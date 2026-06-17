@@ -623,6 +623,95 @@ describe("buildLineLayouts", () => {
     expect(line).toMatchObject({ x1: 460, y1: 260 });
   });
 
+  it("uses separate output corners for two decision outgoing lines", () => {
+    const nodes: DiagramCanvasNodeLayout[] = [
+      {
+        node: {
+          height: 120,
+          id: "decision",
+          layer: 1,
+          shape: "decision",
+          text: "判断",
+          width: 160,
+          x: 300,
+          y: 200
+        },
+        x: 300,
+        y: 200
+      },
+      {
+        node: {
+          height: 80,
+          id: "input",
+          layer: 1,
+          shape: "process",
+          text: "入力",
+          width: 120,
+          x: 40,
+          y: 220
+        },
+        x: 40,
+        y: 220
+      },
+      {
+        node: {
+          height: 80,
+          id: "target-left-bottom",
+          layer: 1,
+          shape: "process",
+          text: "左下",
+          width: 120,
+          x: 120,
+          y: 480
+        },
+        x: 120,
+        y: 480
+      },
+      {
+        node: {
+          height: 80,
+          id: "target-right-bottom",
+          layer: 1,
+          shape: "process",
+          text: "右下",
+          width: 120,
+          x: 620,
+          y: 480
+        },
+        x: 620,
+        y: 480
+      }
+    ];
+
+    const lines = buildLineLayouts([
+      {
+        from: "input",
+        id: "line-in",
+        label: "in",
+        to: "decision"
+      },
+      {
+        from: "decision",
+        id: "line-yes",
+        label: "はい",
+        to: "target-left-bottom"
+      },
+      {
+        from: "decision",
+        id: "line-no",
+        label: "いいえ",
+        to: "target-right-bottom"
+      }
+    ], nodes);
+
+    const yesLine = lines.find((line) => line.line.id === "line-yes");
+    const noLine = lines.find((line) => line.line.id === "line-no");
+
+    expect(yesLine).toMatchObject({ x1: 380, y1: 320 });
+    expect(noLine).toMatchObject({ x1: 460, y1: 260 });
+    expect(`${yesLine?.x1},${yesLine?.y1}`).not.toBe(`${noLine?.x1},${noLine?.y1}`);
+  });
+
   it("hides the third and later outgoing decision lines from layout targets", () => {
     const nodes: DiagramCanvasNodeLayout[] = [
       {
