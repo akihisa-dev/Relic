@@ -1291,6 +1291,13 @@ describe("DiagramCanvas", () => {
     expect(css).not.toMatch(/\.diagram-canvas-space\s*\{[^}]*linear-gradient\(var\(--border-soft\) 1px, transparent 1px\)/s);
   });
 
+  it("does not show rectangular selection frames around non-rectangular free-drawing shapes", () => {
+    const css = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
+
+    expect(css).toMatch(/\.diagram-canvas-node--selected\.diagram-canvas-node--shape-decision,\s*\.diagram-canvas-node--selected\.diagram-canvas-node--shape-input-output\s*\{[^}]*box-shadow:\s*none;/s);
+    expect(css).toMatch(/\.diagram-canvas-node--dragging\.diagram-canvas-node--shape-decision,\s*\.diagram-canvas-node--dragging\.diagram-canvas-node--shape-input-output\s*\{[^}]*box-shadow:\s*none;/s);
+  });
+
   it("moves and scales the relationship grid with the viewport", () => {
     render(
       <I18nProvider language="en">
