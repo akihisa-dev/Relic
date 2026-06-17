@@ -19,6 +19,7 @@ import {
   addRelicDiagramLine,
   moveRelicDiagramNode,
   moveRelicFreeDrawingAreaWithContents,
+  relicFreeDrawingNodeMaxLayer,
   relicFreeDrawingNodeMinLayer,
   relicFreeDrawingShapeTypes,
   removeRelicDiagramLine,
@@ -237,6 +238,12 @@ export function RelationshipCanvas({
     () => buildLineLayouts(visibleDiagramLines(diagram.lines, diagram.nodes), displayNodes),
     [diagram.lines, diagram.nodes, displayNodes]
   );
+  const selectedFreeDrawingLayer = useMemo(() => {
+    if (selection?.type !== "node") return null;
+
+    const selectedNode = diagram.nodes.find((node) => node.id === selection.id);
+    return selectedNode && "layer" in selectedNode ? selectedNode.layer : null;
+  }, [diagram.nodes, selection]);
   const displaySnapGuides = useMemo(() => (drag?.guides ?? []).map((guide) => ({
     ...guide,
     value: guide.value - (guide.axis === "x" ? layout.originX : layout.originY)
@@ -815,6 +822,7 @@ export function RelationshipCanvas({
     event.stopPropagation();
     if (!onChange || !isFreeDrawing || !("shape" in node)) return;
     if (direction === -1 && node.layer <= relicFreeDrawingNodeMinLayer) return;
+    if (direction === 1 && node.layer >= relicFreeDrawingNodeMaxLayer) return;
 
     const updated = updateRelicFreeDrawingNodeLayer(content, node.id, node.layer + direction);
     if (updated.ok) {
@@ -995,15 +1003,24 @@ export function RelationshipCanvas({
             const canChangeLayer = isFreeDrawing && "shape" in node && node.shape !== "area";
             const canAddConnectedShape = isFreeDrawing && "shape" in node && canAddDecisionOutputLine(node, diagram.lines);
             const layerFeedbackDirection = layerFeedback?.nodeId === node.id ? layerFeedback.direction : undefined;
+            const layerRelation = selectedFreeDrawingLayer !== null && "layer" in node && selection?.id !== node.id
+              ? node.layer > selectedFreeDrawingLayer
+                ? "above"
+                : node.layer < selectedFreeDrawingLayer
+                  ? "below"
+                  : "same"
+              : undefined;
 
             return (
               <DiagramNodeView
                 isDragging={drag?.nodeId === node.id}
                 isLayerBackwardDisabled={canChangeLayer && "layer" in node ? node.layer <= relicFreeDrawingNodeMinLayer : false}
+                isLayerForwardDisabled={canChangeLayer && "layer" in node ? node.layer >= relicFreeDrawingNodeMaxLayer : false}
                 isTextEditing={nodeTextEdit?.nodeId === node.id}
                 isSelected={selection?.type === "node" && selection.id === node.id}
                 layerFeedbackDirection={layerFeedbackDirection}
                 layerLabel={canChangeLayer && "layer" in node ? t("diagram.layerValue", { layer: node.layer }) : undefined}
+                layerRelation={layerRelation}
                 key={node.id}
                 node={node}
                 nodeTextDraft={nodeTextEdit?.nodeId === node.id ? nodeTextEdit.value : undefined}

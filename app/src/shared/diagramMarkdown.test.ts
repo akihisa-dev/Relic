@@ -537,6 +537,10 @@ describe("free-drawing operations", () => {
     expect(sentBackward.ok ? sentBackward.value.node.layer : null).toBe(1);
     expect(sentBackward.ok ? sentBackward.value.content : "").toContain("layer: 1");
 
+    const sentForwardPastMax = updateRelicFreeDrawingNodeLayer(freeDrawingContent, "node-2", 12);
+    expect(sentForwardPastMax.ok ? sentForwardPastMax.value.node.layer : null).toBe(8);
+    expect(sentForwardPastMax.ok ? sentForwardPastMax.value.content : "").toContain("layer: 8");
+
     const keptAreaBase = updateRelicFreeDrawingNodeLayer(addedNode.ok ? addedNode.value.content : "", addedNode.ok ? addedNode.value.node.id : "", 4);
     expect(keptAreaBase.ok ? keptAreaBase.value.node.layer : null).toBe(0);
   });
