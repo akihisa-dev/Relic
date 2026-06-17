@@ -141,6 +141,62 @@ const freeDrawingContent = [
   ""
 ].join("\n");
 
+const freeDrawingDecisionWithTwoOutputs = [
+  "---",
+  "type: free-drawing",
+  "title: 自由図",
+  "---",
+  "",
+  "nodes:",
+  "  - id: decision-1",
+  "    shape: decision",
+  "    text: 判断",
+  "    x: 280",
+  "    y: 160",
+  "    width: 180",
+  "    height: 120",
+  "  - id: target-1",
+  "    shape: process",
+  "    text: はい先",
+  "    x: 560",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "  - id: target-2",
+  "    shape: process",
+  "    text: いいえ先",
+  "    x: 560",
+  "    y: 240",
+  "    width: 180",
+  "    height: 80",
+  "  - id: target-3",
+  "    shape: process",
+  "    text: 三本目",
+  "    x: 560",
+  "    y: 400",
+  "    width: 180",
+  "    height: 80",
+  "lines:",
+  "  - id: line-1",
+  "    from: decision-1",
+  "    to: target-1",
+  "    label: はい",
+  "  - id: line-2",
+  "    from: decision-1",
+  "    to: target-2",
+  "    label: いいえ",
+  ""
+].join("\n");
+
+const freeDrawingDecisionWithThreeOutputs = [
+  ...freeDrawingDecisionWithTwoOutputs.split("\n").slice(0, -1),
+  "  - id: line-3",
+  "    from: decision-1",
+  "    to: target-3",
+  "    label: 選択肢3",
+  ""
+].join("\n");
+
 const freeDrawingContentWithArea = [
   "---",
   "type: free-drawing",
@@ -521,6 +577,61 @@ describe("DiagramCanvas", () => {
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("from: node-2");
     expect(onChange.mock.calls[0]?.[0]).toContain("label: はい");
+  });
+
+  it("does not show the connected-shape add button for a decision with two outgoing lines", () => {
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={freeDrawingDecisionWithTwoOutputs} fileName="自由図" />
+      </I18nProvider>
+    );
+
+    const decision = screen.getByText("判断").closest(".diagram-canvas-node");
+    expect(decision).toBeInstanceOf(HTMLElement);
+
+    fireEvent(decision as HTMLElement, pointerEvent("pointerdown", 2, 300, 180));
+    fireEvent(decision as HTMLElement, pointerEvent("pointerup", 2, 300, 180));
+
+    expect(screen.queryByRole("button", { name: "Add connected shape" })).not.toBeInTheDocument();
+  });
+
+  it("does not add a third outgoing line from a decision shape by dragging its outline", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={freeDrawingDecisionWithTwoOutputs} fileName="自由図" onChange={onChange} />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("img", { name: "自由図" });
+    const decision = screen.getByText("判断").closest(".diagram-canvas-node");
+    const thirdTarget = screen.getByText("三本目").closest(".diagram-canvas-node");
+    expect(decision).toBeInstanceOf(HTMLElement);
+    expect(thirdTarget).toBeInstanceOf(HTMLElement);
+
+    fireEvent(decision as HTMLElement, pointerEvent("pointerdown", 2, 300, 180));
+    fireEvent(decision as HTMLElement, pointerEvent("pointerup", 2, 300, 180));
+    const outline = (decision as HTMLElement).querySelector(".diagram-canvas-node-outline-hit--right");
+    expect(outline).toBeInstanceOf(HTMLElement);
+
+    fireEvent(outline as HTMLElement, pointerEvent("pointerdown", 3, 460, 220));
+    fireEvent(canvas, pointerEvent("pointermove", 3, 580, 420));
+    fireEvent(thirdTarget as HTMLElement, pointerEvent("pointerup", 3, 580, 420));
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("hides the third outgoing decision line from display and line hit targets", () => {
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={freeDrawingDecisionWithThreeOutputs} fileName="自由図" />
+      </I18nProvider>
+    );
+
+    expect(container.querySelectorAll(".diagram-canvas-line")).toHaveLength(2);
+    expect(container.querySelectorAll(".diagram-canvas-line-hit")).toHaveLength(2);
+    expect(screen.getByText("はい")).toBeInTheDocument();
+    expect(screen.getByText("いいえ")).toBeInTheDocument();
+    expect(screen.queryByText("選択肢3")).not.toBeInTheDocument();
   });
 
   it("changes the layer of a selected free-drawing shape", () => {
