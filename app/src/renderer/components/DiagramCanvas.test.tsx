@@ -324,6 +324,7 @@ describe("DiagramCanvas", () => {
     expect(screen.queryByText("characters/alice.md")).not.toBeInTheDocument();
     expect(screen.getByText("bob")).toBeInTheDocument();
     expect(screen.getByText("幼なじみ")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add connected shape" })).not.toBeInTheDocument();
     const line = container.querySelector(".diagram-canvas-line");
     expect(line?.getAttribute("d")).toBe("M 372 232 L 452 232");
     expect(line?.getAttribute("marker-end")).toMatch(/^url\(#diagram-canvas-arrow-/);
@@ -442,6 +443,29 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("text: 判断");
     expect(onChange.mock.calls[0]?.[0]).toContain("x: 160");
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 128");
+  });
+
+  it("adds a connected shape from a selected free-drawing node", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
+
+    const source = screen.getByText("主人公").closest(".diagram-canvas-node");
+    expect(source).toBeInstanceOf(HTMLElement);
+
+    fireEvent(source as HTMLElement, pointerEvent("pointerdown", 2, 130, 90));
+    fireEvent(source as HTMLElement, pointerEvent("pointerup", 2, 130, 90));
+    const addButton = screen.getByRole("button", { name: "Add connected shape" });
+    fireEvent(addButton, pointerEvent("pointerdown", 3, 310, 120));
+
+    const menu = screen.getByRole("menu", { name: "Shape to connect" });
+    fireEvent(within(menu).getByRole("menuitem", { name: "Input / Output" }), pointerEvent("pointerdown", 4, 340, 120));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: node-3");
+    expect(onChange.mock.calls[0]?.[0]).toContain("shape: input-output");
+    expect(onChange.mock.calls[0]?.[0]).toContain("text: 入出力");
+    expect(onChange.mock.calls[0]?.[0]).toContain("from: node-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("to: node-3");
   });
 
   it("does not show the Mermaid copy action in Relationship Diagram mode", () => {

@@ -6,10 +6,16 @@ import {
   type ReactElement
 } from "react";
 
-import { type RelicConnectedDiagramNode } from "../../../shared/diagramMarkdown";
+import { type RelicConnectedDiagramNode, type RelicFreeDrawingShapeType } from "../../../shared/diagramMarkdown";
 import { nodeFileName } from "./diagramGeometry";
 
 interface DiagramNodeViewProps {
+  addShapeLabel?: string;
+  addShapeMenuLabel?: string;
+  addShapeOptions?: ReadonlyArray<{
+    label: string;
+    shape: RelicFreeDrawingShapeType;
+  }>;
   isDragging: boolean;
   isTextEditing: boolean;
   isSelected: boolean;
@@ -21,6 +27,12 @@ interface DiagramNodeViewProps {
   onNodeTextCommit?: () => void;
   onNodeTextDoubleClick?: (node: RelicConnectedDiagramNode, event: ReactMouseEvent<HTMLDivElement>) => void;
   onOutlinePointerDown: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLElement>) => void;
+  onShapeAddButtonPointerDown?: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLButtonElement>) => void;
+  onShapeOptionPointerDown?: (
+    node: RelicConnectedDiagramNode,
+    shape: RelicFreeDrawingShapeType,
+    event: ReactPointerEvent<HTMLButtonElement>
+  ) => void;
   onPointerCancel: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerDown: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
@@ -32,6 +44,9 @@ interface DiagramNodeViewProps {
 }
 
 export function DiagramNodeView({
+  addShapeLabel,
+  addShapeMenuLabel,
+  addShapeOptions,
   isDragging,
   isTextEditing,
   isSelected,
@@ -43,6 +58,8 @@ export function DiagramNodeView({
   onNodeTextCommit,
   onNodeTextDoubleClick,
   onOutlinePointerDown,
+  onShapeAddButtonPointerDown,
+  onShapeOptionPointerDown,
   onPointerCancel,
   onPointerDown,
   onPointerMove,
@@ -114,6 +131,34 @@ export function DiagramNodeView({
             tabIndex={-1}
             type="button"
           />
+        </span>
+      ) : null}
+      {isSelected && addShapeLabel ? (
+        <span className="diagram-canvas-node-add-shape">
+          <button
+            aria-label={addShapeLabel}
+            className="diagram-canvas-node-add-shape-button"
+            onPointerDown={(event) => onShapeAddButtonPointerDown?.(node, event)}
+            type="button"
+          >
+            +
+          </button>
+          {addShapeMenuLabel && addShapeOptions && addShapeOptions.length > 0 ? (
+            <span className="diagram-canvas-node-add-shape-menu" role="menu" aria-label={addShapeMenuLabel}>
+              {addShapeOptions.map((option) => (
+                <button
+                  className={`diagram-canvas-node-add-shape-option diagram-canvas-node-add-shape-option--${option.shape}`}
+                  key={option.shape}
+                  onPointerDown={(event) => onShapeOptionPointerDown?.(node, option.shape, event)}
+                  role="menuitem"
+                  type="button"
+                >
+                  <span className="diagram-canvas-node-add-shape-icon" aria-hidden="true" />
+                  <span>{option.label}</span>
+                </button>
+              ))}
+            </span>
+          ) : null}
         </span>
       ) : null}
     </div>
