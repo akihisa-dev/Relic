@@ -649,6 +649,99 @@ describe("DiagramCanvas", () => {
     expect((highNode as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 14px 36px rgba(15, 23, 42, 0.136)");
   });
 
+  it("keeps free-drawing layer order while a lower layer node is selected", () => {
+    const layeredContent = [
+      "---",
+      "type: free-drawing",
+      "title: 自由図",
+      "---",
+      "",
+      "nodes:",
+      "  - id: low-1",
+      "    shape: process",
+      "    text: 低い",
+      "    x: 120",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "    layer: 1",
+      "  - id: high-1",
+      "    shape: process",
+      "    text: 高い",
+      "    x: 380",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "    layer: 4",
+      "lines: []",
+      ""
+    ].join("\n");
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={layeredContent} fileName="自由図" onChange={onChange} />
+      </I18nProvider>
+    );
+
+    const lowNode = screen.getByText("低い").closest(".diagram-canvas-node");
+    const highNode = screen.getByText("高い").closest(".diagram-canvas-node");
+    expect(lowNode).toBeInstanceOf(HTMLElement);
+    expect(highNode).toBeInstanceOf(HTMLElement);
+
+    fireEvent(lowNode as HTMLElement, pointerEvent("pointerdown", 2, 130, 90));
+    fireEvent(lowNode as HTMLElement, pointerEvent("pointerup", 2, 130, 90));
+
+    expect(lowNode as HTMLElement).toHaveClass("diagram-canvas-node--selected");
+    expect((lowNode as HTMLElement).style.zIndex).toBe("101");
+    expect((highNode as HTMLElement).style.zIndex).toBe("104");
+  });
+
+  it("renders a free-drawing line and its label on the higher connected node layer", () => {
+    const layeredContent = [
+      "---",
+      "type: free-drawing",
+      "title: 自由図",
+      "---",
+      "",
+      "nodes:",
+      "  - id: low-1",
+      "    shape: process",
+      "    text: 低い",
+      "    x: 120",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "    layer: 1",
+      "  - id: high-1",
+      "    shape: process",
+      "    text: 高い",
+      "    x: 380",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "    layer: 4",
+      "lines:",
+      "  - id: line-1",
+      "    from: low-1",
+      "    to: high-1",
+      "    label: 高低",
+      ""
+    ].join("\n");
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={layeredContent} fileName="自由図" />
+      </I18nProvider>
+    );
+
+    const line = container.querySelector(".diagram-canvas-line");
+    const lineSvg = line?.closest(".diagram-canvas-lines");
+    const label = screen.getByText("高低").closest(".diagram-canvas-line-controls");
+    expect(lineSvg).toBeInstanceOf(SVGSVGElement);
+    expect(label).toBeInstanceOf(HTMLElement);
+    expect((lineSvg as SVGSVGElement).style.zIndex).toBe("104");
+    expect((label as HTMLElement).style.zIndex).toBe("104");
+  });
+
   it("moves nodes fully contained in an area when dragging the area", () => {
     const onChange = vi.fn();
     render(

@@ -46,6 +46,7 @@ import {
 import { type DiagramCanvasProps } from "./diagramTypes";
 import { freeDrawingShapeDragType, isFreeDrawingShapeType } from "./freeDrawingShapeDrag";
 import { DiagramLineLayer } from "./DiagramLineLayer";
+import { diagramNodeDisplayLayer } from "./diagramLayering";
 import { DiagramNodeView } from "./DiagramNodeView";
 import { DiagramSnapGuides } from "./DiagramSnapGuides";
 import { diagramGridSize, snapDiagramNode, snapDiagramPointToGrid, snapDiagramSizeToGrid, type DiagramSnapGuide } from "./diagramSnap";
@@ -241,12 +242,18 @@ export function RelationshipCanvas({
   const resizePreview = resize
     ? layout.nodes.find((node) => node.node.id === resize.nodeId)
     : null;
-  const previewLine = connect?.isActive ? {
-    currentX: connect.currentX,
-    currentY: connect.currentY,
-    startX: connect.startX,
-    startY: connect.startY
-  } : null;
+  const previewLine = useMemo(() => {
+    if (!connect?.isActive) return null;
+    const fromNode = displayNodes.find((node) => node.node.id === connect.fromNodeId);
+
+    return {
+      currentX: connect.currentX,
+      currentY: connect.currentY,
+      displayLayer: fromNode ? diagramNodeDisplayLayer(fromNode.node, false, false) : 0,
+      startX: connect.startX,
+      startY: connect.startY
+    };
+  }, [connect, displayNodes]);
   const startNodeDrag = (node: RelicDiagramNodeBase, event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!onChange) return;
 
@@ -861,7 +868,8 @@ export function RelationshipCanvas({
                   onSubmit={submitLabelEdit}
                   style={{
                     left: line.labelX,
-                    top: line.labelY
+                    top: line.labelY,
+                    zIndex: line.displayLayer
                   }}
                 >
                   <input
@@ -890,7 +898,8 @@ export function RelationshipCanvas({
                 key={line.line.id}
                 style={{
                   left: line.labelX,
-                  top: line.labelY
+                  top: line.labelY,
+                  zIndex: line.displayLayer
                 }}
               >
                 <button

@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { type RelicConnectedDiagramNode, type RelicFreeDrawingShapeType } from "../../../shared/diagramMarkdown";
+import { diagramNodeDisplayLayer } from "./diagramLayering";
 import { nodeFileName } from "./diagramGeometry";
 
 interface DiagramNodeViewProps {
@@ -86,7 +87,7 @@ export function DiagramNodeView({
     "--diagram-node-elevation-shadow": nodeElevationShadow(node),
     minHeight: node.height,
     transform: `translate(${x}px, ${y}px)`,
-    zIndex: nodeLayerIndex(node, isDragging, isSelected),
+    zIndex: diagramNodeDisplayLayer(node, isDragging, isSelected),
     width: node.width
   };
   const handleNodeTextKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>): void => {
@@ -212,20 +213,9 @@ export function DiagramNodeView({
   );
 }
 
-const diagramNodeLayerBase = 100;
-const diagramNodeActiveLayerBoost = 1000;
-
 type DiagramNodeStyle = CSSProperties & {
   "--diagram-node-elevation-shadow": string;
 };
-
-function nodeLayerIndex(node: RelicConnectedDiagramNode, isDragging: boolean, isSelected: boolean): number {
-  const layer = "layer" in node ? node.layer : 0;
-  const displayLayer = diagramNodeLayerBase + layer;
-  if (isDragging || isSelected) return displayLayer + diagramNodeActiveLayerBoost;
-
-  return displayLayer;
-}
 
 function nodeElevationShadow(node: RelicConnectedDiagramNode): string {
   if (!("layer" in node)) return "0 8px 24px rgba(15, 23, 42, 0.1)";
