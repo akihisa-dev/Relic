@@ -559,7 +559,7 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("to: node-3");
   });
 
-  it("adds a standard choice label when connecting from a decision shape", () => {
+  it("adds a YES standard choice label when connecting from a decision shape", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
 
@@ -576,7 +576,55 @@ describe("DiagramCanvas", () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("from: node-2");
-    expect(onChange.mock.calls[0]?.[0]).toContain("label: はい");
+    expect(onChange.mock.calls[0]?.[0]).toContain("label: 'YES'");
+  });
+
+  it("adds a NO standard choice label for the second decision outgoing line", () => {
+    const onChange = vi.fn();
+    const oneDecisionOutputContent = [
+      "---",
+      "type: free-drawing",
+      "title: 自由図",
+      "---",
+      "",
+      "nodes:",
+      "  - id: node-1",
+      "    shape: decision",
+      "    text: 判断",
+      "    x: 120",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "  - id: node-2",
+      "    shape: process",
+      "    text: YES先",
+      "    x: 380",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "lines:",
+      "  - id: line-1",
+      "    from: node-1",
+      "    to: node-2",
+      "    label: YES",
+      ""
+    ].join("\n");
+    render(<StatefulDiagramCanvas content={oneDecisionOutputContent} onChange={onChange} />);
+
+    const source = screen.getByText("判断").closest(".diagram-canvas-node");
+    expect(source).toBeInstanceOf(HTMLElement);
+
+    fireEvent(source as HTMLElement, pointerEvent("pointerdown", 2, 130, 90));
+    fireEvent(source as HTMLElement, pointerEvent("pointerup", 2, 130, 90));
+    const addButton = screen.getByRole("button", { name: "Add connected shape" });
+    fireEvent(addButton, pointerEvent("pointerdown", 3, 300, 120));
+
+    const menu = screen.getByRole("menu", { name: "Shape to connect" });
+    fireEvent(within(menu).getByRole("menuitem", { name: "Process" }), pointerEvent("pointerdown", 4, 330, 120));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("from: node-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("label: 'NO'");
   });
 
   it("does not show the connected-shape add button for a decision with two outgoing lines", () => {

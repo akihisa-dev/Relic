@@ -55,7 +55,7 @@ import { diagramGridSize, snapDiagramNode, snapDiagramPointToGrid, snapDiagramSi
 const connectActivationDistance = 4;
 const connectedShapeDefaultHeight = 80;
 const connectedShapeDefaultWidth = 180;
-const decisionOptionLabels = ["はい", "いいえ"] as const;
+const decisionOptionLabels = ["YES", "NO"] as const;
 const minNodeHeight = 64;
 const minNodeWidth = 96;
 
