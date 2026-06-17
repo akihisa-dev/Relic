@@ -23,10 +23,10 @@ describe("readWorkspaceFileIndex", () => {
   it("Markdownファイル一覧とDiagram判定と行単位テキストを作る", async () => {
     const workspacePath = await createWorkspace();
     await writeFile(path.join(workspacePath, "note.md"), "# Note\n本文", "utf8");
+    await writeFile(path.join(workspacePath, "diagram.md"), "---\ntype: diagram\n---\n\nnodes: []\nlines: []", "utf8");
     await writeFile(path.join(workspacePath, "relationship.md"), "---\ntype: relationship\n---\n\nnodes: []\nlines: []", "utf8");
-    await writeFile(path.join(workspacePath, "free.md"), "---\ntype: free-drawing\n---\n\nnodes: []\nlines: []", "utf8");
     await writeFile(path.join(workspacePath, "why.md"), "---\ntype: why-tree\n---\n\nlabels:\n  root: ルート\n  node: ノード\n  fact: メモ\n  solution: 関連項目\n  action: アクション\nphenomenon:\n  title: 問題\n  facts: []\n  solutions: []\n  actions: []", "utf8");
-    await writeFile(path.join(workspacePath, "ignored.txt"), "---\ntype: relationship\n---", "utf8");
+    await writeFile(path.join(workspacePath, "ignored.txt"), "---\ntype: diagram\n---", "utf8");
 
     const index = await readWorkspaceFileIndex(workspacePath);
 
@@ -36,15 +36,15 @@ describe("readWorkspaceFileIndex", () => {
       path: filePath,
       readStatus
     }))).toEqual([
-      { kind: "diagram", name: "free", path: "free.md", readStatus: "ok" },
+      { kind: "diagram", name: "diagram", path: "diagram.md", readStatus: "ok" },
       { kind: "markdown", name: "note", path: "note.md", readStatus: "ok" },
-      { kind: "diagram", name: "relationship", path: "relationship.md", readStatus: "ok" },
-      { kind: "diagram", name: "why", path: "why.md", readStatus: "ok" }
+      { kind: "markdown", name: "relationship", path: "relationship.md", readStatus: "ok" },
+      { kind: "markdown", name: "why", path: "why.md", readStatus: "ok" }
     ]);
     expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["# Note", "本文"]);
-    expect(index.records.find((record) => record.path === "relationship.md")?.lines).toEqual([
+    expect(index.records.find((record) => record.path === "diagram.md")?.lines).toEqual([
       "---",
-      "type: relationship",
+      "type: diagram",
       "---",
       "",
       "nodes: []",
@@ -74,15 +74,17 @@ describe("readWorkspaceFileIndex", () => {
 
   it("Diagram判定はフロントマターtypeだけを見て、type: mapは扱わない", async () => {
     const workspacePath = await createWorkspace();
-    await writeFile(path.join(workspacePath, "not-diagram.md"), "# Title\ntype: relationship", "utf8");
+    await writeFile(path.join(workspacePath, "not-diagram.md"), "# Title\ntype: diagram", "utf8");
     await writeFile(path.join(workspacePath, "old-map.md"), "type: map\nnodes: []", "utf8");
-    await writeFile(path.join(workspacePath, "diagram.md"), "---\ntype: why-tree\n---\nphenomenon:\n  title: 問題", "utf8");
+    await writeFile(path.join(workspacePath, "diagram.md"), "---\ntype: diagram\n---\nnodes: []\nlines: []", "utf8");
+    await writeFile(path.join(workspacePath, "old-relationship.md"), "---\ntype: relationship\n---\nnodes: []\nlines: []", "utf8");
 
     const index = await readWorkspaceFileIndex(workspacePath);
 
     expect(index.entries.find((entry) => entry.path === "not-diagram.md")?.kind).toBe("markdown");
     expect(index.entries.find((entry) => entry.path === "old-map.md")?.kind).toBe("markdown");
     expect(index.entries.find((entry) => entry.path === "diagram.md")?.kind).toBe("diagram");
+    expect(index.entries.find((entry) => entry.path === "old-relationship.md")?.kind).toBe("markdown");
   });
 
   it("変更されていないファイルは保存済みの控えを再利用する", async () => {
@@ -111,7 +113,7 @@ describe("readWorkspaceFileIndex", () => {
 
   it("大きすぎるMarkdownは全文検索用本文を持たず先頭部分だけでDiagram判定する", async () => {
     const workspacePath = await createWorkspace();
-    await writeFile(path.join(workspacePath, "large-diagram.md"), `---\ntype: relationship\n---\n${"x".repeat(64)}`, "utf8");
+    await writeFile(path.join(workspacePath, "large-diagram.md"), `---\ntype: diagram\n---\n${"x".repeat(64)}`, "utf8");
 
     const index = await readWorkspaceFileIndex(workspacePath, {
       maxSearchFileBytes: 8,

@@ -60,45 +60,42 @@ describe("searchWorkspace", () => {
 
   it("Diagram Markdownも全文検索対象に含める", async () => {
     const workspacePath = await createSearchWorkspace();
-    await writeFile(path.join(workspacePath, "人物関係.md"), "---\ntype: relationship\n---\n\nnodes: []\nlines:\n  - label: 幼なじみ", "utf8");
+    await writeFile(path.join(workspacePath, "図解ファイル.md"), "---\ntype: diagram\n---\n\nnodes: []\nlines:\n  - label: 幼なじみ", "utf8");
 
     await expect(searchWorkspace(workspacePath, "幼なじみ", "fullText")).resolves.toEqual({
       ok: true,
       value: searchResultSet([{
-        fileName: "人物関係",
+        fileName: "図解ファイル",
         lineNumber: 7,
         lineText: "- label: 幼なじみ",
-        path: "人物関係.md"
+        path: "図解ファイル.md"
       }])
     });
   });
 
-  it("Why Tree内の問題、原因、根拠、解決策、実行項目を全文検索対象に含める", async () => {
+  it("Diagram内の図形テキストを全文検索対象に含める", async () => {
     const workspacePath = await createSearchWorkspace();
     await writeFile(path.join(workspacePath, "原因分析.md"), [
       "---",
-      "type: why-tree",
+      "type: diagram",
       "---",
       "",
-      "labels:",
-      "  root: ルート",
-      "  node: ノード",
-      "  fact: メモ",
-      "  solution: 関連項目",
-      "  action: アクション",
-      "phenomenon:",
-      "  title: 問題が起きている",
-      "  facts:",
-      "    - 観察された事実",
-      "  solutions:",
-      "    - 試す解決策",
-      "  actions:",
-      "    - 今日やる実行項目",
-      "  whys:",
-      "    - title: 根本原因",
-      "      facts: []",
-      "      solutions: []",
-      "      actions: []",
+      "nodes:",
+      "  - id: node-1",
+      "    shape: process",
+      "    text: 問題が起きている",
+      "    x: 120",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "  - id: node-2",
+      "    shape: decision",
+      "    text: 根本原因",
+      "    x: 360",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "lines: []",
       ""
     ].join("\n"), "utf8");
 
@@ -106,26 +103,14 @@ describe("searchWorkspace", () => {
       ok: true,
       value: searchResultSet([{
         fileName: "原因分析",
-        lineNumber: 12,
-        lineText: "title: 問題が起きている",
+        lineNumber: 8,
+        lineText: "text: 問題が起きている",
         path: "原因分析.md"
       }])
     });
     await expect(searchWorkspace(workspacePath, "根本原因", "fullText")).resolves.toMatchObject({
       ok: true,
-      value: { results: [{ fileName: "原因分析", lineText: "- title: 根本原因", path: "原因分析.md" }] }
-    });
-    await expect(searchWorkspace(workspacePath, "観察された事実", "fullText")).resolves.toMatchObject({
-      ok: true,
-      value: { results: [{ fileName: "原因分析", lineText: "- 観察された事実", path: "原因分析.md" }] }
-    });
-    await expect(searchWorkspace(workspacePath, "試す解決策", "fullText")).resolves.toMatchObject({
-      ok: true,
-      value: { results: [{ fileName: "原因分析", lineText: "- 試す解決策", path: "原因分析.md" }] }
-    });
-    await expect(searchWorkspace(workspacePath, "今日やる実行項目", "fullText")).resolves.toMatchObject({
-      ok: true,
-      value: { results: [{ fileName: "原因分析", lineText: "- 今日やる実行項目", path: "原因分析.md" }] }
+      value: { results: [{ fileName: "原因分析", lineText: "text: 根本原因", path: "原因分析.md" }] }
     });
   });
 

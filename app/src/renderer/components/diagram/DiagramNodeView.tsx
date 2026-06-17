@@ -9,7 +9,6 @@ import {
 
 import { type RelicConnectedDiagramNode, type RelicFreeDrawingShapeType } from "../../../shared/diagramMarkdown";
 import { diagramNodeDisplayLayer } from "./diagramLayering";
-import { nodeFileName } from "./diagramGeometry";
 
 interface DiagramNodeViewProps {
   addShapeLabel?: string;
@@ -73,10 +72,10 @@ export function DiagramNodeView({
   x,
   y
 }: DiagramNodeViewProps): ReactElement {
-  const freeText = "text" in node ? node.text : null;
-  const isArea = "shape" in node && node.shape === "area";
-  const title = "file" in node ? node.file : freeText ?? "";
-  const shapeClass = "shape" in node ? `diagram-canvas-node--shape-${node.shape}` : "";
+  const freeText = node.text;
+  const isArea = node.shape === "area";
+  const title = freeText;
+  const shapeClass = `diagram-canvas-node--shape-${node.shape}`;
   const nodeStyle: DiagramNodeStyle = {
     ...nodeElevationStyle(node),
     minHeight: node.height,
@@ -106,9 +105,7 @@ export function DiagramNodeView({
       style={nodeStyle}
       title={title}
     >
-      {!renderNodeText ? null : freeText === null ? (
-        <span className="diagram-canvas-node-name">{"file" in node ? nodeFileName(node.file) : ""}</span>
-      ) : !isTextEditing ? (
+      {!renderNodeText ? null : !isTextEditing ? (
         <span className={[
           "diagram-canvas-node-name",
           "diagram-canvas-node-name--free-text",
@@ -197,14 +194,6 @@ function nodeElevationStyle(node: RelicConnectedDiagramNode): Pick<
   "--diagram-node-layer-border" |
   "--diagram-node-layer-fill"
 > {
-  if (!("layer" in node)) {
-    return {
-      "--diagram-node-elevation-filter": "drop-shadow(0 8px 24px rgba(15, 23, 42, 0.1))",
-      "--diagram-node-elevation-shadow": "0 8px 24px rgba(15, 23, 42, 0.1)",
-      "--diagram-node-layer-border": "color-mix(in srgb, var(--text-3) 64%, var(--border-medium))",
-      "--diagram-node-layer-fill": "var(--bg)"
-    };
-  }
   if (node.shape === "area") {
     return {
       "--diagram-node-elevation-filter": "none",

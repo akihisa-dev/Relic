@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultEditorSettings, type WorkspaceState } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
 import { useEditorStore, type PaneState } from "../store/editorStore";
-import { freeDrawingShapeDragType } from "./diagram/freeDrawingShapeDrag";
+import { diagramShapeDragType } from "./diagram/diagramShapeDrag";
 import { DiagramSidebar } from "./DiagramSidebar";
 
 const workspaceState: WorkspaceState = {
@@ -82,14 +82,14 @@ afterEach(() => {
 });
 
 describe("DiagramSidebar", () => {
-  it("separates Diagram files from placeable Markdown files", () => {
+  it("shows Diagram files and hides unreadable entries", () => {
     renderDiagramSidebar();
 
     expect(screen.getByText("Diagram files")).toBeInTheDocument();
     expect(screen.getByText("World.md")).toBeInTheDocument();
     expect(screen.queryByText("Broken.md")).not.toBeInTheDocument();
-    expect(screen.getByText("Markdown files")).toBeInTheDocument();
-    expect(screen.getByText("Alice.md")).toBeInTheDocument();
+    expect(screen.queryByText("Markdown files")).not.toBeInTheDocument();
+    expect(screen.queryByText("Alice.md")).not.toBeInTheDocument();
   });
 
   it("opens a Diagram file from the Diagram file list", () => {
@@ -110,45 +110,16 @@ describe("DiagramSidebar", () => {
     expect(onDeleteItem).toHaveBeenCalledWith("diagrams/World.md", "file");
   });
 
-  it("creates relationship, why-tree, and free-drawing files from the Diagram sidebar", () => {
+  it("creates a Diagram file from the Diagram sidebar", () => {
     const props = renderDiagramSidebar();
 
-    fireEvent.click(screen.getByRole("button", { name: "New relationship" }));
-    fireEvent.click(screen.getByRole("button", { name: "New structure tree" }));
-    fireEvent.click(screen.getByRole("button", { name: "New free drawing" }));
+    fireEvent.click(screen.getByRole("button", { name: "New Diagram file" }));
 
-    expect(props.onCreateDiagramFile).toHaveBeenNthCalledWith(1, "relationship");
-    expect(props.onCreateDiagramFile).toHaveBeenNthCalledWith(2, "why-tree");
-    expect(props.onCreateDiagramFile).toHaveBeenNthCalledWith(3, "free-drawing");
+    expect(props.onCreateDiagramFile).toHaveBeenCalledWith("diagram");
   });
 
-  it("adds a placeable Markdown file to the active Diagram tab", () => {
-    const content = "---\ntype: relationship\n---\n\nnodes: []\nlines: []\n";
-    useEditorStore.setState({
-      focusedPane: "left",
-      leftPane: { activeTabId: "map-tab", history: ["map-tab"], tabIds: ["map-tab"] },
-      rightPane: emptyPane(),
-      tabs: {
-        "map-tab": {
-          content,
-          id: "map-tab",
-          kind: "file",
-          name: "World",
-          path: "diagrams/World.md",
-          savedContent: content
-        }
-      }
-    });
-    renderDiagramSidebar();
-
-    fireEvent.click(screen.getByRole("button", { name: /Alice\.md/ }));
-
-    const tab = useEditorStore.getState().tabs["map-tab"];
-    expect(tab?.kind === "file" ? tab.content : "").toContain("file: characters/Alice.md");
-  });
-
-  it("shows flowchart shapes instead of Markdown files for an active free-drawing Diagram", () => {
-    const content = "---\ntype: free-drawing\n---\n\nnodes: []\nlines: []\n";
+  it("shows flowchart shapes for an active Diagram file", () => {
+    const content = "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n";
     useEditorStore.setState({
       focusedPane: "left",
       leftPane: { activeTabId: "free-tab", history: ["free-tab"], tabIds: ["free-tab"] },
@@ -177,8 +148,8 @@ describe("DiagramSidebar", () => {
     expect(screen.queryByRole("button", { name: /Alice\.md/ })).not.toBeInTheDocument();
   });
 
-  it("starts dragging a free-drawing flowchart shape from the sidebar", () => {
-    const content = "---\ntype: free-drawing\n---\n\nnodes: []\nlines: []\n";
+  it("starts dragging a flowchart shape from the sidebar", () => {
+    const content = "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n";
     const setData = vi.fn();
     useEditorStore.setState({
       focusedPane: "left",
@@ -204,54 +175,7 @@ describe("DiagramSidebar", () => {
       }
     });
 
-    expect(setData).toHaveBeenCalledWith(freeDrawingShapeDragType, "decision");
+    expect(setData).toHaveBeenCalledWith(diagramShapeDragType, "decision");
   });
 
-  it("shows structure-tree label fields instead of Markdown files for an active why-tree Diagram", () => {
-    const content = [
-      "---",
-      "type: why-tree",
-      "---",
-      "",
-      "labels:",
-      "  root: ルート",
-      "  node: ノード",
-      "  fact: メモ",
-      "  solution: 関連項目",
-      "  action: アクション",
-      "phenomenon:",
-      "  title: 問題",
-      "  facts: []",
-      "  solutions: []",
-      "  actions: []",
-      "  whys: []",
-      ""
-    ].join("\n");
-    useEditorStore.setState({
-      focusedPane: "left",
-      leftPane: { activeTabId: "why-tab", history: ["why-tab"], tabIds: ["why-tab"] },
-      rightPane: emptyPane(),
-      tabs: {
-        "why-tab": {
-          content,
-          id: "why-tab",
-          kind: "file",
-          name: "Why",
-          path: "diagrams/Why.md",
-          savedContent: content
-        }
-      }
-    });
-    renderDiagramSidebar();
-
-    expect(screen.getByText("Labels")).toBeInTheDocument();
-    expect(screen.getByLabelText("Node label")).toHaveValue("ノード");
-    expect(screen.queryByText("Markdown files")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Alice\.md/ })).not.toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText("Node label"), { target: { value: "分解" } });
-
-    const tab = useEditorStore.getState().tabs["why-tab"];
-    expect(tab?.kind === "file" ? tab.content : "").toContain("node: 分解");
-  });
 });

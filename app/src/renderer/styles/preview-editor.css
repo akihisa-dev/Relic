@@ -377,8 +377,7 @@
   overflow: hidden;
 }
 
-.editor-body > .diagram-canvas,
-.editor-body > .why-tree-editor {
+.editor-body > .diagram-canvas {
   grid-row: 3;
 }
 

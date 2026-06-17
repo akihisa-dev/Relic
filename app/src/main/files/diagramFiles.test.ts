@@ -24,13 +24,14 @@ describe("diagramFiles", () => {
     const workspacePath = await createWorkspace();
     await writeFile(path.join(workspacePath, "world.md"), [
       "---",
-      "type: relationship",
-      "title: 関係図",
+      "type: diagram",
+      "title: 図解ファイル",
       "---",
       "",
       "nodes:",
       "  - id: node-1",
-      "    file: characters/alice.md",
+      "    shape: process",
+      "    text: alice",
       "    x: 120",
       "    y: 80",
       "    width: 180",
@@ -45,10 +46,11 @@ describe("diagramFiles", () => {
         name: "world",
         path: "world.md",
         map: {
-          type: "relationship",
+          type: "diagram",
           nodes: [
             {
-              file: "characters/alice.md",
+              shape: "process",
+              text: "alice",
               id: "node-1"
             }
           ],
@@ -60,14 +62,16 @@ describe("diagramFiles", () => {
 
   it("NodeとLineを図解用MDへ書き戻す", async () => {
     const workspacePath = await createWorkspace();
-    const original = "---\ntype: relationship\n---\n\nnodes: []\nlines: []\n";
+    const original = "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n";
     await writeFile(path.join(workspacePath, "world.md"), original, "utf8");
 
     const result = await writeRelicDiagramFile(workspacePath, "world.md", {
-      type: "relationship",
+      type: "diagram",
       nodes: [
         {
-          file: "characters/alice.md",
+          shape: "process",
+          text: "alice",
+          layer: 1,
           height: 80,
           id: "node-1",
           width: 180,
@@ -75,7 +79,9 @@ describe("diagramFiles", () => {
           y: 80
         },
         {
-          file: "characters/bob.md",
+          shape: "process",
+          text: "bob",
+          layer: 1,
           height: 80,
           id: "node-2",
           width: 180,
@@ -99,16 +105,16 @@ describe("diagramFiles", () => {
 
   it("壊れた図解用MDと外部変更を保存対象にしない", async () => {
     const workspacePath = await createWorkspace();
-    await writeFile(path.join(workspacePath, "broken.md"), "---\ntype: relationship\n---\n\nnotes: body", "utf8");
-    await writeFile(path.join(workspacePath, "changed.md"), "---\ntype: relationship\n---\n\nnodes: []\nlines: []\n", "utf8");
+    await writeFile(path.join(workspacePath, "broken.md"), "---\ntype: diagram\n---\n\nnotes: body", "utf8");
+    await writeFile(path.join(workspacePath, "changed.md"), "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n", "utf8");
 
     await expect(writeRelicDiagramFile(workspacePath, "broken.md", {
-      type: "relationship",
+      type: "diagram",
       nodes: [],
       lines: []
     })).resolves.toMatchObject({ ok: false });
     await expect(writeRelicDiagramFile(workspacePath, "changed.md", {
-      type: "relationship",
+      type: "diagram",
       nodes: [],
       lines: []
     }, "old")).resolves.toMatchObject({

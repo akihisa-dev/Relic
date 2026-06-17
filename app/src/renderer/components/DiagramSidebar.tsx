@@ -3,17 +3,13 @@ import { createPortal } from "react-dom";
 
 import type { WorkspaceFileIndexEntry, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
 import {
-  addRelicDiagramNodeForFile,
   diagramTypeFromMarkdownContent,
-  parseRelicDiagramMarkdown,
-  updateRelicWhyTreeLabels,
   type RelicDiagramType,
-  type RelicFreeDrawingShapeType,
-  type RelicWhyTreeLabels
+  type RelicFreeDrawingShapeType
 } from "../../shared/diagramMarkdown";
 import { useT } from "../i18n";
 import { useEditorStore } from "../store/editorStore";
-import { freeDrawingShapeDragType } from "./diagram/freeDrawingShapeDrag";
+import { diagramShapeDragType } from "./diagram/diagramShapeDrag";
 import { FilesWorkspaceEmpty } from "./FilesWorkspaceActions";
 
 interface DiagramSidebarProps {
@@ -44,57 +40,18 @@ export function DiagramSidebar({
   workspaceState
 }: DiagramSidebarProps): ReactElement {
   const t = useT();
-  const [placementError, setPlacementError] = useState<string | null>(null);
   const focusedPane = useEditorStore((state) => state.focusedPane);
   const leftPane = useEditorStore((state) => state.leftPane);
   const rightPane = useEditorStore((state) => state.rightPane);
   const tabs = useEditorStore((state) => state.tabs);
-  const updateTabContent = useEditorStore((state) => state.updateTabContent);
   const activeWorkspace = workspaceState?.activeWorkspace ?? null;
-  const { diagramFiles, placeableFiles } = useMemo(
+  const { diagramFiles } = useMemo(
     () => groupDiagramSidebarFiles(workspaceState?.fileIndex ?? []),
     [workspaceState?.fileIndex]
   );
   const activePane = focusedPane === "right" ? rightPane : leftPane;
   const activeTab = activePane.activeTabId ? tabs[activePane.activeTabId] : null;
-  const activeRelationshipTab = activeTab?.kind === "file" && diagramTypeFromMarkdownContent(activeTab.content) === "relationship" ? activeTab : null;
-  const activeFreeDrawingTab = activeTab?.kind === "file" && diagramTypeFromMarkdownContent(activeTab.content) === "free-drawing" ? activeTab : null;
-  const activeWhyTreeTab = activeTab?.kind === "file" && diagramTypeFromMarkdownContent(activeTab.content) === "why-tree" ? activeTab : null;
-  const activeWhyTree = useMemo(() => {
-    if (!activeWhyTreeTab) return null;
-    const parsed = parseRelicDiagramMarkdown(activeWhyTreeTab.content);
-    return parsed.ok && parsed.value.type === "why-tree" ? parsed.value : null;
-  }, [activeWhyTreeTab]);
-  const handlePlaceFile = (filePath: string): void => {
-    if (!activeRelationshipTab) {
-      setPlacementError(t("diagram.openRelationshipFirst"));
-      return;
-    }
-
-    const next = addRelicDiagramNodeForFile(activeRelationshipTab.content, filePath);
-    if (!next.ok) {
-      setPlacementError(next.error.message);
-      return;
-    }
-
-    setPlacementError(null);
-    updateTabContent(activeRelationshipTab.id, next.value.content);
-  };
-  const handleWhyTreeLabelChange = (key: WhyTreeLabelKey, value: string): void => {
-    if (!activeWhyTreeTab || !activeWhyTree || value === activeWhyTree.labels[key]) return;
-
-    const next = updateRelicWhyTreeLabels(activeWhyTreeTab.content, {
-      ...activeWhyTree.labels,
-      [key]: value
-    });
-    if (!next.ok) {
-      setPlacementError(next.error.message);
-      return;
-    }
-
-    setPlacementError(null);
-    updateTabContent(activeWhyTreeTab.id, next.value.content);
-  };
+  const activeDiagramTab = activeTab?.kind === "file" && diagramTypeFromMarkdownContent(activeTab.content) === "diagram" ? activeTab : null;
 
   if (!activeWorkspace) {
     return (
@@ -113,37 +70,15 @@ export function DiagramSidebar({
     <div className="diagram-sidebar-section">
       <div className="diagram-sidebar-actions">
         <button
-          aria-label={t("diagram.createRelationship")}
+          aria-label={t("diagram.createFile")}
           className="files-create-icon-button"
-          data-tooltip={t("diagram.createRelationship")}
+          data-tooltip={t("diagram.createFile")}
           disabled={isCreatingFile}
-          onClick={() => onCreateDiagramFile("relationship")}
-          title={t("diagram.createRelationship")}
+          onClick={() => onCreateDiagramFile("diagram")}
+          title={t("diagram.createFile")}
           type="button"
         >
           <DiagramFileIcon />
-        </button>
-        <button
-          aria-label={t("diagram.createWhyTree")}
-          className="files-create-icon-button"
-          data-tooltip={t("diagram.createWhyTree")}
-          disabled={isCreatingFile}
-          onClick={() => onCreateDiagramFile("why-tree")}
-          title={t("diagram.createWhyTree")}
-          type="button"
-        >
-          <WhyTreeIcon />
-        </button>
-        <button
-          aria-label={t("diagram.createFreeDrawing")}
-          className="files-create-icon-button"
-          data-tooltip={t("diagram.createFreeDrawing")}
-          disabled={isCreatingFile}
-          onClick={() => onCreateDiagramFile("free-drawing")}
-          title={t("diagram.createFreeDrawing")}
-          type="button"
-        >
-          <FreeDrawingIcon />
         </button>
       </div>
       <DiagramSidebarGroup
@@ -155,47 +90,18 @@ export function DiagramSidebar({
         openFilePaths={openFilePaths}
         title={t("diagram.files")}
       />
-      {activeFreeDrawingTab ? (
+      {activeDiagramTab ? (
         <DiagramShapePalette title={t("diagram.flowchartShapes")} />
-      ) : activeWhyTree ? (
-        <DiagramWhyTreeLabelFields
-          labels={activeWhyTree.labels}
-          onChange={handleWhyTreeLabelChange}
-          title={t("diagram.whyTree.labelPanel")}
-        />
-      ) : (
-        <DiagramSidebarGroup
-          emptyLabel={t("diagram.noPlaceableFiles")}
-          files={placeableFiles}
-          onPlaceFile={handlePlaceFile}
-          placeDisabled={!activeRelationshipTab}
-          title={t("diagram.placeableFiles")}
-        />
-      )}
-      {placementError ? (
-        <output className="diagram-sidebar-error">{placementError}</output>
       ) : null}
     </div>
   );
 }
 
 const flowchartShapes: RelicFreeDrawingShapeType[] = ["terminator", "process", "decision", "input-output", "label", "area"];
-type WhyTreeLabelKey = keyof RelicWhyTreeLabels;
-
-const whyTreeLabelFields: {
-  key: WhyTreeLabelKey;
-  labelKey: "diagram.whyTree.labelField.action" | "diagram.whyTree.labelField.fact" | "diagram.whyTree.labelField.node" | "diagram.whyTree.labelField.root" | "diagram.whyTree.labelField.solution";
-}[] = [
-  { key: "root", labelKey: "diagram.whyTree.labelField.root" },
-  { key: "node", labelKey: "diagram.whyTree.labelField.node" },
-  { key: "fact", labelKey: "diagram.whyTree.labelField.fact" },
-  { key: "solution", labelKey: "diagram.whyTree.labelField.solution" },
-  { key: "action", labelKey: "diagram.whyTree.labelField.action" }
-];
 
 function startShapeDrag(shape: RelicFreeDrawingShapeType, event: ReactDragEvent<HTMLButtonElement>): void {
   event.dataTransfer.effectAllowed = "copy";
-  event.dataTransfer.setData(freeDrawingShapeDragType, shape);
+  event.dataTransfer.setData(diagramShapeDragType, shape);
   event.dataTransfer.setData("text/plain", shape);
 }
 
@@ -228,72 +134,12 @@ function DiagramShapePalette({ title }: { title: string }): ReactElement {
   );
 }
 
-function DiagramWhyTreeLabelFields({
-  labels,
-  onChange,
-  title
-}: {
-  labels: RelicWhyTreeLabels;
-  onChange: (key: WhyTreeLabelKey, value: string) => void;
-  title: string;
-}): ReactElement {
-  const t = useT();
-
-  return (
-    <section className="diagram-sidebar-group">
-      <div className="diagram-sidebar-group-heading">
-        <span>{title}</span>
-        <span className="pane-heading-count">{whyTreeLabelFields.length}</span>
-      </div>
-      <div className="why-tree-label-fields why-tree-label-fields--sidebar">
-        {whyTreeLabelFields.map((field) => (
-          <label key={field.key}>
-            <span>{t(field.labelKey)}</span>
-            <input
-              onChange={(event) => onChange(field.key, event.currentTarget.value)}
-              value={labels[field.key]}
-            />
-          </label>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function DiagramFileIcon(): ReactElement {
   return (
     <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="22">
       <path d="M4.5 5.25v13.5l4.5-2.25 6 2.25 4.5-2.25V3l-4.5 2.25-6-2.25-4.5 2.25Z" />
       <path d="M9 3v13.5" />
       <path d="M15 5.25v13.5" />
-    </svg>
-  );
-}
-
-function WhyTreeIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="22">
-      <path d="M12 4v5" />
-      <path d="M8 13 5 18" />
-      <path d="m16 13 3 5" />
-      <circle cx="12" cy="4" r="2" />
-      <circle cx="8" cy="13" r="2" />
-      <circle cx="16" cy="13" r="2" />
-      <circle cx="5" cy="20" r="2" />
-      <circle cx="19" cy="20" r="2" />
-    </svg>
-  );
-}
-
-function FreeDrawingIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="22">
-      <path d="M5 7.5h7v5H5z" />
-      <path d="M12 15h7v4h-7z" />
-      <path d="M12 10h3.5v5" />
-      <path d="M8.5 12.5v4.5H12" />
-      <path d="M16.5 7.5h2.5" />
-      <path d="M17.75 6.25v2.5" />
     </svg>
   );
 }
@@ -456,23 +302,18 @@ function TrashIcon(): ReactElement {
 
 function groupDiagramSidebarFiles(fileIndex: WorkspaceFileIndexEntry[]): {
   diagramFiles: WorkspaceFileIndexEntry[];
-  placeableFiles: WorkspaceFileIndexEntry[];
 } {
   const diagramFiles: WorkspaceFileIndexEntry[] = [];
-  const placeableFiles: WorkspaceFileIndexEntry[] = [];
 
   for (const file of fileIndex) {
     if (file.readStatus !== "ok") continue;
     if (file.kind === "diagram") {
       diagramFiles.push(file);
-    } else {
-      placeableFiles.push(file);
     }
   }
 
   return {
-    diagramFiles: sortFilesForSidebar(diagramFiles),
-    placeableFiles: sortFilesForSidebar(placeableFiles)
+    diagramFiles: sortFilesForSidebar(diagramFiles)
   };
 }
 

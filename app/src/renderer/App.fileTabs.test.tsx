@@ -358,13 +358,14 @@ describe("App file tabs", () => {
   it("Diagram画面でNodeを移動すると図解Markdownを自動保存する", async () => {
     const diagramContent = [
       "---",
-      "type: relationship",
+      "type: diagram",
       "title: 関係図",
       "---",
       "",
       "nodes:",
       "  - id: node-1",
-      "    file: characters/alice.md",
+      "    shape: process",
+      "    text: alice",
       "    x: 120",
       "    y: 80",
       "    width: 180",
@@ -382,7 +383,7 @@ describe("App file tabs", () => {
           fileTree: [{ name: "関係図", path: "関係図.md", type: "file" }],
           fileIndex: [{
             contentHash: "diagram",
-            diagramType: "relationship",
+            diagramType: "diagram",
             excerptLines: [],
             kind: "diagram",
             mtimeMs: 1,
@@ -402,8 +403,8 @@ describe("App file tabs", () => {
     await renderApp();
     fireEvent.click(await screen.findByRole("button", { name: /関係図/ }));
 
-    const node = await screen.findByText("alice");
-    const nodeCard = node.closest(".diagram-canvas-node");
+    await screen.findByText("alice");
+    const nodeCard = diagramNode("alice");
     expect(nodeCard).toBeInstanceOf(HTMLElement);
 
     fireEvent(nodeCard as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
@@ -420,13 +421,14 @@ describe("App file tabs", () => {
   it("保存後に図解ファイルの分類を更新してDiagramサイドバーへ表示する", async () => {
     const diagramContent = [
       "---",
-      "type: relationship",
+      "type: diagram",
       "title: 関係図 6",
       "---",
       "",
       "nodes:",
       "  - id: node-1",
-      "    file: characters/alice.md",
+      "    shape: process",
+      "    text: alice",
       "    x: 120",
       "    y: 80",
       "    width: 180",
@@ -484,8 +486,8 @@ describe("App file tabs", () => {
 
     expect(await screen.findByText("図解ファイルはまだありません。")).toBeInTheDocument();
 
-    const node = await screen.findByText("alice");
-    const nodeCard = node.closest(".diagram-canvas-node");
+    await screen.findByText("alice");
+    const nodeCard = diagramNode("alice");
     expect(nodeCard).toBeInstanceOf(HTMLElement);
 
     fireEvent(nodeCard as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
@@ -504,7 +506,7 @@ describe("App file tabs", () => {
     });
   });
 
-  it("Diagramサイドバーから作成したRelationshipファイルへ初期本文を書き込んで開く", async () => {
+  it("Diagramサイドバーから作成した図解ファイルへ初期本文を書き込んで開く", async () => {
     const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     const getWorkspaceState = vi.fn()
       .mockResolvedValueOnce({
@@ -519,15 +521,15 @@ describe("App file tabs", () => {
         ok: true,
         value: {
           ...withWorkspace,
-          fileTree: [{ name: "関係図", path: "関係図.md", type: "file" }],
+          fileTree: [{ name: "図解ファイル", path: "図解ファイル.md", type: "file" }],
           fileIndex: [{
             contentHash: "diagram",
-            diagramType: "relationship",
+            diagramType: "diagram",
             excerptLines: [],
             kind: "diagram",
             mtimeMs: 1,
-            name: "関係図",
-            path: "関係図.md",
+            name: "図解ファイル",
+            path: "図解ファイル.md",
             size: 1
           }]
         }
@@ -538,7 +540,7 @@ describe("App file tabs", () => {
         ok: true,
         value: {
           ...withWorkspace,
-          fileTree: [{ name: "関係図", path: "関係図.md", type: "file" }],
+          fileTree: [{ name: "図解ファイル", path: "図解ファイル.md", type: "file" }],
           fileIndex: []
         }
       }),
@@ -548,16 +550,16 @@ describe("App file tabs", () => {
         value: {
           content: [
             "---",
-            "type: relationship",
-            "title: 関係図",
+            "type: diagram",
+            "title: 図解ファイル",
             "---",
             "",
             "nodes: []",
             "lines: []",
             ""
           ].join("\n"),
-          name: "関係図",
-          path: "関係図.md"
+          name: "図解ファイル",
+          path: "図解ファイル.md"
         }
       }),
       writeMarkdownFile
@@ -566,73 +568,14 @@ describe("App file tabs", () => {
     await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: "図解" }));
-    fireEvent.click(await screen.findByRole("button", { name: "関係図を作成" }));
+    fireEvent.click(await screen.findByRole("button", { name: "図解ファイルを作成" }));
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
-      content: expect.stringContaining("type: relationship"),
+      content: expect.stringContaining("type: diagram"),
       expectedContent: "",
-      path: "関係図.md"
+      path: "図解ファイル.md"
     }));
-    expect(await screen.findByRole("img", { name: "関係図" })).toBeInTheDocument();
-  });
-
-  it("Why Tree画面で入力すると図解Markdownを自動保存する", async () => {
-    const whyTreeContent = [
-      "---",
-      "type: why-tree",
-      "title: 原因分析",
-      "---",
-      "",
-      "labels:",
-      "  root: ルート",
-      "  node: ノード",
-      "  fact: メモ",
-      "  solution: 関連項目",
-      "  action: アクション",
-      "phenomenon:",
-      "  title: 売上低下",
-      "  facts: []",
-      "  solutions: []",
-      "  actions: []",
-      ""
-    ].join("\n");
-    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
-
-    window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
-        ok: true,
-        value: {
-          ...withWorkspace,
-          fileTree: [{ name: "原因分析", path: "原因分析.md", type: "file" }],
-          fileIndex: [{
-            contentHash: "diagram",
-            diagramType: "why-tree",
-            excerptLines: [],
-            kind: "diagram",
-            mtimeMs: 1,
-            name: "原因分析",
-            path: "原因分析.md",
-            size: whyTreeContent.length
-          }]
-        }
-      }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
-        ok: true,
-        value: { content: whyTreeContent, name: "原因分析", path: "原因分析.md" }
-      }),
-      writeMarkdownFile
-    });
-
-    await renderApp();
-    fireEvent.click(await screen.findByRole("button", { name: /原因分析/ }));
-
-    fireEvent.change(await screen.findByLabelText("ルート"), { target: { value: "売上が下がった" } });
-
-    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
-      content: expect.stringContaining("title: 売上が下がった"),
-      expectedContent: whyTreeContent,
-      path: "原因分析.md"
-    }), { timeout: 2000 });
+    expect(await screen.findByRole("img", { name: "図解ファイル" })).toBeInTheDocument();
   });
 
   it("ステータスバーに保存状態を表示する", async () => {
@@ -909,4 +852,12 @@ function pointerEvent(type: string, pointerId: number, clientX: number, clientY:
   Object.defineProperty(event, "pointerId", { value: pointerId });
 
   return event;
+}
+
+function diagramNode(title: string): HTMLElement {
+  const node = Array.from(document.querySelectorAll<HTMLElement>(".diagram-canvas-node"))
+    .find((candidate) => candidate.title === title);
+  expect(node).toBeInstanceOf(HTMLElement);
+
+  return node as HTMLElement;
 }

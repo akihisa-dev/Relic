@@ -395,12 +395,13 @@ describe("PaneView", () => {
   it("Diagram Markdownは通常エディタではなくDiagram表示で開く", () => {
     const content = [
       "---",
-      "type: relationship",
+      "type: diagram",
       "---",
       "",
       "nodes:",
       "  - id: node-1",
-      "    file: characters/alice.md",
+      "    shape: process",
+      "    text: alice",
       "    x: 120",
       "    y: 80",
       "    width: 180",
@@ -430,7 +431,7 @@ describe("PaneView", () => {
   });
 
   it("Diagram Markdownもソースモードでは通常エディタで開く", async () => {
-    const content = "---\ntype: relationship\n---\n\nnodes: []\nlines: []\n";
+    const content = "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n";
     setPaneState(
       {
         [fileTab.id]: {

@@ -288,7 +288,7 @@ status: [未着手]
 - 日付バー端をドラッグすると、対応Markdownファイルの `plannedDate` または `actualDate` の開始日または終了日を書き戻す
 - 日付バーの移動・長さ変更後の日付範囲から年を取り出し、対応Markdownファイルの `chronicle0` も同じ年または期間へ書き戻す
 
-Diagramファイルでは、フロントマターの `type: relationship`、`type: why-tree`、`type: free-drawing` をDiagram種別の判定に使う。
+Diagramファイルでは、フロントマターの `type: diagram` をDiagram判定に使う。
 これはDiagramファイル専用の判定であり、通常Markdownファイル向けの固定プロパティやカスタム入力能力として扱わない。
 Diagramファイルとして扱う場合のフロントマターは `type` と任意の `title` だけを対象にし、詳細は [diagrams.md](diagrams.md) を参照する。
 

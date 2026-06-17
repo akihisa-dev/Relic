@@ -5,7 +5,9 @@ import { buildLineLayouts, visibleDiagramLines, type DiagramCanvasNodeLayout } f
 const horizontalNodes: DiagramCanvasNodeLayout[] = [
   {
     node: {
-      file: "a.md",
+      layer: 1,
+      shape: "process",
+      text: "a",
       height: 80,
       id: "node-1",
       width: 180,
@@ -17,7 +19,9 @@ const horizontalNodes: DiagramCanvasNodeLayout[] = [
   },
   {
     node: {
-      file: "b.md",
+      layer: 1,
+      shape: "process",
+      text: "b",
       height: 80,
       id: "node-2",
       width: 180,
@@ -129,7 +133,7 @@ describe("buildLineLayouts", () => {
     expect(line?.labelY).toBe(310);
   });
 
-  it("draws a jump on the vertical segment where relationship lines cross", () => {
+  it("draws a jump on the vertical segment where diagram lines cross", () => {
     const lines = buildLineLayouts([
       {
         from: "left",
@@ -146,7 +150,9 @@ describe("buildLineLayouts", () => {
     ], [
       {
         node: {
-          file: "left.md",
+          layer: 1,
+      shape: "process",
+      text: "left",
           height: 80,
           id: "left",
           width: 180,
@@ -158,7 +164,9 @@ describe("buildLineLayouts", () => {
       },
       {
         node: {
-          file: "right.md",
+          layer: 1,
+      shape: "process",
+      text: "right",
           height: 80,
           id: "right",
           width: 180,
@@ -170,7 +178,9 @@ describe("buildLineLayouts", () => {
       },
       {
         node: {
-          file: "top.md",
+          layer: 1,
+      shape: "process",
+      text: "top",
           height: 80,
           id: "top",
           width: 180,
@@ -182,7 +192,9 @@ describe("buildLineLayouts", () => {
       },
       {
         node: {
-          file: "bottom.md",
+          layer: 1,
+      shape: "process",
+      text: "bottom",
           height: 80,
           id: "bottom",
           width: 180,
@@ -231,7 +243,9 @@ describe("buildLineLayouts", () => {
     const nodes: DiagramCanvasNodeLayout[] = [
       {
         node: {
-          file: "top.md",
+          layer: 1,
+      shape: "process",
+      text: "top",
           height: 320,
           id: "top",
           width: 480,
@@ -243,7 +257,9 @@ describe("buildLineLayouts", () => {
       },
       {
         node: {
-          file: "left.md",
+          layer: 1,
+      shape: "process",
+      text: "left",
           height: 224,
           id: "left",
           width: 480,
@@ -255,7 +271,9 @@ describe("buildLineLayouts", () => {
       },
       {
         node: {
-          file: "right.md",
+          layer: 1,
+      shape: "process",
+      text: "right",
           height: 224,
           id: "right",
           width: 480,
@@ -292,7 +310,9 @@ describe("buildLineLayouts", () => {
     const nodes: DiagramCanvasNodeLayout[] = [
       {
         node: {
-          file: "top.md",
+          layer: 1,
+      shape: "process",
+      text: "top",
           height: 320,
           id: "top",
           width: 480,
@@ -304,7 +324,9 @@ describe("buildLineLayouts", () => {
       },
       {
         node: {
-          file: "left.md",
+          layer: 1,
+      shape: "process",
+      text: "left",
           height: 224,
           id: "left",
           width: 480,
@@ -316,7 +338,9 @@ describe("buildLineLayouts", () => {
       },
       {
         node: {
-          file: "right.md",
+          layer: 1,
+      shape: "process",
+      text: "right",
           height: 224,
           id: "right",
           width: 480,
@@ -429,7 +453,9 @@ describe("buildLineLayouts", () => {
       },
       {
         node: {
-          file: "middle.md",
+          layer: 1,
+      shape: "process",
+      text: "middle",
           height: 120,
           id: "node-3",
           width: 120,

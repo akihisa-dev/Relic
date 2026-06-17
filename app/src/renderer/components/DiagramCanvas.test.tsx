@@ -4,24 +4,26 @@ import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n";
-import { freeDrawingShapeDragType } from "./diagram/freeDrawingShapeDrag";
+import { diagramShapeDragType } from "./diagram/diagramShapeDrag";
 import { DiagramCanvas } from "./DiagramCanvas";
 
 const diagramContent = [
   "---",
-  "type: relationship",
+  "type: diagram",
   "title: 関係図",
   "---",
   "",
   "nodes:",
   "  - id: node-1",
-  "    file: characters/alice.md",
+  "    shape: process",
+  "    text: alice",
   "    x: 120",
   "    y: 80",
   "    width: 180",
   "    height: 80",
   "  - id: node-2",
-  "    file: characters/bob.md",
+  "    shape: process",
+  "    text: bob",
   "    x: 380",
   "    y: 80",
   "    width: 180",
@@ -36,18 +38,20 @@ const diagramContent = [
 
 const diagramContentWithoutLines = [
   "---",
-  "type: relationship",
+  "type: diagram",
   "---",
   "",
   "nodes:",
   "  - id: node-1",
-  "    file: characters/alice.md",
+  "    shape: process",
+  "    text: alice",
   "    x: 120",
   "    y: 80",
   "    width: 180",
   "    height: 80",
   "  - id: node-2",
-  "    file: characters/bob.md",
+  "    shape: process",
+  "    text: bob",
   "    x: 380",
   "    y: 80",
   "    width: 180",
@@ -58,18 +62,20 @@ const diagramContentWithoutLines = [
 
 const diagramContentWithEmptyLabel = [
   "---",
-  "type: relationship",
+  "type: diagram",
   "---",
   "",
   "nodes:",
   "  - id: node-1",
-  "    file: characters/alice.md",
+  "    shape: process",
+  "    text: alice",
   "    x: 120",
   "    y: 80",
   "    width: 180",
   "    height: 80",
   "  - id: node-2",
-  "    file: characters/bob.md",
+  "    shape: process",
+  "    text: bob",
   "    x: 380",
   "    y: 80",
   "    width: 180",
@@ -84,18 +90,20 @@ const diagramContentWithEmptyLabel = [
 
 const diagramContentWithOppositeLines = [
   "---",
-  "type: relationship",
+  "type: diagram",
   "---",
   "",
   "nodes:",
   "  - id: node-1",
-  "    file: characters/alice.md",
+  "    shape: process",
+  "    text: alice",
   "    x: 120",
   "    y: 80",
   "    width: 180",
   "    height: 80",
   "  - id: node-2",
-  "    file: characters/bob.md",
+  "    shape: process",
+  "    text: bob",
   "    x: 380",
   "    y: 80",
   "    width: 180",
@@ -114,8 +122,8 @@ const diagramContentWithOppositeLines = [
 
 const freeDrawingContent = [
   "---",
-  "type: free-drawing",
-  "title: 自由図",
+  "type: diagram",
+  "title: 図解ファイル",
   "---",
   "",
   "nodes:",
@@ -143,8 +151,8 @@ const freeDrawingContent = [
 
 const freeDrawingDecisionWithTwoOutputs = [
   "---",
-  "type: free-drawing",
-  "title: 自由図",
+  "type: diagram",
+  "title: 図解ファイル",
   "---",
   "",
   "nodes:",
@@ -199,7 +207,7 @@ const freeDrawingDecisionWithThreeOutputs = [
 
 const freeDrawingContentWithArea = [
   "---",
-  "type: free-drawing",
+  "type: diagram",
   "title: 閾ｪ逕ｱ蝗ｳ",
   "---",
   "",
@@ -232,125 +240,6 @@ const freeDrawingContentWithArea = [
   ""
 ].join("\n");
 
-const whyTreeContent = [
-  "---",
-  "type: why-tree",
-  "title: 売上低下分析",
-  "---",
-  "",
-  "labels:",
-  "  root: ルート",
-  "  node: ノード",
-  "  fact: メモ",
-  "  solution: 関連項目",
-  "  action: アクション",
-  "phenomenon:",
-  "  title: 売上低下",
-  "  facts:",
-  "    - 市場縮小",
-  "  solutions:",
-  "    - 新市場開拓",
-  "  actions:",
-  "    - 調査実施",
-  "  whys:",
-  "    - title: 流入減少",
-  "      facts:",
-  "        - SEO順位低下",
-  "      solutions:",
-  "        - SEO改善",
-  "      actions:",
-  "        - 記事改修",
-  ""
-].join("\n");
-
-const whyTreeContentWithSiblings = [
-  "---",
-  "type: why-tree",
-  "title: 原因分析",
-  "---",
-  "",
-  "labels:",
-  "  root: ルート",
-  "  node: ノード",
-  "  fact: メモ",
-  "  solution: 関連項目",
-  "  action: アクション",
-  "phenomenon:",
-  "  title: 売上低下",
-  "  facts: []",
-  "  solutions: []",
-  "  actions: []",
-  "  whys:",
-  "    - title: 流入減少",
-  "      facts:",
-  "        - SEO順位低下",
-  "        - 品質低下",
-  "      solutions: []",
-  "      actions: []",
-  "    - title: 広告停止",
-  "      facts: []",
-  "      solutions: []",
-  "      actions: []",
-  ""
-].join("\n");
-
-const whyTreeContentWithNestedWhy = [
-  "---",
-  "type: why-tree",
-  "title: 原因分析",
-  "---",
-  "",
-  "labels:",
-  "  root: ルート",
-  "  node: ノード",
-  "  fact: メモ",
-  "  solution: 関連項目",
-  "  action: アクション",
-  "phenomenon:",
-  "  title: 売上低下",
-  "  facts: []",
-  "  solutions: []",
-  "  actions: []",
-  "  whys:",
-  "    - title: 流入減少",
-  "      facts: []",
-  "      solutions: []",
-  "      actions: []",
-  "      whys:",
-  "        - title: コンテンツ老朽化",
-  "          facts: []",
-  "          solutions: []",
-  "          actions: []",
-  ""
-].join("\n");
-
-const whyTreeContentWithOnlyActions = [
-  "---",
-  "type: why-tree",
-  "title: 原因分析",
-  "---",
-  "",
-  "labels:",
-  "  root: ルート",
-  "  node: ノード",
-  "  fact: メモ",
-  "  solution: 関連項目",
-  "  action: アクション",
-  "phenomenon:",
-  "  title: 問",
-  "  facts: []",
-  "  solutions: []",
-  "  actions:",
-  "    - 実行項目",
-  "    - 実行項目",
-  "  whys:",
-  "    - title: なぜ？",
-  "      facts: []",
-  "      solutions: []",
-  "      actions: []",
-  ""
-].join("\n");
-
 function renderDiagramCanvas(content = diagramContent) {
   render(
     <I18nProvider language="en">
@@ -376,14 +265,6 @@ function StatefulDiagramCanvas({ content, onChange }: { content: string; onChang
   );
 }
 
-function DelayedDiagramCanvas({ content, onChange }: { content: string; onChange: (content: string) => void }) {
-  return (
-    <I18nProvider language="en">
-      <DiagramCanvas content={content} fileName="World" onChange={onChange} />
-    </I18nProvider>
-  );
-}
-
 function mockRect(element: Element, rect: { bottom: number; height: number; left: number; right: number; top: number; width: number }): void {
   element.getBoundingClientRect = () => ({
     ...rect,
@@ -391,12 +272,6 @@ function mockRect(element: Element, rect: { bottom: number; height: number; left
     y: rect.top,
     toJSON: () => rect
   });
-}
-
-function getWhyTreeTextareasByValue(value: string): HTMLTextAreaElement[] {
-  return screen
-    .getAllByDisplayValue(value)
-    .filter((element): element is HTMLTextAreaElement => element instanceof HTMLTextAreaElement);
 }
 
 afterEach(() => {
@@ -421,7 +296,7 @@ describe("DiagramCanvas", () => {
     expect(line?.getAttribute("marker-end")).toMatch(/^url\(#diagram-canvas-arrow-/);
   });
 
-  it("renders opposite relationship lines as separate paths", () => {
+  it("renders opposite diagram lines as separate paths", () => {
     const { container } = render(
       <I18nProvider language="en">
         <DiagramCanvas content={diagramContentWithOppositeLines} fileName="World" />
@@ -435,7 +310,7 @@ describe("DiagramCanvas", () => {
     ]);
   });
 
-  it("renders free-drawing text nodes and edits their text in Markdown", () => {
+  it("renders diagram text nodes and edits their text in Markdown", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
 
@@ -454,11 +329,11 @@ describe("DiagramCanvas", () => {
     expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("text: 自由メモ"));
   });
 
-  it("moves a free-drawing node by dragging its shape body like a relationship node", () => {
+  it("moves a diagram node by dragging its shape body", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <DiagramCanvas content={freeDrawingContent} fileName="自由図" onChange={onChange} />
+        <DiagramCanvas content={freeDrawingContent} fileName="図解ファイル" onChange={onChange} />
       </I18nProvider>
     );
     const node = freeDrawingNode("主人公");
@@ -473,11 +348,11 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("text: 主人公");
   });
 
-  it("resizes a selected free-drawing shape with the relationship resize handle", () => {
+  it("resizes a selected diagram shape with the resize handle", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <DiagramCanvas content={freeDrawingContent} fileName="自由図" onChange={onChange} />
+        <DiagramCanvas content={freeDrawingContent} fileName="図解ファイル" onChange={onChange} />
       </I18nProvider>
     );
     const decision = freeDrawingNode("敵対組織");
@@ -497,12 +372,12 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("height: 96");
   });
 
-  it("drops a flowchart shape onto a free-drawing canvas", () => {
+  it("drops a flowchart shape onto a diagram canvas", () => {
     const onChange = vi.fn();
-    const emptyFreeDrawing = "---\ntype: free-drawing\n---\n\nnodes: []\nlines: []\n";
+    const emptyFreeDrawing = "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n";
     const { container } = render(
       <I18nProvider language="en">
-        <DiagramCanvas content={emptyFreeDrawing} fileName="自由図" onChange={onChange} />
+        <DiagramCanvas content={emptyFreeDrawing} fileName="図解ファイル" onChange={onChange} />
       </I18nProvider>
     );
 
@@ -512,7 +387,7 @@ describe("DiagramCanvas", () => {
     const dataTransfer = {
       dropEffect: "",
       getData: vi.fn(() => "decision"),
-      types: [freeDrawingShapeDragType]
+      types: [diagramShapeDragType]
     };
 
     const dragOver = createEvent.dragOver(canvas, { clientX: 240, clientY: 160 });
@@ -534,7 +409,7 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 128");
   });
 
-  it("adds a connected shape from a selected free-drawing node", () => {
+  it("adds a connected shape from a selected diagram node", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
 
@@ -579,8 +454,8 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     const oneDecisionOutputContent = [
       "---",
-      "type: free-drawing",
-      "title: 自由図",
+      "type: diagram",
+      "title: 図解ファイル",
       "---",
       "",
       "nodes:",
@@ -625,7 +500,7 @@ describe("DiagramCanvas", () => {
   it("does not show the connected-shape add button for a decision with two outgoing lines", () => {
     render(
       <I18nProvider language="en">
-        <DiagramCanvas content={freeDrawingDecisionWithTwoOutputs} fileName="自由図" />
+        <DiagramCanvas content={freeDrawingDecisionWithTwoOutputs} fileName="図解ファイル" />
       </I18nProvider>
     );
 
@@ -641,10 +516,10 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <DiagramCanvas content={freeDrawingDecisionWithTwoOutputs} fileName="自由図" onChange={onChange} />
+        <DiagramCanvas content={freeDrawingDecisionWithTwoOutputs} fileName="図解ファイル" onChange={onChange} />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "自由図" });
+    const canvas = screen.getByRole("img", { name: "図解ファイル" });
     const decision = freeDrawingNode("判断");
     const thirdTarget = freeDrawingNode("三本目");
 
@@ -663,7 +538,7 @@ describe("DiagramCanvas", () => {
   it("hides the third outgoing decision line from display and line hit targets", () => {
     const { container } = render(
       <I18nProvider language="en">
-        <DiagramCanvas content={freeDrawingDecisionWithThreeOutputs} fileName="自由図" />
+        <DiagramCanvas content={freeDrawingDecisionWithThreeOutputs} fileName="図解ファイル" />
       </I18nProvider>
     );
 
@@ -674,7 +549,7 @@ describe("DiagramCanvas", () => {
     expect(screen.queryByText("選択肢3")).not.toBeInTheDocument();
   });
 
-  it("does not show variable layer controls for free-drawing shapes", () => {
+  it("does not show variable layer controls for diagram shapes", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
 
@@ -690,12 +565,12 @@ describe("DiagramCanvas", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("drops an area shape onto a free-drawing canvas", () => {
+  it("drops an area shape onto a diagram canvas", () => {
     const onChange = vi.fn();
-    const emptyFreeDrawing = "---\ntype: free-drawing\n---\n\nnodes: []\nlines: []\n";
+    const emptyFreeDrawing = "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n";
     const { container } = render(
       <I18nProvider language="en">
-        <DiagramCanvas content={emptyFreeDrawing} fileName="自由図" onChange={onChange} />
+        <DiagramCanvas content={emptyFreeDrawing} fileName="図解ファイル" onChange={onChange} />
       </I18nProvider>
     );
 
@@ -705,7 +580,7 @@ describe("DiagramCanvas", () => {
     const dataTransfer = {
       dropEffect: "",
       getData: vi.fn(() => "area"),
-      types: [freeDrawingShapeDragType]
+      types: [diagramShapeDragType]
     };
 
     const drop = createEvent.drop(canvas, { clientX: 320, clientY: 240 });
@@ -750,11 +625,11 @@ describe("DiagramCanvas", () => {
     expect(screen.queryByRole("button", { name: "Send backward" })).not.toBeInTheDocument();
   });
 
-  it("normalizes old free-drawing node layers to the fixed shape layer", () => {
+  it("normalizes old diagram node layers to the fixed shape layer", () => {
     const layeredContent = [
       "---",
-      "type: free-drawing",
-      "title: 自由図",
+      "type: diagram",
+      "title: 図解ファイル",
       "---",
       "",
       "nodes:",
@@ -780,7 +655,7 @@ describe("DiagramCanvas", () => {
 
     render(
       <I18nProvider language="en">
-        <DiagramCanvas content={layeredContent} fileName="自由図" />
+        <DiagramCanvas content={layeredContent} fileName="図解ファイル" />
       </I18nProvider>
     );
 
@@ -800,11 +675,11 @@ describe("DiagramCanvas", () => {
     expect(highNode.style.getPropertyValue("--diagram-node-layer-border")).toBe("color-mix(in srgb, var(--text-3) 64%, var(--border-medium))");
   });
 
-  it("ignores old layer 8 values in the free-drawing UI", () => {
+  it("ignores old layer 8 values in the diagram UI", () => {
     const maxLayerContent = [
       "---",
-      "type: free-drawing",
-      "title: 自由図",
+      "type: diagram",
+      "title: 図解ファイル",
       "---",
       "",
       "nodes:",
@@ -822,7 +697,7 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <DiagramCanvas content={maxLayerContent} fileName="自由図" onChange={onChange} />
+        <DiagramCanvas content={maxLayerContent} fileName="図解ファイル" onChange={onChange} />
       </I18nProvider>
     );
 
@@ -838,11 +713,11 @@ describe("DiagramCanvas", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("keeps all non-area free-drawing shapes on the fixed shape layer while selected", () => {
+  it("keeps all non-area diagram shapes on the fixed shape layer while selected", () => {
     const layeredContent = [
       "---",
-      "type: free-drawing",
-      "title: 自由図",
+      "type: diagram",
+      "title: 図解ファイル",
       "---",
       "",
       "nodes:",
@@ -868,7 +743,7 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <DiagramCanvas content={layeredContent} fileName="自由図" onChange={onChange} />
+        <DiagramCanvas content={layeredContent} fileName="図解ファイル" onChange={onChange} />
       </I18nProvider>
     );
 
@@ -890,11 +765,11 @@ describe("DiagramCanvas", () => {
     expect(lowNode).not.toHaveClass("diagram-canvas-node--layer-below-selected");
   });
 
-  it("renders free-drawing line labels separately from fixed node labels", () => {
+  it("renders diagram line labels separately from fixed node labels", () => {
     const layeredContent = [
       "---",
-      "type: free-drawing",
-      "title: 自由図",
+      "type: diagram",
+      "title: 図解ファイル",
       "---",
       "",
       "nodes:",
@@ -923,7 +798,7 @@ describe("DiagramCanvas", () => {
     ].join("\n");
     const { container } = render(
       <I18nProvider language="en">
-        <DiagramCanvas content={layeredContent} fileName="自由図" />
+        <DiagramCanvas content={layeredContent} fileName="図解ファイル" />
       </I18nProvider>
     );
 
@@ -967,7 +842,7 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 140");
   });
 
-  it("does not show the Mermaid copy action in Relationship Diagram mode", () => {
+  it("does not show the Mermaid copy action in Diagram mode", () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -977,367 +852,6 @@ describe("DiagramCanvas", () => {
 
     expect(screen.queryByRole("button", { name: "Copy Mermaid source" })).not.toBeInTheDocument();
     expect(writeText).not.toHaveBeenCalled();
-  });
-
-  it("renders why-tree as a structural editor without relationship controls", () => {
-    const { container } = render(
-      <I18nProvider language="en">
-        <DiagramCanvas content={whyTreeContent} fileName="Why" />
-      </I18nProvider>
-    );
-
-    expect(screen.getByRole("tree", { name: "Why" })).toBeInTheDocument();
-    expect(screen.getByDisplayValue("売上低下")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("流入減少")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("市場縮小")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("SEO改善")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("記事改修")).toBeInTheDocument();
-    expect(container.querySelector(".diagram-canvas-node")).toBeNull();
-    expect(container.querySelector(".diagram-canvas-line")).toBeNull();
-    expect(container.querySelector(".why-tree-line-label")).toHaveTextContent("ノード");
-    expect(screen.queryByLabelText("Node role")).not.toBeInTheDocument();
-  });
-
-  it("does not show the Mermaid copy action in structure-tree mode", () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText }
-    });
-    render(
-      <I18nProvider language="en">
-        <DiagramCanvas content={whyTreeContent} fileName="Why" />
-      </I18nProvider>
-    );
-
-    expect(screen.queryByRole("button", { name: "Copy Mermaid source" })).not.toBeInTheDocument();
-    expect(writeText).not.toHaveBeenCalled();
-  });
-
-  it("renders action supplements even when solution supplements are empty", () => {
-    render(
-      <I18nProvider language="en">
-        <DiagramCanvas content={whyTreeContentWithOnlyActions} fileName="Why" />
-      </I18nProvider>
-    );
-
-    expect(screen.getAllByDisplayValue("実行項目")).toHaveLength(2);
-    expect(screen.queryByDisplayValue("解決策")).not.toBeInTheDocument();
-  });
-
-  it("adds structure-tree items only from root or node selection", () => {
-    const onChange = vi.fn();
-    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-
-    expect(container.querySelector(".why-tree-node-menu")).toBeNull();
-    expect(container.querySelector(".why-tree-add-controls")).toBeNull();
-    expect(container.querySelector(".why-tree-actions-bar")).toBeNull();
-
-    fireEvent.click(screen.getByDisplayValue("売上低下"));
-    expect(container.querySelector(".why-tree-node-menu")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /\+ ノード/ }));
-    expect(onChange.mock.calls[0]?.[0]).toContain("title: ノード");
-
-    fireEvent.click(screen.getByRole("button", { name: /\+ メモ/ }));
-    expect(onChange.mock.calls[1]?.[0]).toContain("メモ");
-
-    fireEvent.click(screen.getByRole("button", { name: /\+ 関連項目/ }));
-    expect(onChange.mock.calls[2]?.[0]).toContain("関連項目");
-
-    fireEvent.click(screen.getByRole("button", { name: /\+ アクション/ }));
-    expect(onChange.mock.calls[3]?.[0]).toContain("アクション");
-
-    fireEvent.focus(screen.getByDisplayValue("市場縮小"));
-    expect(container.querySelector(".why-tree-node-menu")).toBeNull();
-    expect(screen.queryByRole("button", { name: /\+ ノード/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /\+ メモ/ })).not.toBeInTheDocument();
-  });
-
-  it("renders structure-tree labels without the old floating label panel", () => {
-    const onChange = vi.fn();
-    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-
-    expect(container.querySelector(".why-tree-label-panel")).toBeNull();
-    expect(screen.queryByLabelText("Node label")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Show labels panel" })).not.toBeInTheDocument();
-    expect(container.querySelector(".why-tree-line-label")).toHaveTextContent("ノード");
-  });
-
-  it("adds Why nodes from the selected node instead of always appending to the deepest node", () => {
-    const onChange = vi.fn();
-    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-
-    fireEvent.click(screen.getByDisplayValue("売上低下"));
-    fireEvent.click(screen.getByRole("button", { name: /\+ ノード/ }));
-    fireEvent.click(screen.getByDisplayValue("売上低下"));
-    fireEvent.click(screen.getByRole("button", { name: /\+ ノード/ }));
-
-    expect(getWhyTreeTextareasByValue("ノード")).toHaveLength(2);
-    expect(container.querySelector(".why-tree-child-group")).toBeInTheDocument();
-    expect(container.querySelector(".why-tree-lines path")).toBeInTheDocument();
-    expect(container.querySelector(".why-tree-children")).toBeInTheDocument();
-    expect(onChange.mock.calls[1]?.[0]).toContain("whys:");
-  });
-
-  it("renders added why-tree items immediately even before the parent content prop updates", () => {
-    const onChange = vi.fn();
-    const { container, rerender } = render(<DelayedDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-
-    fireEvent.click(screen.getByDisplayValue("売上低下"));
-    fireEvent.click(screen.getByRole("button", { name: /\+ ノード/ }));
-    expect(getWhyTreeTextareasByValue("ノード")[0]).toBeInTheDocument();
-    expect(container.querySelector(".why-tree-lines path")).toBeInTheDocument();
-    rerender(<DelayedDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-    expect(getWhyTreeTextareasByValue("ノード")[0]).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /\+ メモ/ }));
-    expect(getWhyTreeTextareasByValue("メモ")[0]).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /\+ メモ/ }));
-    expect(getWhyTreeTextareasByValue("メモ")).toHaveLength(2);
-    expect(onChange).toHaveBeenCalledTimes(3);
-  });
-
-  it("collapses why-tree child whys without saving the collapsed state", () => {
-    const onChange = vi.fn();
-    const { container } = render(<StatefulDiagramCanvas content={whyTreeContentWithNestedWhy} onChange={onChange} />);
-
-    expect(screen.getByDisplayValue("コンテンツ老朽化")).toBeInTheDocument();
-    expect(container.querySelectorAll(".why-tree-lines path")).toHaveLength(2);
-
-    const parentWhy = screen.getByDisplayValue("流入減少").closest(".why-tree-main-node");
-    expect(parentWhy).toBeInstanceOf(HTMLElement);
-    fireEvent.click(within(parentWhy as HTMLElement).getByRole("button", { name: "Collapse child nodes" }));
-
-    expect(screen.queryByDisplayValue("コンテンツ老朽化")).not.toBeInTheDocument();
-    expect(container.querySelectorAll(".why-tree-lines path")).toHaveLength(1);
-    expect(onChange).not.toHaveBeenCalled();
-
-    fireEvent.click(within(parentWhy as HTMLElement).getByRole("button", { name: "Show child nodes" }));
-
-    expect(screen.getByDisplayValue("コンテンツ老朽化")).toBeInTheDocument();
-    expect(container.querySelectorAll(".why-tree-lines path")).toHaveLength(2);
-    expect(onChange).not.toHaveBeenCalled();
-  });
-
-  it("routes why-tree connector lines around the open add menu", () => {
-    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={vi.fn()} />);
-    const content = container.querySelector(".why-tree-content") as Element;
-    const nodes = container.querySelectorAll(".why-tree-main-node");
-    fireEvent.click(screen.getByDisplayValue("売上低下"));
-    const menu = container.querySelector(".why-tree-node-menu") as Element;
-
-    mockRect(content, { bottom: 500, height: 500, left: 0, right: 1000, top: 0, width: 1000 });
-    mockRect(nodes[0] as Element, { bottom: 126, height: 86, left: 350, right: 650, top: 40, width: 300 });
-    mockRect(nodes[1] as Element, { bottom: 396, height: 86, left: 350, right: 650, top: 310, width: 300 });
-    mockRect(menu, { bottom: 220, height: 40, left: 360, right: 640, top: 180, width: 280 });
-    container.querySelectorAll(".why-tree-support-item").forEach((item, index) => {
-      mockRect(item, { bottom: 120 + index * 56, height: 46, left: 700, right: 870, top: 74 + index * 56, width: 170 });
-    });
-
-    fireEvent(window, new Event("resize"));
-
-    expect(container.querySelector(".why-tree-lines path")?.getAttribute("d")).toBe("M 500 126 V 168 H 656 V 232 H 500 V 310");
-    expect(container.querySelector(".why-tree-line-label")).toHaveTextContent("ノード");
-  });
-
-  it("hides the why-tree add menu when blank space is clicked", () => {
-    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={vi.fn()} />);
-    const editor = screen.getByRole("tree", { name: "World" });
-    const content = container.querySelector(".why-tree-content");
-    expect(content).toBeInstanceOf(HTMLElement);
-
-    expect(container.querySelector(".why-tree-node-menu")).toBeNull();
-
-    fireEvent.click(screen.getByDisplayValue("売上低下"));
-    expect(container.querySelector(".why-tree-node-menu")).toBeInTheDocument();
-
-    fireEvent(content as HTMLElement, pointerEvent("pointerdown", 10, 120, 120));
-    fireEvent(editor, pointerEvent("pointerup", 10, 120, 120));
-
-    expect(container.querySelector(".why-tree-node-menu")).toBeNull();
-  });
-
-  it("moves the why-tree menu near the selected Why node", () => {
-    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={vi.fn()} />);
-
-    fireEvent.click(screen.getByDisplayValue("流入減少"));
-
-    const selectedWhy = screen.getByDisplayValue("流入減少").closest(".why-tree-node-shell");
-    expect(selectedWhy).toBeInstanceOf(HTMLElement);
-    expect(selectedWhy).toHaveClass("why-tree-node-shell--menu-open");
-    expect((selectedWhy as HTMLElement).querySelector(".why-tree-node-menu")).toBeInTheDocument();
-    expect(container.querySelectorAll(".why-tree-node-menu")).toHaveLength(1);
-  });
-
-  it("uses why-tree keyboard shortcuts outside text inputs only", () => {
-    const onChange = vi.fn();
-    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-    const editor = screen.getByRole("tree", { name: "World" });
-    const whyInput = screen.getByDisplayValue("流入減少");
-
-    fireEvent.click(whyInput);
-    expect(fireEvent.keyDown(whyInput, { key: "Enter" })).toBe(true);
-    expect(fireEvent.keyDown(whyInput, { key: " " })).toBe(true);
-    expect(onChange).not.toHaveBeenCalled();
-
-    expect(fireEvent.keyDown(editor, { key: "Enter" })).toBe(false);
-
-    expect(onChange.mock.calls[0]?.[0]).toContain("title: ノード");
-    expect(getWhyTreeTextareasByValue("ノード")[0]).toBeInTheDocument();
-
-    fireEvent.keyDown(editor, { key: "Escape" });
-
-    expect(container.querySelector(".why-tree-node-menu")).toBeNull();
-  });
-
-  it("deletes selected why-tree items from the keyboard outside text inputs", () => {
-    const onChange = vi.fn();
-    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-    const editor = screen.getByRole("tree", { name: "World" });
-
-    fireEvent.click(screen.getByDisplayValue("流入減少"));
-    fireEvent.keyDown(editor, { key: "Delete" });
-
-    expect(onChange.mock.calls[0]?.[0]).not.toContain("title: 流入減少");
-    expect(screen.queryByDisplayValue("流入減少")).not.toBeInTheDocument();
-    expect(screen.getByDisplayValue("売上低下")).toBeInTheDocument();
-  });
-
-  it("keeps input Backspace as text editing in why-tree fields", () => {
-    const onChange = vi.fn();
-    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-
-    fireEvent.keyDown(screen.getByDisplayValue("流入減少"), { key: "Backspace" });
-    fireEvent.keyDown(screen.getByDisplayValue("SEO順位低下"), { key: "Backspace" });
-
-    expect(onChange).not.toHaveBeenCalled();
-    expect(screen.getByDisplayValue("流入減少")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("SEO順位低下")).toBeInTheDocument();
-  });
-
-  it("allows why-tree fields to become empty and contain line breaks", () => {
-    const onChange = vi.fn();
-    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-
-    fireEvent.change(screen.getByLabelText("ルート"), { target: { value: "" } });
-    expect(onChange.mock.calls[0]?.[0]).toContain("title: ''");
-    expect(screen.getByDisplayValue("")).toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText("ルート"), { target: { value: "売上\n低下" } });
-    expect(onChange.mock.calls[1]?.[0]).toContain("売上");
-    expect((screen.getByLabelText("ルート") as HTMLTextAreaElement).value).toBe("売上\n低下");
-
-    fireEvent.change(screen.getByLabelText("ルート"), { target: { value: "売上低下\n" } });
-    expect(onChange.mock.calls[2]?.[0]).toContain("売上低下");
-    expect((screen.getByLabelText("ルート") as HTMLTextAreaElement).value).toBe("売上低下\n");
-  });
-
-  it("pans the why-tree view by dragging blank space only", () => {
-    const onChange = vi.fn();
-    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-    const editor = screen.getByRole("tree", { name: "World" }) as HTMLElement;
-    const content = container.querySelector(".why-tree-content") as Element;
-
-    fireEvent(content, pointerEvent("pointerdown", 7, 200, 200));
-    fireEvent(editor, pointerEvent("pointermove", 7, 170, 150));
-    fireEvent(editor, pointerEvent("pointerup", 7, 170, 150));
-
-    expect((content as HTMLElement).style.transform).toContain("translate(-30px, -50px)");
-    expect(onChange).not.toHaveBeenCalled();
-
-    const node = screen.getByDisplayValue("売上低下").closest(".why-tree-main-node") as Element;
-    fireEvent(node, pointerEvent("pointerdown", 8, 200, 200));
-    fireEvent(editor, pointerEvent("pointermove", 8, 100, 100));
-    expect((content as HTMLElement).style.transform).toContain("translate(-30px, -50px)");
-
-    fireEvent(editor, pointerEvent("pointerdown", 9, 220, 220));
-    fireEvent(editor, pointerEvent("pointermove", 9, 260, 250));
-    fireEvent(editor, pointerEvent("pointerup", 9, 260, 250));
-    expect((content as HTMLElement).style.transform).toContain("translate(10px, -20px)");
-    expect(onChange).not.toHaveBeenCalled();
-  });
-
-  it("zooms the why-tree view without saving the viewport", () => {
-    const onChange = vi.fn();
-    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-    const editor = screen.getByRole("tree", { name: "World" });
-    const content = container.querySelector(".why-tree-content");
-    expect(content).toBeInstanceOf(HTMLElement);
-
-    fireEvent.wheel(editor, { clientX: 100, clientY: 100, deltaY: -100 });
-
-    expect((content as HTMLElement).style.transform).toContain("scale(1.1)");
-    expect(onChange).not.toHaveBeenCalled();
-  });
-
-  it("edits why-tree titles and supplements in Markdown", () => {
-    const onChange = vi.fn();
-    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-
-    fireEvent.change(screen.getByLabelText("ルート"), { target: { value: "売上が下がった" } });
-    expect(onChange.mock.calls[0]?.[0]).toContain("title: 売上が下がった");
-
-    fireEvent.change(screen.getAllByRole("textbox", { name: "メモ" })[0] as HTMLTextAreaElement, { target: { value: "市場が縮小した" } });
-    expect(onChange.mock.calls[1]?.[0]).toContain("市場が縮小した");
-  });
-
-  it("deletes why-tree items except the Phenomenon", () => {
-    const onChange = vi.fn();
-    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-
-    const phenomenon = screen.getByDisplayValue("売上低下").closest(".why-tree-main-node");
-    expect(phenomenon).toBeInstanceOf(HTMLElement);
-    expect((phenomenon as HTMLElement).querySelector(".why-tree-delete-button")).toBeNull();
-
-    const whyNode = screen.getByDisplayValue("流入減少").closest(".why-tree-main-node");
-    expect(whyNode).toBeInstanceOf(HTMLElement);
-    fireEvent.click((whyNode as HTMLElement).querySelector(".why-tree-delete-button") as Element);
-
-    expect(onChange.mock.calls[0]?.[0]).not.toContain("title: 流入減少");
-    expect(screen.getByDisplayValue("売上低下")).toBeInTheDocument();
-    expect(container.querySelectorAll(".why-tree-main-node .why-tree-delete-button")).toHaveLength(0);
-  });
-
-  it("deletes selected why-tree supplements", () => {
-    const onChange = vi.fn();
-    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-
-    const factNode = screen.getByDisplayValue("SEO順位低下").closest(".why-tree-support-item");
-    expect(factNode).toBeInstanceOf(HTMLElement);
-    fireEvent.click((factNode as HTMLElement).querySelector(".why-tree-delete-button") as Element);
-
-    expect(onChange.mock.calls[0]?.[0]).not.toContain("SEO順位低下");
-    expect(screen.queryByDisplayValue("SEO順位低下")).not.toBeInTheDocument();
-  });
-
-  it("reorders why-tree whys and supplements by dragging", () => {
-    const onChange = vi.fn();
-    render(<StatefulDiagramCanvas content={whyTreeContentWithSiblings} onChange={onChange} />);
-
-    const firstWhy = screen.getByDisplayValue("流入減少").closest(".why-tree-main-node");
-    const secondWhy = screen.getByDisplayValue("広告停止").closest(".why-tree-main-node");
-    expect(firstWhy).toBeInstanceOf(HTMLElement);
-    expect(secondWhy).toBeInstanceOf(HTMLElement);
-    fireEvent.dragStart(secondWhy as HTMLElement);
-    fireEvent.dragOver(firstWhy as HTMLElement);
-    fireEvent.drop(firstWhy as HTMLElement);
-
-    const movedWhyContent = onChange.mock.calls[0]?.[0] as string;
-    expect(movedWhyContent.indexOf("title: 広告停止")).toBeLessThan(movedWhyContent.indexOf("title: 流入減少"));
-
-    const seoFact = screen.getByDisplayValue("SEO順位低下").closest(".why-tree-support-item");
-    const qualityFact = screen.getByDisplayValue("品質低下").closest(".why-tree-support-item");
-    expect(seoFact).toBeInstanceOf(HTMLElement);
-    expect(qualityFact).toBeInstanceOf(HTMLElement);
-    fireEvent.dragStart(seoFact as HTMLElement);
-    fireEvent.dragOver(qualityFact as HTMLElement);
-    fireEvent.drop(qualityFact as HTMLElement);
-
-    const movedFactContent = onChange.mock.calls[1]?.[0] as string;
-    expect(movedFactContent.indexOf("- 品質低下")).toBeLessThan(movedFactContent.indexOf("- SEO順位低下"));
-    expect(screen.queryByRole("button", { name: "Move up" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Move down" })).not.toBeInTheDocument();
   });
 
   it("shows an error for invalid Diagram Markdown", () => {
@@ -1353,7 +867,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const node = screen.getByText("alice").closest(".diagram-canvas-node");
+    const node = freeDrawingNode("alice");
     expect(node).toBeInstanceOf(HTMLElement);
 
     fireEvent(node as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
@@ -1382,7 +896,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const node = screen.getByText("alice").closest(".diagram-canvas-node");
+    const node = freeDrawingNode("alice");
     expect(node).toBeInstanceOf(HTMLElement);
 
     fireEvent(node as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
@@ -1399,10 +913,10 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).not.toContain("snap");
   });
 
-  it("keeps the relationship viewport stable when a committed node move expands the canvas origin", () => {
+  it("keeps the diagram viewport stable when a committed node move expands the canvas origin", () => {
     const onChange = vi.fn();
     const { container } = render(<StatefulDiagramCanvas content={diagramContentWithoutLines} onChange={onChange} />);
-    const node = screen.getByText("alice").closest(".diagram-canvas-node");
+    const node = freeDrawingNode("alice");
     const space = container.querySelector(".diagram-canvas-space");
     expect(node).toBeInstanceOf(HTMLElement);
     expect(space).toBeInstanceOf(HTMLElement);
@@ -1423,7 +937,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContent} fileName="World" />
       </I18nProvider>
     );
-    const node = screen.getByText("alice").closest(".diagram-canvas-node");
+    const node = freeDrawingNode("alice");
     expect(node).toBeInstanceOf(HTMLElement);
 
     fireEvent.doubleClick(node as HTMLElement);
@@ -1482,7 +996,7 @@ describe("DiagramCanvas", () => {
     expect((space as HTMLElement).style.transform).toContain("scale(1.1)");
   });
 
-  it("renders the relationship grid as the full canvas background instead of a transformed content patch", () => {
+  it("renders the diagram grid as the full canvas background instead of a transformed content patch", () => {
     const css = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
     expect(css).toMatch(/\.diagram-canvas\s*\{[^}]*background-color:\s*var\(--bg\);/s);
@@ -1490,14 +1004,14 @@ describe("DiagramCanvas", () => {
     expect(css).not.toMatch(/\.diagram-canvas-space\s*\{[^}]*linear-gradient\(var\(--border-soft\) 1px, transparent 1px\)/s);
   });
 
-  it("does not show rectangular selection frames around non-rectangular free-drawing shapes", () => {
+  it("does not show rectangular selection frames around non-rectangular diagram shapes", () => {
     const css = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
     expect(css).toMatch(/\.diagram-canvas-node--selected\.diagram-canvas-node--shape-decision,\s*\.diagram-canvas-node--selected\.diagram-canvas-node--shape-input-output\s*\{[^}]*box-shadow:\s*none;/s);
     expect(css).toMatch(/\.diagram-canvas-node--dragging\.diagram-canvas-node--shape-decision,\s*\.diagram-canvas-node--dragging\.diagram-canvas-node--shape-input-output\s*\{[^}]*box-shadow:\s*none;/s);
   });
 
-  it("moves and scales the relationship grid with the viewport", () => {
+  it("moves and scales the diagram grid with the viewport", () => {
     render(
       <I18nProvider language="en">
         <DiagramCanvas content={diagramContent} fileName="World" />
@@ -1529,7 +1043,7 @@ describe("DiagramCanvas", () => {
       </I18nProvider>
     );
     const canvas = screen.getByRole("img", { name: "World" });
-    const node = screen.getByText("alice").closest(".diagram-canvas-node");
+    const node = freeDrawingNode("alice");
     expect(node).toBeInstanceOf(HTMLElement);
 
     fireEvent.wheel(canvas, { clientX: 100, clientY: 100, deltaY: -100 });
@@ -1549,7 +1063,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const node = screen.getByText("alice").closest(".diagram-canvas-node");
+    const node = freeDrawingNode("alice");
     expect(node).toBeInstanceOf(HTMLElement);
 
     fireEvent(node as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
@@ -1577,8 +1091,8 @@ describe("DiagramCanvas", () => {
       </I18nProvider>
     );
     const canvas = screen.getByRole("img", { name: "World" });
-    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
-    const bob = screen.getByText("bob").closest(".diagram-canvas-node");
+    const alice = freeDrawingNode("alice");
+    const bob = freeDrawingNode("bob");
     expect(alice).toBeInstanceOf(HTMLElement);
     expect(bob).toBeInstanceOf(HTMLElement);
 
@@ -1607,8 +1121,8 @@ describe("DiagramCanvas", () => {
       </I18nProvider>
     );
     const canvas = screen.getByRole("img", { name: "World" });
-    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
-    const bob = screen.getByText("bob").closest(".diagram-canvas-node");
+    const alice = freeDrawingNode("alice");
+    const bob = freeDrawingNode("bob");
     expect(alice).toBeInstanceOf(HTMLElement);
     expect(bob).toBeInstanceOf(HTMLElement);
 
@@ -1628,8 +1142,8 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={diagramContentWithoutLines} onChange={onChange} />);
     const canvas = screen.getByRole("img", { name: "World" });
-    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
-    const bob = screen.getByText("bob").closest(".diagram-canvas-node");
+    const alice = freeDrawingNode("alice");
+    const bob = freeDrawingNode("bob");
     expect(alice).toBeInstanceOf(HTMLElement);
     expect(bob).toBeInstanceOf(HTMLElement);
 
@@ -1667,7 +1181,7 @@ describe("DiagramCanvas", () => {
     expect(screen.getByRole("button", { name: "Edit line label" })).toHaveTextContent("Add line label");
   });
 
-  it("clears relationship selection with Escape without saving", () => {
+  it("clears diagram selection with Escape without saving", () => {
     const onChange = vi.fn();
     const { container } = render(
       <I18nProvider language="en">
@@ -1687,7 +1201,7 @@ describe("DiagramCanvas", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("keeps Backspace inside the relationship label editor from deleting the line", () => {
+  it("keeps Backspace inside the diagram label editor from deleting the line", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
@@ -1710,7 +1224,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
+    const alice = freeDrawingNode("alice");
     expect(alice).toBeInstanceOf(HTMLElement);
 
     fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
@@ -1730,7 +1244,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
+    const alice = freeDrawingNode("alice");
     expect(alice).toBeInstanceOf(HTMLElement);
 
     fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
@@ -1753,7 +1267,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
+    const alice = freeDrawingNode("alice");
     expect(alice).toBeInstanceOf(HTMLElement);
 
     fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
@@ -1785,7 +1299,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
+    const alice = freeDrawingNode("alice");
     expect(alice).toBeInstanceOf(HTMLElement);
 
     fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
@@ -1809,7 +1323,7 @@ describe("DiagramCanvas", () => {
       </I18nProvider>
     );
     const canvas = screen.getByRole("img", { name: "World" });
-    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
+    const alice = freeDrawingNode("alice");
     expect(alice).toBeInstanceOf(HTMLElement);
 
     fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
@@ -1831,7 +1345,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const node = screen.getByText("alice").closest(".diagram-canvas-node");
+    const node = freeDrawingNode("alice");
     expect(node).toBeInstanceOf(HTMLElement);
 
     fireEvent(node as HTMLElement, pointerEvent("pointerdown", 3, 10, 10));
@@ -1863,7 +1377,7 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("id: node-2");
   });
 
-  it("reverses a selected relationship line direction", () => {
+  it("reverses a selected diagram line direction", () => {
     const onChange = vi.fn();
     const { container } = render(
       <I18nProvider language="en">

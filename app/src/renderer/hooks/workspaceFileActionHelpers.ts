@@ -42,8 +42,9 @@ export function nextUniqueFileName(workspaceState: WorkspaceState | null, t: Tra
 export function nextUniqueDiagramFileName(
   workspaceState: WorkspaceState | null,
   t: Translator,
-  type: RelicDiagramType = "relationship"
+  type: RelicDiagramType = "diagram"
 ): string {
+  void type;
   const existing = new Set<string>();
 
   walkWorkspaceTree(workspaceState?.fileTree ?? [], (node) => {
@@ -51,11 +52,7 @@ export function nextUniqueDiagramFileName(
   });
 
   for (let i = 1; ; i += 1) {
-    const baseName = type === "why-tree"
-      ? t("diagram.defaultNewWhyTreeName")
-      : type === "free-drawing"
-        ? t("diagram.defaultNewFreeDrawingName")
-        : t("diagram.defaultNewRelationshipName");
+    const baseName = t("diagram.defaultNewFileName");
     const name = i === 1 ? baseName : `${baseName} ${i}`;
     if (!existing.has(`${name}.md`)) return name;
   }

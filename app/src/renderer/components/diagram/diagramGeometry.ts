@@ -207,7 +207,7 @@ function linePorts(
   decisionInputSideByNodeId: Map<string, NodePortSide>,
   decisionOutputSidesByNodeId: Map<string, Set<NodePortSide>>
 ): { end: NodePort; start: NodePort } {
-  const fallbackPorts = relationshipLinePorts(from, to);
+  const fallbackPorts = diagramLinePorts(from, to);
   return {
     end: isDecisionNode(to.node)
       ? decisionPort(to, decisionInputSideByNodeId.get(to.node.id) ?? closestDecisionPortSide(to, from, decisionPortSides))
@@ -223,7 +223,7 @@ function linePorts(
   };
 }
 
-function relationshipLinePorts(
+function diagramLinePorts(
   from: DiagramCanvasNodeLayout,
   to: DiagramCanvasNodeLayout
 ): { end: NodePort; start: NodePort } {
