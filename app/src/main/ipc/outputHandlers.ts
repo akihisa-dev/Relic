@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 import {
   copyDiagramSvgChannel,
   printPreviewChannel,
+  previewOutputHtmlMaxBytes,
   saveDiagramSvgChannel,
   savePreviewAsPdfChannel,
   type CopyDiagramSvgInput,
@@ -267,6 +268,7 @@ function isSavePreviewAsPdfInput(input: unknown): input is SavePreviewAsPdfInput
   return isObject(input) &&
     typeof input.defaultFileName === "string" &&
     typeof input.html === "string" &&
+    isWithinPreviewHtmlLimit(input.html) &&
     input.html.trim() !== "" &&
     typeof input.title === "string";
 }
@@ -274,8 +276,13 @@ function isSavePreviewAsPdfInput(input: unknown): input is SavePreviewAsPdfInput
 function isPrintPreviewInput(input: unknown): input is PrintPreviewInput {
   return isObject(input) &&
     typeof input.html === "string" &&
+    isWithinPreviewHtmlLimit(input.html) &&
     input.html.trim() !== "" &&
     typeof input.title === "string";
+}
+
+function isWithinPreviewHtmlLimit(html: string): boolean {
+  return Buffer.byteLength(html, "utf8") <= previewOutputHtmlMaxBytes;
 }
 
 function isSaveDiagramSvgInput(input: unknown): input is SaveDiagramSvgInput {

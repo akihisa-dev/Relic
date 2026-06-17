@@ -2,7 +2,7 @@ import { mkdir, open, readFile, stat } from "node:fs/promises";
 import type { Stats } from "node:fs";
 import path from "node:path";
 
-import type { WorkspaceFileIndexEntry, WorkspaceFileKind } from "../../shared/ipc";
+import type { WorkspaceFileIndexEntry, WorkspaceFileKind, WorkspaceTreeNode } from "../../shared/ipc";
 import { isRelicDiagramMarkdownContent } from "../../shared/diagramMarkdown";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
@@ -27,6 +27,8 @@ interface PersistedWorkspaceFileIndex {
 
 interface WorkspaceFileIndexOptions {
   cachePath?: string;
+  filePaths?: string[];
+  fileTree?: WorkspaceTreeNode[];
   maxSearchFileBytes?: number;
   operations?: Partial<WorkspaceFileIndexOperations>;
 }
@@ -72,8 +74,10 @@ export async function readWorkspaceFileIndex(
     ? await readCachedRecords(options.cachePath, operations)
     : [];
   const cacheByPath = new Map(cachedRecords.map((record) => [record.path, record]));
-  const fileTree = await readWorkspaceFileTree(workspacePath);
-  const paths = collectMarkdownPaths(fileTree);
+  const paths = options.filePaths ??
+    (options.fileTree !== undefined
+      ? collectMarkdownPaths(options.fileTree)
+      : collectMarkdownPaths(await readWorkspaceFileTree(workspacePath)));
   const records = await Promise.all(paths.map(async (relativePath) => {
     const absolutePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
     if (!absolutePath.ok) return unreadableRecord(relativePath);

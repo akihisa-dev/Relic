@@ -239,15 +239,21 @@ describe("diagramPreview", () => {
     vi.useRealTimers();
   });
 
-  it("D2描画がタイムアウトした後でも次のD2描画を実行できる", async () => {
+  it("D2描画がタイムアウトしても元処理が完了するまで次のD2描画を開始しない", async () => {
     vi.useFakeTimers();
     const { renderDiagramElement } = await loadDiagramPreviewModule();
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const firstContainer = createAttachedContainer();
     const secondContainer = createAttachedContainer();
-    compileD2Mock.mockReturnValueOnce(new Promise(() => undefined));
+    const firstCompile = createDeferred<{ diagram: { id: string }; renderOptions: Record<string, never> }>();
+    const firstRender = createDeferred<string>();
+    compileD2Mock.mockReturnValueOnce(firstCompile.promise);
+    renderD2Mock.mockReturnValueOnce(firstRender.promise);
 
     const firstResult = renderDiagramElement(firstContainer, "d2", "stuck -> diagram");
+    await vi.waitFor(() => {
+      expect(compileD2Mock).toHaveBeenCalledTimes(1);
+    });
     await vi.advanceTimersByTimeAsync(diagramRenderTimeoutMs);
 
     await expect(firstResult).resolves.toBeNull();
@@ -259,9 +265,22 @@ describe("diagramPreview", () => {
     });
     renderD2Mock.mockResolvedValueOnce('<svg viewBox="0 0 120 80"><text>recovered</text></svg>');
 
-    const secondResult = await renderDiagramElement(secondContainer, "d2", "next -> diagram");
+    const secondResult = renderDiagramElement(secondContainer, "d2", "next -> diagram");
+    await Promise.resolve();
+    expect(compileD2Mock).toHaveBeenCalledTimes(1);
 
-    expect(typeof secondResult?.fitToViewport).toBe("function");
+    firstCompile.resolve({ diagram: { id: "first" }, renderOptions: {} });
+    await vi.waitFor(() => {
+      expect(renderD2Mock).toHaveBeenCalledWith({ id: "first" }, { noXMLTag: true });
+    });
+    firstRender.resolve('<svg viewBox="0 0 120 80"><text>late</text></svg>');
+
+    await vi.waitFor(() => {
+      expect(compileD2Mock).toHaveBeenCalledTimes(2);
+    });
+    await expect(secondResult).resolves.toEqual(expect.objectContaining({
+      fitToViewport: expect.any(Function)
+    }));
     expect(secondContainer.dataset.diagramRenderStatus).toBe("rendered");
     expect(secondContainer.querySelector(".preview-diagram-svg--d2 svg")?.textContent).toBe("recovered");
     warn.mockRestore();
