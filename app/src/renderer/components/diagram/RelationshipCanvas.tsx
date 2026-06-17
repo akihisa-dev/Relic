@@ -942,44 +942,48 @@ export function RelationshipCanvas({
               }}
             />
           ) : null}
-          {displayNodes.map(({ node, x, y }) => (
-            <DiagramNodeView
-              isDragging={drag?.nodeId === node.id}
-              isTextEditing={nodeTextEdit?.nodeId === node.id}
-              isSelected={selection?.type === "node" && selection.id === node.id}
-              key={node.id}
-              node={node}
-              nodeTextDraft={nodeTextEdit?.nodeId === node.id ? nodeTextEdit.value : undefined}
-              nodeTextLabel={"shape" in node && node.shape === "area"
-                ? t("diagram.freeDrawingAreaName")
-                : t("diagram.freeDrawingNodeText")}
-              onNodeTextCancel={cancelFreeDrawingNodeText}
-              onNodeTextChange={isFreeDrawing ? changeFreeDrawingNodeText : undefined}
-              onNodeTextCommit={commitFreeDrawingNodeText}
-              onNodeTextDoubleClick={beginFreeDrawingNodeTextEdit}
-              onOutlinePointerDown={startNodeOutlineConnect}
-              addShapeLabel={isFreeDrawing && "shape" in node ? t("diagram.addConnectedShape") : undefined}
-              addShapeMenuLabel={isFreeDrawing && shapeAddMenu?.nodeId === node.id ? t("diagram.connectedShapeMenu") : undefined}
-              addShapeOptions={isFreeDrawing && shapeAddMenu?.nodeId === node.id ? freeDrawingShapeOptions : undefined}
-              onShapeAddButtonPointerDown={toggleShapeAddMenu}
-              onShapeOptionPointerDown={chooseConnectedShape}
-              onLayerBackwardPointerDown={isFreeDrawing && "shape" in node ? (targetNode, event) => changeFreeDrawingNodeLayer(targetNode, -1, event) : undefined}
-              onLayerForwardPointerDown={isFreeDrawing && "shape" in node ? (targetNode, event) => changeFreeDrawingNodeLayer(targetNode, 1, event) : undefined}
-              onPointerCancel={cancelNodeDrag}
-              onPointerDown={startNodePointer}
-              onPointerMove={(event) => {
-                updateNodeDrag(event);
-                updateNodeResize(event);
-              }}
-              onResizePointerDown={startNodeResize}
-              onPointerUp={finishNodePointer}
-              resizeLabel={t("diagram.resizeNode")}
-              layerBackwardLabel={t("diagram.layerBackward")}
-              layerForwardLabel={t("diagram.layerForward")}
-              x={x}
-              y={y}
-            />
-          ))}
+          {displayNodes.map(({ node, x, y }) => {
+            const canChangeLayer = isFreeDrawing && "shape" in node && node.shape !== "area";
+
+            return (
+              <DiagramNodeView
+                isDragging={drag?.nodeId === node.id}
+                isTextEditing={nodeTextEdit?.nodeId === node.id}
+                isSelected={selection?.type === "node" && selection.id === node.id}
+                key={node.id}
+                node={node}
+                nodeTextDraft={nodeTextEdit?.nodeId === node.id ? nodeTextEdit.value : undefined}
+                nodeTextLabel={"shape" in node && node.shape === "area"
+                  ? t("diagram.freeDrawingAreaName")
+                  : t("diagram.freeDrawingNodeText")}
+                onNodeTextCancel={cancelFreeDrawingNodeText}
+                onNodeTextChange={isFreeDrawing ? changeFreeDrawingNodeText : undefined}
+                onNodeTextCommit={commitFreeDrawingNodeText}
+                onNodeTextDoubleClick={beginFreeDrawingNodeTextEdit}
+                onOutlinePointerDown={startNodeOutlineConnect}
+                addShapeLabel={isFreeDrawing && "shape" in node ? t("diagram.addConnectedShape") : undefined}
+                addShapeMenuLabel={isFreeDrawing && shapeAddMenu?.nodeId === node.id ? t("diagram.connectedShapeMenu") : undefined}
+                addShapeOptions={isFreeDrawing && shapeAddMenu?.nodeId === node.id ? freeDrawingShapeOptions : undefined}
+                onShapeAddButtonPointerDown={toggleShapeAddMenu}
+                onShapeOptionPointerDown={chooseConnectedShape}
+                onLayerBackwardPointerDown={canChangeLayer ? (targetNode, event) => changeFreeDrawingNodeLayer(targetNode, -1, event) : undefined}
+                onLayerForwardPointerDown={canChangeLayer ? (targetNode, event) => changeFreeDrawingNodeLayer(targetNode, 1, event) : undefined}
+                onPointerCancel={cancelNodeDrag}
+                onPointerDown={startNodePointer}
+                onPointerMove={(event) => {
+                  updateNodeDrag(event);
+                  updateNodeResize(event);
+                }}
+                onResizePointerDown={startNodeResize}
+                onPointerUp={finishNodePointer}
+                resizeLabel={t("diagram.resizeNode")}
+                layerBackwardLabel={t("diagram.layerBackward")}
+                layerForwardLabel={t("diagram.layerForward")}
+                x={x}
+                y={y}
+              />
+            );
+          })}
         </div>
       </div>
     </div>
