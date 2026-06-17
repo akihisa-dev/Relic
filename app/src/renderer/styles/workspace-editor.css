@@ -1292,6 +1292,139 @@
   width: 10px;
 }
 
+.diagram-canvas-node-add-shape {
+  align-items: center;
+  display: flex;
+  left: calc(100% + 10px);
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+}
+
+.diagram-canvas-node-add-shape-button {
+  align-items: center;
+  appearance: none;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px var(--accent), 0 8px 18px rgba(15, 23, 42, 0.14);
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 16px;
+  font-weight: 700;
+  height: 24px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0 0 2px;
+  pointer-events: auto;
+  touch-action: none;
+  width: 24px;
+}
+
+.diagram-canvas-node-add-shape-button:hover,
+.diagram-canvas-node-add-shape-button:focus-visible {
+  background: var(--accent-hover);
+}
+
+.diagram-canvas-node-add-shape-menu {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18);
+  display: grid;
+  gap: 4px;
+  margin-left: 8px;
+  min-width: 132px;
+  padding: 6px;
+  pointer-events: auto;
+}
+
+.diagram-canvas-node-add-shape-option {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  font-size: 12px;
+  gap: 8px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  line-height: 1.2;
+  padding: 7px 8px;
+  text-align: left;
+  touch-action: none;
+  white-space: nowrap;
+}
+
+.diagram-canvas-node-add-shape-option:hover,
+.diagram-canvas-node-add-shape-option:focus-visible {
+  background: var(--surface-subtle);
+}
+
+.diagram-canvas-node-add-shape-icon {
+  border: 1.5px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  box-sizing: border-box;
+  display: inline-block;
+  height: 14px;
+  position: relative;
+  width: 20px;
+}
+
+.diagram-canvas-node-add-shape-option--terminator .diagram-canvas-node-add-shape-icon {
+  border-radius: 999px;
+}
+
+.diagram-canvas-node-add-shape-option--process .diagram-canvas-node-add-shape-icon {
+  border-radius: 3px;
+}
+
+.diagram-canvas-node-add-shape-option--decision .diagram-canvas-node-add-shape-icon {
+  border: 0;
+}
+
+.diagram-canvas-node-add-shape-option--decision .diagram-canvas-node-add-shape-icon::before {
+  border: 1.5px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  box-sizing: border-box;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+.diagram-canvas-node-add-shape-option--input-output .diagram-canvas-node-add-shape-icon {
+  border: 0;
+}
+
+.diagram-canvas-node-add-shape-option--input-output .diagram-canvas-node-add-shape-icon::before {
+  border: 1.5px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  box-sizing: border-box;
+  clip-path: polygon(16% 0, 100% 0, 84% 100%, 0 100%);
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+.diagram-canvas-node-add-shape-option--note .diagram-canvas-node-add-shape-icon {
+  border-radius: 2px;
+}
+
+.diagram-canvas-node-add-shape-option--note .diagram-canvas-node-add-shape-icon::after {
+  background: var(--bg);
+  border-bottom: 1.5px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  border-left: 1.5px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  content: "";
+  height: 5px;
+  position: absolute;
+  right: -1.5px;
+  top: -1.5px;
+  width: 5px;
+}
+
 .diagram-canvas-node-outline-hit--top,
 .diagram-canvas-node-outline-hit--bottom {
   cursor: crosshair;

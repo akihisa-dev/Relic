@@ -17,6 +17,7 @@ import {
   addRelicFreeDrawingNode,
   addRelicDiagramLine,
   moveRelicDiagramNode,
+  relicFreeDrawingShapeTypes,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
   reverseRelicDiagramLineDirection,
@@ -47,6 +48,8 @@ import { DiagramSnapGuides } from "./DiagramSnapGuides";
 import { diagramGridSize, snapDiagramNode, snapDiagramPointToGrid, snapDiagramSizeToGrid, type DiagramSnapGuide } from "./diagramSnap";
 
 const connectActivationDistance = 4;
+const connectedShapeDefaultHeight = 80;
+const connectedShapeDefaultWidth = 180;
 const minNodeHeight = 64;
 const minNodeWidth = 96;
 
@@ -107,6 +110,10 @@ interface NodeTextEditState {
   value: string;
 }
 
+interface ShapeAddMenuState {
+  nodeId: string;
+}
+
 export function RelationshipCanvas({
   content,
   diagram,
@@ -123,6 +130,7 @@ export function RelationshipCanvas({
   const [pan, setPan] = useState<PanState | null>(null);
   const [resize, setResize] = useState<ResizeState | null>(null);
   const [selection, setSelection] = useState<DiagramSelection | null>(null);
+  const [shapeAddMenu, setShapeAddMenu] = useState<ShapeAddMenuState | null>(null);
   const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
 
   const layout = useMemo(() => buildDiagramCanvasLayout(diagram), [diagram]);
@@ -181,6 +189,10 @@ export function RelationshipCanvas({
     ...guide,
     value: guide.value - (guide.axis === "x" ? layout.originX : layout.originY)
   })), [drag?.guides, layout.originX, layout.originY]);
+  const freeDrawingShapeOptions = useMemo(() => relicFreeDrawingShapeTypes.map((shape) => ({
+    label: t(`diagram.freeDrawingShape.${shape}`),
+    shape
+  })), [t]);
   const dragDropPreview = useMemo(() => {
     if (!drag) return null;
     const movingNode = diagram.nodes.find((node) => node.id === drag.nodeId);
@@ -213,6 +225,7 @@ export function RelationshipCanvas({
     event.preventDefault();
     setSelection({ id: node.id, type: "node" });
     setNodeTextEdit(null);
+    setShapeAddMenu(null);
     focusCanvasFrom(event.currentTarget);
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -277,6 +290,7 @@ export function RelationshipCanvas({
     event.stopPropagation();
     setSelection({ id: node.id, type: "node" });
     setNodeTextEdit(null);
+    setShapeAddMenu(null);
     focusCanvasFrom(event.currentTarget);
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -344,6 +358,7 @@ export function RelationshipCanvas({
     setSelection(null);
     setLabelEdit(null);
     setNodeTextEdit(null);
+    setShapeAddMenu(null);
     focusCanvasFrom(event.currentTarget);
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -401,6 +416,7 @@ export function RelationshipCanvas({
     const pointer = pointerPositionInCanvas(event);
 
     focusCanvasFrom(event.currentTarget);
+    setShapeAddMenu(null);
     setConnect({
       isActive: false,
       currentX: pointer.x,
@@ -452,6 +468,7 @@ export function RelationshipCanvas({
       onChange?.(added.value.content);
       setSelection({ id: added.value.line.id, type: "line" });
       setLabelEdit({ lineId: added.value.line.id, value: "" });
+      setShapeAddMenu(null);
     }
     setConnect(null);
   };
@@ -482,6 +499,7 @@ export function RelationshipCanvas({
     event.preventDefault();
     event.stopPropagation();
     setSelection({ id: lineId, type: "line" });
+    setShapeAddMenu(null);
     focusCanvasFrom(event.currentTarget);
   };
   const beginLabelEdit = (line: DiagramCanvasLineLayout): void => {
@@ -489,6 +507,7 @@ export function RelationshipCanvas({
 
     setSelection({ id: line.line.id, type: "line" });
     setNodeTextEdit(null);
+    setShapeAddMenu(null);
     setLabelEdit({
       lineId: line.line.id,
       value: line.line.label
@@ -536,6 +555,7 @@ export function RelationshipCanvas({
       setSelection(null);
       setLabelEdit(null);
       setNodeTextEdit(null);
+      setShapeAddMenu(null);
       focusCanvasFrom(event.currentTarget);
     }
   };
@@ -551,6 +571,7 @@ export function RelationshipCanvas({
       setLabelEdit(null);
       setNodeTextEdit(null);
       setSelection(null);
+      setShapeAddMenu(null);
     }
   };
   const addFreeDrawingNode = (
@@ -564,7 +585,78 @@ export function RelationshipCanvas({
     if (added.ok) {
       onChange(added.value.content);
       setSelection({ id: added.value.node.id, type: "node" });
+      setShapeAddMenu(null);
     }
+  };
+  const connectedFreeDrawingNodePosition = (sourceNode: RelicDiagramNodeBase): { x: number; y: number } => {
+    const baseX = sourceNode.x + sourceNode.width + diagramGridSize * 2;
+    const baseY = sourceNode.y;
+    let candidate = snapDiagramPointToGrid(baseX, baseY, layout.originX, layout.originY);
+
+    for (let attempt = 0; attempt <= diagram.nodes.length; attempt += 1) {
+      const overlaps = diagram.nodes.some((node) => rectanglesOverlap(
+        candidate.x,
+        candidate.y,
+        connectedShapeDefaultWidth,
+        connectedShapeDefaultHeight,
+        node.x,
+        node.y,
+        node.width,
+        node.height
+      ));
+      if (!overlaps) return candidate;
+
+      candidate = snapDiagramPointToGrid(
+        baseX,
+        baseY + (connectedShapeDefaultHeight + diagramGridSize) * (attempt + 1),
+        layout.originX,
+        layout.originY
+      );
+    }
+
+    return candidate;
+  };
+  const addConnectedFreeDrawingNode = (
+    sourceNode: RelicDiagramNodeBase,
+    shape: RelicFreeDrawingShapeType
+  ): void => {
+    if (!onChange || !isFreeDrawing) return;
+
+    const position = connectedFreeDrawingNodePosition(sourceNode);
+    const added = addRelicFreeDrawingNode(content, shape, position.x, position.y);
+    if (!added.ok) return;
+
+    const lineAdded = addRelicDiagramLine(added.value.content, sourceNode.id, added.value.node.id);
+    if (!lineAdded.ok) return;
+
+    onChange(lineAdded.value.content);
+    setSelection({ id: added.value.node.id, type: "node" });
+    setShapeAddMenu(null);
+  };
+  const toggleShapeAddMenu = (
+    node: RelicConnectedDiagramNode,
+    event: ReactPointerEvent<HTMLButtonElement>
+  ): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!isFreeDrawing || !("shape" in node)) return;
+
+    setSelection({ id: node.id, type: "node" });
+    setLabelEdit(null);
+    setNodeTextEdit(null);
+    setShapeAddMenu((current) => current?.nodeId === node.id ? null : { nodeId: node.id });
+    focusCanvasFrom(event.currentTarget);
+  };
+  const chooseConnectedShape = (
+    node: RelicConnectedDiagramNode,
+    shape: RelicFreeDrawingShapeType,
+    event: ReactPointerEvent<HTMLButtonElement>
+  ): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!("shape" in node)) return;
+
+    addConnectedFreeDrawingNode(node, shape);
   };
   const handleCanvasDragOver = (event: ReactDragEvent<HTMLDivElement>): void => {
     if (!isFreeDrawing) return;
@@ -600,6 +692,7 @@ export function RelationshipCanvas({
     setSelection({ id: node.id, type: "node" });
     setNodeTextEdit({ nodeId: node.id, value: node.text });
     setLabelEdit(null);
+    setShapeAddMenu(null);
   };
   const changeFreeDrawingNodeText = (nodeId: string, value: string): void => {
     setNodeTextEdit((current) => current?.nodeId === nodeId ? { ...current, value } : current);
@@ -630,6 +723,7 @@ export function RelationshipCanvas({
       onChange(reversed.value.content);
       setSelection({ id: reversed.value.line.id, type: "line" });
       setLabelEdit(null);
+      setShapeAddMenu(null);
     }
   };
   const handleCanvasKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
@@ -643,6 +737,7 @@ export function RelationshipCanvas({
       setPan(null);
       setResize(null);
       setSelection(null);
+      setShapeAddMenu(null);
       return;
     }
     if (event.key !== "Delete" && event.key !== "Backspace") return;
@@ -805,6 +900,11 @@ export function RelationshipCanvas({
               onNodeTextCommit={commitFreeDrawingNodeText}
               onNodeTextDoubleClick={beginFreeDrawingNodeTextEdit}
               onOutlinePointerDown={startNodeOutlineConnect}
+              addShapeLabel={isFreeDrawing && "shape" in node ? t("diagram.addConnectedShape") : undefined}
+              addShapeMenuLabel={isFreeDrawing && shapeAddMenu?.nodeId === node.id ? t("diagram.connectedShapeMenu") : undefined}
+              addShapeOptions={isFreeDrawing && shapeAddMenu?.nodeId === node.id ? freeDrawingShapeOptions : undefined}
+              onShapeAddButtonPointerDown={toggleShapeAddMenu}
+              onShapeOptionPointerDown={chooseConnectedShape}
               onPointerCancel={cancelNodeDrag}
               onPointerDown={startNodePointer}
               onPointerMove={(event) => {
@@ -839,6 +939,22 @@ function focusCanvasFrom(element: Element): void {
   if (canvas instanceof HTMLElement) {
     canvas.focus({ preventScroll: true });
   }
+}
+
+function rectanglesOverlap(
+  leftA: number,
+  topA: number,
+  widthA: number,
+  heightA: number,
+  leftB: number,
+  topB: number,
+  widthB: number,
+  heightB: number
+): boolean {
+  return leftA < leftB + widthB &&
+    leftA + widthA > leftB &&
+    topA < topB + heightB &&
+    topA + heightA > topB;
 }
 
 function ReverseLineDirectionIcon(): ReactElement {
