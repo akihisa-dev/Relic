@@ -17,6 +17,7 @@ const pairedLineGap = 24;
 const turnCost = 8;
 const reservedSegmentPenalty = 5000;
 const portLeadDistance = 28;
+const decisionOutputLineLimit = 2;
 
 export interface DiagramCanvasLayout {
   height: number;
@@ -69,9 +70,18 @@ type RouteDirection = "h" | "none" | "v";
 type NodePortSide = "bottom" | "left" | "right" | "top";
 
 interface NodePort {
+  fixed?: boolean;
   point: DiagramPoint;
   side: NodePortSide;
 }
+
+const decisionPortSides = ["top", "right", "bottom", "left"] as const satisfies readonly NodePortSide[];
+const decisionPortVectors: Record<NodePortSide, DiagramPoint> = {
+  bottom: { x: 0, y: 1 },
+  left: { x: -1, y: 0 },
+  right: { x: 1, y: 0 },
+  top: { x: 0, y: -1 }
+};
 
 interface LineRouteContext {
   end: NodePort;
@@ -121,12 +131,14 @@ export function buildLineLayouts(
 ): DiagramCanvasLineLayout[] {
   const nodeById = new Map(nodes.map((node) => [node.node.id, node]));
   const reservedSegments: RoutedSegment[] = [];
-  const contexts = lines.flatMap((line): LineRouteContext[] => {
+  const renderableLines = visibleDiagramLines(lines, nodes.map((node) => node.node));
+  const decisionInputSideByNodeId = buildDecisionInputSideByNodeId(renderableLines, nodeById);
+  const contexts = renderableLines.flatMap((line): LineRouteContext[] => {
     const from = nodeById.get(line.from);
     const to = nodeById.get(line.to);
     if (!from || !to) return [];
 
-    const ports = relationshipLinePorts(from, to);
+    const ports = linePorts(from, to, decisionInputSideByNodeId);
     return [{
       end: ports.end,
       from,
@@ -170,6 +182,38 @@ export function buildLineLayouts(
       y2: route.end.y
     };
   });
+}
+
+export function visibleDiagramLines(
+  lines: RelicDiagramLine[],
+  nodes: RelicConnectedDiagramNode[]
+): RelicDiagramLine[] {
+  const decisionNodeIds = new Set(nodes.filter(isDecisionNode).map((node) => node.id));
+  const outgoingCountByNodeId = new Map<string, number>();
+
+  return lines.filter((line) => {
+    if (!decisionNodeIds.has(line.from)) return true;
+
+    const outgoingCount = outgoingCountByNodeId.get(line.from) ?? 0;
+    outgoingCountByNodeId.set(line.from, outgoingCount + 1);
+    return outgoingCount < decisionOutputLineLimit;
+  });
+}
+
+function linePorts(
+  from: DiagramCanvasNodeLayout,
+  to: DiagramCanvasNodeLayout,
+  decisionInputSideByNodeId: Map<string, NodePortSide>
+): { end: NodePort; start: NodePort } {
+  const fallbackPorts = relationshipLinePorts(from, to);
+  return {
+    end: isDecisionNode(to.node)
+      ? decisionPort(to, decisionInputSideByNodeId.get(to.node.id) ?? closestDecisionPortSide(to, from, decisionPortSides))
+      : fallbackPorts.end,
+    start: isDecisionNode(from.node)
+      ? decisionPort(from, decisionOutputPortSide(from, to, decisionInputSideByNodeId.get(from.node.id)))
+      : fallbackPorts.start
+  };
 }
 
 function relationshipLinePorts(
@@ -223,6 +267,108 @@ function relationshipLinePorts(
   };
 }
 
+function buildDecisionInputSideByNodeId(
+  lines: RelicDiagramLine[],
+  nodeById: Map<string, DiagramCanvasNodeLayout>
+): Map<string, NodePortSide> {
+  const inputVectorByNodeId = new Map<string, DiagramPoint>();
+
+  lines.forEach((line) => {
+    const to = nodeById.get(line.to);
+    if (!to || !isDecisionNode(to.node)) return;
+    const from = nodeById.get(line.from);
+    if (!from) return;
+
+    const decisionCenter = nodeCenter(to);
+    const fromCenter = nodeCenter(from);
+    const current = inputVectorByNodeId.get(to.node.id) ?? { x: 0, y: 0 };
+    inputVectorByNodeId.set(to.node.id, {
+      x: current.x + fromCenter.x - decisionCenter.x,
+      y: current.y + fromCenter.y - decisionCenter.y
+    });
+  });
+
+  return new Map(Array.from(inputVectorByNodeId.entries()).map(([nodeId, vector]) => [
+    nodeId,
+    closestPortSide(vector, decisionPortSides)
+  ]));
+}
+
+function decisionOutputPortSide(
+  from: DiagramCanvasNodeLayout,
+  to: DiagramCanvasNodeLayout,
+  inputSide: NodePortSide | undefined
+): NodePortSide {
+  const availableSides = inputSide
+    ? decisionPortSides.filter((side) => side !== inputSide)
+    : decisionPortSides;
+  return closestDecisionPortSide(from, to, availableSides);
+}
+
+function closestDecisionPortSide(
+  from: DiagramCanvasNodeLayout,
+  to: DiagramCanvasNodeLayout,
+  availableSides: readonly NodePortSide[]
+): NodePortSide {
+  const fromCenter = nodeCenter(from);
+  const toCenter = nodeCenter(to);
+  return closestPortSide({
+    x: toCenter.x - fromCenter.x,
+    y: toCenter.y - fromCenter.y
+  }, availableSides);
+}
+
+function closestPortSide(vector: DiagramPoint, availableSides: readonly NodePortSide[]): NodePortSide {
+  let bestSide = availableSides[0] ?? "right";
+  let bestScore = Number.NEGATIVE_INFINITY;
+
+  availableSides.forEach((side) => {
+    const sideVector = decisionPortVectors[side];
+    const score = vector.x * sideVector.x + vector.y * sideVector.y;
+    if (score > bestScore) {
+      bestScore = score;
+      bestSide = side;
+    }
+  });
+
+  return bestSide;
+}
+
+function decisionPort(node: DiagramCanvasNodeLayout, side: NodePortSide): NodePort {
+  const center = nodeCenter(node);
+
+  switch (side) {
+    case "bottom":
+      return {
+        fixed: true,
+        point: { x: center.x, y: node.y + node.node.height },
+        side
+      };
+    case "left":
+      return {
+        fixed: true,
+        point: { x: node.x, y: center.y },
+        side
+      };
+    case "right":
+      return {
+        fixed: true,
+        point: { x: node.x + node.node.width, y: center.y },
+        side
+      };
+    case "top":
+      return {
+        fixed: true,
+        point: { x: center.x, y: node.y },
+        side
+      };
+  }
+}
+
+function isDecisionNode(node: RelicConnectedDiagramNode): boolean {
+  return "shape" in node && node.shape === "decision";
+}
+
 function applyDestinationPortLanes(contexts: LineRouteContext[]): void {
   const groups = new Map<string, Array<{ context: LineRouteContext; node: DiagramCanvasNodeLayout; port: NodePort }>>();
 
@@ -244,6 +390,7 @@ function applyDestinationPortLanes(contexts: LineRouteContext[]): void {
     ]));
 
     usages.forEach(({ context, node, port }) => {
+      if (port.fixed) return;
       const offset = offsetByDestination.get(context.to.node.id) ?? 0;
       port.point = offsetPortPoint(port, node, offset);
     });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildLineLayouts, type DiagramCanvasNodeLayout } from "./diagramGeometry";
+import { buildLineLayouts, visibleDiagramLines, type DiagramCanvasNodeLayout } from "./diagramGeometry";
 
 const horizontalNodes: DiagramCanvasNodeLayout[] = [
   {
@@ -442,5 +442,274 @@ describe("buildLineLayouts", () => {
     ]);
 
     expect(line?.pathD).toBe("M 360 220 L 388 220 L 388 132 L 672 132 L 672 220 L 700 220");
+  });
+
+  it("merges incoming decision lines into one averaged input corner", () => {
+    const nodes: DiagramCanvasNodeLayout[] = [
+      {
+        node: {
+          height: 120,
+          id: "decision",
+          layer: 1,
+          shape: "decision",
+          text: "判断",
+          width: 160,
+          x: 300,
+          y: 200
+        },
+        x: 300,
+        y: 200
+      },
+      {
+        node: {
+          height: 80,
+          id: "left-top",
+          layer: 1,
+          shape: "process",
+          text: "上流",
+          width: 120,
+          x: 40,
+          y: 120
+        },
+        x: 40,
+        y: 120
+      },
+      {
+        node: {
+          height: 80,
+          id: "left-bottom",
+          layer: 1,
+          shape: "process",
+          text: "下流",
+          width: 120,
+          x: 40,
+          y: 320
+        },
+        x: 40,
+        y: 320
+      }
+    ];
+
+    const lines = buildLineLayouts([
+      {
+        from: "left-top",
+        id: "line-1",
+        label: "A",
+        to: "decision"
+      },
+      {
+        from: "left-bottom",
+        id: "line-2",
+        label: "B",
+        to: "decision"
+      }
+    ], nodes);
+
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatchObject({ x2: 300, y2: 260 });
+    expect(lines[1]).toMatchObject({ x2: 300, y2: 260 });
+  });
+
+  it("keeps decision output corners away from the reserved input corner", () => {
+    const nodes: DiagramCanvasNodeLayout[] = [
+      {
+        node: {
+          height: 120,
+          id: "decision",
+          layer: 1,
+          shape: "decision",
+          text: "判断",
+          width: 160,
+          x: 300,
+          y: 200
+        },
+        x: 300,
+        y: 200
+      },
+      {
+        node: {
+          height: 80,
+          id: "right-input",
+          layer: 1,
+          shape: "process",
+          text: "入力",
+          width: 120,
+          x: 620,
+          y: 220
+        },
+        x: 620,
+        y: 220
+      },
+      {
+        node: {
+          height: 80,
+          id: "right-output",
+          layer: 1,
+          shape: "process",
+          text: "出力",
+          width: 120,
+          x: 620,
+          y: 360
+        },
+        x: 620,
+        y: 360
+      }
+    ];
+
+    const lines = buildLineLayouts([
+      {
+        from: "right-input",
+        id: "line-in",
+        label: "in",
+        to: "decision"
+      },
+      {
+        from: "decision",
+        id: "line-out",
+        label: "out",
+        to: "right-output"
+      }
+    ], nodes);
+
+    const incoming = lines.find((line) => line.line.id === "line-in");
+    const outgoing = lines.find((line) => line.line.id === "line-out");
+
+    expect(incoming).toMatchObject({ x2: 460, y2: 260 });
+    expect(outgoing).toMatchObject({ x1: 380, y1: 320 });
+    expect(outgoing).not.toMatchObject({ x1: 460, y1: 260 });
+  });
+
+  it("uses any natural decision output corner when no input corner is reserved", () => {
+    const nodes: DiagramCanvasNodeLayout[] = [
+      {
+        node: {
+          height: 120,
+          id: "decision",
+          layer: 1,
+          shape: "decision",
+          text: "判断",
+          width: 160,
+          x: 300,
+          y: 200
+        },
+        x: 300,
+        y: 200
+      },
+      {
+        node: {
+          height: 80,
+          id: "right-output",
+          layer: 1,
+          shape: "process",
+          text: "出力",
+          width: 120,
+          x: 620,
+          y: 220
+        },
+        x: 620,
+        y: 220
+      }
+    ];
+
+    const [line] = buildLineLayouts([
+      {
+        from: "decision",
+        id: "line-out",
+        label: "out",
+        to: "right-output"
+      }
+    ], nodes);
+
+    expect(line).toMatchObject({ x1: 460, y1: 260 });
+  });
+
+  it("hides the third and later outgoing decision lines from layout targets", () => {
+    const nodes: DiagramCanvasNodeLayout[] = [
+      {
+        node: {
+          height: 120,
+          id: "decision",
+          layer: 1,
+          shape: "decision",
+          text: "判断",
+          width: 160,
+          x: 300,
+          y: 200
+        },
+        x: 300,
+        y: 200
+      },
+      {
+        node: {
+          height: 80,
+          id: "target-1",
+          layer: 1,
+          shape: "process",
+          text: "A",
+          width: 120,
+          x: 620,
+          y: 80
+        },
+        x: 620,
+        y: 80
+      },
+      {
+        node: {
+          height: 80,
+          id: "target-2",
+          layer: 1,
+          shape: "process",
+          text: "B",
+          width: 120,
+          x: 620,
+          y: 220
+        },
+        x: 620,
+        y: 220
+      },
+      {
+        node: {
+          height: 80,
+          id: "target-3",
+          layer: 1,
+          shape: "process",
+          text: "C",
+          width: 120,
+          x: 620,
+          y: 360
+        },
+        x: 620,
+        y: 360
+      }
+    ];
+    const lines = [
+      {
+        from: "decision",
+        id: "line-1",
+        label: "はい",
+        to: "target-1"
+      },
+      {
+        from: "decision",
+        id: "line-2",
+        label: "いいえ",
+        to: "target-2"
+      },
+      {
+        from: "decision",
+        id: "line-3",
+        label: "選択肢3",
+        to: "target-3"
+      }
+    ];
+
+    expect(visibleDiagramLines(lines, nodes.map((node) => node.node)).map((line) => line.id)).toEqual([
+      "line-1",
+      "line-2"
+    ]);
+    expect(buildLineLayouts(lines, nodes).map((line) => line.line.id)).toEqual([
+      "line-1",
+      "line-2"
+    ]);
   });
 });

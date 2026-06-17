@@ -36,6 +36,7 @@ import { useT } from "../../i18n";
 import {
   buildDiagramCanvasLayout,
   buildLineLayouts,
+  visibleDiagramLines,
   type DiagramCanvasLineLayout
 } from "./diagramGeometry";
 import {
@@ -211,8 +212,8 @@ export function RelationshipCanvas({
     });
   }, [drag, layout, resize]);
   const displayLines = useMemo(
-    () => buildLineLayouts(diagram.lines, displayNodes),
-    [diagram.lines, displayNodes]
+    () => buildLineLayouts(visibleDiagramLines(diagram.lines, diagram.nodes), displayNodes),
+    [diagram.lines, diagram.nodes, displayNodes]
   );
   const displaySnapGuides = useMemo(() => (drag?.guides ?? []).map((guide) => ({
     ...guide,
@@ -450,6 +451,7 @@ export function RelationshipCanvas({
     event.preventDefault();
     event.stopPropagation();
     if (!onChange) return;
+    if (isFreeDrawing && !canAddDecisionOutputLine(node, diagram.lines)) return;
 
     const pointer = pointerPositionInCanvas(event);
 
@@ -502,6 +504,11 @@ export function RelationshipCanvas({
     }
 
     const sourceNode = diagram.nodes.find((node) => node.id === connect.fromNodeId);
+    if (!canAddDecisionOutputLine(sourceNode, diagram.lines)) {
+      setConnect(null);
+      return;
+    }
+
     const added = addRelicDiagramLine(content, connect.fromNodeId, toNodeId, decisionLineLabel(sourceNode, diagram.lines));
     if (added.ok) {
       onChange?.(added.value.content);
@@ -661,6 +668,7 @@ export function RelationshipCanvas({
     shape: RelicFreeDrawingShapeType
   ): void => {
     if (!onChange || !isFreeDrawing) return;
+    if (!canAddDecisionOutputLine(sourceNode, diagram.lines)) return;
 
     const position = connectedFreeDrawingNodePosition(sourceNode, shape);
     const added = addRelicFreeDrawingNode(content, shape, position.x, position.y);
@@ -685,6 +693,10 @@ export function RelationshipCanvas({
     event.preventDefault();
     event.stopPropagation();
     if (!isFreeDrawing || !("shape" in node)) return;
+    if (!canAddDecisionOutputLine(node, diagram.lines)) {
+      setShapeAddMenu(null);
+      return;
+    }
 
     setSelection({ id: node.id, type: "node" });
     setLabelEdit(null);
@@ -953,6 +965,7 @@ export function RelationshipCanvas({
           ) : null}
           {displayNodes.map(({ node, x, y }) => {
             const canChangeLayer = isFreeDrawing && "shape" in node && node.shape !== "area";
+            const canAddConnectedShape = isFreeDrawing && "shape" in node && canAddDecisionOutputLine(node, diagram.lines);
 
             return (
               <DiagramNodeView
@@ -970,7 +983,7 @@ export function RelationshipCanvas({
                 onNodeTextCommit={commitFreeDrawingNodeText}
                 onNodeTextDoubleClick={beginFreeDrawingNodeTextEdit}
                 onOutlinePointerDown={startNodeOutlineConnect}
-                addShapeLabel={isFreeDrawing && "shape" in node ? t("diagram.addConnectedShape") : undefined}
+                addShapeLabel={canAddConnectedShape ? t("diagram.addConnectedShape") : undefined}
                 addShapeMenuLabel={isFreeDrawing && shapeAddMenu?.nodeId === node.id ? t("diagram.connectedShapeMenu") : undefined}
                 addShapeOptions={isFreeDrawing && shapeAddMenu?.nodeId === node.id ? freeDrawingShapeOptions : undefined}
                 onShapeAddButtonPointerDown={toggleShapeAddMenu}
@@ -1040,16 +1053,17 @@ function isNodeFullyInsideNode(node: RelicDiagramNodeBase, container: RelicDiagr
     node.y + node.height <= container.y + container.height;
 }
 
+function canAddDecisionOutputLine(node: RelicDiagramNodeBase | undefined, lines: RelicDiagramLine[]): boolean {
+  if (!node || !("shape" in node) || node.shape !== "decision") return true;
+
+  return lines.filter((line) => line.from === node.id).length < decisionOptionLabels.length;
+}
+
 function decisionLineLabel(node: RelicConnectedDiagramNode | undefined, lines: RelicDiagramLine[]): string {
   if (!node || !("shape" in node) || node.shape !== "decision") return "";
 
-  const usedLabels = lines
-    .filter((line) => line.from === node.id)
-    .map((line) => line.label);
-  const standardLabel = decisionOptionLabels.find((label) => !usedLabels.includes(label));
-  if (standardLabel) return standardLabel;
-
-  return `選択肢${usedLabels.length + 1}`;
+  const outgoingCount = lines.filter((line) => line.from === node.id).length;
+  return decisionOptionLabels[outgoingCount] ?? "";
 }
 
 function connectedFreeDrawingShapeSize(shape: RelicFreeDrawingShapeType): { height: number; width: number } {
