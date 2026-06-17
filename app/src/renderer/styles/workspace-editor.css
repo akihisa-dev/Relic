@@ -1276,6 +1276,7 @@
 .diagram-canvas-node--selected.diagram-canvas-node--shape-decision,
 .diagram-canvas-node--selected.diagram-canvas-node--shape-input-output {
   background: transparent;
+  box-shadow: none;
 }
 
 .diagram-canvas-node--selected.diagram-canvas-node--shape-decision::before,
@@ -1290,6 +1291,11 @@
     var(--diagram-node-elevation-shadow, 0 8px 24px rgba(15, 23, 42, 0.1));
   cursor: grabbing;
   z-index: 2;
+}
+
+.diagram-canvas-node--dragging.diagram-canvas-node--shape-decision,
+.diagram-canvas-node--dragging.diagram-canvas-node--shape-input-output {
+  box-shadow: none;
 }
 
 .diagram-canvas-node-outline-hitbox {
