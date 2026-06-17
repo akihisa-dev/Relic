@@ -1230,7 +1230,7 @@
   border-radius: 7px;
   box-shadow: none;
   color: var(--text-2);
-  justify-content: start;
+  align-content: start;
   opacity: 0.92;
   padding: 12px 14px;
 }
@@ -1522,6 +1522,18 @@
   font-size: 14px;
   font-weight: 700;
   line-height: 1.2;
+  text-align: center;
+}
+
+.diagram-canvas-node:not(.diagram-canvas-node--shape-area) .diagram-canvas-node-name {
+  align-self: center;
+  justify-self: center;
+}
+
+.diagram-canvas-node-name--area-name {
+  color: var(--text-2);
+  font-size: 13px;
+  text-align: left;
 }
 
 .diagram-canvas-node-text {
@@ -1539,7 +1551,17 @@
   overflow: hidden;
   padding: 0;
   resize: none;
+  text-align: center;
   width: 100%;
+}
+
+.diagram-canvas-node-text--area-name {
+  align-self: start;
+  color: var(--text-2);
+  font-size: 13px;
+  justify-self: start;
+  min-height: 24px;
+  text-align: left;
 }
 
 .diagram-canvas-node-role {

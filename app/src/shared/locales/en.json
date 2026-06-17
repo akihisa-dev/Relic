@@ -149,6 +149,7 @@
   "diagram.noDiagramFiles": "No Diagram files.",
   "diagram.noPlaceableFiles": "No Markdown files to place.",
   "diagram.flowchartShapes": "Flowchart shapes",
+  "diagram.freeDrawingAreaName": "Area name",
   "diagram.freeDrawingNodeText": "Shape text",
   "diagram.freeDrawingShape.decision": "Decision",
   "diagram.freeDrawingShape.input-output": "Input / Output",
