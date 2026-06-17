@@ -715,6 +715,61 @@ export function moveRelicDiagramNode(
   });
 }
 
+export function moveRelicFreeDrawingAreaWithContents(
+  content: string,
+  nodeId: string,
+  x: number,
+  y: number
+): RelicResult<RelicDiagramNodeMove> {
+  const parsed = parseRelicFreeDrawingMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const nextX = parseFiniteNumber(x, "DIAGRAM_NODE_X_INVALID", "Nodeの x は数値にしてください。");
+  if (!nextX.ok) return nextX;
+  const nextY = parseFiniteNumber(y, "DIAGRAM_NODE_Y_INVALID", "Nodeの y は数値にしてください。");
+  if (!nextY.ok) return nextY;
+
+  const area = parsed.value.nodes.find((item) => item.id === nodeId);
+  if (!area) {
+    return fail("DIAGRAM_NODE_MISSING", "移動するNodeが見つかりません。");
+  }
+  if (area.shape !== "area") {
+    return fail("DIAGRAM_NODE_SHAPE_INVALID", "領域図形ではありません。");
+  }
+
+  const roundedX = Math.round(nextX.value);
+  const roundedY = Math.round(nextY.value);
+  const deltaX = roundedX - area.x;
+  const deltaY = roundedY - area.y;
+  const containedNodeIds = new Set(parsed.value.nodes
+    .filter((node) => node.id !== area.id && isNodeFullyInsideArea(node, area))
+    .map((node) => node.id));
+  const nextArea = {
+    ...area,
+    x: roundedX,
+    y: roundedY
+  };
+  const serialized = serializeRelicFreeDrawingMarkdown({
+    ...parsed.value,
+    nodes: parsed.value.nodes.map((node) => {
+      if (node.id === area.id) return nextArea;
+      if (!containedNodeIds.has(node.id)) return node;
+
+      return {
+        ...node,
+        x: node.x + deltaX,
+        y: node.y + deltaY
+      };
+    })
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    node: nextArea
+  });
+}
+
 export function resizeRelicDiagramNode(
   content: string,
   nodeId: string,
@@ -756,6 +811,13 @@ export function resizeRelicDiagramNode(
 
 function snapRelationshipNodeSize(value: number): number {
   return Math.max(relationshipNodeGridSize, Math.round(value / relationshipNodeGridSize) * relationshipNodeGridSize);
+}
+
+function isNodeFullyInsideArea(node: RelicDiagramNodeBase, area: RelicDiagramNodeBase): boolean {
+  return node.x >= area.x &&
+    node.y >= area.y &&
+    node.x + node.width <= area.x + area.width &&
+    node.y + node.height <= area.y + area.height;
 }
 
 export function addRelicDiagramLine(

@@ -78,6 +78,7 @@ export function DiagramNodeView({
   y
 }: DiagramNodeViewProps): ReactElement {
   const freeText = "text" in node ? node.text : null;
+  const isArea = "shape" in node && node.shape === "area";
   const title = "file" in node ? node.file : freeText ?? "";
   const shapeClass = "shape" in node ? `diagram-canvas-node--shape-${node.shape}` : "";
   const handleNodeTextKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>): void => {
@@ -110,12 +111,22 @@ export function DiagramNodeView({
       {freeText === null ? (
         <span className="diagram-canvas-node-name">{"file" in node ? nodeFileName(node.file) : ""}</span>
       ) : !isTextEditing ? (
-        <span className="diagram-canvas-node-name diagram-canvas-node-name--free-text">{freeText || nodeTextLabel}</span>
+        <span className={[
+          "diagram-canvas-node-name",
+          "diagram-canvas-node-name--free-text",
+          isArea ? "diagram-canvas-node-name--area-name" : ""
+        ].filter(Boolean).join(" ")}
+        >
+          {freeText || nodeTextLabel}
+        </span>
       ) : (
         <textarea
           aria-label={nodeTextLabel}
           autoFocus
-          className="diagram-canvas-node-text"
+          className={[
+            "diagram-canvas-node-text",
+            isArea ? "diagram-canvas-node-text--area-name" : ""
+          ].filter(Boolean).join(" ")}
           onChange={(event: ReactChangeEvent<HTMLTextAreaElement>) => onNodeTextChange?.(node.id, event.currentTarget.value)}
           onBlur={onNodeTextCommit}
           onKeyDown={handleNodeTextKeyDown}
@@ -198,11 +209,15 @@ export function DiagramNodeView({
   );
 }
 
+const diagramNodeLayerBase = 100;
+const diagramNodeActiveLayerBoost = 1000;
+
 function nodeLayerIndex(node: RelicConnectedDiagramNode, isDragging: boolean, isSelected: boolean): number {
   const layer = "layer" in node ? node.layer : 0;
-  if (isDragging || isSelected) return layer + 1000;
+  const displayLayer = diagramNodeLayerBase + layer;
+  if (isDragging || isSelected) return displayLayer + diagramNodeActiveLayerBoost;
 
-  return layer;
+  return displayLayer;
 }
 
 function LayerBackIcon(): ReactElement {

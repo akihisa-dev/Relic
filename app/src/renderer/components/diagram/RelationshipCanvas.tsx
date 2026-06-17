@@ -17,6 +17,7 @@ import {
   addRelicFreeDrawingNode,
   addRelicDiagramLine,
   moveRelicDiagramNode,
+  moveRelicFreeDrawingAreaWithContents,
   relicFreeDrawingShapeTypes,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
@@ -160,30 +161,54 @@ export function RelationshipCanvas({
     }));
   }, [layout.originX, layout.originY]);
 
-  const displayNodes = useMemo(() => layout.nodes.map((node) => {
-    if (resize?.nodeId === node.node.id) {
-      return {
-        node: {
-          ...node.node,
-          height: resize.currentHeight,
-          width: resize.currentWidth
-        },
-        x: node.x,
-        y: node.y
-      };
-    }
-    if (drag?.nodeId !== node.node.id) return node;
+  const displayNodes = useMemo(() => {
+    const draggedLayoutNode = drag
+      ? layout.nodes.find((node) => node.node.id === drag.nodeId)
+      : null;
+    const draggedArea = draggedLayoutNode && "shape" in draggedLayoutNode.node && draggedLayoutNode.node.shape === "area"
+      ? draggedLayoutNode.node
+      : null;
+    const dragDeltaX = drag ? drag.currentX - drag.originalX : 0;
+    const dragDeltaY = drag ? drag.currentY - drag.originalY : 0;
 
-    return {
-      node: {
-        ...node.node,
-        x: drag.currentX,
-        y: drag.currentY
-      },
-      x: drag.currentX - layout.originX,
-      y: drag.currentY - layout.originY
-    };
-  }), [drag, layout, resize]);
+    return layout.nodes.map((node) => {
+      if (resize?.nodeId === node.node.id) {
+        return {
+          node: {
+            ...node.node,
+            height: resize.currentHeight,
+            width: resize.currentWidth
+          },
+          x: node.x,
+          y: node.y
+        };
+      }
+      if (drag?.nodeId === node.node.id) {
+        return {
+          node: {
+            ...node.node,
+            x: drag.currentX,
+            y: drag.currentY
+          },
+          x: drag.currentX - layout.originX,
+          y: drag.currentY - layout.originY
+        };
+      }
+      if (draggedArea && isNodeFullyInsideNode(node.node, draggedArea)) {
+        return {
+          node: {
+            ...node.node,
+            x: node.node.x + dragDeltaX,
+            y: node.node.y + dragDeltaY
+          },
+          x: node.x + dragDeltaX,
+          y: node.y + dragDeltaY
+        };
+      }
+
+      return node;
+    });
+  }, [drag, layout, resize]);
   const displayLines = useMemo(
     () => buildLineLayouts(diagram.lines, displayNodes),
     [diagram.lines, displayNodes]
@@ -275,7 +300,10 @@ export function RelationshipCanvas({
     const hasMoved = drag.currentX !== drag.originalX || drag.currentY !== drag.originalY;
     const snapped = hasMoved ? snapDiagramPointToGrid(drag.currentX, drag.currentY, layout.originX, layout.originY) : null;
     if (snapped && (snapped.x !== drag.originalX || snapped.y !== drag.originalY)) {
-      const moved = moveRelicDiagramNode(content, drag.nodeId, snapped.x, snapped.y);
+      const movingNode = diagram.nodes.find((node) => node.id === drag.nodeId);
+      const moved = movingNode && "shape" in movingNode && movingNode.shape === "area"
+        ? moveRelicFreeDrawingAreaWithContents(content, drag.nodeId, snapped.x, snapped.y)
+        : moveRelicDiagramNode(content, drag.nodeId, snapped.x, snapped.y);
       if (moved.ok) {
         onChange?.(moved.value.content);
       }
@@ -922,7 +950,9 @@ export function RelationshipCanvas({
               key={node.id}
               node={node}
               nodeTextDraft={nodeTextEdit?.nodeId === node.id ? nodeTextEdit.value : undefined}
-              nodeTextLabel={t("diagram.freeDrawingNodeText")}
+              nodeTextLabel={"shape" in node && node.shape === "area"
+                ? t("diagram.freeDrawingAreaName")
+                : t("diagram.freeDrawingNodeText")}
               onNodeTextCancel={cancelFreeDrawingNodeText}
               onNodeTextChange={isFreeDrawing ? changeFreeDrawingNodeText : undefined}
               onNodeTextCommit={commitFreeDrawingNodeText}
@@ -987,6 +1017,14 @@ function rectanglesOverlap(
     leftA + widthA > leftB &&
     topA < topB + heightB &&
     topA + heightA > topB;
+}
+
+function isNodeFullyInsideNode(node: RelicDiagramNodeBase, container: RelicDiagramNodeBase): boolean {
+  return node.id !== container.id &&
+    node.x >= container.x &&
+    node.y >= container.y &&
+    node.x + node.width <= container.x + container.width &&
+    node.y + node.height <= container.y + container.height;
 }
 
 function decisionLineLabel(node: RelicConnectedDiagramNode | undefined, lines: RelicDiagramLine[]): string {

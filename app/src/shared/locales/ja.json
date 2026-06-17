@@ -149,6 +149,7 @@
   "diagram.noDiagramFiles": "図解ファイルはまだありません。",
   "diagram.noPlaceableFiles": "配置できるMarkdownファイルはまだありません。",
   "diagram.flowchartShapes": "フローチャート図形",
+  "diagram.freeDrawingAreaName": "領域名",
   "diagram.freeDrawingNodeText": "図形のテキスト",
   "diagram.freeDrawingShape.decision": "判断",
   "diagram.freeDrawingShape.input-output": "入出力",

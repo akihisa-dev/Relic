@@ -9,6 +9,7 @@ import {
   diagramTypeFromMarkdownContent,
   isRelicDiagramMarkdownContent,
   moveRelicDiagramNode,
+  moveRelicFreeDrawingAreaWithContents,
   moveRelicWhyTreeSupplement,
   moveRelicWhyTreeWhy,
   parseRelicDiagramMarkdown,
@@ -530,6 +531,56 @@ describe("free-drawing operations", () => {
     const updatedLayer = updateRelicFreeDrawingNodeLayer(freeDrawingContent, "node-2", 3);
     expect(updatedLayer.ok ? updatedLayer.value.node.layer : null).toBe(3);
     expect(updatedLayer.ok ? updatedLayer.value.content : "").toContain("layer: 3");
+  });
+
+  it("領域図形を動かすと完全に内包された図形だけ一緒に動かす", () => {
+    const content = [
+      "---",
+      "type: free-drawing",
+      "---",
+      "",
+      "nodes:",
+      "  - id: area-1",
+      "    shape: area",
+      "    text: 領域A",
+      "    x: 100",
+      "    y: 100",
+      "    width: 300",
+      "    height: 200",
+      "    layer: -1",
+      "  - id: inside-1",
+      "    shape: process",
+      "    text: 内側",
+      "    x: 140",
+      "    y: 140",
+      "    width: 120",
+      "    height: 80",
+      "    layer: 0",
+      "  - id: outside-1",
+      "    shape: process",
+      "    text: 外側",
+      "    x: 420",
+      "    y: 140",
+      "    width: 120",
+      "    height: 80",
+      "    layer: 0",
+      "lines: []",
+      ""
+    ].join("\n");
+
+    const moved = moveRelicFreeDrawingAreaWithContents(content, "area-1", 132.4, 164.6);
+
+    expect(moved.ok).toBe(true);
+    if (!moved.ok) return;
+    expect(moved.value.content).toContain("id: area-1");
+    expect(moved.value.content).toContain("x: 132");
+    expect(moved.value.content).toContain("y: 165");
+    expect(moved.value.content).toContain("id: inside-1");
+    expect(moved.value.content).toContain("x: 172");
+    expect(moved.value.content).toContain("y: 205");
+    expect(moved.value.content).toContain("id: outside-1");
+    expect(moved.value.content).toContain("x: 420");
+    expect(moved.value.content).toContain("y: 140");
   });
 
   it("free-drawingにRelationshipのファイル参照Node追加を適用しない", () => {

@@ -141,6 +141,41 @@ const freeDrawingContent = [
   ""
 ].join("\n");
 
+const freeDrawingContentWithArea = [
+  "---",
+  "type: free-drawing",
+  "title: 閾ｪ逕ｱ蝗ｳ",
+  "---",
+  "",
+  "nodes:",
+  "  - id: area-1",
+  "    shape: area",
+  "    text: 領域A",
+  "    x: 100",
+  "    y: 100",
+  "    width: 300",
+  "    height: 200",
+  "    layer: -1",
+  "  - id: inside-1",
+  "    shape: process",
+  "    text: 内側",
+  "    x: 140",
+  "    y: 140",
+  "    width: 120",
+  "    height: 80",
+  "    layer: 0",
+  "  - id: outside-1",
+  "    shape: process",
+  "    text: 外側",
+  "    x: 420",
+  "    y: 140",
+  "    width: 120",
+  "    height: 80",
+  "    layer: 0",
+  "lines: []",
+  ""
+].join("\n");
+
 const whyTreeContent = [
   "---",
   "type: why-tree",
@@ -534,6 +569,44 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("width: 384");
     expect(onChange.mock.calls[0]?.[0]).toContain("height: 224");
     expect(onChange.mock.calls[0]?.[0]).toContain("layer: -1");
+  });
+
+  it("keeps background area shapes interactive with a safe z-index", () => {
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={freeDrawingContentWithArea} fileName="閾ｪ逕ｱ蝗ｳ" />
+      </I18nProvider>
+    );
+
+    const area = screen.getByText("領域A").closest(".diagram-canvas-node");
+    expect(area).toBeInstanceOf(HTMLElement);
+    expect((area as HTMLElement).style.zIndex).toBe("99");
+  });
+
+  it("moves nodes fully contained in an area when dragging the area", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={freeDrawingContentWithArea} fileName="閾ｪ逕ｱ蝗ｳ" onChange={onChange} />
+      </I18nProvider>
+    );
+    const area = screen.getByText("領域A").closest(".diagram-canvas-node");
+    expect(area).toBeInstanceOf(HTMLElement);
+
+    fireEvent(area as HTMLElement, pointerEvent("pointerdown", 2, 110, 110));
+    fireEvent(area as HTMLElement, pointerEvent("pointermove", 2, 142, 174));
+    fireEvent(area as HTMLElement, pointerEvent("pointerup", 2, 142, 174));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: area-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 132");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 164");
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: inside-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 172");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 204");
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: outside-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 420");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 140");
   });
 
   it("does not show the Mermaid copy action in Relationship Diagram mode", () => {
