@@ -159,6 +159,7 @@
   "diagram.freeDrawingShape.area": "領域",
   "diagram.layerBackward": "背面へ送る",
   "diagram.layerForward": "前面へ出す",
+  "diagram.layerValue": "レイヤー {{layer}}",
   "diagram.openDiagramFirst": "Markdownファイルを配置するには図解ファイルを開いてください。",
   "diagram.openRelationshipFirst": "Markdownファイルを配置するには関係図を開いてください。",
   "diagram.placeableFiles": "Markdownファイル",

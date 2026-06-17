@@ -688,14 +688,20 @@ describe("DiagramCanvas", () => {
 
     const source = screen.getByText("主人公").closest(".diagram-canvas-node");
     expect(source).toBeInstanceOf(HTMLElement);
+    expect(screen.queryByText("Layer 1")).not.toBeInTheDocument();
 
     fireEvent(source as HTMLElement, pointerEvent("pointerdown", 2, 130, 90));
     fireEvent(source as HTMLElement, pointerEvent("pointerup", 2, 130, 90));
+    expect(screen.getByText("Layer 1")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send backward" })).toBeDisabled();
+
     fireEvent(screen.getByRole("button", { name: "Bring forward" }), pointerEvent("pointerdown", 3, 130, 60));
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("id: node-1");
     expect(onChange.mock.calls[0]?.[0]).toContain("layer: 2");
+    expect(screen.getByText("Layer 2")).toHaveClass("diagram-canvas-node-layer-badge--changed");
+    expect(screen.getByText("主人公").closest(".diagram-canvas-node")).toHaveClass("diagram-canvas-node--layer-feedback-forward");
   });
 
   it("drops an area shape onto a free-drawing canvas", () => {

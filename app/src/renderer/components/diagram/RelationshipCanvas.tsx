@@ -7,6 +7,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type WheelEvent as ReactWheelEvent,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -18,6 +19,7 @@ import {
   addRelicDiagramLine,
   moveRelicDiagramNode,
   moveRelicFreeDrawingAreaWithContents,
+  relicFreeDrawingNodeMinLayer,
   relicFreeDrawingShapeTypes,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
@@ -120,6 +122,14 @@ interface ShapeAddMenuState {
   nodeId: string;
 }
 
+interface LayerFeedbackState {
+  direction: -1 | 1;
+  nodeId: string;
+  token: number;
+}
+
+const layerFeedbackDurationMs = 560;
+
 export function RelationshipCanvas({
   content,
   diagram,
@@ -133,6 +143,7 @@ export function RelationshipCanvas({
   const [drag, setDrag] = useState<DragState | null>(null);
   const [labelEdit, setLabelEdit] = useState<LabelEditState | null>(null);
   const [nodeTextEdit, setNodeTextEdit] = useState<NodeTextEditState | null>(null);
+  const [layerFeedback, setLayerFeedback] = useState<LayerFeedbackState | null>(null);
   const [pan, setPan] = useState<PanState | null>(null);
   const [resize, setResize] = useState<ResizeState | null>(null);
   const [selection, setSelection] = useState<DiagramSelection | null>(null);
@@ -140,6 +151,7 @@ export function RelationshipCanvas({
   const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
 
   const layout = useMemo(() => buildDiagramCanvasLayout(diagram), [diagram]);
+  const layerFeedbackSequenceRef = useRef(0);
   const previousLayoutOriginRef = useRef<{ x: number; y: number } | null>(null);
   const canvasStyle = {
     "--diagram-canvas-grid-size": `${diagramGridSize * viewport.zoom}px`,
@@ -162,6 +174,16 @@ export function RelationshipCanvas({
       panY: current.panY + deltaY * current.zoom
     }));
   }, [layout.originX, layout.originY]);
+
+  useEffect(() => {
+    if (!layerFeedback) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      setLayerFeedback((current) => current?.token === layerFeedback.token ? null : current);
+    }, layerFeedbackDurationMs);
+
+    return () => window.clearTimeout(timeout);
+  }, [layerFeedback]);
 
   const displayNodes = useMemo(() => {
     const draggedLayoutNode = drag
@@ -792,12 +814,18 @@ export function RelationshipCanvas({
     event.preventDefault();
     event.stopPropagation();
     if (!onChange || !isFreeDrawing || !("shape" in node)) return;
+    if (direction === -1 && node.layer <= relicFreeDrawingNodeMinLayer) return;
 
     const updated = updateRelicFreeDrawingNodeLayer(content, node.id, node.layer + direction);
     if (updated.ok) {
       onChange(updated.value.content);
       setSelection({ id: updated.value.node.id, type: "node" });
       setLabelEdit(null);
+      setLayerFeedback({
+        direction,
+        nodeId: updated.value.node.id,
+        token: layerFeedbackSequenceRef.current += 1
+      });
       setShapeAddMenu(null);
     }
   };
@@ -966,12 +994,16 @@ export function RelationshipCanvas({
           {displayNodes.map(({ node, x, y }) => {
             const canChangeLayer = isFreeDrawing && "shape" in node && node.shape !== "area";
             const canAddConnectedShape = isFreeDrawing && "shape" in node && canAddDecisionOutputLine(node, diagram.lines);
+            const layerFeedbackDirection = layerFeedback?.nodeId === node.id ? layerFeedback.direction : undefined;
 
             return (
               <DiagramNodeView
                 isDragging={drag?.nodeId === node.id}
+                isLayerBackwardDisabled={canChangeLayer && "layer" in node ? node.layer <= relicFreeDrawingNodeMinLayer : false}
                 isTextEditing={nodeTextEdit?.nodeId === node.id}
                 isSelected={selection?.type === "node" && selection.id === node.id}
+                layerFeedbackDirection={layerFeedbackDirection}
+                layerLabel={canChangeLayer && "layer" in node ? t("diagram.layerValue", { layer: node.layer }) : undefined}
                 key={node.id}
                 node={node}
                 nodeTextDraft={nodeTextEdit?.nodeId === node.id ? nodeTextEdit.value : undefined}

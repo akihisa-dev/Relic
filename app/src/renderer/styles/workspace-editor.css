@@ -1302,6 +1302,15 @@
   box-shadow: none;
 }
 
+.diagram-canvas-node--layer-feedback:not(.diagram-canvas-node--shape-decision):not(.diagram-canvas-node--shape-input-output) {
+  animation: diagram-layer-node-feedback 560ms var(--ease-standard);
+}
+
+.diagram-canvas-node--layer-feedback.diagram-canvas-node--shape-decision::before,
+.diagram-canvas-node--layer-feedback.diagram-canvas-node--shape-input-output::before {
+  animation: diagram-layer-shape-feedback 560ms var(--ease-standard);
+}
+
 .diagram-canvas-node-outline-hitbox {
   inset: -8px;
   pointer-events: none;
@@ -1332,12 +1341,36 @@
 }
 
 .diagram-canvas-node-layer-controls {
+  align-items: center;
   display: flex;
   gap: 4px;
   left: -8px;
   pointer-events: auto;
   position: absolute;
   top: -34px;
+}
+
+.diagram-canvas-node-layer-badge {
+  align-items: center;
+  background: color-mix(in srgb, var(--bg) 92%, var(--accent) 8%);
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
+  color: var(--text);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 700;
+  height: 26px;
+  justify-content: center;
+  letter-spacing: 0;
+  min-width: 68px;
+  padding: 0 8px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.diagram-canvas-node-layer-badge--changed {
+  animation: diagram-layer-badge-feedback 560ms var(--ease-standard);
 }
 
 .diagram-canvas-node-layer-button {
@@ -1356,11 +1389,66 @@
   width: 26px;
 }
 
+.diagram-canvas-node-layer-button:disabled {
+  background: color-mix(in srgb, var(--bg) 72%, var(--border) 28%);
+  border-color: var(--border);
+  box-shadow: none;
+  color: var(--text-3);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .diagram-canvas-node-layer-button:hover,
 .diagram-canvas-node-layer-button:focus-visible {
   border-color: var(--accent-ring);
   color: var(--text);
   outline: none;
+}
+
+.diagram-canvas-node-layer-button:disabled:hover,
+.diagram-canvas-node-layer-button:disabled:focus-visible {
+  border-color: var(--border);
+  color: var(--text-3);
+}
+
+@keyframes diagram-layer-node-feedback {
+  0%,
+  100% {
+    box-shadow: var(--diagram-node-elevation-shadow, 0 8px 24px rgba(15, 23, 42, 0.1));
+  }
+
+  42% {
+    box-shadow:
+      0 0 0 5px var(--accent-soft),
+      0 0 0 1px var(--accent),
+      var(--diagram-node-elevation-shadow, 0 8px 24px rgba(15, 23, 42, 0.1));
+  }
+}
+
+@keyframes diagram-layer-shape-feedback {
+  0%,
+  100% {
+    filter: var(--diagram-node-elevation-filter, drop-shadow(0 8px 24px rgba(15, 23, 42, 0.1)));
+  }
+
+  42% {
+    filter:
+      var(--diagram-node-elevation-filter, drop-shadow(0 8px 24px rgba(15, 23, 42, 0.1)))
+      drop-shadow(0 0 10px var(--accent-ring));
+  }
+}
+
+@keyframes diagram-layer-badge-feedback {
+  0%,
+  100% {
+    background: color-mix(in srgb, var(--bg) 92%, var(--accent) 8%);
+    border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  }
+
+  42% {
+    background: color-mix(in srgb, var(--accent) 22%, var(--bg));
+    border-color: var(--accent);
+  }
 }
 
 .diagram-canvas-node-add-shape {
