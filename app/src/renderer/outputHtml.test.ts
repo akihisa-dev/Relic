@@ -192,6 +192,9 @@ describe("outputHtml", () => {
     expect(result.html).toContain("relic-output-relationship");
     expect(result.html).toContain("relic-output-relationship-node--shape-decision");
     expect(result.html).toContain("relic-output-relationship-node--shape-area");
+    expect(result.html).toContain("relic-output-relationship-node-label--shape-process");
+    expect(result.html).toContain("relic-output-relationship-node-label--shape-decision");
+    expect(result.html).toContain("relic-output-relationship-node-label--area");
     expect(result.html).toContain(">主人公<");
     expect(result.html).toContain(">敵対組織<");
     expect(result.html).toContain(">勢力範囲<");

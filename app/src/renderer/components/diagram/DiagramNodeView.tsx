@@ -19,20 +19,11 @@ interface DiagramNodeViewProps {
     shape: RelicFreeDrawingShapeType;
   }>;
   isDragging: boolean;
-  isLayerBackwardDisabled?: boolean;
-  isLayerForwardDisabled?: boolean;
   isTextEditing: boolean;
   isSelected: boolean;
-  layerBackwardLabel: string;
-  layerFeedbackDirection?: -1 | 1;
-  layerForwardLabel: string;
-  layerLabel?: string;
-  layerRelation?: "above" | "below" | "same";
   node: RelicConnectedDiagramNode;
   nodeTextDraft?: string;
   nodeTextLabel: string;
-  onLayerBackwardPointerDown?: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLButtonElement>) => void;
-  onLayerForwardPointerDown?: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLButtonElement>) => void;
   onNodeTextCancel?: () => void;
   onNodeTextChange?: (nodeId: string, value: string) => void;
   onNodeTextCommit?: () => void;
@@ -49,6 +40,7 @@ interface DiagramNodeViewProps {
   onPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerUp: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLDivElement>) => void;
   onResizePointerDown: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLElement>) => void;
+  renderNodeText?: boolean;
   resizeLabel: string;
   x: number;
   y: number;
@@ -59,20 +51,11 @@ export function DiagramNodeView({
   addShapeMenuLabel,
   addShapeOptions,
   isDragging,
-  isLayerBackwardDisabled = false,
-  isLayerForwardDisabled = false,
   isTextEditing,
   isSelected,
-  layerBackwardLabel,
-  layerFeedbackDirection,
-  layerForwardLabel,
-  layerLabel,
-  layerRelation,
   node,
   nodeTextDraft,
   nodeTextLabel,
-  onLayerBackwardPointerDown,
-  onLayerForwardPointerDown,
   onNodeTextCancel,
   onNodeTextChange,
   onNodeTextCommit,
@@ -85,13 +68,13 @@ export function DiagramNodeView({
   onPointerMove,
   onPointerUp,
   onResizePointerDown,
+  renderNodeText = true,
   resizeLabel,
   x,
   y
 }: DiagramNodeViewProps): ReactElement {
   const freeText = "text" in node ? node.text : null;
   const isArea = "shape" in node && node.shape === "area";
-  const hasLayerFeedback = isSelected && layerFeedbackDirection !== undefined;
   const title = "file" in node ? node.file : freeText ?? "";
   const shapeClass = "shape" in node ? `diagram-canvas-node--shape-${node.shape}` : "";
   const nodeStyle: DiagramNodeStyle = {
@@ -113,12 +96,6 @@ export function DiagramNodeView({
         "diagram-canvas-node",
         shapeClass,
         isDragging ? "diagram-canvas-node--dragging" : "",
-        layerRelation === "above" ? "diagram-canvas-node--layer-above-selected" : "",
-        layerRelation === "below" ? "diagram-canvas-node--layer-below-selected" : "",
-        layerRelation === "same" ? "diagram-canvas-node--layer-same-selected" : "",
-        hasLayerFeedback ? "diagram-canvas-node--layer-feedback" : "",
-        layerFeedbackDirection === 1 ? "diagram-canvas-node--layer-feedback-forward" : "",
-        layerFeedbackDirection === -1 ? "diagram-canvas-node--layer-feedback-backward" : "",
         isSelected ? "diagram-canvas-node--selected" : ""
       ].filter(Boolean).join(" ")}
       onPointerCancel={onPointerCancel}
@@ -129,7 +106,7 @@ export function DiagramNodeView({
       style={nodeStyle}
       title={title}
     >
-      {freeText === null ? (
+      {!renderNodeText ? null : freeText === null ? (
         <span className="diagram-canvas-node-name">{"file" in node ? nodeFileName(node.file) : ""}</span>
       ) : !isTextEditing ? (
         <span className={[
@@ -202,43 +179,6 @@ export function DiagramNodeView({
           ) : null}
         </span>
       ) : null}
-      {isSelected && (onLayerBackwardPointerDown || onLayerForwardPointerDown) ? (
-        <span className="diagram-canvas-node-layer-controls" aria-label={layerForwardLabel}>
-          {layerLabel ? (
-            <span
-              aria-live="polite"
-              className={[
-                "diagram-canvas-node-layer-badge",
-                hasLayerFeedback ? "diagram-canvas-node-layer-badge--changed" : ""
-              ].filter(Boolean).join(" ")}
-            >
-              {layerLabel}
-            </span>
-          ) : null}
-          <button
-            aria-label={layerBackwardLabel}
-            className="diagram-canvas-node-layer-button"
-            data-tooltip={layerBackwardLabel}
-            disabled={isLayerBackwardDisabled}
-            onPointerDown={(event) => onLayerBackwardPointerDown?.(node, event)}
-            title={layerBackwardLabel}
-            type="button"
-          >
-            <LayerBackIcon />
-          </button>
-          <button
-            aria-label={layerForwardLabel}
-            className="diagram-canvas-node-layer-button"
-            data-tooltip={layerForwardLabel}
-            disabled={isLayerForwardDisabled}
-            onPointerDown={(event) => onLayerForwardPointerDown?.(node, event)}
-            title={layerForwardLabel}
-            type="button"
-          >
-            <LayerFrontIcon />
-          </button>
-        </span>
-      ) : null}
     </div>
   );
 }
@@ -274,50 +214,10 @@ function nodeElevationStyle(node: RelicConnectedDiagramNode): Pick<
     };
   }
 
-  const cappedLayer = Math.min(Math.max(1, Math.round(node.layer)), 8);
-  const edgeOffsetY = cappedLayer;
-  const shadowOffsetY = 8 + cappedLayer * 4;
-  const shadowBlur = 18 + cappedLayer * 7;
-  const edgeAlpha = (0.06 + cappedLayer * 0.018).toFixed(3);
-  const outlineAccent = Math.min(10 + cappedLayer * 7, 66);
-  const shadowAlpha = (0.11 + cappedLayer * 0.026).toFixed(3);
-  const fillTextMix = Math.min(4 + cappedLayer * 2, 20);
-  const fillBgMix = 100 - fillTextMix;
-
   return {
-    "--diagram-node-elevation-filter": [
-      `drop-shadow(0 ${edgeOffsetY}px 0 rgba(15, 23, 42, ${edgeAlpha}))`,
-      `drop-shadow(0 ${shadowOffsetY}px ${shadowBlur}px rgba(15, 23, 42, ${shadowAlpha}))`
-    ].join(" "),
-    "--diagram-node-elevation-shadow": [
-      `0 0 0 1px color-mix(in srgb, var(--accent) ${outlineAccent}%, transparent)`,
-      `inset 0 -${edgeOffsetY}px 0 color-mix(in srgb, var(--text) ${fillTextMix}%, transparent)`,
-      `0 ${edgeOffsetY}px 0 rgba(15, 23, 42, ${edgeAlpha})`,
-      `0 ${shadowOffsetY}px ${shadowBlur}px rgba(15, 23, 42, ${shadowAlpha})`
-    ].join(", "),
-    "--diagram-node-layer-border": `color-mix(in srgb, var(--accent) ${outlineAccent}%, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)))`,
-    "--diagram-node-layer-fill": `linear-gradient(180deg, var(--bg) 0%, var(--bg) 58%, color-mix(in srgb, var(--bg) ${fillBgMix}%, var(--text) ${fillTextMix}%) 100%)`
+    "--diagram-node-elevation-filter": "drop-shadow(0 8px 24px rgba(15, 23, 42, 0.1))",
+    "--diagram-node-elevation-shadow": "0 8px 24px rgba(15, 23, 42, 0.1)",
+    "--diagram-node-layer-border": "color-mix(in srgb, var(--text-3) 64%, var(--border-medium))",
+    "--diagram-node-layer-fill": "var(--bg)"
   };
-}
-
-function LayerBackIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="14">
-      <path d="M 6 8 H 18" />
-      <path d="M 6 14 H 18" />
-      <path d="M 12 20 V 4" />
-      <path d="M 8 16 L 12 20 L 16 16" />
-    </svg>
-  );
-}
-
-function LayerFrontIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="14">
-      <path d="M 6 10 H 18" />
-      <path d="M 6 16 H 18" />
-      <path d="M 12 4 V 20" />
-      <path d="M 8 8 L 12 4 L 16 8" />
-    </svg>
-  );
 }

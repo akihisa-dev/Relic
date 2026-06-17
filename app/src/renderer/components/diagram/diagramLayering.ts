@@ -1,4 +1,9 @@
-import { type RelicConnectedDiagramNode } from "../../../shared/diagramMarkdown";
+import {
+  relicFreeDrawingAreaLayer,
+  relicFreeDrawingLabelLayer,
+  relicFreeDrawingShapeLayer,
+  type RelicConnectedDiagramNode
+} from "../../../shared/diagramMarkdown";
 
 export const diagramLayerBase = 100;
 const diagramNodeActiveLayerBoost = 1000;
@@ -8,18 +13,23 @@ export function diagramNodeDisplayLayer(
   isDragging: boolean,
   isSelected: boolean
 ): number {
-  const layer = "layer" in node ? node.layer : 0;
-  const displayLayer = diagramLayerBase + layer;
+  const displayLayer = diagramLayerBase + nodeDisplayLayer(node);
   if ("layer" in node) return displayLayer;
   if (isDragging || isSelected) return displayLayer + diagramNodeActiveLayerBoost;
 
   return displayLayer;
 }
 
-export function diagramLineDisplayLayer(from: RelicConnectedDiagramNode, to: RelicConnectedDiagramNode): number {
-  return diagramLayerBase + Math.max(nodeLayer(from), nodeLayer(to));
+export function diagramFreeDrawingLabelDisplayLayer(): number {
+  return diagramLayerBase + relicFreeDrawingLabelLayer;
 }
 
-function nodeLayer(node: RelicConnectedDiagramNode): number {
-  return "layer" in node ? node.layer : 0;
+export function diagramLineDisplayLayer(from: RelicConnectedDiagramNode, to: RelicConnectedDiagramNode): number {
+  return diagramLayerBase + Math.max(nodeDisplayLayer(from), nodeDisplayLayer(to));
+}
+
+function nodeDisplayLayer(node: RelicConnectedDiagramNode): number {
+  if (!("layer" in node)) return 0;
+
+  return node.shape === "area" ? relicFreeDrawingAreaLayer : relicFreeDrawingShapeLayer;
 }

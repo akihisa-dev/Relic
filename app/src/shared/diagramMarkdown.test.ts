@@ -517,7 +517,7 @@ describe("free-drawing operations", () => {
     expect(addedLine.ok ? addedLine.value.line : null).toMatchObject({ from: "node-1", label: "はい", to: "node-2" });
   });
 
-  it("領域図形とNodeレイヤーをMarkdownへ保存する", () => {
+  it("領域図形と図形レイヤーを固定値としてMarkdownへ保存する", () => {
     const addedNode = addRelicFreeDrawingNode(freeDrawingContent, "area", 640, 320);
     expect(addedNode.ok ? addedNode.value.node : null).toMatchObject({
       height: 224,
@@ -530,16 +530,16 @@ describe("free-drawing operations", () => {
     expect(addedNode.ok ? addedNode.value.content : "").toContain("layer: 0");
 
     const updatedLayer = updateRelicFreeDrawingNodeLayer(freeDrawingContent, "node-2", 3);
-    expect(updatedLayer.ok ? updatedLayer.value.node.layer : null).toBe(3);
-    expect(updatedLayer.ok ? updatedLayer.value.content : "").toContain("layer: 3");
+    expect(updatedLayer.ok ? updatedLayer.value.node.layer : null).toBe(1);
+    expect(updatedLayer.ok ? updatedLayer.value.content : "").toContain("layer: 1");
 
     const sentBackward = updateRelicFreeDrawingNodeLayer(freeDrawingContent, "node-2", 0);
     expect(sentBackward.ok ? sentBackward.value.node.layer : null).toBe(1);
     expect(sentBackward.ok ? sentBackward.value.content : "").toContain("layer: 1");
 
     const sentForwardPastMax = updateRelicFreeDrawingNodeLayer(freeDrawingContent, "node-2", 12);
-    expect(sentForwardPastMax.ok ? sentForwardPastMax.value.node.layer : null).toBe(8);
-    expect(sentForwardPastMax.ok ? sentForwardPastMax.value.content : "").toContain("layer: 8");
+    expect(sentForwardPastMax.ok ? sentForwardPastMax.value.node.layer : null).toBe(1);
+    expect(sentForwardPastMax.ok ? sentForwardPastMax.value.content : "").toContain("layer: 1");
 
     const keptAreaBase = updateRelicFreeDrawingNodeLayer(addedNode.ok ? addedNode.value.content : "", addedNode.ok ? addedNode.value.node.id : "", 4);
     expect(keptAreaBase.ok ? keptAreaBase.value.node.layer : null).toBe(0);

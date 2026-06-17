@@ -454,19 +454,18 @@ describe("DiagramCanvas", () => {
     expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("text: 自由メモ"));
   });
 
-  it("moves a free-drawing node by dragging its visible text like a relationship node", () => {
+  it("moves a free-drawing node by dragging its shape body like a relationship node", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
         <DiagramCanvas content={freeDrawingContent} fileName="自由図" onChange={onChange} />
       </I18nProvider>
     );
-    const node = screen.getByText("主人公").closest(".diagram-canvas-node");
-    expect(node).toBeInstanceOf(HTMLElement);
+    const node = freeDrawingNode("主人公");
 
-    fireEvent(node as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
-    fireEvent(node as HTMLElement, pointerEvent("pointermove", 2, 50, 30));
-    fireEvent(node as HTMLElement, pointerEvent("pointerup", 2, 50, 30));
+    fireEvent(node, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(node, pointerEvent("pointermove", 2, 50, 30));
+    fireEvent(node, pointerEvent("pointerup", 2, 50, 30));
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("x: 152");
@@ -481,17 +480,16 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={freeDrawingContent} fileName="自由図" onChange={onChange} />
       </I18nProvider>
     );
-    const decision = screen.getByText("敵対組織").closest(".diagram-canvas-node");
-    expect(decision).toBeInstanceOf(HTMLElement);
+    const decision = freeDrawingNode("敵対組織");
     expect(decision).toHaveClass("diagram-canvas-node--shape-decision");
 
-    fireEvent(decision as HTMLElement, pointerEvent("pointerdown", 2, 390, 90));
-    fireEvent(decision as HTMLElement, pointerEvent("pointerup", 2, 390, 90));
+    fireEvent(decision, pointerEvent("pointerdown", 2, 390, 90));
+    fireEvent(decision, pointerEvent("pointerup", 2, 390, 90));
     const resizeHandle = screen.getByRole("button", { name: "Resize node" });
 
     fireEvent(resizeHandle, pointerEvent("pointerdown", 3, 560, 160));
-    fireEvent(decision as HTMLElement, pointerEvent("pointermove", 3, 620, 190));
-    fireEvent(decision as HTMLElement, pointerEvent("pointerup", 3, 620, 190));
+    fireEvent(decision, pointerEvent("pointermove", 3, 620, 190));
+    fireEvent(decision, pointerEvent("pointerup", 3, 620, 190));
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("shape: decision");
@@ -540,11 +538,10 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
 
-    const source = screen.getByText("主人公").closest(".diagram-canvas-node");
-    expect(source).toBeInstanceOf(HTMLElement);
+    const source = freeDrawingNode("主人公");
 
-    fireEvent(source as HTMLElement, pointerEvent("pointerdown", 2, 130, 90));
-    fireEvent(source as HTMLElement, pointerEvent("pointerup", 2, 130, 90));
+    fireEvent(source, pointerEvent("pointerdown", 2, 130, 90));
+    fireEvent(source, pointerEvent("pointerup", 2, 130, 90));
     const addButton = screen.getByRole("button", { name: "Add connected shape" });
     fireEvent(addButton, pointerEvent("pointerdown", 3, 310, 120));
 
@@ -563,11 +560,10 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
 
-    const source = screen.getByText("敵対組織").closest(".diagram-canvas-node");
-    expect(source).toBeInstanceOf(HTMLElement);
+    const source = freeDrawingNode("敵対組織");
 
-    fireEvent(source as HTMLElement, pointerEvent("pointerdown", 2, 390, 90));
-    fireEvent(source as HTMLElement, pointerEvent("pointerup", 2, 390, 90));
+    fireEvent(source, pointerEvent("pointerdown", 2, 390, 90));
+    fireEvent(source, pointerEvent("pointerup", 2, 390, 90));
     const addButton = screen.getByRole("button", { name: "Add connected shape" });
     fireEvent(addButton, pointerEvent("pointerdown", 3, 560, 120));
 
@@ -611,11 +607,10 @@ describe("DiagramCanvas", () => {
     ].join("\n");
     render(<StatefulDiagramCanvas content={oneDecisionOutputContent} onChange={onChange} />);
 
-    const source = screen.getByText("判断").closest(".diagram-canvas-node");
-    expect(source).toBeInstanceOf(HTMLElement);
+    const source = freeDrawingNode("判断");
 
-    fireEvent(source as HTMLElement, pointerEvent("pointerdown", 2, 130, 90));
-    fireEvent(source as HTMLElement, pointerEvent("pointerup", 2, 130, 90));
+    fireEvent(source, pointerEvent("pointerdown", 2, 130, 90));
+    fireEvent(source, pointerEvent("pointerup", 2, 130, 90));
     const addButton = screen.getByRole("button", { name: "Add connected shape" });
     fireEvent(addButton, pointerEvent("pointerdown", 3, 300, 120));
 
@@ -634,11 +629,10 @@ describe("DiagramCanvas", () => {
       </I18nProvider>
     );
 
-    const decision = screen.getByText("判断").closest(".diagram-canvas-node");
-    expect(decision).toBeInstanceOf(HTMLElement);
+    const decision = freeDrawingNode("判断");
 
-    fireEvent(decision as HTMLElement, pointerEvent("pointerdown", 2, 300, 180));
-    fireEvent(decision as HTMLElement, pointerEvent("pointerup", 2, 300, 180));
+    fireEvent(decision, pointerEvent("pointerdown", 2, 300, 180));
+    fireEvent(decision, pointerEvent("pointerup", 2, 300, 180));
 
     expect(screen.queryByRole("button", { name: "Add connected shape" })).not.toBeInTheDocument();
   });
@@ -651,19 +645,17 @@ describe("DiagramCanvas", () => {
       </I18nProvider>
     );
     const canvas = screen.getByRole("img", { name: "自由図" });
-    const decision = screen.getByText("判断").closest(".diagram-canvas-node");
-    const thirdTarget = screen.getByText("三本目").closest(".diagram-canvas-node");
-    expect(decision).toBeInstanceOf(HTMLElement);
-    expect(thirdTarget).toBeInstanceOf(HTMLElement);
+    const decision = freeDrawingNode("判断");
+    const thirdTarget = freeDrawingNode("三本目");
 
-    fireEvent(decision as HTMLElement, pointerEvent("pointerdown", 2, 300, 180));
-    fireEvent(decision as HTMLElement, pointerEvent("pointerup", 2, 300, 180));
-    const outline = (decision as HTMLElement).querySelector(".diagram-canvas-node-outline-hit--right");
+    fireEvent(decision, pointerEvent("pointerdown", 2, 300, 180));
+    fireEvent(decision, pointerEvent("pointerup", 2, 300, 180));
+    const outline = decision.querySelector(".diagram-canvas-node-outline-hit--right");
     expect(outline).toBeInstanceOf(HTMLElement);
 
     fireEvent(outline as HTMLElement, pointerEvent("pointerdown", 3, 460, 220));
     fireEvent(canvas, pointerEvent("pointermove", 3, 580, 420));
-    fireEvent(thirdTarget as HTMLElement, pointerEvent("pointerup", 3, 580, 420));
+    fireEvent(thirdTarget, pointerEvent("pointerup", 3, 580, 420));
 
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -682,26 +674,20 @@ describe("DiagramCanvas", () => {
     expect(screen.queryByText("選択肢3")).not.toBeInTheDocument();
   });
 
-  it("changes the layer of a selected free-drawing shape", () => {
+  it("does not show variable layer controls for free-drawing shapes", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
 
-    const source = screen.getByText("主人公").closest(".diagram-canvas-node");
-    expect(source).toBeInstanceOf(HTMLElement);
+    const source = freeDrawingNode("主人公");
     expect(screen.queryByText("Layer 1")).not.toBeInTheDocument();
 
-    fireEvent(source as HTMLElement, pointerEvent("pointerdown", 2, 130, 90));
-    fireEvent(source as HTMLElement, pointerEvent("pointerup", 2, 130, 90));
-    expect(screen.getByText("Layer 1")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Send backward" })).toBeDisabled();
+    fireEvent(source, pointerEvent("pointerdown", 2, 130, 90));
+    fireEvent(source, pointerEvent("pointerup", 2, 130, 90));
 
-    fireEvent(screen.getByRole("button", { name: "Bring forward" }), pointerEvent("pointerdown", 3, 130, 60));
-
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0]?.[0]).toContain("id: node-1");
-    expect(onChange.mock.calls[0]?.[0]).toContain("layer: 2");
-    expect(screen.getByText("Layer 2")).toHaveClass("diagram-canvas-node-layer-badge--changed");
-    expect(screen.getByText("主人公").closest(".diagram-canvas-node")).toHaveClass("diagram-canvas-node--layer-feedback-forward");
+    expect(screen.queryByText(/Layer/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Send backward" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Bring forward" })).not.toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("drops an area shape onto a free-drawing canvas", () => {
@@ -743,30 +729,28 @@ describe("DiagramCanvas", () => {
       </I18nProvider>
     );
 
-    const area = screen.getByText("領域A").closest(".diagram-canvas-node");
-    expect(area).toBeInstanceOf(HTMLElement);
-    expect((area as HTMLElement).style.zIndex).toBe("100");
-    expect((area as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 0 0 rgba(15, 23, 42, 0)");
+    const area = freeDrawingNode("領域A");
+    expect(area.style.zIndex).toBe("100");
+    expect(area.style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 0 0 rgba(15, 23, 42, 0)");
   });
 
-  it("does not show layer controls for area shapes because they stay on layer 0", () => {
+  it("does not show layer controls for area shapes because layers are fixed", () => {
     render(
       <I18nProvider language="en">
         <DiagramCanvas content={freeDrawingContentWithArea} fileName="閾ｪ逕ｱ蝗ｳ" />
       </I18nProvider>
     );
 
-    const area = screen.getByText("領域A").closest(".diagram-canvas-node");
-    expect(area).toBeInstanceOf(HTMLElement);
+    const area = freeDrawingNode("領域A");
 
-    fireEvent(area as HTMLElement, pointerEvent("pointerdown", 2, 110, 110));
-    fireEvent(area as HTMLElement, pointerEvent("pointerup", 2, 110, 110));
+    fireEvent(area, pointerEvent("pointerdown", 2, 110, 110));
+    fireEvent(area, pointerEvent("pointerup", 2, 110, 110));
 
     expect(screen.queryByRole("button", { name: "Bring forward" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Send backward" })).not.toBeInTheDocument();
   });
 
-  it("makes higher free-drawing layers look more elevated without moving nodes", () => {
+  it("normalizes old free-drawing node layers to the fixed shape layer", () => {
     const layeredContent = [
       "---",
       "type: free-drawing",
@@ -800,23 +784,23 @@ describe("DiagramCanvas", () => {
       </I18nProvider>
     );
 
-    const lowNode = screen.getByText("低い").closest(".diagram-canvas-node");
-    const highNode = screen.getByText("高い").closest(".diagram-canvas-node");
-    expect(lowNode).toBeInstanceOf(HTMLElement);
-    expect(highNode).toBeInstanceOf(HTMLElement);
+    const lowNode = freeDrawingNode("低い");
+    const highNode = freeDrawingNode("高い");
 
-    const lowTransform = (lowNode as HTMLElement).style.transform;
-    const highTransform = (highNode as HTMLElement).style.transform;
+    const lowTransform = lowNode.style.transform;
+    const highTransform = highNode.style.transform;
     expect(lowTransform).toMatch(/^translate\([-.\d]+px, [-.\d]+px\)$/);
     expect(highTransform).toMatch(/^translate\([-.\d]+px, [-.\d]+px\)$/);
     expect(lowTransform.split(", ")[1]).toBe(highTransform.split(", ")[1]);
-    expect((lowNode as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 0 0 1px color-mix(in srgb, var(--accent) 17%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--text) 6%, transparent), 0 1px 0 rgba(15, 23, 42, 0.078), 0 12px 25px rgba(15, 23, 42, 0.136)");
-    expect((highNode as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 0 0 1px color-mix(in srgb, var(--accent) 38%, transparent), inset 0 -4px 0 color-mix(in srgb, var(--text) 12%, transparent), 0 4px 0 rgba(15, 23, 42, 0.132), 0 24px 46px rgba(15, 23, 42, 0.214)");
-    expect((lowNode as HTMLElement).style.getPropertyValue("--diagram-node-layer-border")).toBe("color-mix(in srgb, var(--accent) 17%, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)))");
-    expect((highNode as HTMLElement).style.getPropertyValue("--diagram-node-layer-border")).toBe("color-mix(in srgb, var(--accent) 38%, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)))");
+    expect(lowNode.style.zIndex).toBe("101");
+    expect(highNode.style.zIndex).toBe("101");
+    expect(lowNode.style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 8px 24px rgba(15, 23, 42, 0.1)");
+    expect(highNode.style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 8px 24px rgba(15, 23, 42, 0.1)");
+    expect(lowNode.style.getPropertyValue("--diagram-node-layer-border")).toBe("color-mix(in srgb, var(--text-3) 64%, var(--border-medium))");
+    expect(highNode.style.getPropertyValue("--diagram-node-layer-border")).toBe("color-mix(in srgb, var(--text-3) 64%, var(--border-medium))");
   });
 
-  it("stops free-drawing layer changes at layer 8", () => {
+  it("ignores old layer 8 values in the free-drawing UI", () => {
     const maxLayerContent = [
       "---",
       "type: free-drawing",
@@ -842,18 +826,19 @@ describe("DiagramCanvas", () => {
       </I18nProvider>
     );
 
-    const node = screen.getByText("最大").closest(".diagram-canvas-node");
-    expect(node).toBeInstanceOf(HTMLElement);
+    const node = freeDrawingNode("最大");
 
-    fireEvent(node as HTMLElement, pointerEvent("pointerdown", 2, 130, 90));
-    fireEvent(node as HTMLElement, pointerEvent("pointerup", 2, 130, 90));
+    fireEvent(node, pointerEvent("pointerdown", 2, 130, 90));
+    fireEvent(node, pointerEvent("pointerup", 2, 130, 90));
 
-    expect(screen.getByText("Layer 8")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bring forward" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Send backward" })).not.toBeDisabled();
+    expect(node.style.zIndex).toBe("101");
+    expect(screen.queryByText(/Layer/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Bring forward" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Send backward" })).not.toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("keeps free-drawing layer order while a lower layer node is selected", () => {
+  it("keeps all non-area free-drawing shapes on the fixed shape layer while selected", () => {
     const layeredContent = [
       "---",
       "type: free-drawing",
@@ -887,27 +872,25 @@ describe("DiagramCanvas", () => {
       </I18nProvider>
     );
 
-    const lowNode = screen.getByText("低い").closest(".diagram-canvas-node");
-    const highNode = screen.getByText("高い").closest(".diagram-canvas-node");
-    expect(lowNode).toBeInstanceOf(HTMLElement);
-    expect(highNode).toBeInstanceOf(HTMLElement);
+    const lowNode = freeDrawingNode("低い");
+    const highNode = freeDrawingNode("高い");
 
-    fireEvent(lowNode as HTMLElement, pointerEvent("pointerdown", 2, 130, 90));
-    fireEvent(lowNode as HTMLElement, pointerEvent("pointerup", 2, 130, 90));
+    fireEvent(lowNode, pointerEvent("pointerdown", 2, 130, 90));
+    fireEvent(lowNode, pointerEvent("pointerup", 2, 130, 90));
 
-    expect(lowNode as HTMLElement).toHaveClass("diagram-canvas-node--selected");
-    expect(highNode as HTMLElement).toHaveClass("diagram-canvas-node--layer-above-selected");
-    expect((lowNode as HTMLElement).style.zIndex).toBe("101");
-    expect((highNode as HTMLElement).style.zIndex).toBe("104");
+    expect(lowNode).toHaveClass("diagram-canvas-node--selected");
+    expect(highNode).not.toHaveClass("diagram-canvas-node--layer-above-selected");
+    expect(lowNode.style.zIndex).toBe("101");
+    expect(highNode.style.zIndex).toBe("101");
 
-    fireEvent(highNode as HTMLElement, pointerEvent("pointerdown", 3, 390, 90));
-    fireEvent(highNode as HTMLElement, pointerEvent("pointerup", 3, 390, 90));
+    fireEvent(highNode, pointerEvent("pointerdown", 3, 390, 90));
+    fireEvent(highNode, pointerEvent("pointerup", 3, 390, 90));
 
-    expect(highNode as HTMLElement).toHaveClass("diagram-canvas-node--selected");
-    expect(lowNode as HTMLElement).toHaveClass("diagram-canvas-node--layer-below-selected");
+    expect(highNode).toHaveClass("diagram-canvas-node--selected");
+    expect(lowNode).not.toHaveClass("diagram-canvas-node--layer-below-selected");
   });
 
-  it("renders a free-drawing line and its label on the higher connected node layer", () => {
+  it("renders free-drawing line labels separately from fixed node labels", () => {
     const layeredContent = [
       "---",
       "type: free-drawing",
@@ -946,11 +929,17 @@ describe("DiagramCanvas", () => {
 
     const line = container.querySelector(".diagram-canvas-line");
     const lineSvg = line?.closest(".diagram-canvas-lines");
-    const label = screen.getByText("高低").closest(".diagram-canvas-line-controls");
+    const lineLabel = screen.getByText("高低").closest(".diagram-canvas-line-controls");
+    const lowNodeLabel = screen.getByText("低い").closest(".diagram-canvas-node-label-frame");
+    const highNodeLabel = screen.getByText("高い").closest(".diagram-canvas-node-label-frame");
     expect(lineSvg).toBeInstanceOf(SVGSVGElement);
-    expect(label).toBeInstanceOf(HTMLElement);
-    expect((lineSvg as SVGSVGElement).style.zIndex).toBe("104");
-    expect((label as HTMLElement).style.zIndex).toBe("104");
+    expect(lineLabel).toBeInstanceOf(HTMLElement);
+    expect(lowNodeLabel).toBeInstanceOf(HTMLElement);
+    expect(highNodeLabel).toBeInstanceOf(HTMLElement);
+    expect((lineSvg as SVGSVGElement).style.zIndex).toBe("101");
+    expect((lineLabel as HTMLElement).style.zIndex).toBe("101");
+    expect((lowNodeLabel as HTMLElement).style.zIndex).toBe("102");
+    expect((highNodeLabel as HTMLElement).style.zIndex).toBe("102");
   });
 
   it("moves nodes fully contained in an area when dragging the area", () => {
@@ -960,12 +949,11 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={freeDrawingContentWithArea} fileName="閾ｪ逕ｱ蝗ｳ" onChange={onChange} />
       </I18nProvider>
     );
-    const area = screen.getByText("領域A").closest(".diagram-canvas-node");
-    expect(area).toBeInstanceOf(HTMLElement);
+    const area = freeDrawingNode("領域A");
 
-    fireEvent(area as HTMLElement, pointerEvent("pointerdown", 2, 110, 110));
-    fireEvent(area as HTMLElement, pointerEvent("pointermove", 2, 142, 174));
-    fireEvent(area as HTMLElement, pointerEvent("pointerup", 2, 142, 174));
+    fireEvent(area, pointerEvent("pointerdown", 2, 110, 110));
+    fireEvent(area, pointerEvent("pointermove", 2, 142, 174));
+    fireEvent(area, pointerEvent("pointerup", 2, 142, 174));
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("id: area-1");
@@ -1676,7 +1664,7 @@ describe("DiagramCanvas", () => {
     expect(screen.queryByRole("button", { name: "Edit line label" })).not.toBeInTheDocument();
     fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
 
-    expect(screen.getByRole("button", { name: "Edit line label" })).toHaveTextContent("Add label");
+    expect(screen.getByRole("button", { name: "Edit line label" })).toHaveTextContent("Add line label");
   });
 
   it("clears relationship selection with Escape without saving", () => {
@@ -1691,7 +1679,7 @@ describe("DiagramCanvas", () => {
     expect(line).toBeInstanceOf(Element);
 
     fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
-    expect(screen.getByRole("button", { name: "Edit line label" })).toHaveTextContent("Add label");
+    expect(screen.getByRole("button", { name: "Edit line label" })).toHaveTextContent("Add line label");
 
     fireEvent.keyDown(canvas, { key: "Escape" });
 
@@ -1925,4 +1913,12 @@ function pointerEvent(type: string, pointerId: number, clientX: number, clientY:
   Object.defineProperty(event, "pointerId", { value: pointerId });
 
   return event;
+}
+
+function freeDrawingNode(title: string): HTMLElement {
+  const node = Array.from(document.querySelectorAll<HTMLElement>(".diagram-canvas-node"))
+    .find((candidate) => candidate.title === title);
+  expect(node).toBeInstanceOf(HTMLElement);
+
+  return node as HTMLElement;
 }

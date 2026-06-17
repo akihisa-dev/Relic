@@ -9,8 +9,8 @@ export type RelicDiagramType = typeof relicDiagramTypes[number];
 export const relicFreeDrawingShapeTypes = ["terminator", "process", "decision", "input-output", "note", "area"] as const;
 export type RelicFreeDrawingShapeType = typeof relicFreeDrawingShapeTypes[number];
 export const relicFreeDrawingAreaLayer = 0;
-export const relicFreeDrawingNodeMinLayer = 1;
-export const relicFreeDrawingNodeMaxLayer = 8;
+export const relicFreeDrawingShapeLayer = 1;
+export const relicFreeDrawingLabelLayer = 2;
 
 const relicWhyTreeSupplementKinds = ["fact", "solution", "action"] as const;
 export type RelicWhyTreeSupplementKind = typeof relicWhyTreeSupplementKinds[number];
@@ -1620,13 +1620,13 @@ function defaultFreeDrawingShapeSize(shape: RelicFreeDrawingShapeType): Pick<Rel
 }
 
 function defaultFreeDrawingShapeLayer(shape: RelicFreeDrawingShapeType): number {
-  return shape === "area" ? relicFreeDrawingAreaLayer : relicFreeDrawingNodeMinLayer;
+  return shape === "area" ? relicFreeDrawingAreaLayer : relicFreeDrawingShapeLayer;
 }
 
-function normalizeFreeDrawingNodeLayer(shape: RelicFreeDrawingShapeType, layer: number): number {
+function normalizeFreeDrawingNodeLayer(shape: RelicFreeDrawingShapeType, _layer: number): number {
   if (shape === "area") return relicFreeDrawingAreaLayer;
 
-  return Math.min(relicFreeDrawingNodeMaxLayer, Math.max(relicFreeDrawingNodeMinLayer, Math.round(layer)));
+  return relicFreeDrawingShapeLayer;
 }
 
 function nextNodeId(nodes: RelicDiagramNodeBase[]): string {
