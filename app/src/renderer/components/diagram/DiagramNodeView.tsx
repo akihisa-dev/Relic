@@ -19,10 +19,13 @@ interface DiagramNodeViewProps {
     shape: RelicFreeDrawingShapeType;
   }>;
   isDragging: boolean;
+  isLayerBackwardDisabled?: boolean;
   isTextEditing: boolean;
   isSelected: boolean;
   layerBackwardLabel: string;
+  layerFeedbackDirection?: -1 | 1;
   layerForwardLabel: string;
+  layerLabel?: string;
   node: RelicConnectedDiagramNode;
   nodeTextDraft?: string;
   nodeTextLabel: string;
@@ -54,10 +57,13 @@ export function DiagramNodeView({
   addShapeMenuLabel,
   addShapeOptions,
   isDragging,
+  isLayerBackwardDisabled = false,
   isTextEditing,
   isSelected,
   layerBackwardLabel,
+  layerFeedbackDirection,
   layerForwardLabel,
+  layerLabel,
   node,
   nodeTextDraft,
   nodeTextLabel,
@@ -81,6 +87,7 @@ export function DiagramNodeView({
 }: DiagramNodeViewProps): ReactElement {
   const freeText = "text" in node ? node.text : null;
   const isArea = "shape" in node && node.shape === "area";
+  const hasLayerFeedback = isSelected && layerFeedbackDirection !== undefined;
   const title = "file" in node ? node.file : freeText ?? "";
   const shapeClass = "shape" in node ? `diagram-canvas-node--shape-${node.shape}` : "";
   const nodeStyle: DiagramNodeStyle = {
@@ -102,6 +109,9 @@ export function DiagramNodeView({
         "diagram-canvas-node",
         shapeClass,
         isDragging ? "diagram-canvas-node--dragging" : "",
+        hasLayerFeedback ? "diagram-canvas-node--layer-feedback" : "",
+        layerFeedbackDirection === 1 ? "diagram-canvas-node--layer-feedback-forward" : "",
+        layerFeedbackDirection === -1 ? "diagram-canvas-node--layer-feedback-backward" : "",
         isSelected ? "diagram-canvas-node--selected" : ""
       ].filter(Boolean).join(" ")}
       onPointerCancel={onPointerCancel}
@@ -187,10 +197,22 @@ export function DiagramNodeView({
       ) : null}
       {isSelected && (onLayerBackwardPointerDown || onLayerForwardPointerDown) ? (
         <span className="diagram-canvas-node-layer-controls" aria-label={layerForwardLabel}>
+          {layerLabel ? (
+            <span
+              aria-live="polite"
+              className={[
+                "diagram-canvas-node-layer-badge",
+                hasLayerFeedback ? "diagram-canvas-node-layer-badge--changed" : ""
+              ].filter(Boolean).join(" ")}
+            >
+              {layerLabel}
+            </span>
+          ) : null}
           <button
             aria-label={layerBackwardLabel}
             className="diagram-canvas-node-layer-button"
             data-tooltip={layerBackwardLabel}
+            disabled={isLayerBackwardDisabled}
             onPointerDown={(event) => onLayerBackwardPointerDown?.(node, event)}
             title={layerBackwardLabel}
             type="button"
