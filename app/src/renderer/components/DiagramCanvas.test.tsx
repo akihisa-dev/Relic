@@ -804,8 +804,10 @@ describe("DiagramCanvas", () => {
     expect(lowTransform).toMatch(/^translate\([-.\d]+px, [-.\d]+px\)$/);
     expect(highTransform).toMatch(/^translate\([-.\d]+px, [-.\d]+px\)$/);
     expect(lowTransform.split(", ")[1]).toBe(highTransform.split(", ")[1]);
-    expect((lowNode as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 8px 24px rgba(15, 23, 42, 0.100)");
-    expect((highNode as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 14px 36px rgba(15, 23, 42, 0.136)");
+    expect((lowNode as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--text) 5%, transparent), 0 1px 0 rgba(15, 23, 42, 0.052), 0 10px 24px rgba(15, 23, 42, 0.112)");
+    expect((highNode as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent), inset 0 -3px 0 color-mix(in srgb, var(--text) 8%, transparent), 0 3px 0 rgba(15, 23, 42, 0.088), 0 19px 42px rgba(15, 23, 42, 0.160)");
+    expect((lowNode as HTMLElement).style.getPropertyValue("--diagram-node-layer-border")).toBe("color-mix(in srgb, var(--accent) 12%, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)))");
+    expect((highNode as HTMLElement).style.getPropertyValue("--diagram-node-layer-border")).toBe("color-mix(in srgb, var(--accent) 24%, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)))");
   });
 
   it("keeps free-drawing layer order while a lower layer node is selected", () => {

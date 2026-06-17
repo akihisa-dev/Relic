@@ -1108,8 +1108,8 @@
 }
 
 .diagram-canvas-node {
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--diagram-node-layer-fill, var(--bg));
+  border: 1px solid var(--diagram-node-layer-border, var(--border));
   border-radius: 7px;
   box-shadow: var(--diagram-node-elevation-shadow, 0 8px 24px rgba(15, 23, 42, 0.1));
   box-sizing: border-box;
@@ -1153,25 +1153,27 @@
 }
 
 .diagram-canvas-node--shape-terminator {
-  border: 2px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  border: 2px solid var(--diagram-node-layer-border, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)));
   border-radius: 999px;
 }
 
 .diagram-canvas-node--shape-process {
-  border: 2px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  border: 2px solid var(--diagram-node-layer-border, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)));
   border-radius: 7px;
 }
 
 .diagram-canvas-node--shape-decision {
   background: transparent;
   border: 0;
+  box-shadow: none;
   padding: 18px 34px;
 }
 
 .diagram-canvas-node--shape-decision::before {
-  background: color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  background: var(--diagram-node-layer-border, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)));
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   content: "";
+  filter: var(--diagram-node-elevation-filter, drop-shadow(0 8px 24px rgba(15, 23, 42, 0.1)));
   inset: 0;
   pointer-events: none;
   position: absolute;
@@ -1179,7 +1181,7 @@
 }
 
 .diagram-canvas-node--shape-decision::after {
-  background: var(--bg);
+  background: var(--diagram-node-layer-fill, var(--bg));
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   content: "";
   inset: 2px;
@@ -1191,14 +1193,16 @@
 .diagram-canvas-node--shape-input-output {
   background: transparent;
   border: 0;
+  box-shadow: none;
   padding-left: 28px;
   padding-right: 28px;
 }
 
 .diagram-canvas-node--shape-input-output::before {
-  background: color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  background: var(--diagram-node-layer-border, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)));
   clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
   content: "";
+  filter: var(--diagram-node-elevation-filter, drop-shadow(0 8px 24px rgba(15, 23, 42, 0.1)));
   inset: 0;
   pointer-events: none;
   position: absolute;
@@ -1206,7 +1210,7 @@
 }
 
 .diagram-canvas-node--shape-input-output::after {
-  background: var(--bg);
+  background: var(--diagram-node-layer-fill, var(--bg));
   clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
   content: "";
   inset: 2px;
@@ -1216,14 +1220,14 @@
 }
 
 .diagram-canvas-node--shape-note {
-  border: 2px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  border: 2px solid var(--diagram-node-layer-border, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)));
   border-radius: 5px;
 }
 
 .diagram-canvas-node--shape-note::after {
-  background: var(--bg);
-  border-bottom: 2px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
-  border-left: 2px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  background: var(--diagram-node-layer-fill, var(--bg));
+  border-bottom: 2px solid var(--diagram-node-layer-border, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)));
+  border-left: 2px solid var(--diagram-node-layer-border, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)));
   content: "";
   height: 16px;
   position: absolute;
