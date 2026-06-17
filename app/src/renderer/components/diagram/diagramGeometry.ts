@@ -133,12 +133,13 @@ export function buildLineLayouts(
   const reservedSegments: RoutedSegment[] = [];
   const renderableLines = visibleDiagramLines(lines, nodes.map((node) => node.node));
   const decisionInputSideByNodeId = buildDecisionInputSideByNodeId(renderableLines, nodeById);
+  const decisionOutputSidesByNodeId = new Map<string, Set<NodePortSide>>();
   const contexts = renderableLines.flatMap((line): LineRouteContext[] => {
     const from = nodeById.get(line.from);
     const to = nodeById.get(line.to);
     if (!from || !to) return [];
 
-    const ports = linePorts(from, to, decisionInputSideByNodeId);
+    const ports = linePorts(from, to, decisionInputSideByNodeId, decisionOutputSidesByNodeId);
     return [{
       end: ports.end,
       from,
@@ -203,7 +204,8 @@ export function visibleDiagramLines(
 function linePorts(
   from: DiagramCanvasNodeLayout,
   to: DiagramCanvasNodeLayout,
-  decisionInputSideByNodeId: Map<string, NodePortSide>
+  decisionInputSideByNodeId: Map<string, NodePortSide>,
+  decisionOutputSidesByNodeId: Map<string, Set<NodePortSide>>
 ): { end: NodePort; start: NodePort } {
   const fallbackPorts = relationshipLinePorts(from, to);
   return {
@@ -211,7 +213,12 @@ function linePorts(
       ? decisionPort(to, decisionInputSideByNodeId.get(to.node.id) ?? closestDecisionPortSide(to, from, decisionPortSides))
       : fallbackPorts.end,
     start: isDecisionNode(from.node)
-      ? decisionPort(from, decisionOutputPortSide(from, to, decisionInputSideByNodeId.get(from.node.id)))
+      ? decisionPort(from, reserveDecisionOutputPortSide(
+        from,
+        to,
+        decisionInputSideByNodeId.get(from.node.id),
+        decisionOutputSidesByNodeId
+      ))
       : fallbackPorts.start
   };
 }
@@ -294,15 +301,20 @@ function buildDecisionInputSideByNodeId(
   ]));
 }
 
-function decisionOutputPortSide(
+function reserveDecisionOutputPortSide(
   from: DiagramCanvasNodeLayout,
   to: DiagramCanvasNodeLayout,
-  inputSide: NodePortSide | undefined
+  inputSide: NodePortSide | undefined,
+  decisionOutputSidesByNodeId: Map<string, Set<NodePortSide>>
 ): NodePortSide {
+  const usedSides = decisionOutputSidesByNodeId.get(from.node.id) ?? new Set<NodePortSide>();
   const availableSides = inputSide
-    ? decisionPortSides.filter((side) => side !== inputSide)
-    : decisionPortSides;
-  return closestDecisionPortSide(from, to, availableSides);
+    ? decisionPortSides.filter((side) => side !== inputSide && !usedSides.has(side))
+    : decisionPortSides.filter((side) => !usedSides.has(side));
+  const side = closestDecisionPortSide(from, to, availableSides.length > 0 ? availableSides : decisionPortSides);
+  usedSides.add(side);
+  decisionOutputSidesByNodeId.set(from.node.id, usedSides);
+  return side;
 }
 
 function closestDecisionPortSide(
