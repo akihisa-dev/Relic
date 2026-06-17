@@ -84,7 +84,7 @@ export function DiagramNodeView({
   const title = "file" in node ? node.file : freeText ?? "";
   const shapeClass = "shape" in node ? `diagram-canvas-node--shape-${node.shape}` : "";
   const nodeStyle: DiagramNodeStyle = {
-    "--diagram-node-elevation-shadow": nodeElevationShadow(node),
+    ...nodeElevationStyle(node),
     minHeight: node.height,
     transform: `translate(${x}px, ${y}px)`,
     zIndex: diagramNodeDisplayLayer(node, isDragging, isSelected),
@@ -214,19 +214,60 @@ export function DiagramNodeView({
 }
 
 type DiagramNodeStyle = CSSProperties & {
+  "--diagram-node-elevation-filter": string;
   "--diagram-node-elevation-shadow": string;
+  "--diagram-node-layer-border": string;
+  "--diagram-node-layer-fill": string;
 };
 
-function nodeElevationShadow(node: RelicConnectedDiagramNode): string {
-  if (!("layer" in node)) return "0 8px 24px rgba(15, 23, 42, 0.1)";
-  if (node.shape === "area") return "0 0 0 rgba(15, 23, 42, 0)";
+function nodeElevationStyle(node: RelicConnectedDiagramNode): Pick<
+  DiagramNodeStyle,
+  "--diagram-node-elevation-filter" |
+  "--diagram-node-elevation-shadow" |
+  "--diagram-node-layer-border" |
+  "--diagram-node-layer-fill"
+> {
+  if (!("layer" in node)) {
+    return {
+      "--diagram-node-elevation-filter": "drop-shadow(0 8px 24px rgba(15, 23, 42, 0.1))",
+      "--diagram-node-elevation-shadow": "0 8px 24px rgba(15, 23, 42, 0.1)",
+      "--diagram-node-layer-border": "color-mix(in srgb, var(--text-3) 64%, var(--border-medium))",
+      "--diagram-node-layer-fill": "var(--bg)"
+    };
+  }
+  if (node.shape === "area") {
+    return {
+      "--diagram-node-elevation-filter": "none",
+      "--diagram-node-elevation-shadow": "0 0 0 rgba(15, 23, 42, 0)",
+      "--diagram-node-layer-border": "color-mix(in srgb, var(--text-3) 58%, var(--border-medium))",
+      "--diagram-node-layer-fill": "color-mix(in srgb, var(--accent) 8%, var(--bg))"
+    };
+  }
 
   const cappedLayer = Math.min(Math.max(1, Math.round(node.layer)), 8);
-  const offsetY = 6 + cappedLayer * 2;
-  const blur = 20 + cappedLayer * 4;
-  const alpha = (0.088 + cappedLayer * 0.012).toFixed(3);
+  const edgeOffsetY = Math.min(1 + Math.floor(cappedLayer / 2), 4);
+  const shadowOffsetY = 7 + cappedLayer * 3;
+  const shadowBlur = 18 + cappedLayer * 6;
+  const edgeAlpha = (0.04 + cappedLayer * 0.012).toFixed(3);
+  const outlineAccent = Math.min(8 + cappedLayer * 4, 36);
+  const shadowAlpha = (0.096 + cappedLayer * 0.016).toFixed(3);
+  const fillTextMix = Math.min(4 + cappedLayer, 12);
+  const fillBgMix = 100 - fillTextMix;
 
-  return `0 ${offsetY}px ${blur}px rgba(15, 23, 42, ${alpha})`;
+  return {
+    "--diagram-node-elevation-filter": [
+      `drop-shadow(0 ${edgeOffsetY}px 0 rgba(15, 23, 42, ${edgeAlpha}))`,
+      `drop-shadow(0 ${shadowOffsetY}px ${shadowBlur}px rgba(15, 23, 42, ${shadowAlpha}))`
+    ].join(" "),
+    "--diagram-node-elevation-shadow": [
+      `0 0 0 1px color-mix(in srgb, var(--accent) ${outlineAccent}%, transparent)`,
+      `inset 0 -${edgeOffsetY}px 0 color-mix(in srgb, var(--text) ${fillTextMix}%, transparent)`,
+      `0 ${edgeOffsetY}px 0 rgba(15, 23, 42, ${edgeAlpha})`,
+      `0 ${shadowOffsetY}px ${shadowBlur}px rgba(15, 23, 42, ${shadowAlpha})`
+    ].join(", "),
+    "--diagram-node-layer-border": `color-mix(in srgb, var(--accent) ${outlineAccent}%, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)))`,
+    "--diagram-node-layer-fill": `linear-gradient(180deg, var(--bg) 0%, var(--bg) 58%, color-mix(in srgb, var(--bg) ${fillBgMix}%, var(--text) ${fillTextMix}%) 100%)`
+  };
 }
 
 function LayerBackIcon(): ReactElement {
