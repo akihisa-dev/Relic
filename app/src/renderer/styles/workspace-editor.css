@@ -1103,7 +1103,7 @@
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 7px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+  box-shadow: var(--diagram-node-elevation-shadow, 0 8px 24px rgba(15, 23, 42, 0.1));
   box-sizing: border-box;
   display: grid;
   gap: 4px;
@@ -1258,7 +1258,10 @@
 
 .diagram-canvas-node--selected {
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-soft), 0 0 0 1px var(--accent), 0 8px 24px rgba(15, 23, 42, 0.1);
+  box-shadow:
+    0 0 0 4px var(--accent-soft),
+    0 0 0 1px var(--accent),
+    var(--diagram-node-elevation-shadow, 0 8px 24px rgba(15, 23, 42, 0.1));
   z-index: 2;
 }
 
@@ -1274,7 +1277,9 @@
 
 .diagram-canvas-node--dragging {
   border-color: var(--accent);
-  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
+  box-shadow:
+    0 14px 32px rgba(15, 23, 42, 0.16),
+    var(--diagram-node-elevation-shadow, 0 8px 24px rgba(15, 23, 42, 0.1));
   cursor: grabbing;
   z-index: 2;
 }

@@ -1,5 +1,6 @@
 import {
   type ChangeEvent as ReactChangeEvent,
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
@@ -81,6 +82,13 @@ export function DiagramNodeView({
   const isArea = "shape" in node && node.shape === "area";
   const title = "file" in node ? node.file : freeText ?? "";
   const shapeClass = "shape" in node ? `diagram-canvas-node--shape-${node.shape}` : "";
+  const nodeStyle: DiagramNodeStyle = {
+    "--diagram-node-elevation-shadow": nodeElevationShadow(node),
+    minHeight: node.height,
+    transform: `translate(${x}px, ${y}px)`,
+    zIndex: nodeLayerIndex(node, isDragging, isSelected),
+    width: node.width
+  };
   const handleNodeTextKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>): void => {
     if (event.key !== "Escape") return;
     event.preventDefault();
@@ -100,12 +108,7 @@ export function DiagramNodeView({
       onPointerDown={(event) => onPointerDown(node, event)}
       onPointerMove={onPointerMove}
       onPointerUp={(event) => onPointerUp(node, event)}
-      style={{
-        minHeight: node.height,
-        transform: `translate(${x}px, ${y}px)`,
-        zIndex: nodeLayerIndex(node, isDragging, isSelected),
-        width: node.width
-      }}
+      style={nodeStyle}
       title={title}
     >
       {freeText === null ? (
@@ -212,12 +215,28 @@ export function DiagramNodeView({
 const diagramNodeLayerBase = 100;
 const diagramNodeActiveLayerBoost = 1000;
 
+type DiagramNodeStyle = CSSProperties & {
+  "--diagram-node-elevation-shadow": string;
+};
+
 function nodeLayerIndex(node: RelicConnectedDiagramNode, isDragging: boolean, isSelected: boolean): number {
   const layer = "layer" in node ? node.layer : 0;
   const displayLayer = diagramNodeLayerBase + layer;
   if (isDragging || isSelected) return displayLayer + diagramNodeActiveLayerBoost;
 
   return displayLayer;
+}
+
+function nodeElevationShadow(node: RelicConnectedDiagramNode): string {
+  if (!("layer" in node)) return "0 8px 24px rgba(15, 23, 42, 0.1)";
+  if (node.shape === "area") return "0 0 0 rgba(15, 23, 42, 0)";
+
+  const cappedLayer = Math.min(Math.max(1, Math.round(node.layer)), 8);
+  const offsetY = 6 + cappedLayer * 2;
+  const blur = 20 + cappedLayer * 4;
+  const alpha = (0.088 + cappedLayer * 0.012).toFixed(3);
+
+  return `0 ${offsetY}px ${blur}px rgba(15, 23, 42, ${alpha})`;
 }
 
 function LayerBackIcon(): ReactElement {

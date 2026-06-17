@@ -536,7 +536,7 @@ describe("DiagramCanvas", () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("id: node-1");
-    expect(onChange.mock.calls[0]?.[0]).toContain("layer: 1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("layer: 2");
   });
 
   it("drops an area shape onto a free-drawing canvas", () => {
@@ -568,7 +568,7 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("text: 領域");
     expect(onChange.mock.calls[0]?.[0]).toContain("width: 384");
     expect(onChange.mock.calls[0]?.[0]).toContain("height: 224");
-    expect(onChange.mock.calls[0]?.[0]).toContain("layer: -1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("layer: 0");
   });
 
   it("keeps background area shapes interactive with a safe z-index", () => {
@@ -580,7 +580,73 @@ describe("DiagramCanvas", () => {
 
     const area = screen.getByText("領域A").closest(".diagram-canvas-node");
     expect(area).toBeInstanceOf(HTMLElement);
-    expect((area as HTMLElement).style.zIndex).toBe("99");
+    expect((area as HTMLElement).style.zIndex).toBe("100");
+    expect((area as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 0 0 rgba(15, 23, 42, 0)");
+  });
+
+  it("does not show layer controls for area shapes because they stay on layer 0", () => {
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={freeDrawingContentWithArea} fileName="閾ｪ逕ｱ蝗ｳ" />
+      </I18nProvider>
+    );
+
+    const area = screen.getByText("領域A").closest(".diagram-canvas-node");
+    expect(area).toBeInstanceOf(HTMLElement);
+
+    fireEvent(area as HTMLElement, pointerEvent("pointerdown", 2, 110, 110));
+    fireEvent(area as HTMLElement, pointerEvent("pointerup", 2, 110, 110));
+
+    expect(screen.queryByRole("button", { name: "Bring forward" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Send backward" })).not.toBeInTheDocument();
+  });
+
+  it("makes higher free-drawing layers look more elevated without moving nodes", () => {
+    const layeredContent = [
+      "---",
+      "type: free-drawing",
+      "title: 自由図",
+      "---",
+      "",
+      "nodes:",
+      "  - id: low-1",
+      "    shape: process",
+      "    text: 低い",
+      "    x: 120",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "    layer: 1",
+      "  - id: high-1",
+      "    shape: process",
+      "    text: 高い",
+      "    x: 380",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "    layer: 4",
+      "lines: []",
+      ""
+    ].join("\n");
+
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={layeredContent} fileName="自由図" />
+      </I18nProvider>
+    );
+
+    const lowNode = screen.getByText("低い").closest(".diagram-canvas-node");
+    const highNode = screen.getByText("高い").closest(".diagram-canvas-node");
+    expect(lowNode).toBeInstanceOf(HTMLElement);
+    expect(highNode).toBeInstanceOf(HTMLElement);
+
+    const lowTransform = (lowNode as HTMLElement).style.transform;
+    const highTransform = (highNode as HTMLElement).style.transform;
+    expect(lowTransform).toMatch(/^translate\([-.\d]+px, [-.\d]+px\)$/);
+    expect(highTransform).toMatch(/^translate\([-.\d]+px, [-.\d]+px\)$/);
+    expect(lowTransform.split(", ")[1]).toBe(highTransform.split(", ")[1]);
+    expect((lowNode as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 8px 24px rgba(15, 23, 42, 0.100)");
+    expect((highNode as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 14px 36px rgba(15, 23, 42, 0.136)");
   });
 
   it("moves nodes fully contained in an area when dragging the area", () => {

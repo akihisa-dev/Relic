@@ -8,6 +8,8 @@ export type RelicDiagramType = typeof relicDiagramTypes[number];
 
 export const relicFreeDrawingShapeTypes = ["terminator", "process", "decision", "input-output", "note", "area"] as const;
 export type RelicFreeDrawingShapeType = typeof relicFreeDrawingShapeTypes[number];
+export const relicFreeDrawingAreaLayer = 0;
+export const relicFreeDrawingNodeMinLayer = 1;
 
 const relicWhyTreeSupplementKinds = ["fact", "solution", "action"] as const;
 export type RelicWhyTreeSupplementKind = typeof relicWhyTreeSupplementKinds[number];
@@ -1038,7 +1040,7 @@ export function updateRelicFreeDrawingNodeLayer(
 
   const nextNode = {
     ...node,
-    layer: Math.round(nextLayer.value)
+    layer: normalizeFreeDrawingNodeLayer(node.shape, nextLayer.value)
   };
   const serialized = serializeRelicFreeDrawingMarkdown({
     ...parsed.value,
@@ -1296,7 +1298,7 @@ function parseFreeDrawingNodes(rawNodes: unknown): RelicResult<RelicFreeDrawingN
     nodes.push({
       height: height.value,
       id: id.value,
-      layer: layer.value,
+      layer: normalizeFreeDrawingNodeLayer(shape.value, layer.value),
       shape: shape.value,
       text: text.value,
       width: width.value,
@@ -1617,7 +1619,13 @@ function defaultFreeDrawingShapeSize(shape: RelicFreeDrawingShapeType): Pick<Rel
 }
 
 function defaultFreeDrawingShapeLayer(shape: RelicFreeDrawingShapeType): number {
-  return shape === "area" ? -1 : 0;
+  return shape === "area" ? relicFreeDrawingAreaLayer : relicFreeDrawingNodeMinLayer;
+}
+
+function normalizeFreeDrawingNodeLayer(shape: RelicFreeDrawingShapeType, layer: number): number {
+  if (shape === "area") return relicFreeDrawingAreaLayer;
+
+  return Math.max(relicFreeDrawingNodeMinLayer, Math.round(layer));
 }
 
 function nextNodeId(nodes: RelicDiagramNodeBase[]): string {

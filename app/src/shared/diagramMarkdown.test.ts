@@ -492,6 +492,7 @@ describe("free-drawing operations", () => {
     expect(addedNode.ok ? addedNode.value.content : "").toContain("text: 入出力");
     expect(addedNode.ok ? addedNode.value.content : "").toContain("x: 640");
     expect(addedNode.ok ? addedNode.value.content : "").toContain("y: 320");
+    expect(addedNode.ok ? addedNode.value.content : "").toContain("layer: 1");
 
     const updatedText = updateRelicFreeDrawingNodeText(freeDrawingContent, "node-1", "新しいメモ");
     expect(updatedText.ok ? updatedText.value.node.text : "").toBe("新しいメモ");
@@ -520,17 +521,24 @@ describe("free-drawing operations", () => {
     const addedNode = addRelicFreeDrawingNode(freeDrawingContent, "area", 640, 320);
     expect(addedNode.ok ? addedNode.value.node : null).toMatchObject({
       height: 224,
-      layer: -1,
+      layer: 0,
       shape: "area",
       text: "領域",
       width: 384
     });
     expect(addedNode.ok ? addedNode.value.content : "").toContain("shape: area");
-    expect(addedNode.ok ? addedNode.value.content : "").toContain("layer: -1");
+    expect(addedNode.ok ? addedNode.value.content : "").toContain("layer: 0");
 
     const updatedLayer = updateRelicFreeDrawingNodeLayer(freeDrawingContent, "node-2", 3);
     expect(updatedLayer.ok ? updatedLayer.value.node.layer : null).toBe(3);
     expect(updatedLayer.ok ? updatedLayer.value.content : "").toContain("layer: 3");
+
+    const sentBackward = updateRelicFreeDrawingNodeLayer(freeDrawingContent, "node-2", 0);
+    expect(sentBackward.ok ? sentBackward.value.node.layer : null).toBe(1);
+    expect(sentBackward.ok ? sentBackward.value.content : "").toContain("layer: 1");
+
+    const keptAreaBase = updateRelicFreeDrawingNodeLayer(addedNode.ok ? addedNode.value.content : "", addedNode.ok ? addedNode.value.node.id : "", 4);
+    expect(keptAreaBase.ok ? keptAreaBase.value.node.layer : null).toBe(0);
   });
 
   it("領域図形を動かすと完全に内包された図形だけ一緒に動かす", () => {
