@@ -977,6 +977,14 @@
   position: absolute;
 }
 
+.diagram-canvas-lines {
+  pointer-events: none;
+}
+
+.diagram-canvas-lines--defs {
+  z-index: 0;
+}
+
 .diagram-canvas-labels,
 .diagram-canvas-nodes,
 .diagram-canvas-snap-guides {

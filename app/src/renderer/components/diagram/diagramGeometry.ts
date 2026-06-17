@@ -4,6 +4,7 @@ import {
   type RelicDiagramLine,
 } from "../../../shared/diagramMarkdown";
 import { stripMarkdownExtension } from "../../../shared/markdownExtension";
+import { diagramLineDisplayLayer } from "./diagramLayering";
 
 const canvasPadding = 192;
 const minCanvasWidth = 900;
@@ -33,6 +34,7 @@ export interface DiagramCanvasNodeLayout {
 }
 
 export interface DiagramCanvasLineLayout {
+  displayLayer: number;
   label: string;
   line: RelicDiagramLine;
   labelX: number;
@@ -157,6 +159,7 @@ export function buildLineLayouts(
     const labelPoint = labelPointFromRoute(route.points, otherSegments);
     return {
       label: context.line.label,
+      displayLayer: diagramLineDisplayLayer(context.from.node, context.to.node),
       labelX: labelPoint.x,
       labelY: labelPoint.y,
       line: context.line,
