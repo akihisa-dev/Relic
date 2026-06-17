@@ -44,7 +44,7 @@ import {
   type ViewportState
 } from "./diagramViewport";
 import { type DiagramCanvasProps } from "./diagramTypes";
-import { freeDrawingShapeDragType, isFreeDrawingShapeType } from "./freeDrawingShapeDrag";
+import { diagramShapeDragType, isFreeDrawingShapeType } from "./diagramShapeDrag";
 import { DiagramLineLayer } from "./DiagramLineLayer";
 import { diagramFreeDrawingLabelDisplayLayer, diagramNodeDisplayLayer } from "./diagramLayering";
 import { DiagramNodeView } from "./DiagramNodeView";
@@ -119,7 +119,7 @@ interface ShapeAddMenuState {
   nodeId: string;
 }
 
-export function RelationshipCanvas({
+export function DiagramCanvasSurface({
   content,
   diagram,
   fileName,
@@ -127,7 +127,7 @@ export function RelationshipCanvas({
   toolbar
 }: DiagramCanvasProps & { diagram: RelicConnectedDiagramDocument }): ReactElement {
   const t = useT();
-  const isFreeDrawing = diagram.type === "free-drawing";
+  const isFreeDrawing = diagram.type === "diagram";
   const [connect, setConnect] = useState<ConnectState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [labelEdit, setLabelEdit] = useState<LabelEditState | null>(null);
@@ -723,7 +723,7 @@ export function RelationshipCanvas({
   const handleCanvasDrop = (event: ReactDragEvent<HTMLDivElement>): void => {
     if (!isFreeDrawing) return;
 
-    const shape = event.dataTransfer.getData(freeDrawingShapeDragType) || event.dataTransfer.getData("text/plain");
+    const shape = event.dataTransfer.getData(diagramShapeDragType) || event.dataTransfer.getData("text/plain");
     if (!isFreeDrawingShapeType(shape)) return;
 
     event.preventDefault();
@@ -966,7 +966,7 @@ export function RelationshipCanvas({
                 onOutlinePointerDown={startNodeOutlineConnect}
                 addShapeLabel={canAddConnectedShape ? t("diagram.addConnectedShape") : undefined}
                 addShapeMenuLabel={isFreeDrawing && shapeAddMenu?.nodeId === node.id ? t("diagram.connectedShapeMenu") : undefined}
-                addShapeOptions={isFreeDrawing && shapeAddMenu?.nodeId === node.id ? freeDrawingShapeOptions : undefined}
+                addShapeOptions={shapeAddMenu?.nodeId === node.id ? freeDrawingShapeOptions : undefined}
                 onShapeAddButtonPointerDown={toggleShapeAddMenu}
                 onShapeOptionPointerDown={chooseConnectedShape}
                 onPointerCancel={cancelNodeDrag}

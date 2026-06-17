@@ -6,7 +6,9 @@ import { type DiagramCanvasNodeLayout } from "./diagramGeometry";
 const nodes: DiagramCanvasNodeLayout[] = [
   {
     node: {
-      file: "a.md",
+      layer: 1,
+      shape: "process",
+      text: "a",
       height: 80,
       id: "node-1",
       width: 180,
@@ -18,7 +20,9 @@ const nodes: DiagramCanvasNodeLayout[] = [
   },
   {
     node: {
-      file: "b.md",
+      layer: 1,
+      shape: "process",
+      text: "b",
       height: 80,
       id: "node-2",
       width: 180,

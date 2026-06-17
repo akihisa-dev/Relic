@@ -1,10 +1,9 @@
 import { type ReactElement, useMemo } from "react";
 
-import { parseRelicDiagramMarkdown } from "../../../shared/diagramMarkdown";
+import { parseRelicDiagramMarkdown, type RelicConnectedDiagramDocument } from "../../../shared/diagramMarkdown";
 import { useT } from "../../i18n";
-import { RelationshipCanvas } from "./RelationshipCanvas";
+import { DiagramCanvasSurface } from "./DiagramCanvasSurface";
 import { type DiagramCanvasProps } from "./diagramTypes";
-import { WhyTreeEditor } from "./WhyTreeEditor";
 
 export function DiagramCanvasRouter({ content, fileName, onChange }: DiagramCanvasProps): ReactElement {
   const t = useT();
@@ -18,21 +17,10 @@ export function DiagramCanvasRouter({ content, fileName, onChange }: DiagramCanv
     );
   }
 
-  if (parsed.value.type === "why-tree") {
-    return (
-      <WhyTreeEditor
-        content={content}
-        fileName={fileName}
-        onChange={onChange}
-        tree={parsed.value}
-      />
-    );
-  }
-
   return (
-    <RelationshipCanvas
+    <DiagramCanvasSurface
       content={content}
-      diagram={parsed.value}
+      diagram={parsed.value as RelicConnectedDiagramDocument}
       fileName={fileName}
       onChange={onChange}
     />

@@ -57,7 +57,7 @@ describe("workspaceHandlers", () => {
     temporaryPaths.push(userDataPath, workspacePath);
 
     await writeFile(path.join(workspacePath, "読書メモ.md"), "# 読書メモ\n", "utf8");
-    await writeFile(path.join(workspacePath, "人物関係.md"), "---\ntype: relationship\n---\n\nnodes: []\nlines: []\n", "utf8");
+    await writeFile(path.join(workspacePath, "人物関係.md"), "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n", "utf8");
     await mkdir(path.join(workspacePath, "資料"));
     await writeFile(path.join(workspacePath, "資料", "保管メモ.md"), "# 保管メモ\n", "utf8");
 

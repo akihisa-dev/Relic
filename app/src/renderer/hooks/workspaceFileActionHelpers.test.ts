@@ -73,13 +73,11 @@ describe("workspaceFileActionHelpers", () => {
 
   it("rootに存在する図解名を避けて次のDiagramファイル名を返す", () => {
     const state = workspaceState([
-      { name: "関係図.md", path: "関係図.md", type: "file" },
-      { name: "関係図 2.md", path: "関係図 2.md", type: "file" },
-      { name: "構造ツリー.md", path: "構造ツリー.md", type: "file" },
-      { name: "自由図.md", path: "自由図.md", type: "file" },
+      { name: "図解ファイル.md", path: "図解ファイル.md", type: "file" },
+      { name: "図解ファイル 2.md", path: "図解ファイル 2.md", type: "file" },
       {
         children: [
-          { name: "関係図.md", path: "Nested/関係図.md", type: "file" }
+          { name: "図解ファイル.md", path: "Nested/図解ファイル.md", type: "file" }
         ],
         name: "Nested",
         path: "Nested",
@@ -87,9 +85,7 @@ describe("workspaceFileActionHelpers", () => {
       }
     ]);
 
-    expect(nextUniqueDiagramFileName(state, t, "relationship")).toBe("関係図 3");
-    expect(nextUniqueDiagramFileName(state, t, "why-tree")).toBe("構造ツリー 2");
-    expect(nextUniqueDiagramFileName(state, t, "free-drawing")).toBe("自由図 2");
+    expect(nextUniqueDiagramFileName(state, t, "diagram")).toBe("図解ファイル 3");
   });
 
   it("作成後のMarkdown pathを末尾一致で探す", () => {

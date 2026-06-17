@@ -8,9 +8,7 @@ import {
   nextUniqueFolderName
 } from "./workspaceFileActionHelpers";
 import {
-  emptyRelicFreeDrawingMarkdownContent,
-  emptyRelicRelationshipMarkdownContent,
-  emptyRelicWhyTreeMarkdownContent,
+  emptyRelicDiagramMarkdownContent,
   type RelicDiagramType
 } from "../../shared/diagramMarkdown";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
@@ -102,16 +100,12 @@ export function useWorkspaceFileCreationActions({
     workspaceState
   ]);
 
-  const handleCreateDiagramFile = useCallback((diagramType: RelicDiagramType): void => {
+  const handleCreateDiagramFile = useCallback((diagramType: RelicDiagramType = "diagram"): void => {
     if (!window.relic) return;
 
     const fileName = nextUniqueDiagramFileName(workspaceState, t, diagramType);
     const expectedPath = ensureMarkdownExtension(fileName);
-    const content = diagramType === "why-tree"
-      ? emptyRelicWhyTreeMarkdownContent
-      : diagramType === "free-drawing"
-        ? emptyRelicFreeDrawingMarkdownContent
-        : emptyRelicRelationshipMarkdownContent;
+    const content = emptyRelicDiagramMarkdownContent;
 
     setIsCreatingFile(true);
     setWorkspaceError(null);
