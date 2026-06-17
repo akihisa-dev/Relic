@@ -23,9 +23,11 @@ import {
   reverseRelicDiagramLineDirection,
   resizeRelicDiagramNode,
   updateRelicFreeDrawingNodeText,
+  updateRelicFreeDrawingNodeLayer,
   updateRelicDiagramLineLabel,
   type RelicConnectedDiagramDocument,
   type RelicConnectedDiagramNode,
+  type RelicDiagramLine,
   type RelicDiagramNodeBase,
   type RelicFreeDrawingShapeType
 } from "../../../shared/diagramMarkdown";
@@ -50,6 +52,7 @@ import { diagramGridSize, snapDiagramNode, snapDiagramPointToGrid, snapDiagramSi
 const connectActivationDistance = 4;
 const connectedShapeDefaultHeight = 80;
 const connectedShapeDefaultWidth = 180;
+const decisionOptionLabels = ["はい", "いいえ"] as const;
 const minNodeHeight = 64;
 const minNodeWidth = 96;
 
@@ -463,11 +466,12 @@ export function RelationshipCanvas({
       return;
     }
 
-    const added = addRelicDiagramLine(content, connect.fromNodeId, toNodeId);
+    const sourceNode = diagram.nodes.find((node) => node.id === connect.fromNodeId);
+    const added = addRelicDiagramLine(content, connect.fromNodeId, toNodeId, decisionLineLabel(sourceNode, diagram.lines));
     if (added.ok) {
       onChange?.(added.value.content);
       setSelection({ id: added.value.line.id, type: "line" });
-      setLabelEdit({ lineId: added.value.line.id, value: "" });
+      setLabelEdit({ lineId: added.value.line.id, value: added.value.line.label });
       setShapeAddMenu(null);
     }
     setConnect(null);
@@ -588,7 +592,8 @@ export function RelationshipCanvas({
       setShapeAddMenu(null);
     }
   };
-  const connectedFreeDrawingNodePosition = (sourceNode: RelicDiagramNodeBase): { x: number; y: number } => {
+  const connectedFreeDrawingNodePosition = (sourceNode: RelicDiagramNodeBase, shape: RelicFreeDrawingShapeType): { x: number; y: number } => {
+    const size = connectedFreeDrawingShapeSize(shape);
     const baseX = sourceNode.x + sourceNode.width + diagramGridSize * 2;
     const baseY = sourceNode.y;
     let candidate = snapDiagramPointToGrid(baseX, baseY, layout.originX, layout.originY);
@@ -597,8 +602,8 @@ export function RelationshipCanvas({
       const overlaps = diagram.nodes.some((node) => rectanglesOverlap(
         candidate.x,
         candidate.y,
-        connectedShapeDefaultWidth,
-        connectedShapeDefaultHeight,
+        size.width,
+        size.height,
         node.x,
         node.y,
         node.width,
@@ -608,7 +613,7 @@ export function RelationshipCanvas({
 
       candidate = snapDiagramPointToGrid(
         baseX,
-        baseY + (connectedShapeDefaultHeight + diagramGridSize) * (attempt + 1),
+        baseY + (size.height + diagramGridSize) * (attempt + 1),
         layout.originX,
         layout.originY
       );
@@ -617,16 +622,21 @@ export function RelationshipCanvas({
     return candidate;
   };
   const addConnectedFreeDrawingNode = (
-    sourceNode: RelicDiagramNodeBase,
+    sourceNode: RelicConnectedDiagramNode,
     shape: RelicFreeDrawingShapeType
   ): void => {
     if (!onChange || !isFreeDrawing) return;
 
-    const position = connectedFreeDrawingNodePosition(sourceNode);
+    const position = connectedFreeDrawingNodePosition(sourceNode, shape);
     const added = addRelicFreeDrawingNode(content, shape, position.x, position.y);
     if (!added.ok) return;
 
-    const lineAdded = addRelicDiagramLine(added.value.content, sourceNode.id, added.value.node.id);
+    const lineAdded = addRelicDiagramLine(
+      added.value.content,
+      sourceNode.id,
+      added.value.node.id,
+      decisionLineLabel(sourceNode, diagram.lines)
+    );
     if (!lineAdded.ok) return;
 
     onChange(lineAdded.value.content);
@@ -673,9 +683,10 @@ export function RelationshipCanvas({
     event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
     const pointer = screenToCanvasPoint(event.clientX, event.clientY, rect, viewport);
+    const size = connectedFreeDrawingShapeSize(shape);
     const snapped = snapDiagramPointToGrid(
-      pointer.x + layout.originX - 96,
-      pointer.y + layout.originY - 48,
+      pointer.x + layout.originX - size.width / 2,
+      pointer.y + layout.originY - size.height / 2,
       layout.originX,
       layout.originY
     );
@@ -722,6 +733,23 @@ export function RelationshipCanvas({
     if (reversed.ok) {
       onChange(reversed.value.content);
       setSelection({ id: reversed.value.line.id, type: "line" });
+      setLabelEdit(null);
+      setShapeAddMenu(null);
+    }
+  };
+  const changeFreeDrawingNodeLayer = (
+    node: RelicConnectedDiagramNode,
+    direction: -1 | 1,
+    event: ReactPointerEvent<HTMLButtonElement>
+  ): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!onChange || !isFreeDrawing || !("shape" in node)) return;
+
+    const updated = updateRelicFreeDrawingNodeLayer(content, node.id, node.layer + direction);
+    if (updated.ok) {
+      onChange(updated.value.content);
+      setSelection({ id: updated.value.node.id, type: "node" });
       setLabelEdit(null);
       setShapeAddMenu(null);
     }
@@ -905,6 +933,8 @@ export function RelationshipCanvas({
               addShapeOptions={isFreeDrawing && shapeAddMenu?.nodeId === node.id ? freeDrawingShapeOptions : undefined}
               onShapeAddButtonPointerDown={toggleShapeAddMenu}
               onShapeOptionPointerDown={chooseConnectedShape}
+              onLayerBackwardPointerDown={isFreeDrawing && "shape" in node ? (targetNode, event) => changeFreeDrawingNodeLayer(targetNode, -1, event) : undefined}
+              onLayerForwardPointerDown={isFreeDrawing && "shape" in node ? (targetNode, event) => changeFreeDrawingNodeLayer(targetNode, 1, event) : undefined}
               onPointerCancel={cancelNodeDrag}
               onPointerDown={startNodePointer}
               onPointerMove={(event) => {
@@ -914,6 +944,8 @@ export function RelationshipCanvas({
               onResizePointerDown={startNodeResize}
               onPointerUp={finishNodePointer}
               resizeLabel={t("diagram.resizeNode")}
+              layerBackwardLabel={t("diagram.layerBackward")}
+              layerForwardLabel={t("diagram.layerForward")}
               x={x}
               y={y}
             />
@@ -955,6 +987,32 @@ function rectanglesOverlap(
     leftA + widthA > leftB &&
     topA < topB + heightB &&
     topA + heightA > topB;
+}
+
+function decisionLineLabel(node: RelicConnectedDiagramNode | undefined, lines: RelicDiagramLine[]): string {
+  if (!node || !("shape" in node) || node.shape !== "decision") return "";
+
+  const usedLabels = lines
+    .filter((line) => line.from === node.id)
+    .map((line) => line.label);
+  const standardLabel = decisionOptionLabels.find((label) => !usedLabels.includes(label));
+  if (standardLabel) return standardLabel;
+
+  return `選択肢${usedLabels.length + 1}`;
+}
+
+function connectedFreeDrawingShapeSize(shape: RelicFreeDrawingShapeType): { height: number; width: number } {
+  if (shape === "area") {
+    return {
+      height: 224,
+      width: 384
+    };
+  }
+
+  return {
+    height: connectedShapeDefaultHeight,
+    width: connectedShapeDefaultWidth
+  };
 }
 
 function ReverseLineDirectionIcon(): ReactElement {

@@ -468,6 +468,74 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("to: node-3");
   });
 
+  it("adds a standard choice label when connecting from a decision shape", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
+
+    const source = screen.getByText("敵対組織").closest(".diagram-canvas-node");
+    expect(source).toBeInstanceOf(HTMLElement);
+
+    fireEvent(source as HTMLElement, pointerEvent("pointerdown", 2, 390, 90));
+    fireEvent(source as HTMLElement, pointerEvent("pointerup", 2, 390, 90));
+    const addButton = screen.getByRole("button", { name: "Add connected shape" });
+    fireEvent(addButton, pointerEvent("pointerdown", 3, 560, 120));
+
+    const menu = screen.getByRole("menu", { name: "Shape to connect" });
+    fireEvent(within(menu).getByRole("menuitem", { name: "Process" }), pointerEvent("pointerdown", 4, 590, 120));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("from: node-2");
+    expect(onChange.mock.calls[0]?.[0]).toContain("label: はい");
+  });
+
+  it("changes the layer of a selected free-drawing shape", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
+
+    const source = screen.getByText("主人公").closest(".diagram-canvas-node");
+    expect(source).toBeInstanceOf(HTMLElement);
+
+    fireEvent(source as HTMLElement, pointerEvent("pointerdown", 2, 130, 90));
+    fireEvent(source as HTMLElement, pointerEvent("pointerup", 2, 130, 90));
+    fireEvent(screen.getByRole("button", { name: "Bring forward" }), pointerEvent("pointerdown", 3, 130, 60));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: node-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("layer: 1");
+  });
+
+  it("drops an area shape onto a free-drawing canvas", () => {
+    const onChange = vi.fn();
+    const emptyFreeDrawing = "---\ntype: free-drawing\n---\n\nnodes: []\nlines: []\n";
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={emptyFreeDrawing} fileName="自由図" onChange={onChange} />
+      </I18nProvider>
+    );
+
+    const canvas = container.querySelector(".diagram-canvas") as HTMLElement;
+    expect(canvas).toBeInstanceOf(HTMLElement);
+    mockRect(canvas, { bottom: 620, height: 620, left: 0, right: 900, top: 0, width: 900 });
+    const dataTransfer = {
+      dropEffect: "",
+      getData: vi.fn(() => "area"),
+      types: [freeDrawingShapeDragType]
+    };
+
+    const drop = createEvent.drop(canvas, { clientX: 320, clientY: 240 });
+    Object.defineProperty(drop, "clientX", { value: 320 });
+    Object.defineProperty(drop, "clientY", { value: 240 });
+    Object.defineProperty(drop, "dataTransfer", { value: dataTransfer });
+    fireEvent(canvas, drop);
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("shape: area");
+    expect(onChange.mock.calls[0]?.[0]).toContain("text: 領域");
+    expect(onChange.mock.calls[0]?.[0]).toContain("width: 384");
+    expect(onChange.mock.calls[0]?.[0]).toContain("height: 224");
+    expect(onChange.mock.calls[0]?.[0]).toContain("layer: -1");
+  });
+
   it("does not show the Mermaid copy action in Relationship Diagram mode", () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {

@@ -451,6 +451,12 @@
   width: 7px;
 }
 
+.diagram-sidebar-shape--area .diagram-sidebar-shape-icon {
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+  border: 2px dashed color-mix(in srgb, var(--text-3) 68%, var(--border-medium));
+  border-radius: 3px;
+}
+
 .diagram-sidebar-shape-name {
   font-size: 13px;
   font-weight: 650;
