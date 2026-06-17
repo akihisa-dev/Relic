@@ -66,9 +66,10 @@ describe("FilesSearchResults", () => {
   });
 
   it("shows search limit notices", () => {
-    renderResults({ limitNotice: { skippedLargeFiles: 2, truncated: true } });
+    renderResults({ limitNotice: { skippedLongLines: 1, skippedLargeFiles: 2, truncated: true } });
 
     expect(screen.getByText(/Only some results are shown/)).toBeInTheDocument();
     expect(screen.getByText(/2 large file/)).toBeInTheDocument();
+    expect(screen.getByText(/1 line/)).toBeInTheDocument();
   });
 });

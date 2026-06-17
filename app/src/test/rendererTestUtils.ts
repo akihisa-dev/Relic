@@ -104,7 +104,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     saveWorkspaceChronicleCalendars: vi.fn().mockResolvedValue({ ok: true, value: [{ id: "chronicle0", name: "メイン暦" }] }),
     saveWorkspaceCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     searchAndReplace: vi.fn(),
-    searchWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { results: [], skippedLargeFiles: 0, truncated: false } }),
+    searchWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { results: [], skippedLongLines: 0, skippedLargeFiles: 0, truncated: false } }),
     switchWorkspace: vi.fn(),
     togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     updateChartEntry: vi.fn().mockResolvedValue({ ok: true, value: [] }),

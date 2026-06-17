@@ -1,4 +1,4 @@
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -200,6 +200,15 @@ export async function writeWorkspaceSettings(
 
   await mkdir(path.dirname(settingsPath), { recursive: true });
   await atomicWriteTextFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+}
+
+export async function removeWorkspaceSettings(
+  userDataPath: string,
+  workspaceId: string
+): Promise<void> {
+  const settingsPath = getWorkspaceSettingsPath(userDataPath, workspaceId);
+
+  await rm(settingsPath, { force: true });
 }
 
 function parseSettingsObject(raw: string): PersistedWorkspaceSettings | null {

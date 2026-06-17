@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
+import type { WorkspaceSearchResultSet } from "../../shared/ipcWorkspace";
 
 import { regexMaxLineLength, regexMaxPatternLength } from "./regexSafety";
 import { searchWorkspace, workspaceSearchMaxFileBytes, workspaceSearchMaxResults } from "./search";
@@ -189,7 +190,7 @@ describe("searchWorkspace", () => {
         lineNumber: 1,
         lineText: "needle",
         path: "short.md"
-      }])
+      }], { skippedLongLines: 1 })
     });
   });
 
@@ -282,14 +283,16 @@ describe("searchWorkspace", () => {
     await writeFile(path.join(workspacePath, "visible.md"), "needle", "utf8");
 
     const result = await searchWorkspace(workspacePath, "needle", "fullText", undefined, {
-      async readFile(filePath, encoding) {
-        if (path.basename(filePath) === "blocked.md") {
-          throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
-        }
+      fileIndexOperations: {
+        async readFile(filePath, encoding) {
+          if (path.basename(filePath) === "blocked.md") {
+            throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+          }
 
-        return readFile(filePath, encoding);
-      },
-      stat
+          return readFile(filePath, encoding);
+        },
+        stat
+      }
     });
 
     expect(result).toEqual({
@@ -324,6 +327,12 @@ describe("searchWorkspace", () => {
   }
 });
 
-function searchResultSet(results: unknown[]) {
-  return { results, skippedLargeFiles: 0, truncated: false };
+function searchResultSet(results: unknown[], overrides: Partial<WorkspaceSearchResultSet> = {}) {
+  return {
+    results,
+    skippedLongLines: 0,
+    skippedLargeFiles: 0,
+    truncated: false,
+    ...overrides
+  };
 }

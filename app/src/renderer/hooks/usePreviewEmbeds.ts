@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { extractEmbedTargets, maxEmbeddedFileLength, type EmbedState } from "../previewMarkdown";
+import { runWithConcurrency } from "../concurrency";
 
 const emptyEmbeds = new Map<string, EmbedState>();
+const maxConcurrentEmbeds = 2;
 
 export function usePreviewEmbeds(content: string, workspacePath: string | null | undefined): Map<string, EmbedState> {
   const [embeds, setEmbeds] = useState<Map<string, EmbedState>>(new Map());
@@ -14,27 +16,37 @@ export function usePreviewEmbeds(content: string, workspacePath: string | null |
     }
 
     let canceled = false;
-    setEmbeds(new Map(targets.map((target) => [target, { status: "loading" } as EmbedState])));
+    setEmbeds(new Map(targets.map((target) => [target, { status: "loading" }])));
 
-    void Promise.all(
-      targets.map(async (target) => {
+    const loadEmbedTasks = targets.map((target): (() => Promise<[string, EmbedState]>) => async () => {
+      try {
         const result = await window.relic!.readMarkdownFile({ path: target });
 
         if (!result.ok) {
-          return [target, { status: "error", message: result.error.message } as EmbedState] as const;
+          return [target, { status: "error", message: result.error.message }];
         }
 
         if (result.value.content.length > maxEmbeddedFileLength) {
-          return [target, { status: "large", name: result.value.name } as EmbedState] as const;
+          return [target, { status: "large", name: result.value.name }];
         }
 
-        return [
-          target,
-          { status: "loaded", content: result.value.content, name: result.value.name } as EmbedState
-        ] as const;
-      })
-    ).then((entries) => {
-      if (!canceled) setEmbeds(new Map(entries));
+        return [target, {
+          status: "loaded",
+          content: result.value.content,
+          name: result.value.name
+        }];
+      } catch (error) {
+        return [target, {
+          status: "error",
+          message: error instanceof Error ? error.message : "Failed to read embedded file."
+        }];
+      }
+    });
+
+    void runWithConcurrency(loadEmbedTasks, maxConcurrentEmbeds).then((entries) => {
+      if (!canceled) {
+        setEmbeds(new Map(entries));
+      }
     });
 
     return () => {

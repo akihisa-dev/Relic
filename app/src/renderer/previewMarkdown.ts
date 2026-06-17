@@ -11,6 +11,8 @@ import { isSafePreviewUrl, sanitizePreviewHtml } from "./htmlSanitizer";
 
 export const maxEmbeddedFileLength = 20_000;
 
+const MARKDOWN_EXTENSIONS_REGISTERED = Symbol.for("relic.previewMarkdown.extensionsRegistered");
+
 export type EmbedState =
   | { status: "loading" }
   | { status: "loaded"; content: string; name: string }
@@ -121,9 +123,18 @@ const obsidianExtension = {
   ]
 };
 
-marked.use(mathExtension as Parameters<typeof marked.use>[0]);
-marked.use(obsidianExtension as Parameters<typeof marked.use>[0]);
-marked.use(markedFootnote());
+function registerMarkedExtensions(): void {
+  const globalScope = globalThis as { [MARKDOWN_EXTENSIONS_REGISTERED]?: boolean };
+
+  if (globalScope[MARKDOWN_EXTENSIONS_REGISTERED]) {
+    return;
+  }
+
+  marked.use(mathExtension as Parameters<typeof marked.use>[0]);
+  marked.use(obsidianExtension as Parameters<typeof marked.use>[0]);
+  marked.use(markedFootnote());
+  globalScope[MARKDOWN_EXTENSIONS_REGISTERED] = true;
+}
 
 export function escapeHtml(value: string): string {
   return value
@@ -236,6 +247,7 @@ export function renderMarkdown(
   renderEmbeds: boolean,
   t: Translator
 ): string {
+  registerMarkedExtensions();
   const renderer = buildRenderer();
   const withEmbedPlaceholders = renderEmbeds
     ? content.replace(/!\[\[([^\]\n]+)\]\]/g, (match, rawTarget: string) => {

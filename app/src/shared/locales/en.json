@@ -250,6 +250,7 @@
   "search.noField": "Enter a field name.",
   "search.noMatches": "No matches.",
   "search.noResults": "Enter a search term.",
+  "search.skippedLongLines": "{{count}} line(s) were too long for regex search.",
   "search.skippedLargeFiles": "{{count}} large file(s) were skipped.",
   "search.truncated": "Only some results are shown because there are many matches.",
   "search.patternDate": "Date format",

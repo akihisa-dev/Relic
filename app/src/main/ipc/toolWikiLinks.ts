@@ -1,6 +1,20 @@
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import { hasMarkdownExtension } from "../../shared/markdownExtension";
 
+const WIKI_LINK_UNSAFE_TEXT_PATTERN = /[\]\n\r|]/u;
+
+function hasUnsafeWikiLinkBoundaryText(value: string): boolean {
+  return WIKI_LINK_UNSAFE_TEXT_PATTERN.test(value) || /^\s|\s$/.test(value);
+}
+
+function isSafeWikiLinkText(value: string): boolean {
+  return !hasUnsafeWikiLinkBoundaryText(value);
+}
+
+function toPlainText(value: string): string {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
 export function collectMarkdownPathsFromTree(nodes: WorkspaceTreeNode[]): string[] {
   const paths: string[] = [];
 
@@ -29,9 +43,18 @@ export function createWikiLinkFormatter(markdownPaths: string[]): (relativePath:
   return (relativePath, displayName) => {
     const normalizedPath = relativePath.replace(/\\/g, "/").replace(/\.md$/i, "");
     const basename = normalizedPath.split("/").at(-1) ?? normalizedPath;
+    const safeDisplayName = isSafeWikiLinkText(displayName);
+    const safeBasename = isSafeWikiLinkText(basename);
+    const safeNormalizedPath = isSafeWikiLinkText(normalizedPath);
 
     if ((basenameCounts.get(basename) ?? 0) === 1) {
+      if (!safeBasename) return toPlainText(displayName);
+      if (!safeDisplayName) return toPlainText(displayName);
       return displayName === basename ? `[[${basename}]]` : `[[${basename}|${displayName}]]`;
+    }
+
+    if (!safeBasename || !safeDisplayName || !safeNormalizedPath) {
+      return toPlainText(displayName);
     }
 
     return `[[./${normalizedPath}|${displayName}]]`;

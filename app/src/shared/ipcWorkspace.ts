@@ -163,6 +163,7 @@ export interface WorkspaceSearchResult {
 
 export interface WorkspaceSearchResultSet {
   results: WorkspaceSearchResult[];
+  skippedLongLines: number;
   skippedLargeFiles: number;
   truncated: boolean;
 }
