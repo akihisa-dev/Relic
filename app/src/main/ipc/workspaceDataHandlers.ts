@@ -1,5 +1,6 @@
 import { ipcMain } from "electron";
 
+import type { ChartSettings, ChronicleCalendarSettings } from "../../shared/ipc";
 import {
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
@@ -105,20 +106,13 @@ export function registerWorkspaceDataHandlers(): void {
         context.value.userDataPath,
         context.value.activeWorkspace.id
       );
+      const savedCharts = normalizeChartSettingsForSave(input);
       await writeWorkspaceSettings(context.value.userDataPath, context.value.activeWorkspace.id, {
         ...workspaceSettings,
-        charts: input.map((chart) => ({
-          filePaths: chart.filePaths?.flatMap((filePath) => {
-            const normalized = normalizeWorkspaceRelativeSettingPath(filePath);
-            return normalized ? [normalized] : [];
-          }),
-          id: chart.id.trim(),
-          name: chart.name.trim(),
-          source: chart.source
-        }))
+        charts: savedCharts
       });
 
-      return readWorkspaceCharts(context.value.activeWorkspace.path, input, workspaceSettings.chronicleCalendars);
+      return readWorkspaceCharts(context.value.activeWorkspace.path, savedCharts, workspaceSettings.chronicleCalendars);
     } catch (error) {
       return fail(
         "WORKSPACE_CHARTS_SAVE_FAILED",
@@ -160,16 +154,13 @@ export function registerWorkspaceDataHandlers(): void {
         context.value.userDataPath,
         context.value.activeWorkspace.id
       );
+      const savedCalendars = normalizeChronicleCalendarsForSave(input);
       await writeWorkspaceSettings(context.value.userDataPath, context.value.activeWorkspace.id, {
         ...workspaceSettings,
-        chronicleCalendars: input.map((calendar) => ({
-          id: calendar.id,
-          name: calendar.name.trim(),
-          ...(calendar.id === "chronicle0" ? {} : { startYear: calendar.startYear })
-        }))
+        chronicleCalendars: savedCalendars
       });
 
-      return { ok: true as const, value: input };
+      return { ok: true as const, value: savedCalendars };
     } catch (error) {
       return fail(
         "WORKSPACE_CHRONICLE_CALENDARS_SAVE_FAILED",
@@ -206,4 +197,26 @@ export function registerWorkspaceDataHandlers(): void {
       );
     }
   });
+}
+
+function normalizeChartSettingsForSave(charts: ChartSettings[]): ChartSettings[] {
+  return charts.map((chart) => ({
+    filePaths: chart.filePaths?.flatMap((filePath) => {
+      const normalized = normalizeWorkspaceRelativeSettingPath(filePath);
+      return normalized ? [normalized] : [];
+    }),
+    id: chart.id.trim(),
+    name: chart.name.trim(),
+    source: chart.source
+  }));
+}
+
+function normalizeChronicleCalendarsForSave(
+  calendars: ChronicleCalendarSettings[]
+): ChronicleCalendarSettings[] {
+  return calendars.map((calendar) => ({
+    id: calendar.id,
+    name: calendar.name.trim(),
+    ...(calendar.id === "chronicle0" ? {} : { startYear: calendar.startYear })
+  }));
 }

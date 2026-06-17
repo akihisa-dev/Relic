@@ -16,11 +16,18 @@ export async function buildWorkspaceState(settings: AppSettings): Promise<Worksp
   }
 
   const userDataPath = app.getPath("userData");
+  const fileTreePromise = readWorkspaceFileTree(activeWorkspace.path).catch(() => []);
+  const fileIndexPromise = fileTreePromise
+    .then((fileTree) =>
+      readWorkspaceFileIndex(activeWorkspace.path, {
+        cachePath: getWorkspaceFileIndexCachePath(userDataPath, activeWorkspace.id),
+        fileTree
+      }).catch(() => ({ entries: [], records: [] }))
+    );
+
   const [fileTree, fileIndex, wsSettings] = await Promise.all([
-    readWorkspaceFileTree(activeWorkspace.path).catch(() => []),
-    readWorkspaceFileIndex(activeWorkspace.path, {
-      cachePath: getWorkspaceFileIndexCachePath(userDataPath, activeWorkspace.id)
-    }).catch(() => ({ entries: [], records: [] })),
+    fileTreePromise,
+    fileIndexPromise,
     readWorkspaceSettings(userDataPath, activeWorkspace.id).catch(() => null)
   ]);
 

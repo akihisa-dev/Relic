@@ -132,6 +132,32 @@ describe("readWorkspaceFileIndex", () => {
     }]);
   });
 
+  it("fileTreeを渡すと、その木からMarkdownパスを抽出して対象を限定できる", async () => {
+    const workspacePath = await createWorkspace();
+    await writeFile(path.join(workspacePath, "note.md"), "# Note\n", "utf8");
+    await writeFile(path.join(workspacePath, "skip.md"), "# Skip\n", "utf8");
+
+    const index = await readWorkspaceFileIndex(workspacePath, {
+      fileTree: [{ name: "note", path: "note.md", type: "file" }]
+    });
+
+    expect(index.entries.map(({ path: filePath }) => filePath)).toEqual(["note.md"]);
+    expect(index.records).toHaveLength(1);
+  });
+
+  it("markdown path一覧を渡すと、その一覧だけを対象に索引化できる", async () => {
+    const workspacePath = await createWorkspace();
+    await writeFile(path.join(workspacePath, "note.md"), "# Note\n", "utf8");
+    await writeFile(path.join(workspacePath, "skip.md"), "# Skip\n", "utf8");
+
+    const index = await readWorkspaceFileIndex(workspacePath, {
+      filePaths: ["skip.md"]
+    });
+
+    expect(index.entries.map(({ path: filePath }) => filePath)).toEqual(["skip.md"]);
+    expect(index.records).toHaveLength(1);
+  });
+
   it("読めないMarkdownがあっても全体を壊さない", async () => {
     const workspacePath = await createWorkspace();
     await writeFile(path.join(workspacePath, "blocked.md"), "needle", "utf8");

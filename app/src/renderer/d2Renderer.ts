@@ -8,15 +8,13 @@ let d2RendererPromise: Promise<D2Renderer> | null = null;
 let d2RenderQueue: Promise<void> = Promise.resolve();
 
 export function enqueueD2Render(source: string): Promise<string> {
-  const renderTask = d2RenderQueue.then(() =>
-    withDiagramRenderTimeout(renderD2Svg(source), "d2")
-  );
-  d2RenderQueue = renderTask.then(
+  const renderOperation = d2RenderQueue.then(() => renderD2Svg(source));
+  d2RenderQueue = renderOperation.then(
     () => undefined,
     () => undefined
   );
 
-  return renderTask;
+  return withDiagramRenderTimeout(renderOperation, "d2");
 }
 
 async function loadD2(): Promise<D2Renderer> {

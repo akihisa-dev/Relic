@@ -211,7 +211,9 @@ async function renderDiagramSvg(language: DiagramLanguage, source: string): Prom
     ? renderMermaidSvg(source)
     : enqueueD2Render(source);
 
-  return withDiagramRenderTimeout(operation, language);
+  return language === "mermaid"
+    ? withDiagramRenderTimeout(operation, language)
+    : operation;
 }
 
 function applyDiagramSvgIntrinsicSize(diagram: HTMLElement): void {

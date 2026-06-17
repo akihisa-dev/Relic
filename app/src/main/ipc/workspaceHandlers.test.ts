@@ -28,6 +28,8 @@ import {
   defaultChronicleCalendars,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields,
+  saveWorkspaceChartsChannel,
+  saveWorkspaceChronicleCalendarsChannel,
   togglePinChannel,
   getWorkspaceStateChannel
 } from "../../shared/ipc";
@@ -232,6 +234,111 @@ describe("workspaceHandlers", () => {
     expect(result).toMatchObject({
       error: { code: "TOGGLE_PIN_INVALID_INPUT" },
       ok: false
+    });
+  });
+
+  it("チャート保存後は永続化した正規化済み設定でチャートを返す", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
+    temporaryPaths.push(userDataPath, workspacePath);
+    await writeFile(path.join(workspacePath, "note.md"), "# Note\n", "utf8");
+
+    const workspace = createWorkspaceSummary(workspacePath);
+    const settings = addOrActivateWorkspace(
+      {
+        editorSettings: defaultEditorSettings,
+        featureToggles: defaultFeatureToggles,
+        frontmatterTemplates: defaultFrontmatterTemplates,
+        lastWorkspaceId: null,
+        userDefinedFields: defaultUserDefinedFields,
+        workspaces: []
+      },
+      workspace
+    );
+    await writeAppSettings(userDataPath, settings);
+
+    electronMock.getPath.mockReturnValue(userDataPath);
+    registerWorkspaceHandlers();
+    const saveChartsHandler = electronMock.handle.mock.calls.find(
+      ([channel]) => channel === saveWorkspaceChartsChannel
+    )?.[1];
+
+    if (!saveChartsHandler) throw new Error("saveWorkspaceCharts handler was not registered");
+
+    const result = await saveChartsHandler(undefined, [
+      {
+        filePaths: ["note.md"],
+        id: " chronicle ",
+        name: " 年表 ",
+        source: "chronicle"
+      },
+      {
+        filePaths: ["note.md"],
+        id: " date ",
+        name: " 日付 ",
+        source: "date"
+      }
+    ]);
+
+    expect(result).toEqual({
+      ok: true,
+      value: [
+        expect.objectContaining({
+          entries: [],
+          filePaths: ["note.md"],
+          id: "chronicle",
+          name: "年表",
+          source: "chronicle"
+        }),
+        expect.objectContaining({
+          entries: [],
+          filePaths: ["note.md"],
+          id: "date",
+          name: "日付",
+          source: "date"
+        })
+      ]
+    });
+  });
+
+  it("暦設定保存後は永続化した正規化済み設定を返す", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
+    temporaryPaths.push(userDataPath, workspacePath);
+
+    const workspace = createWorkspaceSummary(workspacePath);
+    const settings = addOrActivateWorkspace(
+      {
+        editorSettings: defaultEditorSettings,
+        featureToggles: defaultFeatureToggles,
+        frontmatterTemplates: defaultFrontmatterTemplates,
+        lastWorkspaceId: null,
+        userDefinedFields: defaultUserDefinedFields,
+        workspaces: []
+      },
+      workspace
+    );
+    await writeAppSettings(userDataPath, settings);
+
+    electronMock.getPath.mockReturnValue(userDataPath);
+    registerWorkspaceHandlers();
+    const saveCalendarsHandler = electronMock.handle.mock.calls.find(
+      ([channel]) => channel === saveWorkspaceChronicleCalendarsChannel
+    )?.[1];
+
+    if (!saveCalendarsHandler) throw new Error("saveWorkspaceChronicleCalendars handler was not registered");
+
+    const result = await saveCalendarsHandler(undefined, [
+      { id: "chronicle0", name: " 主暦 " },
+      { id: "chronicle1", name: " 王国暦 ", startYear: 1200 }
+    ]);
+
+    expect(result).toEqual({
+      ok: true,
+      value: [
+        { id: "chronicle0", name: "主暦" },
+        { id: "chronicle1", name: "王国暦", startYear: 1200 }
+      ]
     });
   });
 });

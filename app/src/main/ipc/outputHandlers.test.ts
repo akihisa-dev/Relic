@@ -81,6 +81,7 @@ import {
   copyDiagramSvgChannel,
   printPreviewChannel,
   saveDiagramSvgChannel,
+  previewOutputHtmlMaxBytes,
   savePreviewAsPdfChannel
 } from "../../shared/ipc";
 import { registerOutputHandlers } from "./outputHandlers";
@@ -192,6 +193,42 @@ describe("outputHandlers", () => {
       "/tmp/out.pdf"
     );
     expect(fsMock.writeFile).not.toHaveBeenCalledWith("/tmp/out.pdf", expect.anything(), expect.anything());
+  });
+
+  it("PDF保存でHTMLが空の場合は入力エラーになる", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
+      defaultFileName: "Note",
+      html: "",
+      title: "Note"
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "OUTPUT_PDF_INVALID_INPUT" })
+    });
+    expect(electronMock.showSaveDialog).not.toHaveBeenCalled();
+    expect(electronMock.printToPDF).not.toHaveBeenCalled();
+    expect(electronMock.loadURL).not.toHaveBeenCalled();
+  });
+
+  it("PDF保存でHTMLサイズ上限を超えると入力エラーになり、hidden windowを作らない", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
+      defaultFileName: "Note",
+      html: "a".repeat(previewOutputHtmlMaxBytes + 1),
+      title: "Note"
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "OUTPUT_PDF_INVALID_INPUT" })
+    });
+    expect(electronMock.showSaveDialog).not.toHaveBeenCalled();
+    expect(electronMock.printToPDF).not.toHaveBeenCalled();
+    expect(electronMock.loadURL).not.toHaveBeenCalled();
   });
 
   it("SVG保存で空SVGを保存しない", async () => {
@@ -380,6 +417,38 @@ describe("outputHandlers", () => {
     const closeHandler = electronMock.browserWindowOn.mock.calls.find(([eventName]) => eventName === "closed")?.[1] as (() => void) | undefined;
     closeHandler?.();
     expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringMatching(/\/tmp\/relic-print-preview\/preview-.+\.pdf$/));
+  });
+
+  it("印刷プレビューでHTMLが空の場合は入力エラーになる", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
+      html: "",
+      title: "Note"
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "OUTPUT_PRINT_INVALID_INPUT" })
+    });
+    expect(electronMock.printToPDF).not.toHaveBeenCalled();
+    expect(electronMock.loadURL).not.toHaveBeenCalled();
+  });
+
+  it("印刷プレビューでHTMLサイズ上限を超えると入力エラーになり、hidden windowを作らない", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
+      html: "a".repeat(previewOutputHtmlMaxBytes + 1),
+      title: "Note"
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "OUTPUT_PRINT_INVALID_INPUT" })
+    });
+    expect(electronMock.printToPDF).not.toHaveBeenCalled();
+    expect(electronMock.loadURL).not.toHaveBeenCalled();
   });
 
   it("印刷プレビュー起動時の古い一時PDF削除に失敗してもハンドラ登録を続ける", async () => {
