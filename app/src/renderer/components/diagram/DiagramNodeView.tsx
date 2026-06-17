@@ -19,9 +19,13 @@ interface DiagramNodeViewProps {
   isDragging: boolean;
   isTextEditing: boolean;
   isSelected: boolean;
+  layerBackwardLabel: string;
+  layerForwardLabel: string;
   node: RelicConnectedDiagramNode;
   nodeTextDraft?: string;
   nodeTextLabel: string;
+  onLayerBackwardPointerDown?: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLButtonElement>) => void;
+  onLayerForwardPointerDown?: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLButtonElement>) => void;
   onNodeTextCancel?: () => void;
   onNodeTextChange?: (nodeId: string, value: string) => void;
   onNodeTextCommit?: () => void;
@@ -50,9 +54,13 @@ export function DiagramNodeView({
   isDragging,
   isTextEditing,
   isSelected,
+  layerBackwardLabel,
+  layerForwardLabel,
   node,
   nodeTextDraft,
   nodeTextLabel,
+  onLayerBackwardPointerDown,
+  onLayerForwardPointerDown,
   onNodeTextCancel,
   onNodeTextChange,
   onNodeTextCommit,
@@ -94,6 +102,7 @@ export function DiagramNodeView({
       style={{
         minHeight: node.height,
         transform: `translate(${x}px, ${y}px)`,
+        zIndex: nodeLayerIndex(node, isDragging, isSelected),
         width: node.width
       }}
       title={title}
@@ -161,6 +170,59 @@ export function DiagramNodeView({
           ) : null}
         </span>
       ) : null}
+      {isSelected && (onLayerBackwardPointerDown || onLayerForwardPointerDown) ? (
+        <span className="diagram-canvas-node-layer-controls" aria-label={layerForwardLabel}>
+          <button
+            aria-label={layerBackwardLabel}
+            className="diagram-canvas-node-layer-button"
+            data-tooltip={layerBackwardLabel}
+            onPointerDown={(event) => onLayerBackwardPointerDown?.(node, event)}
+            title={layerBackwardLabel}
+            type="button"
+          >
+            <LayerBackIcon />
+          </button>
+          <button
+            aria-label={layerForwardLabel}
+            className="diagram-canvas-node-layer-button"
+            data-tooltip={layerForwardLabel}
+            onPointerDown={(event) => onLayerForwardPointerDown?.(node, event)}
+            title={layerForwardLabel}
+            type="button"
+          >
+            <LayerFrontIcon />
+          </button>
+        </span>
+      ) : null}
     </div>
+  );
+}
+
+function nodeLayerIndex(node: RelicConnectedDiagramNode, isDragging: boolean, isSelected: boolean): number {
+  const layer = "layer" in node ? node.layer : 0;
+  if (isDragging || isSelected) return layer + 1000;
+
+  return layer;
+}
+
+function LayerBackIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="14">
+      <path d="M 6 8 H 18" />
+      <path d="M 6 14 H 18" />
+      <path d="M 12 20 V 4" />
+      <path d="M 8 16 L 12 20 L 16 16" />
+    </svg>
+  );
+}
+
+function LayerFrontIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="14">
+      <path d="M 6 10 H 18" />
+      <path d="M 6 16 H 18" />
+      <path d="M 12 4 V 20" />
+      <path d="M 8 8 L 12 4 L 16 8" />
+    </svg>
   );
 }

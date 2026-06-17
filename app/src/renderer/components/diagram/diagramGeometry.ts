@@ -58,6 +58,7 @@ interface DiagramRect {
 
 interface RoutedSegment {
   end: DiagramPoint;
+  label: string;
   start: DiagramPoint;
   toNodeId: string;
 }
@@ -136,7 +137,7 @@ export function buildLineLayouts(
   applyDestinationPortLanes(contexts);
 
   const routedLines = contexts.map((context) => {
-    const conflictingSegments = reservedSegments.filter((segment) => segment.toNodeId !== context.to.node.id);
+    const conflictingSegments = reservedSegments.filter((segment) => !canShareRoutedSegment(segment, context));
     const route = buildRoutedLineRoute(
       context.start,
       context.end,
@@ -145,7 +146,7 @@ export function buildLineLayouts(
       context.to.node.id,
       conflictingSegments
     );
-    reservedSegments.push(...segmentsFromPoints(route.points, context.to.node.id));
+    reservedSegments.push(...segmentsFromPoints(route.points, context.to.node.id, context.line.label));
     return { context, route };
   });
 
@@ -702,6 +703,7 @@ function mergeIntervals(intervals: Array<{ end: number; start: number }>): Array
 function segmentFromDistances(segment: RoutedSegment, startDistance: number, endDistance: number): RoutedSegment {
   return {
     end: pointAtSegmentDistance(segment.start, segment.end, endDistance),
+    label: segment.label,
     start: pointAtSegmentDistance(segment.start, segment.end, startDistance),
     toNodeId: segment.toNodeId
   };
@@ -747,14 +749,20 @@ function segmentCrossingPoint(
     : null;
 }
 
-function segmentsFromPoints(points: DiagramPoint[], toNodeId = ""): RoutedSegment[] {
+function segmentsFromPoints(points: DiagramPoint[], toNodeId = "", label = ""): RoutedSegment[] {
   const segments: RoutedSegment[] = [];
   for (let index = 1; index < points.length; index += 1) {
     const start = points[index - 1];
     const end = points[index];
-    if (start && end) segments.push({ end, start, toNodeId });
+    if (start && end) segments.push({ end, label, start, toNodeId });
   }
   return segments;
+}
+
+function canShareRoutedSegment(segment: RoutedSegment, context: LineRouteContext): boolean {
+  if (segment.toNodeId === context.to.node.id) return true;
+
+  return segment.label.trim().length > 0 && segment.label === context.line.label;
 }
 
 function segmentBlocked(start: DiagramPoint, end: DiagramPoint, obstacles: DiagramRect[]): boolean {

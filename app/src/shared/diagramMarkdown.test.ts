@@ -21,6 +21,7 @@ import {
   resizeRelicDiagramNode,
   serializeRelicDiagramMarkdown,
   updateRelicDiagramLineLabel,
+  updateRelicFreeDrawingNodeLayer,
   updateRelicFreeDrawingNodeText,
   updateRelicWhyTreeLabels,
   updateRelicWhyTreeSupplement,
@@ -508,9 +509,27 @@ describe("free-drawing operations", () => {
         "    label: 対立"
       ].join("\n"), "lines: []"),
       "node-1",
-      "node-2"
+      "node-2",
+      "はい"
     );
-    expect(addedLine.ok ? addedLine.value.line : null).toMatchObject({ from: "node-1", to: "node-2" });
+    expect(addedLine.ok ? addedLine.value.line : null).toMatchObject({ from: "node-1", label: "はい", to: "node-2" });
+  });
+
+  it("領域図形とNodeレイヤーをMarkdownへ保存する", () => {
+    const addedNode = addRelicFreeDrawingNode(freeDrawingContent, "area", 640, 320);
+    expect(addedNode.ok ? addedNode.value.node : null).toMatchObject({
+      height: 224,
+      layer: -1,
+      shape: "area",
+      text: "領域",
+      width: 384
+    });
+    expect(addedNode.ok ? addedNode.value.content : "").toContain("shape: area");
+    expect(addedNode.ok ? addedNode.value.content : "").toContain("layer: -1");
+
+    const updatedLayer = updateRelicFreeDrawingNodeLayer(freeDrawingContent, "node-2", 3);
+    expect(updatedLayer.ok ? updatedLayer.value.node.layer : null).toBe(3);
+    expect(updatedLayer.ok ? updatedLayer.value.content : "").toContain("layer: 3");
   });
 
   it("free-drawingにRelationshipのファイル参照Node追加を適用しない", () => {

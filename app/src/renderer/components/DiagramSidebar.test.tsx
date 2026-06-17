@@ -172,6 +172,7 @@ describe("DiagramSidebar", () => {
     expect(screen.getByRole("button", { name: "Decision" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Input / Output" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Note" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Area" })).toBeInTheDocument();
     expect(screen.queryByText("Markdown files")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Alice\.md/ })).not.toBeInTheDocument();
   });

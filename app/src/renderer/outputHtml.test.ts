@@ -167,6 +167,15 @@ describe("outputHtml", () => {
         "    y: 0",
         "    width: 192",
         "    height: 96",
+        "    layer: 1",
+        "  - id: c",
+        "    shape: area",
+        "    text: 勢力範囲",
+        "    x: -64",
+        "    y: -64",
+        "    width: 384",
+        "    height: 224",
+        "    layer: -1",
         "lines:",
         "  - id: l1",
         "    from: a",
@@ -182,9 +191,13 @@ describe("outputHtml", () => {
 
     expect(result.html).toContain("relic-output-relationship");
     expect(result.html).toContain("relic-output-relationship-node--shape-decision");
+    expect(result.html).toContain("relic-output-relationship-node--shape-area");
     expect(result.html).toContain(">主人公<");
     expect(result.html).toContain(">敵対組織<");
+    expect(result.html).toContain(">勢力範囲<");
     expect(result.html).toContain("対立");
+    expect(result.html).toContain(".relic-output-relationship-node--shape-decision::before");
+    expect(result.html).toContain(".relic-output-relationship-node--shape-decision::after");
     expect(result.html).not.toContain("text: 主人公");
   });
 

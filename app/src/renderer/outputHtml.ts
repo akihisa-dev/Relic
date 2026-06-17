@@ -177,7 +177,7 @@ function buildRelationshipOutputHtml(
         ? `<text class="relic-output-relationship-label" x="${line.labelX}" y="${line.labelY}">${escapeHtml(line.label)}</text>`
         : ""
     ]),
-    ...layout.nodes.map((node) => [
+    ...[...layout.nodes].sort((left, right) => outputDiagramNodeLayer(left.node) - outputDiagramNodeLayer(right.node)).map((node) => [
       `<foreignObject x="${node.x}" y="${node.y}" width="${node.node.width}" height="${node.node.height}">`,
       `<div class="${outputDiagramNodeClassName(node.node)}" title="${escapeHtmlAttribute(outputDiagramNodeTitle(node.node))}" xmlns="http://www.w3.org/1999/xhtml">`,
       `<span>${escapeHtml(outputDiagramNodeText(node.node))}</span>`,
@@ -193,6 +193,10 @@ function outputDiagramNodeClassName(node: Extract<RelicDiagramDocument, { type: 
   return "shape" in node
     ? `relic-output-relationship-node relic-output-relationship-node--shape-${node.shape}`
     : "relic-output-relationship-node";
+}
+
+function outputDiagramNodeLayer(node: Extract<RelicDiagramDocument, { type: "relationship" | "free-drawing" }>["nodes"][number]): number {
+  return "layer" in node ? node.layer : 0;
 }
 
 function outputDiagramNodeText(node: Extract<RelicDiagramDocument, { type: "relationship" | "free-drawing" }>["nodes"][number]): string {
@@ -516,13 +520,39 @@ mark {
   width: 100%;
 }
 
+.relic-output-relationship-node > span {
+  position: relative;
+  z-index: 1;
+}
+
 .relic-output-relationship-node--shape-terminator {
   border-radius: 999px;
 }
 
 .relic-output-relationship-node--shape-decision {
+  background: transparent;
+  border: 0;
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   padding: 18px 34px;
+  position: relative;
+}
+
+.relic-output-relationship-node--shape-decision::before,
+.relic-output-relationship-node--shape-decision::after {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  content: "";
+  pointer-events: none;
+  position: absolute;
+}
+
+.relic-output-relationship-node--shape-decision::before {
+  background: #80786c;
+  inset: 0;
+}
+
+.relic-output-relationship-node--shape-decision::after {
+  background: #ffffff;
+  inset: 1.5px;
 }
 
 .relic-output-relationship-node--shape-input-output {
@@ -546,6 +576,17 @@ mark {
   right: -1.5px;
   top: -1.5px;
   width: 16px;
+}
+
+.relic-output-relationship-node--shape-area {
+  align-items: flex-start;
+  background: #f3f0e8;
+  border: 1.5px dashed #80786c;
+  box-shadow: none;
+  color: #4f4940;
+  justify-content: flex-start;
+  padding: 12px 14px;
+  text-align: left;
 }
 
 .relic-output-why-tree {

@@ -179,7 +179,7 @@ export function DiagramSidebar({
   );
 }
 
-const flowchartShapes: RelicFreeDrawingShapeType[] = ["terminator", "process", "decision", "input-output", "note"];
+const flowchartShapes: RelicFreeDrawingShapeType[] = ["terminator", "process", "decision", "input-output", "note", "area"];
 type WhyTreeLabelKey = keyof RelicWhyTreeLabels;
 
 const whyTreeLabelFields: {

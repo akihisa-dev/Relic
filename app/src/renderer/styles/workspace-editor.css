@@ -1224,6 +1224,22 @@
   width: 16px;
 }
 
+.diagram-canvas-node--shape-area {
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+  border: 2px dashed color-mix(in srgb, var(--text-3) 58%, var(--border-medium));
+  border-radius: 7px;
+  box-shadow: none;
+  color: var(--text-2);
+  justify-content: start;
+  opacity: 0.92;
+  padding: 12px 14px;
+}
+
+.diagram-canvas-node--shape-area .diagram-canvas-node-name {
+  align-self: start;
+  justify-self: start;
+}
+
 .diagram-canvas-node--shape-decision > *,
 .diagram-canvas-node--shape-input-output > * {
   position: relative;
@@ -1290,6 +1306,38 @@
   right: -1px;
   touch-action: none;
   width: 10px;
+}
+
+.diagram-canvas-node-layer-controls {
+  display: flex;
+  gap: 4px;
+  left: -8px;
+  pointer-events: auto;
+  position: absolute;
+  top: -34px;
+}
+
+.diagram-canvas-node-layer-button {
+  align-items: center;
+  appearance: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+  color: var(--text-2);
+  cursor: pointer;
+  display: inline-flex;
+  height: 26px;
+  justify-content: center;
+  padding: 0;
+  width: 26px;
+}
+
+.diagram-canvas-node-layer-button:hover,
+.diagram-canvas-node-layer-button:focus-visible {
+  border-color: var(--accent-ring);
+  color: var(--text);
+  outline: none;
 }
 
 .diagram-canvas-node-add-shape {
@@ -1423,6 +1471,12 @@
   right: -1.5px;
   top: -1.5px;
   width: 5px;
+}
+
+.diagram-canvas-node-add-shape-option--area .diagram-canvas-node-add-shape-icon {
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+  border-style: dashed;
+  border-radius: 2px;
 }
 
 .diagram-canvas-node-outline-hit--top,
