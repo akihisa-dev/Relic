@@ -180,10 +180,23 @@ function buildRelationshipOutputHtml(
     ...[...layout.nodes].sort((left, right) => outputDiagramNodeLayer(left.node) - outputDiagramNodeLayer(right.node)).map((node) => [
       `<foreignObject x="${node.x}" y="${node.y}" width="${node.node.width}" height="${node.node.height}">`,
       `<div class="${outputDiagramNodeClassName(node.node)}" title="${escapeHtmlAttribute(outputDiagramNodeTitle(node.node))}" xmlns="http://www.w3.org/1999/xhtml">`,
-      `<span>${escapeHtml(outputDiagramNodeText(node.node))}</span>`,
+      outputDiagramNodeBodyHtml(node.node),
       "</div>",
       "</foreignObject>"
     ].join("")),
+    ...(diagram.type === "free-drawing" ? layout.nodes.flatMap((node) => {
+      if (!("text" in node.node)) return [];
+
+      return [
+        [
+          `<foreignObject x="${node.x}" y="${node.y}" width="${node.node.width}" height="${node.node.height}">`,
+          `<div class="${outputDiagramNodeLabelClassName(node.node)}" xmlns="http://www.w3.org/1999/xhtml">`,
+          `<span>${escapeHtml(node.node.text)}</span>`,
+          "</div>",
+          "</foreignObject>"
+        ].join("")
+      ];
+    }) : []),
     "</svg>",
     "</section>"
   ].join("");
@@ -196,11 +209,21 @@ function outputDiagramNodeClassName(node: Extract<RelicDiagramDocument, { type: 
 }
 
 function outputDiagramNodeLayer(node: Extract<RelicDiagramDocument, { type: "relationship" | "free-drawing" }>["nodes"][number]): number {
-  return "layer" in node ? node.layer : 0;
+  if (!("layer" in node)) return 0;
+
+  return node.shape === "area" ? 0 : 1;
 }
 
-function outputDiagramNodeText(node: Extract<RelicDiagramDocument, { type: "relationship" | "free-drawing" }>["nodes"][number]): string {
-  return "file" in node ? nodeFileName(node.file) : node.text;
+function outputDiagramNodeBodyHtml(node: Extract<RelicDiagramDocument, { type: "relationship" | "free-drawing" }>["nodes"][number]): string {
+  return "file" in node ? `<span>${escapeHtml(nodeFileName(node.file))}</span>` : "";
+}
+
+function outputDiagramNodeLabelClassName(node: Extract<RelicDiagramDocument, { type: "free-drawing" }>["nodes"][number]): string {
+  return [
+    "relic-output-relationship-node-label",
+    `relic-output-relationship-node-label--shape-${node.shape}`,
+    node.shape === "area" ? "relic-output-relationship-node-label--area" : ""
+  ].filter(Boolean).join(" ");
 }
 
 function outputDiagramNodeTitle(node: Extract<RelicDiagramDocument, { type: "relationship" | "free-drawing" }>["nodes"][number]): string {
@@ -523,6 +546,40 @@ mark {
 .relic-output-relationship-node > span {
   position: relative;
   z-index: 1;
+}
+
+.relic-output-relationship-node-label {
+  align-items: center;
+  box-sizing: border-box;
+  color: #1f1d19;
+  display: flex;
+  font-size: 14px;
+  font-weight: 650;
+  height: 100%;
+  justify-content: center;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  padding: 10px;
+  text-align: center;
+  width: 100%;
+}
+
+.relic-output-relationship-node-label--shape-decision {
+  padding: 18px 34px;
+}
+
+.relic-output-relationship-node-label--shape-input-output {
+  padding-left: 28px;
+  padding-right: 28px;
+}
+
+.relic-output-relationship-node-label--area {
+  align-items: flex-start;
+  color: #4f4940;
+  font-size: 13px;
+  justify-content: flex-start;
+  padding: 12px 14px;
+  text-align: left;
 }
 
 .relic-output-relationship-node--shape-terminator {

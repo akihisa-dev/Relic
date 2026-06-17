@@ -7,7 +7,6 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type WheelEvent as ReactWheelEvent,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -19,15 +18,12 @@ import {
   addRelicDiagramLine,
   moveRelicDiagramNode,
   moveRelicFreeDrawingAreaWithContents,
-  relicFreeDrawingNodeMaxLayer,
-  relicFreeDrawingNodeMinLayer,
   relicFreeDrawingShapeTypes,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
   reverseRelicDiagramLineDirection,
   resizeRelicDiagramNode,
   updateRelicFreeDrawingNodeText,
-  updateRelicFreeDrawingNodeLayer,
   updateRelicDiagramLineLabel,
   type RelicConnectedDiagramDocument,
   type RelicConnectedDiagramNode,
@@ -50,7 +46,7 @@ import {
 import { type DiagramCanvasProps } from "./diagramTypes";
 import { freeDrawingShapeDragType, isFreeDrawingShapeType } from "./freeDrawingShapeDrag";
 import { DiagramLineLayer } from "./DiagramLineLayer";
-import { diagramNodeDisplayLayer } from "./diagramLayering";
+import { diagramFreeDrawingLabelDisplayLayer, diagramNodeDisplayLayer } from "./diagramLayering";
 import { DiagramNodeView } from "./DiagramNodeView";
 import { DiagramSnapGuides } from "./DiagramSnapGuides";
 import { diagramGridSize, snapDiagramNode, snapDiagramPointToGrid, snapDiagramSizeToGrid, type DiagramSnapGuide } from "./diagramSnap";
@@ -123,14 +119,6 @@ interface ShapeAddMenuState {
   nodeId: string;
 }
 
-interface LayerFeedbackState {
-  direction: -1 | 1;
-  nodeId: string;
-  token: number;
-}
-
-const layerFeedbackDurationMs = 560;
-
 export function RelationshipCanvas({
   content,
   diagram,
@@ -144,7 +132,6 @@ export function RelationshipCanvas({
   const [drag, setDrag] = useState<DragState | null>(null);
   const [labelEdit, setLabelEdit] = useState<LabelEditState | null>(null);
   const [nodeTextEdit, setNodeTextEdit] = useState<NodeTextEditState | null>(null);
-  const [layerFeedback, setLayerFeedback] = useState<LayerFeedbackState | null>(null);
   const [pan, setPan] = useState<PanState | null>(null);
   const [resize, setResize] = useState<ResizeState | null>(null);
   const [selection, setSelection] = useState<DiagramSelection | null>(null);
@@ -152,7 +139,6 @@ export function RelationshipCanvas({
   const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
 
   const layout = useMemo(() => buildDiagramCanvasLayout(diagram), [diagram]);
-  const layerFeedbackSequenceRef = useRef(0);
   const previousLayoutOriginRef = useRef<{ x: number; y: number } | null>(null);
   const canvasStyle = {
     "--diagram-canvas-grid-size": `${diagramGridSize * viewport.zoom}px`,
@@ -175,16 +161,6 @@ export function RelationshipCanvas({
       panY: current.panY + deltaY * current.zoom
     }));
   }, [layout.originX, layout.originY]);
-
-  useEffect(() => {
-    if (!layerFeedback) return undefined;
-
-    const timeout = window.setTimeout(() => {
-      setLayerFeedback((current) => current?.token === layerFeedback.token ? null : current);
-    }, layerFeedbackDurationMs);
-
-    return () => window.clearTimeout(timeout);
-  }, [layerFeedback]);
 
   const displayNodes = useMemo(() => {
     const draggedLayoutNode = drag
@@ -238,12 +214,6 @@ export function RelationshipCanvas({
     () => buildLineLayouts(visibleDiagramLines(diagram.lines, diagram.nodes), displayNodes),
     [diagram.lines, diagram.nodes, displayNodes]
   );
-  const selectedFreeDrawingLayer = useMemo(() => {
-    if (selection?.type !== "node") return null;
-
-    const selectedNode = diagram.nodes.find((node) => node.id === selection.id);
-    return selectedNode && "layer" in selectedNode ? selectedNode.layer : null;
-  }, [diagram.nodes, selection]);
   const displaySnapGuides = useMemo(() => (drag?.guides ?? []).map((guide) => ({
     ...guide,
     value: guide.value - (guide.axis === "x" ? layout.originX : layout.originY)
@@ -813,30 +783,6 @@ export function RelationshipCanvas({
       setShapeAddMenu(null);
     }
   };
-  const changeFreeDrawingNodeLayer = (
-    node: RelicConnectedDiagramNode,
-    direction: -1 | 1,
-    event: ReactPointerEvent<HTMLButtonElement>
-  ): void => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!onChange || !isFreeDrawing || !("shape" in node)) return;
-    if (direction === -1 && node.layer <= relicFreeDrawingNodeMinLayer) return;
-    if (direction === 1 && node.layer >= relicFreeDrawingNodeMaxLayer) return;
-
-    const updated = updateRelicFreeDrawingNodeLayer(content, node.id, node.layer + direction);
-    if (updated.ok) {
-      onChange(updated.value.content);
-      setSelection({ id: updated.value.node.id, type: "node" });
-      setLabelEdit(null);
-      setLayerFeedback({
-        direction,
-        nodeId: updated.value.node.id,
-        token: layerFeedbackSequenceRef.current += 1
-      });
-      setShapeAddMenu(null);
-    }
-  };
   const handleCanvasKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
     if (event.key === "Escape") {
@@ -1000,27 +946,13 @@ export function RelationshipCanvas({
             />
           ) : null}
           {displayNodes.map(({ node, x, y }) => {
-            const canChangeLayer = isFreeDrawing && "shape" in node && node.shape !== "area";
             const canAddConnectedShape = isFreeDrawing && "shape" in node && canAddDecisionOutputLine(node, diagram.lines);
-            const layerFeedbackDirection = layerFeedback?.nodeId === node.id ? layerFeedback.direction : undefined;
-            const layerRelation = selectedFreeDrawingLayer !== null && "layer" in node && selection?.id !== node.id
-              ? node.layer > selectedFreeDrawingLayer
-                ? "above"
-                : node.layer < selectedFreeDrawingLayer
-                  ? "below"
-                  : "same"
-              : undefined;
 
             return (
               <DiagramNodeView
                 isDragging={drag?.nodeId === node.id}
-                isLayerBackwardDisabled={canChangeLayer && "layer" in node ? node.layer <= relicFreeDrawingNodeMinLayer : false}
-                isLayerForwardDisabled={canChangeLayer && "layer" in node ? node.layer >= relicFreeDrawingNodeMaxLayer : false}
                 isTextEditing={nodeTextEdit?.nodeId === node.id}
                 isSelected={selection?.type === "node" && selection.id === node.id}
-                layerFeedbackDirection={layerFeedbackDirection}
-                layerLabel={canChangeLayer && "layer" in node ? t("diagram.layerValue", { layer: node.layer }) : undefined}
-                layerRelation={layerRelation}
                 key={node.id}
                 node={node}
                 nodeTextDraft={nodeTextEdit?.nodeId === node.id ? nodeTextEdit.value : undefined}
@@ -1037,8 +969,6 @@ export function RelationshipCanvas({
                 addShapeOptions={isFreeDrawing && shapeAddMenu?.nodeId === node.id ? freeDrawingShapeOptions : undefined}
                 onShapeAddButtonPointerDown={toggleShapeAddMenu}
                 onShapeOptionPointerDown={chooseConnectedShape}
-                onLayerBackwardPointerDown={canChangeLayer ? (targetNode, event) => changeFreeDrawingNodeLayer(targetNode, -1, event) : undefined}
-                onLayerForwardPointerDown={canChangeLayer ? (targetNode, event) => changeFreeDrawingNodeLayer(targetNode, 1, event) : undefined}
                 onPointerCancel={cancelNodeDrag}
                 onPointerDown={startNodePointer}
                 onPointerMove={(event) => {
@@ -1047,15 +977,74 @@ export function RelationshipCanvas({
                 }}
                 onResizePointerDown={startNodeResize}
                 onPointerUp={finishNodePointer}
+                renderNodeText={!isFreeDrawing}
                 resizeLabel={t("diagram.resizeNode")}
-                layerBackwardLabel={t("diagram.layerBackward")}
-                layerForwardLabel={t("diagram.layerForward")}
                 x={x}
                 y={y}
               />
             );
           })}
         </div>
+        {isFreeDrawing ? (
+          <div className="diagram-canvas-node-labels">
+            {displayNodes.map(({ node, x, y }) => {
+              if (!("text" in node)) return null;
+
+              const isArea = node.shape === "area";
+              const labelClassName = [
+                "diagram-canvas-node-label-frame",
+                `diagram-canvas-node-label-frame--shape-${node.shape}`,
+                isArea ? "diagram-canvas-node-label-frame--area" : ""
+              ].filter(Boolean).join(" ");
+              const labelStyle: CSSProperties = {
+                height: node.height,
+                left: x,
+                top: y,
+                width: node.width,
+                zIndex: diagramFreeDrawingLabelDisplayLayer()
+              };
+
+              return (
+                <div
+                  className={labelClassName}
+                  key={node.id}
+                  onDoubleClick={(event) => beginFreeDrawingNodeTextEdit(node, event)}
+                  style={labelStyle}
+                >
+                  {nodeTextEdit?.nodeId === node.id ? (
+                    <textarea
+                      aria-label={isArea ? t("diagram.freeDrawingAreaName") : t("diagram.freeDrawingNodeText")}
+                      autoFocus
+                      className={[
+                        "diagram-canvas-node-text",
+                        isArea ? "diagram-canvas-node-text--area-name" : ""
+                      ].filter(Boolean).join(" ")}
+                      onBlur={commitFreeDrawingNodeText}
+                      onChange={(event) => changeFreeDrawingNodeText(node.id, event.currentTarget.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          cancelFreeDrawingNodeText();
+                        }
+                      }}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      value={nodeTextEdit.value}
+                    />
+                  ) : (
+                    <span className={[
+                      "diagram-canvas-node-name",
+                      "diagram-canvas-node-name--free-text",
+                      isArea ? "diagram-canvas-node-name--area-name" : ""
+                    ].filter(Boolean).join(" ")}
+                    >
+                      {node.text || (isArea ? t("diagram.freeDrawingAreaName") : t("diagram.freeDrawingNodeText"))}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -1067,6 +1056,7 @@ function isBlankCanvasTarget(target: EventTarget, currentTarget: Element): boole
     (target instanceof Element && target.classList.contains("diagram-canvas-empty")) ||
     (target instanceof Element && target.classList.contains("diagram-canvas-lines")) ||
     (target instanceof Element && target.classList.contains("diagram-canvas-labels")) ||
+    (target instanceof Element && target.classList.contains("diagram-canvas-node-labels")) ||
     (target instanceof Element && target.classList.contains("diagram-canvas-nodes")) ||
     (target instanceof Element && target.classList.contains("diagram-canvas-space"));
 }
