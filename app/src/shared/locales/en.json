@@ -153,7 +153,7 @@
   "diagram.freeDrawingNodeText": "Shape text",
   "diagram.freeDrawingShape.decision": "Decision",
   "diagram.freeDrawingShape.input-output": "Input / Output",
-  "diagram.freeDrawingShape.note": "Note",
+  "diagram.freeDrawingShape.label": "Label",
   "diagram.freeDrawingShape.process": "Process",
   "diagram.freeDrawingShape.terminator": "Start / End",
   "diagram.freeDrawingShape.area": "Area",

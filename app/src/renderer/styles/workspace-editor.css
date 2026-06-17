@@ -1222,21 +1222,9 @@
   z-index: 0;
 }
 
-.diagram-canvas-node--shape-note {
+.diagram-canvas-node--shape-label {
   border: 2px solid var(--diagram-node-layer-border, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)));
-  border-radius: 5px;
-}
-
-.diagram-canvas-node--shape-note::after {
-  background: var(--diagram-node-layer-fill, var(--bg));
-  border-bottom: 2px solid var(--diagram-node-layer-border, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)));
-  border-left: 2px solid var(--diagram-node-layer-border, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)));
-  content: "";
-  height: 16px;
-  position: absolute;
-  right: -2px;
-  top: -2px;
-  width: 16px;
+  border-radius: 7px;
 }
 
 .diagram-canvas-node--shape-area {
@@ -1451,20 +1439,8 @@
   position: absolute;
 }
 
-.diagram-canvas-node-add-shape-option--note .diagram-canvas-node-add-shape-icon {
-  border-radius: 2px;
-}
-
-.diagram-canvas-node-add-shape-option--note .diagram-canvas-node-add-shape-icon::after {
-  background: var(--bg);
-  border-bottom: 1.5px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
-  border-left: 1.5px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
-  content: "";
-  height: 5px;
-  position: absolute;
-  right: -1.5px;
-  top: -1.5px;
-  width: 5px;
+.diagram-canvas-node-add-shape-option--label .diagram-canvas-node-add-shape-icon {
+  border-radius: 7px;
 }
 
 .diagram-canvas-node-add-shape-option--area .diagram-canvas-node-add-shape-icon {

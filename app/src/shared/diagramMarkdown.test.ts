@@ -232,6 +232,7 @@ describe("parseRelicDiagramMarkdown", () => {
     expect(parseRelicDiagramMarkdown("---\ntype: relationship\n---\n\nnotes: body").ok).toBe(false);
     expect(parseRelicDiagramMarkdown("---\ntype: relationship\n---\n\nnodes:\n  - id: node-1\n    file: ../outside.md\n    x: 0\n    y: 0\n    width: 100\n    height: 80").ok).toBe(false);
     expect(parseRelicDiagramMarkdown("---\ntype: relationship\n---\n\nnodes:\n  - id: node-1\n    file: a.md\n    x: 0\n    y: 0\n    width: 100\n    height: 80\nlines:\n  - id: line-1\n    from: node-1\n    to: node-1").ok).toBe(false);
+    expect(parseRelicDiagramMarkdown("---\ntype: free-drawing\n---\n\nnodes:\n  - id: node-1\n    shape: note\n    text: メモ\n    x: 0\n    y: 0\n    width: 100\n    height: 80\nlines: []").ok).toBe(false);
   });
 
   it("why-treeではRelationship型のnodes/linesやphenomenon欠落を拒否する", () => {
@@ -493,6 +494,10 @@ describe("free-drawing operations", () => {
     expect(addedNode.ok ? addedNode.value.content : "").toContain("x: 640");
     expect(addedNode.ok ? addedNode.value.content : "").toContain("y: 320");
     expect(addedNode.ok ? addedNode.value.content : "").toContain("layer: 1");
+
+    const addedLabel = addRelicFreeDrawingNode(freeDrawingContent, "label", 640, 320);
+    expect(addedLabel.ok ? addedLabel.value.content : "").toContain("shape: label");
+    expect(addedLabel.ok ? addedLabel.value.content : "").toContain("text: ラベル");
 
     const updatedText = updateRelicFreeDrawingNodeText(freeDrawingContent, "node-1", "新しいメモ");
     expect(updatedText.ok ? updatedText.value.node.text : "").toBe("新しいメモ");
