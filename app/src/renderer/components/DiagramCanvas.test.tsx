@@ -810,10 +810,47 @@ describe("DiagramCanvas", () => {
     expect(lowTransform).toMatch(/^translate\([-.\d]+px, [-.\d]+px\)$/);
     expect(highTransform).toMatch(/^translate\([-.\d]+px, [-.\d]+px\)$/);
     expect(lowTransform.split(", ")[1]).toBe(highTransform.split(", ")[1]);
-    expect((lowNode as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--text) 5%, transparent), 0 1px 0 rgba(15, 23, 42, 0.052), 0 10px 24px rgba(15, 23, 42, 0.112)");
-    expect((highNode as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent), inset 0 -3px 0 color-mix(in srgb, var(--text) 8%, transparent), 0 3px 0 rgba(15, 23, 42, 0.088), 0 19px 42px rgba(15, 23, 42, 0.160)");
-    expect((lowNode as HTMLElement).style.getPropertyValue("--diagram-node-layer-border")).toBe("color-mix(in srgb, var(--accent) 12%, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)))");
-    expect((highNode as HTMLElement).style.getPropertyValue("--diagram-node-layer-border")).toBe("color-mix(in srgb, var(--accent) 24%, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)))");
+    expect((lowNode as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 0 0 1px color-mix(in srgb, var(--accent) 17%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--text) 6%, transparent), 0 1px 0 rgba(15, 23, 42, 0.078), 0 12px 25px rgba(15, 23, 42, 0.136)");
+    expect((highNode as HTMLElement).style.getPropertyValue("--diagram-node-elevation-shadow")).toBe("0 0 0 1px color-mix(in srgb, var(--accent) 38%, transparent), inset 0 -4px 0 color-mix(in srgb, var(--text) 12%, transparent), 0 4px 0 rgba(15, 23, 42, 0.132), 0 24px 46px rgba(15, 23, 42, 0.214)");
+    expect((lowNode as HTMLElement).style.getPropertyValue("--diagram-node-layer-border")).toBe("color-mix(in srgb, var(--accent) 17%, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)))");
+    expect((highNode as HTMLElement).style.getPropertyValue("--diagram-node-layer-border")).toBe("color-mix(in srgb, var(--accent) 38%, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)))");
+  });
+
+  it("stops free-drawing layer changes at layer 8", () => {
+    const maxLayerContent = [
+      "---",
+      "type: free-drawing",
+      "title: 自由図",
+      "---",
+      "",
+      "nodes:",
+      "  - id: max-1",
+      "    shape: process",
+      "    text: 最大",
+      "    x: 120",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "    layer: 8",
+      "lines: []",
+      ""
+    ].join("\n");
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={maxLayerContent} fileName="自由図" onChange={onChange} />
+      </I18nProvider>
+    );
+
+    const node = screen.getByText("最大").closest(".diagram-canvas-node");
+    expect(node).toBeInstanceOf(HTMLElement);
+
+    fireEvent(node as HTMLElement, pointerEvent("pointerdown", 2, 130, 90));
+    fireEvent(node as HTMLElement, pointerEvent("pointerup", 2, 130, 90));
+
+    expect(screen.getByText("Layer 8")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bring forward" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Send backward" })).not.toBeDisabled();
   });
 
   it("keeps free-drawing layer order while a lower layer node is selected", () => {
@@ -859,8 +896,15 @@ describe("DiagramCanvas", () => {
     fireEvent(lowNode as HTMLElement, pointerEvent("pointerup", 2, 130, 90));
 
     expect(lowNode as HTMLElement).toHaveClass("diagram-canvas-node--selected");
+    expect(highNode as HTMLElement).toHaveClass("diagram-canvas-node--layer-above-selected");
     expect((lowNode as HTMLElement).style.zIndex).toBe("101");
     expect((highNode as HTMLElement).style.zIndex).toBe("104");
+
+    fireEvent(highNode as HTMLElement, pointerEvent("pointerdown", 3, 390, 90));
+    fireEvent(highNode as HTMLElement, pointerEvent("pointerup", 3, 390, 90));
+
+    expect(highNode as HTMLElement).toHaveClass("diagram-canvas-node--selected");
+    expect(lowNode as HTMLElement).toHaveClass("diagram-canvas-node--layer-below-selected");
   });
 
   it("renders a free-drawing line and its label on the higher connected node layer", () => {

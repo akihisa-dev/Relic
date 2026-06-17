@@ -20,12 +20,14 @@ interface DiagramNodeViewProps {
   }>;
   isDragging: boolean;
   isLayerBackwardDisabled?: boolean;
+  isLayerForwardDisabled?: boolean;
   isTextEditing: boolean;
   isSelected: boolean;
   layerBackwardLabel: string;
   layerFeedbackDirection?: -1 | 1;
   layerForwardLabel: string;
   layerLabel?: string;
+  layerRelation?: "above" | "below" | "same";
   node: RelicConnectedDiagramNode;
   nodeTextDraft?: string;
   nodeTextLabel: string;
@@ -58,12 +60,14 @@ export function DiagramNodeView({
   addShapeOptions,
   isDragging,
   isLayerBackwardDisabled = false,
+  isLayerForwardDisabled = false,
   isTextEditing,
   isSelected,
   layerBackwardLabel,
   layerFeedbackDirection,
   layerForwardLabel,
   layerLabel,
+  layerRelation,
   node,
   nodeTextDraft,
   nodeTextLabel,
@@ -109,6 +113,9 @@ export function DiagramNodeView({
         "diagram-canvas-node",
         shapeClass,
         isDragging ? "diagram-canvas-node--dragging" : "",
+        layerRelation === "above" ? "diagram-canvas-node--layer-above-selected" : "",
+        layerRelation === "below" ? "diagram-canvas-node--layer-below-selected" : "",
+        layerRelation === "same" ? "diagram-canvas-node--layer-same-selected" : "",
         hasLayerFeedback ? "diagram-canvas-node--layer-feedback" : "",
         layerFeedbackDirection === 1 ? "diagram-canvas-node--layer-feedback-forward" : "",
         layerFeedbackDirection === -1 ? "diagram-canvas-node--layer-feedback-backward" : "",
@@ -223,6 +230,7 @@ export function DiagramNodeView({
             aria-label={layerForwardLabel}
             className="diagram-canvas-node-layer-button"
             data-tooltip={layerForwardLabel}
+            disabled={isLayerForwardDisabled}
             onPointerDown={(event) => onLayerForwardPointerDown?.(node, event)}
             title={layerForwardLabel}
             type="button"
@@ -267,13 +275,13 @@ function nodeElevationStyle(node: RelicConnectedDiagramNode): Pick<
   }
 
   const cappedLayer = Math.min(Math.max(1, Math.round(node.layer)), 8);
-  const edgeOffsetY = Math.min(1 + Math.floor(cappedLayer / 2), 4);
-  const shadowOffsetY = 7 + cappedLayer * 3;
-  const shadowBlur = 18 + cappedLayer * 6;
-  const edgeAlpha = (0.04 + cappedLayer * 0.012).toFixed(3);
-  const outlineAccent = Math.min(8 + cappedLayer * 4, 36);
-  const shadowAlpha = (0.096 + cappedLayer * 0.016).toFixed(3);
-  const fillTextMix = Math.min(4 + cappedLayer, 12);
+  const edgeOffsetY = cappedLayer;
+  const shadowOffsetY = 8 + cappedLayer * 4;
+  const shadowBlur = 18 + cappedLayer * 7;
+  const edgeAlpha = (0.06 + cappedLayer * 0.018).toFixed(3);
+  const outlineAccent = Math.min(10 + cappedLayer * 7, 66);
+  const shadowAlpha = (0.11 + cappedLayer * 0.026).toFixed(3);
+  const fillTextMix = Math.min(4 + cappedLayer * 2, 20);
   const fillBgMix = 100 - fillTextMix;
 
   return {

@@ -1311,6 +1311,36 @@
   animation: diagram-layer-shape-feedback 560ms var(--ease-standard);
 }
 
+.diagram-canvas-node--layer-below-selected {
+  filter: saturate(0.76) brightness(0.98);
+  opacity: 0.72;
+}
+
+.diagram-canvas-node--layer-below-selected:not(.diagram-canvas-node--shape-decision):not(.diagram-canvas-node--shape-input-output) {
+  box-shadow:
+    inset 0 2px 8px rgba(15, 23, 42, 0.08),
+    0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.diagram-canvas-node--layer-above-selected:not(.diagram-canvas-node--shape-decision):not(.diagram-canvas-node--shape-input-output) {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent),
+    var(--diagram-node-elevation-shadow, 0 8px 24px rgba(15, 23, 42, 0.1));
+}
+
+.diagram-canvas-node--layer-above-selected.diagram-canvas-node--shape-decision::before,
+.diagram-canvas-node--layer-above-selected.diagram-canvas-node--shape-input-output::before {
+  filter:
+    var(--diagram-node-elevation-filter, drop-shadow(0 8px 24px rgba(15, 23, 42, 0.1)))
+    drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 18%, transparent));
+}
+
+.diagram-canvas-node--layer-same-selected:not(.diagram-canvas-node--shape-decision):not(.diagram-canvas-node--shape-input-output) {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--text-3) 22%, transparent),
+    var(--diagram-node-elevation-shadow, 0 8px 24px rgba(15, 23, 42, 0.1));
+}
+
 .diagram-canvas-node-outline-hitbox {
   inset: -8px;
   pointer-events: none;
