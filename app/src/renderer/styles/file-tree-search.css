@@ -434,21 +434,8 @@
   position: absolute;
 }
 
-.diagram-sidebar-shape--note .diagram-sidebar-shape-icon {
-  border-radius: 3px;
-  position: relative;
-}
-
-.diagram-sidebar-shape--note .diagram-sidebar-shape-icon::after {
-  background: var(--sidebar-bg);
-  border-bottom: 2px solid color-mix(in srgb, var(--text-3) 68%, var(--border-medium));
-  border-left: 2px solid color-mix(in srgb, var(--text-3) 68%, var(--border-medium));
-  content: "";
-  height: 7px;
-  position: absolute;
-  right: -2px;
-  top: -2px;
-  width: 7px;
+.diagram-sidebar-shape--label .diagram-sidebar-shape-icon {
+  border-radius: 7px;
 }
 
 .diagram-sidebar-shape--area .diagram-sidebar-shape-icon {

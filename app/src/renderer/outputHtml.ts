@@ -618,21 +618,8 @@ mark {
   padding-right: 28px;
 }
 
-.relic-output-relationship-node--shape-note {
-  border-radius: 5px;
-  position: relative;
-}
-
-.relic-output-relationship-node--shape-note::after {
-  background: #f7f5ef;
-  border-bottom: 1.5px solid #80786c;
-  border-left: 1.5px solid #80786c;
-  content: "";
-  height: 16px;
-  position: absolute;
-  right: -1.5px;
-  top: -1.5px;
-  width: 16px;
+.relic-output-relationship-node--shape-label {
+  border-radius: 7px;
 }
 
 .relic-output-relationship-node--shape-area {

@@ -6,7 +6,7 @@ import { fail, ok, type RelicResult } from "./result";
 const relicDiagramTypes = ["relationship", "why-tree", "free-drawing"] as const;
 export type RelicDiagramType = typeof relicDiagramTypes[number];
 
-export const relicFreeDrawingShapeTypes = ["terminator", "process", "decision", "input-output", "note", "area"] as const;
+export const relicFreeDrawingShapeTypes = ["terminator", "process", "decision", "input-output", "label", "area"] as const;
 export type RelicFreeDrawingShapeType = typeof relicFreeDrawingShapeTypes[number];
 export const relicFreeDrawingAreaLayer = 0;
 export const relicFreeDrawingShapeLayer = 1;
@@ -933,7 +933,7 @@ export function updateRelicDiagramLineLabel(
 
   const line = parsed.value.lines.find((item) => item.id === id.value);
   if (!line) {
-    return fail("DIAGRAM_LINE_MISSING", "Labelを変更するLineが見つかりません。");
+    return fail("DIAGRAM_LINE_MISSING", "Lineラベルを変更するLineが見つかりません。");
   }
 
   const nextLine = {
@@ -1601,7 +1601,7 @@ function defaultFreeDrawingShapeText(shape: RelicFreeDrawingShapeType): string {
   if (shape === "terminator") return "開始/終了";
   if (shape === "decision") return "判断";
   if (shape === "input-output") return "入出力";
-  if (shape === "note") return "メモ";
+  if (shape === "label") return "ラベル";
   return "処理";
 }
 
