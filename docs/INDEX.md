@@ -57,7 +57,8 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 | [development/phases/P15.md](development/phases/P15.md) | P15正本。カレンダーと年表機能の全般フェーズの対象範囲、ルール、作業記録 |
 | [development/phases/P16.md](development/phases/P16.md) | P16正本。フロントマター入力方式改善と全般バグ修正フェーズの対象範囲、ルール、作業記録 |
 | [development/phases/P17.md](development/phases/P17.md) | P17正本。Diagram / 図解機能追加フェーズの対象範囲、ルール、作業記録 |
-| [development/phases/P18.md](development/phases/P18.md) | 現在フェーズ正本。リファクタリング・開発体制の調整・文書整理フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P18.md](development/phases/P18.md) | P18正本。リファクタリング・開発体制の調整・文書整理フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P19.md](development/phases/P19.md) | 現在フェーズ正本。機能改善・修正・追加フェーズの対象範囲、ルール、作業記録 |
 | [development/questions.md](development/questions.md) | 未決定事項の正本 |
 | [development/coding-rules.md](development/coding-rules.md) | コーディング規約 |
 | [development/testing-rules.md](development/testing-rules.md) | テスト方針 |
