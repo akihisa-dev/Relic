@@ -8,7 +8,7 @@ export function renderApp() {
 }
 
 export function searchResultSet(results: unknown[]) {
-  return { results, skippedLargeFiles: 0, truncated: false };
+  return { results, skippedLargeFiles: 0, skippedLongLines: 0, truncated: false };
 }
 
 const originalNavigatorPlatform = Object.getOwnPropertyDescriptor(navigator, "platform");

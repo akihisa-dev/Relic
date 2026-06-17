@@ -250,6 +250,7 @@
   "search.noField": "フィールド名を入力してください。",
   "search.noMatches": "一致する結果はありません。",
   "search.noResults": "検索語句を入力してください。",
+  "search.skippedLongLines": "正規表現では長すぎる行が {{count}} 件あり、除外しました。",
   "search.skippedLargeFiles": "大きいファイル {{count}} 件は検索対象から外しました。",
   "search.truncated": "検索結果が多いため、一部のみ表示しています。",
   "search.patternDate": "日付形式",

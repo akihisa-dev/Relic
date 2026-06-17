@@ -18,6 +18,7 @@ import { readBacklinks } from "../files/backlinks";
 import { readMarkdownFile } from "../files/markdownFiles";
 import { applySearchAndReplace, replaceInFile, searchAndReplace } from "../files/replace";
 import { searchWorkspace } from "../files/search";
+import { getWorkspaceFileIndexCachePath } from "../files/workspaceFileIndex";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import {
   isPathInput,
@@ -46,14 +47,20 @@ export function registerFileSearchHandlers(): void {
               context.settings.userDefinedFields
             )
           ) {
-            return ok({ results: [], skippedLargeFiles: 0, truncated: false });
+            return ok({ results: [], skippedLongLines: 0, skippedLargeFiles: 0, truncated: false });
           }
 
           return searchWorkspace(
             context.activeWorkspace.path,
             searchInput.query,
             searchInput.mode,
-            searchInput.frontmatterField
+            searchInput.frontmatterField,
+            {
+              cachePath: getWorkspaceFileIndexCachePath(
+                context.userDataPath,
+                context.activeWorkspace.id
+              )
+            }
           );
         }
       );

@@ -1,0 +1,45 @@
+import { describe, expect, it } from "vitest";
+
+import { hasRenderableSvg, sanitizeOutputSvg } from "./sanitizeOutputSvg";
+
+describe("sanitizeOutputSvg", () => {
+  it("SVGタグ外の文字列を含む入力からSVGだけを抽出し、必要ならサニタイズする", () => {
+    const result = sanitizeOutputSvg("foo <svg><path d=\"M0 0\"/></svg> bar");
+
+    expect(result).toBe("<svg><path d=\"M0 0\"/></svg>");
+  });
+
+  it("SVGが空なら保存対象として扱わない", () => {
+    expect(sanitizeOutputSvg("<svg></svg>")).toBe("<svg></svg>");
+    expect(hasRenderableSvg("<svg></svg>")).toBe(false);
+  });
+
+  it("許可されないタグを除去する", () => {
+    const input = "<svg><script>alert(1)</script><g><text>ok</text></g><foreignObject><rect/></foreignObject></svg>";
+    const result = sanitizeOutputSvg(input);
+
+    expect(result).toBe("<svg><g><text>ok</text></g></svg>");
+    expect(hasRenderableSvg(result)).toBe(true);
+  });
+
+  it("SVG属性中のイベントハンドラを除去し、危険なURIを除去する", () => {
+    const input = '<svg><text ONCLICK="alert(1)" href="java\nscript:alert(1)" xlink:href="https://example.com">safe</text></svg>';
+    const result = sanitizeOutputSvg(input);
+
+    expect(result).toBe('<svg><text xlink:href="https://example.com">safe</text></svg>');
+  });
+
+  it("安全なURI属性は保持する", () => {
+    const input = '<svg><a href="mailto:hello@example.com" src="http://example.com/logo.svg">link</a></svg>';
+    const result = sanitizeOutputSvg(input);
+
+    expect(result).toBe('<svg><a href="mailto:hello@example.com" src="http://example.com/logo.svg">link</a></svg>');
+  });
+
+  it("空白入り制御文字入りの危険スキームは除去する", () => {
+    const input = '<svg><a href="ja va script:alert(1)">bad</a></svg>';
+    const result = sanitizeOutputSvg(input);
+
+    expect(result).toBe("<svg><a>bad</a></svg>");
+  });
+});

@@ -22,6 +22,11 @@ interface SearchOperations {
   stat(filePath: string): Promise<Stats>;
 }
 
+export interface SearchWorkspaceOptions {
+  cachePath?: string;
+  fileIndexOperations?: SearchOperations;
+}
+
 const defaultSearchOperations: SearchOperations = {
   readFile,
   stat
@@ -32,7 +37,7 @@ export async function searchWorkspace(
   query: string,
   mode: SearchMode,
   frontmatterField?: string,
-  operations: SearchOperations = defaultSearchOperations
+  options: SearchWorkspaceOptions = {}
 ): Promise<RelicResult<WorkspaceSearchResultSet>> {
   const normalizedQuery = query.trim();
   const normalizedQueryLower = normalizedQuery.toLocaleLowerCase();
@@ -60,17 +65,21 @@ export async function searchWorkspace(
   }
 
   try {
+    const searchOperations = options.fileIndexOperations ?? defaultSearchOperations;
+
     const fileIndex = await readWorkspaceFileIndex(workspacePath, {
       maxSearchFileBytes: workspaceSearchMaxFileBytes,
       operations: {
-        readFile: (filePath) => operations.readFile(filePath, "utf8"),
-        stat: operations.stat
-      }
+        readFile: (filePath) => searchOperations.readFile(filePath, "utf8"),
+        stat: searchOperations.stat
+      },
+      cachePath: options.cachePath
     });
     const results: WorkspaceSearchResult[] = [];
     const skippedLargeFiles = fileIndex.records.filter(
       (record) => record.readStatus === "ok" && !record.searchable
     ).length;
+    let skippedLongLines = 0;
     let truncated = false;
 
     for (const record of fileIndex.records) {
@@ -135,7 +144,10 @@ export async function searchWorkspace(
       }
 
       for (const [index, line] of record.lines.entries()) {
-        if (mode === "regex" && !isRegexSafeLine(line)) continue;
+        if (mode === "regex" && !isRegexSafeLine(line)) {
+          skippedLongLines += 1;
+          continue;
+        }
 
         const matches =
           mode === "regex"
@@ -159,7 +171,7 @@ export async function searchWorkspace(
       if (truncated) break;
     }
 
-    return ok({ results, skippedLargeFiles, truncated });
+    return ok({ results, skippedLargeFiles, skippedLongLines, truncated });
   } catch (error) {
     return fail(
       "SEARCH_FAILED",
@@ -170,7 +182,12 @@ export async function searchWorkspace(
 }
 
 function emptySearchResultSet(): WorkspaceSearchResultSet {
-  return { results: [], skippedLargeFiles: 0, truncated: false };
+  return {
+    results: [],
+    skippedLongLines: 0,
+    skippedLargeFiles: 0,
+    truncated: false
+  };
 }
 
 function matchesFrontmatterField(value: unknown, queryLower: string): boolean {

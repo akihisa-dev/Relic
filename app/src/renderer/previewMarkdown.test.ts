@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { marked } from "marked";
 
 import {
   extractEmbedTargets,
@@ -250,5 +251,21 @@ describe("previewMarkdown", () => {
     expect(html).toContain('class="wikilink"');
     expect(html).toContain('data-target="Child"');
     expect(html).not.toContain("Child.md を読み込んでいます");
+  });
+
+  it("marked拡張登録は重複せずに1回だけ実行される", () => {
+    const MARKDOWN_EXTENSIONS_REGISTERED = Symbol.for("relic.previewMarkdown.extensionsRegistered");
+    const globalScope = globalThis as { [MARKDOWN_EXTENSIONS_REGISTERED]?: boolean };
+
+    delete globalScope[MARKDOWN_EXTENSIONS_REGISTERED];
+
+    const useSpy = vi.spyOn(marked, "use");
+
+    renderMarkdown("==重複しない確認==", null, new Map(), true, t);
+    renderMarkdown("$E=mc^2$", null, new Map(), true, t);
+
+    expect(useSpy).toHaveBeenCalledTimes(3);
+
+    useSpy.mockRestore();
   });
 });

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -30,11 +30,12 @@ import {
   defaultUserDefinedFields,
   saveWorkspaceChartsChannel,
   saveWorkspaceChronicleCalendarsChannel,
+  renameWorkspaceChannel,
   togglePinChannel,
   getWorkspaceStateChannel
 } from "../../shared/ipc";
 import { writeAppSettings } from "../settings/appSettings";
-import { defaultCharts, getWorkspaceSettingsPath, writeWorkspaceSettings } from "../settings/workspaceSettings";
+import * as workspaceSettings from "../settings/workspaceSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
 import { registerWorkspaceHandlers } from "./workspaceHandlers";
 
@@ -42,6 +43,7 @@ describe("workspaceHandlers", () => {
   const temporaryPaths: string[] = [];
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
     await Promise.all(
       temporaryPaths.splice(0).map((temporaryPath) =>
@@ -76,9 +78,9 @@ describe("workspaceHandlers", () => {
       workspace
     );
     await writeAppSettings(userDataPath, settings);
-    await writeWorkspaceSettings(userDataPath, workspace.id, {
+    await workspaceSettings.writeWorkspaceSettings(userDataPath, workspace.id, {
       chronicleCalendars: defaultChronicleCalendars,
-      charts: defaultCharts,
+      charts: workspaceSettings.defaultCharts,
       pinnedPaths: ["読書メモ.md"],
       workspacePath
     });
@@ -179,7 +181,7 @@ describe("workspaceHandlers", () => {
       workspace
     );
     await writeAppSettings(userDataPath, settings);
-    await mkdir(getWorkspaceSettingsPath(userDataPath, workspace.id), { recursive: true });
+    await mkdir(workspaceSettings.getWorkspaceSettingsPath(userDataPath, workspace.id), { recursive: true });
 
     electronMock.getPath.mockReturnValue(userDataPath);
     registerWorkspaceHandlers();
@@ -339,6 +341,130 @@ describe("workspaceHandlers", () => {
         { id: "chronicle0", name: "主暦" },
         { id: "chronicle1", name: "王国暦", startYear: 1200 }
       ]
+    });
+  });
+
+  it("ワークスペースID変更時はworkspace settingsを新IDに移行して旧IDを削除する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
+    const workspaceParentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
+    temporaryPaths.push(userDataPath, workspaceParentPath);
+
+    const oldWorkspacePath = path.join(workspaceParentPath, "旧ワークスペース");
+    await mkdir(oldWorkspacePath);
+    const workspace = createWorkspaceSummary(oldWorkspacePath);
+    const settings = addOrActivateWorkspace(
+      {
+        editorSettings: defaultEditorSettings,
+        featureToggles: defaultFeatureToggles,
+        frontmatterTemplates: defaultFrontmatterTemplates,
+        lastWorkspaceId: null,
+        userDefinedFields: defaultUserDefinedFields,
+        workspaces: []
+      },
+      workspace
+    );
+    await writeAppSettings(userDataPath, settings);
+    await workspaceSettings.writeWorkspaceSettings(userDataPath, workspace.id, {
+      chronicleCalendars: defaultChronicleCalendars,
+      charts: workspaceSettings.defaultCharts,
+      pinnedPaths: ["memo.md"],
+      workspacePath: oldWorkspacePath
+    });
+
+    electronMock.getPath.mockReturnValue(userDataPath);
+    registerWorkspaceHandlers();
+    const renameWorkspaceHandler = electronMock.handle.mock.calls.find(
+      ([channel]) => channel === renameWorkspaceChannel
+    )?.[1];
+
+    if (!renameWorkspaceHandler) throw new Error("renameWorkspace handler was not registered");
+
+    const result = await renameWorkspaceHandler(undefined, {
+      workspaceId: workspace.id,
+      name: "新ワークスペース"
+    });
+
+    const newWorkspace = createWorkspaceSummary(path.join(workspaceParentPath, "新ワークスペース"));
+    const oldWorkspaceSettingsPath = workspaceSettings.getWorkspaceSettingsPath(userDataPath, workspace.id);
+    const newWorkspaceSettingsPath = workspaceSettings.getWorkspaceSettingsPath(userDataPath, newWorkspace.id);
+
+    expect(result).toEqual({
+      ok: true,
+      value: expect.objectContaining({
+        activeWorkspace: expect.objectContaining({
+          id: newWorkspace.id,
+          name: "新ワークスペース",
+          path: newWorkspace.path
+        }),
+        pinnedPaths: ["memo.md"],
+        workspaces: [expect.objectContaining({ id: newWorkspace.id, name: "新ワークスペース" })]
+      })
+    });
+    await expect(stat(oldWorkspaceSettingsPath)).rejects.toMatchObject({ code: "ENOENT" });
+    expect(await stat(newWorkspaceSettingsPath)).toBeTruthy();
+    expect(await workspaceSettings.readWorkspaceSettings(userDataPath, newWorkspace.id)).toMatchObject({
+      pinnedPaths: ["memo.md"],
+      workspacePath: oldWorkspacePath
+    });
+  });
+
+  it("旧workspace settings削除失敗時でもリネーム処理を完了する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
+    const workspaceParentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
+    temporaryPaths.push(userDataPath, workspaceParentPath);
+
+    const oldWorkspacePath = path.join(workspaceParentPath, "旧ワークスペース");
+    await mkdir(oldWorkspacePath);
+    const workspace = createWorkspaceSummary(oldWorkspacePath);
+    const settings = addOrActivateWorkspace(
+      {
+        editorSettings: defaultEditorSettings,
+        featureToggles: defaultFeatureToggles,
+        frontmatterTemplates: defaultFrontmatterTemplates,
+        lastWorkspaceId: null,
+        userDefinedFields: defaultUserDefinedFields,
+        workspaces: []
+      },
+      workspace
+    );
+    await writeAppSettings(userDataPath, settings);
+    await workspaceSettings.writeWorkspaceSettings(userDataPath, workspace.id, {
+      chronicleCalendars: defaultChronicleCalendars,
+      charts: workspaceSettings.defaultCharts,
+      pinnedPaths: ["memo.md"],
+      workspacePath: oldWorkspacePath
+    });
+    const removeWorkspaceSettingsSpy = vi.spyOn(workspaceSettings, "removeWorkspaceSettings");
+    removeWorkspaceSettingsSpy.mockRejectedValueOnce(new Error("削除失敗"));
+
+    electronMock.getPath.mockReturnValue(userDataPath);
+    registerWorkspaceHandlers();
+    const renameWorkspaceHandler = electronMock.handle.mock.calls.find(
+      ([channel]) => channel === renameWorkspaceChannel
+    )?.[1];
+
+    if (!renameWorkspaceHandler) throw new Error("renameWorkspace handler was not registered");
+
+    const result = await renameWorkspaceHandler(undefined, {
+      workspaceId: workspace.id,
+      name: "新ワークスペース"
+    });
+
+    const newWorkspace = createWorkspaceSummary(path.join(workspaceParentPath, "新ワークスペース"));
+    expect(result).toEqual({
+      ok: true,
+      value: expect.objectContaining({
+        activeWorkspace: expect.objectContaining({ id: newWorkspace.id })
+      })
+    });
+    expect(removeWorkspaceSettingsSpy).toHaveBeenCalledWith(userDataPath, workspace.id);
+    expect(await workspaceSettings.readWorkspaceSettings(userDataPath, workspace.id)).toMatchObject({
+      pinnedPaths: ["memo.md"],
+      workspacePath: oldWorkspacePath
+    });
+    expect(await workspaceSettings.readWorkspaceSettings(userDataPath, newWorkspace.id)).toMatchObject({
+      pinnedPaths: ["memo.md"],
+      workspacePath: oldWorkspacePath
     });
   });
 });

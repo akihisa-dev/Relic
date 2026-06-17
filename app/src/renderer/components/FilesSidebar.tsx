@@ -45,7 +45,7 @@ export interface FilesSidebarProps {
   searchFrontmatterCandidates: Record<string, string[]>;
   searchFrontmatterField: string;
   searchFrontmatterFields: string[];
-  searchLimitNotice: { skippedLargeFiles: number; truncated: boolean } | null;
+  searchLimitNotice: { skippedLongLines: number; skippedLargeFiles: number; truncated: boolean } | null;
   searchMode: SearchMode;
   searchQuery: string;
   searchResults: WorkspaceSearchResult[];

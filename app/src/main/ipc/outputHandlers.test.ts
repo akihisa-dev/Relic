@@ -86,6 +86,11 @@ import {
 } from "../../shared/ipc";
 import { registerOutputHandlers } from "./outputHandlers";
 
+const printPreviewDirectoryName = `/tmp/relic-print-preview-${process.pid}`;
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function handlerFor(channel: string) {
   const handler = electronMock.handle.mock.calls.find(([registeredChannel]) => registeredChannel === channel)?.[1];
   if (!handler) throw new Error(`Handler not registered: ${channel}`);
@@ -377,18 +382,18 @@ describe("outputHandlers", () => {
     expect(electronMock.focus).toHaveBeenCalled();
     expect(electronMock.print).not.toHaveBeenCalled();
     expect(electronMock.browserWindowOn).toHaveBeenCalledWith("closed", expect.any(Function));
-    expect(fsMock.rm).toHaveBeenCalledWith("/tmp/relic-print-preview", { force: true, recursive: true });
-    expect(fsMock.mkdir).toHaveBeenCalledWith("/tmp/relic-print-preview", { recursive: true });
+    expect(fsMock.rm).toHaveBeenCalledWith(printPreviewDirectoryName, { force: true, recursive: true });
+    expect(fsMock.mkdir).toHaveBeenCalledWith(printPreviewDirectoryName, { recursive: true });
     expect(fsMock.writeFile).toHaveBeenCalledWith(
-      expect.stringMatching(/\/tmp\/relic-print-preview\/\.preview-.+\.pdf\..+\.tmp$/),
+      expect.stringMatching(new RegExp(`${escapeRegExp(printPreviewDirectoryName)}\\/\\.preview-.+\\.pdf\\..+\\.tmp$`)),
       Buffer.from("pdf"),
       undefined
     );
     expect(fsMock.rename).toHaveBeenCalledWith(
-      expect.stringMatching(/\/tmp\/relic-print-preview\/\.preview-.+\.pdf\..+\.tmp$/),
-      expect.stringMatching(/\/tmp\/relic-print-preview\/preview-.+\.pdf$/)
+      expect.stringMatching(new RegExp(`${escapeRegExp(printPreviewDirectoryName)}\\/\\.preview-.+\\.pdf\\..+\\.tmp$`)),
+      expect.stringMatching(new RegExp(`${escapeRegExp(printPreviewDirectoryName)}\\/preview-.+\\.pdf$`))
     );
-    expect(electronMock.loadURL.mock.calls.at(-1)?.[0]).toMatch(/^file:\/\/\/tmp\/relic-print-preview\/preview-.+\.pdf$/);
+    expect(electronMock.loadURL.mock.calls.at(-1)?.[0]).toMatch(new RegExp(`^file:\\/\\/\\/tmp\\/relic-print-preview-${process.pid}\\/preview-.+\\.pdf$`));
     expect(electronMock.loadURL.mock.calls.at(-1)?.[0]).not.toContain("Note");
     expect(electronMock.browserWindowOptions.at(-1)?.webPreferences).toEqual(
       expect.objectContaining({
@@ -416,7 +421,7 @@ describe("outputHandlers", () => {
 
     const closeHandler = electronMock.browserWindowOn.mock.calls.find(([eventName]) => eventName === "closed")?.[1] as (() => void) | undefined;
     closeHandler?.();
-    expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringMatching(/\/tmp\/relic-print-preview\/preview-.+\.pdf$/));
+    expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`${escapeRegExp(printPreviewDirectoryName)}\\/preview-.+\\.pdf$`)));
   });
 
   it("印刷プレビューでHTMLが空の場合は入力エラーになる", async () => {
@@ -456,7 +461,7 @@ describe("outputHandlers", () => {
 
     expect(() => registerOutputHandlers()).not.toThrow();
 
-    expect(fsMock.rm).toHaveBeenCalledWith("/tmp/relic-print-preview", { force: true, recursive: true });
+    expect(fsMock.rm).toHaveBeenCalledWith(printPreviewDirectoryName, { force: true, recursive: true });
     expect(electronMock.handle).toHaveBeenCalledWith(printPreviewChannel, expect.any(Function));
   });
 });

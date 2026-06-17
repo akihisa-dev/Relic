@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type {
   SearchMode,
@@ -19,7 +19,7 @@ interface UseWorkspaceSearchStateInput {
 interface SearchSnapshot {
   error: string | null;
   key: string | null;
-  limitNotice: { skippedLargeFiles: number; truncated: boolean } | null;
+  limitNotice: { skippedLargeFiles: number; skippedLongLines: number; truncated: boolean } | null;
   results: WorkspaceSearchResult[];
 }
 
@@ -40,6 +40,11 @@ export function useWorkspaceSearchState({
   const [searchFrontmatterField, setSearchFrontmatterField] = useState("");
   const [searchSnapshot, setSearchSnapshot] = useState<SearchSnapshot>(emptySearchSnapshot);
   const [workspaceFrontmatterCandidates, setWorkspaceFrontmatterCandidates] = useState<Record<string, string[]>>({});
+  const [debouncedSearchKey, setDebouncedSearchKey] = useState<string | null>(null);
+  const [debouncedSearchMode, setDebouncedSearchMode] = useState<SearchMode>("fullText");
+  const [debouncedSearchFrontmatterField, setDebouncedSearchFrontmatterField] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const lastRequestedSearchKey = useRef<string | null>(null);
   const frontmatterSearchFields = useMemo(
     () => knownFrontmatterSearchFields(userDefinedFields),
     [userDefinedFields]
@@ -89,15 +94,47 @@ export function useWorkspaceSearchState({
   }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
   useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic || searchQuery.trim() === "") {
+    if (!hasActiveWorkspace || searchQuery.trim() === "") {
+      setDebouncedSearchKey(null);
+      return;
+    }
+
+    const nextSearchKey = searchKey;
+    const timer = window.setTimeout(() => {
+      setDebouncedSearchKey(nextSearchKey);
+      setDebouncedSearchMode(searchMode);
+      setDebouncedSearchFrontmatterField(effectiveSearchFrontmatterField);
+      setDebouncedSearchQuery(searchQuery);
+      lastRequestedSearchKey.current = null;
+    }, 120);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [effectiveSearchFrontmatterField, hasActiveWorkspace, searchKey, searchMode, searchQuery]);
+
+  useEffect(() => {
+    if (!workspaceState?.activeWorkspace || !window.relic || debouncedSearchKey === null) {
+      return;
+    }
+    if (lastRequestedSearchKey.current === debouncedSearchKey) {
       return;
     }
 
     let canceled = false;
     const input: SearchWorkspaceInput =
-      searchMode === "frontmatter"
-        ? { frontmatterField: effectiveSearchFrontmatterField, mode: searchMode, query: searchQuery }
-        : { mode: searchMode, query: searchQuery };
+      debouncedSearchMode === "frontmatter"
+        ? {
+          frontmatterField: debouncedSearchFrontmatterField,
+          mode: debouncedSearchMode,
+          query: debouncedSearchQuery
+        }
+        : {
+          mode: debouncedSearchMode,
+          query: debouncedSearchQuery
+        };
+
+    lastRequestedSearchKey.current = debouncedSearchKey;
 
     void window.relic
       .searchWorkspace(input)
@@ -107,16 +144,20 @@ export function useWorkspaceSearchState({
         if (result.ok) {
           setSearchSnapshot({
             error: null,
-            key: searchKey,
-            limitNotice: result.value.truncated || result.value.skippedLargeFiles > 0
-              ? { skippedLargeFiles: result.value.skippedLargeFiles, truncated: result.value.truncated }
+            key: debouncedSearchKey,
+            limitNotice: result.value.truncated || result.value.skippedLargeFiles > 0 || result.value.skippedLongLines > 0
+              ? {
+                skippedLargeFiles: result.value.skippedLargeFiles,
+                skippedLongLines: result.value.skippedLongLines,
+                truncated: result.value.truncated
+              }
               : null,
             results: result.value.results
           });
         } else {
           setSearchSnapshot({
             error: result.error.message,
-            key: searchKey,
+            key: debouncedSearchKey,
             limitNotice: null,
             results: []
           });
@@ -126,7 +167,14 @@ export function useWorkspaceSearchState({
     return () => {
       canceled = true;
     };
-  }, [effectiveSearchFrontmatterField, searchKey, searchMode, searchQuery, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+  }, [
+    debouncedSearchKey,
+    debouncedSearchMode,
+    debouncedSearchFrontmatterField,
+    debouncedSearchQuery,
+    workspaceState?.activeWorkspace?.id,
+    workspaceState?.fileTree
+  ]);
 
   const hasActiveSearch = searchKey !== null;
   const currentSearchSnapshot = hasActiveSearch && searchSnapshot.key === searchKey ? searchSnapshot : emptySearchSnapshot;

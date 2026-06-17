@@ -10,6 +10,7 @@ import {
   type RelicDiagramDocument
 } from "../shared/diagramMarkdown";
 import { buildDiagramCanvasLayout } from "./components/diagram/diagramGeometry";
+import { runWithConcurrency } from "./concurrency";
 
 export interface BuildPreviewOutputHtmlInput {
   content: string;
@@ -99,10 +100,12 @@ export function outputFileNameFromPath(path: string | null | undefined): string 
   return name || null;
 }
 
+const maxConcurrentDiagramRender = 2;
+
 async function renderOutputDiagrams(root: ParentNode, t: Translator): Promise<void> {
   const diagrams = Array.from(root.querySelectorAll<HTMLElement>(".preview-diagram"));
 
-  await Promise.all(diagrams.map(async (diagram) => {
+  const renderTasks = diagrams.map((diagram) => async () => {
     const language = diagramLanguageFor(diagram.dataset.diagramLanguage);
     if (!language) return;
 
@@ -112,7 +115,9 @@ async function renderOutputDiagrams(root: ParentNode, t: Translator): Promise<vo
     if (!source) return;
 
     await renderDiagramElement(diagram, language, source, t);
-  }));
+  });
+
+  await runWithConcurrency(renderTasks, maxConcurrentDiagramRender);
 }
 
 function normalizeOutputDiagramDom(root: ParentNode): void {

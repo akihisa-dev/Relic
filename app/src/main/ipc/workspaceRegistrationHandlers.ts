@@ -15,7 +15,7 @@ import {
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { getMainTranslator } from "../i18n";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
-import { parsePinnedPaths, readWorkspaceSettings, writeWorkspaceSettings } from "../settings/workspaceSettings";
+import * as workspaceSettings from "../settings/workspaceSettings";
 import {
   addOrActivateWorkspace,
   activateWorkspace,
@@ -121,7 +121,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
 
   ipcMain.handle(togglePinChannel, async (_event, rawPath: unknown): Promise<RelicResult<WorkspaceState>> => {
     try {
-      const pinnedPath = parsePinnedPaths([rawPath]).at(0);
+      const pinnedPath = workspaceSettings.parsePinnedPaths([rawPath]).at(0);
 
       if (!pinnedPath) {
         return fail("TOGGLE_PIN_INVALID_INPUT", "パスが無効です。");
@@ -134,12 +134,15 @@ export function registerWorkspaceRegistrationHandlers(): void {
         return fail("TOGGLE_PIN_NO_WORKSPACE", "アクティブなワークスペースがありません。");
       }
 
-      const wsSettings = await readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id);
+      const wsSettings = await workspaceSettings.readWorkspaceSettings(
+        app.getPath("userData"),
+        activeWorkspace.id
+      );
       const updated = wsSettings.pinnedPaths.includes(pinnedPath)
         ? wsSettings.pinnedPaths.filter((p) => p !== pinnedPath)
         : [...wsSettings.pinnedPaths, pinnedPath];
 
-      await writeWorkspaceSettings(app.getPath("userData"), activeWorkspace.id, {
+      await workspaceSettings.writeWorkspaceSettings(app.getPath("userData"), activeWorkspace.id, {
         ...wsSettings,
         pinnedPaths: updated
       });
@@ -237,18 +240,25 @@ export function registerWorkspaceRegistrationHandlers(): void {
         }
 
         if (renameResult.value.oldWorkspaceId !== renameResult.value.newWorkspaceId) {
-          const workspaceSettings = await readWorkspaceSettings(
+          const migratedWorkspaceSettings = await workspaceSettings.readWorkspaceSettings(
             app.getPath("userData"),
             renameResult.value.oldWorkspaceId
           );
-          await writeWorkspaceSettings(
+          await workspaceSettings.writeWorkspaceSettings(
             app.getPath("userData"),
             renameResult.value.newWorkspaceId,
-            workspaceSettings
+            migratedWorkspaceSettings
           );
         }
 
         await writeAppSettings(app.getPath("userData"), renameResult.value.nextSettings);
+        if (renameResult.value.oldWorkspaceId !== renameResult.value.newWorkspaceId) {
+          await workspaceSettings.removeWorkspaceSettings(
+            app.getPath("userData"),
+            renameResult.value.oldWorkspaceId
+          )
+            .catch(() => undefined);
+        }
         syncWorkspaceWatcher(renameResult.value.nextSettings);
 
         return ok(await buildWorkspaceState(renameResult.value.nextSettings));
