@@ -97,6 +97,15 @@ export function DiagramLineLayer({
               onDoubleClick={(event) => onLineDoubleClick(line, event)}
               onPointerDown={(event) => onLinePointerDown(line.line.id, event)}
             />
+            {line.kind === "annotation" ? (
+              <circle
+                aria-hidden="true"
+                className="diagram-canvas-line-annotation-anchor"
+                cx={line.x2}
+                cy={line.y2}
+                r="4.5"
+              />
+            ) : null}
           </svg>
         );
       })}

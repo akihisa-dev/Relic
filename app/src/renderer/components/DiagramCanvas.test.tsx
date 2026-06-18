@@ -352,6 +352,7 @@ describe("DiagramCanvas", () => {
     expect(line).toHaveClass("diagram-canvas-line--annotation");
     expect(line?.getAttribute("d")).toContain(" Q ");
     expect(line?.getAttribute("marker-end")).toBeNull();
+    expect(container.querySelector(".diagram-canvas-line-annotation-anchor")?.tagName).toBe("circle");
 
     const hit = container.querySelector(".diagram-canvas-line-hit");
     expect(hit).toBeInstanceOf(Element);
