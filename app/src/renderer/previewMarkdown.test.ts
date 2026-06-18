@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import hljs from "highlight.js";
+import katex from "katex";
 import { marked } from "marked";
 
 import {
@@ -154,6 +156,33 @@ describe("previewMarkdown", () => {
     expect(html).toContain("katex");
     expect(html).toContain("hljs language-js");
     expect(html).toContain("const");
+  });
+
+  it("同じ入力ではコードハイライトとKaTeX結果を再利用する", () => {
+    const highlightSpy = vi.spyOn(hljs, "highlight");
+    const katexSpy = vi.spyOn(katex, "renderToString");
+    const content = "# キャッシュ確認\n\n$a^2+b^2=c^2$\n\n```ts\nconst cachedPreviewValue = 10;\n```";
+
+    const firstHtml = renderMarkdown(content, null, new Map(), true, t);
+    const secondHtml = renderMarkdown(content, null, new Map(), true, t);
+
+    expect(secondHtml).toBe(firstHtml);
+    expect(highlightSpy).toHaveBeenCalledTimes(1);
+    expect(katexSpy).toHaveBeenCalledTimes(1);
+
+    highlightSpy.mockRestore();
+    katexSpy.mockRestore();
+  });
+
+  it("Markdown本文が変わった場合はプレビューを再生成する", () => {
+    const highlightSpy = vi.spyOn(hljs, "highlight");
+
+    renderMarkdown("```ts\nconst regeneratedPreviewValue = 1;\n```", null, new Map(), true, t);
+    renderMarkdown("```ts\nconst regeneratedPreviewValue = 2;\n```", null, new Map(), true, t);
+
+    expect(highlightSpy).toHaveBeenCalledTimes(2);
+
+    highlightSpy.mockRestore();
   });
 
   it("コードブロック内の危険URL例は説明用テキストとして維持する", () => {

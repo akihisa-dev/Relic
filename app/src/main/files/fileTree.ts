@@ -23,6 +23,16 @@ export async function readWorkspaceFileTree(
 }
 
 const maxConcurrentDirectoryReads = 8;
+const defaultExcludedWorkspaceDirectories = new Set([
+  "node_modules",
+  "out",
+  "dist",
+  "build"
+]);
+
+export function isDefaultExcludedWorkspaceDirectory(name: string): boolean {
+  return name.startsWith(".") || defaultExcludedWorkspaceDirectories.has(name);
+}
 
 async function readDirectory(
   rootPath: string,
@@ -40,7 +50,7 @@ async function readDirectory(
     return [];
   }
 
-  const nodeReads = entries.filter((entry) => !entry.name.startsWith("."));
+  const nodeReads = entries.filter((entry) => !isDefaultExcludedWorkspaceDirectory(entry.name));
   const nodes = await mapWithConcurrency<Dirent, WorkspaceTreeNode | null>(
     nodeReads,
     maxConcurrentDirectoryReads,

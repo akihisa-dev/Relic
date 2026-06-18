@@ -6,15 +6,40 @@ type D2Renderer = InstanceType<(typeof import("@terrastruct/d2"))["D2"]>;
 
 let d2RendererPromise: Promise<D2Renderer> | null = null;
 let d2RenderQueue: Promise<void> = Promise.resolve();
+const maxD2CacheEntries = 24;
+const d2RenderCache = new Map<string, Promise<string>>();
 
 export function enqueueD2Render(source: string): Promise<string> {
+  const cacheKey = createD2RenderCacheKey(source);
+  const cached = d2RenderCache.get(cacheKey);
+
+  if (cached) return withDiagramRenderTimeout(cached, "d2");
+
   const renderOperation = d2RenderQueue.then(() => renderD2Svg(source));
+  rememberD2Render(cacheKey, renderOperation);
   d2RenderQueue = renderOperation.then(
     () => undefined,
     () => undefined
   );
 
   return withDiagramRenderTimeout(renderOperation, "d2");
+}
+
+function createD2RenderCacheKey(source: string): string {
+  return JSON.stringify({
+    source,
+    compileOptions: getD2CompileOptions(),
+    renderOptions: { noXMLTag: true }
+  });
+}
+
+function rememberD2Render(cacheKey: string, renderPromise: Promise<string>): void {
+  d2RenderCache.set(cacheKey, renderPromise);
+
+  if (d2RenderCache.size > maxD2CacheEntries) {
+    const oldestKey = d2RenderCache.keys().next().value;
+    if (oldestKey) d2RenderCache.delete(oldestKey);
+  }
 }
 
 async function loadD2(): Promise<D2Renderer> {
