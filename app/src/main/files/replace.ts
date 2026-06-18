@@ -1,8 +1,10 @@
 import { readFile } from "node:fs/promises";
 
 import type {
+  ApplySearchAndReplaceResult,
   ReplaceInFileResult,
-  SearchAndReplaceMatch
+  SearchAndReplaceMatch,
+  SearchAndReplacePreviewResult
 } from "../../shared/ipc";
 import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
@@ -27,6 +29,13 @@ interface SearchAndReplaceTarget {
   content: string;
   relativePath: string;
 }
+
+interface SearchAndReplaceTargetsResult {
+  skippedUnreadableFiles: string[];
+  targets: SearchAndReplaceTarget[];
+}
+
+export const searchAndReplacePreviewMaxResults = 500;
 
 const defaultSearchAndReplaceOperations: Required<SearchAndReplaceWriteOperations> = {
   readFile,
@@ -95,7 +104,7 @@ export async function searchAndReplace(
   replacement: string,
   isRegex: boolean,
   operations: SearchAndReplaceReadOperations = defaultSearchAndReplaceOperations
-): Promise<RelicResult<SearchAndReplaceMatch[]>> {
+): Promise<RelicResult<SearchAndReplacePreviewResult>> {
   const regex = buildReplacementRegex(searchQuery, isRegex);
 
   if (!regex.ok) {
@@ -104,6 +113,7 @@ export async function searchAndReplace(
 
   try {
     const matches: SearchAndReplaceMatch[] = [];
+    let truncated = false;
     const targets = await readReplaceTargets(
       workspacePath,
       regex.value,
@@ -114,7 +124,7 @@ export async function searchAndReplace(
 
     if (!targets.ok) return targets;
 
-    for (const { content, relativePath } of targets.value) {
+    for (const { content, relativePath } of targets.value.targets) {
       const lines = content.split("\n");
 
       for (const [index, line] of lines.entries()) {
@@ -129,13 +139,23 @@ export async function searchAndReplace(
             newLineText: newLineText.trim() === "" ? "(空行)" : newLineText.trim(),
             path: relativePath
           });
+          if (matches.length >= searchAndReplacePreviewMaxResults) {
+            truncated = true;
+            break;
+          }
         }
 
         regex.value.lastIndex = 0;
       }
+
+      if (truncated) break;
     }
 
-    return ok(matches);
+    return ok({
+      matches,
+      skippedUnreadableFiles: targets.value.skippedUnreadableFiles,
+      truncated
+    });
   } catch (error) {
     return fail(
       "REPLACE_FAILED",
@@ -151,7 +171,7 @@ export async function applySearchAndReplace(
   replacement: string,
   isRegex: boolean,
   operations: SearchAndReplaceWriteOperations = defaultSearchAndReplaceOperations
-): Promise<RelicResult<{ count: number }>> {
+): Promise<RelicResult<ApplySearchAndReplaceResult>> {
   const regex = buildReplacementRegex(searchQuery, isRegex);
 
   if (!regex.ok) {
@@ -178,7 +198,7 @@ export async function applySearchAndReplace(
     }> = [];
 
     try {
-      for (const { absolutePath, content } of targets.value) {
+      for (const { absolutePath, content } of targets.value.targets) {
         const matches = content.match(regex.value);
 
         if (matches && matches.length > 0) {
@@ -207,7 +227,7 @@ export async function applySearchAndReplace(
       throw error;
     }
 
-    return ok({ count });
+    return ok({ count, skippedUnreadableFiles: targets.value.skippedUnreadableFiles });
   } catch (error) {
     return fail(
       "REPLACE_FAILED",
@@ -223,7 +243,7 @@ async function readReplaceTargets(
   isRegex: boolean,
   regexTargetLabel: string,
   operations: SearchAndReplaceReadOperations
-): Promise<RelicResult<SearchAndReplaceTarget[]>> {
+): Promise<RelicResult<SearchAndReplaceTargetsResult>> {
   const fileTree = await readWorkspaceFileTree(workspacePath);
   const files = await collectSafeMarkdownFiles(workspacePath, collectMarkdownPaths(fileTree));
   const fileContents = await Promise.all(
@@ -231,13 +251,16 @@ async function readReplaceTargets(
       try {
         return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
       } catch {
-        return null;
+        return { ...file, unreadable: true };
       }
     })
   );
-  const targets = fileContents.filter((fileContent): fileContent is SearchAndReplaceTarget => fileContent !== null);
+  const targets = fileContents.filter((fileContent): fileContent is SearchAndReplaceTarget => "content" in fileContent);
+  const skippedUnreadableFiles = fileContents
+    .filter((fileContent): fileContent is { absolutePath: string; relativePath: string; unreadable: true } => "unreadable" in fileContent)
+    .map((fileContent) => fileContent.relativePath);
 
-  if (!isRegex) return ok(targets);
+  if (!isRegex) return ok({ skippedUnreadableFiles, targets });
 
   for (const { content } of targets) {
     const safeTarget = validateRegexTargetText(content, regexTargetLabel);
@@ -248,7 +271,7 @@ async function readReplaceTargets(
     }
   }
 
-  return ok(targets);
+  return ok({ skippedUnreadableFiles, targets });
 }
 
 async function collectSafeMarkdownFiles(
