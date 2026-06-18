@@ -134,6 +134,7 @@ describe("Diagram Markdown", () => {
   it("壊れた図解ファイルと旧typeを拒否する", () => {
     expect(parseRelicDiagramMarkdown("---\ntype: diagram\n---\n\nnotes: body").ok).toBe(false);
     expect(parseRelicDiagramMarkdown("---\ntype: diagram\n---\n\nnodes:\n  - id: node-1\n    shape: note\n    text: メモ\n    x: 0\n    y: 0\n    width: 100\n    height: 80\nlines: []").ok).toBe(false);
+    expect(parseRelicDiagramMarkdown("---\ntype: diagram\n---\n\nnodes:\n  - id: node-1\n    shape: label\n    text: ラベル\n    x: 0\n    y: 0\n    width: 160\n    height: 64\nlines: []").ok).toBe(false);
     expect(parseRelicDiagramMarkdown("---\ntype: relationship\n---\n\nnodes: []\nlines: []").ok).toBe(false);
     expect(parseRelicDiagramMarkdown("---\ntype: why-tree\n---\n\nlabels: {}\nphenomenon: {}").ok).toBe(false);
     expect(parseRelicDiagramMarkdown("---\ntype: free-drawing\n---\n\nnodes: []\nlines: []").ok).toBe(false);
@@ -181,19 +182,6 @@ describe("Diagram operations", () => {
     ].join("\n"), "lines: []");
     const addedLine = addRelicDiagramLine(withoutLines, "node-1", "node-2", "YES");
     expect(addedLine.ok ? addedLine.value.line : null).toMatchObject({ from: "node-1", label: "YES", to: "node-2" });
-
-    const withLabelNode = withoutLines.replace("lines: []", [
-      "  - id: label-1",
-      "    shape: label",
-      "    text: 注釈",
-      "    x: 640",
-      "    y: 320",
-      "    width: 160",
-      "    height: 64",
-      "lines: []"
-    ].join("\n"));
-    const addedAnnotation = addRelicDiagramLine(withLabelNode, "label-1", "node-1", "通常Lineではない");
-    expect(addedAnnotation.ok ? addedAnnotation.value.line : null).toMatchObject({ from: "node-1", label: "", to: "label-1" });
 
     const updatedLabel = updateRelicDiagramLineLabel(diagramContent, "line-1", "関連");
     expect(updatedLabel.ok ? updatedLabel.value.content : "").toContain("label: 関連");

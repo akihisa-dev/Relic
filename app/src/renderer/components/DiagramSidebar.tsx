@@ -97,7 +97,7 @@ export function DiagramSidebar({
   );
 }
 
-const flowchartShapes: RelicFreeDrawingShapeType[] = ["terminator", "process", "decision", "input-output", "label", "area"];
+const flowchartShapes: RelicFreeDrawingShapeType[] = ["terminator", "process", "decision", "input-output", "area"];
 
 function startShapeDrag(shape: RelicFreeDrawingShapeType, event: ReactDragEvent<HTMLButtonElement>): void {
   event.dataTransfer.effectAllowed = "copy";

@@ -89,11 +89,10 @@ export function DiagramLineLayer({
               aria-hidden="true"
               className={[
                 "diagram-canvas-line",
-                line.kind === "annotation" ? "diagram-canvas-line--annotation" : "",
                 selection?.type === "line" && selection.id === line.line.id ? "diagram-canvas-line--selected" : ""
               ].filter(Boolean).join(" ")}
               d={line.pathD}
-              markerEnd={line.kind === "annotation" ? undefined : `url(#${markerId})`}
+              markerEnd={`url(#${markerId})`}
               onDoubleClick={(event) => onLineDoubleClick(line, event)}
               onPointerDown={(event) => onLinePointerDown(line.line.id, event)}
             />
