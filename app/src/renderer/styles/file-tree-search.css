@@ -434,10 +434,6 @@
   position: absolute;
 }
 
-.diagram-sidebar-shape--label .diagram-sidebar-shape-icon {
-  border-radius: 7px;
-}
-
 .diagram-sidebar-shape--area .diagram-sidebar-shape-icon {
   background: color-mix(in srgb, var(--accent) 10%, var(--bg));
   border: 2px dashed color-mix(in srgb, var(--text-3) 68%, var(--border-medium));

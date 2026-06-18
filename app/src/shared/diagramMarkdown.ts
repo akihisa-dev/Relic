@@ -5,7 +5,7 @@ import { fail, ok, type RelicResult } from "./result";
 const relicDiagramTypes = ["diagram"] as const;
 export type RelicDiagramType = typeof relicDiagramTypes[number];
 
-export const relicFreeDrawingShapeTypes = ["terminator", "process", "decision", "input-output", "label", "area"] as const;
+export const relicFreeDrawingShapeTypes = ["terminator", "process", "decision", "input-output", "area"] as const;
 export type RelicFreeDrawingShapeType = typeof relicFreeDrawingShapeTypes[number];
 export const relicFreeDrawingAreaLayer = 0;
 export const relicFreeDrawingShapeLayer = 1;
@@ -419,19 +419,17 @@ export function addRelicDiagramLine(
   if (!fromNode || !toNode) {
     return fail("DIAGRAM_LINE_NODE_MISSING", "Lineが存在しないNodeを参照しています。");
   }
-  const normalized = normalizeDiagramLineEndpoints(fromNode, toNode);
-  if (!normalized.ok) return normalized;
-  if (parsed.value.lines.some((line) => line.from === normalized.value.from && line.to === normalized.value.to)) {
+  if (parsed.value.lines.some((line) => line.from === from.value && line.to === to.value)) {
     return fail("DIAGRAM_LINE_DUPLICATED", "同じ向きのLineはすでに存在します。");
   }
   const nextLabel = parseOptionalText(label, "DIAGRAM_LINE_LABEL_INVALID", "Lineの label は文字にしてください。");
   if (!nextLabel.ok) return nextLabel;
 
   const line = {
-    from: normalized.value.from,
+    from: from.value,
     id: nextLineId(parsed.value.lines),
-    label: normalized.value.isAnnotation ? "" : nextLabel.value,
-    to: normalized.value.to
+    label: nextLabel.value,
+    to: to.value
   };
   const serialized = serializeRelicConnectedDiagramMarkdown({
     ...parsed.value,
@@ -876,25 +874,6 @@ function parseLines(rawLines: unknown, nodes: RelicDiagramNodeBase[]): RelicResu
   return ok(lines);
 }
 
-function normalizeDiagramLineEndpoints(
-  fromNode: RelicFreeDrawingNode,
-  toNode: RelicFreeDrawingNode
-): RelicResult<{ from: string; isAnnotation: boolean; to: string }> {
-  const fromIsLabel = fromNode.shape === "label";
-  const toIsLabel = toNode.shape === "label";
-  if (fromIsLabel && toIsLabel) {
-    return fail("DIAGRAM_LINE_LABEL_PAIR_INVALID", "ラベル図形同士は接続できません。");
-  }
-  if (fromIsLabel) {
-    return ok({ from: toNode.id, isAnnotation: true, to: fromNode.id });
-  }
-  if (toIsLabel) {
-    return ok({ from: fromNode.id, isAnnotation: true, to: toNode.id });
-  }
-
-  return ok({ from: fromNode.id, isAnnotation: false, to: toNode.id });
-}
-
 function diagramLineDirectionKey(from: string, to: string): string {
   return `${from}\u0000${to}`;
 }
@@ -930,7 +909,6 @@ function defaultFreeDrawingShapeText(shape: RelicFreeDrawingShapeType): string {
   if (shape === "terminator") return "開始/終了";
   if (shape === "decision") return "判断";
   if (shape === "input-output") return "入出力";
-  if (shape === "label") return "ラベル";
   return "処理";
 }
 

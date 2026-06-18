@@ -215,20 +215,8 @@ mark {
   stroke-width: 2.5;
 }
 
-.relic-output-diagram-canvas-line--annotation {
-  stroke: #4f7f94;
-  stroke-width: 2.2;
-}
-
 .relic-output-diagram-canvas-arrow {
   fill: #4c4a45;
-}
-
-.relic-output-diagram-canvas-callout-tail {
-  fill: #edf5f7;
-  stroke: #5f8ea2;
-  stroke-linejoin: round;
-  stroke-width: 2;
 }
 
 .relic-output-diagram-canvas-label {
@@ -334,17 +322,6 @@ mark {
   clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
   padding-left: 28px;
   padding-right: 28px;
-}
-
-.relic-output-diagram-canvas-node--shape-label {
-  background: linear-gradient(180deg, #fbfaf7 0%, #edf5f7 100%);
-  border-color: #5f8ea2;
-  border-radius: 18px;
-  box-shadow:
-    0 8px 20px rgba(15, 23, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.78);
-  padding-left: 20px;
-  padding-right: 20px;
 }
 
 .relic-output-diagram-canvas-node--shape-area {

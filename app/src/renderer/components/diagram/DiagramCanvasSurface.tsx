@@ -139,13 +139,6 @@ export function DiagramCanvasSurface({
   const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
 
   const layout = useMemo(() => buildDiagramCanvasLayout(diagram), [diagram]);
-  const calloutTailSideByNodeId = useMemo(() => {
-    return new Map(layout.lines.flatMap((line) => (
-      line.kind === "annotation" && line.annotationLabelNodeId && line.annotationLabelSide
-        ? [[line.annotationLabelNodeId, line.annotationLabelSide] as const]
-        : []
-    )));
-  }, [layout.lines]);
   const previousLayoutOriginRef = useRef<{ x: number; y: number } | null>(null);
   const canvasStyle = {
     "--diagram-canvas-grid-size": `${diagramGridSize * viewport.zoom}px`,
@@ -514,12 +507,7 @@ export function DiagramCanvasSurface({
       setConnect(null);
       return;
     }
-    if (sourceNode.shape === "label" && targetNode.shape === "label") {
-      setConnect(null);
-      return;
-    }
-    const isAnnotation = sourceNode.shape === "label" || targetNode.shape === "label";
-    if (!isAnnotation && !canAddDecisionOutputLine(sourceNode, diagram.lines, diagram.nodes)) {
+    if (!canAddDecisionOutputLine(sourceNode, diagram.lines, diagram.nodes)) {
       setConnect(null);
       return;
     }
@@ -528,7 +516,7 @@ export function DiagramCanvasSurface({
       content,
       connect.fromNodeId,
       toNodeId,
-      isAnnotation ? "" : decisionLineLabel(sourceNode, diagram.lines, diagram.nodes)
+      decisionLineLabel(sourceNode, diagram.lines, diagram.nodes)
     );
     if (added.ok) {
       onChange?.(added.value.content);
@@ -570,7 +558,6 @@ export function DiagramCanvasSurface({
   };
   const beginLabelEdit = (line: DiagramCanvasLineLayout): void => {
     if (!onChange) return;
-    if (line.kind === "annotation") return;
 
     setSelection({ id: line.line.id, type: "line" });
     setNodeTextEdit(null);
@@ -689,9 +676,7 @@ export function DiagramCanvasSurface({
     shape: RelicFreeDrawingShapeType
   ): void => {
     if (!onChange || !isFreeDrawing) return;
-    if (sourceNode.shape === "label") return;
-    const isAnnotation = shape === "label";
-    if (!isAnnotation && !canAddDecisionOutputLine(sourceNode, diagram.lines, diagram.nodes)) return;
+    if (!canAddDecisionOutputLine(sourceNode, diagram.lines, diagram.nodes)) return;
 
     const position = connectedFreeDrawingNodePosition(sourceNode, shape);
     const added = addRelicFreeDrawingNode(content, shape, position.x, position.y);
@@ -701,7 +686,7 @@ export function DiagramCanvasSurface({
       added.value.content,
       sourceNode.id,
       added.value.node.id,
-      isAnnotation ? "" : decisionLineLabel(sourceNode, diagram.lines, diagram.nodes)
+      decisionLineLabel(sourceNode, diagram.lines, diagram.nodes)
     );
     if (!lineAdded.ok) return;
 
@@ -716,10 +701,6 @@ export function DiagramCanvasSurface({
     event.preventDefault();
     event.stopPropagation();
     if (!isFreeDrawing || !("shape" in node)) return;
-    if (node.shape === "label") {
-      setShapeAddMenu(null);
-      return;
-    }
 
     setSelection({ id: node.id, type: "node" });
     setLabelEdit(null);
@@ -878,7 +859,6 @@ export function DiagramCanvasSurface({
         <div className="diagram-canvas-labels">
           {displayLines.map((line) => {
             const isSelectedLine = selection?.type === "line" && selection.id === line.line.id;
-            if (line.kind === "annotation") return null;
             if (labelEdit?.lineId === line.line.id) {
               return (
                 <form
@@ -973,11 +953,9 @@ export function DiagramCanvasSurface({
           {displayNodes.map(({ node, x, y }) => {
             const shapeOptions = isFreeDrawing && "shape" in node ? connectedShapeOptionsForNode(node, diagram.lines, diagram.nodes, freeDrawingShapeOptions) : [];
             const canAddConnectedShape = shapeOptions.length > 0;
-            const calloutTailSide = node.shape === "label" ? calloutTailSideByNodeId.get(node.id) : undefined;
 
             return (
               <DiagramNodeView
-                calloutTailSide={calloutTailSide}
                 isDragging={drag?.nodeId === node.id}
                 isTextEditing={nodeTextEdit?.nodeId === node.id}
                 isSelected={selection?.type === "node" && selection.id === node.id}
@@ -1126,37 +1104,30 @@ function connectedShapeOptionsForNode(
   nodes: RelicConnectedDiagramNode[],
   options: ReadonlyArray<{ label: string; shape: RelicFreeDrawingShapeType }>
 ): ReadonlyArray<{ label: string; shape: RelicFreeDrawingShapeType }> {
-  if (node.shape === "label") return [];
   if (canAddDecisionOutputLine(node, lines, nodes)) return options;
 
-  return options.filter((option) => option.shape === "label");
+  return [];
 }
 
 function canAddDecisionOutputLine(
   node: RelicDiagramNodeBase | undefined,
   lines: RelicDiagramLine[],
-  nodes: RelicConnectedDiagramNode[]
+  _nodes: RelicConnectedDiagramNode[]
 ): boolean {
   if (!node || !("shape" in node) || node.shape !== "decision") return true;
 
-  return lines.filter((line) => line.from === node.id && !isAnnotationLine(line, nodes)).length < decisionOptionLabels.length;
+  return lines.filter((line) => line.from === node.id).length < decisionOptionLabels.length;
 }
 
 function decisionLineLabel(
   node: RelicConnectedDiagramNode | undefined,
   lines: RelicDiagramLine[],
-  nodes: RelicConnectedDiagramNode[]
+  _nodes: RelicConnectedDiagramNode[]
 ): string {
   if (!node || !("shape" in node) || node.shape !== "decision") return "";
 
-  const outgoingCount = lines.filter((line) => line.from === node.id && !isAnnotationLine(line, nodes)).length;
+  const outgoingCount = lines.filter((line) => line.from === node.id).length;
   return decisionOptionLabels[outgoingCount] ?? "";
-}
-
-function isAnnotationLine(line: RelicDiagramLine, nodes: RelicConnectedDiagramNode[]): boolean {
-  const from = nodes.find((node) => node.id === line.from);
-  const to = nodes.find((node) => node.id === line.to);
-  return from?.shape === "label" || to?.shape === "label";
 }
 
 function connectedFreeDrawingShapeSize(shape: RelicFreeDrawingShapeType): { height: number; width: number } {

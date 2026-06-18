@@ -9,7 +9,7 @@ import {
   parseRelicDiagramMarkdown,
   type RelicDiagramDocument
 } from "../shared/diagramMarkdown";
-import { buildDiagramCanvasLayout, type DiagramNodePortSide } from "./components/diagram/diagramGeometry";
+import { buildDiagramCanvasLayout } from "./components/diagram/diagramGeometry";
 import { runWithConcurrency } from "./concurrency";
 import { outputCss } from "./outputCss";
 
@@ -174,17 +174,11 @@ function buildDiagramCanvasOutputHtml(
     "</marker>",
     "</defs>",
     ...layout.lines.flatMap((line) => [
-      `<path class="${line.kind === "annotation" ? "relic-output-diagram-canvas-line relic-output-diagram-canvas-line--annotation" : "relic-output-diagram-canvas-line"}" d="${escapeHtmlAttribute(line.pathD)}"${line.kind === "annotation" ? "" : ` marker-end="url(#${markerId})"`} />`,
+      `<path class="relic-output-diagram-canvas-line" d="${escapeHtmlAttribute(line.pathD)}" marker-end="url(#${markerId})" />`,
       line.label.trim()
         ? `<text class="relic-output-diagram-canvas-label" x="${line.labelX}" y="${line.labelY}">${escapeHtml(line.label)}</text>`
         : ""
     ]),
-    ...layout.lines.flatMap((line) => {
-      if (line.kind !== "annotation" || !line.annotationLabelNodeId || !line.annotationLabelSide) return [];
-      const node = layout.nodes.find((item) => item.node.id === line.annotationLabelNodeId);
-      if (!node) return [];
-      return [outputDiagramCalloutTailHtml(node, line.annotationLabelSide)];
-    }),
     ...[...layout.nodes].sort((left, right) => outputDiagramNodeLayer(left.node) - outputDiagramNodeLayer(right.node)).map((node) => [
       `<foreignObject x="${node.x}" y="${node.y}" width="${node.node.width}" height="${node.node.height}">`,
       `<div class="${outputDiagramNodeClassName(node.node)}" title="${escapeHtmlAttribute(outputDiagramNodeTitle(node.node))}" xmlns="http://www.w3.org/1999/xhtml">`,
@@ -210,44 +204,6 @@ function buildDiagramCanvasOutputHtml(
 
 function outputDiagramNodeClassName(node: RelicDiagramDocument["nodes"][number]): string {
   return `relic-output-diagram-canvas-node relic-output-diagram-canvas-node--shape-${node.shape}`;
-}
-
-function outputDiagramCalloutTailHtml(
-  node: ReturnType<typeof buildDiagramCanvasLayout>["nodes"][number],
-  side: DiagramNodePortSide
-): string {
-  const centerX = node.x + node.node.width / 2;
-  const centerY = node.y + node.node.height / 2;
-  const tailWidth = 22;
-  const tailDepth = 16;
-  const points = {
-    bottom: [
-      [centerX - tailWidth / 2, node.y + node.node.height - 1],
-      [centerX + tailWidth / 2, node.y + node.node.height - 1],
-      [centerX, node.y + node.node.height + tailDepth]
-    ],
-    left: [
-      [node.x + 1, centerY - tailWidth / 2],
-      [node.x + 1, centerY + tailWidth / 2],
-      [node.x - tailDepth, centerY]
-    ],
-    right: [
-      [node.x + node.node.width - 1, centerY - tailWidth / 2],
-      [node.x + node.node.width - 1, centerY + tailWidth / 2],
-      [node.x + node.node.width + tailDepth, centerY]
-    ],
-    top: [
-      [centerX - tailWidth / 2, node.y + 1],
-      [centerX + tailWidth / 2, node.y + 1],
-      [centerX, node.y - tailDepth]
-    ]
-  } satisfies Record<DiagramNodePortSide, number[][]>;
-
-  return `<polygon class="relic-output-diagram-canvas-callout-tail relic-output-diagram-canvas-callout-tail--${side}" points="${points[side].map(([x, y]) => `${formatSvgNumber(x)},${formatSvgNumber(y)}`).join(" ")}" />`;
-}
-
-function formatSvgNumber(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(3).replace(/\.?0+$/, "");
 }
 
 function outputDiagramNodeLayer(node: RelicDiagramDocument["nodes"][number]): number {

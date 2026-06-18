@@ -4,7 +4,7 @@ import {
   type RelicDiagramLine,
 } from "../../../shared/diagramMarkdown";
 import { stripMarkdownExtension } from "../../../shared/markdownExtension";
-import { diagramFreeDrawingLabelDisplayLayer, diagramLineDisplayLayer } from "./diagramLayering";
+import { diagramLineDisplayLayer } from "./diagramLayering";
 
 const canvasPadding = 192;
 const minCanvasWidth = 900;
@@ -35,10 +35,7 @@ export interface DiagramCanvasNodeLayout {
 }
 
 export interface DiagramCanvasLineLayout {
-  annotationLabelNodeId?: string;
-  annotationLabelSide?: DiagramNodePortSide;
   displayLayer: number;
-  kind: "annotation" | "line";
   label: string;
   line: RelicDiagramLine;
   labelX: number;
@@ -70,7 +67,7 @@ interface RoutedSegment {
 }
 
 type RouteDirection = "h" | "none" | "v";
-export type DiagramNodePortSide = "bottom" | "left" | "right" | "top";
+type DiagramNodePortSide = "bottom" | "left" | "right" | "top";
 
 interface NodePort {
   fixed?: boolean;
@@ -169,52 +166,23 @@ export function buildLineLayouts(
   });
 
   return routedLines.map(({ context, route }, index) => {
-    const kind = diagramLineKind(context.from.node, context.to.node);
     const otherSegments = routedLines.flatMap((routedLine, otherIndex) => (
       otherIndex === index ? [] : segmentsFromPoints(routedLine.route.points)
     ));
     const labelPoint = labelPointFromRoute(route.points, otherSegments);
-    const annotationLabelNode = kind === "annotation"
-      ? context.from.node.shape === "label"
-        ? context.from.node
-        : context.to.node.shape === "label"
-          ? context.to.node
-          : null
-      : null;
     return {
-      label: kind === "annotation" ? "" : context.line.label,
-      annotationLabelNodeId: annotationLabelNode?.id,
-      annotationLabelSide: annotationLabelNode ? context.start.side : undefined,
-      displayLayer: kind === "annotation" ? diagramFreeDrawingLabelDisplayLayer() : diagramLineDisplayLayer(context.from.node, context.to.node),
-      kind,
+      label: context.line.label,
+      displayLayer: diagramLineDisplayLayer(context.from.node, context.to.node),
       labelX: labelPoint.x,
       labelY: labelPoint.y,
       line: context.line,
-      pathD: kind === "annotation"
-        ? annotationPathFromPoints(context.start.point, context.end.point)
-        : pathFromPointsWithVerticalLineJumps(route.points, otherSegments),
+      pathD: pathFromPointsWithVerticalLineJumps(route.points, otherSegments),
       x1: route.start.x,
       x2: route.end.x,
       y1: route.start.y,
       y2: route.end.y
     };
   });
-}
-
-function annotationPathFromPoints(start: DiagramPoint, end: DiagramPoint): string {
-  const control = {
-    x: (start.x + end.x) / 2,
-    y: (start.y + end.y) / 2 - Math.min(28, Math.abs(start.x - end.x) / 8)
-  };
-
-  return [
-    `M ${formatPathNumber(start.x)} ${formatPathNumber(start.y)}`,
-    `Q ${formatPathNumber(control.x)} ${formatPathNumber(control.y)} ${formatPathNumber(end.x)} ${formatPathNumber(end.y)}`
-  ].join(" ");
-}
-
-function diagramLineKind(from: RelicConnectedDiagramNode, to: RelicConnectedDiagramNode): DiagramCanvasLineLayout["kind"] {
-  return from.shape === "label" || to.shape === "label" ? "annotation" : "line";
 }
 
 export function visibleDiagramLines(
@@ -226,18 +194,11 @@ export function visibleDiagramLines(
 
   return lines.filter((line) => {
     if (!decisionNodeIds.has(line.from)) return true;
-    if (isAnnotationLine(line, nodes)) return true;
 
     const outgoingCount = outgoingCountByNodeId.get(line.from) ?? 0;
     outgoingCountByNodeId.set(line.from, outgoingCount + 1);
     return outgoingCount < decisionOutputLineLimit;
   });
-}
-
-function isAnnotationLine(line: RelicDiagramLine, nodes: RelicConnectedDiagramNode[]): boolean {
-  const from = nodes.find((node) => node.id === line.from);
-  const to = nodes.find((node) => node.id === line.to);
-  return from?.shape === "label" || to?.shape === "label";
 }
 
 function linePorts(
@@ -246,10 +207,6 @@ function linePorts(
   decisionInputSideByNodeId: Map<string, DiagramNodePortSide>,
   decisionOutputSidesByNodeId: Map<string, Set<DiagramNodePortSide>>
 ): { end: NodePort; start: NodePort } {
-  if (diagramLineKind(from.node, to.node) === "annotation") {
-    return annotationLinePorts(from, to);
-  }
-
   const fallbackPorts = diagramLinePorts(from, to);
   return {
     end: isDecisionNode(to.node)
@@ -263,17 +220,6 @@ function linePorts(
         decisionOutputSidesByNodeId
       ))
       : fallbackPorts.start
-  };
-}
-
-function annotationLinePorts(from: DiagramCanvasNodeLayout, to: DiagramCanvasNodeLayout): { end: NodePort; start: NodePort } {
-  const labelNode = from.node.shape === "label" ? from : to;
-  const targetNode = from.node.shape === "label" ? to : from;
-  const ports = diagramLinePorts(labelNode, targetNode);
-
-  return {
-    end: ports.end,
-    start: ports.start
   };
 }
 

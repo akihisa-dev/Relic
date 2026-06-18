@@ -149,7 +149,6 @@
   "diagram.freeDrawingNodeText": "図形のテキスト",
   "diagram.freeDrawingShape.decision": "判断",
   "diagram.freeDrawingShape.input-output": "入出力",
-  "diagram.freeDrawingShape.label": "ラベル",
   "diagram.freeDrawingShape.process": "処理",
   "diagram.freeDrawingShape.terminator": "開始/終了",
   "diagram.freeDrawingShape.area": "領域",
