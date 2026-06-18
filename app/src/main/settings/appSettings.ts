@@ -39,6 +39,10 @@ const defaultAppSettings: AppSettings = {
 };
 
 const currentAppSettingsSchemaVersion = 1;
+type MigrationResult<T> = {
+  didMigrate: boolean;
+  settings: T;
+};
 type SerializedUpdate = Promise<unknown>;
 let appSettingsUpdateQueue: SerializedUpdate = Promise.resolve();
 
@@ -53,6 +57,13 @@ export function getAppSettingsPath(userDataPath: string): string {
 }
 
 export async function readAppSettings(userDataPath: string): Promise<AppSettings> {
+  return readAppSettingsInternal(userDataPath, { persistMigration: true });
+}
+
+async function readAppSettingsInternal(
+  userDataPath: string,
+  options: { persistMigration: boolean }
+): Promise<AppSettings> {
   const settingsPath = getAppSettingsPath(userDataPath);
 
   try {
@@ -71,14 +82,22 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
     }
 
     const migratedSettings = migrateAppSettings(parsedSettings, settingsPath);
-    const workspaces = parseWorkspaceSummaries(migratedSettings.workspaces);
+    if (migratedSettings.didMigrate && options.persistMigration) {
+      try {
+        await persistMigratedAppSettings(settingsPath);
+      } catch {
+        // 書き戻し失敗時も読み込み結果は捨てず、続行する
+      }
+    }
+
+    const workspaces = parseWorkspaceSummaries(migratedSettings.settings.workspaces);
 
     return {
-      editorSettings: parseEditorSettings(migratedSettings.editorSettings),
-      featureToggles: parseFeatureToggles(migratedSettings.featureToggles),
-      frontmatterTemplates: parseFrontmatterTemplates(migratedSettings.frontmatterTemplates),
-      lastWorkspaceId: parseLastWorkspaceId(migratedSettings.lastWorkspaceId, workspaces),
-      userDefinedFields: parseUserDefinedFields(migratedSettings.userDefinedFields),
+      editorSettings: parseEditorSettings(migratedSettings.settings.editorSettings),
+      featureToggles: parseFeatureToggles(migratedSettings.settings.featureToggles),
+      frontmatterTemplates: parseFrontmatterTemplates(migratedSettings.settings.frontmatterTemplates),
+      lastWorkspaceId: parseLastWorkspaceId(migratedSettings.settings.lastWorkspaceId, workspaces),
+      userDefinedFields: parseUserDefinedFields(migratedSettings.settings.userDefinedFields),
       workspaces
     };
   } catch (error) {
@@ -103,7 +122,7 @@ export async function updateAppSettings(
   update: (current: AppSettings) => Promise<AppSettings> | AppSettings
 ): Promise<AppSettings> {
   return queueAppSettingsUpdate(async () => {
-    const current = await readAppSettings(userDataPath);
+    const current = await readAppSettingsInternal(userDataPath, { persistMigration: false });
     const next = await update(current);
     await writeAppSettings(userDataPath, next);
     return next;
@@ -300,20 +319,64 @@ function parseSettingsObject(raw: unknown): Record<string, unknown> | null {
   return raw as Record<string, unknown>;
 }
 
-function migrateAppSettings(raw: Record<string, unknown>, settingsPath: string): Record<string, unknown> {
+function migrateAppSettings(raw: Record<string, unknown>, settingsPath: string): MigrationResult<Record<string, unknown>> {
   const schemaVersion = readSchemaVersion(raw.schemaVersion, settingsPath, "AppSettings");
 
-  if (schemaVersion === currentAppSettingsSchemaVersion) return raw;
+  if (schemaVersion === currentAppSettingsSchemaVersion) {
+    return { didMigrate: false, settings: raw };
+  }
 
   if (schemaVersion === 0) {
     return {
-      ...raw,
-      featureToggles: migrateFeatureTogglesV0(raw.featureToggles),
-      schemaVersion: currentAppSettingsSchemaVersion
+      didMigrate: true,
+      settings: {
+        ...raw,
+        featureToggles: migrateFeatureTogglesV0(raw.featureToggles),
+        schemaVersion: currentAppSettingsSchemaVersion
+      }
     };
   }
 
   throw createUnsupportedSettingsVersionError(settingsPath, "AppSettings", schemaVersion);
+}
+
+async function persistMigratedAppSettings(
+  settingsPath: string,
+): Promise<void> {
+  return queueAppSettingsUpdate(async () => {
+    const rawSettings = await readFile(settingsPath, "utf8");
+    const parsedJson = parseSettingsJson(rawSettings);
+
+    if (!parsedJson.ok) {
+      return;
+    }
+
+    const parsedSettings = parseSettingsObject(parsedJson.value);
+    if (!parsedSettings) {
+      return;
+    }
+
+    const latestMigration = migrateAppSettings(parsedSettings, settingsPath);
+    if (!latestMigration.didMigrate) {
+      return;
+    }
+
+    await writeMigratedAppSettings(settingsPath, latestMigration.settings);
+  });
+}
+
+async function writeMigratedAppSettings(
+  settingsPath: string,
+  settings: Record<string, unknown>
+): Promise<void> {
+  await mkdir(path.dirname(settingsPath), { recursive: true });
+  await atomicWriteTextFile(
+    settingsPath,
+    `${JSON.stringify({
+      ...settings,
+      schemaVersion: currentAppSettingsSchemaVersion
+    }, null, 2)}\n`
+  );
 }
 
 function migrateFeatureTogglesV0(raw: unknown): unknown {

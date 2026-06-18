@@ -1,12 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import type { UpdateChartEntryInput, WorkspaceTreeNode } from "../shared/ipc";
-import {
-  normalizeWorkspaceCharts,
-  normalizeWorkspaceChartsWithFiles,
-  readDateChartEntriesFromFiles,
-  updateChartFrontmatter
-} from "./chartData";
+import type { UpdateChartEntryInput } from "../shared/ipc";
+import { normalizeWorkspaceCharts, updateChartFrontmatter } from "./chartData";
 
 const day = (value: string): number =>
   Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
@@ -39,9 +34,36 @@ function chronicleEditInput(overrides: Partial<UpdateChartEntryInput> = {}): Upd
 }
 
 describe("chartData", () => {
-  it("旧形式 chronicle 配列を現行チャートへ正規化する", () => {
+  it("現行形式のチャート配列を chronicle/date の固定順で正規化する", () => {
     const charts = normalizeWorkspaceCharts([
-      { endYear: 1333, fileName: "鎌倉時代", path: "history/kamakura.md", startYear: 1185 }
+      {
+        entries: [{
+          endLabel: "2026-05-05",
+          endValue: day("2026-05-05"),
+          fileName: "実装タスク",
+          path: "tasks/implementation.md",
+          startLabel: "2026-05-01",
+          startValue: day("2026-05-01")
+        }],
+        filePaths: [],
+        id: "date",
+        name: "date",
+        source: "date"
+      },
+      {
+        entries: [{
+          endLabel: "1333",
+          endValue: 1332,
+          fileName: "鎌倉時代",
+          path: "history/kamakura.md",
+          startLabel: "1185",
+          startValue: 1184
+        }],
+        filePaths: ["history/kamakura.md"],
+        id: "chronicle",
+        name: "chronicle",
+        source: "chronicle"
+      }
     ]);
 
     expect(charts).toEqual([
@@ -60,7 +82,14 @@ describe("chartData", () => {
         source: "chronicle"
       },
       {
-        entries: [],
+        entries: [{
+          endLabel: "2026-05-05",
+          endValue: day("2026-05-05"),
+          fileName: "実装タスク",
+          path: "tasks/implementation.md",
+          startLabel: "2026-05-01",
+          startValue: day("2026-05-01")
+        }],
         filePaths: [],
         id: "date",
         name: "date",
@@ -69,101 +98,25 @@ describe("chartData", () => {
     ]);
   });
 
-  it("Markdown frontmatter から plannedDate と actualDate を date チャートへ補完する", async () => {
-    const fileTree: WorkspaceTreeNode[] = [{
-      children: [{ name: "実装タスク", path: "tasks/implementation.md", type: "file" }],
-      name: "tasks",
-      path: "tasks",
-      type: "folder"
-    }];
-    const readMarkdownFile = vi.fn(async ({ path }: { path: string }) => ({
-      ok: true as const,
-      value: {
-        content: "---\nstatus: [進行中]\nplannedDate: [2026-05-01, 2026-05-05]\nactualDate: [2026-05-03, 2026-05-06]\n---\n# 実装タスク",
-        name: "実装タスク",
-        path
-      }
-    }));
+  it("現行形式外の値は現状保持できるチャートとして扱わず、空のチャートを返す", () => {
+    const charts = normalizeWorkspaceCharts([{ endYear: 1333, fileName: "鎌倉時代", path: "history/kamakura.md", startYear: 1185 }] as unknown[]);
 
-    const charts = await normalizeWorkspaceChartsWithFiles(
-      [{ entries: [], filePaths: [], id: "date", name: "date", source: "date" }],
-      fileTree,
-      readMarkdownFile
-    );
-
-    expect(charts[1].entries).toEqual([
+    expect(charts).toEqual([
       {
-        dateKind: "planned",
-        endLabel: "2026-05-05",
-        endValue: day("2026-05-05"),
-        fileName: "実装タスク",
-        path: "tasks/implementation.md",
-        startLabel: "2026-05-01",
-        startValue: day("2026-05-01"),
-        statuses: ["進行中"]
+        entries: [],
+        filePaths: [],
+        id: "chronicle",
+        name: "chronicle",
+        source: "chronicle"
       },
       {
-        dateKind: "actual",
-        endLabel: "2026-05-06",
-        endValue: day("2026-05-06"),
-        fileName: "実装タスク",
-        path: "tasks/implementation.md",
-        startLabel: "2026-05-03",
-        startValue: day("2026-05-03"),
-        statuses: ["進行中"]
+        entries: [],
+        filePaths: [],
+        id: "date",
+        name: "date",
+        source: "date"
       }
     ]);
-  });
-
-  it("dateだけではplannedとして読まない", async () => {
-    const fileTree: WorkspaceTreeNode[] = [{ name: "legacy-date", path: "tasks/legacy-date.md", type: "file" }];
-    const readMarkdownFile = vi.fn(async ({ path }: { path: string }) => ({
-      ok: true as const,
-      value: {
-        content: "---\ndate: [2026-06-01]\n---\n# legacy-date",
-        name: "",
-        path
-      }
-    }));
-
-    await expect(readDateChartEntriesFromFiles(fileTree, readMarkdownFile)).resolves.toEqual([]);
-  });
-
-  it("read失敗、frontmatterなし、不正日付、逆順日付は補完対象から除外する", async () => {
-    const fileTree: WorkspaceTreeNode[] = [
-      { name: "valid", path: "tasks/valid.md", type: "file" },
-      { name: "failed", path: "tasks/failed.md", type: "file" },
-      { name: "plain", path: "tasks/plain.md", type: "file" },
-      { name: "invalid", path: "tasks/invalid.md", type: "file" },
-      { name: "reversed", path: "tasks/reversed.md", type: "file" }
-    ];
-    const contents: Record<string, string> = {
-      "tasks/invalid.md": "---\nplannedDate: [2026-13-01]\n---\n# invalid",
-      "tasks/plain.md": "# plain",
-      "tasks/reversed.md": "---\nplannedDate: [2026-05-05, 2026-05-01]\n---\n# reversed",
-      "tasks/valid.md": "---\nactualDate: [2026-05-03]\n---\n# valid"
-    };
-    const readMarkdownFile = vi.fn(async ({ path }: { path: string }) => {
-      if (path === "tasks/failed.md") {
-        return { error: { code: "READ_FAILED", message: "読めませんでした。" }, ok: false as const };
-      }
-
-      return {
-        ok: true as const,
-        value: { content: contents[path], name: "", path }
-      };
-    });
-
-    await expect(readDateChartEntriesFromFiles(fileTree, readMarkdownFile)).resolves.toEqual([{
-      dateKind: "actual",
-      endLabel: "2026-05-03",
-      endValue: day("2026-05-03"),
-      fileName: "valid",
-      path: "tasks/valid.md",
-      startLabel: "2026-05-03",
-      startValue: day("2026-05-03"),
-      statuses: []
-    }]);
   });
 
   it("dateバー更新ではplannedDateだけを既存文字列形式で更新する", () => {

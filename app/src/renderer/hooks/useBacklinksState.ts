@@ -4,6 +4,7 @@ import type { Backlink, WorkspaceTreeNode } from "../../shared/ipc";
 
 interface UseBacklinksStateInput {
   activeFilePath: string | null;
+  enabled: boolean;
   fileTree: WorkspaceTreeNode[] | undefined;
   setWorkspaceError: (message: string | null) => void;
 }
@@ -12,6 +13,7 @@ const emptyBacklinks: Backlink[] = [];
 
 export function useBacklinksState({
   activeFilePath,
+  enabled,
   fileTree,
   setWorkspaceError
 }: UseBacklinksStateInput) {
@@ -19,10 +21,10 @@ export function useBacklinksState({
     backlinks: emptyBacklinks,
     path: null
   });
-  const hasActiveFile = Boolean(activeFilePath && window.relic);
+  const hasActiveFile = Boolean(enabled && activeFilePath && window.relic);
 
   useEffect(() => {
-    if (!activeFilePath || !window.relic) {
+    if (!enabled || !activeFilePath || !window.relic) {
       return;
     }
 
@@ -44,7 +46,7 @@ export function useBacklinksState({
     return () => {
       canceled = true;
     };
-  }, [activeFilePath, fileTree, setWorkspaceError]);
+  }, [activeFilePath, enabled, fileTree, setWorkspaceError]);
 
   return {
     backlinks: hasActiveFile && backlinkState.path === activeFilePath ? backlinkState.backlinks : emptyBacklinks,

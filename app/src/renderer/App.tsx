@@ -144,6 +144,9 @@ export function App(): ReactElement {
     isRightPanelFrontmatterAvailable
   );
   const isEffectiveRightPanelOpen = isRightPanelAvailable && isRightPanelOpen;
+  const isLinksPanelActive = isEffectiveRightPanelOpen &&
+    isRightPanelLinksAvailable &&
+    effectiveRightPanelView === "links";
   const toggleRightPanelIfAvailable = useCallback((): void => {
     if (!isRightPanelAvailable) return;
     if (!isRightPanelOpen && rightPanelView !== effectiveRightPanelView) {
@@ -426,6 +429,7 @@ export function App(): ReactElement {
     existingMarkdownPaths,
     fileTree: workspaceState?.fileTree,
     focusedPane,
+    isLinksPanelActive,
     leftPane,
     rightPane,
     setWorkspaceError,

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -163,6 +163,39 @@ describe("workspaceSettings", () => {
     ]);
   });
 
+  it("v0ワークスペース設定は読み込み時に現行schemaVersionで保存される", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-legacy-v0");
+
+    await mkdir(path.dirname(settingsPath), { recursive: true });
+    await writeFile(settingsPath, JSON.stringify({
+      schemaVersion: 0,
+      chronicleCalendars: defaultChronicleCalendars,
+      charts: [
+        {
+          filePaths: ["schedule.md"],
+          id: "date",
+          name: "予定",
+          source: "date"
+        }
+      ],
+      pinnedPaths: ["notes.md"],
+      workspacePath: "/Users/test/workspace"
+    }), "utf8");
+
+    await readWorkspaceSettings(userDataPath, "ws-legacy-v0");
+    const afterFirstRead = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
+    expect(afterFirstRead.schemaVersion).toBe(1);
+
+    await delay(1100);
+    const firstMtime = (await stat(settingsPath)).mtimeMs;
+    await readWorkspaceSettings(userDataPath, "ws-legacy-v0");
+    const secondMtime = (await stat(settingsPath)).mtimeMs;
+
+    expect(secondMtime).toBe(firstMtime);
+  });
+
   it("保存時はchartsキーだけを書き込む", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
     temporaryPaths.push(userDataPath);
@@ -283,5 +316,37 @@ describe("workspaceSettings", () => {
 
     expect(loaded.pinnedPaths).toEqual(["notes/one.md"]);
     expect(loaded.workspacePath).toBe("/Users/test/notes");
+  });
+
+  it("移行読み込みと同時更新で更新値が上書きされない", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-legacy-concurrent");
+    await mkdir(path.dirname(settingsPath), { recursive: true });
+    await writeFile(settingsPath, JSON.stringify({
+      schemaVersion: 0,
+      chronicleCalendars: defaultChronicleCalendars,
+      charts: defaultCharts,
+      pinnedPaths: [],
+      workspacePath: "/Users/test/legacy"
+    }), "utf8");
+
+    const update = updateWorkspaceSettings(userDataPath, "ws-legacy-concurrent", async (settings) => {
+      await delay(40);
+      return {
+        ...settings,
+        workspacePath: "/Users/test/new"
+      };
+    });
+    const readWhileUpdating = (async () => {
+      await delay(10);
+      return readWorkspaceSettings(userDataPath, "ws-legacy-concurrent");
+    })();
+
+    await Promise.all([update, readWhileUpdating]);
+
+    const raw = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
+    expect(raw.schemaVersion).toBe(1);
+    expect(raw.workspacePath).toBe("/Users/test/new");
   });
 });

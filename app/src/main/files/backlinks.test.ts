@@ -89,6 +89,33 @@ describe("readBacklinks", () => {
     });
   });
 
+  it("参照元Markdownの読み込みを上限付き並列で行う", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-concurrency-"));
+    temporaryPaths.push(workspacePath);
+    await writeFile(path.join(workspacePath, "target.md"), "# Target", "utf8");
+    for (let index = 0; index < 12; index += 1) {
+      await writeFile(path.join(workspacePath, `source-${index}.md`), "[[target]]", "utf8");
+    }
+
+    let activeReads = 0;
+    let maxActiveReads = 0;
+
+    await expect(readBacklinks(workspacePath, "target.md", {
+      async readFile(filePath, encoding) {
+        activeReads += 1;
+        maxActiveReads = Math.max(maxActiveReads, activeReads);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        try {
+          return await readFile(filePath, encoding);
+        } finally {
+          activeReads -= 1;
+        }
+      }
+    })).resolves.toMatchObject({ ok: true });
+
+    expect(maxActiveReads).toBeLessThanOrEqual(8);
+  });
+
   it("Markdown以外とワークスペース外への参照を拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-"));
     temporaryPaths.push(workspacePath);

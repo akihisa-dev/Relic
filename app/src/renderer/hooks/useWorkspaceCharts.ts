@@ -7,10 +7,7 @@ import type {
   WorkspaceState
 } from "../../shared/ipc";
 import { relicApiContractVersion } from "../../shared/ipc";
-import {
-  normalizeWorkspaceCharts,
-  normalizeWorkspaceChartsWithFiles
-} from "../chartData";
+import { normalizeWorkspaceCharts } from "../chartData";
 import type { Tab } from "../store/editorStore";
 
 interface UseWorkspaceChartsInput {
@@ -48,15 +45,12 @@ export function useWorkspaceCharts({
     const result = await window.relic.getWorkspaceCharts();
 
     if (result.ok) {
-      const normalized = hasOpenChart
-        ? await normalizeWorkspaceChartsWithFiles(result.value, workspaceState.fileTree, window.relic.readMarkdownFile)
-        : normalizeWorkspaceCharts(result.value);
-      setCharts(normalized);
+      setCharts(normalizeWorkspaceCharts(result.value));
     } else {
       setCharts([]);
       setWorkspaceError(result.error.message);
     }
-  }, [hasOpenChart, setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+  }, [setWorkspaceError, workspaceState?.activeWorkspace?.id]);
 
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
@@ -85,7 +79,7 @@ export function useWorkspaceCharts({
     return () => {
       canceled = true;
     };
-  }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+  }, [setWorkspaceError, workspaceState?.activeWorkspace?.id]);
 
   useEffect(() => {
     if (!hasOpenChart) return;
@@ -110,7 +104,7 @@ export function useWorkspaceCharts({
     }
 
     if (result.ok) {
-      setCharts(await normalizeWorkspaceChartsWithFiles(result.value, workspaceState?.fileTree ?? [], relic.readMarkdownFile));
+      setCharts(normalizeWorkspaceCharts(result.value));
       const updatedFile = await relic.readMarkdownFile({ path: input.path });
 
       if (updatedFile.ok) {
@@ -123,7 +117,7 @@ export function useWorkspaceCharts({
     } else {
       setWorkspaceError(result.error.message);
     }
-  }, [setWorkspaceError, tabs, updateTabContent, workspaceState?.fileTree]);
+  }, [setWorkspaceError, tabs, updateTabContent]);
 
   return {
     charts: workspaceState?.activeWorkspace ? charts : [],

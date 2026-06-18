@@ -1,34 +1,11 @@
-import type { ChartEntry, WorkspaceChart } from "../shared/ipc";
+import type { WorkspaceChart } from "../shared/ipc";
 
 export function normalizeWorkspaceCharts(value: unknown): WorkspaceChart[] {
   if (!Array.isArray(value)) return [];
 
   if (value.every(isWorkspaceChart)) return fixedWorkspaceCharts(value);
 
-  const legacyEntries = value.flatMap((entry): ChartEntry[] => {
-    if (typeof entry !== "object" || entry === null) return [];
-
-    const candidate = entry as Record<string, unknown>;
-    if (
-      typeof candidate.path !== "string" ||
-      typeof candidate.fileName !== "string" ||
-      typeof candidate.startYear !== "number" ||
-      typeof candidate.endYear !== "number"
-    ) return [];
-
-    return [{
-      endLabel: formatLegacyChronicleYear(candidate.endYear),
-      endValue: legacyChronicleYearToAxis(candidate.endYear),
-      fileName: candidate.fileName,
-      path: candidate.path,
-      startLabel: formatLegacyChronicleYear(candidate.startYear),
-      startValue: legacyChronicleYearToAxis(candidate.startYear)
-    }];
-  });
-
-  return legacyEntries.length > 0
-    ? fixedWorkspaceCharts([{ entries: legacyEntries, filePaths: legacyEntries.map((entry) => entry.path), id: "chronicle", name: "chronicle", source: "chronicle" }])
-    : fixedWorkspaceCharts([]);
+  return fixedWorkspaceCharts([]);
 }
 
 function fixedWorkspaceCharts(charts: WorkspaceChart[]): WorkspaceChart[] {
@@ -64,12 +41,4 @@ function isWorkspaceChart(value: unknown): value is WorkspaceChart {
     Array.isArray(chart.entries) &&
     (!("filePaths" in chart) || Array.isArray(chart.filePaths))
   );
-}
-
-function legacyChronicleYearToAxis(year: number): number {
-  return year < 0 ? year : year - 1;
-}
-
-function formatLegacyChronicleYear(year: number): string {
-  return year < 0 ? `−${Math.abs(year)}` : String(year);
 }
