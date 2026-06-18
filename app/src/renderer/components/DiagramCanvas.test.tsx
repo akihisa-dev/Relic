@@ -310,6 +310,56 @@ describe("DiagramCanvas", () => {
     ]);
   });
 
+  it("keeps selection-specific actions out of the fixed canvas toolbar", () => {
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContent} fileName="World" />
+      </I18nProvider>
+    );
+    const toolbar = screen.getByLabelText("Diagram editing tools");
+
+    expect(within(toolbar).getByRole("button", { name: "Undo" })).toBeDisabled();
+    expect(within(toolbar).getByLabelText("Current zoom")).toHaveTextContent("100%");
+    expect(within(toolbar).queryByRole("button", { name: "Duplicate" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Selected shape tools")).not.toBeInTheDocument();
+  });
+
+  it("shows node-specific actions only when a node is selected", () => {
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={vi.fn()} />
+      </I18nProvider>
+    );
+    const node = freeDrawingNode("alice");
+
+    fireEvent(node, pointerEvent("pointerdown", 1, 10, 10));
+    fireEvent(node, pointerEvent("pointerup", 1, 10, 10));
+
+    const nodeToolbar = screen.getByLabelText("Selected shape tools");
+    expect(within(nodeToolbar).getByRole("button", { name: "Edit text" })).toBeInTheDocument();
+    expect(within(nodeToolbar).getByRole("button", { name: "Duplicate" })).toBeInTheDocument();
+    expect(within(nodeToolbar).getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Selected line tools")).not.toBeInTheDocument();
+  });
+
+  it("shows line-specific actions only when a line is selected", () => {
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={vi.fn()} />
+      </I18nProvider>
+    );
+    const line = container.querySelector(".diagram-canvas-line-hit");
+    expect(line).toBeInstanceOf(Element);
+
+    fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
+
+    const lineToolbar = screen.getByLabelText("Selected line tools");
+    expect(within(lineToolbar).getByRole("button", { name: "Edit line label" })).toBeInTheDocument();
+    expect(within(lineToolbar).getByRole("button", { name: "Reverse arrow direction" })).toBeInTheDocument();
+    expect(within(lineToolbar).getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Selected shape tools")).not.toBeInTheDocument();
+  });
+
   it("renders diagram text nodes and edits their text in Markdown", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
@@ -409,6 +459,48 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 128");
     expect(onChange.mock.calls[0]?.[0]).toContain("width: 160");
     expect(onChange.mock.calls[0]?.[0]).toContain("height: 64");
+  });
+
+  it("shows a start panel on an empty Diagram and adds the first shape from it", () => {
+    const onChange = vi.fn();
+    const emptyFreeDrawing = "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n";
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={emptyFreeDrawing} fileName="図解ファイル" onChange={onChange} />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText("Add a shape to begin")).toBeInTheDocument();
+    expect(screen.getByText("Choose a shape, or drag one from the palette on the left onto the canvas.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add shape" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Process" }));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("shape: process");
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("pan");
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("zoom");
+  });
+
+  it("adds a sidebar-requested shape at the visible canvas center", () => {
+    const onChange = vi.fn();
+    const emptyFreeDrawing = "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n";
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={emptyFreeDrawing} fileName="図解ファイル" onChange={onChange} />
+      </I18nProvider>
+    );
+    const canvas = container.querySelector(".diagram-canvas") as HTMLElement;
+    mockRect(canvas, { bottom: 620, height: 620, left: 0, right: 900, top: 0, width: 900 });
+    const detail = { handled: false, shape: "terminator" as const };
+
+    window.dispatchEvent(new CustomEvent("relic-diagram-shape-add", { detail }));
+
+    expect(detail.handled).toBe(true);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("shape: terminator");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 384");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 288");
   });
 
   it("adds a connected shape from a selected diagram node", () => {
@@ -1304,10 +1396,10 @@ describe("DiagramCanvas", () => {
     const line = container.querySelector(".diagram-canvas-line-hit");
     expect(line).toBeInstanceOf(Element);
 
-    expect(screen.queryByRole("button", { name: "Edit line label" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add line label" })).not.toBeInTheDocument();
     fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
 
-    expect(screen.getByRole("button", { name: "Edit line label" })).toHaveTextContent("Add line label");
+    expect(screen.getByRole("button", { name: "Add line label" })).toBeInTheDocument();
   });
 
   it("clears diagram selection with Escape without saving", () => {
@@ -1322,11 +1414,11 @@ describe("DiagramCanvas", () => {
     expect(line).toBeInstanceOf(Element);
 
     fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
-    expect(screen.getByRole("button", { name: "Edit line label" })).toHaveTextContent("Add line label");
+    expect(screen.getByRole("button", { name: "Add line label" })).toBeInTheDocument();
 
     fireEvent.keyDown(canvas, { key: "Escape" });
 
-    expect(screen.queryByRole("button", { name: "Edit line label" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add line label" })).not.toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
   });
 
