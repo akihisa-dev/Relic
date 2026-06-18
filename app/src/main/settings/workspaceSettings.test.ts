@@ -176,6 +176,7 @@ describe("workspaceSettings", () => {
 
     const raw = JSON.parse(await readFile(getWorkspaceSettingsPath(userDataPath, "ws-new"), "utf8")) as Record<string, unknown>;
 
+    expect(raw.schemaVersion).toBe(1);
     expect(raw.charts).toEqual(defaultCharts);
     expect(raw.ganttCharts).toBeUndefined();
     await expect(readdir(path.dirname(getWorkspaceSettingsPath(userDataPath, "ws-new")))).resolves.toEqual([
@@ -195,6 +196,22 @@ describe("workspaceSettings", () => {
 
     expect(files).toHaveLength(1);
     expect(files[0]).toMatch(/^ws-broken\.corrupt-\d+\.json$/);
+  });
+
+  it("未知の将来schemaVersionは旧形式として誤読せず元ファイルを残す", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-future");
+    await mkdir(path.dirname(settingsPath), { recursive: true });
+    await writeFile(settingsPath, JSON.stringify({
+      schemaVersion: 999,
+      charts: defaultCharts,
+      pinnedPaths: [],
+      workspacePath: "/Users/test/future"
+    }), "utf8");
+
+    await expect(readWorkspaceSettings(userDataPath, "ws-future")).rejects.toHaveProperty("name", "UnsupportedWorkspaceSettingsVersionError");
+    await expect(readdir(path.dirname(settingsPath))).resolves.toEqual([path.basename(settingsPath)]);
   });
 
   it("オブジェクトではないワークスペース設定ファイルでも初期設定で読み込める", async () => {

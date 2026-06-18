@@ -97,6 +97,7 @@ export interface RelicFreeDrawingNodeLayerUpdate {
 }
 
 interface DiagramFrontmatter {
+  formatVersion: number;
   title?: string;
   type: string;
 }
@@ -109,7 +110,8 @@ interface ParsedDiagramMarkdownParts {
 const freeDrawingBodyKeys = new Set(["nodes", "lines"]);
 const freeDrawingNodeKeys = new Set(["id", "shape", "text", "x", "y", "width", "height", "layer"]);
 const diagramLineKeys = new Set(["id", "from", "to", "label"]);
-const diagramFrontmatterKeys = new Set(["type", "title"]);
+const currentDiagramFormatVersion = 1;
+const diagramFrontmatterKeys = new Set(["type", "title", "formatVersion"]);
 const diagramNodeGridSize = 32;
 const defaultNodeWidth = 192;
 const defaultNodeHeight = 96;
@@ -117,6 +119,7 @@ const defaultNodeHeight = 96;
 export const emptyRelicFreeDrawingMarkdownContent = [
   "---",
   "type: diagram",
+  "formatVersion: 1",
   "title: 図解ファイル",
   "---",
   "",
@@ -177,11 +180,15 @@ export function parseRelicFreeDrawingMarkdown(content: string): RelicResult<Reli
     return fail("DIAGRAM_FORMAT_INVALID", "図解ファイルの形式が正しくありません。");
   }
 
-  return validateRelicFreeDrawingDocument({
+  const migrated = migrateRelicFreeDrawingDocument({
     ...body,
+    formatVersion: parts.value.frontmatter.formatVersion,
     title: parts.value.frontmatter.title,
     type: "diagram"
   });
+  if (!migrated.ok) return migrated;
+
+  return validateRelicFreeDrawingDocument(migrated.value);
 }
 
 export function serializeRelicFreeDrawingMarkdown(document: RelicFreeDrawingDiagramDocument): RelicResult<string> {
@@ -685,12 +692,15 @@ function parseDiagramMarkdownParts(content: string): RelicResult<ParsedDiagramMa
 
   const type = parseDiagramType(parsed.type);
   if (!type.ok) return type;
+  const formatVersion = parseDiagramFormatVersion(parsed.formatVersion);
+  if (!formatVersion.ok) return formatVersion;
   const title = parsed.title === undefined ? undefined : parseOptionalText(parsed.title, "DIAGRAM_TITLE_INVALID", "図解の title は文字にしてください。");
   if (title && !title.ok) return title;
 
   return ok({
     body,
     frontmatter: {
+      formatVersion: formatVersion.value,
       ...(title?.value ? { title: title.value } : {}),
       type: type.value
     }
@@ -701,6 +711,36 @@ function parseRelicConnectedDiagramMarkdown(content: string): RelicResult<RelicC
   const type = diagramTypeFromMarkdownContent(content);
   if (type === "diagram") return parseRelicFreeDrawingMarkdown(content);
   return fail("DIAGRAM_TYPE_INVALID", "図解ファイルではありません。");
+}
+
+function migrateRelicFreeDrawingDocument(raw: Record<string, unknown>): RelicResult<Record<string, unknown>> {
+  if (raw.formatVersion === currentDiagramFormatVersion) return ok(raw);
+  if (raw.formatVersion !== 0) {
+    return fail("DIAGRAM_FORMAT_VERSION_UNSUPPORTED", "このRelicでは対応していないDiagram形式です。");
+  }
+
+  return ok({
+    ...raw,
+    formatVersion: currentDiagramFormatVersion,
+    lines: raw.lines ?? [],
+    nodes: migrateV0DiagramNodes(raw.nodes)
+  });
+}
+
+function migrateV0DiagramNodes(rawNodes: unknown): unknown {
+  if (rawNodes === undefined) return [];
+  if (!Array.isArray(rawNodes)) return rawNodes;
+
+  return rawNodes.map((rawNode) => {
+    if (!isRecord(rawNode)) return rawNode;
+
+    const shape = rawNode.shape ?? "process";
+    return {
+      ...rawNode,
+      shape,
+      layer: shape === "area" ? relicFreeDrawingAreaLayer : relicFreeDrawingShapeLayer
+    };
+  });
 }
 
 function serializeRelicConnectedDiagramMarkdown(document: RelicConnectedDiagramDocument): RelicResult<string> {
@@ -980,6 +1020,18 @@ function parseDiagramType(raw: unknown): RelicResult<string> {
   return ok(raw);
 }
 
+function parseDiagramFormatVersion(raw: unknown): RelicResult<number> {
+  if (raw === undefined) return ok(0);
+  if (!Number.isInteger(raw) || Number(raw) < 0) {
+    return fail("DIAGRAM_FORMAT_VERSION_INVALID", "図解ファイルの formatVersion は0以上の整数にしてください。");
+  }
+  if (Number(raw) > currentDiagramFormatVersion) {
+    return fail("DIAGRAM_FORMAT_VERSION_UNSUPPORTED", "このRelicでは対応していないDiagram形式です。");
+  }
+
+  return ok(Number(raw));
+}
+
 function parseRequiredText(raw: unknown, code: string, message: string): RelicResult<string> {
   if (typeof raw !== "string" || raw.trim() !== raw || raw.length === 0) {
     return fail(code, message);
@@ -1032,6 +1084,7 @@ function dumpFrontmatter(type: string, title: string | undefined): string {
   return yaml.dump(
     {
       type,
+      formatVersion: currentDiagramFormatVersion,
       ...(title ? { title } : {})
     },
     yamlDumpOptions()

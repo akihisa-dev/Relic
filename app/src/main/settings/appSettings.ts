@@ -38,6 +38,7 @@ const defaultAppSettings: AppSettings = {
   workspaces: []
 };
 
+const currentAppSettingsSchemaVersion = 1;
 type SerializedUpdate = Promise<unknown>;
 let appSettingsUpdateQueue: SerializedUpdate = Promise.resolve();
 
@@ -69,14 +70,15 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
       return defaultAppSettings;
     }
 
-    const workspaces = parseWorkspaceSummaries(parsedSettings.workspaces);
+    const migratedSettings = migrateAppSettings(parsedSettings, settingsPath);
+    const workspaces = parseWorkspaceSummaries(migratedSettings.workspaces);
 
     return {
-      editorSettings: parseEditorSettings(parsedSettings.editorSettings),
-      featureToggles: parseFeatureToggles(parsedSettings.featureToggles),
-      frontmatterTemplates: parseFrontmatterTemplates(parsedSettings.frontmatterTemplates),
-      lastWorkspaceId: parseLastWorkspaceId(parsedSettings.lastWorkspaceId, workspaces),
-      userDefinedFields: parseUserDefinedFields(parsedSettings.userDefinedFields),
+      editorSettings: parseEditorSettings(migratedSettings.editorSettings),
+      featureToggles: parseFeatureToggles(migratedSettings.featureToggles),
+      frontmatterTemplates: parseFrontmatterTemplates(migratedSettings.frontmatterTemplates),
+      lastWorkspaceId: parseLastWorkspaceId(migratedSettings.lastWorkspaceId, workspaces),
+      userDefinedFields: parseUserDefinedFields(migratedSettings.userDefinedFields),
       workspaces
     };
   } catch (error) {
@@ -93,7 +95,7 @@ export async function writeAppSettings(
   settings: AppSettings
 ): Promise<void> {
   await mkdir(userDataPath, { recursive: true });
-  await atomicWriteTextFile(getAppSettingsPath(userDataPath), `${JSON.stringify(settings, null, 2)}\n`);
+  await atomicWriteTextFile(getAppSettingsPath(userDataPath), `${JSON.stringify(serializeAppSettings(settings), null, 2)}\n`);
 }
 
 export async function updateAppSettings(
@@ -142,7 +144,6 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
   }
 
   const s = raw as Record<string, unknown>;
-  const legacyRightPanel = typeof s.rightPanel === "boolean" ? s.rightPanel : true;
 
   return {
     calendar: typeof s.calendar === "boolean" ? s.calendar : true,
@@ -150,8 +151,8 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
     chronicleSettings: typeof s.chronicleSettings === "boolean" ? s.chronicleSettings : false,
     tools: typeof s.tools === "boolean" ? s.tools : false,
     frontmatter: typeof s.frontmatter === "boolean" ? s.frontmatter : false,
-    rightPanelLinks: typeof s.rightPanelLinks === "boolean" ? s.rightPanelLinks : legacyRightPanel,
-    rightPanelOutline: typeof s.rightPanelOutline === "boolean" ? s.rightPanelOutline : legacyRightPanel
+    rightPanelLinks: typeof s.rightPanelLinks === "boolean" ? s.rightPanelLinks : true,
+    rightPanelOutline: typeof s.rightPanelOutline === "boolean" ? s.rightPanelOutline : true
   };
 }
 
@@ -299,9 +300,65 @@ function parseSettingsObject(raw: unknown): Record<string, unknown> | null {
   return raw as Record<string, unknown>;
 }
 
+function migrateAppSettings(raw: Record<string, unknown>, settingsPath: string): Record<string, unknown> {
+  const schemaVersion = readSchemaVersion(raw.schemaVersion, settingsPath, "AppSettings");
+
+  if (schemaVersion === currentAppSettingsSchemaVersion) return raw;
+
+  if (schemaVersion === 0) {
+    return {
+      ...raw,
+      featureToggles: migrateFeatureTogglesV0(raw.featureToggles),
+      schemaVersion: currentAppSettingsSchemaVersion
+    };
+  }
+
+  throw createUnsupportedSettingsVersionError(settingsPath, "AppSettings", schemaVersion);
+}
+
+function migrateFeatureTogglesV0(raw: unknown): unknown {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return raw;
+
+  const toggles = raw as Record<string, unknown>;
+  const legacyRightPanel = typeof toggles.rightPanel === "boolean" ? toggles.rightPanel : true;
+
+  return {
+    ...toggles,
+    rightPanelLinks: typeof toggles.rightPanelLinks === "boolean" ? toggles.rightPanelLinks : legacyRightPanel,
+    rightPanelOutline: typeof toggles.rightPanelOutline === "boolean" ? toggles.rightPanelOutline : legacyRightPanel
+  };
+}
+
+function serializeAppSettings(settings: AppSettings): Record<string, unknown> {
+  return {
+    schemaVersion: currentAppSettingsSchemaVersion,
+    ...settings
+  };
+}
+
+function readSchemaVersion(raw: unknown, settingsPath: string, scope: string): number {
+  if (raw === undefined) return 0;
+  if (!Number.isInteger(raw) || Number(raw) < 0) {
+    throw createUnsupportedSettingsVersionError(settingsPath, scope, raw);
+  }
+
+  const schemaVersion = Number(raw);
+  if (schemaVersion > currentAppSettingsSchemaVersion) {
+    throw createUnsupportedSettingsVersionError(settingsPath, scope, schemaVersion);
+  }
+
+  return schemaVersion;
+}
+
 function createCorruptSettingsError(settingsPath: string): Error {
   const error = new Error(`設定JSONが壊れています: ${settingsPath}`) as Error;
   error.name = "CorruptAppSettingsError";
+  return error;
+}
+
+function createUnsupportedSettingsVersionError(settingsPath: string, scope: string, schemaVersion: unknown): Error {
+  const error = new Error(`${scope} の設定形式がこのRelicでは読めません: ${settingsPath} (schemaVersion: ${String(schemaVersion)})`) as Error;
+  error.name = "UnsupportedSettingsVersionError";
   return error;
 }
 

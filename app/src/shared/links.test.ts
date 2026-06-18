@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   createWikiLinkResolver,
+  formatWikiLink,
   normalizeWikiLinkTarget,
   parseWikiLinks,
   resolveMarkdownLinkPath,
   resolveWikiLinkPath,
   resolveWikiLinkPathWithAliases,
-  resolveWikiLinks
+  resolveWikiLinks,
+  scanWikiLinks
 } from "./links";
 
 describe("parseWikiLinks", () => {
@@ -56,6 +58,53 @@ describe("parseWikiLinks", () => {
     expect(parseWikiLinks("```md\n[[無視]]\n```\n[[拾う]]").map((link) => link.target)).toEqual([
       "拾う.md"
     ]);
+  });
+
+  it("inline code、チルダフェンス、インデントコード内のリンク記法は無視する", () => {
+    const markdown = [
+      "`[[inline]]`",
+      "~~~",
+      "[[tilde]]",
+      "~~~",
+      "    [[indent]]",
+      "[[拾う]]"
+    ].join("\n");
+
+    expect(parseWikiLinks(markdown).map((link) => link.target)).toEqual(["拾う.md"]);
+  });
+});
+
+describe("scanWikiLinks", () => {
+  it("リンク本文とMarkdown内の位置を共通形式で返す", () => {
+    const markdown = "before ![[folder/note#見出し^abc|表示]] after";
+    const [match] = scanWikiLinks(markdown);
+
+    expect(match).toMatchObject({
+      alias: "表示",
+      blockId: "abc",
+      body: "folder/note#見出し^abc|表示",
+      bodyFrom: markdown.indexOf("folder/note"),
+      bodyTo: markdown.indexOf("]]"),
+      from: markdown.indexOf("![["),
+      heading: "見出し",
+      kind: "embed",
+      raw: "![[folder/note#見出し^abc|表示]]",
+      rawTargetBase: "folder/note",
+      target: "folder/note.md",
+      targetBase: "folder/note.md",
+      to: markdown.indexOf(" after")
+    });
+  });
+});
+
+describe("formatWikiLink", () => {
+  it("共通のWikiLink表記で見出し・ブロック・エイリアスを書き戻す", () => {
+    expect(formatWikiLink("embed", {
+      alias: "表示",
+      blockId: "abc",
+      heading: "見出し",
+      targetBase: "folder/note"
+    })).toBe("![[folder/note#見出し^abc|表示]]");
   });
 });
 

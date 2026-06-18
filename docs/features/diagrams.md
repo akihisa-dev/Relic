@@ -22,12 +22,15 @@ Diagramファイルとして扱うフロントマターの `type` は `diagram` 
 ```yaml
 ---
 type: diagram
+formatVersion: 1
 title: 図解ファイル
 ---
 ```
 
-フロントマターで扱うDiagram共通フィールドは `type` と任意の `title` だけとする。
+フロントマターで扱うDiagram共通フィールドは `type`、`formatVersion`、任意の `title` だけとする。
 他のフロントマター項目が混ざっているMarkdownは、Diagramファイルとしては扱わない。
+`formatVersion` がない既存の `type: diagram` ファイルは旧形式として読み込み、画面上では現行形式として扱う。
+Relicが対応していない将来の `formatVersion` は、旧形式として誤読せずDiagramファイルとして扱わない。
 
 ---
 
@@ -75,6 +78,7 @@ DiagramのMarkdownは以下の構造で保存する。
 ```yaml
 ---
 type: diagram
+formatVersion: 1
 title: 図解ファイル
 ---
 
@@ -84,6 +88,7 @@ lines: []
 
 | フィールド | 内容 |
 |-----------|------|
+| `formatVersion` | Diagram保存形式のバージョン。現行形式は `1` |
 | `nodes` | Diagram上のNode一覧 |
 | `nodes[].id` | Diagramファイル内で一意のNode ID |
 | `nodes[].shape` | 図形の種類。`terminator`、`process`、`decision`、`input-output`、`label`、`area` のいずれか |
@@ -96,14 +101,14 @@ lines: []
 | `lines[].from` / `lines[].to` | 接続するNode ID |
 | `lines[].label` | Line中央に表示するLineラベル。図形に付くラベルとは別に扱う |
 
-- `nodes` と `lines` は未指定の場合、空配列として扱う
-- 既存ファイルなどで `nodes[].shape` が未指定の場合は、`process` として扱う
+- `nodes` と `lines` は旧形式読み込み時に未指定の場合、空配列として扱う
+- 旧形式で `nodes[].shape` が未指定の場合は、`process` として扱う
 - `nodes[].text` は文字列として扱い、空文字を許可する
 - 領域図形の `nodes[].layer` は常に `0` として扱う
 - `0` は領域図形専用のレイヤーとし、領域図形以外の `nodes[].layer` は常に `1` として扱う
 - 図形に付くラベルは表示上の固定レイヤー `2` とし、図形本体より上に表示する
-- 既存ファイルなどで `nodes[].layer` が未指定の場合、領域図形は `0`、領域図形以外は `1` として扱う
-- 既存ファイルなどで現在ルールと異なる `nodes[].layer` が保存されている場合は、読み込み時に領域図形 `0`、領域図形以外 `1` へ合わせて扱う
+- 旧形式で `nodes[].layer` が未指定の場合、領域図形は `0`、領域図形以外は `1` として扱う
+- 旧形式で現在ルールと異なる `nodes[].layer` が保存されている場合は、読み込み時に領域図形 `0`、領域図形以外 `1` へ合わせて扱う
 - Lineの表示レイヤーは接続先の図形関係から表示時に決め、MarkdownへLine専用のレイヤーは保存しない
 - Diagramは循環、多対多、横断関係を許可する
 - 同じNode一対のLineは最大2本まで作れる

@@ -8,6 +8,7 @@ import type { Translator } from "./i18nModel";
 import { diagramLanguageFor } from "./diagramLanguage";
 import { encodeDiagramSourceAttribute } from "./diagramSourceAttribute";
 import { isSafePreviewUrl, sanitizePreviewHtml } from "./htmlSanitizer";
+import { formatWikiLinkTargetReference, parseWikiLinkBody, scanWikiLinks } from "../shared/links";
 
 export const maxEmbeddedFileLength = 20_000;
 
@@ -123,8 +124,10 @@ const obsidianExtension = {
         const match = /^\[\[([^\]]+)\]\]/.exec(src);
 
         if (match) {
-          const [target = "", label] = (match[1] ?? "").split("|");
-          return { type: "wikilink", raw: match[0], label: label ?? target, target };
+          const parsed = parseWikiLinkBody(match[1] ?? "");
+          if (!parsed) return undefined;
+          const target = formatWikiLinkTargetReference(parsed);
+          return { type: "wikilink", raw: match[0], label: parsed.alias ?? target, target };
         }
 
         return undefined;
@@ -244,8 +247,9 @@ export function toggleNthCheckbox(source: string, index: number): string {
 export function extractEmbedTargets(content: string): string[] {
   const targets = new Set<string>();
 
-  for (const match of content.matchAll(/!\[\[([^\]\n]+)\]\]/g)) {
-    const target = normalizeEmbedTarget(match[1] ?? "");
+  for (const link of scanWikiLinks(content)) {
+    if (link.kind !== "embed") continue;
+    const target = normalizeEmbedTarget(formatWikiLinkTargetReference(link));
 
     if (target) targets.add(target);
   }
@@ -277,7 +281,7 @@ export function renderMarkdown(
 
         return `\n\n${renderFileEmbed(target, embeds, workspacePath, t)}\n\n`;
       })
-    : content.replace(/!\[\[([^\]\n]+)\]\]/g, "[[$1]]");
+    : replaceEmbedWikiLinksWithRegularLinks(content);
   const raw = marked.parse(withEmbedPlaceholders, { async: false, renderer }) as string;
   // チェックボックスの disabled を外して操作可能にする
   const withCheckboxes = raw.replace(
@@ -316,6 +320,21 @@ function renderFileEmbed(
   const body = renderMarkdown(state.content, workspacePath, new Map(), false, t);
 
   return `<section class="preview-file-embed"><div class="preview-file-embed-title">${escapeHtml(state.name)}</div><div class="preview-file-embed-body">${body}</div></section>`;
+}
+
+function replaceEmbedWikiLinksWithRegularLinks(content: string): string {
+  let result = content;
+  let offset = 0;
+
+  for (const link of scanWikiLinks(content)) {
+    if (link.kind !== "embed") continue;
+    const nextRaw = link.raw.slice(1);
+    const from = link.from + offset;
+    result = result.slice(0, from) + nextRaw + result.slice(from + link.raw.length);
+    offset += nextRaw.length - link.raw.length;
+  }
+
+  return result;
 }
 
 function renderHighlightedCode(language: string, text: string): string {

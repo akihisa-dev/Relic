@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -46,6 +46,8 @@ describe("appSettings", () => {
       lastWorkspaceId: "ws-1",
       workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
     });
+    const raw = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
+    expect(raw.schemaVersion).toBe(1);
     await expect(readdir(userDataPath)).resolves.toEqual([path.basename(getAppSettingsPath(userDataPath))]);
   });
 
@@ -116,6 +118,18 @@ describe("appSettings", () => {
         rightPanelOutline: false
       })
     });
+  });
+
+  it("未知の将来schemaVersionは旧形式として誤読しない", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      schemaVersion: 999,
+      featureToggles: { rightPanelLinks: false, rightPanelOutline: false }
+    }), "utf8");
+
+    await expect(readAppSettings(userDataPath)).rejects.toHaveProperty("name", "UnsupportedSettingsVersionError");
+    await expect(readdir(userDataPath)).resolves.toEqual([path.basename(getAppSettingsPath(userDataPath))]);
   });
 
   it("オブジェクトではないアプリ設定ファイルでも初期設定で読み込める", async () => {

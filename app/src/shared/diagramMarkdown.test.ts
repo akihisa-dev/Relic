@@ -59,6 +59,7 @@ describe("Diagram Markdown", () => {
 
   it("空の図解ファイルテンプレートはtype: diagramで作る", () => {
     expect(emptyRelicDiagramMarkdownContent).toContain("type: diagram");
+    expect(emptyRelicDiagramMarkdownContent).toContain("formatVersion: 1");
     expect(emptyRelicDiagramMarkdownContent).toContain("title: 図解ファイル");
     expect(parseRelicDiagramMarkdown(emptyRelicDiagramMarkdownContent)).toMatchObject({
       ok: true,
@@ -90,8 +91,44 @@ describe("Diagram Markdown", () => {
     const serialized = serializeRelicDiagramMarkdown(parsed.value);
     expect(serialized.ok).toBe(true);
     expect(serialized.ok ? serialized.value : "").toContain("type: diagram");
+    expect(serialized.ok ? serialized.value : "").toContain("formatVersion: 1");
     expect(serialized.ok ? serialized.value : "").toContain("shape: process");
     expect(serialized.ok ? parseRelicDiagramMarkdown(serialized.value) : null).toEqual(parsed);
+  });
+
+  it("formatVersionなしの旧図解ファイルはv1へ移行して読み込む", () => {
+    const legacyContent = [
+      "---",
+      "type: diagram",
+      "title: 旧図解",
+      "---",
+      "",
+      "nodes:",
+      "  - id: area-1",
+      "    text: 領域",
+      "    x: 10",
+      "    y: 20",
+      "    width: 200",
+      "    height: 120",
+      "  - id: node-1",
+      "    text: 内容",
+      "    x: 40",
+      "    y: 60",
+      "    width: 120",
+      "    height: 80",
+      "lines: []",
+      ""
+    ].join("\n");
+
+    expect(parseRelicDiagramMarkdown(legacyContent)).toMatchObject({
+      ok: true,
+      value: {
+        nodes: [
+          { id: "area-1", layer: 1, shape: "process" },
+          { id: "node-1", layer: 1, shape: "process" }
+        ]
+      }
+    });
   });
 
   it("壊れた図解ファイルと旧typeを拒否する", () => {
@@ -100,6 +137,16 @@ describe("Diagram Markdown", () => {
     expect(parseRelicDiagramMarkdown("---\ntype: relationship\n---\n\nnodes: []\nlines: []").ok).toBe(false);
     expect(parseRelicDiagramMarkdown("---\ntype: why-tree\n---\n\nlabels: {}\nphenomenon: {}").ok).toBe(false);
     expect(parseRelicDiagramMarkdown("---\ntype: free-drawing\n---\n\nnodes: []\nlines: []").ok).toBe(false);
+  });
+
+  it("未知の将来formatVersionは旧形式として誤読しない", () => {
+    const parsed = parseRelicDiagramMarkdown("---\ntype: diagram\nformatVersion: 999\n---\n\nnodes: []\nlines: []");
+
+    expect(parsed).toMatchObject({
+      error: { code: "DIAGRAM_FORMAT_VERSION_UNSUPPORTED" },
+      ok: false
+    });
+    expect(isRelicDiagramMarkdownContent("---\ntype: diagram\nformatVersion: 999\n---\n\nnodes: []\nlines: []")).toBe(false);
   });
 });
 

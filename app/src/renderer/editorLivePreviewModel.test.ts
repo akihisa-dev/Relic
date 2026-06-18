@@ -27,6 +27,14 @@ describe("editorLivePreviewModel", () => {
     ]);
   });
 
+  it("wiki linkのエイリアスは最初の区切り以降を表示する", () => {
+    const text = "[[Note|A|B]]";
+    const matches = collectInlineMatches(0, text);
+
+    expect(matches).toHaveLength(1);
+    expect(text.slice(matches[0].contentFrom, matches[0].contentTo)).toBe("A|B");
+  });
+
   it("範囲が重なる記法は外側を優先する", () => {
     const matches = collectInlineMatches(0, "[**bold**](https://example.com)");
 
