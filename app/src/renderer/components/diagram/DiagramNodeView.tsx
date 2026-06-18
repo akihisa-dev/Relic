@@ -7,16 +7,10 @@ import {
   type ReactElement
 } from "react";
 
-import { type RelicConnectedDiagramNode, type RelicFreeDrawingShapeType } from "../../../shared/diagramMarkdown";
+import { type RelicConnectedDiagramNode } from "../../../shared/diagramMarkdown";
 import { diagramNodeDisplayLayer } from "./diagramLayering";
 
 interface DiagramNodeViewProps {
-  addShapeLabel?: string;
-  addShapeMenuLabel?: string;
-  addShapeOptions?: ReadonlyArray<{
-    label: string;
-    shape: RelicFreeDrawingShapeType;
-  }>;
   isDragging: boolean;
   isTextEditing: boolean;
   isSelected: boolean;
@@ -29,13 +23,8 @@ interface DiagramNodeViewProps {
   onNodeTextChange?: (nodeId: string, value: string) => void;
   onNodeTextCommit?: () => void;
   onNodeTextDoubleClick?: (node: RelicConnectedDiagramNode, event: ReactMouseEvent<HTMLDivElement>) => void;
+  onContextMenu?: (node: RelicConnectedDiagramNode, event: ReactMouseEvent<HTMLDivElement>) => void;
   onOutlinePointerDown: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLElement>) => void;
-  onShapeAddButtonPointerDown?: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLButtonElement>) => void;
-  onShapeOptionPointerDown?: (
-    node: RelicConnectedDiagramNode,
-    shape: RelicFreeDrawingShapeType,
-    event: ReactPointerEvent<HTMLButtonElement>
-  ) => void;
   onPointerCancel: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerDown: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLDivElement>) => void;
   onFocus?: (node: RelicConnectedDiagramNode) => void;
@@ -49,9 +38,6 @@ interface DiagramNodeViewProps {
 }
 
 export function DiagramNodeView({
-  addShapeLabel,
-  addShapeMenuLabel,
-  addShapeOptions,
   isDragging,
   isTextEditing,
   isSelected,
@@ -64,9 +50,8 @@ export function DiagramNodeView({
   onNodeTextChange,
   onNodeTextCommit,
   onNodeTextDoubleClick,
+  onContextMenu,
   onOutlinePointerDown,
-  onShapeAddButtonPointerDown,
-  onShapeOptionPointerDown,
   onPointerCancel,
   onPointerDown,
   onFocus,
@@ -105,6 +90,7 @@ export function DiagramNodeView({
         connectionTargetState ? `diagram-canvas-node--connection-${connectionTargetState}` : ""
       ].filter(Boolean).join(" ")}
       onPointerCancel={onPointerCancel}
+      onContextMenu={(event) => onContextMenu?.(node, event)}
       onDoubleClick={(event) => onNodeTextDoubleClick?.(node, event)}
       onFocus={() => onFocus?.(node)}
       onPointerDown={(event) => onPointerDown(node, event)}
@@ -140,8 +126,7 @@ export function DiagramNodeView({
           value={nodeTextDraft ?? freeText}
         />
       )}
-      {isSelected ? (
-        <span className="diagram-canvas-node-outline-hitbox">
+      <span className="diagram-canvas-node-outline-hitbox" aria-hidden={!isSelected}>
           {(["top", "right", "bottom", "left"] as const).map((side) => (
             <span
               className={`diagram-canvas-node-outline-hit diagram-canvas-node-outline-hit--${side}`}
@@ -158,35 +143,6 @@ export function DiagramNodeView({
             type="button"
           />
         </span>
-      ) : null}
-      {isSelected && addShapeLabel ? (
-        <span className="diagram-canvas-node-add-shape">
-          <button
-            aria-label={addShapeLabel}
-            className="diagram-canvas-node-add-shape-button"
-            onPointerDown={(event) => onShapeAddButtonPointerDown?.(node, event)}
-            type="button"
-          >
-            +
-          </button>
-          {addShapeMenuLabel && addShapeOptions && addShapeOptions.length > 0 ? (
-            <span className="diagram-canvas-node-add-shape-menu" role="menu" aria-label={addShapeMenuLabel}>
-              {addShapeOptions.map((option) => (
-                <button
-                  className={`diagram-canvas-node-add-shape-option diagram-canvas-node-add-shape-option--${option.shape}`}
-                  key={option.shape}
-                  onPointerDown={(event) => onShapeOptionPointerDown?.(node, option.shape, event)}
-                  role="menuitem"
-                  type="button"
-                >
-                  <span className="diagram-canvas-node-add-shape-icon" aria-hidden="true" />
-                  <span>{option.label}</span>
-                </button>
-              ))}
-            </span>
-          ) : null}
-        </span>
-      ) : null}
     </div>
   );
 }

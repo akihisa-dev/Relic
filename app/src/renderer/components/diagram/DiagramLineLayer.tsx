@@ -17,6 +17,7 @@ type DiagramLineSelection =
 interface DiagramLineLayerProps {
   height: number;
   lines: DiagramCanvasLineLayout[];
+  onLineContextMenu: (line: DiagramCanvasLineLayout, event: ReactMouseEvent<SVGPathElement>) => void;
   onLineDoubleClick: (line: DiagramCanvasLineLayout, event: ReactMouseEvent<SVGPathElement>) => void;
   onLinePointerDown: (lineId: string, event: ReactPointerEvent<SVGPathElement>) => void;
   previewLine: {
@@ -33,6 +34,7 @@ interface DiagramLineLayerProps {
 export function DiagramLineLayer({
   height,
   lines,
+  onLineContextMenu,
   onLineDoubleClick,
   onLinePointerDown,
   previewLine,
@@ -82,6 +84,7 @@ export function DiagramLineLayer({
             <path
               className="diagram-canvas-line-hit"
               d={line.pathD}
+              onContextMenu={(event) => onLineContextMenu(line, event)}
               onDoubleClick={(event) => onLineDoubleClick(line, event)}
               onPointerDown={(event) => onLinePointerDown(line.line.id, event)}
             />
@@ -93,6 +96,7 @@ export function DiagramLineLayer({
               ].filter(Boolean).join(" ")}
               d={line.pathD}
               markerEnd={`url(#${markerId})`}
+              onContextMenu={(event) => onLineContextMenu(line, event)}
               onDoubleClick={(event) => onLineDoubleClick(line, event)}
               onPointerDown={(event) => onLinePointerDown(line.line.id, event)}
             />

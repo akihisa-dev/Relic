@@ -426,7 +426,7 @@ describe("PaneView", () => {
 
     expect(screen.getByRole("application", { name: "World" })).toBeInTheDocument();
     expect(screen.getByText("alice")).toBeInTheDocument();
-    expect(document.querySelector(".pane-status")?.textContent).toMatch(/1 shape \/ 0 lines\s+Drag: move view\s+Shift\+drag: range select/);
+    expect(document.querySelector(".pane-status")?.textContent).toBe("1 shape / 0 lines");
     expect(document.querySelector(".cm-content")).toBeNull();
   });
 
