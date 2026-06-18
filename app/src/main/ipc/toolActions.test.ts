@@ -290,6 +290,35 @@ describe("toolActions", () => {
     );
   });
 
+  it("結合処理は元の候補順を保ったまま出力する", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await writeFile(path.join(workspacePath, "a.md"), "A\n", "utf8");
+    await writeFile(path.join(workspacePath, "b.md"), "B\n", "utf8");
+
+    const result = await mergeFiles(
+      {
+        filterType: "all",
+        filterValue: "",
+        insertFilenameHeading: false,
+        outputFolder: ".",
+        outputName: "Merged",
+        sortBy: "name"
+      },
+      {
+        async readFile(filePath, encoding) {
+          if (path.basename(filePath) === "a.md") {
+            await new Promise((resolve) => setTimeout(resolve, 30));
+          }
+
+          return readFile(filePath, encoding);
+        }
+      }
+    );
+
+    expect(result).toEqual({ ok: true, value: "Merged.md" });
+    await expect(readFile(path.join(workspacePath, "Merged.md"), "utf8")).resolves.toBe("A\n\n---\n\nB\n");
+  });
+
   it("フロントマター絞り込み中に読めないMarkdownファイルはスキップして結合を続行する", async () => {
     const { workspacePath } = await prepareActiveWorkspace();
     await writeFile(path.join(workspacePath, "blocked.md"), "---\nstatus: keep\n---\nblocked", "utf8");

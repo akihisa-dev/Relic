@@ -1,22 +1,11 @@
 import { redo, undo } from "@codemirror/commands";
-import { screen, waitFor } from "@testing-library/react";
+import { waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import {
-  renderEditorWithView,
-  settings
-} from "./editorTestHelpers";
+import { renderEditorWithView, settings } from "./editorTestHelpers";
 import { Editor } from "./Editor";
 
-describe("Editor", () => {
-  it("本文入力欄を名前付きtextboxとして公開する", async () => {
-    await renderEditorWithView({
-      content: "本文"
-    });
-
-    expect(screen.getByRole("textbox", { name: "Markdown editor" })).toBeInTheDocument();
-  });
-
+describe("Editor view state", () => {
   it("通常入力後もEditorView identityとカーソルとスクロール位置を維持する", async () => {
     const { view, viewRef } = await renderEditorWithView({
       content: "alpha\nbeta\ngamma"

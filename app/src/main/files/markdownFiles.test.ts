@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { link, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -333,6 +333,25 @@ describe("renameMarkdownFile", () => {
       ok: true
     });
     await expect(readFile(path.join(workspacePath, "source.md"), "utf8")).resolves.toBe("[[after]]");
+  });
+
+  it("移動先が同じ実体を指す場合は一時名を経由してMarkdownファイル名を変更する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await writeFile(path.join(workspacePath, "before.md"), "# Before", "utf8");
+    await link(path.join(workspacePath, "before.md"), path.join(workspacePath, "after.md"));
+
+    await expect(renameMarkdownFile(workspacePath, "before.md", "after")).resolves.toEqual({
+      ok: true,
+      value: {
+        content: "# Before",
+        name: "after",
+        path: "after.md"
+      }
+    });
+    await expect(readFile(path.join(workspacePath, "after.md"), "utf8")).resolves.toBe("# Before");
+    await expect(readFile(path.join(workspacePath, "before.md"), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("同名ファイルがある場合は上書きしない", async () => {

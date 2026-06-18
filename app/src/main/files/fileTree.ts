@@ -5,6 +5,7 @@ import path from "node:path";
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import { hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
 import { toWorkspaceRelativePath } from "./paths";
+import { mapWithConcurrency } from "./concurrency";
 
 interface FileTreeOperations {
   readdir(directoryPath: string, options: { withFileTypes: true }): Promise<Dirent[]>;
@@ -20,6 +21,8 @@ export async function readWorkspaceFileTree(
 ): Promise<WorkspaceTreeNode[]> {
   return readDirectory(workspacePath, "", operations);
 }
+
+const maxConcurrentDirectoryReads = 8;
 
 async function readDirectory(
   rootPath: string,
@@ -37,10 +40,11 @@ async function readDirectory(
     return [];
   }
 
-  const nodeReads = entries.reduce<Promise<WorkspaceTreeNode | null>[]>((reads, entry) => {
-    if (entry.name.startsWith(".")) return reads;
-
-    reads.push((async (): Promise<WorkspaceTreeNode | null> => {
+  const nodeReads = entries.filter((entry) => !entry.name.startsWith("."));
+  const nodes = await mapWithConcurrency<Dirent, WorkspaceTreeNode | null>(
+    nodeReads,
+    maxConcurrentDirectoryReads,
+    async (entry) => {
       const relativePath = toWorkspaceRelativePath(path.join(relativeDirectory, entry.name));
 
       if (entry.isDirectory()) {
@@ -61,10 +65,8 @@ async function readDirectory(
       }
 
       return null;
-    })());
-    return reads;
-  }, []);
-  const nodes = await Promise.all(nodeReads);
+    }
+  );
 
   return nodes.filter(isTreeNode).sort(compareTreeNodes);
 }

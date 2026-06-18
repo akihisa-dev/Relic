@@ -30,6 +30,7 @@ import {
 import { formatGeneratedMarkdownHeadingText } from "./toolMarkdownFormat";
 import { writeToolMarkdownOutput } from "./toolOutputFiles";
 import { collectMarkdownPathsFromTree, createWikiLinkFormatter } from "./toolWikiLinks";
+import { mapWithConcurrency } from "../files/concurrency";
 
 interface ToolWorkspaceContext {
   workspacePath: string;
@@ -40,6 +41,7 @@ const defaultToolActionFileOperations: ToolActionFileOperations = {
   readdir: (directoryPath, options) => readdir(directoryPath, options) as Promise<Dirent<string>[]>,
   stat
 };
+const maxConcurrentToolReads = 8;
 
 export async function mergeFiles(
   input: MergeFilesInput,
@@ -56,14 +58,14 @@ export async function mergeFiles(
 
   sortMergeCandidates(filtered, input.sortBy);
 
-  const parts = await Promise.all(filtered.map(async (file) => {
+  const parts = await mapWithConcurrency(filtered, maxConcurrentToolReads, async (file) => {
     const content = await fileOperations.readFile(path.join(workspacePath, file.relPath), "utf-8");
     const name = stripMarkdownExtension(file.relPath.split("/").at(-1) ?? file.relPath);
     if (input.insertFilenameHeading) {
       return `# ${formatGeneratedMarkdownHeadingText(name)}\n\n${content.trim()}`;
     }
     return content.trim();
-  }));
+  });
 
   const merged = parts.join("\n\n---\n\n") + "\n";
   return writeToolMarkdownOutput(workspacePath, input.outputFolder, input.outputName || "merged", merged);
@@ -146,7 +148,7 @@ export async function generateTagIndex(
   const wikiLinkForPath = createWikiLinkFormatter(collectMarkdownPathsFromTree(fileTree));
   const grouped = new Map<string, FileCandidate[]>();
 
-  await Promise.all(collected.map(async (file) => {
+  await mapWithConcurrency(collected, maxConcurrentToolReads, async (file) => {
     try {
       const content = await fileOperations.readFile(path.join(workspacePath, file.relPath), "utf-8");
       const tags = parseMarkdownTags(content).frontmatterTags;
@@ -158,7 +160,7 @@ export async function generateTagIndex(
     } catch {
       return;
     }
-  }));
+  });
 
   const lines: string[] = ["# タグ別索引", ""];
   const sortedTags = Array.from(grouped.keys()).toSorted((a, b) => a.localeCompare(b, "ja"));

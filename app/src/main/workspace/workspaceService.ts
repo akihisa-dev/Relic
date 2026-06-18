@@ -10,14 +10,29 @@ import { validateBaseName } from "../files/names";
 
 const DEFAULT_MAX_RENAME_TEMPORARY_PATH_CANDIDATES = 1000;
 
-export function createWorkspaceSummary(workspacePath: string): WorkspaceSummary {
+export function createWorkspaceSummary(
+  workspacePath: string,
+  platform: NodeJS.Platform = process.platform
+): WorkspaceSummary {
   const normalizedPath = path.resolve(workspacePath);
+  const idPath = normalizeWorkspacePathForId(normalizedPath, platform);
 
   return {
-    id: createHash("sha256").update(normalizedPath).digest("hex").slice(0, 16),
+    id: createHash("sha256").update(idPath).digest("hex").slice(0, 16),
     name: path.basename(normalizedPath),
     path: normalizedPath
   };
+}
+
+export function normalizeWorkspacePathForId(
+  workspacePath: string,
+  platform: NodeJS.Platform = process.platform
+): string {
+  const normalizedPath = path.resolve(workspacePath);
+
+  return platform === "darwin" || platform === "win32"
+    ? normalizedPath.toLocaleLowerCase("en-US")
+    : normalizedPath;
 }
 
 export async function prepareWorkspace(workspacePath: string): Promise<void> {
@@ -26,20 +41,28 @@ export async function prepareWorkspace(workspacePath: string): Promise<void> {
 
 export function addOrActivateWorkspace(
   settings: AppSettings,
-  workspace: WorkspaceSummary
+  workspace: WorkspaceSummary,
+  platform: NodeJS.Platform = process.platform
 ): AppSettings {
-  const existingIndex = settings.workspaces.findIndex((item) => item.id === workspace.id);
+  const incomingWorkspaceKey = normalizeWorkspacePathForId(workspace.path, platform);
+  const existingIndex = settings.workspaces.findIndex((item) => (
+    item.id === workspace.id ||
+    normalizeWorkspacePathForId(item.path, platform) === incomingWorkspaceKey
+  ));
   const workspaces = [...settings.workspaces];
+  const savedWorkspace = existingIndex >= 0
+    ? { ...workspace, id: workspaces[existingIndex].id }
+    : workspace;
 
   if (existingIndex >= 0) {
-    workspaces[existingIndex] = workspace;
+    workspaces[existingIndex] = savedWorkspace;
   } else {
-    workspaces.push(workspace);
+    workspaces.push(savedWorkspace);
   }
 
   return {
     ...settings,
-    lastWorkspaceId: workspace.id,
+    lastWorkspaceId: savedWorkspace.id,
     workspaces
   };
 }
