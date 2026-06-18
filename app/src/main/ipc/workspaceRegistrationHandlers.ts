@@ -14,7 +14,7 @@ import {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { getMainTranslator } from "../i18n";
-import { readAppSettings, writeAppSettings } from "../settings/appSettings";
+import { readAppSettings, updateAppSettings } from "../settings/appSettings";
 import * as workspaceSettings from "../settings/workspaceSettings";
 import {
   addOrActivateWorkspace,
@@ -70,10 +70,10 @@ export function registerWorkspaceRegistrationHandlers(): void {
 
       const settings = await readAppSettings(app.getPath("userData"));
       const nextSettings = addOrActivateWorkspace(settings, workspace);
-      await writeAppSettings(app.getPath("userData"), nextSettings);
-      syncWorkspaceWatcher(nextSettings);
+      const savedSettings = await updateAppSettings(app.getPath("userData"), () => nextSettings);
+      syncWorkspaceWatcher(savedSettings);
 
-      return ok(await buildWorkspaceState(nextSettings));
+      return ok(await buildWorkspaceState(savedSettings));
     } catch (error) {
       return fail(
         "WORKSPACE_OPEN_FAILED",
@@ -106,10 +106,10 @@ export function registerWorkspaceRegistrationHandlers(): void {
 
       const settings = await readAppSettings(app.getPath("userData"));
       const nextSettings = addOrActivateWorkspace(settings, workspace);
-      await writeAppSettings(app.getPath("userData"), nextSettings);
-      syncWorkspaceWatcher(nextSettings);
+      const savedSettings = await updateAppSettings(app.getPath("userData"), () => nextSettings);
+      syncWorkspaceWatcher(savedSettings);
 
-      return ok(await buildWorkspaceState(nextSettings));
+      return ok(await buildWorkspaceState(savedSettings));
     } catch (error) {
       return fail(
         "WORKSPACE_CREATE_FAILED",
@@ -142,10 +142,14 @@ export function registerWorkspaceRegistrationHandlers(): void {
         ? wsSettings.pinnedPaths.filter((p) => p !== pinnedPath)
         : [...wsSettings.pinnedPaths, pinnedPath];
 
-      await workspaceSettings.writeWorkspaceSettings(app.getPath("userData"), activeWorkspace.id, {
-        ...wsSettings,
-        pinnedPaths: updated
-      });
+      await workspaceSettings.updateWorkspaceSettings(
+        app.getPath("userData"),
+        activeWorkspace.id,
+        (previousWorkspaceSettings) => ({
+          ...previousWorkspaceSettings,
+          pinnedPaths: updated
+        })
+      );
 
       return ok(await buildWorkspaceState(settings));
     } catch (error) {
@@ -181,10 +185,10 @@ export function registerWorkspaceRegistrationHandlers(): void {
         }
 
         await prepareWorkspace(activeWorkspace.path);
-        await writeAppSettings(app.getPath("userData"), nextSettings.value);
-        syncWorkspaceWatcher(nextSettings.value);
+        const savedSettings = await updateAppSettings(app.getPath("userData"), () => nextSettings.value);
+        syncWorkspaceWatcher(savedSettings);
 
-        return ok(await buildWorkspaceState(nextSettings.value));
+        return ok(await buildWorkspaceState(savedSettings));
       } catch (error) {
         return fail(
           "WORKSPACE_SWITCH_FAILED",
@@ -210,10 +214,10 @@ export function registerWorkspaceRegistrationHandlers(): void {
           return nextSettings;
         }
 
-        await writeAppSettings(app.getPath("userData"), nextSettings.value);
-        syncWorkspaceWatcher(nextSettings.value);
+        const savedSettings = await updateAppSettings(app.getPath("userData"), () => nextSettings.value);
+        syncWorkspaceWatcher(savedSettings);
 
-        return ok(await buildWorkspaceState(nextSettings.value));
+        return ok(await buildWorkspaceState(savedSettings));
       } catch (error) {
         return fail(
           "WORKSPACE_REMOVE_FAILED",
@@ -244,14 +248,17 @@ export function registerWorkspaceRegistrationHandlers(): void {
             app.getPath("userData"),
             renameResult.value.oldWorkspaceId
           );
-          await workspaceSettings.writeWorkspaceSettings(
+          await workspaceSettings.updateWorkspaceSettings(
             app.getPath("userData"),
             renameResult.value.newWorkspaceId,
-            migratedWorkspaceSettings
+            () => migratedWorkspaceSettings
           );
         }
 
-        await writeAppSettings(app.getPath("userData"), renameResult.value.nextSettings);
+        const savedSettings = await updateAppSettings(
+          app.getPath("userData"),
+          () => renameResult.value.nextSettings
+        );
         if (renameResult.value.oldWorkspaceId !== renameResult.value.newWorkspaceId) {
           await workspaceSettings.removeWorkspaceSettings(
             app.getPath("userData"),
@@ -259,9 +266,9 @@ export function registerWorkspaceRegistrationHandlers(): void {
           )
             .catch(() => undefined);
         }
-        syncWorkspaceWatcher(renameResult.value.nextSettings);
+        syncWorkspaceWatcher(savedSettings);
 
-        return ok(await buildWorkspaceState(renameResult.value.nextSettings));
+        return ok(await buildWorkspaceState(savedSettings));
       } catch (error) {
         return fail(
           "WORKSPACE_RENAME_FAILED",

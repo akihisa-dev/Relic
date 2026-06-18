@@ -486,6 +486,20 @@ describe("moveMarkdownFile", () => {
     );
   });
 
+  it("別フォルダへ移動したファイル内の basename-only リンクの意味を維持する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "archive"));
+    await writeFile(path.join(workspacePath, "note.md"), "[[target]]", "utf8");
+    await writeFile(path.join(workspacePath, "target.md"), "", "utf8");
+
+    await expect(moveMarkdownFile(workspacePath, "note.md", "archive")).resolves.toMatchObject({
+      ok: true
+    });
+    await expect(readFile(path.join(workspacePath, "archive", "note.md"), "utf8")).resolves.toBe("[[../target]]");
+  });
+
   it("移動先に同名ファイルがある場合は上書きしない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-"));
     temporaryPaths.push(workspacePath);

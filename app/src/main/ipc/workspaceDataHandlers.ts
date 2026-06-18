@@ -19,7 +19,7 @@ import { readWorkspaceTags } from "../files/tags";
 import {
   normalizeWorkspaceRelativeSettingPath,
   readWorkspaceSettings,
-  writeWorkspaceSettings
+  updateWorkspaceSettings
 } from "../settings/workspaceSettings";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
@@ -102,15 +102,15 @@ export function registerWorkspaceDataHandlers(): void {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
 
-      const workspaceSettings = await readWorkspaceSettings(
-        context.value.userDataPath,
-        context.value.activeWorkspace.id
-      );
       const savedCharts = normalizeChartSettingsForSave(input);
-      await writeWorkspaceSettings(context.value.userDataPath, context.value.activeWorkspace.id, {
-        ...workspaceSettings,
-        charts: savedCharts
-      });
+      const workspaceSettings = await updateWorkspaceSettings(
+        context.value.userDataPath,
+        context.value.activeWorkspace.id,
+        (workspaceSettings) => ({
+          ...workspaceSettings,
+          charts: savedCharts
+        })
+      );
 
       return readWorkspaceCharts(context.value.activeWorkspace.path, savedCharts, workspaceSettings.chronicleCalendars);
     } catch (error) {
@@ -150,15 +150,15 @@ export function registerWorkspaceDataHandlers(): void {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
 
-      const workspaceSettings = await readWorkspaceSettings(
-        context.value.userDataPath,
-        context.value.activeWorkspace.id
-      );
       const savedCalendars = normalizeChronicleCalendarsForSave(input);
-      await writeWorkspaceSettings(context.value.userDataPath, context.value.activeWorkspace.id, {
-        ...workspaceSettings,
-        chronicleCalendars: savedCalendars
-      });
+      await updateWorkspaceSettings(
+        context.value.userDataPath,
+        context.value.activeWorkspace.id,
+        (workspaceSettings) => ({
+          ...workspaceSettings,
+          chronicleCalendars: savedCalendars
+        })
+      );
 
       return { ok: true as const, value: savedCalendars };
     } catch (error) {

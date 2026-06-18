@@ -9,11 +9,13 @@ import {
   defaultCharts,
   getWorkspaceSettingsPath,
   readWorkspaceSettings,
+  updateWorkspaceSettings,
   writeWorkspaceSettings
 } from "./workspaceSettings";
 
 describe("workspaceSettings", () => {
   const temporaryPaths: string[] = [];
+  const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
   afterEach(async () => {
     await Promise.all(
@@ -181,19 +183,18 @@ describe("workspaceSettings", () => {
     ]);
   });
 
-  it("壊れたワークスペース設定ファイルでも初期設定で読み込める", async () => {
+  it("壊れたワークスペース設定ファイルは退避したうえで読み込みエラーになる", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
     temporaryPaths.push(userDataPath);
     const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-broken");
     await mkdir(path.dirname(settingsPath), { recursive: true });
     await writeFile(settingsPath, "{ invalid json", "utf8");
 
-    const settings = await readWorkspaceSettings(userDataPath, "ws-broken");
+    await expect(readWorkspaceSettings(userDataPath, "ws-broken")).rejects.toHaveProperty("name", "CorruptWorkspaceSettingsError");
+    const files = await readdir(path.dirname(settingsPath));
 
-    expect(settings.pinnedPaths).toEqual([]);
-    expect(settings.chronicleCalendars).toEqual(defaultChronicleCalendars);
-    expect(settings.charts).toEqual(defaultCharts);
-    expect(settings.workspacePath).toBe("");
+    expect(files).toHaveLength(1);
+    expect(files[0]).toMatch(/^ws-broken\.corrupt-\d+\.json$/);
   });
 
   it("オブジェクトではないワークスペース設定ファイルでも初期設定で読み込める", async () => {
@@ -236,5 +237,34 @@ describe("workspaceSettings", () => {
       pinnedPaths: [],
       workspacePath: "/tmp/workspace"
     })).rejects.toThrow("Invalid workspace settings id.");
+  });
+
+  it("同時更新は更新ヘルパーで直列化される", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeWorkspaceSettings(userDataPath, "ws-race", {
+      chronicleCalendars: defaultChronicleCalendars,
+      charts: defaultCharts,
+      pinnedPaths: [],
+      workspacePath: ""
+    });
+
+    const firstUpdate = updateWorkspaceSettings(userDataPath, "ws-race", async (settings) => {
+      await delay(30);
+      return {
+        ...settings,
+        pinnedPaths: ["notes/one.md"]
+      };
+    });
+    const secondUpdate = updateWorkspaceSettings(userDataPath, "ws-race", (settings) => ({
+      ...settings,
+      workspacePath: "/Users/test/notes"
+    }));
+
+    await Promise.all([firstUpdate, secondUpdate]);
+    const loaded = await readWorkspaceSettings(userDataPath, "ws-race");
+
+    expect(loaded.pinnedPaths).toEqual(["notes/one.md"]);
+    expect(loaded.workspacePath).toBe("/Users/test/notes");
   });
 });

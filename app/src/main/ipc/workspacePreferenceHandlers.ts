@@ -13,7 +13,7 @@ import {
   type UserDefinedField
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { readAppSettings, writeAppSettings } from "../settings/appSettings";
+import { readAppSettings, updateAppSettings } from "../settings/appSettings";
 import { ipcErrorDetails } from "./activeWorkspace";
 import {
   isFeatureTogglesInput,
@@ -37,8 +37,10 @@ export function registerWorkspacePreferenceHandlers(): void {
         return fail("FEATURE_TOGGLES_INVALID_INPUT", "機能トグルの値が正しくありません。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      await writeAppSettings(app.getPath("userData"), { ...settings, featureToggles: input });
+      await updateAppSettings(app.getPath("userData"), (settings) => ({
+        ...settings,
+        featureToggles: input
+      }));
       return ok(undefined);
     } catch (error) {
       return fail("FEATURE_TOGGLES_SAVE_FAILED", "機能トグルを保存できませんでした。", ipcErrorDetails(error));
@@ -60,8 +62,10 @@ export function registerWorkspacePreferenceHandlers(): void {
         return fail("USER_DEFINED_FIELDS_INVALID_INPUT", "カスタムフィールドの値が正しくありません。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      await writeAppSettings(app.getPath("userData"), { ...settings, userDefinedFields: input });
+      await updateAppSettings(app.getPath("userData"), (settings) => ({
+        ...settings,
+        userDefinedFields: input
+      }));
       return ok(undefined);
     } catch (error) {
       return fail("USER_DEFINED_FIELDS_SAVE_FAILED", "カスタムフィールドを保存できませんでした。", ipcErrorDetails(error));
@@ -83,8 +87,10 @@ export function registerWorkspacePreferenceHandlers(): void {
         return fail("FRONTMATTER_TEMPLATES_INVALID_INPUT", "フロントマターテンプレートの値が正しくありません。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      await writeAppSettings(app.getPath("userData"), { ...settings, frontmatterTemplates: input });
+      await updateAppSettings(app.getPath("userData"), (settings) => ({
+        ...settings,
+        frontmatterTemplates: input
+      }));
       return ok(undefined);
     } catch (error) {
       return fail("FRONTMATTER_TEMPLATES_SAVE_FAILED", "フロントマターテンプレートを保存できませんでした。", ipcErrorDetails(error));

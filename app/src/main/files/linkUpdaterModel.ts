@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { resolveWikiLinkPath } from "../../shared/links";
 import { ensureMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
 
@@ -49,6 +51,57 @@ export function replaceFileLinksWithCount(
     const newTargetBase = isPathBased || !canKeepBaseNameOnly ? newPathWithoutExt : newBaseName;
 
     let newBody = newTargetBase;
+    if (parsed.heading) newBody += `#${parsed.heading}`;
+    if (parsed.blockId) newBody += `^${parsed.blockId}`;
+    if (parsed.alias !== null) newBody += `|${parsed.alias}`;
+
+    const embed = match[1] === "!" ? "!" : "";
+    const newRawLink = `${embed}[[${newBody}]]`;
+
+    const adjustedMatchStart = matchStart + offset;
+    result = result.slice(0, adjustedMatchStart) + newRawLink + result.slice(adjustedMatchStart + rawLink.length);
+    offset += newRawLink.length - rawLink.length;
+    count += 1;
+  }
+
+  return { content: result, count };
+}
+
+export function replaceMovedSourceBasenameLinksWithCount(
+  content: string,
+  sourcePath: string,
+  previousSourcePath: string
+): { content: string; count: number } {
+  const maskedContent = maskMarkdownCodeRanges(content);
+  let result = content;
+  let offset = 0;
+  let count = 0;
+
+  const pattern = /(!)?\[\[([^\]\n]+)\]\]/g;
+
+  for (const match of maskedContent.matchAll(pattern)) {
+    const matchStart = match.index;
+    const rawLink = match[0] ?? "";
+    const body = match[2] ?? "";
+
+    if (matchStart === undefined || !rawLink) continue;
+    const parsed = parseWikiLinkBody(body);
+    if (!parsed) continue;
+
+    if (parsed.targetBase.includes("/")) continue;
+
+    const previousResolvedPath = resolveWikiLinkPath(parsed.targetBase, previousSourcePath);
+    if (previousResolvedPath === previousSourcePath) continue;
+
+    const nextResolvedPath = resolveWikiLinkPath(parsed.targetBase, sourcePath);
+    if (previousResolvedPath === nextResolvedPath) continue;
+
+    const relativeTarget = path.posix.relative(
+      path.posix.dirname(sourcePath),
+      stripMarkdownExtension(previousResolvedPath)
+    );
+
+    let newBody = relativeTarget;
     if (parsed.heading) newBody += `#${parsed.heading}`;
     if (parsed.blockId) newBody += `^${parsed.blockId}`;
     if (parsed.alias !== null) newBody += `|${parsed.alias}`;

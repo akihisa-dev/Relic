@@ -1,4 +1,4 @@
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir, readFile, rename } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -38,6 +38,15 @@ const defaultAppSettings: AppSettings = {
   workspaces: []
 };
 
+type SerializedUpdate = Promise<unknown>;
+let appSettingsUpdateQueue: SerializedUpdate = Promise.resolve();
+
+function queueAppSettingsUpdate<T>(task: () => Promise<T>): Promise<T> {
+  const next = appSettingsUpdateQueue.catch(() => undefined).then(task);
+  appSettingsUpdateQueue = next.finally(() => undefined);
+  return next;
+}
+
 export function getAppSettingsPath(userDataPath: string): string {
   return path.join(userDataPath, "app-settings.json");
 }
@@ -47,7 +56,14 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
 
   try {
     const rawSettings = await readFile(settingsPath, "utf8");
-    const parsedSettings = parseSettingsObject(rawSettings);
+    const parsedJson = parseSettingsJson(rawSettings);
+
+    if (!parsedJson.ok) {
+      await backupCorruptedSettingsFile(settingsPath);
+      throw createCorruptSettingsError(settingsPath);
+    }
+
+    const parsedSettings = parseSettingsObject(parsedJson.value);
 
     if (!parsedSettings) {
       return defaultAppSettings;
@@ -78,6 +94,18 @@ export async function writeAppSettings(
 ): Promise<void> {
   await mkdir(userDataPath, { recursive: true });
   await atomicWriteTextFile(getAppSettingsPath(userDataPath), `${JSON.stringify(settings, null, 2)}\n`);
+}
+
+export async function updateAppSettings(
+  userDataPath: string,
+  update: (current: AppSettings) => Promise<AppSettings> | AppSettings
+): Promise<AppSettings> {
+  return queueAppSettingsUpdate(async () => {
+    const current = await readAppSettings(userDataPath);
+    const next = await update(current);
+    await writeAppSettings(userDataPath, next);
+    return next;
+  });
 }
 
 function parseEditorSettings(raw: unknown): EditorSettings {
@@ -255,18 +283,32 @@ function parseLastWorkspaceId(raw: unknown, workspaces: WorkspaceSummary[]): str
   return workspaces.some((workspace) => workspace.id === raw) ? raw : null;
 }
 
-function parseSettingsObject(raw: string): Record<string, unknown> | null {
+function parseSettingsJson(rawSettings: string): { ok: true; value: unknown } | { ok: false } {
   try {
-    const parsed: unknown = JSON.parse(raw);
-
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      return null;
-    }
-
-    return parsed as Record<string, unknown>;
+    return { ok: true, value: JSON.parse(rawSettings) };
   } catch {
+    return { ok: false };
+  }
+}
+
+function parseSettingsObject(raw: unknown): Record<string, unknown> | null {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     return null;
   }
+
+  return raw as Record<string, unknown>;
+}
+
+function createCorruptSettingsError(settingsPath: string): Error {
+  const error = new Error(`設定JSONが壊れています: ${settingsPath}`) as Error;
+  error.name = "CorruptAppSettingsError";
+  return error;
+}
+
+async function backupCorruptedSettingsFile(settingsPath: string): Promise<void> {
+  const parsedPath = path.parse(settingsPath);
+  const backupPath = path.join(parsedPath.dir, `${parsedPath.name}.corrupt-${Date.now()}.json`);
+  await rename(settingsPath, backupPath);
 }
 
 function isMissingFileError(error: unknown): boolean {
