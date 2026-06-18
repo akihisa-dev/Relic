@@ -129,6 +129,7 @@
   "links.outgoing": "アウトゴーイング",
   "links.outgoingLimited": "リンクが多いため、一部のみ表示しています。",
   "links.updateImpactConfirm": "{{files}} 件のMarkdownファイル内にある {{links}} 件のリンクを更新します。続けますか？",
+  "links.updateImpactConfirmWithUnreadableFiles": "読み取り不能なMarkdownファイルが {{unreadableFiles}} 件あります。{{files}} 件のMarkdownファイル内にある {{links}} 件のリンクを更新します。続けますか？",
   "diagram.files": "図解ファイル",
   "diagram.addLineLabel": "Lineラベルを追加",
   "diagram.addConnectedShape": "図形を接続して追加",

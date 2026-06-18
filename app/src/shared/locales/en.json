@@ -129,6 +129,7 @@
   "links.outgoing": "Outgoing",
   "links.outgoingLimited": "Only some links are shown because there are many links.",
   "links.updateImpactConfirm": "Update {{links}} link(s) in {{files}} Markdown file(s)?",
+  "links.updateImpactConfirmWithUnreadableFiles": "There are {{unreadableFiles}} unreadable Markdown file(s). Continue to update {{links}} link(s) in {{files}} Markdown file(s)?",
   "diagram.files": "Diagram files",
   "diagram.addLineLabel": "Add line label",
   "diagram.addConnectedShape": "Add connected shape",

@@ -19,6 +19,11 @@ interface LinkUpdatePatch {
   previousContent: string;
 }
 
+interface LinkUpdatePatchResult {
+  patches: LinkUpdatePatch[];
+  skippedUnreadableFileCount: number;
+}
+
 interface LinkUpdateReadOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
 }
@@ -71,7 +76,7 @@ export async function updateLinksForFileRename(
   });
   if (!patches.ok) return patches;
 
-  return applyLinkUpdatePatches(patches.value, operations);
+  return applyLinkUpdatePatches(patches.value.patches, operations);
 }
 
 /**
@@ -92,7 +97,7 @@ export async function updateLinksForFolderRename(
   });
   if (!patches.ok) return patches;
 
-  return applyLinkUpdatePatches(patches.value, operations);
+  return applyLinkUpdatePatches(patches.value.patches, operations);
 }
 
 async function buildLinkUpdatePatches(
@@ -104,8 +109,10 @@ async function buildLinkUpdatePatches(
     operations: LinkUpdateReadOperations;
     skipUnreadableFiles: boolean;
   }
-): Promise<RelicResult<LinkUpdatePatch[]>> {
-  if (oldPath === newPath) return ok([]);
+): Promise<RelicResult<LinkUpdatePatchResult>> {
+  if (oldPath === newPath) {
+    return ok({ patches: [], skippedUnreadableFileCount: 0 });
+  }
 
   const normalizedOldPath = toWorkspaceRelativePath(oldPath);
   const normalizedNewPath = toWorkspaceRelativePath(newPath);
@@ -115,6 +122,7 @@ async function buildLinkUpdatePatches(
   const patches: LinkUpdatePatch[] = [];
   const newBaseName = stripMarkdownExtension(path.posix.basename(normalizedNewPath));
   const newPathWithoutExt = stripMarkdownExtension(normalizedNewPath);
+  let skippedUnreadableFileCount = 0;
 
   for (const sourcePath of markdownPaths) {
     const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, sourcePath);
@@ -124,7 +132,10 @@ async function buildLinkUpdatePatches(
     try {
       content = await options.operations.readFile(absoluteSourcePath.value, "utf8");
     } catch (err) {
-      if (options.skipUnreadableFiles) continue;
+      if (options.skipUnreadableFiles) {
+        skippedUnreadableFileCount += 1;
+        continue;
+      }
 
       return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新のためにファイルを読み込めませんでした。", errorDetails(err));
     }
@@ -156,13 +167,17 @@ async function buildLinkUpdatePatches(
     }
   }
 
-  return ok(patches);
+  return ok({
+    patches,
+    skippedUnreadableFileCount
+  });
 }
 
-function summarizeLinkUpdatePatches(patches: LinkUpdatePatch[]): LinkUpdateImpact {
+function summarizeLinkUpdatePatches(result: LinkUpdatePatchResult): LinkUpdateImpact {
   return {
-    fileCount: patches.length,
-    linkCount: patches.reduce((sum, patch) => sum + patch.linkCount, 0)
+    fileCount: result.patches.length,
+    linkCount: result.patches.reduce((sum, patch) => sum + patch.linkCount, 0),
+    unreadableFileCount: result.skippedUnreadableFileCount
   };
 }
 

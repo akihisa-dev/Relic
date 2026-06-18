@@ -103,6 +103,22 @@ function loadedHtmlAt(index: number): string {
   return Buffer.from(url.replace("data:text/html;base64,", ""), "base64").toString("utf8");
 }
 
+function validOutputHtml(body = "本文"): string {
+  return [
+    "<!doctype html>",
+    '<html lang="ja">',
+    "<head>",
+    '<meta charset="utf-8">',
+    '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:;">',
+    "<title>Note</title>",
+    "</head>",
+    "<body>",
+    `<main class="relic-output-body">${body}</main>`,
+    "</body>",
+    "</html>"
+  ].join("");
+}
+
 function lastWrittenText(): string {
   const value = fsMock.writeFile.mock.calls.at(-1)?.[1];
   if (typeof value !== "string") throw new Error("Text was not written");
@@ -130,7 +146,7 @@ describe("outputHandlers", () => {
 
     const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
       defaultFileName: "Note",
-      html: "<html><body>本文</body></html>",
+      html: validOutputHtml(),
       title: "Note"
     });
 
@@ -145,7 +161,7 @@ describe("outputHandlers", () => {
 
     const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
       defaultFileName: "Note",
-      html: "<html><body>本文</body></html>",
+      html: validOutputHtml(),
       title: "Note"
     });
 
@@ -160,7 +176,7 @@ describe("outputHandlers", () => {
 
     const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
       defaultFileName: "Note",
-      html: "<html><body>本文</body></html>",
+      html: validOutputHtml(),
       title: "Note"
     });
 
@@ -180,7 +196,7 @@ describe("outputHandlers", () => {
 
     const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
       defaultFileName: "Note",
-      html: "<html><body>本文</body></html>",
+      html: validOutputHtml(),
       title: "Note"
     });
 
@@ -233,6 +249,40 @@ describe("outputHandlers", () => {
     });
     expect(electronMock.showSaveDialog).not.toHaveBeenCalled();
     expect(electronMock.printToPDF).not.toHaveBeenCalled();
+    expect(electronMock.loadURL).not.toHaveBeenCalled();
+  });
+
+  it("PDF保存でCSPのないHTMLは入力エラーになり、hidden windowを作らない", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
+      defaultFileName: "Note",
+      html: "<!doctype html><html><head><title>Note</title></head><body><main class=\"relic-output-body\">本文</main></body></html>",
+      title: "Note"
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "OUTPUT_PDF_INVALID_INPUT" })
+    });
+    expect(electronMock.showSaveDialog).not.toHaveBeenCalled();
+    expect(electronMock.loadURL).not.toHaveBeenCalled();
+  });
+
+  it("PDF保存で許可外タグや危険属性を含むHTMLは入力エラーになる", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
+      defaultFileName: "Note",
+      html: validOutputHtml('<script>alert(1)</script><a href="javascript:alert(1)" onclick="alert(1)">link</a>'),
+      title: "Note"
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "OUTPUT_PDF_INVALID_INPUT" })
+    });
+    expect(electronMock.showSaveDialog).not.toHaveBeenCalled();
     expect(electronMock.loadURL).not.toHaveBeenCalled();
   });
 
@@ -370,7 +420,7 @@ describe("outputHandlers", () => {
     registerOutputHandlers();
 
     const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
-      html: '<html><head><meta http-equiv="Content-Security-Policy" content="default-src \'none\'"></head><body>本文</body></html>',
+      html: validOutputHtml(),
       title: "Note"
     });
 
@@ -445,6 +495,22 @@ describe("outputHandlers", () => {
 
     const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
       html: "a".repeat(previewOutputHtmlMaxBytes + 1),
+      title: "Note"
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "OUTPUT_PRINT_INVALID_INPUT" })
+    });
+    expect(electronMock.printToPDF).not.toHaveBeenCalled();
+    expect(electronMock.loadURL).not.toHaveBeenCalled();
+  });
+
+  it("印刷プレビューでCSPのないHTMLは入力エラーになり、hidden windowを作らない", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
+      html: "<!doctype html><html><head><title>Note</title></head><body><main class=\"relic-output-body\">本文</main></body></html>",
       title: "Note"
     });
 

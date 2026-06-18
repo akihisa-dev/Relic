@@ -63,7 +63,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
     getFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getFrontmatterValueCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
-    getLinkUpdateImpact: vi.fn().mockResolvedValue({ ok: true, value: { fileCount: 0, linkCount: 0 } }),
+    getLinkUpdateImpact: vi.fn().mockResolvedValue({ ok: true, value: { fileCount: 0, linkCount: 0, unreadableFileCount: 0 } }),
     getUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceAliases: vi.fn().mockResolvedValue({ ok: true, value: {} }),
     getWorkspaceCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),

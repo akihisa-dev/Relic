@@ -27,6 +27,7 @@ import {
   type FileCandidate,
   type ToolActionFileOperations
 } from "./toolCandidateCollectors";
+import { formatGeneratedMarkdownHeadingText } from "./toolMarkdownFormat";
 import { writeToolMarkdownOutput } from "./toolOutputFiles";
 import { collectMarkdownPathsFromTree, createWikiLinkFormatter } from "./toolWikiLinks";
 
@@ -59,7 +60,7 @@ export async function mergeFiles(
     const content = await fileOperations.readFile(path.join(workspacePath, file.relPath), "utf-8");
     const name = stripMarkdownExtension(file.relPath.split("/").at(-1) ?? file.relPath);
     if (input.insertFilenameHeading) {
-      return `# ${name}\n\n${content.trim()}`;
+      return `# ${formatGeneratedMarkdownHeadingText(name)}\n\n${content.trim()}`;
     }
     return content.trim();
   }));
@@ -169,7 +170,7 @@ export async function generateTagIndex(
       files.sort((a, b) => (a.name ?? a.relPath).localeCompare(b.name ?? b.relPath, "ja"));
     }
 
-    lines.push(`## ${tag}`);
+    lines.push(`## ${formatGeneratedMarkdownHeadingText(tag)}`);
     for (const file of files) {
       const displayName = file.name ?? file.relPath.replace(/\.md$/i, "");
       lines.push(`- ${wikiLinkForPath(file.relPath, displayName)}`);

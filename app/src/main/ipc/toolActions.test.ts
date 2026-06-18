@@ -342,6 +342,26 @@ describe("toolActions", () => {
     await expect(readFile(path.join(workspacePath, "Merged.md"), "utf8")).resolves.toBe("keep\n");
   });
 
+  it("結合ファイルの挿入見出しはファイル名由来の危険なMarkdown構造を避ける", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await writeFile(path.join(workspacePath, "### Bad.md"), "content", "utf8");
+    await writeFile(path.join(workspacePath, "---.md"), "rule", "utf8");
+
+    const result = await mergeFiles({
+      filterType: "all",
+      filterValue: "",
+      insertFilenameHeading: true,
+      outputFolder: ".",
+      outputName: "Merged",
+      sortBy: "name"
+    });
+
+    expect(result).toEqual({ ok: true, value: "Merged.md" });
+    await expect(readFile(path.join(workspacePath, "Merged.md"), "utf8")).resolves.toBe(
+      "# 無題\n\nrule\n\n---\n\n# Bad\n\ncontent\n"
+    );
+  });
+
   it("出力先フォルダが外部実体のシンボリックリンクなら書き込まない", async () => {
     const { outsidePath, workspacePath } = await prepareActiveWorkspace();
     await writeFile(path.join(workspacePath, "note.md"), "# Note\n", "utf8");
@@ -494,6 +514,28 @@ describe("toolActions", () => {
       expect.objectContaining({ exists: true, path: "notes/b.md" }),
       expect.objectContaining({ exists: true, path: "notes/untagged.md" })
     ]);
+  });
+
+  it("タグ別索引の見出しはタグ名由来の危険なMarkdown構造を避ける", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await mkdir(path.join(workspacePath, "notes"));
+    await writeFile(path.join(workspacePath, "notes", "bad.md"), "---\ntags: ['### bad']\n---\n# Bad\n", "utf8");
+    await writeFile(path.join(workspacePath, "notes", "rule.md"), "---\ntags: ['---']\n---\n# Rule\n", "utf8");
+    await writeFile(path.join(workspacePath, "notes", "normal.md"), "---\ntags: [通常]\n---\n# Normal\n", "utf8");
+
+    const result = await generateTagIndex({
+      includeSubfolders: true,
+      includeUntagged: false,
+      outputFolder: ".",
+      outputName: "Tags",
+      sortBy: "name",
+      targetFolder: "notes"
+    });
+
+    expect(result).toEqual({ ok: true, value: "Tags.md" });
+    await expect(readFile(path.join(workspacePath, "Tags.md"), "utf8")).resolves.toBe(
+      "# タグ別索引\n\n## 無題\n- [[rule]]\n\n## bad\n- [[bad]]\n\n## 通常\n- [[normal]]\n"
+    );
   });
 
   it("タグ別索引はサブフォルダを含めない指定と読めない候補の除外を扱う", async () => {

@@ -168,7 +168,8 @@ describe("updateLinksForFileRename", () => {
       ok: true,
       value: {
         fileCount: 1,
-        linkCount: 1
+        linkCount: 1,
+        unreadableFileCount: 0
       }
     });
   });
@@ -194,7 +195,8 @@ describe("updateLinksForFileRename", () => {
       ok: true,
       value: {
         fileCount: 1,
-        linkCount: 1
+        linkCount: 1,
+        unreadableFileCount: 1
       }
     });
   });

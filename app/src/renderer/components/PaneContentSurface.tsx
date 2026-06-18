@@ -70,7 +70,8 @@ export function PaneContentSurface({
   }
   const notifiedLargeMarkdownFallbacks = notifiedLargeMarkdownFallbacksRef.current;
   const activeFileTab = activeTab?.kind === "file" ? activeTab : null;
-  const isLargeMarkdown = activeFileTab ? isLargeMarkdownContent(activeFileTab.content) : false;
+  const activeFileContent = activeFileTab?.content ?? "";
+  const isLargeMarkdown = useMemo(() => isLargeMarkdownContent(activeFileContent), [activeFileContent]);
   const isDiagramMarkdown = activeFileTab ? isRelicDiagramMarkdownContent(activeFileTab.content) : false;
   const showWordCount = !isDiagramMarkdown || sourceMode;
   const textCountResult = useMemo(() => {
