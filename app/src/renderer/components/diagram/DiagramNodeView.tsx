@@ -36,6 +36,7 @@ interface DiagramNodeViewProps {
   ) => void;
   onPointerCancel: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerDown: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLDivElement>) => void;
+  onFocus?: (node: RelicConnectedDiagramNode) => void;
   onPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerUp: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLDivElement>) => void;
   onResizePointerDown: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLElement>) => void;
@@ -64,6 +65,7 @@ export function DiagramNodeView({
   onShapeOptionPointerDown,
   onPointerCancel,
   onPointerDown,
+  onFocus,
   onPointerMove,
   onPointerUp,
   onResizePointerDown,
@@ -99,10 +101,14 @@ export function DiagramNodeView({
       ].filter(Boolean).join(" ")}
       onPointerCancel={onPointerCancel}
       onDoubleClick={(event) => onNodeTextDoubleClick?.(node, event)}
+      onFocus={() => onFocus?.(node)}
       onPointerDown={(event) => onPointerDown(node, event)}
       onPointerMove={onPointerMove}
       onPointerUp={(event) => onPointerUp(node, event)}
+      role="button"
+      aria-label={`${freeText || nodeTextLabel} (${node.shape})`}
       style={nodeStyle}
+      tabIndex={0}
       title={title}
     >
       {!renderNodeText ? null : !isTextEditing ? (

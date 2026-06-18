@@ -1110,6 +1110,80 @@
   padding: 5px 8px;
 }
 
+.diagram-canvas-toolbar {
+  align-items: center;
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  left: 14px;
+  max-width: calc(100% - 28px);
+  padding: 6px;
+  position: absolute;
+  top: 14px;
+  z-index: 10;
+}
+
+.diagram-canvas-toolbar-group {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.diagram-canvas-toolbar button,
+.diagram-canvas-shape-select select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  min-height: 28px;
+  padding: 4px 8px;
+}
+
+.diagram-canvas-toolbar button {
+  cursor: pointer;
+}
+
+.diagram-canvas-toolbar button:disabled {
+  color: var(--text-muted);
+  cursor: default;
+  opacity: 0.55;
+}
+
+.diagram-canvas-zoom-label {
+  color: var(--text-2);
+  font-size: 12px;
+  min-width: 42px;
+  text-align: center;
+}
+
+.diagram-canvas-shape-select {
+  align-items: center;
+  color: var(--text-2);
+  display: inline-flex;
+  font-size: 12px;
+  gap: 5px;
+}
+
+.diagram-canvas-notice {
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 36%, var(--border));
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12px;
+  left: 14px;
+  max-width: min(520px, calc(100% - 28px));
+  padding: 8px 10px;
+  position: absolute;
+  top: 62px;
+  z-index: 10;
+}
+
 .diagram-canvas-node {
   background: var(--diagram-node-layer-fill, var(--bg));
   border: 1px solid var(--diagram-node-layer-border, var(--border));
@@ -1149,6 +1223,16 @@
   content: "";
   inset: 0;
   position: absolute;
+}
+
+.diagram-canvas-range-select {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  box-sizing: border-box;
+  pointer-events: none;
+  position: absolute;
+  z-index: 5;
 }
 
 .diagram-canvas-node:hover {

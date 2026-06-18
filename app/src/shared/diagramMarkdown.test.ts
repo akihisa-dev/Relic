@@ -3,17 +3,22 @@ import { describe, expect, it } from "vitest";
 import {
   addRelicDiagramLine,
   addRelicFreeDrawingNode,
+  alignRelicDiagramNodes,
   diagramTypeFromMarkdownContent,
+  duplicateRelicDiagramNodes,
   emptyRelicDiagramMarkdownContent,
   isRelicDiagramMarkdownContent,
+  moveRelicDiagramNodesByDelta,
   moveRelicDiagramNode,
   moveRelicFreeDrawingAreaWithContents,
   parseRelicDiagramMarkdown,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
+  removeRelicDiagramNodes,
   replaceRelicDiagramNodeFileReferences,
   resizeRelicDiagramNode,
   serializeRelicDiagramMarkdown,
+  updateRelicFreeDrawingNodeShape,
   updateRelicDiagramLineLabel,
   updateRelicFreeDrawingNodeText
 } from "./diagramMarkdown";
@@ -191,6 +196,56 @@ describe("Diagram operations", () => {
 
     const removedNode = removeRelicDiagramNode(diagramContent, "node-1");
     expect(removedNode.ok ? removedNode.value.content : "").not.toContain("id: node-1");
+  });
+
+  it("複数Node操作をMarkdownへ反映し、選択範囲内のLineだけ複製する", () => {
+    const moved = moveRelicDiagramNodesByDelta(diagramContent, ["node-1", "node-2"], 32, 64);
+    expect(moved.ok ? moved.value.nodeIds : []).toEqual(["node-1", "node-2"]);
+    expect(moved.ok ? moved.value.content : "").toContain("id: node-1\n    shape: process\n    text: 主人公\n    x: 152\n    y: 144");
+    expect(moved.ok ? moved.value.content : "").toContain("id: node-2\n    shape: decision\n    text: 判断\n    x: 412\n    y: 144");
+
+    const duplicated = duplicateRelicDiagramNodes(diagramContent, ["node-1", "node-2"]);
+    expect(duplicated.ok ? duplicated.value.nodeIds : []).toEqual(["node-3", "node-4"]);
+    expect(duplicated.ok ? duplicated.value.lineIds : []).toEqual(["line-2"]);
+    expect(duplicated.ok ? duplicated.value.content : "").toContain("id: node-3\n    shape: process\n    text: 主人公\n    x: 152\n    y: 112");
+    expect(duplicated.ok ? duplicated.value.content : "").toContain("id: line-2\n    from: node-3\n    to: node-4");
+
+    const oneNodeDuplicated = duplicateRelicDiagramNodes(diagramContent, ["node-1"]);
+    expect(oneNodeDuplicated.ok ? oneNodeDuplicated.value.lineIds : []).toEqual([]);
+    expect(oneNodeDuplicated.ok ? oneNodeDuplicated.value.content : "").toContain("id: node-3");
+
+    const deleted = removeRelicDiagramNodes(diagramContent, ["node-1", "node-2"]);
+    expect(deleted.ok ? deleted.value.content : "").not.toContain("id: node-1");
+    expect(deleted.ok ? deleted.value.content : "").not.toContain("id: node-2");
+    expect(deleted.ok ? deleted.value.content : "").not.toContain("id: line-1");
+  });
+
+  it("図形種類変更と整列操作をMarkdownへ反映する", () => {
+    const changed = updateRelicFreeDrawingNodeShape(diagramContent, "node-1", "terminator");
+    expect(changed.ok ? changed.value.node : null).toMatchObject({ id: "node-1", shape: "terminator" });
+    expect(changed.ok ? changed.value.content : "").toContain("shape: terminator");
+
+    const areaChange = updateRelicFreeDrawingNodeShape([
+      "---",
+      "type: diagram",
+      "---",
+      "",
+      "nodes:",
+      "  - id: area-1",
+      "    shape: area",
+      "    text: 領域",
+      "    x: 0",
+      "    y: 0",
+      "    width: 320",
+      "    height: 192",
+      "lines: []",
+      ""
+    ].join("\n"), "area-1", "process");
+    expect(areaChange).toMatchObject({ error: { code: "DIAGRAM_NODE_SHAPE_INVALID" }, ok: false });
+
+    const aligned = alignRelicDiagramNodes(diagramContent, ["node-1", "node-2"], "horizontal");
+    expect(aligned.ok ? aligned.value.content : "").toContain("id: node-1\n    shape: process\n    text: 主人公\n    x: 120\n    y: 80");
+    expect(aligned.ok ? aligned.value.content : "").toContain("id: node-2\n    shape: decision\n    text: 判断\n    x: 380\n    y: 80");
   });
 
   it("領域図形を動かすと完全に内包された図形だけ一緒に動かす", () => {

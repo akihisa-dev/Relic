@@ -91,9 +91,25 @@ export interface RelicFreeDrawingNodeTextUpdate {
   node: RelicFreeDrawingNode;
 }
 
+export interface RelicFreeDrawingNodeShapeUpdate {
+  content: string;
+  node: RelicFreeDrawingNode;
+}
+
 export interface RelicFreeDrawingNodeLayerUpdate {
   content: string;
   node: RelicFreeDrawingNode;
+}
+
+export interface RelicDiagramDuplicate {
+  content: string;
+  lineIds: string[];
+  nodeIds: string[];
+}
+
+export interface RelicDiagramMultiNodeUpdate {
+  content: string;
+  nodeIds: string[];
 }
 
 interface DiagramFrontmatter {
@@ -596,6 +612,45 @@ export function updateRelicFreeDrawingNodeText(
   });
 }
 
+export function updateRelicFreeDrawingNodeShape(
+  content: string,
+  nodeId: string,
+  shape: RelicFreeDrawingShapeType
+): RelicResult<RelicFreeDrawingNodeShapeUpdate> {
+  const parsed = parseRelicFreeDrawingMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const id = parseRequiredText(nodeId, "DIAGRAM_NODE_ID_INVALID", "Nodeの id を指定してください。");
+  if (!id.ok) return id;
+  if (shape === "area") {
+    return fail("DIAGRAM_NODE_SHAPE_INVALID", "領域図形への種類変更はできません。");
+  }
+
+  const node = parsed.value.nodes.find((item) => item.id === id.value);
+  if (!node) {
+    return fail("DIAGRAM_NODE_MISSING", "変更するNodeが見つかりません。");
+  }
+  if (node.shape === "area") {
+    return fail("DIAGRAM_NODE_SHAPE_INVALID", "領域図形から種類変更はできません。");
+  }
+
+  const nextNode = {
+    ...node,
+    layer: relicFreeDrawingShapeLayer,
+    shape
+  };
+  const serialized = serializeRelicFreeDrawingMarkdown({
+    ...parsed.value,
+    nodes: parsed.value.nodes.map((item) => item.id === id.value ? nextNode : item)
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    node: nextNode
+  });
+}
+
 export function updateRelicFreeDrawingNodeLayer(
   content: string,
   nodeId: string,
@@ -628,6 +683,199 @@ export function updateRelicFreeDrawingNodeLayer(
     content: serialized.value,
     node: nextNode
   });
+}
+
+export function moveRelicDiagramNodesByDelta(
+  content: string,
+  nodeIds: Iterable<string>,
+  deltaX: number,
+  deltaY: number
+): RelicResult<RelicDiagramMultiNodeUpdate> {
+  const parsed = parseRelicFreeDrawingMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const ids = new Set([...nodeIds]);
+  if (ids.size === 0) {
+    return fail("DIAGRAM_NODE_MISSING", "移動するNodeが見つかりません。");
+  }
+
+  const movedIds: string[] = [];
+  const nodes = parsed.value.nodes.map((node) => {
+    if (!ids.has(node.id)) return node;
+    movedIds.push(node.id);
+    return {
+      ...node,
+      x: Math.round(node.x + deltaX),
+      y: Math.round(node.y + deltaY)
+    };
+  });
+  if (movedIds.length === 0) {
+    return fail("DIAGRAM_NODE_MISSING", "移動するNodeが見つかりません。");
+  }
+
+  const serialized = serializeRelicFreeDrawingMarkdown({
+    ...parsed.value,
+    nodes
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({ content: serialized.value, nodeIds: movedIds });
+}
+
+export function removeRelicDiagramNodes(
+  content: string,
+  nodeIds: Iterable<string>
+): RelicResult<RelicDiagramDeletion> {
+  const parsed = parseRelicFreeDrawingMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const ids = new Set([...nodeIds]);
+  if (ids.size === 0) {
+    return fail("DIAGRAM_NODE_MISSING", "削除するNodeが見つかりません。");
+  }
+
+  const nextNodes = parsed.value.nodes.filter((node) => !ids.has(node.id));
+  if (nextNodes.length === parsed.value.nodes.length) {
+    return fail("DIAGRAM_NODE_MISSING", "削除するNodeが見つかりません。");
+  }
+
+  const existingNodeIds = new Set(nextNodes.map((node) => node.id));
+  const nextLines = parsed.value.lines.filter((line) => existingNodeIds.has(line.from) && existingNodeIds.has(line.to));
+  const serialized = serializeRelicFreeDrawingMarkdown({
+    ...parsed.value,
+    lines: nextLines,
+    nodes: nextNodes
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    count: parsed.value.nodes.length - nextNodes.length + parsed.value.lines.length - nextLines.length
+  });
+}
+
+export function duplicateRelicDiagramNodes(
+  content: string,
+  nodeIds: Iterable<string>
+): RelicResult<RelicDiagramDuplicate> {
+  const parsed = parseRelicFreeDrawingMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const selectedIds = new Set([...nodeIds]);
+  const selectedNodes = parsed.value.nodes.filter((node) => selectedIds.has(node.id));
+  if (selectedNodes.length === 0) {
+    return fail("DIAGRAM_NODE_MISSING", "複製するNodeが見つかりません。");
+  }
+
+  const idMap = new Map<string, string>();
+  let nextNodes = [...parsed.value.nodes];
+  const duplicatedNodes = selectedNodes.map((node) => {
+    const nextId = nextNodeId(nextNodes);
+    idMap.set(node.id, nextId);
+    const duplicate = {
+      ...node,
+      id: nextId,
+      x: node.x + diagramNodeGridSize,
+      y: node.y + diagramNodeGridSize
+    };
+    nextNodes = [...nextNodes, duplicate];
+    return duplicate;
+  });
+  let nextLines = [...parsed.value.lines];
+  const duplicatedLines = parsed.value.lines.flatMap((line): RelicDiagramLine[] => {
+    const from = idMap.get(line.from);
+    const to = idMap.get(line.to);
+    if (!from || !to) return [];
+
+    const duplicate = {
+      ...line,
+      from,
+      id: nextLineId(nextLines),
+      to
+    };
+    nextLines = [...nextLines, duplicate];
+    return [duplicate];
+  });
+  const serialized = serializeRelicFreeDrawingMarkdown({
+    ...parsed.value,
+    lines: nextLines,
+    nodes: nextNodes
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    lineIds: duplicatedLines.map((line) => line.id),
+    nodeIds: duplicatedNodes.map((node) => node.id)
+  });
+}
+
+export function alignRelicDiagramNodes(
+  content: string,
+  nodeIds: Iterable<string>,
+  direction: "horizontal" | "vertical"
+): RelicResult<RelicDiagramMultiNodeUpdate> {
+  const parsed = parseRelicFreeDrawingMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const ids = new Set([...nodeIds]);
+  const selected = parsed.value.nodes.filter((node) => ids.has(node.id));
+  if (selected.length < 2) {
+    return fail("DIAGRAM_NODE_SELECTION_TOO_SMALL", "整列するには2つ以上の図形を選択してください。");
+  }
+
+  const average = selected.reduce((sum, node) => sum + (direction === "horizontal" ? node.y : node.x), 0) / selected.length;
+  const nodes = parsed.value.nodes.map((node) => {
+    if (!ids.has(node.id)) return node;
+    return direction === "horizontal"
+      ? { ...node, y: Math.round(average) }
+      : { ...node, x: Math.round(average) };
+  });
+  const serialized = serializeRelicFreeDrawingMarkdown({
+    ...parsed.value,
+    nodes
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({ content: serialized.value, nodeIds: selected.map((node) => node.id) });
+}
+
+export function distributeRelicDiagramNodes(
+  content: string,
+  nodeIds: Iterable<string>,
+  direction: "horizontal" | "vertical"
+): RelicResult<RelicDiagramMultiNodeUpdate> {
+  const parsed = parseRelicFreeDrawingMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const ids = new Set([...nodeIds]);
+  const selected = parsed.value.nodes
+    .filter((node) => ids.has(node.id))
+    .sort((a, b) => (direction === "horizontal" ? a.x - b.x : a.y - b.y));
+  if (selected.length < 3) {
+    return fail("DIAGRAM_NODE_SELECTION_TOO_SMALL", "等間隔配置するには3つ以上の図形を選択してください。");
+  }
+
+  const first = selected[0];
+  const last = selected[selected.length - 1];
+  const start = direction === "horizontal" ? first.x : first.y;
+  const end = direction === "horizontal" ? last.x : last.y;
+  const step = (end - start) / (selected.length - 1);
+  const positionById = new Map(selected.map((node, index) => [node.id, Math.round(start + step * index)]));
+  const nodes = parsed.value.nodes.map((node) => {
+    const position = positionById.get(node.id);
+    if (position === undefined) return node;
+    return direction === "horizontal"
+      ? { ...node, x: position }
+      : { ...node, y: position };
+  });
+  const serialized = serializeRelicFreeDrawingMarkdown({
+    ...parsed.value,
+    nodes
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({ content: serialized.value, nodeIds: selected.map((node) => node.id) });
 }
 
 function validateRelicFreeDrawingDocument(raw: unknown): RelicResult<RelicFreeDrawingDiagramDocument> {

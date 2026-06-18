@@ -7,6 +7,8 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type WheelEvent as ReactWheelEvent,
+  useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -16,13 +18,19 @@ import {
 import {
   addRelicFreeDrawingNode,
   addRelicDiagramLine,
+  alignRelicDiagramNodes,
+  distributeRelicDiagramNodes,
+  duplicateRelicDiagramNodes,
   moveRelicDiagramNode,
+  moveRelicDiagramNodesByDelta,
   moveRelicFreeDrawingAreaWithContents,
   relicFreeDrawingShapeTypes,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
+  removeRelicDiagramNodes,
   reverseRelicDiagramLineDirection,
   resizeRelicDiagramNode,
+  updateRelicFreeDrawingNodeShape,
   updateRelicFreeDrawingNodeText,
   updateRelicDiagramLineLabel,
   type RelicConnectedDiagramDocument,
@@ -101,6 +109,14 @@ interface ResizeState {
   startClientY: number;
 }
 
+interface RangeSelectState {
+  currentX: number;
+  currentY: number;
+  pointerId: number;
+  startX: number;
+  startY: number;
+}
+
 type DiagramSelection =
   | { id: string; type: "line" }
   | { id: string; type: "node" };
@@ -133,18 +149,98 @@ export function DiagramCanvasSurface({
   const [labelEdit, setLabelEdit] = useState<LabelEditState | null>(null);
   const [nodeTextEdit, setNodeTextEdit] = useState<NodeTextEditState | null>(null);
   const [pan, setPan] = useState<PanState | null>(null);
+  const [rangeSelect, setRangeSelect] = useState<RangeSelectState | null>(null);
   const [resize, setResize] = useState<ResizeState | null>(null);
   const [selection, setSelection] = useState<DiagramSelection | null>(null);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
   const [shapeAddMenu, setShapeAddMenu] = useState<ShapeAddMenuState | null>(null);
   const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
+  const [notice, setNotice] = useState<string | null>(null);
+  const [history, setHistory] = useState<{ future: string[]; past: string[] }>({ future: [], past: [] });
+  const [copiedNodeIds, setCopiedNodeIds] = useState<string[]>([]);
+  const [keyboardConnectFromNodeId, setKeyboardConnectFromNodeId] = useState<string | null>(null);
 
   const layout = useMemo(() => buildDiagramCanvasLayout(diagram), [diagram]);
   const previousLayoutOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
   const canvasStyle = {
     "--diagram-canvas-grid-size": `${diagramGridSize * viewport.zoom}px`,
     "--diagram-canvas-grid-x": `${viewport.panX}px`,
     "--diagram-canvas-grid-y": `${viewport.panY}px`
   } as CSSProperties;
+  const applyContentChange = useCallback((nextContent: string): void => {
+    if (!onChange || nextContent === content) return;
+
+    setHistory((current) => ({
+      future: [],
+      past: [...current.past.slice(-49), content]
+    }));
+    onChange(nextContent);
+  }, [content, onChange]);
+  const showNotice = useCallback((message: string): void => {
+    setNotice(message);
+  }, []);
+  const undoDiagramChange = useCallback((): void => {
+    if (!onChange) return;
+
+    setHistory((current) => {
+      const previous = current.past.at(-1);
+      if (!previous) return current;
+      onChange(previous);
+      return {
+        future: [content, ...current.future].slice(0, 50),
+        past: current.past.slice(0, -1)
+      };
+    });
+  }, [content, onChange]);
+  const redoDiagramChange = useCallback((): void => {
+    if (!onChange) return;
+
+    setHistory((current) => {
+      const next = current.future[0];
+      if (!next) return current;
+      onChange(next);
+      return {
+        future: current.future.slice(1),
+        past: [...current.past.slice(-49), content]
+      };
+    });
+  }, [content, onChange]);
+  const fitViewportToContent = useCallback((): void => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect || layout.width <= 0 || layout.height <= 0) return;
+
+    const horizontalPadding = 80;
+    const verticalPadding = 80;
+    const nextZoom = clampZoom(Math.min(
+      (rect.width - horizontalPadding) / layout.width,
+      (rect.height - verticalPadding) / layout.height,
+      1
+    ));
+    setViewport({
+      panX: (rect.width - layout.width * nextZoom) / 2,
+      panY: (rect.height - layout.height * nextZoom) / 2,
+      zoom: nextZoom
+    });
+  }, [layout.height, layout.width]);
+  const resetViewport = useCallback((): void => {
+    setViewport({ panX: 0, panY: 0, zoom: 1 });
+  }, []);
+  const zoomViewport = useCallback((factor: number): void => {
+    setViewport((current) => ({
+      ...current,
+      zoom: clampZoom(current.zoom * factor)
+    }));
+  }, []);
+
+  useEffect(() => {
+    setNotice(null);
+    setSelectedNodeIds(new Set());
+    setSelection(null);
+    setHistory({ future: [], past: [] });
+    setCopiedNodeIds([]);
+    setKeyboardConnectFromNodeId(null);
+  }, [fileName]);
 
   useLayoutEffect(() => {
     const previous = previousLayoutOriginRef.current;
@@ -169,6 +265,9 @@ export function DiagramCanvasSurface({
     const draggedArea = draggedLayoutNode && "shape" in draggedLayoutNode.node && draggedLayoutNode.node.shape === "area"
       ? draggedLayoutNode.node
       : null;
+    const dragGroupNodeIds = drag && selectedNodeIds.has(drag.nodeId) && selectedNodeIds.size > 1
+      ? selectedNodeIds
+      : new Set<string>();
     const dragDeltaX = drag ? drag.currentX - drag.originalX : 0;
     const dragDeltaY = drag ? drag.currentY - drag.originalY : 0;
 
@@ -195,6 +294,17 @@ export function DiagramCanvasSurface({
           y: drag.currentY - layout.originY
         };
       }
+      if (dragGroupNodeIds.has(node.node.id)) {
+        return {
+          node: {
+            ...node.node,
+            x: node.node.x + dragDeltaX,
+            y: node.node.y + dragDeltaY
+          },
+          x: node.x + dragDeltaX,
+          y: node.y + dragDeltaY
+        };
+      }
       if (draggedArea && isNodeFullyInsideNode(node.node, draggedArea)) {
         return {
           node: {
@@ -209,7 +319,7 @@ export function DiagramCanvasSurface({
 
       return node;
     });
-  }, [drag, layout, resize]);
+  }, [drag, layout, resize, selectedNodeIds]);
   const displayLines = useMemo(
     () => buildLineLayouts(visibleDiagramLines(diagram.lines, diagram.nodes), displayNodes),
     [diagram.lines, diagram.nodes, displayNodes]
@@ -242,6 +352,9 @@ export function DiagramCanvasSurface({
   const resizePreview = resize
     ? layout.nodes.find((node) => node.node.id === resize.nodeId)
     : null;
+  const rangeSelectRect = rangeSelect
+    ? normalizeSelectionRect(rangeSelect.startX, rangeSelect.startY, rangeSelect.currentX, rangeSelect.currentY)
+    : null;
   const previewLine = useMemo(() => {
     if (!connect?.isActive) return null;
     const fromNode = displayNodes.find((node) => node.node.id === connect.fromNodeId);
@@ -258,6 +371,19 @@ export function DiagramCanvasSurface({
     if (!onChange) return;
 
     event.preventDefault();
+    if (event.shiftKey) {
+      setSelectedNodeIds((current) => {
+        const next = new Set(current);
+        if (next.has(node.id)) {
+          next.delete(node.id);
+        } else {
+          next.add(node.id);
+        }
+        return next;
+      });
+    } else if (!selectedNodeIds.has(node.id)) {
+      setSelectedNodeIds(new Set([node.id]));
+    }
     setSelection({ id: node.id, type: "node" });
     setNodeTextEdit(null);
     setShapeAddMenu(null);
@@ -308,11 +434,14 @@ export function DiagramCanvasSurface({
     const snapped = hasMoved ? snapDiagramPointToGrid(drag.currentX, drag.currentY, layout.originX, layout.originY) : null;
     if (snapped && (snapped.x !== drag.originalX || snapped.y !== drag.originalY)) {
       const movingNode = diagram.nodes.find((node) => node.id === drag.nodeId);
-      const moved = movingNode && "shape" in movingNode && movingNode.shape === "area"
+      const selectedMoveIds = selectedNodeIds.has(drag.nodeId) && selectedNodeIds.size > 1 ? selectedNodeIds : null;
+      const moved = selectedMoveIds
+        ? moveRelicDiagramNodesByDelta(content, selectedMoveIds, snapped.x - drag.originalX, snapped.y - drag.originalY)
+        : movingNode && "shape" in movingNode && movingNode.shape === "area"
         ? moveRelicFreeDrawingAreaWithContents(content, drag.nodeId, snapped.x, snapped.y)
         : moveRelicDiagramNode(content, drag.nodeId, snapped.x, snapped.y);
       if (moved.ok) {
-        onChange?.(moved.value.content);
+        applyContentChange(moved.value.content);
       }
     }
     setDrag(null);
@@ -329,6 +458,7 @@ export function DiagramCanvasSurface({
     setSelection({ id: node.id, type: "node" });
     setNodeTextEdit(null);
     setShapeAddMenu(null);
+    setKeyboardConnectFromNodeId(null);
     focusCanvasFrom(event.currentTarget);
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -374,7 +504,7 @@ export function DiagramCanvasSurface({
     if (resize.currentWidth !== resize.originalWidth || resize.currentHeight !== resize.originalHeight) {
       const resized = resizeRelicDiagramNode(content, resize.nodeId, resize.currentWidth, resize.currentHeight);
       if (resized.ok) {
-        onChange?.(resized.value.content);
+        applyContentChange(resized.value.content);
       }
     }
     setResize(null);
@@ -394,10 +524,26 @@ export function DiagramCanvasSurface({
 
     event.preventDefault();
     setSelection(null);
+    setSelectedNodeIds(new Set());
     setLabelEdit(null);
     setNodeTextEdit(null);
     setShapeAddMenu(null);
+    setKeyboardConnectFromNodeId(null);
     focusCanvasFrom(event.currentTarget);
+    if (event.shiftKey) {
+      const pointer = pointerPositionInCanvas(event);
+      if (typeof event.currentTarget.setPointerCapture === "function") {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
+      setRangeSelect({
+        currentX: pointer.x + layout.originX,
+        currentY: pointer.y + layout.originY,
+        pointerId: event.pointerId,
+        startX: pointer.x + layout.originX,
+        startY: pointer.y + layout.originY
+      });
+      return;
+    }
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
     }
@@ -420,6 +566,16 @@ export function DiagramCanvasSurface({
       panY: pan.originalPanY + clientY - pan.startClientY
     }));
   };
+  const updateRangeSelect = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!rangeSelect || rangeSelect.pointerId !== event.pointerId) return;
+    const pointer = pointerPositionInCanvas(event);
+
+    setRangeSelect((current) => current ? {
+      ...current,
+      currentX: pointer.x + layout.originX,
+      currentY: pointer.y + layout.originY
+    } : current);
+  };
   const finishPan = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!pan || pan.pointerId !== event.pointerId) return;
 
@@ -427,6 +583,20 @@ export function DiagramCanvasSurface({
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     setPan(null);
+  };
+  const finishRangeSelect = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!rangeSelect || rangeSelect.pointerId !== event.pointerId) return;
+
+    if (typeof event.currentTarget.releasePointerCapture === "function") {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    const rect = normalizeSelectionRect(rangeSelect.startX, rangeSelect.startY, rangeSelect.currentX, rangeSelect.currentY);
+    const nodeIds = diagram.nodes
+      .filter((node) => rectanglesOverlap(rect.x, rect.y, rect.width, rect.height, node.x, node.y, node.width, node.height))
+      .map((node) => node.id);
+    setSelectedNodeIds(new Set(nodeIds));
+    setSelection(nodeIds[0] ? { id: nodeIds[0], type: "node" } : null);
+    setRangeSelect(null);
   };
   const handleCanvasWheel = (event: ReactWheelEvent<HTMLDivElement>): void => {
     event.preventDefault();
@@ -455,6 +625,7 @@ export function DiagramCanvasSurface({
 
     focusCanvasFrom(event.currentTarget);
     setShapeAddMenu(null);
+    setKeyboardConnectFromNodeId(null);
     setConnect({
       isActive: false,
       currentX: pointer.x,
@@ -497,6 +668,7 @@ export function DiagramCanvasSurface({
       return;
     }
     if (connect.fromNodeId === toNodeId) {
+      showNotice(t("diagram.rejectSelfConnection"));
       setConnect(null);
       return;
     }
@@ -508,6 +680,7 @@ export function DiagramCanvasSurface({
       return;
     }
     if (!canAddDecisionOutputLine(sourceNode, diagram.lines, diagram.nodes)) {
+      showNotice(t("diagram.rejectDecisionOutputLimit"));
       setConnect(null);
       return;
     }
@@ -519,10 +692,12 @@ export function DiagramCanvasSurface({
       decisionLineLabel(sourceNode, diagram.lines, diagram.nodes)
     );
     if (added.ok) {
-      onChange?.(added.value.content);
+      applyContentChange(added.value.content);
       setSelection({ id: added.value.line.id, type: "line" });
       setLabelEdit({ lineId: added.value.line.id, value: added.value.line.label });
       setShapeAddMenu(null);
+    } else {
+      showNotice(added.error.message);
     }
     setConnect(null);
   };
@@ -532,6 +707,11 @@ export function DiagramCanvasSurface({
   };
   const startNodePointer = (node: RelicDiagramNodeBase, event: ReactPointerEvent<HTMLDivElement>): void => {
     startNodeDrag(node, event);
+  };
+  const focusNode = (node: RelicConnectedDiagramNode): void => {
+    setSelection({ id: node.id, type: "node" });
+    setSelectedNodeIds(new Set([node.id]));
+    setShapeAddMenu(null);
   };
   const startNodeOutlineConnect = (node: RelicDiagramNodeBase, event: ReactPointerEvent<HTMLElement>): void => {
     startConnect(node, event);
@@ -553,6 +733,7 @@ export function DiagramCanvasSurface({
     event.preventDefault();
     event.stopPropagation();
     setSelection({ id: lineId, type: "line" });
+    setSelectedNodeIds(new Set());
     setShapeAddMenu(null);
     focusCanvasFrom(event.currentTarget);
   };
@@ -560,6 +741,7 @@ export function DiagramCanvasSurface({
     if (!onChange) return;
 
     setSelection({ id: line.line.id, type: "line" });
+    setSelectedNodeIds(new Set());
     setNodeTextEdit(null);
     setShapeAddMenu(null);
     setLabelEdit({
@@ -592,7 +774,7 @@ export function DiagramCanvasSurface({
 
     const updated = updateRelicDiagramLineLabel(content, labelEdit.lineId, labelEdit.value);
     if (updated.ok) {
-      onChange(updated.value.content);
+      applyContentChange(updated.value.content);
       setSelection({ id: updated.value.line.id, type: "line" });
     }
     setLabelEdit(null);
@@ -607,6 +789,7 @@ export function DiagramCanvasSurface({
   const clearSelectionOnBlankPointerDown = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (isBlankCanvasTarget(event.target, event.currentTarget)) {
       setSelection(null);
+      setSelectedNodeIds(new Set());
       setLabelEdit(null);
       setNodeTextEdit(null);
       setShapeAddMenu(null);
@@ -616,15 +799,18 @@ export function DiagramCanvasSurface({
   const deleteSelection = (): void => {
     if (!selection || !onChange) return;
 
-    const deleted = selection.type === "node"
+    const deleted = selection.type === "node" && selectedNodeIds.size > 1
+      ? removeRelicDiagramNodes(content, selectedNodeIds)
+      : selection.type === "node"
       ? removeRelicDiagramNode(content, selection.id)
       : removeRelicDiagramLine(content, selection.id);
 
     if (deleted.ok) {
-      onChange(deleted.value.content);
+      applyContentChange(deleted.value.content);
       setLabelEdit(null);
       setNodeTextEdit(null);
       setSelection(null);
+      setSelectedNodeIds(new Set());
       setShapeAddMenu(null);
     }
   };
@@ -637,8 +823,9 @@ export function DiagramCanvasSurface({
 
     const added = addRelicFreeDrawingNode(content, shape, x, y);
     if (added.ok) {
-      onChange(added.value.content);
+      applyContentChange(added.value.content);
       setSelection({ id: added.value.node.id, type: "node" });
+      setSelectedNodeIds(new Set([added.value.node.id]));
       setShapeAddMenu(null);
     }
   };
@@ -690,8 +877,9 @@ export function DiagramCanvasSurface({
     );
     if (!lineAdded.ok) return;
 
-    onChange(lineAdded.value.content);
+    applyContentChange(lineAdded.value.content);
     setSelection({ id: added.value.node.id, type: "node" });
+    setSelectedNodeIds(new Set([added.value.node.id]));
     setShapeAddMenu(null);
   };
   const toggleShapeAddMenu = (
@@ -764,7 +952,7 @@ export function DiagramCanvasSurface({
 
     const updated = updateRelicFreeDrawingNodeText(content, nodeTextEdit.nodeId, nodeTextEdit.value);
     if (updated.ok) {
-      onChange(updated.value.content);
+      applyContentChange(updated.value.content);
       setSelection({ id: updated.value.node.id, type: "node" });
     }
     setNodeTextEdit(null);
@@ -782,14 +970,209 @@ export function DiagramCanvasSurface({
 
     const reversed = reverseRelicDiagramLineDirection(content, line.line.id);
     if (reversed.ok) {
-      onChange(reversed.value.content);
+      applyContentChange(reversed.value.content);
       setSelection({ id: reversed.value.line.id, type: "line" });
       setLabelEdit(null);
       setShapeAddMenu(null);
+    } else {
+      showNotice(reversed.error.message);
+    }
+  };
+  const selectedEditableNode = selection?.type === "node"
+    ? diagram.nodes.find((node) => node.id === selection.id)
+    : null;
+  const selectedNodeIdList = selectedNodeIds.size > 0
+    ? [...selectedNodeIds]
+    : selection?.type === "node"
+    ? [selection.id]
+    : [];
+  const duplicateSelection = (): void => {
+    duplicateNodesByIds(selectedNodeIdList);
+  };
+  const duplicateNodesByIds = (nodeIds: string[]): void => {
+    if (!onChange || nodeIds.length === 0) return;
+
+    const duplicated = duplicateRelicDiagramNodes(content, nodeIds);
+    if (duplicated.ok) {
+      applyContentChange(duplicated.value.content);
+      setSelectedNodeIds(new Set(duplicated.value.nodeIds));
+      setSelection({ id: duplicated.value.nodeIds[0], type: "node" });
+    } else {
+      showNotice(duplicated.error.message);
+    }
+  };
+  const copySelection = (): void => {
+    if (selectedNodeIdList.length === 0) return;
+
+    setCopiedNodeIds(selectedNodeIdList);
+  };
+  const pasteCopiedSelection = (): void => {
+    duplicateNodesByIds(copiedNodeIds);
+  };
+  const moveSelectionByKeyboard = (deltaX: number, deltaY: number): void => {
+    if (!onChange || selectedNodeIdList.length === 0) return;
+
+    const moved = moveRelicDiagramNodesByDelta(content, selectedNodeIdList, deltaX, deltaY);
+    if (moved.ok) {
+      applyContentChange(moved.value.content);
+      setSelectedNodeIds(new Set(moved.value.nodeIds));
+      setSelection({ id: moved.value.nodeIds[0], type: "node" });
+    } else {
+      showNotice(moved.error.message);
+    }
+  };
+  const alignSelection = (direction: "horizontal" | "vertical"): void => {
+    if (!onChange || selectedNodeIdList.length === 0) return;
+
+    const aligned = alignRelicDiagramNodes(content, selectedNodeIdList, direction);
+    if (aligned.ok) {
+      applyContentChange(aligned.value.content);
+      setSelectedNodeIds(new Set(aligned.value.nodeIds));
+      setSelection({ id: aligned.value.nodeIds[0], type: "node" });
+    } else {
+      showNotice(aligned.error.message);
+    }
+  };
+  const distributeSelection = (direction: "horizontal" | "vertical"): void => {
+    if (!onChange || selectedNodeIdList.length === 0) return;
+
+    const distributed = distributeRelicDiagramNodes(content, selectedNodeIdList, direction);
+    if (distributed.ok) {
+      applyContentChange(distributed.value.content);
+      setSelectedNodeIds(new Set(distributed.value.nodeIds));
+      setSelection({ id: distributed.value.nodeIds[0], type: "node" });
+    } else {
+      showNotice(distributed.error.message);
+    }
+  };
+  const changeSelectedNodeShape = (shape: RelicFreeDrawingShapeType): void => {
+    if (!onChange || !selectedEditableNode) return;
+
+    const updated = updateRelicFreeDrawingNodeShape(content, selectedEditableNode.id, shape);
+    if (updated.ok) {
+      applyContentChange(updated.value.content);
+      setSelection({ id: updated.value.node.id, type: "node" });
+      setSelectedNodeIds(new Set([updated.value.node.id]));
+    } else {
+      showNotice(updated.error.message);
+    }
+  };
+  const connectSelectedNodeByKeyboard = (): void => {
+    if (!onChange || !selectedEditableNode) return;
+    if (!keyboardConnectFromNodeId) {
+      setKeyboardConnectFromNodeId(selectedEditableNode.id);
+      showNotice(t("diagram.keyboardConnectStarted"));
+      return;
+    }
+    if (keyboardConnectFromNodeId === selectedEditableNode.id) {
+      showNotice(t("diagram.rejectSelfConnection"));
+      return;
+    }
+
+    const sourceNode = diagram.nodes.find((node) => node.id === keyboardConnectFromNodeId);
+    if (!sourceNode) {
+      setKeyboardConnectFromNodeId(selectedEditableNode.id);
+      showNotice(t("diagram.keyboardConnectStarted"));
+      return;
+    }
+    if (!canAddDecisionOutputLine(sourceNode, diagram.lines, diagram.nodes)) {
+      showNotice(t("diagram.rejectDecisionOutputLimit"));
+      setKeyboardConnectFromNodeId(null);
+      return;
+    }
+
+    const added = addRelicDiagramLine(
+      content,
+      sourceNode.id,
+      selectedEditableNode.id,
+      decisionLineLabel(sourceNode, diagram.lines, diagram.nodes)
+    );
+    if (added.ok) {
+      applyContentChange(added.value.content);
+      setKeyboardConnectFromNodeId(null);
+      setSelectedNodeIds(new Set());
+      setSelection({ id: added.value.line.id, type: "line" });
+      setLabelEdit({ lineId: added.value.line.id, value: added.value.line.label });
+    } else {
+      showNotice(added.error.message);
+      setKeyboardConnectFromNodeId(null);
     }
   };
   const handleCanvasKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+    const isMod = event.metaKey || event.ctrlKey;
+    if (isMod && event.key.toLowerCase() === "z") {
+      event.preventDefault();
+      if (event.shiftKey) {
+        redoDiagramChange();
+      } else {
+        undoDiagramChange();
+      }
+      return;
+    }
+    if (isMod && event.key.toLowerCase() === "d") {
+      event.preventDefault();
+      duplicateSelection();
+      return;
+    }
+    if (isMod && event.key.toLowerCase() === "c") {
+      event.preventDefault();
+      copySelection();
+      return;
+    }
+    if (isMod && event.key.toLowerCase() === "v") {
+      event.preventDefault();
+      pasteCopiedSelection();
+      return;
+    }
+    if (["+", "="].includes(event.key)) {
+      event.preventDefault();
+      zoomViewport(1.1);
+      return;
+    }
+    if (event.key === "-") {
+      event.preventDefault();
+      zoomViewport(0.9);
+      return;
+    }
+    if (event.key === "0") {
+      event.preventDefault();
+      resetViewport();
+      return;
+    }
+    if (event.key.toLowerCase() === "f") {
+      event.preventDefault();
+      fitViewportToContent();
+      return;
+    }
+    if (event.key.toLowerCase() === "l") {
+      event.preventDefault();
+      connectSelectedNodeByKeyboard();
+      return;
+    }
+    if (event.key === "Enter" || event.key === "F2") {
+      if (selectedEditableNode) {
+        event.preventDefault();
+        setNodeTextEdit({ nodeId: selectedEditableNode.id, value: selectedEditableNode.text });
+      }
+      return;
+    }
+    if (event.key.startsWith("Arrow")) {
+      event.preventDefault();
+      const step = event.shiftKey ? diagramGridSize : 1;
+      if (selectedNodeIdList.length > 0) {
+        const delta = arrowDelta(event.key, step);
+        moveSelectionByKeyboard(delta.x, delta.y);
+      } else {
+        const delta = arrowDelta(event.key, step * 8);
+        setViewport((current) => ({
+          ...current,
+          panX: current.panX - delta.x,
+          panY: current.panY - delta.y
+        }));
+      }
+      return;
+    }
     if (event.key === "Escape") {
       event.preventDefault();
       setConnect(null);
@@ -797,9 +1180,12 @@ export function DiagramCanvasSurface({
       setLabelEdit(null);
       setNodeTextEdit(null);
       setPan(null);
+      setRangeSelect(null);
       setResize(null);
       setSelection(null);
+      setSelectedNodeIds(new Set());
       setShapeAddMenu(null);
+      setKeyboardConnectFromNodeId(null);
       return;
     }
     if (event.key !== "Delete" && event.key !== "Backspace") return;
@@ -813,6 +1199,7 @@ export function DiagramCanvasSurface({
     <div
       aria-label={fileName}
       className={`diagram-canvas${pan ? " diagram-canvas--panning" : ""}`}
+      ref={canvasRef}
       onDragOver={handleCanvasDragOver}
       onDrop={handleCanvasDrop}
       onKeyDown={handleCanvasKeyDown}
@@ -821,11 +1208,13 @@ export function DiagramCanvasSurface({
       onPointerMove={(event) => {
         updateConnect(event);
         updatePan(event);
+        updateRangeSelect(event);
       }}
       onPointerUp={(event) => {
         cancelConnect(event);
         cancelNodeResize(event);
         finishPan(event);
+        finishRangeSelect(event);
       }}
       onWheel={handleCanvasWheel}
       role="img"
@@ -833,6 +1222,70 @@ export function DiagramCanvasSurface({
       tabIndex={0}
     >
       {toolbar}
+      <div className="diagram-canvas-toolbar" aria-label={t("diagram.canvasToolbar")}>
+        <div className="diagram-canvas-toolbar-group">
+          <button aria-label={t("diagram.fitCanvas")} onClick={fitViewportToContent} title={t("diagram.fitCanvas")} type="button">
+            {t("diagram.fitCanvasShort")}
+          </button>
+          <button aria-label={t("diagram.resetZoom")} onClick={resetViewport} title={t("diagram.resetZoom")} type="button">
+            100%
+          </button>
+          <button aria-label={t("diagram.zoomOut")} onClick={() => zoomViewport(0.9)} title={t("diagram.zoomOut")} type="button">
+            -
+          </button>
+          <span className="diagram-canvas-zoom-label">{Math.round(viewport.zoom * 100)}%</span>
+          <button aria-label={t("diagram.zoomIn")} onClick={() => zoomViewport(1.1)} title={t("diagram.zoomIn")} type="button">
+            +
+          </button>
+        </div>
+        <div className="diagram-canvas-toolbar-group">
+          <button disabled={history.past.length === 0} onClick={undoDiagramChange} type="button">
+            {t("diagram.undo")}
+          </button>
+          <button disabled={history.future.length === 0} onClick={redoDiagramChange} type="button">
+            {t("diagram.redo")}
+          </button>
+          <button disabled={selectedNodeIdList.length === 0} onClick={duplicateSelection} type="button">
+            {t("diagram.duplicate")}
+          </button>
+          <button disabled={selectedNodeIdList.length === 0} onClick={copySelection} type="button">
+            {t("diagram.copySelection")}
+          </button>
+          <button disabled={copiedNodeIds.length === 0} onClick={pasteCopiedSelection} type="button">
+            {t("diagram.pasteSelection")}
+          </button>
+        </div>
+        <div className="diagram-canvas-toolbar-group">
+          <button disabled={selectedNodeIdList.length < 2} onClick={() => alignSelection("horizontal")} type="button">
+            {t("diagram.alignHorizontal")}
+          </button>
+          <button disabled={selectedNodeIdList.length < 2} onClick={() => alignSelection("vertical")} type="button">
+            {t("diagram.alignVertical")}
+          </button>
+          <button disabled={selectedNodeIdList.length < 3} onClick={() => distributeSelection("horizontal")} type="button">
+            {t("diagram.distributeHorizontal")}
+          </button>
+          <button disabled={selectedNodeIdList.length < 3} onClick={() => distributeSelection("vertical")} type="button">
+            {t("diagram.distributeVertical")}
+          </button>
+        </div>
+        {selectedEditableNode && selectedEditableNode.shape !== "area" ? (
+          <label className="diagram-canvas-shape-select">
+            <span>{t("diagram.changeShape")}</span>
+            <select
+              onChange={(event) => changeSelectedNodeShape(event.currentTarget.value as RelicFreeDrawingShapeType)}
+              value={selectedEditableNode.shape}
+            >
+              {relicFreeDrawingShapeTypes.filter((shape) => shape !== "area").map((shape) => (
+                <option key={shape} value={shape}>{t(`diagram.freeDrawingShape.${shape}`)}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </div>
+      {notice ? (
+        <output className="diagram-canvas-notice">{notice}</output>
+      ) : null}
       {layout.nodes.length === 0 ? (
         <p className="diagram-canvas-empty">{t("diagram.emptyCanvas")}</p>
       ) : null}
@@ -950,6 +1403,18 @@ export function DiagramCanvasSurface({
               }}
             />
           ) : null}
+          {rangeSelectRect ? (
+            <div
+              aria-hidden="true"
+              className="diagram-canvas-range-select"
+              style={{
+                height: rangeSelectRect.height,
+                left: rangeSelectRect.x - layout.originX,
+                top: rangeSelectRect.y - layout.originY,
+                width: rangeSelectRect.width
+              }}
+            />
+          ) : null}
           {displayNodes.map(({ node, x, y }) => {
             const shapeOptions = isFreeDrawing && "shape" in node ? connectedShapeOptionsForNode(node, diagram.lines, diagram.nodes, freeDrawingShapeOptions) : [];
             const canAddConnectedShape = shapeOptions.length > 0;
@@ -958,7 +1423,7 @@ export function DiagramCanvasSurface({
               <DiagramNodeView
                 isDragging={drag?.nodeId === node.id}
                 isTextEditing={nodeTextEdit?.nodeId === node.id}
-                isSelected={selection?.type === "node" && selection.id === node.id}
+                isSelected={(selection?.type === "node" && selection.id === node.id) || selectedNodeIds.has(node.id)}
                 key={node.id}
                 node={node}
                 nodeTextDraft={nodeTextEdit?.nodeId === node.id ? nodeTextEdit.value : undefined}
@@ -977,6 +1442,7 @@ export function DiagramCanvasSurface({
                 onShapeOptionPointerDown={chooseConnectedShape}
                 onPointerCancel={cancelNodeDrag}
                 onPointerDown={startNodePointer}
+                onFocus={focusNode}
                 onPointerMove={(event) => {
                   updateNodeDrag(event);
                   updateNodeResize(event);
@@ -1141,6 +1607,32 @@ function connectedFreeDrawingShapeSize(shape: RelicFreeDrawingShapeType): { heig
   return {
     height: connectedShapeDefaultHeight,
     width: connectedShapeDefaultWidth
+  };
+}
+
+function arrowDelta(key: string, step: number): { x: number; y: number } {
+  if (key === "ArrowLeft") return { x: -step, y: 0 };
+  if (key === "ArrowRight") return { x: step, y: 0 };
+  if (key === "ArrowUp") return { x: 0, y: -step };
+  if (key === "ArrowDown") return { x: 0, y: step };
+
+  return { x: 0, y: 0 };
+}
+
+function normalizeSelectionRect(
+  startX: number,
+  startY: number,
+  currentX: number,
+  currentY: number
+): { height: number; width: number; x: number; y: number } {
+  const x = Math.min(startX, currentX);
+  const y = Math.min(startY, currentY);
+
+  return {
+    height: Math.abs(currentY - startY),
+    width: Math.abs(currentX - startX),
+    x,
+    y
   };
 }
 
