@@ -1236,13 +1236,14 @@
   align-items: center;
   background: color-mix(in srgb, var(--bg) 94%, transparent);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   left: 14px;
   max-width: calc(100% - 28px);
+  overflow-x: auto;
   padding: 6px;
   position: absolute;
   top: 14px;
@@ -1284,6 +1285,69 @@
   text-align: center;
 }
 
+.diagram-canvas-context-toolbar {
+  align-items: center;
+  background: color-mix(in srgb, var(--bg) 96%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  left: 50%;
+  max-width: min(520px, calc(100% - 28px));
+  padding: 6px;
+  position: absolute;
+  top: 62px;
+  transform: translateX(-50%);
+  z-index: 11;
+}
+
+.diagram-canvas-context-toolbar button,
+.diagram-canvas-context-menu summary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  min-height: 32px;
+  padding: 5px 9px;
+}
+
+.diagram-canvas-context-toolbar button:disabled {
+  color: var(--text-muted);
+  cursor: default;
+  opacity: 0.55;
+}
+
+.diagram-canvas-context-menu {
+  position: relative;
+}
+
+.diagram-canvas-context-menu summary {
+  list-style: none;
+}
+
+.diagram-canvas-context-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.diagram-canvas-context-menu-list {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18);
+  display: grid;
+  gap: 4px;
+  left: 0;
+  min-width: 152px;
+  padding: 6px;
+  position: absolute;
+  top: calc(100% + 6px);
+}
+
 .diagram-canvas-shape-select {
   align-items: center;
   color: var(--text-2);
@@ -1304,6 +1368,64 @@
   position: absolute;
   top: 62px;
   z-index: 10;
+}
+
+.diagram-canvas-empty-panel {
+  background: color-mix(in srgb, var(--bg) 96%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+  display: grid;
+  gap: 8px;
+  left: 50%;
+  max-width: min(360px, calc(100% - 32px));
+  padding: 16px;
+  position: absolute;
+  text-align: left;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9;
+}
+
+.diagram-canvas-empty-panel h2 {
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.diagram-canvas-empty-panel p {
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.diagram-canvas-empty-actions {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.diagram-canvas-empty-menu {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  width: 100%;
+}
+
+.diagram-canvas-empty-menu-group {
+  display: grid;
+  gap: 4px;
+}
+
+.diagram-canvas-empty-menu-group p {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .diagram-canvas-node {

@@ -118,7 +118,7 @@ describe("DiagramSidebar", () => {
     expect(props.onCreateDiagramFile).toHaveBeenCalledWith("diagram");
   });
 
-  it("shows flowchart shapes for an active Diagram file", () => {
+  it("shows grouped Diagram shapes above Diagram files for an active Diagram file", () => {
     const content = "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n";
     useEditorStore.setState({
       focusedPane: "left",
@@ -137,7 +137,10 @@ describe("DiagramSidebar", () => {
     });
     renderDiagramSidebar();
 
-    expect(screen.getByText("Flowchart shapes")).toBeInTheDocument();
+    expect(screen.getByText("Shape palette")).toBeInTheDocument();
+    expect(screen.getByText("Basic flow")).toBeInTheDocument();
+    expect(screen.getByText("Structure")).toBeInTheDocument();
+    expect(screen.getByText("Shape palette").compareDocumentPosition(screen.getByText("Diagram files"))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(screen.getByRole("button", { name: "Start / End" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Process" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Decision" })).toBeInTheDocument();
@@ -146,6 +149,31 @@ describe("DiagramSidebar", () => {
     expect(screen.getByRole("button", { name: "Area" })).toBeInTheDocument();
     expect(screen.queryByText("Markdown files")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Alice\.md/ })).not.toBeInTheDocument();
+  });
+
+  it("adds a Diagram shape from the sidebar by click when no canvas handles the request", () => {
+    const content = "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n";
+    useEditorStore.setState({
+      focusedPane: "left",
+      leftPane: { activeTabId: "free-tab", history: ["free-tab"], tabIds: ["free-tab"] },
+      rightPane: emptyPane(),
+      tabs: {
+        "free-tab": {
+          content,
+          id: "free-tab",
+          kind: "file",
+          name: "Free",
+          path: "diagrams/Free.md",
+          savedContent: content
+        }
+      }
+    });
+    renderDiagramSidebar();
+
+    fireEvent.click(screen.getByRole("button", { name: "Decision" }));
+
+    const tab = useEditorStore.getState().tabs["free-tab"];
+    expect(tab?.kind === "file" ? tab.content : "").toContain("shape: decision");
   });
 
   it("starts dragging a flowchart shape from the sidebar", () => {

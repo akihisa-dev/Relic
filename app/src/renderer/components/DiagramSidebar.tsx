@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 import type { WorkspaceFileIndexEntry, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
 import {
+  addRelicFreeDrawingNode,
   diagramTypeFromMarkdownContent,
   type RelicDiagramType,
   type RelicFreeDrawingShapeType
@@ -10,6 +11,7 @@ import {
 import { useT } from "../i18n";
 import { useEditorStore } from "../store/editorStore";
 import { diagramShapeDragType } from "./diagram/diagramShapeDrag";
+import { diagramShapePaletteGroups } from "./diagram/diagramShapePalette";
 import { FilesWorkspaceEmpty } from "./FilesWorkspaceActions";
 
 interface DiagramSidebarProps {
@@ -44,6 +46,7 @@ export function DiagramSidebar({
   const leftPane = useEditorStore((state) => state.leftPane);
   const rightPane = useEditorStore((state) => state.rightPane);
   const tabs = useEditorStore((state) => state.tabs);
+  const updateTabContent = useEditorStore((state) => state.updateTabContent);
   const activeWorkspace = workspaceState?.activeWorkspace ?? null;
   const { diagramFiles } = useMemo(
     () => groupDiagramSidebarFiles(workspaceState?.fileIndex ?? []),
@@ -52,6 +55,18 @@ export function DiagramSidebar({
   const activePane = focusedPane === "right" ? rightPane : leftPane;
   const activeTab = activePane.activeTabId ? tabs[activePane.activeTabId] : null;
   const activeDiagramTab = activeTab?.kind === "file" && diagramTypeFromMarkdownContent(activeTab.content) === "diagram" ? activeTab : null;
+  const addShapeToActiveDiagram = (shape: RelicFreeDrawingShapeType): void => {
+    if (!activeDiagramTab) return;
+
+    const detail = { handled: false, shape };
+    window.dispatchEvent(new CustomEvent<DiagramShapePaletteAddRequest>("relic-diagram-shape-add", { detail }));
+    if (detail.handled) return;
+
+    const added = addRelicFreeDrawingNode(activeDiagramTab.content, shape);
+    if (added.ok) {
+      updateTabContent(activeDiagramTab.id, added.value.content);
+    }
+  };
 
   if (!activeWorkspace) {
     return (
@@ -81,6 +96,9 @@ export function DiagramSidebar({
           <DiagramFileIcon />
         </button>
       </div>
+      {activeDiagramTab ? (
+        <DiagramShapePalette onAddShape={addShapeToActiveDiagram} title={t("diagram.shapePalette")} />
+      ) : null}
       <DiagramSidebarGroup
         emptyLabel={t("diagram.noDiagramFiles")}
         files={diagramFiles}
@@ -90,14 +108,14 @@ export function DiagramSidebar({
         openFilePaths={openFilePaths}
         title={t("diagram.files")}
       />
-      {activeDiagramTab ? (
-        <DiagramShapePalette title={t("diagram.flowchartShapes")} />
-      ) : null}
     </div>
   );
 }
 
-const flowchartShapes: RelicFreeDrawingShapeType[] = ["terminator", "process", "decision", "input-output", "area"];
+interface DiagramShapePaletteAddRequest {
+  handled: boolean;
+  shape: RelicFreeDrawingShapeType;
+}
 
 function startShapeDrag(shape: RelicFreeDrawingShapeType, event: ReactDragEvent<HTMLButtonElement>): void {
   event.dataTransfer.effectAllowed = "copy";
@@ -105,31 +123,53 @@ function startShapeDrag(shape: RelicFreeDrawingShapeType, event: ReactDragEvent<
   event.dataTransfer.setData("text/plain", shape);
 }
 
-function DiagramShapePalette({ title }: { title: string }): ReactElement {
+function DiagramShapePalette({
+  onAddShape,
+  title
+}: {
+  onAddShape: (shape: RelicFreeDrawingShapeType) => void;
+  title: string;
+}): ReactElement {
   const t = useT();
+  const groups = diagramShapePaletteGroups(t);
+
+  const handleShapeKeyDown = (shape: RelicFreeDrawingShapeType, event: ReactKeyboardEvent<HTMLButtonElement>): void => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    onAddShape(shape);
+  };
 
   return (
     <section className="diagram-sidebar-group">
       <div className="diagram-sidebar-group-heading">
         <span>{title}</span>
-        <span className="pane-heading-count">{flowchartShapes.length}</span>
+        <span className="pane-heading-count">{groups.reduce((sum, group) => sum + group.items.length, 0)}</span>
       </div>
-      <ul className="diagram-sidebar-shape-list">
-        {flowchartShapes.map((shape) => (
-          <li key={shape}>
-            <button
-              className={`diagram-sidebar-shape diagram-sidebar-shape--${shape}`}
-              draggable
-              onDragStart={(event) => startShapeDrag(shape, event)}
-              title={t(`diagram.freeDrawingShape.${shape}`)}
-              type="button"
-            >
-              <span className="diagram-sidebar-shape-icon" aria-hidden="true" />
-              <span className="diagram-sidebar-shape-name">{t(`diagram.freeDrawingShape.${shape}`)}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      {groups.map((group) => (
+        <div className="diagram-sidebar-shape-group" key={group.title}>
+          <p className="diagram-sidebar-shape-group-title">{group.title}</p>
+          <ul className="diagram-sidebar-shape-list">
+            {group.items.map(({ label, shape }) => (
+              <li key={shape}>
+                <button
+                  aria-label={label}
+                  className={`diagram-sidebar-shape diagram-sidebar-shape--${shape}`}
+                  draggable
+                  onClick={() => onAddShape(shape)}
+                  onDragStart={(event) => startShapeDrag(shape, event)}
+                  onKeyDown={(event) => handleShapeKeyDown(shape, event)}
+                  title={label}
+                  type="button"
+                >
+                  <span className="diagram-sidebar-shape-icon" aria-hidden="true" />
+                  <span className="diagram-sidebar-shape-name">{label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </section>
   );
 }

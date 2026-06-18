@@ -362,9 +362,27 @@
 .diagram-sidebar-shape-list {
   display: grid;
   gap: 7px;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.diagram-sidebar-shape-group {
+  display: grid;
+  gap: 6px;
+}
+
+.diagram-sidebar-shape-group + .diagram-sidebar-shape-group {
+  margin-top: 6px;
+}
+
+.diagram-sidebar-shape-group-title {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin: 0;
 }
 
 .diagram-sidebar-shape {
@@ -376,7 +394,7 @@
   cursor: grab;
   display: grid;
   gap: 8px;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 30px minmax(0, 1fr);
   min-height: 40px;
   padding: 5px 8px;
   text-align: left;
@@ -441,7 +459,7 @@
 }
 
 .diagram-sidebar-shape-name {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 650;
   min-width: 0;
   overflow: hidden;
