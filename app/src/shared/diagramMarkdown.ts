@@ -413,21 +413,25 @@ export function addRelicDiagramLine(
     return fail("DIAGRAM_LINE_SELF_INVALID", "同じNode同士をLineでつなげません。");
   }
 
-  const nodeIds = new Set(parsed.value.nodes.map((node) => node.id));
-  if (!nodeIds.has(from.value) || !nodeIds.has(to.value)) {
+  const nodeById = new Map(parsed.value.nodes.map((node) => [node.id, node]));
+  const fromNode = nodeById.get(from.value);
+  const toNode = nodeById.get(to.value);
+  if (!fromNode || !toNode) {
     return fail("DIAGRAM_LINE_NODE_MISSING", "Lineが存在しないNodeを参照しています。");
   }
-  if (parsed.value.lines.some((line) => line.from === from.value && line.to === to.value)) {
+  const normalized = normalizeDiagramLineEndpoints(fromNode, toNode);
+  if (!normalized.ok) return normalized;
+  if (parsed.value.lines.some((line) => line.from === normalized.value.from && line.to === normalized.value.to)) {
     return fail("DIAGRAM_LINE_DUPLICATED", "同じ向きのLineはすでに存在します。");
   }
   const nextLabel = parseOptionalText(label, "DIAGRAM_LINE_LABEL_INVALID", "Lineの label は文字にしてください。");
   if (!nextLabel.ok) return nextLabel;
 
   const line = {
-    from: from.value,
+    from: normalized.value.from,
     id: nextLineId(parsed.value.lines),
-    label: nextLabel.value,
-    to: to.value
+    label: normalized.value.isAnnotation ? "" : nextLabel.value,
+    to: normalized.value.to
   };
   const serialized = serializeRelicConnectedDiagramMarkdown({
     ...parsed.value,
@@ -870,6 +874,25 @@ function parseLines(rawLines: unknown, nodes: RelicDiagramNodeBase[]): RelicResu
   }
 
   return ok(lines);
+}
+
+function normalizeDiagramLineEndpoints(
+  fromNode: RelicFreeDrawingNode,
+  toNode: RelicFreeDrawingNode
+): RelicResult<{ from: string; isAnnotation: boolean; to: string }> {
+  const fromIsLabel = fromNode.shape === "label";
+  const toIsLabel = toNode.shape === "label";
+  if (fromIsLabel && toIsLabel) {
+    return fail("DIAGRAM_LINE_LABEL_PAIR_INVALID", "ラベル図形同士は接続できません。");
+  }
+  if (fromIsLabel) {
+    return ok({ from: toNode.id, isAnnotation: true, to: fromNode.id });
+  }
+  if (toIsLabel) {
+    return ok({ from: fromNode.id, isAnnotation: true, to: toNode.id });
+  }
+
+  return ok({ from: fromNode.id, isAnnotation: false, to: toNode.id });
 }
 
 function diagramLineDirectionKey(from: string, to: string): string {

@@ -182,6 +182,19 @@ describe("Diagram operations", () => {
     const addedLine = addRelicDiagramLine(withoutLines, "node-1", "node-2", "YES");
     expect(addedLine.ok ? addedLine.value.line : null).toMatchObject({ from: "node-1", label: "YES", to: "node-2" });
 
+    const withLabelNode = withoutLines.replace("lines: []", [
+      "  - id: label-1",
+      "    shape: label",
+      "    text: 注釈",
+      "    x: 640",
+      "    y: 320",
+      "    width: 160",
+      "    height: 64",
+      "lines: []"
+    ].join("\n"));
+    const addedAnnotation = addRelicDiagramLine(withLabelNode, "label-1", "node-1", "通常Lineではない");
+    expect(addedAnnotation.ok ? addedAnnotation.value.line : null).toMatchObject({ from: "node-1", label: "", to: "label-1" });
+
     const updatedLabel = updateRelicDiagramLineLabel(diagramContent, "line-1", "関連");
     expect(updatedLabel.ok ? updatedLabel.value.content : "").toContain("label: 関連");
 

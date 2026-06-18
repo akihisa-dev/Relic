@@ -215,6 +215,11 @@ mark {
   stroke-width: 2.5;
 }
 
+.relic-output-diagram-canvas-line--annotation {
+  stroke: #5d7f8f;
+  stroke-width: 1.8;
+}
+
 .relic-output-diagram-canvas-arrow {
   fill: #4c4a45;
 }
@@ -325,7 +330,8 @@ mark {
 }
 
 .relic-output-diagram-canvas-node--shape-label {
-  border-radius: 7px;
+  background: #f3f7f8;
+  border-radius: 999px;
 }
 
 .relic-output-diagram-canvas-node--shape-area {

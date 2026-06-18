@@ -130,11 +130,22 @@ describe("outputHtml", () => {
         "    width: 384",
         "    height: 224",
         "    layer: -1",
+        "  - id: d",
+        "    shape: label",
+        "    text: 補足",
+        "    x: 32",
+        "    y: 160",
+        "    width: 160",
+        "    height: 64",
         "lines:",
         "  - id: l1",
         "    from: a",
         "    to: b",
-        "    label: 対立"
+        "    label: 対立",
+        "  - id: l2",
+        "    from: a",
+        "    to: d",
+        "    label: ''"
       ].join("\n"),
       fileName: "図解ファイル.md",
       path: "図解ファイル.md",
@@ -146,12 +157,15 @@ describe("outputHtml", () => {
     expect(result.html).toContain("relic-output-diagram-canvas");
     expect(result.html).toContain("relic-output-diagram-canvas-node--shape-decision");
     expect(result.html).toContain("relic-output-diagram-canvas-node--shape-area");
+    expect(result.html).toContain("relic-output-diagram-canvas-node--shape-label");
+    expect(result.html).toContain("relic-output-diagram-canvas-line--annotation");
     expect(result.html).toContain("relic-output-diagram-canvas-node-label--shape-process");
     expect(result.html).toContain("relic-output-diagram-canvas-node-label--shape-decision");
     expect(result.html).toContain("relic-output-diagram-canvas-node-label--area");
     expect(result.html).toContain(">主人公<");
     expect(result.html).toContain(">敵対組織<");
     expect(result.html).toContain(">勢力範囲<");
+    expect(result.html).toContain(">補足<");
     expect(result.html).toContain("対立");
     expect(result.html).toContain(".relic-output-diagram-canvas-node--shape-decision::before");
     expect(result.html).toContain(".relic-output-diagram-canvas-node--shape-decision::after");
