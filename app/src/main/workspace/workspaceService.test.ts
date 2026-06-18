@@ -65,6 +65,31 @@ describe("workspaceService", () => {
     expect(toWorkspaceState(nextSettings).activeWorkspace).toEqual(workspace);
   });
 
+  it("大文字小文字を区別しない環境では大小文字違いの同じワークスペースを重複登録しない", () => {
+    const workspace = createWorkspaceSummary("/tmp/Relic-Notes", "darwin");
+    const sameWorkspaceDifferentCase = createWorkspaceSummary("/tmp/relic-notes", "darwin");
+    const firstSettings = addOrActivateWorkspace(
+      { ...baseSettings, lastWorkspaceId: null, workspaces: [] },
+      workspace,
+      "darwin"
+    );
+    const nextSettings = addOrActivateWorkspace(firstSettings, sameWorkspaceDifferentCase, "darwin");
+
+    expect(nextSettings.workspaces).toHaveLength(1);
+    expect(nextSettings.lastWorkspaceId).toBe(workspace.id);
+    expect(nextSettings.workspaces[0]).toEqual({
+      ...sameWorkspaceDifferentCase,
+      id: workspace.id
+    });
+  });
+
+  it("大文字小文字を区別する環境では大小文字違いのワークスペースIDを分ける", () => {
+    const upperWorkspace = createWorkspaceSummary("/tmp/Relic-Notes", "linux");
+    const lowerWorkspace = createWorkspaceSummary("/tmp/relic-notes", "linux");
+
+    expect(upperWorkspace.id).not.toBe(lowerWorkspace.id);
+  });
+
   it("登録済みワークスペースをアクティブに切り替える", () => {
     const firstWorkspace = createWorkspaceSummary("/tmp/relic-notes-1");
     const secondWorkspace = createWorkspaceSummary("/tmp/relic-notes-2");

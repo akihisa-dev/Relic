@@ -140,6 +140,22 @@ describe("renameFolder", () => {
     );
   });
 
+  it("大文字小文字だけのフォルダ名変更を完了する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "Folder"));
+    await writeFile(path.join(workspacePath, "Folder", "note.md"), "# Note", "utf8");
+
+    await expect(renameFolder(workspacePath, "Folder", "folder")).resolves.toEqual({
+      ok: true,
+      value: {
+        path: "folder"
+      }
+    });
+    await expect(readFile(path.join(workspacePath, "folder", "note.md"), "utf8")).resolves.toBe("# Note");
+  });
+
   it("同名フォルダや同名ファイルがある場合は上書きしない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
     temporaryPaths.push(workspacePath);

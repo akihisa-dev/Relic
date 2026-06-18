@@ -21,6 +21,7 @@ import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveExistingWorkspacePath, resolveWorkspaceRelativePath } from "./paths";
+import { mapWithConcurrency } from "./concurrency";
 
 export { extractChronicleRange, extractDateRange } from "./chronicleData";
 
@@ -36,6 +37,7 @@ const defaultChartOperations: ChartWriteOperations = {
   readFile,
   writeTextFile: atomicWriteTextFile
 };
+const maxConcurrentChartReads = 8;
 
 export async function readWorkspaceCharts(
   workspacePath: string,
@@ -53,14 +55,16 @@ export async function readWorkspaceCharts(
       const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
       return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
     });
-    const fileContents = await Promise.all(
-      files.map(async (file) => {
+    const fileContents = await mapWithConcurrency(
+      files,
+      maxConcurrentChartReads,
+      async (file) => {
         try {
           return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
         } catch {
           return null;
         }
-      })
+      }
     );
 
     for (const fileContent of fileContents) {

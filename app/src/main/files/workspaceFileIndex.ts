@@ -10,6 +10,7 @@ import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveExistingWorkspacePath } from "./paths";
+import { mapWithConcurrency } from "./concurrency";
 
 export interface WorkspaceFileIndex {
   entries: WorkspaceFileIndexEntry[];
@@ -59,6 +60,7 @@ const workspaceFileIndexCacheVersion = 3;
 const defaultMaxSearchFileBytes = 2 * 1024 * 1024;
 const mapMarkerHeadBytes = 256;
 const safeWorkspaceIndexIdPattern = /^[A-Za-z0-9_-]+$/;
+const maxConcurrentIndexReads = 8;
 
 const defaultOperations: WorkspaceFileIndexOperations = {
   mkdir,
@@ -92,49 +94,53 @@ export async function readWorkspaceFileIndex(
       ? collectMarkdownPaths(options.fileTree)
       : collectMarkdownPaths(await readWorkspaceFileTree(workspacePath)));
 
-  const records = await Promise.all(paths.map(async (relativePath) => {
-    const absolutePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
-    if (!absolutePath.ok) return unreadableRecord(relativePath);
+  const records = await mapWithConcurrency(
+    paths,
+    maxConcurrentIndexReads,
+    async (relativePath) => {
+      const absolutePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
+      if (!absolutePath.ok) return unreadableRecord(relativePath);
 
-    let fileStats: Stats;
-    try {
-      fileStats = await operations.stat(absolutePath.value);
-    } catch {
-      return unreadableRecord(relativePath);
-    }
+      let fileStats: Stats;
+      try {
+        fileStats = await operations.stat(absolutePath.value);
+      } catch {
+        return unreadableRecord(relativePath);
+      }
 
-    const cached = cacheByPath.get(relativePath);
-    if (
-      cached?.readStatus === "ok" &&
-      typeof cached.contentHash === "string" &&
-      cached.size === fileStats.size &&
-      cached.mtimeMs === fileStats.mtimeMs
-    ) {
-      if (cached.searchable) {
-        try {
-          const content = await operations.readFile(absolutePath.value);
-          const contentHash = fileHash(content);
+      const cached = cacheByPath.get(relativePath);
+      if (
+        cached?.readStatus === "ok" &&
+        typeof cached.contentHash === "string" &&
+        cached.size === fileStats.size &&
+        cached.mtimeMs === fileStats.mtimeMs
+      ) {
+        if (cached.searchable) {
+          try {
+            const content = await operations.readFile(absolutePath.value);
+            const contentHash = fileHash(content);
 
-          if (cached.contentHash === contentHash) {
-            return recordFor(relativePath, fileStats, cached.kind, content.split("\n"), cached.searchable, cached.contentHash);
+            if (cached.contentHash === contentHash) {
+              return recordFor(relativePath, fileStats, cached.kind, content.split("\n"), cached.searchable, cached.contentHash);
+            }
+          } catch {
+            return unreadableRecord(relativePath, fileStats);
           }
-        } catch {
-          return unreadableRecord(relativePath, fileStats);
-        }
-      } else {
-        try {
-          const head = await operations.readHead(absolutePath.value, mapMarkerHeadBytes);
-          if (cached.contentHash === fileHash(head)) {
-            return { ...cached, lines: [] };
+        } else {
+          try {
+            const head = await operations.readHead(absolutePath.value, mapMarkerHeadBytes);
+            if (cached.contentHash === fileHash(head)) {
+              return { ...cached, lines: [] };
+            }
+          } catch {
+            return unreadableRecord(relativePath, fileStats);
           }
-        } catch {
-          return unreadableRecord(relativePath, fileStats);
         }
       }
-    }
 
-    return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations);
-  }));
+      return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations);
+    }
+  );
 
   const sortedRecords = records.sort((a, b) => a.path.localeCompare(b.path, "ja"));
 

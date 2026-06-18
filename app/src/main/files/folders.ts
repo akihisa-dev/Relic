@@ -2,7 +2,7 @@ import { mkdir, rename, stat } from "node:fs/promises";
 import path from "node:path";
 
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { errorDetails, isFileExistsError, pathExists } from "./fileSystem";
+import { errorDetails, isFileExistsError } from "./fileSystem";
 import { updateLinksForFolderRename } from "./linkUpdater";
 import { validateBaseName } from "./names";
 import {
@@ -11,6 +11,10 @@ import {
   resolveNewWorkspacePath,
   toWorkspaceRelativePath
 } from "./paths";
+import {
+  getRenameDestinationCollision,
+  renameFileSystemEntry
+} from "./renameOperations";
 
 export interface CreatedFolder {
   path: string;
@@ -163,7 +167,9 @@ async function moveFolderToPath(
     return ok({ path: options.samePathReturnPath ?? options.nextRelativePath });
   }
 
-  if (await pathExists(options.destinationPath.value)) {
+  const collision = await getRenameDestinationCollision(options.sourcePath, options.destinationPath.value);
+
+  if (collision === "different-entry") {
     return fail("FOLDER_ALREADY_EXISTS", options.alreadyExistsMessage);
   }
 
@@ -174,7 +180,12 @@ async function moveFolderToPath(
       return fail(options.notDirectoryCode, options.notDirectoryMessage);
     }
 
-    await rename(options.sourcePath, options.destinationPath.value);
+    await renameFileSystemEntry(
+      options.sourcePath,
+      options.destinationPath.value,
+      collision,
+      path.basename(options.sourcePath)
+    );
     const links = await updateLinksForFolderRename(workspacePath, options.relativePath, options.nextRelativePath);
     if (!links.ok) {
       await rename(options.destinationPath.value, options.sourcePath).catch(() => undefined);

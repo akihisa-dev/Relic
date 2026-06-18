@@ -1,11 +1,11 @@
-import { mkdir, rename, readFile } from "node:fs/promises";
+import { mkdir, readFile, rename } from "node:fs/promises";
 import path from "node:path";
 
 import type { MarkdownFileContent } from "../../shared/ipc";
 import { hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { atomicWriteNewTextFile, atomicWriteTextFile } from "./atomicWrite";
-import { errorDetails, isFileExistsError, pathExists } from "./fileSystem";
+import { errorDetails, isFileExistsError } from "./fileSystem";
 import { updateLinksForFileRename } from "./linkUpdater";
 import {
   createCopyRelativePath,
@@ -18,6 +18,10 @@ import {
   resolveNewWorkspacePath,
   toWorkspaceRelativePath
 } from "./paths";
+import {
+  getRenameDestinationCollision,
+  renameFileSystemEntry
+} from "./renameOperations";
 
 export interface CreatedMarkdownFile {
   path: string;
@@ -251,12 +255,19 @@ async function moveMarkdownFileToPath(
     return readMarkdownFile(workspacePath, options.relativePath);
   }
 
-  if (await pathExists(absoluteDestinationPath.value)) {
+  const collision = await getRenameDestinationCollision(options.sourcePath, absoluteDestinationPath.value);
+
+  if (collision === "different-entry") {
     return fail("FILE_ALREADY_EXISTS", options.alreadyExistsMessage);
   }
 
   try {
-    await rename(options.sourcePath, absoluteDestinationPath.value);
+    await renameFileSystemEntry(
+      options.sourcePath,
+      absoluteDestinationPath.value,
+      collision,
+      path.basename(options.sourcePath)
+    );
     const links = await updateLinksForFileRename(workspacePath, options.relativePath, options.nextRelativePath);
     if (!links.ok) {
       await rename(absoluteDestinationPath.value, options.sourcePath).catch(() => undefined);

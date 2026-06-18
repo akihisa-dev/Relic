@@ -20,7 +20,7 @@ import {
   resetRendererStores
 } from "../test/rendererTestUtils";
 
-describe("App", () => {
+describe("App layout", () => {
   beforeAll(installMatchMediaMock);
 
   beforeEach(() => {
