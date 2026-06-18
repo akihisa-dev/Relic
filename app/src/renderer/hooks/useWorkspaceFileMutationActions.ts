@@ -85,14 +85,19 @@ export function useWorkspaceFileMutationActions({
 
       if (
         result.value.fileCount < linkUpdateImpactFileThreshold &&
-        result.value.linkCount < linkUpdateImpactLinkThreshold
+        result.value.linkCount < linkUpdateImpactLinkThreshold &&
+        result.value.unreadableFileCount === 0
       ) {
         return true;
       }
 
-      return window.confirm(t("links.updateImpactConfirm", {
+      const confirmKey = result.value.unreadableFileCount === 0
+        ? "links.updateImpactConfirm"
+        : "links.updateImpactConfirmWithUnreadableFiles";
+      return window.confirm(t(confirmKey, {
         files: result.value.fileCount,
-        links: result.value.linkCount
+        links: result.value.linkCount,
+        unreadableFiles: result.value.unreadableFileCount
       }));
     },
     [setWorkspaceError, t]

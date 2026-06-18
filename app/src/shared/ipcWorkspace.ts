@@ -98,6 +98,7 @@ export interface LinkUpdateImpactInput {
 export interface LinkUpdateImpact {
   fileCount: number;
   linkCount: number;
+  unreadableFileCount: number;
 }
 
 export interface ReplaceInFileInput {

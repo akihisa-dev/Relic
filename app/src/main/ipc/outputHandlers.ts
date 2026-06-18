@@ -264,7 +264,7 @@ function isSavePreviewAsPdfInput(input: unknown): input is SavePreviewAsPdfInput
     typeof input.defaultFileName === "string" &&
     typeof input.html === "string" &&
     isWithinPreviewHtmlLimit(input.html) &&
-    input.html.trim() !== "" &&
+    isSafePreviewOutputHtml(input.html) &&
     typeof input.title === "string";
 }
 
@@ -272,12 +272,41 @@ function isPrintPreviewInput(input: unknown): input is PrintPreviewInput {
   return isObject(input) &&
     typeof input.html === "string" &&
     isWithinPreviewHtmlLimit(input.html) &&
-    input.html.trim() !== "" &&
+    isSafePreviewOutputHtml(input.html) &&
     typeof input.title === "string";
 }
 
 function isWithinPreviewHtmlLimit(html: string): boolean {
   return Buffer.byteLength(html, "utf8") <= previewOutputHtmlMaxBytes;
+}
+
+function isSafePreviewOutputHtml(html: string): boolean {
+  const trimmed = html.trim();
+  if (trimmed === "") return false;
+  if (!/^<!doctype html>/i.test(trimmed)) return false;
+  if (!/<html\b[^>]*>/i.test(trimmed) || !/<head\b[^>]*>/i.test(trimmed) || !/<body\b[^>]*>/i.test(trimmed)) {
+    return false;
+  }
+  if (!/<main\b[^>]*class=(["'])[^"']*\brelic-output-body\b[^"']*\1/i.test(trimmed)) return false;
+  if (!hasRequiredOutputCsp(trimmed)) return false;
+
+  return !hasUnsafeOutputHtml(trimmed);
+}
+
+function hasRequiredOutputCsp(html: string): boolean {
+  return Array.from(html.matchAll(/<meta\b[^>]*>/gi)).some(([tag]) => {
+    const httpEquiv = /\bhttp-equiv\s*=\s*(["'])content-security-policy\1/i.test(tag);
+    const content = /\bcontent\s*=\s*(["'])([\s\S]*?)\1/i.exec(tag)?.[2] ?? "";
+    return httpEquiv && /\bdefault-src\s+'none'/.test(content);
+  });
+}
+
+function hasUnsafeOutputHtml(html: string): boolean {
+  return /<(?:script|iframe|object|embed|webview|link|base)\b/i.test(html) ||
+    /<meta\b[^>]*http-equiv=(["'])refresh\1/i.test(html) ||
+    /\son[a-z]+\s*=/i.test(html) ||
+    /\b(?:href|src|xlink:href)\s*=\s*(["'])\s*(?:javascript|file):/i.test(html) ||
+    /\b(?:href|src|xlink:href)\s*=\s*(?:javascript|file):/i.test(html);
 }
 
 function isSaveDiagramSvgInput(input: unknown): input is SaveDiagramSvgInput {

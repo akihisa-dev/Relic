@@ -347,7 +347,7 @@ describe("App file rename and context menu", () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
 
     window.relic = makeRelicApi({
-      getLinkUpdateImpact: vi.fn().mockResolvedValue({ ok: true, value: { fileCount: 31, linkCount: 100 } }),
+      getLinkUpdateImpact: vi.fn().mockResolvedValue({ ok: true, value: { fileCount: 31, linkCount: 100, unreadableFileCount: 0 } }),
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
@@ -367,6 +367,45 @@ describe("App file rename and context menu", () => {
 
     await waitFor(() => {
       expect(confirmSpy).toHaveBeenCalledWith("31 件のMarkdownファイル内にある 100 件のリンクを更新します。続けますか？");
+    });
+    expect(renameMarkdownFile).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it("読み取り不能Markdownファイルがある場合は確認メッセージに件数を含めて表示する", async () => {
+    const renameMarkdownFile = vi.fn();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    window.relic = makeRelicApi({
+      getLinkUpdateImpact: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          fileCount: 3,
+          linkCount: 5,
+          unreadableFileCount: 2
+        }
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      renameMarkdownFile
+    });
+
+    await renderApp();
+
+    fireEvent.contextMenu(await screen.findByRole("button", { name: /読書メモ/ }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "名前を変更" }));
+    fireEvent.change(screen.getByLabelText("名前を変更"), { target: { value: "読書ログ" } });
+    fireEvent.keyDown(screen.getByLabelText("名前を変更"), { key: "Enter" });
+
+    await waitFor(() => {
+      expect(confirmSpy).toHaveBeenCalledWith(
+        "読み取り不能なMarkdownファイルが 2 件あります。3 件のMarkdownファイル内にある 5 件のリンクを更新します。続けますか？"
+      );
     });
     expect(renameMarkdownFile).not.toHaveBeenCalled();
     confirmSpy.mockRestore();

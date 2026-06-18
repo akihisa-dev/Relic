@@ -8,6 +8,7 @@ import { emptyRelicDiagramMarkdownContent } from "../../shared/diagramMarkdown";
 import { I18nProvider } from "../i18n";
 import type { FileTab } from "../store/editorStore";
 import * as paneViewModel from "../paneViewModel";
+import * as largeMarkdown from "../largeMarkdown";
 import { PaneContentSurface } from "./PaneContentSurface";
 
 vi.mock("./DiagramCanvas", () => ({
@@ -111,5 +112,39 @@ describe("PaneContentSurface", () => {
     expect(screen.getByText("DiagramCanvas")).toBeInTheDocument();
     expect(screen.getByText("diagram-canvas-status")).toBeInTheDocument();
     expect(textCountSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not recalculate large markdown detection when content is unchanged", () => {
+    const largeMarkdownSpy = vi.spyOn(largeMarkdown, "isLargeMarkdownContent");
+    const fileTab: FileTab = {
+      content: "line one\nline two",
+      id: "tab-file",
+      kind: "file",
+      name: "Note",
+      path: "Folder/Note.md",
+      savedContent: "line one\nline two"
+    };
+
+    const { rerender } = renderSurface(fileTab);
+    expect(screen.getByText("17 characters / 4 words")).toBeInTheDocument();
+    expect(largeMarkdownSpy).toHaveBeenCalledTimes(1);
+
+    const sameContentDifferentId: FileTab = {
+      ...fileTab,
+      id: "tab-file-2"
+    };
+    rerender(buildSurfaceElement(sameContentDifferentId, false));
+    expect(screen.getByText("17 characters / 4 words")).toBeInTheDocument();
+    expect(largeMarkdownSpy).toHaveBeenCalledTimes(1);
+
+    const changedContent: FileTab = {
+      ...fileTab,
+      id: "tab-file-3",
+      content: "short",
+      savedContent: "short"
+    };
+    rerender(buildSurfaceElement(changedContent, false));
+    expect(screen.getByText("5 characters / 1 words")).toBeInTheDocument();
+    expect(largeMarkdownSpy).toHaveBeenCalledTimes(2);
   });
 });
