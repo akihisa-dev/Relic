@@ -41,6 +41,7 @@ import {
   type RelicDiagramNodeBase,
   type RelicFreeDrawingShapeType
 } from "../../../shared/diagramMarkdown";
+import { editorContextMenuPosition } from "../../editorContextMenuModel";
 import { useT } from "../../i18n";
 import { type TranslationKey, type Translator } from "../../i18nModel";
 import {
@@ -56,7 +57,7 @@ import {
 } from "./diagramViewport";
 import { type DiagramCanvasProps } from "./diagramTypes";
 import { diagramShapeDragType, isFreeDrawingShapeType } from "./diagramShapeDrag";
-import { diagramShapePaletteGroups, diagramShapePaletteItems } from "./diagramShapePalette";
+import { diagramShapePaletteGroups } from "./diagramShapePalette";
 import { DiagramLineLayer } from "./DiagramLineLayer";
 import { diagramFreeDrawingLabelDisplayLayer, diagramNodeDisplayLayer } from "./diagramLayering";
 import { diagramStatusCountLabels } from "./diagramCanvasStatus";
@@ -146,14 +147,14 @@ interface NodeTextEditState {
   value: string;
 }
 
-interface ShapeAddMenuState {
-  nodeId: string;
-}
-
 interface DiagramShapePaletteAddRequest {
   handled: boolean;
   shape: RelicFreeDrawingShapeType;
 }
+
+type DiagramContextMenuState =
+  | { type: "line"; lineId: string; x: number; y: number }
+  | { type: "node"; nodeId: string; x: number; y: number };
 
 export function DiagramCanvasSurface({
   content,
@@ -177,8 +178,7 @@ export function DiagramCanvasSurface({
   const [paletteDropPreview, setPaletteDropPreview] = useState<{ height: number; width: number; x: number; y: number } | null>(null);
   const [selection, setSelection] = useState<DiagramSelection | null>(null);
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
-  const [shapeAddMenu, setShapeAddMenu] = useState<ShapeAddMenuState | null>(null);
-  const [emptyShapeMenuOpen, setEmptyShapeMenuOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState<DiagramContextMenuState | null>(null);
   const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
   const [notice, setNotice] = useState<string | null>(null);
   const [history, setHistory] = useState<{ future: string[]; past: string[] }>({ future: [], past: [] });
@@ -353,7 +353,6 @@ export function DiagramCanvasSurface({
     ...guide,
     value: guide.value - (guide.axis === "x" ? layout.originX : layout.originY)
   })), [drag?.guides, layout.originX, layout.originY]);
-  const freeDrawingShapeOptions = useMemo(() => diagramShapePaletteItems(t), [t]);
   const freeDrawingShapeGroups = useMemo(() => diagramShapePaletteGroups(t), [t]);
   const dragDropPreview = useMemo(() => {
     if (!drag) return null;
@@ -419,7 +418,7 @@ export function DiagramCanvasSurface({
     }
     setSelection({ id: node.id, type: "node" });
     setNodeTextEdit(null);
-    setShapeAddMenu(null);
+    setContextMenu(null);
     focusCanvasFrom(event.currentTarget);
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -490,7 +489,7 @@ export function DiagramCanvasSurface({
     event.stopPropagation();
     setSelection({ id: node.id, type: "node" });
     setNodeTextEdit(null);
-    setShapeAddMenu(null);
+    setContextMenu(null);
     setKeyboardConnectFromNodeId(null);
     focusCanvasFrom(event.currentTarget);
     if (typeof event.currentTarget.setPointerCapture === "function") {
@@ -560,7 +559,7 @@ export function DiagramCanvasSurface({
     setSelectedNodeIds(new Set());
     setLabelEdit(null);
     setNodeTextEdit(null);
-    setShapeAddMenu(null);
+    setContextMenu(null);
     setKeyboardConnectFromNodeId(null);
     focusCanvasFrom(event.currentTarget);
     if (event.shiftKey) {
@@ -657,7 +656,7 @@ export function DiagramCanvasSurface({
     const pointer = pointerPositionInCanvas(event);
 
     focusCanvasFrom(event.currentTarget);
-    setShapeAddMenu(null);
+    setContextMenu(null);
     setKeyboardConnectFromNodeId(null);
     setConnect({
       isActive: false,
@@ -707,7 +706,7 @@ export function DiagramCanvasSurface({
     setSelectedNodeIds(new Set());
     setLabelEdit(null);
     setNodeTextEdit(null);
-    setShapeAddMenu(null);
+    setContextMenu(null);
     setKeyboardConnectFromNodeId(null);
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -768,7 +767,7 @@ export function DiagramCanvasSurface({
       applyContentChange(added.value.content);
       setSelection({ id: added.value.line.id, type: "line" });
       setLabelEdit({ lineId: added.value.line.id, value: added.value.line.label });
-      setShapeAddMenu(null);
+      setContextMenu(null);
     } else {
       showNotice(added.error.message);
     }
@@ -787,7 +786,7 @@ export function DiagramCanvasSurface({
       setSelection({ id: updated.value.line.id, type: "line" });
       setSelectedNodeIds(new Set());
       setLabelEdit(null);
-      setShapeAddMenu(null);
+      setContextMenu(null);
     } else {
       showNotice(updated.error.message);
     }
@@ -807,7 +806,7 @@ export function DiagramCanvasSurface({
   const focusNode = (node: RelicConnectedDiagramNode): void => {
     setSelection({ id: node.id, type: "node" });
     setSelectedNodeIds(new Set([node.id]));
-    setShapeAddMenu(null);
+    setContextMenu(null);
   };
   const startNodeOutlineConnect = (node: RelicDiagramNodeBase, event: ReactPointerEvent<HTMLElement>): void => {
     startConnect(node, event);
@@ -834,7 +833,7 @@ export function DiagramCanvasSurface({
     event.stopPropagation();
     setSelection({ id: lineId, type: "line" });
     setSelectedNodeIds(new Set());
-    setShapeAddMenu(null);
+    setContextMenu(null);
     focusCanvasFrom(event.currentTarget);
   };
   const beginLabelEdit = (line: DiagramCanvasLineLayout): void => {
@@ -843,7 +842,7 @@ export function DiagramCanvasSurface({
     setSelection({ id: line.line.id, type: "line" });
     setSelectedNodeIds(new Set());
     setNodeTextEdit(null);
-    setShapeAddMenu(null);
+    setContextMenu(null);
     setLabelEdit({
       lineId: line.line.id,
       value: line.line.label
@@ -892,7 +891,7 @@ export function DiagramCanvasSurface({
       setSelectedNodeIds(new Set());
       setLabelEdit(null);
       setNodeTextEdit(null);
-      setShapeAddMenu(null);
+      setContextMenu(null);
       focusCanvasFrom(event.currentTarget);
     }
   };
@@ -911,7 +910,7 @@ export function DiagramCanvasSurface({
       setNodeTextEdit(null);
       setSelection(null);
       setSelectedNodeIds(new Set());
-      setShapeAddMenu(null);
+      setContextMenu(null);
     }
   };
   const addFreeDrawingNode = (
@@ -926,8 +925,7 @@ export function DiagramCanvasSurface({
       applyContentChange(added.value.content);
       setSelection({ id: added.value.node.id, type: "node" });
       setSelectedNodeIds(new Set([added.value.node.id]));
-      setShapeAddMenu(null);
-      setEmptyShapeMenuOpen(false);
+      setContextMenu(null);
     }
   };
   const visibleCanvasCenterPosition = (shape: RelicFreeDrawingShapeType): { x: number; y: number } | null => {
@@ -962,84 +960,6 @@ export function DiagramCanvasSurface({
     window.addEventListener("relic-diagram-shape-add", addRequestedShape);
     return () => window.removeEventListener("relic-diagram-shape-add", addRequestedShape);
   });
-  const connectedFreeDrawingNodePosition = (sourceNode: RelicDiagramNodeBase, shape: RelicFreeDrawingShapeType): { x: number; y: number } => {
-    const size = connectedFreeDrawingShapeSize(shape);
-    const baseX = sourceNode.x + sourceNode.width + diagramGridSize * 2;
-    const baseY = sourceNode.y;
-    let candidate = snapDiagramPointToGrid(baseX, baseY, layout.originX, layout.originY);
-
-    for (let attempt = 0; attempt <= diagram.nodes.length; attempt += 1) {
-      const overlaps = diagram.nodes.some((node) => rectanglesOverlap(
-        candidate.x,
-        candidate.y,
-        size.width,
-        size.height,
-        node.x,
-        node.y,
-        node.width,
-        node.height
-      ));
-      if (!overlaps) return candidate;
-
-      candidate = snapDiagramPointToGrid(
-        baseX,
-        baseY + (size.height + diagramGridSize) * (attempt + 1),
-        layout.originX,
-        layout.originY
-      );
-    }
-
-    return candidate;
-  };
-  const addConnectedFreeDrawingNode = (
-    sourceNode: RelicConnectedDiagramNode,
-    shape: RelicFreeDrawingShapeType
-  ): void => {
-    if (!onChange || !isFreeDrawing) return;
-    if (!canAddDecisionOutputLine(sourceNode, diagram.lines, diagram.nodes)) return;
-
-    const position = connectedFreeDrawingNodePosition(sourceNode, shape);
-    const added = addRelicFreeDrawingNode(content, shape, position.x, position.y);
-    if (!added.ok) return;
-
-    const lineAdded = addRelicDiagramLine(
-      added.value.content,
-      sourceNode.id,
-      added.value.node.id,
-      decisionLineLabel(sourceNode, diagram.lines, diagram.nodes)
-    );
-    if (!lineAdded.ok) return;
-
-    applyContentChange(lineAdded.value.content);
-    setSelection({ id: added.value.node.id, type: "node" });
-    setSelectedNodeIds(new Set([added.value.node.id]));
-    setShapeAddMenu(null);
-  };
-  const toggleShapeAddMenu = (
-    node: RelicConnectedDiagramNode,
-    event: ReactPointerEvent<HTMLButtonElement>
-  ): void => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!isFreeDrawing || !("shape" in node)) return;
-
-    setSelection({ id: node.id, type: "node" });
-    setLabelEdit(null);
-    setNodeTextEdit(null);
-    setShapeAddMenu((current) => current?.nodeId === node.id ? null : { nodeId: node.id });
-    focusCanvasFrom(event.currentTarget);
-  };
-  const chooseConnectedShape = (
-    node: RelicConnectedDiagramNode,
-    shape: RelicFreeDrawingShapeType,
-    event: ReactPointerEvent<HTMLButtonElement>
-  ): void => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!("shape" in node)) return;
-
-    addConnectedFreeDrawingNode(node, shape);
-  };
   const handleCanvasDragOver = (event: ReactDragEvent<HTMLDivElement>): void => {
     if (!isFreeDrawing) return;
 
@@ -1104,7 +1024,7 @@ export function DiagramCanvasSurface({
     setSelection({ id: node.id, type: "node" });
     setNodeTextEdit({ nodeId: node.id, value: node.text });
     setLabelEdit(null);
-    setShapeAddMenu(null);
+    setContextMenu(null);
   };
   const changeFreeDrawingNodeText = (nodeId: string, value: string): void => {
     setNodeTextEdit((current) => current?.nodeId === nodeId ? { ...current, value } : current);
@@ -1135,13 +1055,35 @@ export function DiagramCanvasSurface({
       applyContentChange(reversed.value.content);
       setSelection({ id: reversed.value.line.id, type: "line" });
       setLabelEdit(null);
-      setShapeAddMenu(null);
+      setContextMenu(null);
     } else {
       showNotice(reversed.error.message);
     }
   };
+  const openNodeContextMenu = (node: RelicConnectedDiagramNode, event: ReactMouseEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    const position = editorContextMenuPosition(event.clientX, event.clientY);
+    if (!selectedNodeIds.has(node.id)) {
+      setSelectedNodeIds(new Set([node.id]));
+    }
+    setSelection({ id: node.id, type: "node" });
+    setLabelEdit(null);
+    setNodeTextEdit(null);
+    setContextMenu({ type: "node", nodeId: node.id, ...position });
+  };
+  const openLineContextMenu = (line: DiagramCanvasLineLayout, event: ReactMouseEvent<SVGPathElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    const position = editorContextMenuPosition(event.clientX, event.clientY);
+    setSelection({ id: line.line.id, type: "line" });
+    setSelectedNodeIds(new Set());
+    setLabelEdit(null);
+    setNodeTextEdit(null);
+    setContextMenu({ type: "line", lineId: line.line.id, ...position });
+  };
   const selectedEditableNode = selection?.type === "node"
-    ? diagram.nodes.find((node) => node.id === selection.id)
+    ? diagram.nodes.find((node) => node.id === selection.id) ?? null
     : null;
   const selectedLineLayout = selection?.type === "line"
     ? displayLines.find((line) => line.line.id === selection.id)
@@ -1151,6 +1093,25 @@ export function DiagramCanvasSurface({
     : selection?.type === "node"
     ? [selection.id]
     : [];
+  const openKeyboardContextMenu = (): void => {
+    if (selectedNodeLayouts.length > 0) {
+      const left = Math.min(...selectedNodeLayouts.map((node) => node.x));
+      const top = Math.min(...selectedNodeLayouts.map((node) => node.y));
+      const position = editorContextMenuPosition(
+        viewport.panX + left * viewport.zoom,
+        viewport.panY + top * viewport.zoom
+      );
+      setContextMenu({ type: "node", nodeId: selectedNodeIdList[0], ...position });
+      return;
+    }
+    if (selectedLineLayout) {
+      const position = editorContextMenuPosition(
+        viewport.panX + ((selectedLineLayout.x1 + selectedLineLayout.x2) / 2) * viewport.zoom,
+        viewport.panY + ((selectedLineLayout.y1 + selectedLineLayout.y2) / 2) * viewport.zoom
+      );
+      setContextMenu({ type: "line", lineId: selectedLineLayout.line.id, ...position });
+    }
+  };
   const duplicateSelection = (): void => {
     duplicateNodesByIds(selectedNodeIdList);
   };
@@ -1274,6 +1235,11 @@ export function DiagramCanvasSurface({
   const handleCanvasKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
     const isMod = event.metaKey || event.ctrlKey;
+    if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) {
+      event.preventDefault();
+      openKeyboardContextMenu();
+      return;
+    }
     if (isMod && event.key.toLowerCase() === "z") {
       event.preventDefault();
       if (event.shiftKey) {
@@ -1350,7 +1316,6 @@ export function DiagramCanvasSurface({
       event.preventDefault();
       setConnect(null);
       setDrag(null);
-      setEmptyShapeMenuOpen(false);
       setLabelEdit(null);
       setLineRetarget(null);
       setNodeTextEdit(null);
@@ -1359,7 +1324,7 @@ export function DiagramCanvasSurface({
       setResize(null);
       setSelection(null);
       setSelectedNodeIds(new Set());
-      setShapeAddMenu(null);
+      setContextMenu(null);
       setKeyboardConnectFromNodeId(null);
       return;
     }
@@ -1372,12 +1337,6 @@ export function DiagramCanvasSurface({
   const selectedNodeLayouts = selectedNodeIdList
     .map((nodeId) => displayNodes.find((node) => node.node.id === nodeId))
     .filter((node): node is NonNullable<typeof node> => Boolean(node));
-  const nodeContextToolbarStyle = selectedNodeLayouts.length > 0
-    ? floatingToolbarStyleForNodes(selectedNodeLayouts, viewport)
-    : undefined;
-  const lineContextToolbarStyle = selectedLineLayout
-    ? floatingToolbarStyleForLine(selectedLineLayout, viewport)
-    : undefined;
   const statusCounts = useMemo(
     () => diagramStatusCountLabels(diagram.nodes.length, diagram.lines.length, t),
     [diagram.lines.length, diagram.nodes.length, t]
@@ -1468,115 +1427,74 @@ export function DiagramCanvasSurface({
       {toolbar}
       <div className="diagram-canvas-toolbar" aria-label={t("diagram.canvasToolbar")}>
         <div className="diagram-canvas-toolbar-group">
-          <button aria-label={t("diagram.undo")} disabled={history.past.length === 0} onClick={undoDiagramChange} title={t("diagram.undo")} type="button">
-            {t("diagram.undo")}
+          <button className="diagram-canvas-icon-button" aria-label={t("diagram.undo")} disabled={history.past.length === 0} onClick={undoDiagramChange} title={t("diagram.undo")} type="button">
+            <DiagramActionIcon name="undo" />
           </button>
-          <button aria-label={t("diagram.redo")} disabled={history.future.length === 0} onClick={redoDiagramChange} title={t("diagram.redo")} type="button">
-            {t("diagram.redo")}
+          <button className="diagram-canvas-icon-button" aria-label={t("diagram.redo")} disabled={history.future.length === 0} onClick={redoDiagramChange} title={t("diagram.redo")} type="button">
+            <DiagramActionIcon name="redo" />
           </button>
-          <button aria-label={t("diagram.fitCanvas")} onClick={fitViewportToContent} title={t("diagram.fitCanvas")} type="button">
-            {t("diagram.fitCanvasShort")}
+        </div>
+        <div className="diagram-canvas-toolbar-separator" aria-hidden="true" />
+        <div className="diagram-canvas-toolbar-group">
+          <button className="diagram-canvas-icon-button" aria-label={t("diagram.fitCanvas")} onClick={fitViewportToContent} title={t("diagram.fitCanvas")} type="button">
+            <DiagramActionIcon name="fit" />
           </button>
-          <button aria-label={t("diagram.zoomOut")} onClick={() => zoomViewport(0.9)} title={t("diagram.zoomOut")} type="button">
-            -
+          <button className="diagram-canvas-icon-button" aria-label={t("diagram.zoomOut")} onClick={() => zoomViewport(0.9)} title={t("diagram.zoomOut")} type="button">
+            <DiagramActionIcon name="zoomOut" />
           </button>
           <span aria-label={t("diagram.currentZoom")} className="diagram-canvas-zoom-label">{Math.round(viewport.zoom * 100)}%</span>
-          <button aria-label={t("diagram.zoomIn")} onClick={() => zoomViewport(1.1)} title={t("diagram.zoomIn")} type="button">
-            +
+          <button className="diagram-canvas-icon-button" aria-label={t("diagram.zoomIn")} onClick={() => zoomViewport(1.1)} title={t("diagram.zoomIn")} type="button">
+            <DiagramActionIcon name="zoomIn" />
           </button>
-          <button aria-label={t("diagram.resetZoom")} onClick={resetViewport} title={t("diagram.resetZoom")} type="button">
-            100%
+          <button className="diagram-canvas-icon-button" aria-label={t("diagram.resetZoom")} onClick={resetViewport} title={t("diagram.resetZoom")} type="button">
+            <DiagramActionIcon name="actualSize" />
           </button>
         </div>
       </div>
-      {selection?.type === "node" && selectedNodeIdList.length > 0 ? (
-        <div
-          className="diagram-canvas-context-toolbar"
-          aria-label={selectedNodeIdList.length > 1 ? t("diagram.multiNodeToolbar") : t("diagram.nodeToolbar")}
-          style={nodeContextToolbarStyle}
-        >
-          {selectedNodeIdList.length === 1 && selectedEditableNode ? (
-            <button onClick={() => setNodeTextEdit({ nodeId: selectedEditableNode.id, value: selectedEditableNode.text })} type="button">
-              {t("diagram.editNodeText")}
-            </button>
-          ) : null}
-          <button onClick={copySelection} type="button">{t("diagram.copySelection")}</button>
-          <button onClick={duplicateSelection} type="button">{t("diagram.duplicate")}</button>
-          {selectedNodeIdList.length > 1 ? (
-            <details className="diagram-canvas-context-menu">
-              <summary>{t("diagram.alignMenu")}</summary>
-              <div className="diagram-canvas-context-menu-list">
-                <button onClick={() => alignSelection("horizontal")} type="button">{t("diagram.alignHorizontal")}</button>
-                <button onClick={() => alignSelection("vertical")} type="button">{t("diagram.alignVertical")}</button>
-                <button disabled={selectedNodeIdList.length < 3} onClick={() => distributeSelection("horizontal")} type="button">{t("diagram.distributeHorizontal")}</button>
-                <button disabled={selectedNodeIdList.length < 3} onClick={() => distributeSelection("vertical")} type="button">{t("diagram.distributeVertical")}</button>
-              </div>
-            </details>
-          ) : null}
-          {selectedNodeIdList.length === 1 && selectedEditableNode && selectedEditableNode.shape !== "area" ? (
-            <label className="diagram-canvas-shape-select">
-              <span>{t("diagram.changeShape")}</span>
-              <select
-                onChange={(event) => changeSelectedNodeShape(event.currentTarget.value as RelicFreeDrawingShapeType)}
-                value={selectedEditableNode.shape}
-              >
-                {relicFreeDrawingShapeTypes.filter((shape) => shape !== "area").map((shape) => (
-                  <option key={shape} value={shape}>{t(`diagram.freeDrawingShape.${shape}`)}</option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          <button onClick={deleteSelection} type="button">{t("diagram.deleteSelection")}</button>
-        </div>
-      ) : null}
-      {selectedLineLayout ? (
-        <div
-          className="diagram-canvas-context-toolbar diagram-canvas-context-toolbar--line"
-          aria-label={t("diagram.lineToolbar")}
-          style={lineContextToolbarStyle}
-        >
-          <button onClick={() => beginLabelEdit(selectedLineLayout)} type="button">
-            {selectedLineLayout.line.label ? t("diagram.editLineLabel") : t("diagram.addLineLabel")}
-          </button>
-          <button onPointerDown={(event) => reverseSelectedLineDirection(selectedLineLayout, event)} type="button">{t("diagram.reverseLineDirection")}</button>
-          <button onPointerDown={(event) => startLineRetarget(selectedLineLayout, "from", event)} type="button">{t("diagram.retargetLineFrom")}</button>
-          <button onPointerDown={(event) => startLineRetarget(selectedLineLayout, "to", event)} type="button">{t("diagram.retargetLineTo")}</button>
-          <button onClick={deleteSelection} type="button">{t("diagram.deleteSelection")}</button>
-        </div>
+      {contextMenu ? (
+        <DiagramContextMenu
+          contextMenu={contextMenu}
+          selectedEditableNode={selectedEditableNode}
+          selectedLineLayout={selectedLineLayout ?? null}
+          selectedNodeIdList={selectedNodeIdList}
+          onAlignSelection={alignSelection}
+          onChangeSelectedNodeShape={changeSelectedNodeShape}
+          onClose={() => setContextMenu(null)}
+          onCopySelection={copySelection}
+          onDeleteSelection={deleteSelection}
+          onDistributeSelection={distributeSelection}
+          onDuplicateSelection={duplicateSelection}
+          onReverseLineDirection={reverseSelectedLineDirection}
+          t={t}
+        />
       ) : null}
       {notice ? (
         <output aria-live="polite" className="diagram-canvas-notice" role="status">{notice}</output>
       ) : null}
       {layout.nodes.length === 0 ? (
         <div className="diagram-canvas-empty-panel">
-          <h2>{t("diagram.emptyStartTitle")}</h2>
-          <p>{t("diagram.emptyStartDescription")}</p>
           {onChange ? (
             <div className="diagram-canvas-empty-actions">
-              <button className="primary-button" onClick={() => setEmptyShapeMenuOpen((current) => !current)} type="button">
-                {t("diagram.emptyAddShape")}
-              </button>
-              {emptyShapeMenuOpen ? (
-                <div className="diagram-canvas-empty-menu" role="menu" aria-label={t("diagram.emptyShapeMenu")}>
-                  {freeDrawingShapeGroups.map((group) => (
-                    <div className="diagram-canvas-empty-menu-group" key={group.title}>
-                      <p>{group.title}</p>
-                      {group.items.map((item) => (
-                        <button
-                          className={`diagram-canvas-node-add-shape-option diagram-canvas-node-add-shape-option--${item.shape}`}
-                          key={item.shape}
-                          onClick={() => addFreeDrawingNodeAtVisibleCenter(item.shape)}
-                          role="menuitem"
-                          type="button"
-                        >
-                          <span className="diagram-canvas-node-add-shape-icon" aria-hidden="true" />
-                          <span>{item.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
+              <h2>{t("diagram.emptyShapeMenu")}</h2>
+              <div className="diagram-canvas-empty-menu" role="menu" aria-label={t("diagram.emptyShapeMenu")}>
+                {freeDrawingShapeGroups.map((group) => (
+                  <div className="diagram-canvas-empty-menu-group" key={group.title}>
+                    <p>{group.title}</p>
+                    {group.items.map((item) => (
+                      <button
+                        className={`diagram-canvas-node-add-shape-option diagram-canvas-node-add-shape-option--${item.shape}`}
+                        key={item.shape}
+                        onClick={() => addFreeDrawingNodeAtVisibleCenter(item.shape)}
+                        role="menuitem"
+                        type="button"
+                      >
+                        <span className="diagram-canvas-node-add-shape-icon" aria-hidden="true" />
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
           ) : null}
         </div>
@@ -1594,12 +1512,31 @@ export function DiagramCanvasSurface({
         <DiagramLineLayer
           height={layout.height}
           lines={displayLines}
+          onLineContextMenu={openLineContextMenu}
           onLineDoubleClick={startLabelEditFromLine}
           onLinePointerDown={selectLine}
           previewLine={previewLine}
           selection={selection}
           width={layout.width}
         />
+        {selectedLineLayout ? (
+          <div className="diagram-canvas-line-endpoint-handles" style={{ zIndex: selectedLineLayout.displayLayer + 1 }}>
+            <button
+              aria-label={t("diagram.retargetLineFrom")}
+              className="diagram-canvas-line-endpoint-handle diagram-canvas-line-endpoint-handle--from"
+              onPointerDown={(event) => startLineRetarget(selectedLineLayout, "from", event)}
+              style={{ left: selectedLineLayout.x1, top: selectedLineLayout.y1 }}
+              type="button"
+            />
+            <button
+              aria-label={t("diagram.retargetLineTo")}
+              className="diagram-canvas-line-endpoint-handle diagram-canvas-line-endpoint-handle--to"
+              onPointerDown={(event) => startLineRetarget(selectedLineLayout, "to", event)}
+              style={{ left: selectedLineLayout.x2, top: selectedLineLayout.y2 }}
+              type="button"
+            />
+          </div>
+        ) : null}
         <DiagramSnapGuides guides={displaySnapGuides} height={layout.height} width={layout.width} />
         <div className="diagram-canvas-labels">
           {displayLines.map((line) => {
@@ -1647,7 +1584,14 @@ export function DiagramCanvasSurface({
                 }}
               >
                 {isSelectedLine ? (
-                  <span className={`diagram-canvas-line-label${line.label ? "" : " diagram-canvas-line-label--empty"}`}>
+                  <span
+                    className={`diagram-canvas-line-label${line.label ? "" : " diagram-canvas-line-label--empty"}`}
+                    onDoubleClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      beginLabelEdit(line);
+                    }}
+                  >
                     {line.label || t("diagram.addLineLabel")}
                   </span>
                 ) : (
@@ -1701,11 +1645,7 @@ export function DiagramCanvasSurface({
               }}
             />
           ) : null}
-          {displayNodes.map(({ node, x, y }) => {
-            const shapeOptions = isFreeDrawing && "shape" in node ? connectedShapeOptionsForNode(node, diagram.lines, diagram.nodes, freeDrawingShapeOptions) : [];
-            const canAddConnectedShape = shapeOptions.length > 0;
-
-            return (
+          {displayNodes.map(({ node, x, y }) => (
               <DiagramNodeView
                 isDragging={drag?.nodeId === node.id}
                 isTextEditing={nodeTextEdit?.nodeId === node.id}
@@ -1727,12 +1667,8 @@ export function DiagramCanvasSurface({
                 onNodeTextChange={isFreeDrawing ? changeFreeDrawingNodeText : undefined}
                 onNodeTextCommit={commitFreeDrawingNodeText}
                 onNodeTextDoubleClick={beginFreeDrawingNodeTextEdit}
+                onContextMenu={openNodeContextMenu}
                 onOutlinePointerDown={startNodeOutlineConnect}
-                addShapeLabel={canAddConnectedShape ? t("diagram.addConnectedShape") : undefined}
-                addShapeMenuLabel={isFreeDrawing && shapeAddMenu?.nodeId === node.id ? t("diagram.connectedShapeMenu") : undefined}
-                addShapeOptions={shapeAddMenu?.nodeId === node.id ? shapeOptions : undefined}
-                onShapeAddButtonPointerDown={toggleShapeAddMenu}
-                onShapeOptionPointerDown={chooseConnectedShape}
                 onPointerCancel={cancelNodeDrag}
                 onPointerDown={startNodePointer}
                 onFocus={focusNode}
@@ -1747,8 +1683,7 @@ export function DiagramCanvasSurface({
                 x={x}
                 y={y}
               />
-            );
-          })}
+          ))}
         </div>
         {isFreeDrawing ? (
           <div className="diagram-canvas-node-labels">
@@ -1812,6 +1747,183 @@ export function DiagramCanvasSurface({
         ) : null}
       </div>
     </div>
+  );
+}
+
+interface DiagramContextMenuProps {
+  contextMenu: DiagramContextMenuState;
+  selectedEditableNode: RelicConnectedDiagramNode | null;
+  selectedLineLayout: DiagramCanvasLineLayout | null | undefined;
+  selectedNodeIdList: string[];
+  onAlignSelection: (direction: "horizontal" | "vertical") => void;
+  onChangeSelectedNodeShape: (shape: RelicFreeDrawingShapeType) => void;
+  onClose: () => void;
+  onCopySelection: () => void;
+  onDeleteSelection: () => void;
+  onDistributeSelection: (direction: "horizontal" | "vertical") => void;
+  onDuplicateSelection: () => void;
+  onReverseLineDirection: (line: DiagramCanvasLineLayout, event: ReactPointerEvent<HTMLButtonElement>) => void;
+  t: Translator;
+}
+
+function DiagramContextMenu({
+  contextMenu,
+  selectedEditableNode,
+  selectedLineLayout,
+  selectedNodeIdList,
+  onAlignSelection,
+  onChangeSelectedNodeShape,
+  onClose,
+  onCopySelection,
+  onDeleteSelection,
+  onDistributeSelection,
+  onDuplicateSelection,
+  onReverseLineDirection,
+  t
+}: DiagramContextMenuProps): ReactElement {
+  const run = (action: () => void): void => {
+    action();
+    onClose();
+  };
+  const isNodeMenu = contextMenu.type === "node";
+  const isMultiNodeMenu = isNodeMenu && selectedNodeIdList.length > 1;
+
+  return (
+    <div
+      className="diagram-canvas-action-menu tab-context-menu"
+      onPointerDown={(event) => event.stopPropagation()}
+      role="menu"
+      style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 40 }}
+    >
+      {isNodeMenu ? (
+        <>
+          <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(onCopySelection)} role="menuitem" type="button">
+            <DiagramActionIcon name="copy" />
+            {t("diagram.copySelection")}
+          </button>
+          <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(onDuplicateSelection)} role="menuitem" type="button">
+            <DiagramActionIcon name="duplicate" />
+            {t("diagram.duplicate")}
+          </button>
+          {isMultiNodeMenu ? (
+            <>
+              <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(() => onAlignSelection("horizontal"))} role="menuitem" type="button">
+                <DiagramActionIcon name="alignHorizontal" />
+                {t("diagram.alignHorizontal")}
+              </button>
+              <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(() => onAlignSelection("vertical"))} role="menuitem" type="button">
+                <DiagramActionIcon name="alignVertical" />
+                {t("diagram.alignVertical")}
+              </button>
+              <button
+                className="tab-context-menu-item tab-context-menu-item--icon"
+                disabled={selectedNodeIdList.length < 3}
+                onClick={() => run(() => onDistributeSelection("horizontal"))}
+                role="menuitem"
+                type="button"
+              >
+                <DiagramActionIcon name="distributeHorizontal" />
+                {t("diagram.distributeHorizontal")}
+              </button>
+              <button
+                className="tab-context-menu-item tab-context-menu-item--icon"
+                disabled={selectedNodeIdList.length < 3}
+                onClick={() => run(() => onDistributeSelection("vertical"))}
+                role="menuitem"
+                type="button"
+              >
+                <DiagramActionIcon name="distributeVertical" />
+                {t("diagram.distributeVertical")}
+              </button>
+            </>
+          ) : null}
+          {!isMultiNodeMenu && selectedEditableNode && selectedEditableNode.shape !== "area" ? (
+            <label className="tab-context-menu-item tab-context-menu-item--icon diagram-canvas-action-menu-select">
+              <DiagramActionIcon name="shapes" />
+              <span>{t("diagram.changeShape")}</span>
+              <select
+                aria-label={t("diagram.changeShape")}
+                onChange={(event) => {
+                  onChangeSelectedNodeShape(event.currentTarget.value as RelicFreeDrawingShapeType);
+                  onClose();
+                }}
+                value={selectedEditableNode.shape}
+              >
+                {relicFreeDrawingShapeTypes.filter((shape) => shape !== "area").map((shape) => (
+                  <option key={shape} value={shape}>{t(`diagram.freeDrawingShape.${shape}`)}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <button className="tab-context-menu-item tab-context-menu-item--icon danger" onClick={() => run(onDeleteSelection)} role="menuitem" type="button">
+            <DiagramActionIcon name="trash" />
+            {t("diagram.deleteSelection")}
+          </button>
+        </>
+      ) : selectedLineLayout ? (
+        <>
+          <button
+            className="tab-context-menu-item tab-context-menu-item--icon"
+            onPointerDown={(event) => {
+              onReverseLineDirection(selectedLineLayout, event);
+              onClose();
+            }}
+            role="menuitem"
+            type="button"
+          >
+            <DiagramActionIcon name="reverse" />
+            {t("diagram.reverseLineDirection")}
+          </button>
+          <button className="tab-context-menu-item tab-context-menu-item--icon danger" onClick={() => run(onDeleteSelection)} role="menuitem" type="button">
+            <DiagramActionIcon name="trash" />
+            {t("diagram.deleteSelection")}
+          </button>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+type DiagramActionIconName =
+  | "actualSize"
+  | "alignHorizontal"
+  | "alignVertical"
+  | "copy"
+  | "distributeHorizontal"
+  | "distributeVertical"
+  | "duplicate"
+  | "fit"
+  | "redo"
+  | "reverse"
+  | "shapes"
+  | "trash"
+  | "undo"
+  | "zoomIn"
+  | "zoomOut";
+
+function DiagramActionIcon({ name }: { name: DiagramActionIconName }): ReactElement {
+  const paths: Record<DiagramActionIconName, ReactElement> = {
+    actualSize: <><path d="M7 7h10v10H7z" /><path d="M4 4h4M4 4v4M20 4h-4M20 4v4M4 20h4M4 20v-4M20 20h-4M20 20v-4" /></>,
+    alignHorizontal: <><path d="M4 12h16" /><rect height="4" rx="1" width="6" x="5" y="5" /><rect height="4" rx="1" width="9" x="10" y="15" /></>,
+    alignVertical: <><path d="M12 4v16" /><rect height="6" rx="1" width="4" x="5" y="5" /><rect height="9" rx="1" width="4" x="15" y="10" /></>,
+    copy: <><rect height="11" rx="2" width="9" x="9" y="7" /><path d="M6 14V5a2 2 0 0 1 2-2h8" /></>,
+    distributeHorizontal: <><path d="M4 5v14M20 5v14" /><rect height="6" rx="1" width="4" x="7" y="9" /><rect height="6" rx="1" width="4" x="13" y="9" /></>,
+    distributeVertical: <><path d="M5 4h14M5 20h14" /><rect height="4" rx="1" width="6" x="9" y="7" /><rect height="4" rx="1" width="6" x="9" y="13" /></>,
+    duplicate: <><rect height="9" rx="2" width="9" x="8" y="8" /><path d="M5 13V7a2 2 0 0 1 2-2h6" /><path d="M19 12h-4M17 10v4" /></>,
+    fit: <><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5" /><path d="M8 8 3 3M16 8l5-5M8 16l-5 5M16 16l5 5" /></>,
+    redo: <><path d="M20 7v6h-6" /><path d="M20 13a8 8 0 1 1-2.3-5.7" /></>,
+    reverse: <><path d="M7 7h10l-3-3M17 17H7l3 3" /><path d="M17 7 7 17" /></>,
+    shapes: <><rect height="7" rx="1.5" width="7" x="4" y="4" /><path d="M16.5 4 21 8.5 16.5 13 12 8.5z" /><circle cx="9" cy="17" r="3" /></>,
+    trash: <><path d="M4 7h16" /><path d="M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></>,
+    undo: <><path d="M4 7v6h6" /><path d="M4 13a8 8 0 1 0 2.3-5.7" /></>,
+    zoomIn: <><circle cx="10" cy="10" r="5" /><path d="M10 7v6M7 10h6M14 14l6 6" /></>,
+    zoomOut: <><circle cx="10" cy="10" r="5" /><path d="M7 10h6M14 14l6 6" /></>
+  };
+
+  return (
+    <svg aria-hidden="true" className="diagram-canvas-action-icon" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" viewBox="0 0 24 24" width="18">
+      {paths[name]}
+    </svg>
   );
 }
 
@@ -1883,17 +1995,6 @@ function isNodeFullyInsideNode(node: RelicDiagramNodeBase, container: RelicDiagr
     node.y >= container.y &&
     node.x + node.width <= container.x + container.width &&
     node.y + node.height <= container.y + container.height;
-}
-
-function connectedShapeOptionsForNode(
-  node: RelicConnectedDiagramNode,
-  lines: RelicDiagramLine[],
-  nodes: RelicConnectedDiagramNode[],
-  options: ReadonlyArray<{ label: string; shape: RelicFreeDrawingShapeType }>
-): ReadonlyArray<{ label: string; shape: RelicFreeDrawingShapeType }> {
-  if (canAddDecisionOutputLine(node, lines, nodes)) return options;
-
-  return [];
 }
 
 function canAddDecisionOutputLine(
@@ -1975,30 +2076,6 @@ function freeDrawingShapeOpenPosition(
   }
 
   return base;
-}
-
-function floatingToolbarStyleForNodes(
-  nodes: Array<{ node: RelicConnectedDiagramNode; x: number; y: number }>,
-  viewport: ViewportState
-): CSSProperties {
-  const left = Math.min(...nodes.map((node) => node.x));
-  const top = Math.min(...nodes.map((node) => node.y));
-  const right = Math.max(...nodes.map((node) => node.x + node.node.width));
-
-  return {
-    left: viewport.panX + ((left + right) / 2) * viewport.zoom,
-    top: Math.max(62, viewport.panY + top * viewport.zoom - 48)
-  };
-}
-
-function floatingToolbarStyleForLine(
-  line: DiagramCanvasLineLayout,
-  viewport: ViewportState
-): CSSProperties {
-  return {
-    left: viewport.panX + ((line.x1 + line.x2) / 2) * viewport.zoom,
-    top: Math.max(62, viewport.panY + ((line.y1 + line.y2) / 2) * viewport.zoom - 48)
-  };
 }
 
 function arrowDelta(key: string, step: number): { x: number; y: number } {

@@ -324,7 +324,7 @@ describe("DiagramCanvas", () => {
     expect(screen.queryByLabelText("Selected shape tools")).not.toBeInTheDocument();
   });
 
-  it("shows node-specific actions only when a node is selected", () => {
+  it("shows node-specific actions from the explicit node context menu", () => {
     render(
       <I18nProvider language="en">
         <DiagramCanvas content={diagramContent} fileName="World" onChange={vi.fn()} />
@@ -332,17 +332,18 @@ describe("DiagramCanvas", () => {
     );
     const node = freeDrawingNode("alice");
 
-    fireEvent(node, pointerEvent("pointerdown", 1, 10, 10));
-    fireEvent(node, pointerEvent("pointerup", 1, 10, 10));
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    fireEvent.contextMenu(node, { clientX: 120, clientY: 80 });
 
-    const nodeToolbar = screen.getByLabelText("Selected shape tools");
-    expect(within(nodeToolbar).getByRole("button", { name: "Edit text" })).toBeInTheDocument();
-    expect(within(nodeToolbar).getByRole("button", { name: "Duplicate" })).toBeInTheDocument();
-    expect(within(nodeToolbar).getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    const menu = screen.getByRole("menu");
+    expect(within(menu).queryByRole("button", { name: "Edit text" })).not.toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Copy" })).toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Duplicate" })).toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Delete" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Selected line tools")).not.toBeInTheDocument();
   });
 
-  it("shows line-specific actions only when a line is selected", () => {
+  it("shows line endpoint handles and line actions from the explicit line context menu", () => {
     const { container } = render(
       <I18nProvider language="en">
         <DiagramCanvas content={diagramContent} fileName="World" onChange={vi.fn()} />
@@ -353,10 +354,13 @@ describe("DiagramCanvas", () => {
 
     fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
 
-    const lineToolbar = screen.getByLabelText("Selected line tools");
-    expect(within(lineToolbar).getByRole("button", { name: "Edit line label" })).toBeInTheDocument();
-    expect(within(lineToolbar).getByRole("button", { name: "Reverse arrow direction" })).toBeInTheDocument();
-    expect(within(lineToolbar).getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Change line start" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Change line end" })).toBeInTheDocument();
+    fireEvent.contextMenu(line as Element, { clientX: 260, clientY: 120 });
+    const menu = screen.getByRole("menu");
+    expect(within(menu).queryByRole("button", { name: "Edit line label" })).not.toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Reverse arrow direction" })).toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Delete" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Selected shape tools")).not.toBeInTheDocument();
   });
 
@@ -368,17 +372,17 @@ describe("DiagramCanvas", () => {
       </I18nProvider>
     );
 
-    expect(onStatusChange).toHaveBeenLastCalledWith("2 shapes / 1 line  Drag: move view  Shift+drag: range select");
+    expect(onStatusChange).toHaveBeenLastCalledWith("2 shapes / 1 line");
 
     const node = freeDrawingNode("alice");
     fireEvent(node, pointerEvent("pointerdown", 1, 10, 10));
     fireEvent(node, pointerEvent("pointerup", 1, 10, 10));
-    expect(onStatusChange).toHaveBeenLastCalledWith("\"alice\" selected  Enter/F2: edit  L: connect  Delete: delete");
+    expect(onStatusChange).toHaveBeenLastCalledWith("1 shape selected");
 
     const line = container.querySelector(".diagram-canvas-line-hit");
     expect(line).toBeInstanceOf(Element);
     fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
-    expect(onStatusChange).toHaveBeenLastCalledWith("Line selected  Double-click: edit label  Drag endpoint: change connection");
+    expect(onStatusChange).toHaveBeenLastCalledWith("1 line selected");
   });
 
   it("uses translated shape names and selection state in node aria labels", () => {
@@ -526,11 +530,11 @@ describe("DiagramCanvas", () => {
       </I18nProvider>
     );
 
-    expect(screen.getByText("Add a shape to begin")).toBeInTheDocument();
-    expect(screen.getByText("Choose a shape, or drag one from the palette on the left onto the canvas.")).toBeInTheDocument();
+    expect(screen.queryByText("Add a shape to begin")).not.toBeInTheDocument();
+    expect(screen.queryByText("Choose a shape, or drag one from the palette on the left onto the canvas.")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Add shape" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Process" }));
+    const menu = screen.getByRole("menu", { name: "Shape to add" });
+    fireEvent.click(within(menu).getByRole("menuitem", { name: "Process" }));
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("shape: process");
@@ -559,7 +563,7 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 288");
   });
 
-  it("adds a connected shape from a selected diagram node", () => {
+  it("does not offer a connected-shape add menu from a selected diagram node", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
 
@@ -567,54 +571,42 @@ describe("DiagramCanvas", () => {
 
     fireEvent(source, pointerEvent("pointerdown", 2, 130, 90));
     fireEvent(source, pointerEvent("pointerup", 2, 130, 90));
-    const addButton = screen.getByRole("button", { name: "Add connected shape" });
-    fireEvent(addButton, pointerEvent("pointerdown", 3, 310, 120));
 
-    const menu = screen.getByRole("menu", { name: "Shape to connect" });
-    fireEvent(within(menu).getByRole("menuitem", { name: "Input / Output" }), pointerEvent("pointerdown", 4, 340, 120));
-
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0]?.[0]).toContain("id: node-3");
-    expect(onChange.mock.calls[0]?.[0]).toContain("shape: input-output");
-    expect(onChange.mock.calls[0]?.[0]).toContain("text: 入出力");
-    expect(onChange.mock.calls[0]?.[0]).toContain("width: 160");
-    expect(onChange.mock.calls[0]?.[0]).toContain("height: 64");
-    expect(onChange.mock.calls[0]?.[0]).toContain("from: node-1");
-    expect(onChange.mock.calls[0]?.[0]).toContain("to: node-3");
+    expect(screen.queryByRole("button", { name: "Add connected shape" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menu", { name: "Shape to connect" })).not.toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("does not offer a label shape in the connected shape menu", () => {
+  it("keeps shape creation in the empty-canvas palette instead of a connected shape menu", () => {
     const onChange = vi.fn();
-    render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
+    const emptyFreeDrawing = "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n";
+    render(<StatefulDiagramCanvas content={emptyFreeDrawing} onChange={onChange} />);
 
-    const source = freeDrawingNode("主人公");
-
-    fireEvent(source, pointerEvent("pointerdown", 2, 130, 90));
-    fireEvent(source, pointerEvent("pointerup", 2, 130, 90));
-    const addButton = screen.getByRole("button", { name: "Add connected shape" });
-    fireEvent(addButton, pointerEvent("pointerdown", 3, 310, 120));
-
-    const menu = screen.getByRole("menu", { name: "Shape to connect" });
+    const menu = screen.getByRole("menu", { name: "Shape to add" });
     expect(within(menu).queryByRole("menuitem", { name: "Label" })).not.toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("adds a YES standard choice label when connecting from a decision shape", () => {
+  it("adds a YES standard choice label when connecting from a decision shape port", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
+    const canvas = screen.getByRole("application", { name: "World" });
 
     const source = freeDrawingNode("敵対組織");
+    const target = freeDrawingNode("主人公");
 
     fireEvent(source, pointerEvent("pointerdown", 2, 390, 90));
     fireEvent(source, pointerEvent("pointerup", 2, 390, 90));
-    const addButton = screen.getByRole("button", { name: "Add connected shape" });
-    fireEvent(addButton, pointerEvent("pointerdown", 3, 560, 120));
+    const outline = source.querySelector(".diagram-canvas-node-outline-hit--right");
+    expect(outline).toBeInstanceOf(HTMLElement);
 
-    const menu = screen.getByRole("menu", { name: "Shape to connect" });
-    fireEvent(within(menu).getByRole("menuitem", { name: "Process" }), pointerEvent("pointerdown", 4, 590, 120));
+    fireEvent(outline as HTMLElement, pointerEvent("pointerdown", 3, 560, 120));
+    fireEvent(canvas, pointerEvent("pointermove", 3, 180, 120));
+    fireEvent(target, pointerEvent("pointerup", 3, 180, 120));
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("from: node-2");
+    expect(onChange.mock.calls[0]?.[0]).toContain("to: node-1");
     expect(onChange.mock.calls[0]?.[0]).toContain("label: 'YES'");
   });
 
@@ -641,6 +633,13 @@ describe("DiagramCanvas", () => {
       "    y: 80",
       "    width: 180",
       "    height: 80",
+      "  - id: node-3",
+      "    shape: process",
+      "    text: NO先",
+      "    x: 380",
+      "    y: 240",
+      "    width: 180",
+      "    height: 80",
       "lines:",
       "  - id: line-1",
       "    from: node-1",
@@ -650,18 +649,22 @@ describe("DiagramCanvas", () => {
     ].join("\n");
     render(<StatefulDiagramCanvas content={oneDecisionOutputContent} onChange={onChange} />);
 
+    const canvas = screen.getByRole("application", { name: "World" });
     const source = freeDrawingNode("判断");
+    const target = freeDrawingNode("NO先");
 
     fireEvent(source, pointerEvent("pointerdown", 2, 130, 90));
     fireEvent(source, pointerEvent("pointerup", 2, 130, 90));
-    const addButton = screen.getByRole("button", { name: "Add connected shape" });
-    fireEvent(addButton, pointerEvent("pointerdown", 3, 300, 120));
+    const outline = source.querySelector(".diagram-canvas-node-outline-hit--right");
+    expect(outline).toBeInstanceOf(HTMLElement);
 
-    const menu = screen.getByRole("menu", { name: "Shape to connect" });
-    fireEvent(within(menu).getByRole("menuitem", { name: "Process" }), pointerEvent("pointerdown", 4, 330, 120));
+    fireEvent(outline as HTMLElement, pointerEvent("pointerdown", 3, 300, 120));
+    fireEvent(canvas, pointerEvent("pointermove", 3, 430, 280));
+    fireEvent(target, pointerEvent("pointerup", 3, 430, 280));
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("from: node-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("to: node-3");
     expect(onChange.mock.calls[0]?.[0]).toContain("label: 'NO'");
   });
 
@@ -1036,13 +1039,14 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[2]?.[0]).toContain("id: node-3");
   });
 
-  it("changes the selected diagram shape from the canvas toolbar", () => {
+  it("changes the selected diagram shape from the node context menu", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={diagramContent} onChange={onChange} />);
     const alice = freeDrawingNode("alice");
 
     fireEvent(alice, pointerEvent("pointerdown", 2, 10, 10));
     fireEvent(alice, pointerEvent("pointerup", 2, 10, 10));
+    fireEvent.contextMenu(alice, { clientX: 120, clientY: 80 });
     fireEvent.change(screen.getByLabelText("Shape"), { target: { value: "decision" } });
 
     expect(onChange).toHaveBeenCalledTimes(1);
@@ -1349,15 +1353,18 @@ describe("DiagramCanvas", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("does not render node connection handles", () => {
+  it("renders node connection ports as direct handles", () => {
     render(
       <I18nProvider language="en">
         <DiagramCanvas content={diagramContentWithoutLines} fileName="World" />
       </I18nProvider>
     );
 
-    expect(screen.queryByLabelText("Connect alice")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Connect bob")).not.toBeInTheDocument();
+    const alice = freeDrawingNode("alice");
+    const bob = freeDrawingNode("bob");
+
+    expect(alice.querySelectorAll(".diagram-canvas-node-outline-hit")).toHaveLength(4);
+    expect(bob.querySelectorAll(".diagram-canvas-node-outline-hit")).toHaveLength(4);
   });
 
   it("adds a line by dragging from a selected node to another node", () => {
@@ -1442,7 +1449,7 @@ describe("DiagramCanvas", () => {
     expect(screen.getByText("best friends")).toBeInTheDocument();
   });
 
-  it("shows an add-label button for a selected unlabeled line", () => {
+  it("shows an inline add-label target for a selected unlabeled line", () => {
     const onChange = vi.fn();
     const { container } = render(
       <I18nProvider language="en">
@@ -1452,10 +1459,10 @@ describe("DiagramCanvas", () => {
     const line = container.querySelector(".diagram-canvas-line-hit");
     expect(line).toBeInstanceOf(Element);
 
-    expect(screen.queryByRole("button", { name: "Add line label" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Add line label")).not.toBeInTheDocument();
     fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
 
-    expect(screen.getByRole("button", { name: "Add line label" })).toBeInTheDocument();
+    expect(screen.getByText("Add line label")).toBeInTheDocument();
   });
 
   it("clears diagram selection with Escape without saving", () => {
@@ -1470,11 +1477,13 @@ describe("DiagramCanvas", () => {
     expect(line).toBeInstanceOf(Element);
 
     fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
-    expect(screen.getByRole("button", { name: "Add line label" })).toBeInTheDocument();
+    expect(screen.getByText("Add line label")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Change line start" })).toBeInTheDocument();
 
     fireEvent.keyDown(canvas, { key: "Escape" });
 
-    expect(screen.queryByRole("button", { name: "Add line label" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Add line label")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Change line start" })).not.toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -1664,9 +1673,10 @@ describe("DiagramCanvas", () => {
     const line = container.querySelector(".diagram-canvas-line-hit");
     expect(line).toBeInstanceOf(Element);
 
-    expect(screen.queryByRole("button", { name: "Reverse arrow direction" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Reverse arrow direction" })).not.toBeInTheDocument();
     fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
-    fireEvent.pointerDown(screen.getByRole("button", { name: "Reverse arrow direction" }));
+    fireEvent.contextMenu(line as Element, { clientX: 260, clientY: 120 });
+    fireEvent.pointerDown(screen.getByRole("menuitem", { name: "Reverse arrow direction" }));
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("from: node-2");
