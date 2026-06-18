@@ -1040,13 +1040,6 @@
   stroke-width: 2.6;
 }
 
-.diagram-canvas-line-annotation-anchor {
-  fill: var(--bg);
-  pointer-events: none;
-  stroke: color-mix(in srgb, var(--accent) 74%, var(--text-3));
-  stroke-width: 2;
-}
-
 .diagram-canvas-line--preview {
   opacity: 0.72;
   stroke: var(--accent);
@@ -1243,13 +1236,106 @@
 }
 
 .diagram-canvas-node--shape-label {
+  --diagram-callout-tail-border: color-mix(in srgb, var(--accent) 58%, var(--diagram-node-layer-border, var(--border-medium)));
+  --diagram-callout-tail-fill: color-mix(in srgb, var(--bg) 88%, var(--accent) 12%);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--bg) 96%, white 4%), color-mix(in srgb, var(--bg) 86%, var(--accent) 14%));
-  border: 2px solid color-mix(in srgb, var(--accent) 58%, var(--diagram-node-layer-border, var(--border-medium)));
+  border: 2px solid var(--diagram-callout-tail-border);
   border-radius: 18px;
   box-shadow:
     0 8px 20px rgba(15, 23, 42, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.diagram-canvas-node--shape-label::before,
+.diagram-canvas-node--shape-label::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+}
+
+.diagram-canvas-node--shape-label::before {
+  background: var(--diagram-callout-tail-border);
+}
+
+.diagram-canvas-node--shape-label::after {
+  background: var(--diagram-callout-tail-fill);
+}
+
+.diagram-canvas-node--callout-tail-bottom::before,
+.diagram-canvas-node--callout-tail-bottom::after {
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.diagram-canvas-node--callout-tail-bottom::before {
+  bottom: -16px;
+  height: 16px;
+  width: 24px;
+}
+
+.diagram-canvas-node--callout-tail-bottom::after {
+  bottom: -12px;
+  height: 12px;
+  width: 18px;
+}
+
+.diagram-canvas-node--callout-tail-top::before,
+.diagram-canvas-node--callout-tail-top::after {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.diagram-canvas-node--callout-tail-top::before {
+  height: 16px;
+  top: -16px;
+  width: 24px;
+}
+
+.diagram-canvas-node--callout-tail-top::after {
+  height: 12px;
+  top: -12px;
+  width: 18px;
+}
+
+.diagram-canvas-node--callout-tail-left::before,
+.diagram-canvas-node--callout-tail-left::after {
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.diagram-canvas-node--callout-tail-left::before {
+  height: 24px;
+  left: -16px;
+  width: 16px;
+}
+
+.diagram-canvas-node--callout-tail-left::after {
+  height: 18px;
+  left: -12px;
+  width: 12px;
+}
+
+.diagram-canvas-node--callout-tail-right::before,
+.diagram-canvas-node--callout-tail-right::after {
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.diagram-canvas-node--callout-tail-right::before {
+  height: 24px;
+  right: -16px;
+  width: 16px;
+}
+
+.diagram-canvas-node--callout-tail-right::after {
+  height: 18px;
+  right: -12px;
+  width: 12px;
 }
 
 .diagram-canvas-node--shape-area {

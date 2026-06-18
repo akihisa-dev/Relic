@@ -108,6 +108,8 @@ describe("buildLineLayouts", () => {
     ]);
 
     expect(line).toMatchObject({
+      annotationLabelNodeId: "label-1",
+      annotationLabelSide: "left",
       kind: "annotation",
       label: "",
       line: { id: "line-annotation" }

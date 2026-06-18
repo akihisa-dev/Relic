@@ -159,7 +159,8 @@ describe("outputHtml", () => {
     expect(result.html).toContain("relic-output-diagram-canvas-node--shape-area");
     expect(result.html).toContain("relic-output-diagram-canvas-node--shape-label");
     expect(result.html).toContain("relic-output-diagram-canvas-line--annotation");
-    expect(result.html).toContain("relic-output-diagram-canvas-line-annotation-anchor");
+    expect(result.html).toContain("relic-output-diagram-canvas-callout-tail");
+    expect(result.html).toContain("relic-output-diagram-canvas-callout-tail--top");
     expect(result.html).toContain("relic-output-diagram-canvas-node-label--shape-process");
     expect(result.html).toContain("relic-output-diagram-canvas-node-label--shape-decision");
     expect(result.html).toContain("relic-output-diagram-canvas-node-label--area");
