@@ -113,8 +113,8 @@ const diagramLineKeys = new Set(["id", "from", "to", "label"]);
 const currentDiagramFormatVersion = 1;
 const diagramFrontmatterKeys = new Set(["type", "title", "formatVersion"]);
 const diagramNodeGridSize = 32;
-const defaultNodeWidth = 192;
-const defaultNodeHeight = 96;
+const defaultNodeWidth = diagramNodeGridSize * 5;
+const defaultNodeHeight = diagramNodeGridSize * 2;
 
 export const emptyRelicFreeDrawingMarkdownContent = [
   "---",

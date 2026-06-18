@@ -407,6 +407,8 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("text: 判断");
     expect(onChange.mock.calls[0]?.[0]).toContain("x: 160");
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 128");
+    expect(onChange.mock.calls[0]?.[0]).toContain("width: 160");
+    expect(onChange.mock.calls[0]?.[0]).toContain("height: 64");
   });
 
   it("adds a connected shape from a selected diagram node", () => {
@@ -427,6 +429,8 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("id: node-3");
     expect(onChange.mock.calls[0]?.[0]).toContain("shape: input-output");
     expect(onChange.mock.calls[0]?.[0]).toContain("text: 入出力");
+    expect(onChange.mock.calls[0]?.[0]).toContain("width: 160");
+    expect(onChange.mock.calls[0]?.[0]).toContain("height: 64");
     expect(onChange.mock.calls[0]?.[0]).toContain("from: node-1");
     expect(onChange.mock.calls[0]?.[0]).toContain("to: node-3");
   });

@@ -156,6 +156,10 @@ describe("Diagram operations", () => {
     expect(addedNode.ok ? addedNode.value.node.id : "").toBe("node-3");
     expect(addedNode.ok ? addedNode.value.content : "").toContain("shape: input-output");
     expect(addedNode.ok ? addedNode.value.content : "").toContain("text: 入出力");
+    expect(addedNode.ok ? addedNode.value.node : null).toMatchObject({ height: 64, width: 160 });
+
+    const addedArea = addRelicFreeDrawingNode(diagramContent, "area", 640, 320);
+    expect(addedArea.ok ? addedArea.value.node : null).toMatchObject({ height: 224, width: 384 });
 
     const updatedText = updateRelicFreeDrawingNodeText(diagramContent, "node-1", "新しいテキスト");
     expect(updatedText.ok ? updatedText.value.content : "").toContain("text: 新しいテキスト");

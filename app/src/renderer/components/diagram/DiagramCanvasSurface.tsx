@@ -52,8 +52,8 @@ import { DiagramSnapGuides } from "./DiagramSnapGuides";
 import { diagramGridSize, snapDiagramNode, snapDiagramPointToGrid, snapDiagramSizeToGrid, type DiagramSnapGuide } from "./diagramSnap";
 
 const connectActivationDistance = 4;
-const connectedShapeDefaultHeight = 80;
-const connectedShapeDefaultWidth = 180;
+const connectedShapeDefaultHeight = diagramGridSize * 2;
+const connectedShapeDefaultWidth = diagramGridSize * 5;
 const decisionOptionLabels = ["YES", "NO"] as const;
 const minNodeHeight = 64;
 const minNodeWidth = 96;
