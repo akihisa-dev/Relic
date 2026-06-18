@@ -863,6 +863,84 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 140");
   });
 
+  it("duplicates copied diagram nodes and keeps undo redo history in the canvas", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={diagramContent} onChange={onChange} />);
+    const canvas = screen.getByRole("img", { name: "World" });
+    const alice = freeDrawingNode("alice");
+
+    fireEvent(alice, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(alice, pointerEvent("pointerup", 2, 10, 10));
+    fireEvent.keyDown(canvas, { ctrlKey: true, key: "c" });
+    fireEvent.keyDown(canvas, { ctrlKey: true, key: "v" });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: node-3");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 152");
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("id: line-2");
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(onChange.mock.calls[1]?.[0]).not.toContain("id: node-3");
+
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(onChange).toHaveBeenCalledTimes(3);
+    expect(onChange.mock.calls[2]?.[0]).toContain("id: node-3");
+  });
+
+  it("changes the selected diagram shape from the canvas toolbar", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={diagramContent} onChange={onChange} />);
+    const alice = freeDrawingNode("alice");
+
+    fireEvent(alice, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(alice, pointerEvent("pointerup", 2, 10, 10));
+    fireEvent.change(screen.getByLabelText("Shape"), { target: { value: "decision" } });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: node-1\n    shape: decision");
+  });
+
+  it("deletes multiple selected diagram nodes together", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={diagramContent} onChange={onChange} />);
+    const canvas = screen.getByRole("img", { name: "World" });
+    const alice = freeDrawingNode("alice");
+    const bob = freeDrawingNode("bob");
+
+    fireEvent(alice, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(alice, pointerEvent("pointerup", 2, 10, 10));
+    fireEvent(bob, pointerEvent("pointerdown", 3, 390, 90, { shiftKey: true }));
+    fireEvent(bob, pointerEvent("pointerup", 3, 390, 90, { shiftKey: true }));
+    fireEvent.keyDown(canvas, { key: "Delete" });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("id: node-1");
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("id: node-2");
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("id: line-1");
+  });
+
+  it("creates a diagram line from the keyboard", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={diagramContentWithoutLines} onChange={onChange} />);
+    const canvas = screen.getByRole("img", { name: "World" });
+    const alice = freeDrawingNode("alice");
+    const bob = freeDrawingNode("bob");
+
+    fireEvent(alice, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(alice, pointerEvent("pointerup", 2, 10, 10));
+    fireEvent.keyDown(canvas, { key: "l" });
+    expect(screen.getByText("Select a target shape and press L again to connect.")).toBeInTheDocument();
+
+    fireEvent(bob, pointerEvent("pointerdown", 3, 390, 90));
+    fireEvent(bob, pointerEvent("pointerup", 3, 390, 90));
+    fireEvent.keyDown(canvas, { key: "l" });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("from: node-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("to: node-2");
+  });
+
   it("does not show the Mermaid copy action in Diagram mode", () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
@@ -1444,12 +1522,19 @@ describe("DiagramCanvas", () => {
   });
 });
 
-function pointerEvent(type: string, pointerId: number, clientX: number, clientY: number): Event {
+function pointerEvent(
+  type: string,
+  pointerId: number,
+  clientX: number,
+  clientY: number,
+  init: MouseEventInit = {}
+): Event {
   const event = new MouseEvent(type, {
     bubbles: true,
     cancelable: true,
     clientX,
-    clientY
+    clientY,
+    ...init
   });
 
   Object.defineProperty(event, "pointerId", { value: pointerId });

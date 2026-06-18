@@ -154,6 +154,7 @@ export function PaneContentSurface({
             <DiagramCanvas
               content={activeFileTab.content}
               fileName={activeFileTab.name}
+              key={activeFileTab.id}
               onChange={(content) => onUpdateTabContent(activeFileTab.id, content)}
             />
           ) : (
