@@ -66,6 +66,37 @@ describe("readWorkspaceFileTree", () => {
     ]);
   });
 
+  it("既定除外ディレクトリ配下のMarkdownは返さない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-tree-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "notes"));
+    await mkdir(path.join(workspacePath, "node_modules"));
+    await mkdir(path.join(workspacePath, "out"));
+    await mkdir(path.join(workspacePath, "dist"));
+    await mkdir(path.join(workspacePath, "build"));
+    await writeFile(path.join(workspacePath, "notes", "keep.md"), "# Keep", "utf8");
+    await writeFile(path.join(workspacePath, "node_modules", "skip.md"), "# Skip", "utf8");
+    await writeFile(path.join(workspacePath, "out", "skip.md"), "# Skip", "utf8");
+    await writeFile(path.join(workspacePath, "dist", "skip.md"), "# Skip", "utf8");
+    await writeFile(path.join(workspacePath, "build", "skip.md"), "# Skip", "utf8");
+
+    await expect(readWorkspaceFileTree(workspacePath)).resolves.toEqual([
+      {
+        children: [
+          {
+            name: "keep",
+            path: "notes/keep.md",
+            type: "file"
+          }
+        ],
+        name: "notes",
+        path: "notes",
+        type: "folder"
+      }
+    ]);
+  });
+
   it("読めない子フォルダは空フォルダとして扱い、読める項目は返す", async () => {
     const workspacePath = path.join(path.sep, "workspace");
     const lockedPath = path.join(workspacePath, "locked");

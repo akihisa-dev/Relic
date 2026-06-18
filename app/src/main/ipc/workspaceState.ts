@@ -21,7 +21,8 @@ export async function buildWorkspaceState(settings: AppSettings): Promise<Worksp
     .then((fileTree) =>
       readWorkspaceFileIndex(activeWorkspace.path, {
         cachePath: getWorkspaceFileIndexCachePath(userDataPath, activeWorkspace.id),
-        fileTree
+        fileTree,
+        includeSearchContent: false
       }).catch(() => ({ entries: [], records: [] }))
     );
 

@@ -43,6 +43,7 @@ interface WorkspaceFileIndexOptions {
   cachePath?: string;
   filePaths?: string[];
   fileTree?: WorkspaceTreeNode[];
+  includeSearchContent?: boolean;
   maxSearchFileBytes?: number;
   operations?: Partial<WorkspaceFileIndexOperations>;
 }
@@ -56,7 +57,7 @@ interface WorkspaceFileIndexOperations {
   writeCache(filePath: string, content: string): Promise<void>;
 }
 
-const workspaceFileIndexCacheVersion = 3;
+const workspaceFileIndexCacheVersion = 4;
 const defaultMaxSearchFileBytes = 2 * 1024 * 1024;
 const mapMarkerHeadBytes = 256;
 const safeWorkspaceIndexIdPattern = /^[A-Za-z0-9_-]+$/;
@@ -84,6 +85,7 @@ export async function readWorkspaceFileIndex(
   options: WorkspaceFileIndexOptions = {}
 ): Promise<WorkspaceFileIndex> {
   const operations = { ...defaultOperations, ...options.operations };
+  const includeSearchContent = options.includeSearchContent ?? true;
   const maxSearchFileBytes = options.maxSearchFileBytes ?? defaultMaxSearchFileBytes;
   const cachedRecords = options.cachePath
     ? await readCachedRecords(options.cachePath, operations)
@@ -115,6 +117,10 @@ export async function readWorkspaceFileIndex(
         cached.size === fileStats.size &&
         cached.mtimeMs === fileStats.mtimeMs
       ) {
+        if (!includeSearchContent) {
+          return { ...cached, lines: [] };
+        }
+
         if (cached.searchable) {
           try {
             const content = await operations.readFile(absolutePath.value);
@@ -138,7 +144,7 @@ export async function readWorkspaceFileIndex(
         }
       }
 
-      return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations);
+      return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent);
     }
   );
 
@@ -159,7 +165,8 @@ async function readIndexRecord(
   relativePath: string,
   fileStats: Stats,
   maxSearchFileBytes: number,
-  operations: WorkspaceFileIndexOperations
+  operations: WorkspaceFileIndexOperations,
+  includeSearchContent: boolean
 ): Promise<WorkspaceFileIndexRecord> {
   if (fileStats.size > maxSearchFileBytes) {
     try {
@@ -183,7 +190,7 @@ async function readIndexRecord(
       relativePath,
       fileStats,
       isRelicDiagramMarkdownContent(content) ? "diagram" : "markdown",
-      content.split("\n"),
+      includeSearchContent ? content.split("\n") : [],
       true,
       fileHash(content)
     );

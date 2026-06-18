@@ -12,6 +12,12 @@ import { isSafePreviewUrl, sanitizePreviewHtml } from "./htmlSanitizer";
 export const maxEmbeddedFileLength = 20_000;
 
 const MARKDOWN_EXTENSIONS_REGISTERED = Symbol.for("relic.previewMarkdown.extensionsRegistered");
+const maxPreviewCacheEntries = 12;
+const maxHighlightCacheEntries = 80;
+const maxMathCacheEntries = 80;
+const previewRenderCache = new Map<string, string>();
+const highlightCache = new Map<string, string>();
+const mathCache = new Map<string, string>();
 
 export type EmbedState =
   | { status: "loading" }
@@ -24,8 +30,15 @@ export function slugifyHeading(text: string): string {
 }
 
 function renderMath(tex: string, displayMode: boolean): string {
+  const cacheKey = `${displayMode ? "block" : "inline"}\n${tex}`;
+  const cached = mathCache.get(cacheKey);
+
+  if (cached) return cached;
+
   try {
-    return katex.renderToString(tex, { displayMode, throwOnError: false });
+    const rendered = katex.renderToString(tex, { displayMode, throwOnError: false });
+    rememberCacheEntry(mathCache, cacheKey, rendered, maxMathCacheEntries);
+    return rendered;
   } catch {
     return `<span class="math-error">${tex}</span>`;
   }
@@ -185,7 +198,7 @@ function buildRenderer(): Renderer {
     }
 
     const language = lang && hljs.getLanguage(lang) ? lang : "plaintext";
-    const highlighted = hljs.highlight(text, { language }).value;
+    const highlighted = renderHighlightedCode(language, text);
 
     return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`;
   };
@@ -247,6 +260,11 @@ export function renderMarkdown(
   renderEmbeds: boolean,
   t: Translator
 ): string {
+  const cacheKey = createPreviewCacheKey(content, workspacePath, embeds, renderEmbeds, t);
+  const cached = previewRenderCache.get(cacheKey);
+
+  if (cached) return cached;
+
   registerMarkedExtensions();
   const renderer = buildRenderer();
   const withEmbedPlaceholders = renderEmbeds
@@ -271,6 +289,7 @@ export function renderMarkdown(
   );
   const sanitized = sanitizePreviewHtml(withCheckboxes);
 
+  rememberCacheEntry(previewRenderCache, cacheKey, sanitized, maxPreviewCacheEntries);
   return sanitized;
 }
 
@@ -297,4 +316,40 @@ function renderFileEmbed(
   const body = renderMarkdown(state.content, workspacePath, new Map(), false, t);
 
   return `<section class="preview-file-embed"><div class="preview-file-embed-title">${escapeHtml(state.name)}</div><div class="preview-file-embed-body">${body}</div></section>`;
+}
+
+function renderHighlightedCode(language: string, text: string): string {
+  const cacheKey = `${language}\n${text}`;
+  const cached = highlightCache.get(cacheKey);
+
+  if (cached) return cached;
+
+  const highlighted = hljs.highlight(text, { language }).value;
+  rememberCacheEntry(highlightCache, cacheKey, highlighted, maxHighlightCacheEntries);
+  return highlighted;
+}
+
+function createPreviewCacheKey(
+  content: string,
+  workspacePath: string | null | undefined,
+  embeds: Map<string, EmbedState>,
+  renderEmbeds: boolean,
+  t: Translator
+): string {
+  return JSON.stringify({
+    content,
+    embeds: [...embeds.entries()].sort(([a], [b]) => a.localeCompare(b, "ja")),
+    renderEmbeds,
+    translatorKey: t("preview.embedLoading", { target: "__relic_cache_key__" }),
+    workspacePath: workspacePath ?? null
+  });
+}
+
+function rememberCacheEntry(cache: Map<string, string>, key: string, value: string, maxEntries: number): void {
+  cache.set(key, value);
+
+  if (cache.size > maxEntries) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey) cache.delete(oldestKey);
+  }
 }

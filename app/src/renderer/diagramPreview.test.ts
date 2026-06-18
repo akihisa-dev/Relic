@@ -65,6 +65,38 @@ describe("diagramPreview", () => {
     });
   });
 
+  it("同じMermaidソースとテーマでは描画結果を再利用する", async () => {
+    const { renderDiagramElement } = await loadDiagramPreviewModule();
+    const firstContainer = createAttachedContainer();
+    const secondContainer = createAttachedContainer();
+    renderMock.mockResolvedValueOnce({ svg: "<svg><text>cached</text></svg>" });
+
+    await renderDiagramElement(firstContainer, "mermaid", "graph TD; A-->B");
+    await renderDiagramElement(secondContainer, "mermaid", "graph TD; A-->B");
+
+    expect(renderMock).toHaveBeenCalledTimes(1);
+    expect(firstContainer.querySelector(".preview-diagram-svg--mermaid svg")?.textContent).toBe("cached");
+    expect(secondContainer.querySelector(".preview-diagram-svg--mermaid svg")?.textContent).toBe("cached");
+  });
+
+  it("Mermaidはテーマが変わった場合に別の描画結果として扱う", async () => {
+    const { renderDiagramElement } = await loadDiagramPreviewModule();
+    const firstContainer = createAttachedContainer();
+    const secondContainer = createAttachedContainer();
+    renderMock
+      .mockResolvedValueOnce({ svg: "<svg><text>light</text></svg>" })
+      .mockResolvedValueOnce({ svg: "<svg><text>dark</text></svg>" });
+
+    document.documentElement.setAttribute("data-theme", "light");
+    await renderDiagramElement(firstContainer, "mermaid", "graph TD; A-->B");
+    document.documentElement.setAttribute("data-theme", "dark");
+    await renderDiagramElement(secondContainer, "mermaid", "graph TD; A-->B");
+
+    expect(renderMock).toHaveBeenCalledTimes(2);
+    expect(firstContainer.querySelector(".preview-diagram-svg--mermaid svg")?.textContent).toBe("light");
+    expect(secondContainer.querySelector(".preview-diagram-svg--mermaid svg")?.textContent).toBe("dark");
+  });
+
   it("renderDiagramElementsは壊れたdata-diagram-sourceを描画に渡さない", async () => {
     const { renderDiagramElements } = await loadDiagramPreviewModule();
     const container = document.createElement("div");
@@ -107,6 +139,46 @@ describe("diagramPreview", () => {
     await vi.waitFor(() => {
       expect(container.querySelector(".preview-diagram-svg--d2 svg")?.textContent).toBe("D2");
     });
+  });
+
+  it("同じD2ソースでは進行中の描画結果を共有して再利用する", async () => {
+    const { renderDiagramElement } = await loadDiagramPreviewModule();
+    const firstContainer = createAttachedContainer();
+    const secondContainer = createAttachedContainer();
+    compileD2Mock.mockResolvedValueOnce({
+      diagram: { root: true },
+      renderOptions: {}
+    });
+    renderD2Mock.mockResolvedValueOnce('<svg viewBox="0 0 120 80"><text>cached d2</text></svg>');
+
+    await Promise.all([
+      renderDiagramElement(firstContainer, "d2", "x -> y"),
+      renderDiagramElement(secondContainer, "d2", "x -> y")
+    ]);
+
+    expect(compileD2Mock).toHaveBeenCalledTimes(1);
+    expect(renderD2Mock).toHaveBeenCalledTimes(1);
+    expect(firstContainer.querySelector(".preview-diagram-svg--d2 svg")?.textContent).toBe("cached d2");
+    expect(secondContainer.querySelector(".preview-diagram-svg--d2 svg")?.textContent).toBe("cached d2");
+  });
+
+  it("D2ソースが変わった場合は新しく描画する", async () => {
+    const { renderDiagramElement } = await loadDiagramPreviewModule();
+    const firstContainer = createAttachedContainer();
+    const secondContainer = createAttachedContainer();
+    compileD2Mock
+      .mockResolvedValueOnce({ diagram: { id: "first" }, renderOptions: {} })
+      .mockResolvedValueOnce({ diagram: { id: "second" }, renderOptions: {} });
+    renderD2Mock
+      .mockResolvedValueOnce('<svg viewBox="0 0 120 80"><text>first</text></svg>')
+      .mockResolvedValueOnce('<svg viewBox="0 0 120 80"><text>second</text></svg>');
+
+    await renderDiagramElement(firstContainer, "d2", "x -> y");
+    await renderDiagramElement(secondContainer, "d2", "x -> z");
+
+    expect(compileD2Mock).toHaveBeenCalledTimes(2);
+    expect(renderD2Mock).toHaveBeenCalledTimes(2);
+    expect(secondContainer.querySelector(".preview-diagram-svg--d2 svg")?.textContent).toBe("second");
   });
 
   it("buildDiagramErrorはMermaidの基本情報を表示する", async () => {
@@ -362,8 +434,8 @@ describe("diagramPreview", () => {
       saveDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "saved", filePath: "/tmp/note.svg" } })
     });
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 120 80"><text>mermaid</text></svg>' });
-    const view = createFakeEditorView("```mermaid\ngraph TD; A-->B\n```", "Note");
-    const widget = new DiagramBlockWidget("graph TD; A-->B", "mermaid", 0, 30, 11);
+    const view = createFakeEditorView("```mermaid\ngraph TD; CleanCopy-->B\n```", "Note");
+    const widget = new DiagramBlockWidget("graph TD; CleanCopy-->B", "mermaid", 0, 39, 11);
     const element = widget.toDOM(view);
     document.body.append(element);
 

@@ -133,6 +133,37 @@ describe("readWorkspaceFileIndex", () => {
     expect(readCount).toBe(2);
   });
 
+  it("検索本文が不要な場合は未変更ファイルを本文再読込せずキャッシュから一覧を返す", async () => {
+    const workspacePath = await createWorkspace();
+    const userDataPath = await createWorkspace("relic-index-user-data-");
+    const cachePath = getWorkspaceFileIndexCachePath(userDataPath, "workspace_1");
+    await writeFile(path.join(workspacePath, "note.md"), "needle", "utf8");
+
+    await readWorkspaceFileIndex(workspacePath, { cachePath });
+
+    let readCount = 0;
+    const index = await readWorkspaceFileIndex(workspacePath, {
+      cachePath,
+      includeSearchContent: false,
+      operations: {
+        async readFile(filePath) {
+          readCount += 1;
+          return readFile(filePath, "utf8");
+        },
+        stat: readStat
+      }
+    });
+
+    expect(index.entries).toMatchObject([{
+      kind: "markdown",
+      name: "note",
+      path: "note.md",
+      readStatus: "ok"
+    }]);
+    expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual([]);
+    expect(readCount).toBe(0);
+  });
+
   it("旧バージョンキャッシュは安全に再生成される", async () => {
     const workspacePath = await createWorkspace();
     const userDataPath = await createWorkspace("relic-index-user-data-");
@@ -169,7 +200,7 @@ describe("readWorkspaceFileIndex", () => {
     const cache = JSON.parse(cacheRaw);
 
     expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["current"]);
-    expect(cache.version).toBe(3);
+    expect(cache.version).toBe(4);
     expect(cache.records[0]).not.toHaveProperty("lines");
   });
 
