@@ -1,5 +1,5 @@
 import { EditorView } from "@codemirror/view";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, KeyboardEvent, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
@@ -72,6 +72,11 @@ export function PaneContentSurface({
   const activeFileTab = activeTab?.kind === "file" ? activeTab : null;
   const isLargeMarkdown = activeFileTab ? isLargeMarkdownContent(activeFileTab.content) : false;
   const isDiagramMarkdown = activeFileTab ? isRelicDiagramMarkdownContent(activeFileTab.content) : false;
+  const showWordCount = !isDiagramMarkdown || sourceMode;
+  const textCountResult = useMemo(() => {
+    if (!showWordCount || !activeFileTab) return null;
+    return textCount(activeFileTab.content);
+  }, [activeFileTab?.content, showWordCount]);
   const [frontmatterAddButtonHost, setFrontmatterAddButtonHost] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -85,7 +90,6 @@ export function PaneContentSurface({
   }, [activeFileTab, isLargeMarkdown, notifiedLargeMarkdownFallbacks, onLargeMarkdownFallback]);
 
   if (activeFileTab) {
-    const { chars, words } = textCount(activeFileTab.content);
     const hasInvalidFrontmatter = hasInvalidFrontmatterYaml(activeFileTab.content);
     const editorContentMaxWidth = editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth;
     const editorTitleRowStyle = {
@@ -172,7 +176,11 @@ export function PaneContentSurface({
           )}
         </div>
         <div className="pane-status">
-          <span>{isDiagramMarkdown && !sourceMode ? diagramCanvasStatus(activeFileTab.content, t) : t("app.wordCount", { chars, words })}</span>
+          <span>
+            {isDiagramMarkdown && !sourceMode
+              ? diagramCanvasStatus(activeFileTab.content, t)
+              : t("app.wordCount", { chars: textCountResult?.chars ?? 0, words: textCountResult?.words ?? 0 })}
+          </span>
         </div>
       </div>
     );

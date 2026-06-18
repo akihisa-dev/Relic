@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { ReactElement } from "react";
 
 import { useT } from "../i18n";
@@ -12,7 +13,10 @@ interface AppStatusBarProps {
 
 export function AppStatusBar({ activeFileTab, saveStatus }: AppStatusBarProps): ReactElement {
   const t = useT();
-  const count = textCount(activeFileTab?.content ?? "");
+  const count = useMemo(
+    () => textCount(activeFileTab?.content ?? ""),
+    [activeFileTab?.content]
+  );
   const saveStatusLabel = saveStatus ? {
     dirty: t("app.saveStatus.dirty"),
     error: t("app.saveStatus.error"),

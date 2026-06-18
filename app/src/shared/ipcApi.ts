@@ -50,9 +50,10 @@ import type {
   RenameWorkspaceInput,
   ReplaceInFileInput,
   ReplaceInFileResult,
+  ApplySearchAndReplaceResult,
   RevealWorkspaceItemInput,
   SearchAndReplaceInput,
-  SearchAndReplaceMatch,
+  SearchAndReplacePreviewResult,
   SearchWorkspaceInput,
   SwitchWorkspaceInput,
   WorkspaceChangedEvent,
@@ -112,7 +113,7 @@ export interface RelicApi {
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   renameFolder: (input: RenameFolderInput) => Promise<RelicResult<WorkspaceState>>;
   revealWorkspaceItem: (input: RevealWorkspaceItemInput) => Promise<RelicResult<void>>;
-  applySearchAndReplace: (input: SearchAndReplaceInput) => Promise<RelicResult<ReplaceInFileResult>>;
+  applySearchAndReplace: (input: SearchAndReplaceInput) => Promise<RelicResult<ApplySearchAndReplaceResult>>;
   replaceInFile: (input: ReplaceInFileInput) => Promise<RelicResult<ReplaceInFileResult>>;
   printPreview: (input: PrintPreviewInput) => Promise<RelicResult<OutputPrintResult>>;
   saveDiagramSvg: (input: SaveDiagramSvgInput) => Promise<RelicResult<OutputSavedResult>>;
@@ -120,7 +121,7 @@ export interface RelicApi {
   savePreviewAsPdf: (input: SavePreviewAsPdfInput) => Promise<RelicResult<OutputSavedResult>>;
   searchAndReplace: (
     input: SearchAndReplaceInput
-  ) => Promise<RelicResult<SearchAndReplaceMatch[]>>;
+  ) => Promise<RelicResult<SearchAndReplacePreviewResult>>;
   searchWorkspace: (input: SearchWorkspaceInput) => Promise<RelicResult<WorkspaceSearchResultSet>>;
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;

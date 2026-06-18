@@ -114,6 +114,12 @@ export interface SearchAndReplaceMatch {
   path: string;
 }
 
+export interface SearchAndReplacePreviewResult {
+  matches: SearchAndReplaceMatch[];
+  skippedUnreadableFiles: string[];
+  truncated: boolean;
+}
+
 export interface SearchAndReplaceInput {
   isRegex: boolean;
   replacement: string;
@@ -122,6 +128,11 @@ export interface SearchAndReplaceInput {
 
 export interface ReplaceInFileResult {
   count: number;
+}
+
+export interface ApplySearchAndReplaceResult {
+  count: number;
+  skippedUnreadableFiles: string[];
 }
 
 export interface SwitchWorkspaceInput {

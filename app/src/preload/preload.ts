@@ -96,11 +96,12 @@ import {
   type RenameFolderInput,
   type RenameMarkdownFileInput,
   type RenameMarkdownFileResult,
+  type ApplySearchAndReplaceResult,
   type ReplaceInFileInput,
   type ReplaceInFileResult,
   type RevealWorkspaceItemInput,
   type SearchAndReplaceInput,
-  type SearchAndReplaceMatch,
+  type SearchAndReplacePreviewResult,
   type SearchWorkspaceInput,
   type SwitchWorkspaceInput,
   type WorkspaceChangedEvent,
@@ -117,7 +118,7 @@ import type { AliasIndex } from "../shared/links";
 
 const relicApi: RelicApi = {
   applySearchAndReplace: (input: SearchAndReplaceInput) =>
-    ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
+    ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ApplySearchAndReplaceResult>>,
   copyDiagramSvg: (input: CopyDiagramSvgInput) =>
     ipcRenderer.invoke(copyDiagramSvgChannel, input) as Promise<RelicResult<OutputCopyResult>>,
   createNewWorkspace: () =>
@@ -193,7 +194,7 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(savePreviewAsPdfChannel, input) as Promise<RelicResult<OutputSavedResult>>,
   searchAndReplace: (input: SearchAndReplaceInput) =>
     ipcRenderer.invoke(searchAndReplaceChannel, input) as Promise<
-      RelicResult<SearchAndReplaceMatch[]>
+      RelicResult<SearchAndReplacePreviewResult>
     >,
   searchWorkspace: (input: SearchWorkspaceInput) =>
     ipcRenderer.invoke(searchWorkspaceChannel, input) as Promise<
