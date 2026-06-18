@@ -74,6 +74,7 @@ export function PaneContentSurface({
   const isLargeMarkdown = useMemo(() => isLargeMarkdownContent(activeFileContent), [activeFileContent]);
   const isDiagramMarkdown = activeFileTab ? isRelicDiagramMarkdownCandidate(activeFileTab.content) : false;
   const showWordCount = !isDiagramMarkdown || sourceMode;
+  const [diagramStatus, setDiagramStatus] = useState<string | null>(null);
   const textCountResult = useMemo(() => {
     if (!showWordCount || !activeFileTab) return null;
     return textCount(activeFileTab.content);
@@ -97,27 +98,38 @@ export function PaneContentSurface({
       "--editor-file-title-max-width": editorContentMaxWidth ?? "100%"
     } as CSSProperties;
 
+    const diagramHeader = isDiagramMarkdown ? (
+      <DiagramFileHeader
+        isSourceMode={sourceMode}
+        name={activeFileTab.name}
+        onRename={(name) => onRenameFile(activeFileTab.path, name)}
+        onSourceModeToggle={onSourceModeToggle}
+      />
+    ) : null;
+
     return (
       <div
         className={`editor-surface${editorActionPulse > 0 ? ` editor-surface--action-${editorActionPulse % 2 === 0 ? "even" : "odd"}` : ""}`}
       >
         <div className="editor-body">
-          <div className="editor-file-title-row" style={editorTitleRowStyle}>
-            <div className="editor-file-title-slot">
-              <EditableFileTitle
-                key={activeFileTab.id}
-                name={activeFileTab.name}
-                onRename={(name) => onRenameFile(activeFileTab.path, name)}
-              />
+          {diagramHeader ?? (
+            <div className="editor-file-title-row" style={editorTitleRowStyle}>
+              <div className="editor-file-title-slot">
+                <EditableFileTitle
+                  key={activeFileTab.id}
+                  name={activeFileTab.name}
+                  onRename={(name) => onRenameFile(activeFileTab.path, name)}
+                />
+              </div>
+              <div className="editor-file-title-actions">
+                <SourceModeButton
+                  isSourceMode={sourceMode}
+                  onSourceModeToggle={onSourceModeToggle}
+                />
+                <div className="editor-file-title-frontmatter-action" ref={setFrontmatterAddButtonHost} />
+              </div>
             </div>
-            <div className="editor-file-title-actions">
-              <SourceModeButton
-                isSourceMode={sourceMode}
-                onSourceModeToggle={onSourceModeToggle}
-              />
-              <div className="editor-file-title-frontmatter-action" ref={setFrontmatterAddButtonHost} />
-            </div>
-          </div>
+          )}
           {activeFileTab.externalConflict ? (
             <output
               className="editor-conflict-banner"
@@ -157,6 +169,7 @@ export function PaneContentSurface({
               key={activeFileTab.id}
               onChange={(content) => onUpdateTabContent(activeFileTab.id, content)}
               onSourceModeToggle={onSourceModeToggle}
+              onStatusChange={setDiagramStatus}
             />
           ) : (
             <Editor
@@ -181,7 +194,7 @@ export function PaneContentSurface({
         <div className="pane-status">
           <span>
             {isDiagramMarkdown && !sourceMode
-              ? diagramCanvasStatus(activeFileTab.content, t)
+              ? (diagramStatus ?? diagramCanvasStatus(activeFileTab.content, t))
               : t("app.wordCount", { chars: textCountResult?.chars ?? 0, words: textCountResult?.words ?? 0 })}
           </span>
         </div>
@@ -222,6 +235,38 @@ export function PaneContentSurface({
           </button>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+interface DiagramFileHeaderProps {
+  isSourceMode: boolean;
+  name: string;
+  onRename: (name: string) => void;
+  onSourceModeToggle: () => void;
+}
+
+function DiagramFileHeader({
+  isSourceMode,
+  name,
+  onRename,
+  onSourceModeToggle
+}: DiagramFileHeaderProps): ReactElement {
+  return (
+    <div className="diagram-file-header">
+      <div className="diagram-file-title-slot">
+        <EditableFileTitle
+          key={name}
+          name={name}
+          onRename={onRename}
+        />
+      </div>
+      <div className="diagram-file-title-actions">
+        <SourceModeButton
+          isSourceMode={isSourceMode}
+          onSourceModeToggle={onSourceModeToggle}
+        />
+      </div>
     </div>
   );
 }

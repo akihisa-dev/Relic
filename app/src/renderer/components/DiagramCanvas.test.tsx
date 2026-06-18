@@ -240,10 +240,10 @@ const freeDrawingContentWithArea = [
   ""
 ].join("\n");
 
-function renderDiagramCanvas(content = diagramContent, onSourceModeToggle?: () => void) {
+function renderDiagramCanvas(content = diagramContent, onSourceModeToggle?: () => void, onStatusChange?: (status: string) => void) {
   render(
     <I18nProvider language="en">
-      <DiagramCanvas content={content} fileName="World" onSourceModeToggle={onSourceModeToggle} />
+      <DiagramCanvas content={content} fileName="World" onSourceModeToggle={onSourceModeToggle} onStatusChange={onStatusChange} />
     </I18nProvider>
   );
 }
@@ -358,6 +358,62 @@ describe("DiagramCanvas", () => {
     expect(within(lineToolbar).getByRole("button", { name: "Reverse arrow direction" })).toBeInTheDocument();
     expect(within(lineToolbar).getByRole("button", { name: "Delete" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Selected shape tools")).not.toBeInTheDocument();
+  });
+
+  it("reports selection-specific status text to the parent status bar", () => {
+    const onStatusChange = vi.fn();
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={vi.fn()} onStatusChange={onStatusChange} />
+      </I18nProvider>
+    );
+
+    expect(onStatusChange).toHaveBeenLastCalledWith("2 shapes / 1 line  Drag: move view  Shift+drag: range select");
+
+    const node = freeDrawingNode("alice");
+    fireEvent(node, pointerEvent("pointerdown", 1, 10, 10));
+    fireEvent(node, pointerEvent("pointerup", 1, 10, 10));
+    expect(onStatusChange).toHaveBeenLastCalledWith("\"alice\" selected  Enter/F2: edit  L: connect  Delete: delete");
+
+    const line = container.querySelector(".diagram-canvas-line-hit");
+    expect(line).toBeInstanceOf(Element);
+    fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
+    expect(onStatusChange).toHaveBeenLastCalledWith("Line selected  Double-click: edit label  Drag endpoint: change connection");
+  });
+
+  it("uses translated shape names and selection state in node aria labels", () => {
+    render(
+      <I18nProvider language="ja">
+        <DiagramCanvas content={freeDrawingContent} fileName="図解ファイル" onChange={vi.fn()} />
+      </I18nProvider>
+    );
+
+    const node = screen.getByRole("button", { name: /主人公、処理、未選択/ });
+    expect(node).toBeInTheDocument();
+
+    fireEvent(node, pointerEvent("pointerdown", 1, 10, 10));
+    fireEvent(node, pointerEvent("pointerup", 1, 10, 10));
+    expect(screen.getByRole("button", { name: /主人公、処理、選択中/ })).toBeInTheDocument();
+  });
+
+  it("exposes rejection notices as a live status region", () => {
+    render(
+      <I18nProvider language="ja">
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={vi.fn()} />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("application", { name: /World/ });
+    const alice = freeDrawingNode("alice");
+    fireEvent(alice, pointerEvent("pointerdown", 1, 10, 10));
+    fireEvent(alice, pointerEvent("pointerup", 1, 10, 10));
+    const outline = alice.querySelector(".diagram-canvas-node-outline-hit--right");
+    expect(outline).toBeInstanceOf(Element);
+
+    fireEvent(outline as Element, pointerEvent("pointerdown", 3, 300, 120));
+    fireEvent(canvas, pointerEvent("pointermove", 3, 340, 120));
+    fireEvent(alice, pointerEvent("pointerup", 3, 340, 120));
+
+    expect(screen.getByRole("status")).toHaveTextContent("同じ図形同士は接続できません。");
   });
 
   it("renders diagram text nodes and edits their text in Markdown", () => {
@@ -632,7 +688,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={freeDrawingDecisionWithTwoOutputs} fileName="図解ファイル" onChange={onChange} />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "図解ファイル" });
+    const canvas = screen.getByRole("application", { name: "図解ファイル" });
     const decision = freeDrawingNode("判断");
     const thirdTarget = freeDrawingNode("三本目");
 
@@ -958,7 +1014,7 @@ describe("DiagramCanvas", () => {
   it("duplicates copied diagram nodes and keeps undo redo history in the canvas", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={diagramContent} onChange={onChange} />);
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const alice = freeDrawingNode("alice");
 
     fireEvent(alice, pointerEvent("pointerdown", 2, 10, 10));
@@ -996,7 +1052,7 @@ describe("DiagramCanvas", () => {
   it("deletes multiple selected diagram nodes together", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={diagramContent} onChange={onChange} />);
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const alice = freeDrawingNode("alice");
     const bob = freeDrawingNode("bob");
 
@@ -1015,7 +1071,7 @@ describe("DiagramCanvas", () => {
   it("creates a diagram line from the keyboard", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={diagramContentWithoutLines} onChange={onChange} />);
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const alice = freeDrawingNode("alice");
     const bob = freeDrawingNode("bob");
 
@@ -1165,7 +1221,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContent} fileName="World" />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const space = container.querySelector(".diagram-canvas-space");
     expect(space).toBeInstanceOf(HTMLElement);
 
@@ -1182,7 +1238,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContent} fileName="World" />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const space = container.querySelector(".diagram-canvas-space");
     const nodeLayer = container.querySelector(".diagram-canvas-nodes");
     expect(space).toBeInstanceOf(HTMLElement);
@@ -1201,7 +1257,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContent} fileName="World" />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const space = container.querySelector(".diagram-canvas-space");
     expect(space).toBeInstanceOf(HTMLElement);
 
@@ -1238,7 +1294,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContent} fileName="World" />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "World" }) as HTMLElement;
+    const canvas = screen.getByRole("application", { name: "World" }) as HTMLElement;
 
     expect(canvas.style.getPropertyValue("--diagram-canvas-grid-size")).toBe("32px");
     expect(canvas.style.getPropertyValue("--diagram-canvas-grid-x")).toBe("0px");
@@ -1263,7 +1319,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const node = freeDrawingNode("alice");
     expect(node).toBeInstanceOf(HTMLElement);
 
@@ -1311,7 +1367,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const alice = freeDrawingNode("alice");
     const bob = freeDrawingNode("bob");
     expect(alice).toBeInstanceOf(HTMLElement);
@@ -1341,7 +1397,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const alice = freeDrawingNode("alice");
     const bob = freeDrawingNode("bob");
     expect(alice).toBeInstanceOf(HTMLElement);
@@ -1362,7 +1418,7 @@ describe("DiagramCanvas", () => {
   it("opens line label editing immediately after creating a line", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={diagramContentWithoutLines} onChange={onChange} />);
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const alice = freeDrawingNode("alice");
     const bob = freeDrawingNode("bob");
     expect(alice).toBeInstanceOf(HTMLElement);
@@ -1409,7 +1465,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContentWithEmptyLabel} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const line = container.querySelector(".diagram-canvas-line-hit");
     expect(line).toBeInstanceOf(Element);
 
@@ -1474,7 +1530,7 @@ describe("DiagramCanvas", () => {
     fireEvent(alice as HTMLElement, pointerEvent("pointermove", 3, 260, 10));
     fireEvent(alice as HTMLElement, pointerEvent("pointerup", 3, 260, 10));
 
-    expect(screen.getByRole("img", { name: "World" })).toBeInTheDocument();
+    expect(screen.getByRole("application", { name: "World" })).toBeInTheDocument();
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("x: 376");
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 80");
@@ -1543,7 +1599,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const alice = freeDrawingNode("alice");
     expect(alice).toBeInstanceOf(HTMLElement);
 
@@ -1571,7 +1627,7 @@ describe("DiagramCanvas", () => {
 
     fireEvent(node as HTMLElement, pointerEvent("pointerdown", 3, 10, 10));
     fireEvent(node as HTMLElement, pointerEvent("pointerup", 3, 10, 10));
-    fireEvent.keyDown(screen.getByRole("img", { name: "World" }), { key: "Delete" });
+    fireEvent.keyDown(screen.getByRole("application", { name: "World" }), { key: "Delete" });
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).not.toContain("id: node-1");
@@ -1590,7 +1646,7 @@ describe("DiagramCanvas", () => {
     expect(line).toBeInstanceOf(Element);
 
     fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
-    fireEvent.keyDown(screen.getByRole("img", { name: "World" }), { key: "Backspace" });
+    fireEvent.keyDown(screen.getByRole("application", { name: "World" }), { key: "Backspace" });
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).not.toContain("id: line-1");
@@ -1635,7 +1691,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={contentWithThirdNode} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const line = container.querySelector(".diagram-canvas-line-hit");
     const carol = freeDrawingNode("carol");
     expect(line).toBeInstanceOf(Element);
@@ -1658,7 +1714,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const line = container.querySelector(".diagram-canvas-line-hit");
     const bob = freeDrawingNode("bob");
     expect(line).toBeInstanceOf(Element);
@@ -1681,7 +1737,7 @@ describe("DiagramCanvas", () => {
         <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const canvas = screen.getByRole("img", { name: "World" });
+    const canvas = screen.getByRole("application", { name: "World" });
     const line = container.querySelector(".diagram-canvas-line-hit");
     const bob = freeDrawingNode("bob");
     expect(line).toBeInstanceOf(Element);

@@ -9,6 +9,7 @@ import {
   type WheelEvent as ReactWheelEvent,
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -41,6 +42,7 @@ import {
   type RelicFreeDrawingShapeType
 } from "../../../shared/diagramMarkdown";
 import { useT } from "../../i18n";
+import { type TranslationKey, type Translator } from "../../i18nModel";
 import {
   buildDiagramCanvasLayout,
   buildLineLayouts,
@@ -57,6 +59,7 @@ import { diagramShapeDragType, isFreeDrawingShapeType } from "./diagramShapeDrag
 import { diagramShapePaletteGroups, diagramShapePaletteItems } from "./diagramShapePalette";
 import { DiagramLineLayer } from "./DiagramLineLayer";
 import { diagramFreeDrawingLabelDisplayLayer, diagramNodeDisplayLayer } from "./diagramLayering";
+import { diagramStatusCountLabels } from "./diagramCanvasStatus";
 import { DiagramNodeView } from "./DiagramNodeView";
 import { DiagramSnapGuides } from "./DiagramSnapGuides";
 import { diagramGridSize, snapDiagramNode, snapDiagramPointToGrid, snapDiagramSizeToGrid, type DiagramSnapGuide } from "./diagramSnap";
@@ -157,9 +160,11 @@ export function DiagramCanvasSurface({
   diagram,
   fileName,
   onChange,
+  onStatusChange,
   toolbar
 }: DiagramCanvasProps & { diagram: RelicConnectedDiagramDocument }): ReactElement {
   const t = useT();
+  const canvasStatusDescriptionId = useId();
   const isFreeDrawing = diagram.type === "diagram";
   const [connect, setConnect] = useState<ConnectState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -1373,9 +1378,63 @@ export function DiagramCanvasSurface({
   const lineContextToolbarStyle = selectedLineLayout
     ? floatingToolbarStyleForLine(selectedLineLayout, viewport)
     : undefined;
+  const statusCounts = useMemo(
+    () => diagramStatusCountLabels(diagram.nodes.length, diagram.lines.length, t),
+    [diagram.lines.length, diagram.nodes.length, t]
+  );
+  const diagramStatusText = useMemo(() => {
+    if (nodeTextEdit) return t("diagram.statusEditingNode", {
+      name: nodeNameForStatus(diagram.nodes.find((node) => node.id === nodeTextEdit.nodeId), t)
+    });
+    if (labelEdit) return t("diagram.statusEditingLineLabel");
+    if (lineRetarget) return t("diagram.statusRetargetingLine");
+    if (connect?.isActive) return t("diagram.statusConnecting");
+    if (keyboardConnectFromNodeId) return t("diagram.statusKeyboardConnecting");
+    if (rangeSelect) return t("diagram.statusRangeSelecting");
+    if (drag && selectedNodeIds.has(drag.nodeId) && selectedNodeIds.size > 1) return t("diagram.statusMovingMultipleNodes", {
+      count: selectedNodeIds.size
+    });
+    if (drag) return t("diagram.statusMovingNode", {
+      name: nodeNameForStatus(diagram.nodes.find((node) => node.id === drag.nodeId), t)
+    });
+    if (resize) return t("diagram.statusResizingNode", {
+      name: nodeNameForStatus(diagram.nodes.find((node) => node.id === resize.nodeId), t)
+    });
+    if (selectedLineLayout) return t("diagram.statusLineSelected");
+    if (selectedNodeIdList.length > 1) return t("diagram.statusMultiNodeSelected", {
+      count: selectedNodeIdList.length
+    });
+    if (selectedEditableNode) return t("diagram.statusNodeSelected", {
+      name: nodeNameForStatus(selectedEditableNode, t)
+    });
+    return t("diagram.statusIdle", {
+      ...statusCounts
+    });
+  }, [
+    connect?.isActive,
+    diagram.nodes,
+    drag,
+    keyboardConnectFromNodeId,
+    labelEdit,
+    lineRetarget,
+    nodeTextEdit,
+    rangeSelect,
+    resize,
+    selectedEditableNode,
+    selectedLineLayout,
+    selectedNodeIdList.length,
+    selectedNodeIds,
+    statusCounts,
+    t
+  ]);
+
+  useEffect(() => {
+    onStatusChange?.(diagramStatusText);
+  }, [diagramStatusText, onStatusChange]);
 
   return (
     <div
+      aria-describedby={canvasStatusDescriptionId}
       aria-label={fileName}
       className={`diagram-canvas${pan ? " diagram-canvas--panning" : ""}`}
       ref={canvasRef}
@@ -1399,10 +1458,13 @@ export function DiagramCanvasSurface({
         finishRangeSelect(event);
       }}
       onWheel={handleCanvasWheel}
-      role="img"
+      role="application"
       style={canvasStyle}
       tabIndex={0}
     >
+      <span className="diagram-canvas-status-description" id={canvasStatusDescriptionId}>
+        {t("diagram.canvasAriaDescription", { status: diagramStatusText })}
+      </span>
       {toolbar}
       <div className="diagram-canvas-toolbar" aria-label={t("diagram.canvasToolbar")}>
         <div className="diagram-canvas-toolbar-group">
@@ -1483,7 +1545,7 @@ export function DiagramCanvasSurface({
         </div>
       ) : null}
       {notice ? (
-        <output className="diagram-canvas-notice">{notice}</output>
+        <output aria-live="polite" className="diagram-canvas-notice" role="status">{notice}</output>
       ) : null}
       {layout.nodes.length === 0 ? (
         <div className="diagram-canvas-empty-panel">
@@ -1648,6 +1710,12 @@ export function DiagramCanvasSurface({
                 isDragging={drag?.nodeId === node.id}
                 isTextEditing={nodeTextEdit?.nodeId === node.id}
                 isSelected={(selection?.type === "node" && selection.id === node.id) || selectedNodeIds.has(node.id)}
+                nodeAriaLabel={diagramNodeAriaLabel(
+                  node,
+                  (selection?.type === "node" && selection.id === node.id) || selectedNodeIds.has(node.id),
+                  lineRetargetNodeState(node.id),
+                  t
+                )}
                 connectionTargetState={lineRetargetNodeState(node.id)}
                 key={node.id}
                 node={node}
@@ -1763,6 +1831,34 @@ function focusCanvasFrom(element: Element): void {
   if (canvas instanceof HTMLElement) {
     canvas.focus({ preventScroll: true });
   }
+}
+
+function diagramNodeAriaLabel(
+  node: RelicConnectedDiagramNode,
+  isSelected: boolean,
+  connectionTargetState: "available" | "blocked" | undefined,
+  t: Translator
+): string {
+  const name = nodeNameForStatus(node, t);
+  const shape = freeDrawingShapeLabel(node.shape, t);
+  const selected = isSelected ? t("diagram.nodeAriaSelected") : t("diagram.nodeAriaNotSelected");
+  const connection = connectionTargetState === "available"
+    ? ` ${t("diagram.nodeAriaConnectionAvailable")}`
+    : connectionTargetState === "blocked"
+    ? ` ${t("diagram.nodeAriaConnectionBlocked")}`
+    : "";
+
+  return t("diagram.nodeAriaLabel", { connection, name, selected, shape });
+}
+
+function nodeNameForStatus(node: RelicConnectedDiagramNode | undefined, t: Translator): string {
+  if (!node) return t("diagram.freeDrawingNodeText");
+
+  return node.text.trim() || freeDrawingShapeLabel(node.shape, t);
+}
+
+function freeDrawingShapeLabel(shape: RelicFreeDrawingShapeType, t: Translator): string {
+  return t(`diagram.freeDrawingShape.${shape}` as TranslationKey);
 }
 
 function rectanglesOverlap(

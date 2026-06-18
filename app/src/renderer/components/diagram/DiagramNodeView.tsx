@@ -22,6 +22,7 @@ interface DiagramNodeViewProps {
   isSelected: boolean;
   connectionTargetState?: "available" | "blocked";
   node: RelicConnectedDiagramNode;
+  nodeAriaLabel: string;
   nodeTextDraft?: string;
   nodeTextLabel: string;
   onNodeTextCancel?: () => void;
@@ -56,6 +57,7 @@ export function DiagramNodeView({
   isSelected,
   connectionTargetState,
   node,
+  nodeAriaLabel,
   nodeTextDraft,
   nodeTextLabel,
   onNodeTextCancel,
@@ -109,7 +111,7 @@ export function DiagramNodeView({
       onPointerMove={onPointerMove}
       onPointerUp={(event) => onPointerUp(node, event)}
       role="button"
-      aria-label={`${freeText || nodeTextLabel} (${node.shape})`}
+      aria-label={nodeAriaLabel}
       style={nodeStyle}
       tabIndex={0}
       title={title}

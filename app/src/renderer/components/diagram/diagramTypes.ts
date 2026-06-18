@@ -5,5 +5,6 @@ export interface DiagramCanvasProps {
   fileName: string;
   onChange?: (content: string) => void;
   onSourceModeToggle?: () => void;
+  onStatusChange?: (status: string) => void;
   toolbar?: ReactElement;
 }
