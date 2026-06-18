@@ -9,7 +9,11 @@ import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
-import { replaceFileLinksWithCount, replaceFolderLinksWithCount } from "./linkUpdaterModel";
+import {
+  replaceFileLinksWithCount,
+  replaceMovedSourceBasenameLinksWithCount,
+  replaceFolderLinksWithCount
+} from "./linkUpdaterModel";
 import { resolveExistingWorkspacePath, toWorkspaceRelativePath } from "./paths";
 
 interface LinkUpdatePatch {
@@ -122,6 +126,8 @@ async function buildLinkUpdatePatches(
   const patches: LinkUpdatePatch[] = [];
   const newBaseName = stripMarkdownExtension(path.posix.basename(normalizedNewPath));
   const newPathWithoutExt = stripMarkdownExtension(normalizedNewPath);
+  const oldBaseName = stripMarkdownExtension(path.posix.basename(normalizedOldPath));
+  const oldPathWithoutExt = stripMarkdownExtension(normalizedOldPath);
   let skippedUnreadableFileCount = 0;
 
   for (const sourcePath of markdownPaths) {
@@ -140,6 +146,18 @@ async function buildLinkUpdatePatches(
       return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新のためにファイルを読み込めませんでした。", errorDetails(err));
     }
 
+    if (!shouldProcessMarkdownFile(
+      sourcePath,
+      normalizedNewPath,
+      kind,
+      content,
+      normalizedOldPath,
+      oldBaseName,
+      oldPathWithoutExt
+    )) {
+      continue;
+    }
+
     const replacement = kind === "file"
       ? replaceFileLinksWithCount(
         content,
@@ -149,6 +167,17 @@ async function buildLinkUpdatePatches(
         newPathWithoutExt
       )
       : replaceFolderLinksWithCount(content, normalizedOldPath, normalizedNewPath);
+
+    const movedSourceReplacement = kind === "file" && sourcePath === normalizedNewPath
+      ? replaceMovedSourceBasenameLinksWithCount(
+        replacement.content,
+        sourcePath,
+        normalizedOldPath
+      )
+      : { content: replacement.content, count: 0 };
+    replacement.content = movedSourceReplacement.content;
+    replacement.count += movedSourceReplacement.count;
+
     const mapReplacement = replaceRelicDiagramNodeFileReferences(
       replacement.content,
       kind,
@@ -171,6 +200,58 @@ async function buildLinkUpdatePatches(
     patches,
     skippedUnreadableFileCount
   });
+}
+
+function shouldProcessMarkdownFile(
+  sourcePath: string,
+  newRelativePath: string,
+  kind: LinkUpdateImpactKind,
+  content: string,
+  oldRelativePath: string,
+  oldBaseName: string,
+  oldPathWithoutExt: string
+): boolean {
+  if (sourcePath === newRelativePath) return true;
+
+  if (kind === "folder") {
+    return contentLikelyContainsPathPrefix(content, oldRelativePath);
+  }
+
+  return hasLikelyWikiLinkTarget(content, oldRelativePath, oldBaseName, oldPathWithoutExt);
+}
+
+function contentLikelyContainsPathPrefix(
+  content: string,
+  pathPrefix: string
+): boolean {
+  if (content.includes(pathPrefix)) return true;
+
+  return content.includes(`[[${pathPrefix}/`) ||
+    content.includes(`[[${pathPrefix}\\`) ||
+    content.includes(`[[${pathPrefix}#`) ||
+    content.includes(`[[${pathPrefix}^`) ||
+    content.includes(`[[${pathPrefix}|`) ||
+    content.includes(`[[${pathPrefix} `);
+}
+
+function hasLikelyWikiLinkTarget(
+  content: string,
+  oldRelativePath: string,
+  oldBaseName: string,
+  oldPathWithoutExt: string
+): boolean {
+  return content.includes(oldRelativePath) ||
+    hasLikelyWikiLinkTargetOf(content, oldBaseName) ||
+    hasLikelyWikiLinkTargetOf(content, oldPathWithoutExt) ||
+    hasLikelyWikiLinkTargetOf(content, oldRelativePath);
+}
+
+function hasLikelyWikiLinkTargetOf(content: string, target: string): boolean {
+  return content.includes(`[[${target}]]`) ||
+    content.includes(`[[${target}#`) ||
+    content.includes(`[[${target}^`) ||
+    content.includes(`[[${target}|`) ||
+    content.includes(`[[${target} `);
 }
 
 function summarizeLinkUpdatePatches(result: LinkUpdatePatchResult): LinkUpdateImpact {

@@ -10,10 +10,11 @@ import {
   defaultFrontmatterTemplates,
   defaultUserDefinedFields
 } from "../../shared/ipc";
-import { getAppSettingsPath, readAppSettings, writeAppSettings } from "./appSettings";
+import { getAppSettingsPath, readAppSettings, updateAppSettings, writeAppSettings } from "./appSettings";
 
 describe("appSettings", () => {
   const temporaryPaths: string[] = [];
+  const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
   afterEach(async () => {
     await Promise.all(
@@ -48,12 +49,21 @@ describe("appSettings", () => {
     await expect(readdir(userDataPath)).resolves.toEqual([path.basename(getAppSettingsPath(userDataPath))]);
   });
 
-  it("壊れたアプリ設定ファイルでも初期設定で読み込める", async () => {
+  it("壊れたアプリ設定ファイルは退避したうえで読み込みエラーになる", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), "{ invalid json", "utf8");
 
-    await expect(readAppSettings(userDataPath)).resolves.toEqual({
+    await expect(readAppSettings(userDataPath)).rejects.toHaveProperty("name", "CorruptAppSettingsError");
+    const files = await readdir(userDataPath);
+    expect(files).toHaveLength(1);
+    expect(files[0]).toMatch(/^app-settings\.corrupt-\d+\.json$/);
+  });
+
+  it("同時更新は更新ヘルパーで直列化される", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeAppSettings(userDataPath, {
       editorSettings: defaultEditorSettings,
       featureToggles: defaultFeatureToggles,
       frontmatterTemplates: defaultFrontmatterTemplates,
@@ -61,6 +71,29 @@ describe("appSettings", () => {
       userDefinedFields: defaultUserDefinedFields,
       workspaces: []
     });
+
+    const firstUpdate = updateAppSettings(userDataPath, async (settings) => {
+      await delay(30);
+      return {
+        ...settings,
+        workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/notes" }],
+        lastWorkspaceId: "ws-1"
+      };
+    });
+    const secondUpdate = updateAppSettings(userDataPath, (settings) => ({
+      ...settings,
+      featureToggles: {
+        ...settings.featureToggles,
+        tools: true
+      }
+    }));
+
+    await Promise.all([firstUpdate, secondUpdate]);
+    const loaded = await readAppSettings(userDataPath);
+
+    expect(loaded.lastWorkspaceId).toBe("ws-1");
+    expect(loaded.workspaces).toEqual([{ id: "ws-1", name: "Notes", path: "/tmp/notes" }]);
+    expect(loaded.featureToggles.tools).toBe(true);
   });
 
   it("旧rightPanel機能設定を右パネル個別設定へ引き継ぐ", async () => {

@@ -12,7 +12,7 @@ import {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { writeMarkdownFileContent } from "../files/markdownFiles";
-import { readAppSettings, writeAppSettings } from "../settings/appSettings";
+import { readAppSettings, updateAppSettings } from "../settings/appSettings";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import {
   editorClipboardMaxTextLength,
@@ -74,8 +74,10 @@ export function registerEditorHandlers(): void {
           return fail("EDITOR_SETTINGS_INVALID", "無効なエディタ設定です。");
         }
 
-        const settings = await readAppSettings(app.getPath("userData"));
-        await writeAppSettings(app.getPath("userData"), { ...settings, editorSettings: input });
+        await updateAppSettings(app.getPath("userData"), (settings) => ({
+          ...settings,
+          editorSettings: input
+        }));
 
         return ok(undefined);
       } catch (error) {

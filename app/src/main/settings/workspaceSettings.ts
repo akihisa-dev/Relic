@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm } from "node:fs/promises";
+import { mkdir, readFile, rm, rename } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -36,6 +36,24 @@ const defaultWorkspaceSettings: WorkspaceSettings = {
 };
 
 const WORKSPACE_SETTINGS_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
+type SerializedUpdate = Promise<unknown>;
+const workspaceSettingsUpdateQueues = new Map<string, SerializedUpdate>();
+
+function queueWorkspaceSettingsUpdate<T>(
+  workspaceId: string,
+  task: () => Promise<T>
+): Promise<T> {
+  const currentQueue = workspaceSettingsUpdateQueues.get(workspaceId) ?? Promise.resolve();
+  const next = currentQueue.catch(() => undefined).then(task);
+  const settled = next.finally(() => undefined);
+  workspaceSettingsUpdateQueues.set(workspaceId, settled);
+  settled.finally(() => {
+    if (workspaceSettingsUpdateQueues.get(workspaceId) === settled) {
+      workspaceSettingsUpdateQueues.delete(workspaceId);
+    }
+  }).catch(() => undefined);
+  return next;
+}
 
 export function getWorkspaceSettingsPath(userDataPath: string, workspaceId: string): string {
   assertSafeWorkspaceSettingsId(workspaceId);
@@ -50,7 +68,14 @@ export async function readWorkspaceSettings(
   try {
     const settingsPath = getWorkspaceSettingsPath(userDataPath, workspaceId);
     const raw = await readFile(settingsPath, "utf8");
-    const parsed = parseSettingsObject(raw);
+    const parsedJson = parseSettingsJson(raw);
+
+    if (!parsedJson.ok) {
+      await backupCorruptedSettingsFile(settingsPath);
+      throw createCorruptWorkspaceSettingsError(settingsPath);
+    }
+
+    const parsed = parseSettingsObject(parsedJson.value);
 
     if (!parsed) {
       return defaultWorkspaceSettings;
@@ -202,6 +227,19 @@ export async function writeWorkspaceSettings(
   await atomicWriteTextFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
 }
 
+export async function updateWorkspaceSettings(
+  userDataPath: string,
+  workspaceId: string,
+  update: (current: WorkspaceSettings) => Promise<WorkspaceSettings> | WorkspaceSettings
+): Promise<WorkspaceSettings> {
+  return queueWorkspaceSettingsUpdate(workspaceId, async () => {
+    const current = await readWorkspaceSettings(userDataPath, workspaceId);
+    const next = await update(current);
+    await writeWorkspaceSettings(userDataPath, workspaceId, next);
+    return next;
+  });
+}
+
 export async function removeWorkspaceSettings(
   userDataPath: string,
   workspaceId: string
@@ -211,18 +249,32 @@ export async function removeWorkspaceSettings(
   await rm(settingsPath, { force: true });
 }
 
-function parseSettingsObject(raw: string): PersistedWorkspaceSettings | null {
+function parseSettingsJson(raw: string): { ok: true; value: unknown } | { ok: false } {
   try {
-    const parsed: unknown = JSON.parse(raw);
-
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      return null;
-    }
-
-    return parsed as PersistedWorkspaceSettings;
+    return { ok: true, value: JSON.parse(raw) };
   } catch {
+    return { ok: false };
+  }
+}
+
+function parseSettingsObject(raw: unknown): PersistedWorkspaceSettings | null {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     return null;
   }
+
+  return raw as PersistedWorkspaceSettings;
+}
+
+function createCorruptWorkspaceSettingsError(settingsPath: string): Error {
+  const error = new Error(`設定JSONが壊れています: ${settingsPath}`) as Error;
+  error.name = "CorruptWorkspaceSettingsError";
+  return error;
+}
+
+async function backupCorruptedSettingsFile(settingsPath: string): Promise<void> {
+  const parsedPath = path.parse(settingsPath);
+  const backupPath = path.join(parsedPath.dir, `${parsedPath.name}.corrupt-${Date.now()}.json`);
+  await rename(settingsPath, backupPath);
 }
 
 function isMissingFileError(error: unknown): boolean {

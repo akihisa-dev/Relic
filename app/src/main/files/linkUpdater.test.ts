@@ -66,6 +66,41 @@ describe("updateLinksForFileRename", () => {
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("[[archive/note]]");
   });
 
+  it("移動対象ファイル内で basename-only リンクの意味が変わる場合はパス付きリンクへ更新する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
+    temporaryPaths.push(ws);
+    await mkdir(path.join(ws, "archive"));
+
+    await writeFile(path.join(ws, "archive", "note.md"), [
+      "[[target]]",
+      "[[target#見出し]]",
+      "[[target^block-id]]",
+      "[[target|表示名]]"
+    ].join("\n"), "utf8");
+    await writeFile(path.join(ws, "target.md"), "", "utf8");
+
+    await updateLinksForFileRename(ws, "note.md", "archive/note.md");
+
+    await expect(readFile(path.join(ws, "archive", "note.md"), "utf8")).resolves.toBe([
+      "[[../target]]",
+      "[[../target#見出し]]",
+      "[[../target^block-id]]",
+      "[[../target|表示名]]"
+    ].join("\n"));
+  });
+
+  it("移動対象ファイル内で意味が変わらない basename-only リンクは更新しない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
+    temporaryPaths.push(ws);
+    await mkdir(path.join(ws, "archive"));
+
+    await writeFile(path.join(ws, "archive", "note.md"), "[[note]]", "utf8");
+
+    await updateLinksForFileRename(ws, "note.md", "archive/note.md");
+
+    await expect(readFile(path.join(ws, "archive", "note.md"), "utf8")).resolves.toBe("[[note]]");
+  });
+
   it("同じフォルダ内で変更した basename-only リンクはファイル名だけを更新する", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
     temporaryPaths.push(ws);
@@ -240,6 +275,35 @@ describe("updateLinksForFileRename", () => {
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("[[other]]");
   });
 
+  it("候補語を含まないMarkdownは更新しない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
+    temporaryPaths.push(ws);
+    await mkdir(path.join(ws, "archive"));
+
+    const writeLog: string[] = [];
+    await writeFile(path.join(ws, "archive", "note.md"), "[[target]]", "utf8");
+    await writeFile(path.join(ws, "target.md"), "", "utf8");
+    await writeFile(path.join(ws, "linker.md"), "[[note]]", "utf8");
+    await writeFile(path.join(ws, "other.md"), "[[unrelated]]", "utf8");
+
+    await updateLinksForFileRename(ws, "note.md", "archive/note.md", {
+      async readFile(filePath, encoding) {
+        return readFile(filePath, encoding);
+      },
+      async writeTextFile(filePath, content) {
+        writeLog.push(filePath);
+        await writeFile(filePath, content, "utf8");
+      }
+    });
+
+    expect(new Set(writeLog)).toEqual(new Set([
+      path.join(ws, "archive", "note.md"),
+      path.join(ws, "linker.md")
+    ]));
+    await expect(readFile(path.join(ws, "other.md"), "utf8")).resolves.toBe("[[unrelated]]");
+    await expect(readFile(path.join(ws, "linker.md"), "utf8")).resolves.toBe("[[archive/note]]");
+  });
+
   it("リンク更新対象が読み込み後に外部変更された場合は上書きしない", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-conflict-"));
     temporaryPaths.push(ws);
@@ -377,6 +441,31 @@ describe("updateLinksForFolderRename", () => {
     await updateLinksForFolderRename(ws, "old-folder", "new-folder");
 
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("[[note]]");
+  });
+
+  it("更新対象外のMarkdownは更新しない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
+    temporaryPaths.push(ws);
+    await mkdir(path.join(ws, "new-folder"));
+
+    const writeLog: string[] = [];
+    await writeFile(path.join(ws, "source.md"), "[[old-folder/note]]", "utf8");
+    await writeFile(path.join(ws, "unrelated.md"), "[[random]]", "utf8");
+    await writeFile(path.join(ws, "new-folder", "note.md"), "", "utf8");
+
+    await updateLinksForFolderRename(ws, "old-folder", "new-folder", {
+      async readFile(filePath, encoding) {
+        return readFile(filePath, encoding);
+      },
+      async writeTextFile(filePath, content) {
+        writeLog.push(filePath);
+        await writeFile(filePath, content, "utf8");
+      }
+    });
+
+    expect(writeLog).toEqual([path.join(ws, "source.md")]);
+    await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("[[new-folder/note]]");
+    await expect(readFile(path.join(ws, "unrelated.md"), "utf8")).resolves.toBe("[[random]]");
   });
 
   it("コードブロック内のリンクは更新しない", async () => {
