@@ -555,6 +555,11 @@ export function DiagramCanvasSurface({
     if (!isBlankCanvasTarget(event.target, event.currentTarget)) return;
 
     event.preventDefault();
+    if (contextMenu) {
+      setContextMenu(null);
+      focusCanvasFrom(event.currentTarget);
+      return;
+    }
     setSelection(null);
     setSelectedNodeIds(new Set());
     setLabelEdit(null);
@@ -887,6 +892,11 @@ export function DiagramCanvasSurface({
   };
   const clearSelectionOnBlankPointerDown = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (isBlankCanvasTarget(event.target, event.currentTarget)) {
+      if (contextMenu) {
+        setContextMenu(null);
+        focusCanvasFrom(event.currentTarget);
+        return;
+      }
       setSelection(null);
       setSelectedNodeIds(new Set());
       setLabelEdit(null);
@@ -1314,6 +1324,10 @@ export function DiagramCanvasSurface({
     }
     if (event.key === "Escape") {
       event.preventDefault();
+      if (contextMenu) {
+        setContextMenu(null);
+        return;
+      }
       setConnect(null);
       setDrag(null);
       setLabelEdit(null);

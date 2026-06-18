@@ -337,10 +337,40 @@ describe("DiagramCanvas", () => {
 
     const menu = screen.getByRole("menu");
     expect(within(menu).queryByRole("button", { name: "Edit text" })).not.toBeInTheDocument();
-    expect(within(menu).getByRole("menuitem", { name: "Copy" })).toBeInTheDocument();
-    expect(within(menu).getByRole("menuitem", { name: "Duplicate" })).toBeInTheDocument();
-    expect(within(menu).getByRole("menuitem", { name: "Delete" })).toBeInTheDocument();
+    const copyItem = within(menu).getByRole("menuitem", { name: "Copy" });
+    expect(copyItem.querySelector(".diagram-canvas-action-icon")).toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Duplicate" }).querySelector(".diagram-canvas-action-icon")).toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Delete" }).querySelector(".diagram-canvas-action-icon")).toBeInTheDocument();
     expect(screen.queryByLabelText("Selected line tools")).not.toBeInTheDocument();
+  });
+
+  it("opens the node context menu from the keyboard and closes it without clearing selection", () => {
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={vi.fn()} />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("application", { name: "World" });
+    const node = freeDrawingNode("alice");
+
+    fireEvent(node, pointerEvent("pointerdown", 1, 10, 10));
+    fireEvent(node, pointerEvent("pointerup", 1, 10, 10));
+    fireEvent.keyDown(canvas, { key: "F10", shiftKey: true });
+
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(node).toHaveClass("diagram-canvas-node--selected");
+
+    fireEvent.keyDown(canvas, { key: "Escape" });
+
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(node).toHaveClass("diagram-canvas-node--selected");
+
+    fireEvent.contextMenu(node, { clientX: 120, clientY: 80 });
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+    fireEvent(container.querySelector(".diagram-canvas-space") as Element, pointerEvent("pointerdown", 2, 5, 5));
+
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(node).toHaveClass("diagram-canvas-node--selected");
   });
 
   it("shows line endpoint handles and line actions from the explicit line context menu", () => {
@@ -1290,6 +1320,15 @@ describe("DiagramCanvas", () => {
 
     expect(css).toMatch(/\.diagram-canvas-node--shape-area\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--accent\) 14%, transparent\);/s);
     expect(css).not.toMatch(/\.diagram-canvas-node--shape-area\s*\{[^}]*opacity:/s);
+  });
+
+  it("keeps the fixed diagram toolbar compact and icon-led", () => {
+    const css = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
+
+    expect(css).toMatch(/\.diagram-canvas-toolbar \.diagram-canvas-icon-button\s*\{[^}]*height:\s*30px;[^}]*width:\s*30px;/s);
+    expect(css).toMatch(/\.diagram-canvas-action-icon\s*\{[^}]*display:\s*block;[^}]*flex:\s*0 0 auto;/s);
+    expect(css).toMatch(/\.diagram-canvas-toolbar-separator\s*\{[^}]*width:\s*1px;/s);
+    expect(css).not.toMatch(/\.diagram-canvas-context-toolbar/);
   });
 
   it("moves and scales the diagram grid with the viewport", () => {
