@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat as readStat, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -87,28 +87,90 @@ describe("readWorkspaceFileIndex", () => {
     expect(index.entries.find((entry) => entry.path === "old-relationship.md")?.kind).toBe("markdown");
   });
 
-  it("変更されていないファイルは保存済みの控えを再利用する", async () => {
+  it("キャッシュは本文行を保存しない", async () => {
     const workspacePath = await createWorkspace();
     const userDataPath = await createWorkspace("relic-index-user-data-");
     const cachePath = getWorkspaceFileIndexCachePath(userDataPath, "workspace_1");
     await writeFile(path.join(workspacePath, "note.md"), "needle", "utf8");
 
     await readWorkspaceFileIndex(workspacePath, { cachePath });
+    const cacheRaw = await readFile(cachePath, "utf8");
+    const cache = JSON.parse(cacheRaw);
 
+    expect(cache.records[0]).not.toHaveProperty("lines");
+  });
+
+  it("size/mtimeが一致しても本文変更を検知して再生成する", async () => {
+    const workspacePath = await createWorkspace();
+    const userDataPath = await createWorkspace("relic-index-user-data-");
+    const cachePath = getWorkspaceFileIndexCachePath(userDataPath, "workspace_1");
+    const notePath = path.join(workspacePath, "note.md");
+    await writeFile(notePath, "AAAAB", "utf8");
+
+    await readWorkspaceFileIndex(workspacePath, { cachePath });
+
+    const originalStat = await readStat(notePath);
+    await writeFile(notePath, "BBBBA", "utf8");
+
+    let readCount = 0;
     const index = await readWorkspaceFileIndex(workspacePath, {
       cachePath,
       operations: {
         async readFile(filePath) {
-          if (filePath.endsWith("note.md")) {
-            throw new Error("unchanged file should be reused from cache");
-          }
-
+          readCount += 1;
           return readFile(filePath, "utf8");
+        },
+        readHead: async () => {
+          return "";
+        },
+        async stat() {
+          return originalStat;
         }
       }
     });
 
-    expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["needle"]);
+    expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["BBBBA"]);
+    expect(readCount).toBe(2);
+  });
+
+  it("旧バージョンキャッシュは安全に再生成される", async () => {
+    const workspacePath = await createWorkspace();
+    const userDataPath = await createWorkspace("relic-index-user-data-");
+    const cachePath = getWorkspaceFileIndexCachePath(userDataPath, "workspace_1");
+    await mkdir(path.dirname(cachePath), { recursive: true });
+    await writeFile(path.join(workspacePath, "note.md"), "current", "utf8");
+    await writeFile(
+      cachePath,
+      JSON.stringify({
+        version: 2,
+        records: [{
+          kind: "markdown",
+          path: "note.md",
+          name: "note",
+          mtimeMs: 0,
+          size: 1,
+          readStatus: "ok",
+          searchable: true,
+          lines: ["stale"]
+        }]
+      })
+    );
+
+    const index = await readWorkspaceFileIndex(workspacePath, {
+      cachePath,
+      operations: {
+        readFile: (filePath) => readFile(filePath, "utf8"),
+        readHead: async () => "",
+        stat: readStat
+      }
+    });
+
+    const cacheRaw = await readFile(cachePath, "utf8");
+    const cache = JSON.parse(cacheRaw);
+
+    expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["current"]);
+    expect(cache.version).toBe(3);
+    expect(cache.records[0]).not.toHaveProperty("lines");
   });
 
   it("大きすぎるMarkdownは全文検索用本文を持たず先頭部分だけでDiagram判定する", async () => {
@@ -172,7 +234,7 @@ describe("readWorkspaceFileIndex", () => {
 
           return readFile(filePath, "utf8");
         },
-        stat
+        stat: readStat
       }
     });
 

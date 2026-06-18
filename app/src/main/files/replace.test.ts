@@ -224,6 +224,10 @@ describe("searchAndReplace", () => {
     if (!result.ok) return;
 
     expect(result.value.matches).toHaveLength(2);
+    expect(result.value.fileSnapshots).toEqual([
+      { contentHash: expect.any(String), path: "a.md" },
+      { contentHash: expect.any(String), path: "b.md" }
+    ]);
     expect(result.value.skippedUnreadableFiles).toEqual([]);
     expect(result.value.truncated).toBe(false);
     expect(result.value.matches[0].lineText).toContain("hello world");
@@ -250,6 +254,9 @@ describe("searchAndReplace", () => {
     expect(result).toEqual({
       ok: true,
       value: {
+        fileSnapshots: [
+          { contentHash: expect.any(String), path: "visible.md" }
+        ],
         matches: [
           {
             lineNumber: 1,
@@ -281,6 +288,9 @@ describe("searchAndReplace", () => {
     if (!result.ok) return;
 
     expect(result.value.matches).toHaveLength(searchAndReplacePreviewMaxResults);
+    expect(result.value.fileSnapshots).toEqual([
+      { contentHash: expect.any(String), path: "many.md" }
+    ]);
     expect(result.value.truncated).toBe(true);
     expect(result.value.skippedUnreadableFiles).toEqual([]);
   });
@@ -296,6 +306,9 @@ describe("searchAndReplace", () => {
     expect(result).toEqual({
       ok: true,
       value: {
+        fileSnapshots: [
+          { contentHash: expect.any(String), path: "note.md" }
+        ],
         matches: [{
           lineNumber: 1,
           lineText: "foo",
@@ -361,6 +374,58 @@ describe("applySearchAndReplace", () => {
     expect(result).toEqual({ ok: true, value: { count: 2, skippedUnreadableFiles: [] } });
     await expect(readFile(path.join(ws, "a.md"), "utf8")).resolves.toBe("$&");
     await expect(readFile(path.join(ws, "b.md"), "utf8")).resolves.toBe("$&");
+  });
+
+  it("プレビュー後に対象ファイルが変更された場合は一括置換を止める", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    const notePath = path.join(ws, "note.md");
+    await writeFile(notePath, "foo before", "utf8");
+
+    const preview = await searchAndReplace(ws, "foo", "bar", false);
+    expect(preview.ok).toBe(true);
+    if (!preview.ok) return;
+
+    await writeFile(notePath, "foo changed", "utf8");
+    const result = await applySearchAndReplace(
+      ws,
+      "foo",
+      "bar",
+      false,
+      undefined,
+      preview.value.fileSnapshots
+    );
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "REPLACE_PREVIEW_STALE" }),
+      ok: false
+    });
+    await expect(readFile(notePath, "utf8")).resolves.toBe("foo changed");
+  });
+
+  it("プレビュー後に対象ファイルが変わっていない場合は検証付きで一括置換できる", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    const notePath = path.join(ws, "note.md");
+    await writeFile(notePath, "foo before", "utf8");
+
+    const preview = await searchAndReplace(ws, "foo", "bar", false);
+    expect(preview.ok).toBe(true);
+    if (!preview.ok) return;
+
+    const result = await applySearchAndReplace(
+      ws,
+      "foo",
+      "bar",
+      false,
+      undefined,
+      preview.value.fileSnapshots
+    );
+
+    expect(result).toEqual({ ok: true, value: { count: 1, skippedUnreadableFiles: [] } });
+    await expect(readFile(notePath, "utf8")).resolves.toBe("bar before");
   });
 
   it("読めないMarkdownファイルを一括置換結果に反映する", async () => {

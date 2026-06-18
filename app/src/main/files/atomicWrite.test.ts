@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { atomicWriteNewTextFile, atomicWriteTextFile } from "./atomicWrite";
+import { atomicWriteNewTextFile, atomicWriteTextFile, isAtomicWriteTemporaryPath } from "./atomicWrite";
 
 describe("atomicWriteTextFile", () => {
   const temporaryPaths: string[] = [];
@@ -41,7 +41,14 @@ describe("atomicWriteTextFile", () => {
     await expect(readFile(filePath, "utf8")).resolves.toBe("original");
     expect(temporaryWrites).toHaveLength(1);
     expect(path.dirname(temporaryWrites[0])).toBe(workspacePath);
+    expect(isAtomicWriteTemporaryPath(temporaryWrites[0])).toBe(true);
     expect(unlink).toHaveBeenCalledWith(temporaryWrites[0]);
+  });
+
+  it("一時ファイル名を判定できる", () => {
+    expect(isAtomicWriteTemporaryPath("/tmp/workspace/.note.md.1234.1700000000000.xyz.tmp")).toBe(true);
+    expect(isAtomicWriteTemporaryPath("/tmp/workspace/.note.md.tmp")).toBe(false);
+    expect(isAtomicWriteTemporaryPath("/tmp/workspace/note.md")).toBe(false);
   });
 
   it("新規作成時に同名ファイルがある場合は元ファイル内容を残す", async () => {

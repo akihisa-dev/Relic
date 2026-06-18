@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, open, readFile, stat } from "node:fs/promises";
 import type { Stats } from "node:fs";
 import path from "node:path";
@@ -18,11 +19,23 @@ export interface WorkspaceFileIndex {
 export interface WorkspaceFileIndexRecord extends WorkspaceFileIndexEntry {
   lines: string[];
   searchable: boolean;
+  contentHash?: string;
 }
 
 interface PersistedWorkspaceFileIndex {
   records?: unknown;
   version?: unknown;
+}
+
+interface PersistedWorkspaceFileIndexRecord {
+  kind?: unknown;
+  mtimeMs?: unknown;
+  name?: unknown;
+  path?: unknown;
+  readStatus?: unknown;
+  searchable?: unknown;
+  size?: unknown;
+  contentHash?: unknown;
 }
 
 interface WorkspaceFileIndexOptions {
@@ -42,7 +55,7 @@ interface WorkspaceFileIndexOperations {
   writeCache(filePath: string, content: string): Promise<void>;
 }
 
-const workspaceFileIndexCacheVersion = 2;
+const workspaceFileIndexCacheVersion = 3;
 const defaultMaxSearchFileBytes = 2 * 1024 * 1024;
 const mapMarkerHeadBytes = 256;
 const safeWorkspaceIndexIdPattern = /^[A-Za-z0-9_-]+$/;
@@ -78,6 +91,7 @@ export async function readWorkspaceFileIndex(
     (options.fileTree !== undefined
       ? collectMarkdownPaths(options.fileTree)
       : collectMarkdownPaths(await readWorkspaceFileTree(workspacePath)));
+
   const records = await Promise.all(paths.map(async (relativePath) => {
     const absolutePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
     if (!absolutePath.ok) return unreadableRecord(relativePath);
@@ -90,8 +104,33 @@ export async function readWorkspaceFileIndex(
     }
 
     const cached = cacheByPath.get(relativePath);
-    if (cached && cached.size === fileStats.size && cached.mtimeMs === fileStats.mtimeMs) {
-      return cached;
+    if (
+      cached?.readStatus === "ok" &&
+      typeof cached.contentHash === "string" &&
+      cached.size === fileStats.size &&
+      cached.mtimeMs === fileStats.mtimeMs
+    ) {
+      if (cached.searchable) {
+        try {
+          const content = await operations.readFile(absolutePath.value);
+          const contentHash = fileHash(content);
+
+          if (cached.contentHash === contentHash) {
+            return recordFor(relativePath, fileStats, cached.kind, content.split("\n"), cached.searchable, cached.contentHash);
+          }
+        } catch {
+          return unreadableRecord(relativePath, fileStats);
+        }
+      } else {
+        try {
+          const head = await operations.readHead(absolutePath.value, mapMarkerHeadBytes);
+          if (cached.contentHash === fileHash(head)) {
+            return { ...cached, lines: [] };
+          }
+        } catch {
+          return unreadableRecord(relativePath, fileStats);
+        }
+      }
     }
 
     return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations);
@@ -104,7 +143,7 @@ export async function readWorkspaceFileIndex(
   }
 
   return {
-    entries: sortedRecords.map(({ lines: _lines, searchable: _searchable, ...entry }) => entry),
+    entries: sortedRecords.map(({ lines: _lines, searchable: _searchable, contentHash: _contentHash, ...entry }) => entry),
     records: sortedRecords
   };
 }
@@ -119,7 +158,14 @@ async function readIndexRecord(
   if (fileStats.size > maxSearchFileBytes) {
     try {
       const head = await operations.readHead(absolutePath, mapMarkerHeadBytes);
-      return recordFor(relativePath, fileStats, isRelicDiagramMarkdownContent(head) ? "diagram" : "markdown", [], false);
+      return recordFor(
+        relativePath,
+        fileStats,
+        isRelicDiagramMarkdownContent(head) ? "diagram" : "markdown",
+        [],
+        false,
+        fileHash(head)
+      );
     } catch {
       return unreadableRecord(relativePath, fileStats);
     }
@@ -132,7 +178,8 @@ async function readIndexRecord(
       fileStats,
       isRelicDiagramMarkdownContent(content) ? "diagram" : "markdown",
       content.split("\n"),
-      true
+      true,
+      fileHash(content)
     );
   } catch {
     return unreadableRecord(relativePath, fileStats);
@@ -144,7 +191,8 @@ function recordFor(
   fileStats: Stats,
   kind: WorkspaceFileKind,
   lines: string[],
-  searchable: boolean
+  searchable: boolean,
+  contentHash?: string
 ): WorkspaceFileIndexRecord {
   return {
     kind,
@@ -154,7 +202,8 @@ function recordFor(
     path: relativePath,
     readStatus: "ok",
     searchable,
-    size: fileStats.size
+    size: fileStats.size,
+    contentHash
   };
 }
 
@@ -189,10 +238,11 @@ async function writeCachedRecords(
   records: WorkspaceFileIndexRecord[],
   operations: WorkspaceFileIndexOperations
 ): Promise<void> {
+  const persistedRecords = records.map(({ lines: _lines, ...record }) => record);
   await operations.mkdir(path.dirname(cachePath), { recursive: true });
   await operations.writeCache(
     cachePath,
-    `${JSON.stringify({ records, version: workspaceFileIndexCacheVersion }, null, 2)}\n`
+    `${JSON.stringify({ records: persistedRecords, version: workspaceFileIndexCacheVersion }, null, 2)}\n`
   );
 }
 
@@ -213,28 +263,33 @@ function parseCachedIndex(raw: string): WorkspaceFileIndexRecord[] | null {
 function parseCachedRecord(raw: unknown): WorkspaceFileIndexRecord[] {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return [];
 
-  const record = raw as Record<string, unknown>;
+  const record = raw as PersistedWorkspaceFileIndexRecord;
   if (record.kind !== "diagram" && record.kind !== "markdown") return [];
   if (record.readStatus !== "ok" && record.readStatus !== "unreadable") return [];
   if (typeof record.path !== "string" || typeof record.name !== "string") return [];
   if (!isFiniteNumber(record.size) || !isFiniteNumber(record.mtimeMs)) return [];
   if (typeof record.searchable !== "boolean") return [];
-  if (!Array.isArray(record.lines) || record.lines.some((line) => typeof line !== "string")) return [];
+  if (record.readStatus === "ok" && (typeof record.contentHash !== "string" || record.contentHash === "")) return [];
 
   return [{
     kind: record.kind,
-    lines: record.lines,
+    lines: [],
     mtimeMs: record.mtimeMs,
     name: record.name,
     path: record.path,
     readStatus: record.readStatus,
     searchable: record.searchable,
-    size: record.size
+    size: record.size,
+    contentHash: record.readStatus === "ok" ? (record.contentHash as string | undefined) : undefined
   }];
 }
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+function fileHash(content: string): string {
+  return createHash("sha256").update(content).digest("hex");
 }
 
 async function readFileHead(filePath: string, byteLength: number): Promise<string> {

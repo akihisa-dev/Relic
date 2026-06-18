@@ -116,12 +116,19 @@ export interface SearchAndReplaceMatch {
 }
 
 export interface SearchAndReplacePreviewResult {
+  fileSnapshots: SearchAndReplaceFileSnapshot[];
   matches: SearchAndReplaceMatch[];
   skippedUnreadableFiles: string[];
   truncated: boolean;
 }
 
+export interface SearchAndReplaceFileSnapshot {
+  contentHash: string;
+  path: string;
+}
+
 export interface SearchAndReplaceInput {
+  expectedFileSnapshots?: SearchAndReplaceFileSnapshot[];
   isRegex: boolean;
   replacement: string;
   searchQuery: string;
