@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type {
+  RelicApi,
   UpdateChartEntryInput,
   WorkspaceChart,
   WorkspaceState
 } from "../../shared/ipc";
+import { relicApiContractVersion } from "../../shared/ipc";
 import {
   normalizeWorkspaceCharts,
-  normalizeWorkspaceChartsWithFiles,
-  updateChartEntryFallback
+  normalizeWorkspaceChartsWithFiles
 } from "../chartData";
 import type { Tab } from "../store/editorStore";
 
@@ -38,6 +39,11 @@ export function useWorkspaceCharts({
       setCharts([]);
       return;
     }
+    if (!isRelicApiContractCompatible(window.relic)) {
+      setCharts([]);
+      setWorkspaceError(apiContractMismatchMessage());
+      return;
+    }
 
     const result = await window.relic.getWorkspaceCharts();
 
@@ -58,6 +64,12 @@ export function useWorkspaceCharts({
     }
 
     let canceled = false;
+
+    if (!isRelicApiContractCompatible(window.relic)) {
+      setCharts([]);
+      setWorkspaceError(apiContractMismatchMessage());
+      return;
+    }
 
     void window.relic.getWorkspaceCharts().then((result) => {
       if (canceled) return;
@@ -84,10 +96,18 @@ export function useWorkspaceCharts({
     if (!window.relic) return;
 
     const relic = window.relic;
-    const updateEntry = (relic as Partial<typeof relic>).updateChartEntry;
-    const result = typeof updateEntry === "function"
-      ? await updateEntry(input).catch(() => updateChartEntryFallback(input, relic))
-      : await updateChartEntryFallback(input, relic);
+    if (!isRelicApiContractCompatible(relic)) {
+      setWorkspaceError(apiContractMismatchMessage());
+      return;
+    }
+
+    let result: Awaited<ReturnType<RelicApi["updateChartEntry"]>>;
+    try {
+      result = await relic.updateChartEntry(input);
+    } catch {
+      setWorkspaceError("チャート更新APIでエラーが発生しました。Relicを再起動してからもう一度お試しください。");
+      return;
+    }
 
     if (result.ok) {
       setCharts(await normalizeWorkspaceChartsWithFiles(result.value, workspaceState?.fileTree ?? [], relic.readMarkdownFile));
@@ -110,4 +130,12 @@ export function useWorkspaceCharts({
     handleUpdateChartEntry,
     reloadCharts
   };
+}
+
+export function isRelicApiContractCompatible(relic: RelicApi | undefined): relic is RelicApi {
+  return relic?.apiContractVersion === relicApiContractVersion;
+}
+
+export function apiContractMismatchMessage(): string {
+  return "Relicの内部API契約が一致しません。Relicを再起動してからもう一度お試しください。";
 }

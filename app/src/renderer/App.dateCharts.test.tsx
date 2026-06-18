@@ -410,7 +410,7 @@ describe("App date charts", () => {
     expect(await screen.findByText("チャートの変更を保存できませんでした。")).toHaveClass("toast--error");
   });
 
-  it("チャート更新専用IPCが使えない場合も既存のファイル読み書きでバー変更を保存する", async () => {
+  it("チャート更新専用IPCが使えない場合はファイル読み書きfallbackへ切り替えない", async () => {
     const readMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -463,11 +463,8 @@ describe("App date charts", () => {
     Object.defineProperty(pointerUp, "pointerId", { value: 1 });
     window.dispatchEvent(pointerUp);
 
-    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
-      content: "---\nchronicle0: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク",
-      expectedContent: "---\nchronicle0: [2026]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
-      path: "tasks/implementation.md"
-    }));
+    expect(await screen.findByText("チャート更新APIでエラーが発生しました。Relicを再起動してからもう一度お試しください。")).toHaveClass("toast--error");
+    expect(writeMarkdownFile).not.toHaveBeenCalled();
   });
 
   it("旧形式の年表データが返っても年表タブを表示できる", async () => {

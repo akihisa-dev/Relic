@@ -11,6 +11,23 @@ export interface WikiLink {
   target: string;
 }
 
+export interface ParsedWikiLinkBody {
+  alias: string | null;
+  blockId: string | null;
+  heading: string | null;
+  rawTargetBase: string;
+  target: string;
+  targetBase: string;
+}
+
+export interface WikiLinkMatch extends WikiLink, ParsedWikiLinkBody {
+  body: string;
+  bodyFrom: number;
+  bodyTo: number;
+  from: number;
+  to: number;
+}
+
 export interface ResolvedWikiLink {
   displayName: string;
   exists: boolean;
@@ -26,23 +43,61 @@ export interface MarkdownLinkTarget {
 export type AliasIndex = Record<string, string[]>;
 
 export function parseWikiLinks(markdown: string): WikiLink[] {
-  const links: WikiLink[] = [];
-  const source = maskFencedCodeBlocks(markdown);
+  return scanWikiLinks(markdown).map(({ body: _body, bodyFrom: _bodyFrom, bodyTo: _bodyTo, from: _from, rawTargetBase: _rawTargetBase, targetBase: _targetBase, to: _to, ...link }) => link);
+}
+
+export function scanWikiLinks(markdown: string, options: { ignoreCode?: boolean } = {}): WikiLinkMatch[] {
+  const links: WikiLinkMatch[] = [];
+  const source = options.ignoreCode === false ? markdown : maskMarkdownCodeRanges(markdown);
   const pattern = /(!)?\[\[([^\]\n]+)\]\]/g;
 
   for (const match of source.matchAll(pattern)) {
+    const from = match.index;
     const raw = match[0] ?? "";
-    const parsed = parseWikiLinkBody(match[2] ?? "", match[1] === "!" ? "embed" : "link");
+    const body = match[2] ?? "";
+    const parsed = parseWikiLinkBody(body);
 
-    if (parsed) {
+    if (from !== undefined && raw && parsed) {
       links.push({
         ...parsed,
-        raw
+        body,
+        bodyFrom: from + (match[1] === "!" ? 3 : 2),
+        bodyTo: from + raw.length - 2,
+        from,
+        kind: match[1] === "!" ? "embed" : "link",
+        raw,
+        to: from + raw.length
       });
     }
   }
 
   return links;
+}
+
+export function formatWikiLinkBody(parts: {
+  alias?: string | null;
+  blockId?: string | null;
+  heading?: string | null;
+  targetBase: string;
+}): string {
+  let body = parts.targetBase;
+  if (parts.heading) body += `#${parts.heading}`;
+  if (parts.blockId) body += `^${parts.blockId}`;
+  if (parts.alias !== undefined && parts.alias !== null) body += `|${parts.alias}`;
+
+  return body;
+}
+
+export function formatWikiLink(kind: WikiLinkKind, parts: Parameters<typeof formatWikiLinkBody>[0]): string {
+  return `${kind === "embed" ? "!" : ""}[[${formatWikiLinkBody(parts)}]]`;
+}
+
+export function formatWikiLinkTargetReference(parts: Pick<ParsedWikiLinkBody, "blockId" | "heading" | "rawTargetBase">): string {
+  return formatWikiLinkBody({
+    blockId: parts.blockId,
+    heading: parts.heading,
+    targetBase: parts.rawTargetBase
+  });
 }
 
 export function normalizeWikiLinkTarget(target: string): string {
@@ -152,27 +207,29 @@ export function resolveWikiLinkPathWithAliases(
   return buildAliasTargetMap(aliasesByPath).get(aliasKey(target)) ?? resolvedPath;
 }
 
-function parseWikiLinkBody(
-  body: string,
-  kind: WikiLinkKind
-): Omit<WikiLink, "raw"> | null {
-  const [targetPart = "", aliasPart] = body.split("|", 2);
+export function parseWikiLinkBody(body: string): ParsedWikiLinkBody | null {
+  const pipeIndex = body.indexOf("|");
+  const targetPart = pipeIndex >= 0 ? body.slice(0, pipeIndex) : body;
+  const aliasPart = pipeIndex >= 0 ? body.slice(pipeIndex + 1) : null;
   const normalizedTargetPart = targetPart.trim();
 
   if (normalizedTargetPart === "") return null;
 
   const [targetWithHeading = "", blockId] = normalizedTargetPart.split("^", 2);
   const [targetBase = "", heading] = targetWithHeading.split("#", 2);
-  const target = targetBase.trim();
+  const rawTargetBase = targetBase.trim();
 
-  if (target === "") return null;
+  if (rawTargetBase === "") return null;
+
+  const target = normalizeWikiLinkTarget(rawTargetBase);
 
   return {
-    alias: aliasPart?.trim() || null,
+    alias: aliasPart === null ? null : aliasPart.trim() || null,
     blockId: blockId?.trim() || null,
     heading: heading?.trim() || null,
-    kind,
-    target: normalizeWikiLinkTarget(target)
+    rawTargetBase,
+    target,
+    targetBase: target
   };
 }
 
@@ -203,8 +260,74 @@ function markdownPathKey(path: string): string {
   return `${stripMarkdownExtension(path)}.md`;
 }
 
-function maskFencedCodeBlocks(markdown: string): string {
-  return markdown.replace(/^```[\s\S]*?^```/gm, (block) => " ".repeat(block.length));
+function maskMarkdownCodeRanges(markdown: string): string {
+  const lines = markdown.match(/[^\n]*(?:\n|$)/g) ?? [];
+  let fence: { marker: "`" | "~"; length: number } | null = null;
+
+  return lines.map((line) => {
+    if (line === "") return line;
+
+    if (fence) {
+      const closesFence = new RegExp(`^ {0,3}\\${fence.marker}{${fence.length},}`).test(line);
+      if (closesFence) {
+        fence = null;
+      }
+
+      return maskText(line);
+    }
+
+    const fenceStart = line.match(/^ {0,3}(`{3,}|~{3,})/);
+    if (fenceStart) {
+      const markerRun = fenceStart[1];
+      fence = {
+        length: markerRun.length,
+        marker: markerRun[0] as "`" | "~"
+      };
+
+      return maskText(line);
+    }
+
+    if (/^(?: {4}|\t)/.test(line)) {
+      return maskText(line);
+    }
+
+    return maskInlineCodeSpans(line);
+  }).join("");
+}
+
+function maskInlineCodeSpans(line: string): string {
+  let output = "";
+  let cursor = 0;
+
+  while (cursor < line.length) {
+    const start = line.indexOf("`", cursor);
+    if (start < 0) {
+      output += line.slice(cursor);
+      break;
+    }
+
+    let markerLength = 1;
+    while (line[start + markerLength] === "`") {
+      markerLength += 1;
+    }
+
+    const marker = "`".repeat(markerLength);
+    const end = line.indexOf(marker, start + markerLength);
+    if (end < 0) {
+      output += line.slice(cursor);
+      break;
+    }
+
+    output += line.slice(cursor, start);
+    output += maskText(line.slice(start, end + markerLength));
+    cursor = end + markerLength;
+  }
+
+  return output;
+}
+
+function maskText(value: string): string {
+  return " ".repeat(value.length);
 }
 
 function normalizePathSegments(value: string): string {

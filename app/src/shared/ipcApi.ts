@@ -72,11 +72,14 @@ export interface WindowCloseResponseInput {
   requestId: string;
 }
 
+export const relicApiContractVersion = 1;
+
 export interface CopyEditorTextToClipboardInput {
   text: string;
 }
 
 export interface RelicApi {
+  apiContractVersion: typeof relicApiContractVersion;
   copyDiagramSvg: (input: CopyDiagramSvgInput) => Promise<RelicResult<OutputCopyResult>>;
   createNewWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   togglePin: (path: string) => Promise<RelicResult<WorkspaceState>>;

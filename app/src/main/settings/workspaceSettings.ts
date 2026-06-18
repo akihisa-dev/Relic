@@ -19,8 +19,10 @@ export interface WorkspaceSettings {
   workspacePath: string;
 }
 
-type PersistedWorkspaceSettings = Partial<WorkspaceSettings> & {
+type PersistedWorkspaceSettings = Partial<Omit<WorkspaceSettings, "charts">> & {
+  charts?: unknown;
   ganttCharts?: unknown;
+  schemaVersion?: unknown;
 };
 
 export const defaultCharts: ChartSettings[] = [
@@ -35,6 +37,7 @@ const defaultWorkspaceSettings: WorkspaceSettings = {
   workspacePath: ""
 };
 
+const currentWorkspaceSettingsSchemaVersion = 1;
 const WORKSPACE_SETTINGS_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 type SerializedUpdate = Promise<unknown>;
 const workspaceSettingsUpdateQueues = new Map<string, SerializedUpdate>();
@@ -81,11 +84,13 @@ export async function readWorkspaceSettings(
       return defaultWorkspaceSettings;
     }
 
+    const migrated = migrateWorkspaceSettings(parsed, settingsPath);
+
     return {
-      chronicleCalendars: parseChronicleCalendars(parsed.chronicleCalendars),
-      charts: parseCharts(parsed.charts ?? parsed.ganttCharts),
-      pinnedPaths: parsePinnedPaths(parsed.pinnedPaths),
-      workspacePath: typeof parsed.workspacePath === "string" ? parsed.workspacePath : ""
+      chronicleCalendars: parseChronicleCalendars(migrated.chronicleCalendars),
+      charts: parseCharts(migrated.charts),
+      pinnedPaths: parsePinnedPaths(migrated.pinnedPaths),
+      workspacePath: typeof migrated.workspacePath === "string" ? migrated.workspacePath : ""
     };
   } catch (error) {
     if (isMissingFileError(error) || isInvalidWorkspaceSettingsIdError(error)) {
@@ -224,7 +229,7 @@ export async function writeWorkspaceSettings(
   const settingsPath = getWorkspaceSettingsPath(userDataPath, workspaceId);
 
   await mkdir(path.dirname(settingsPath), { recursive: true });
-  await atomicWriteTextFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+  await atomicWriteTextFile(settingsPath, `${JSON.stringify(serializeWorkspaceSettings(settings), null, 2)}\n`);
 }
 
 export async function updateWorkspaceSettings(
@@ -265,9 +270,52 @@ function parseSettingsObject(raw: unknown): PersistedWorkspaceSettings | null {
   return raw as PersistedWorkspaceSettings;
 }
 
+function migrateWorkspaceSettings(raw: PersistedWorkspaceSettings, settingsPath: string): PersistedWorkspaceSettings {
+  const schemaVersion = readWorkspaceSettingsSchemaVersion(raw.schemaVersion, settingsPath);
+
+  if (schemaVersion === currentWorkspaceSettingsSchemaVersion) return raw;
+
+  if (schemaVersion === 0) {
+    return {
+      ...raw,
+      charts: raw.charts ?? raw.ganttCharts,
+      schemaVersion: currentWorkspaceSettingsSchemaVersion
+    };
+  }
+
+  throw createUnsupportedWorkspaceSettingsVersionError(settingsPath, schemaVersion);
+}
+
+function serializeWorkspaceSettings(settings: WorkspaceSettings): Record<string, unknown> {
+  return {
+    schemaVersion: currentWorkspaceSettingsSchemaVersion,
+    ...settings
+  };
+}
+
+function readWorkspaceSettingsSchemaVersion(raw: unknown, settingsPath: string): number {
+  if (raw === undefined) return 0;
+  if (!Number.isInteger(raw) || Number(raw) < 0) {
+    throw createUnsupportedWorkspaceSettingsVersionError(settingsPath, raw);
+  }
+
+  const schemaVersion = Number(raw);
+  if (schemaVersion > currentWorkspaceSettingsSchemaVersion) {
+    throw createUnsupportedWorkspaceSettingsVersionError(settingsPath, schemaVersion);
+  }
+
+  return schemaVersion;
+}
+
 function createCorruptWorkspaceSettingsError(settingsPath: string): Error {
   const error = new Error(`設定JSONが壊れています: ${settingsPath}`) as Error;
   error.name = "CorruptWorkspaceSettingsError";
+  return error;
+}
+
+function createUnsupportedWorkspaceSettingsVersionError(settingsPath: string, schemaVersion: unknown): Error {
+  const error = new Error(`ワークスペース設定形式がこのRelicでは読めません: ${settingsPath} (schemaVersion: ${String(schemaVersion)})`) as Error;
+  error.name = "UnsupportedWorkspaceSettingsVersionError";
   return error;
 }
 

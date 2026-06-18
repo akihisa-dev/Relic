@@ -1,5 +1,7 @@
 import { type Text } from "@codemirror/state";
 
+import { scanWikiLinks } from "../shared/links";
+
 export interface SourceRevealRange {
   from: number;
   to: number;
@@ -256,12 +258,12 @@ export function collectInlineMatches(lineFrom: number, text: string): InlineMatc
     };
   }));
 
-  matches.push(...collectRegexMatches(text, /\[\[([^\]\n]+)\]\]/g, (match) => {
-    const from = lineFrom + match.index;
-    const to = from + match[0].length;
-    const separatorIndex = match[1].lastIndexOf("|");
+  matches.push(...scanWikiLinks(text, { ignoreCode: false }).map((match) => {
+    const from = lineFrom + match.from;
+    const to = lineFrom + match.to;
+    const separatorIndex = match.body.indexOf("|");
     const contentOffset = separatorIndex >= 0 ? 2 + separatorIndex + 1 : 2;
-    const contentLength = separatorIndex >= 0 ? match[1].length - separatorIndex - 1 : match[1].length;
+    const contentLength = separatorIndex >= 0 ? match.body.length - separatorIndex - 1 : match.body.length;
     const contentFrom = from + contentOffset;
     const contentTo = contentFrom + contentLength;
     const hideRanges = separatorIndex >= 0
@@ -434,21 +436,10 @@ export function findClickableLinkAtPosition(
     }
   }
 
-  for (const match of line.text.matchAll(/\[\[([^\]\n]+)\]\]/g)) {
-    const body = match[1];
-    const start = match.index ?? 0;
-    const end = start + match[0].length;
+  for (const match of scanWikiLinks(line.text, { ignoreCode: false })) {
+    if (offset < match.from || offset > match.to) continue;
 
-    if (offset < start || offset > end) continue;
-
-    const [targetPart] = body.split("|", 2);
-    const blockParts = targetPart.trim().split("^", 2);
-    const headingParts = blockParts[0].split("#", 2);
-    const target = headingParts[0].trim();
-
-    if (!target) return null;
-
-    return { heading: headingParts[1]?.trim() || undefined, target, type: "wiki" };
+    return { heading: match.heading ?? undefined, target: match.rawTargetBase, type: "wiki" };
   }
 
   return null;

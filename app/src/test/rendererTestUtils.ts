@@ -3,6 +3,7 @@ import { vi } from "vitest";
 import {
   defaultEditorSettings,
   defaultFeatureToggles,
+  relicApiContractVersion,
   type WorkspaceState
 } from "../shared/ipc";
 import { useEditorStore } from "../renderer/store/editorStore";
@@ -47,6 +48,7 @@ export function resetRendererStores(): void {
 
 export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
   return {
+    apiContractVersion: relicApiContractVersion,
     applySearchAndReplace: vi.fn(),
     copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } }),
     createFolder: vi.fn(),

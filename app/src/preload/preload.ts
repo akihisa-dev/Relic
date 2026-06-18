@@ -88,6 +88,7 @@ import {
   type MarkdownFileContent,
   type MoveFolderInput,
   type MoveItemToTrashInput,
+  relicApiContractVersion,
   type MoveMarkdownFileInput,
   type RelicApi,
   type ReadMarkdownFileInput,
@@ -117,6 +118,7 @@ import type { RelicResult } from "../shared/result";
 import type { AliasIndex } from "../shared/links";
 
 const relicApi: RelicApi = {
+  apiContractVersion: relicApiContractVersion,
   applySearchAndReplace: (input: SearchAndReplaceInput) =>
     ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ApplySearchAndReplaceResult>>,
   copyDiagramSvg: (input: CopyDiagramSvgInput) =>
