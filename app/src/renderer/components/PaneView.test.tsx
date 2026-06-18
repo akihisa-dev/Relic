@@ -424,9 +424,9 @@ describe("PaneView", () => {
 
     renderPaneView({ sourceMode: false });
 
-    expect(screen.getByRole("img", { name: "World" })).toBeInTheDocument();
+    expect(screen.getByRole("application", { name: "World" })).toBeInTheDocument();
     expect(screen.getByText("alice")).toBeInTheDocument();
-    expect(screen.getByText("1 nodes / 0 lines")).toBeInTheDocument();
+    expect(document.querySelector(".pane-status")?.textContent).toMatch(/1 shape \/ 0 lines\s+Drag: move view\s+Shift\+drag: range select/);
     expect(document.querySelector(".cm-content")).toBeNull();
   });
 

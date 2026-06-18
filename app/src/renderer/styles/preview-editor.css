@@ -447,6 +447,56 @@
   outline: none;
 }
 
+.diagram-file-header {
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 58%, transparent);
+  box-sizing: border-box;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 44px;
+  min-width: 0;
+  padding: 6px 12px;
+  width: 100%;
+}
+
+.diagram-file-title-slot {
+  min-width: 0;
+}
+
+.diagram-file-header .editor-file-title {
+  color: var(--text);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1.3;
+  margin: 0;
+  max-width: 100%;
+  padding: 4px 6px;
+  text-transform: none;
+}
+
+.diagram-file-header .editor-file-title-button {
+  text-align: left;
+}
+
+.diagram-file-header .editor-file-title-form {
+  margin: 0;
+}
+
+.diagram-file-title-actions {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 4px;
+}
+
+.diagram-file-title-actions .toolbar-btn {
+  height: 30px;
+  width: 30px;
+}
+
 .editor-conflict-banner {
   align-items: center;
   background: color-mix(in srgb, var(--warning, #b7791f) 12%, var(--bg));

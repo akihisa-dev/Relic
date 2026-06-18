@@ -575,7 +575,7 @@ describe("App file tabs", () => {
       expectedContent: "",
       path: "図解ファイル.md"
     }));
-    expect(await screen.findByRole("img", { name: "図解ファイル" })).toBeInTheDocument();
+    expect(await screen.findByRole("application", { name: "図解ファイル" })).toBeInTheDocument();
   });
 
   it("ステータスバーに保存状態を表示する", async () => {

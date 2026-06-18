@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { EditorView } from "@codemirror/view";
-import type { ReactElement } from "react";
+import { useEffect, type ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
@@ -12,7 +12,13 @@ import * as largeMarkdown from "../largeMarkdown";
 import { PaneContentSurface } from "./PaneContentSurface";
 
 vi.mock("./DiagramCanvas", () => ({
-  DiagramCanvas: () => <div>DiagramCanvas</div>
+  DiagramCanvas: ({ onStatusChange }: { onStatusChange?: (status: string) => void }) => {
+    useEffect(() => {
+      onStatusChange?.("diagram-live-status");
+    }, [onStatusChange]);
+
+    return <div>DiagramCanvas</div>;
+  }
 }));
 
 vi.mock("./Editor", () => ({
@@ -110,8 +116,27 @@ describe("PaneContentSurface", () => {
     renderSurface(diagramTab, false);
 
     expect(screen.getByText("DiagramCanvas")).toBeInTheDocument();
-    expect(screen.getByText("diagram-canvas-status")).toBeInTheDocument();
+    expect(screen.getByText("Diagram")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Source" })).toBeInTheDocument();
+    expect(screen.getByText("diagram-live-status")).toBeInTheDocument();
     expect(textCountSpy).not.toHaveBeenCalled();
+  });
+
+  it("keeps the compact Diagram header in source mode", () => {
+    const diagramTab: FileTab = {
+      content: emptyRelicDiagramMarkdownContent,
+      id: "tab-diagram",
+      kind: "file",
+      name: "Diagram",
+      path: "Diagram.md",
+      savedContent: emptyRelicDiagramMarkdownContent
+    };
+
+    renderSurface(diagramTab, true);
+
+    expect(screen.queryByText("DiagramCanvas")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Source" })).toHaveClass("active");
+    expect(screen.getByText("74 characters / 12 words")).toBeInTheDocument();
   });
 
   it("routes invalid Diagram candidates to the Diagram canvas", () => {
@@ -128,7 +153,7 @@ describe("PaneContentSurface", () => {
     renderSurface(diagramTab, false);
 
     expect(screen.getByText("DiagramCanvas")).toBeInTheDocument();
-    expect(screen.getByText("diagram-canvas-status")).toBeInTheDocument();
+    expect(screen.getByText("diagram-live-status")).toBeInTheDocument();
     expect(textCountSpy).not.toHaveBeenCalled();
   });
 

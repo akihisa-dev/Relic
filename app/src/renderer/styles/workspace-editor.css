@@ -906,6 +906,16 @@
   outline: none;
 }
 
+.diagram-canvas-status-description {
+  height: 1px;
+  left: 0;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .diagram-canvas--panning {
   cursor: grabbing;
 }

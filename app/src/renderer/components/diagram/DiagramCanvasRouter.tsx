@@ -1,4 +1,4 @@
-import { type ReactElement, useMemo, useState } from "react";
+import { type ReactElement, useEffect, useMemo, useState } from "react";
 
 import { parseRelicDiagramMarkdown, type RelicConnectedDiagramDocument } from "../../../shared/diagramMarkdown";
 import { type RelicError } from "../../../shared/result";
@@ -7,8 +7,14 @@ import { type Translator } from "../../i18nModel";
 import { DiagramCanvasSurface } from "./DiagramCanvasSurface";
 import { type DiagramCanvasProps } from "./diagramTypes";
 
-export function DiagramCanvasRouter({ content, fileName, onChange, onSourceModeToggle }: DiagramCanvasProps): ReactElement {
+export function DiagramCanvasRouter({ content, fileName, onChange, onSourceModeToggle, onStatusChange }: DiagramCanvasProps): ReactElement {
   const parsed = useMemo(() => parseRelicDiagramMarkdown(content), [content]);
+  const t = useT();
+
+  useEffect(() => {
+    if (parsed.ok) return;
+    onStatusChange?.(t("diagram.invalidStatus"));
+  }, [onStatusChange, parsed, t]);
 
   if (!parsed.ok) {
     return <DiagramParseErrorView error={parsed.error} onSourceModeToggle={onSourceModeToggle} />;
@@ -20,6 +26,7 @@ export function DiagramCanvasRouter({ content, fileName, onChange, onSourceModeT
       diagram={parsed.value as RelicConnectedDiagramDocument}
       fileName={fileName}
       onChange={onChange}
+      onStatusChange={onStatusChange}
     />
   );
 }
