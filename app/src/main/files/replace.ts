@@ -1,8 +1,10 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 import type {
   ApplySearchAndReplaceResult,
   ReplaceInFileResult,
+  SearchAndReplaceFileSnapshot,
   SearchAndReplaceMatch,
   SearchAndReplacePreviewResult
 } from "../../shared/ipc";
@@ -124,13 +126,17 @@ export async function searchAndReplace(
 
     if (!targets.ok) return targets;
 
+    const matchedFiles = new Map<string, SearchAndReplaceFileSnapshot>();
+
     for (const { content, relativePath } of targets.value.targets) {
       const lines = content.split("\n");
+      let hasMatchInFile = false;
 
       for (const [index, line] of lines.entries()) {
         if (isRegex && !isRegexSafeLine(line)) continue;
 
         if (regex.value.test(line)) {
+          hasMatchInFile = true;
           regex.value.lastIndex = 0;
           const newLineText = buildReplacementPreviewLine(line, regex.value, replacement, isRegex);
           matches.push({
@@ -148,10 +154,18 @@ export async function searchAndReplace(
         regex.value.lastIndex = 0;
       }
 
+      if (hasMatchInFile) {
+        matchedFiles.set(relativePath, {
+          contentHash: contentHash(content),
+          path: relativePath
+        });
+      }
+
       if (truncated) break;
     }
 
     return ok({
+      fileSnapshots: Array.from(matchedFiles.values()),
       matches,
       skippedUnreadableFiles: targets.value.skippedUnreadableFiles,
       truncated
@@ -170,7 +184,8 @@ export async function applySearchAndReplace(
   searchQuery: string,
   replacement: string,
   isRegex: boolean,
-  operations: SearchAndReplaceWriteOperations = defaultSearchAndReplaceOperations
+  operations: SearchAndReplaceWriteOperations = defaultSearchAndReplaceOperations,
+  expectedFileSnapshots?: SearchAndReplaceFileSnapshot[]
 ): Promise<RelicResult<ApplySearchAndReplaceResult>> {
   const regex = buildReplacementRegex(searchQuery, isRegex);
 
@@ -190,6 +205,9 @@ export async function applySearchAndReplace(
     );
 
     if (!targets.ok) return targets;
+
+    const stalePreview = validateSearchAndReplacePreviewSnapshots(targets.value.targets, regex.value, expectedFileSnapshots);
+    if (!stalePreview.ok) return stalePreview;
 
     const writtenPatches: Array<{
       absolutePath: string;
@@ -286,4 +304,31 @@ async function collectSafeMarkdownFiles(
   );
 
   return files.filter((file): file is { absolutePath: string; relativePath: string } => file !== null);
+}
+
+function validateSearchAndReplacePreviewSnapshots(
+  targets: SearchAndReplaceTarget[],
+  regex: RegExp,
+  expectedFileSnapshots: SearchAndReplaceFileSnapshot[] | undefined
+): RelicResult<void> {
+  if (!expectedFileSnapshots || expectedFileSnapshots.length === 0) return ok(undefined);
+
+  const expectedByPath = new Map(expectedFileSnapshots.map((snapshot) => [snapshot.path, snapshot.contentHash]));
+
+  for (const target of targets) {
+    const matches = target.content.match(regex);
+    regex.lastIndex = 0;
+    if (!matches || matches.length === 0) continue;
+
+    const expectedHash = expectedByPath.get(target.relativePath);
+    if (!expectedHash || expectedHash !== contentHash(target.content)) {
+      return fail("REPLACE_PREVIEW_STALE", "プレビュー後に対象ファイルが変更されています。再プレビューしてから一括置換してください。");
+    }
+  }
+
+  return ok(undefined);
+}
+
+function contentHash(content: string): string {
+  return createHash("sha256").update(content).digest("hex");
 }

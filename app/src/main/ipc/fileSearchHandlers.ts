@@ -172,7 +172,9 @@ export function registerFileSearchHandlers(): void {
           context.activeWorkspace.path,
           input.searchQuery,
           input.replacement,
-          input.isRegex
+          input.isRegex,
+          undefined,
+          input.expectedFileSnapshots
         )
       );
     } catch (error) {

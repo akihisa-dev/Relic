@@ -53,6 +53,16 @@ describe("workspaceWatcher", () => {
     expect(shouldNotifyWorkspaceChangeEvent("unknown")).toBe(false);
   });
 
+  it("内部atomic writeの一時ファイルは通知対象外にする", () => {
+    expect(shouldNotifyWorkspaceChangeEvent("rename", ".note.md.1234.1700000000000.xyz.tmp")).toBe(false);
+    expect(shouldNotifyWorkspaceChangeEvent("change", ".note.md.1234.1700000000000.xyz.tmp")).toBe(false);
+  });
+
+  it("通常のMarkdownファイル変更は通知対象を維持する", () => {
+    expect(shouldNotifyWorkspaceChangeEvent("rename", "note.md")).toBe(true);
+    expect(shouldNotifyWorkspaceChangeEvent("change", ".note.md")).toBe(true);
+  });
+
   it("連続イベントは静かな時間を待ちつつ最大待ち時間を超えない", () => {
     expect(workspaceChangeNotificationDelay(1000, 1000)).toBe(workspaceChangeNotifyDelayMs);
     expect(workspaceChangeNotificationDelay(1000, 2600)).toBe(400);

@@ -168,8 +168,22 @@ export function isSearchAndReplaceInput(input: unknown): input is SearchAndRepla
     "isRegex" in input &&
     typeof (input as { searchQuery?: unknown }).searchQuery === "string" &&
     typeof (input as { replacement?: unknown }).replacement === "string" &&
-    typeof (input as { isRegex?: unknown }).isRegex === "boolean"
+    typeof (input as { isRegex?: unknown }).isRegex === "boolean" &&
+    (
+      !("expectedFileSnapshots" in input) ||
+      isSearchAndReplaceFileSnapshots((input as { expectedFileSnapshots?: unknown }).expectedFileSnapshots)
+    )
   );
+}
+
+function isSearchAndReplaceFileSnapshots(input: unknown): boolean {
+  return Array.isArray(input) &&
+    input.every((item) =>
+      typeof item === "object" &&
+      item !== null &&
+      typeof (item as { path?: unknown }).path === "string" &&
+      typeof (item as { contentHash?: unknown }).contentHash === "string"
+    );
 }
 
 export function isSearchWorkspaceInput(input: unknown): input is SearchWorkspaceInput {

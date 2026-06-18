@@ -11,6 +11,8 @@ interface AtomicWriteOperations {
   ) => Promise<void>;
 }
 
+const atomicWriteTemporaryFileNamePattern = /^\..*\.\d+\.\d+\.[a-z0-9]+\.tmp$/;
+
 const defaultOperations: AtomicWriteOperations = {
   rename,
   unlink,
@@ -31,6 +33,10 @@ const defaultCreateOperations: AtomicCreateOperations = {
   open,
   unlink
 };
+
+export function isAtomicWriteTemporaryPath(filePath: string): boolean {
+  return atomicWriteTemporaryFileNamePattern.test(path.basename(filePath));
+}
 
 export async function atomicWriteTextFile(
   filePath: string,

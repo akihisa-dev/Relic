@@ -4,6 +4,7 @@ import { BrowserWindow } from "electron";
 
 import { workspaceChangedChannel, type WorkspaceChangedEvent } from "../../shared/ipc";
 import type { AppSettings } from "../settings/appSettings";
+import { isAtomicWriteTemporaryPath } from "../files/atomicWrite";
 
 interface WorkspaceWatchTarget {
   id: string;
@@ -40,8 +41,8 @@ export function syncWorkspaceWatcher(settings: AppSettings): void {
   stopWorkspaceWatcher();
 
   try {
-    workspaceWatcher = watch(target.path, { recursive: true }, (eventType) => {
-      if (!shouldNotifyWorkspaceChangeEvent(eventType)) return;
+    workspaceWatcher = watch(target.path, { recursive: true }, (eventType, filename) => {
+      if (!shouldNotifyWorkspaceChangeEvent(eventType, filename)) return;
       scheduleWorkspaceChangedNotification(target);
     });
     workspaceWatcher.on("error", () => stopWorkspaceWatcher());
@@ -51,8 +52,12 @@ export function syncWorkspaceWatcher(settings: AppSettings): void {
   }
 }
 
-export function shouldNotifyWorkspaceChangeEvent(eventType: string): boolean {
-  return eventType === "rename" || eventType === "change";
+export function shouldNotifyWorkspaceChangeEvent(
+  eventType: string,
+  filename?: string | null
+): boolean {
+  if (eventType !== "rename" && eventType !== "change") return false;
+  return filename ? !isAtomicWriteTemporaryPath(filename) : true;
 }
 
 export function stopWorkspaceWatcher(): void {
