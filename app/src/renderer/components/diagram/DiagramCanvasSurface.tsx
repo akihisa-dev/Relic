@@ -32,6 +32,7 @@ import {
   resizeRelicDiagramNode,
   updateRelicFreeDrawingNodeShape,
   updateRelicFreeDrawingNodeText,
+  updateRelicDiagramLineEndpoints,
   updateRelicDiagramLineLabel,
   type RelicConnectedDiagramDocument,
   type RelicConnectedDiagramNode,
@@ -109,6 +110,16 @@ interface ResizeState {
   startClientY: number;
 }
 
+interface LineRetargetState {
+  currentX: number;
+  currentY: number;
+  endpoint: "from" | "to";
+  fixedX: number;
+  fixedY: number;
+  line: RelicDiagramLine;
+  pointerId: number;
+}
+
 interface RangeSelectState {
   currentX: number;
   currentY: number;
@@ -151,6 +162,7 @@ export function DiagramCanvasSurface({
   const [pan, setPan] = useState<PanState | null>(null);
   const [rangeSelect, setRangeSelect] = useState<RangeSelectState | null>(null);
   const [resize, setResize] = useState<ResizeState | null>(null);
+  const [lineRetarget, setLineRetarget] = useState<LineRetargetState | null>(null);
   const [selection, setSelection] = useState<DiagramSelection | null>(null);
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
   const [shapeAddMenu, setShapeAddMenu] = useState<ShapeAddMenuState | null>(null);
@@ -356,6 +368,16 @@ export function DiagramCanvasSurface({
     ? normalizeSelectionRect(rangeSelect.startX, rangeSelect.startY, rangeSelect.currentX, rangeSelect.currentY)
     : null;
   const previewLine = useMemo(() => {
+    if (lineRetarget) {
+      const selectedLineLayout = displayLines.find((line) => line.line.id === lineRetarget.line.id);
+      return {
+        currentX: lineRetarget.currentX,
+        currentY: lineRetarget.currentY,
+        displayLayer: selectedLineLayout?.displayLayer ?? 0,
+        startX: lineRetarget.fixedX,
+        startY: lineRetarget.fixedY
+      };
+    }
     if (!connect?.isActive) return null;
     const fromNode = displayNodes.find((node) => node.node.id === connect.fromNodeId);
 
@@ -366,7 +388,7 @@ export function DiagramCanvasSurface({
       startX: connect.startX,
       startY: connect.startY
     };
-  }, [connect, displayNodes]);
+  }, [connect, displayLines, displayNodes, lineRetarget]);
   const startNodeDrag = (node: RelicDiagramNodeBase, event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!onChange) return;
 
@@ -659,6 +681,46 @@ export function DiagramCanvasSurface({
       };
     });
   };
+  const startLineRetarget = (
+    line: DiagramCanvasLineLayout,
+    endpoint: "from" | "to",
+    event: ReactPointerEvent<HTMLButtonElement>
+  ): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!onChange) return;
+
+    const pointer = pointerPositionInCanvas(event);
+    focusCanvasFrom(event.currentTarget);
+    setSelection({ id: line.line.id, type: "line" });
+    setSelectedNodeIds(new Set());
+    setLabelEdit(null);
+    setNodeTextEdit(null);
+    setShapeAddMenu(null);
+    setKeyboardConnectFromNodeId(null);
+    if (typeof event.currentTarget.setPointerCapture === "function") {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    setLineRetarget({
+      currentX: pointer.x,
+      currentY: pointer.y,
+      endpoint,
+      fixedX: endpoint === "from" ? line.x2 : line.x1,
+      fixedY: endpoint === "from" ? line.y2 : line.y1,
+      line: line.line,
+      pointerId: event.pointerId
+    });
+  };
+  const updateLineRetarget = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!lineRetarget || lineRetarget.pointerId !== event.pointerId) return;
+    const pointer = pointerPositionInCanvas(event);
+
+    setLineRetarget((current) => current ? {
+      ...current,
+      currentX: pointer.x,
+      currentY: pointer.y
+    } : current);
+  };
   const finishConnect = (toNodeId: string, event: ReactPointerEvent<HTMLDivElement>): void => {
     event.preventDefault();
     event.stopPropagation();
@@ -701,9 +763,32 @@ export function DiagramCanvasSurface({
     }
     setConnect(null);
   };
+  const finishLineRetarget = (nodeId: string, event: ReactPointerEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!lineRetarget || lineRetarget.pointerId !== event.pointerId) return;
+
+    const nextFrom = lineRetarget.endpoint === "from" ? nodeId : lineRetarget.line.from;
+    const nextTo = lineRetarget.endpoint === "to" ? nodeId : lineRetarget.line.to;
+    const updated = updateRelicDiagramLineEndpoints(content, lineRetarget.line.id, nextFrom, nextTo);
+    if (updated.ok) {
+      applyContentChange(updated.value.content);
+      setSelection({ id: updated.value.line.id, type: "line" });
+      setSelectedNodeIds(new Set());
+      setLabelEdit(null);
+      setShapeAddMenu(null);
+    } else {
+      showNotice(updated.error.message);
+    }
+    setLineRetarget(null);
+  };
   const cancelConnect = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!connect || connect.pointerId !== event.pointerId) return;
     setConnect(null);
+  };
+  const cancelLineRetarget = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!lineRetarget || lineRetarget.pointerId !== event.pointerId) return;
+    setLineRetarget(null);
   };
   const startNodePointer = (node: RelicDiagramNodeBase, event: ReactPointerEvent<HTMLDivElement>): void => {
     startNodeDrag(node, event);
@@ -724,6 +809,10 @@ export function DiagramCanvasSurface({
     }
     if (connect?.pointerId === event.pointerId) {
       finishConnect(node.id, event);
+      return;
+    }
+    if (lineRetarget?.pointerId === event.pointerId) {
+      finishLineRetarget(node.id, event);
       return;
     }
 
@@ -981,6 +1070,9 @@ export function DiagramCanvasSurface({
   const selectedEditableNode = selection?.type === "node"
     ? diagram.nodes.find((node) => node.id === selection.id)
     : null;
+  const selectedLineLayout = selection?.type === "line"
+    ? displayLines.find((line) => line.line.id === selection.id)
+    : null;
   const selectedNodeIdList = selectedNodeIds.size > 0
     ? [...selectedNodeIds]
     : selection?.type === "node"
@@ -1056,6 +1148,14 @@ export function DiagramCanvasSurface({
     } else {
       showNotice(updated.error.message);
     }
+  };
+  const lineRetargetNodeState = (nodeId: string): "available" | "blocked" | undefined => {
+    if (!lineRetarget) return undefined;
+
+    const nextFrom = lineRetarget.endpoint === "from" ? nodeId : lineRetarget.line.from;
+    const nextTo = lineRetarget.endpoint === "to" ? nodeId : lineRetarget.line.to;
+    const updated = updateRelicDiagramLineEndpoints(content, lineRetarget.line.id, nextFrom, nextTo);
+    return updated.ok ? "available" : "blocked";
   };
   const connectSelectedNodeByKeyboard = (): void => {
     if (!onChange || !selectedEditableNode) return;
@@ -1178,6 +1278,7 @@ export function DiagramCanvasSurface({
       setConnect(null);
       setDrag(null);
       setLabelEdit(null);
+      setLineRetarget(null);
       setNodeTextEdit(null);
       setPan(null);
       setRangeSelect(null);
@@ -1207,11 +1308,13 @@ export function DiagramCanvasSurface({
       onPointerDown={startPanOnBlank}
       onPointerMove={(event) => {
         updateConnect(event);
+        updateLineRetarget(event);
         updatePan(event);
         updateRangeSelect(event);
       }}
       onPointerUp={(event) => {
         cancelConnect(event);
+        cancelLineRetarget(event);
         cancelNodeResize(event);
         finishPan(event);
         finishRangeSelect(event);
@@ -1308,6 +1411,35 @@ export function DiagramCanvasSurface({
           selection={selection}
           width={layout.width}
         />
+        {selectedLineLayout ? (
+          <div
+            className="diagram-canvas-line-endpoint-handles"
+            style={{ zIndex: selectedLineLayout.displayLayer + 1 }}
+          >
+            <button
+              aria-label={t("diagram.retargetLineFrom")}
+              className="diagram-canvas-line-endpoint-handle diagram-canvas-line-endpoint-handle--from"
+              onPointerDown={(event) => startLineRetarget(selectedLineLayout, "from", event)}
+              style={{
+                left: selectedLineLayout.x1,
+                top: selectedLineLayout.y1
+              }}
+              title={t("diagram.retargetLineFrom")}
+              type="button"
+            />
+            <button
+              aria-label={t("diagram.retargetLineTo")}
+              className="diagram-canvas-line-endpoint-handle diagram-canvas-line-endpoint-handle--to"
+              onPointerDown={(event) => startLineRetarget(selectedLineLayout, "to", event)}
+              style={{
+                left: selectedLineLayout.x2,
+                top: selectedLineLayout.y2
+              }}
+              title={t("diagram.retargetLineTo")}
+              type="button"
+            />
+          </div>
+        ) : null}
         <DiagramSnapGuides guides={displaySnapGuides} height={layout.height} width={layout.width} />
         <div className="diagram-canvas-labels">
           {displayLines.map((line) => {
@@ -1424,6 +1556,7 @@ export function DiagramCanvasSurface({
                 isDragging={drag?.nodeId === node.id}
                 isTextEditing={nodeTextEdit?.nodeId === node.id}
                 isSelected={(selection?.type === "node" && selection.id === node.id) || selectedNodeIds.has(node.id)}
+                connectionTargetState={lineRetargetNodeState(node.id)}
                 key={node.id}
                 node={node}
                 nodeTextDraft={nodeTextEdit?.nodeId === node.id ? nodeTextEdit.value : undefined}

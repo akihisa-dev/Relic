@@ -20,6 +20,7 @@ interface DiagramNodeViewProps {
   isDragging: boolean;
   isTextEditing: boolean;
   isSelected: boolean;
+  connectionTargetState?: "available" | "blocked";
   node: RelicConnectedDiagramNode;
   nodeTextDraft?: string;
   nodeTextLabel: string;
@@ -53,6 +54,7 @@ export function DiagramNodeView({
   isDragging,
   isTextEditing,
   isSelected,
+  connectionTargetState,
   node,
   nodeTextDraft,
   nodeTextLabel,
@@ -97,7 +99,8 @@ export function DiagramNodeView({
         "diagram-canvas-node",
         shapeClass,
         isDragging ? "diagram-canvas-node--dragging" : "",
-        isSelected ? "diagram-canvas-node--selected" : ""
+        isSelected ? "diagram-canvas-node--selected" : "",
+        connectionTargetState ? `diagram-canvas-node--connection-${connectionTargetState}` : ""
       ].filter(Boolean).join(" ")}
       onPointerCancel={onPointerCancel}
       onDoubleClick={(event) => onNodeTextDoubleClick?.(node, event)}

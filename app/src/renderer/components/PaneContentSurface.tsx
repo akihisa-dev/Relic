@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, KeyboardEvent, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
-import { isRelicDiagramMarkdownContent } from "../../shared/diagramMarkdown";
+import { isRelicDiagramMarkdownCandidate } from "../../shared/diagramMarkdown";
 import { hasInvalidFrontmatterYaml } from "../editorFrontmatter";
 import { isLargeMarkdownContent } from "../largeMarkdown";
 import { textCount } from "../paneViewModel";
@@ -72,7 +72,7 @@ export function PaneContentSurface({
   const activeFileTab = activeTab?.kind === "file" ? activeTab : null;
   const activeFileContent = activeFileTab?.content ?? "";
   const isLargeMarkdown = useMemo(() => isLargeMarkdownContent(activeFileContent), [activeFileContent]);
-  const isDiagramMarkdown = activeFileTab ? isRelicDiagramMarkdownContent(activeFileTab.content) : false;
+  const isDiagramMarkdown = activeFileTab ? isRelicDiagramMarkdownCandidate(activeFileTab.content) : false;
   const showWordCount = !isDiagramMarkdown || sourceMode;
   const textCountResult = useMemo(() => {
     if (!showWordCount || !activeFileTab) return null;
@@ -156,6 +156,7 @@ export function PaneContentSurface({
               fileName={activeFileTab.name}
               key={activeFileTab.id}
               onChange={(content) => onUpdateTabContent(activeFileTab.id, content)}
+              onSourceModeToggle={onSourceModeToggle}
             />
           ) : (
             <Editor

@@ -240,10 +240,10 @@ const freeDrawingContentWithArea = [
   ""
 ].join("\n");
 
-function renderDiagramCanvas(content = diagramContent) {
+function renderDiagramCanvas(content = diagramContent, onSourceModeToggle?: () => void) {
   render(
     <I18nProvider language="en">
-      <DiagramCanvas content={content} fileName="World" />
+      <DiagramCanvas content={content} fileName="World" onSourceModeToggle={onSourceModeToggle} />
     </I18nProvider>
   );
 }
@@ -953,10 +953,33 @@ describe("DiagramCanvas", () => {
     expect(writeText).not.toHaveBeenCalled();
   });
 
-  it("shows an error for invalid Diagram Markdown", () => {
-    renderDiagramCanvas("type: map\n\nnotes: body");
+  it("shows parse details and source mode action for invalid Diagram Markdown", () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const onSourceModeToggle = vi.fn();
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText }
+    });
+
+    renderDiagramCanvas("---\ntype: diagram\n---\n\nnotes: body", onSourceModeToggle);
 
     expect(screen.getByRole("alert")).toHaveTextContent("Could not read this Diagram file. Check the source.");
+    expect(screen.getByText("DIAGRAM_UNKNOWN_FIELD")).toBeInTheDocument();
+    expect(screen.getByText("Unsupported field")).toBeInTheDocument();
+    expect(screen.getByText("This file contains a field that the current Diagram format does not support.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy error details" }));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("code: DIAGRAM_UNKNOWN_FIELD"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Open in source mode" }));
+    expect(onSourceModeToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows line and column when Diagram YAML details include a location", () => {
+    renderDiagramCanvas("---\ntype: diagram\n---\n\nnodes:\n  - id: node-1\n    shape: process\n    text: Alice\n    x: [\nlines: []");
+
+    expect(screen.getByText("YAML syntax")).toBeInTheDocument();
+    expect(screen.getByText(/Line \d+, column \d+/)).toBeInTheDocument();
   });
 
   it("commits moved node coordinates on pointer up", () => {
@@ -1501,6 +1524,82 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("from: node-2");
     expect(onChange.mock.calls[0]?.[0]).toContain("to: node-1");
     expect(onChange.mock.calls[0]?.[0]).toContain("label: 幼なじみ");
+  });
+
+  it("retargets the selected line end to another node", () => {
+    const onChange = vi.fn();
+    const contentWithThirdNode = diagramContent.replace("lines:", [
+      "  - id: node-3",
+      "    shape: process",
+      "    text: carol",
+      "    x: 640",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "lines:"
+    ].join("\n"));
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={contentWithThirdNode} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("img", { name: "World" });
+    const line = container.querySelector(".diagram-canvas-line-hit");
+    const carol = freeDrawingNode("carol");
+    expect(line).toBeInstanceOf(Element);
+
+    fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
+    const endHandle = screen.getByRole("button", { name: "Change line end" });
+    fireEvent(endHandle, pointerEvent("pointerdown", 5, 570, 120));
+    expect(carol).toHaveClass("diagram-canvas-node--connection-available");
+    fireEvent(canvas, pointerEvent("pointermove", 5, 650, 120));
+    fireEvent(carol, pointerEvent("pointerup", 5, 650, 120));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: line-1\n    from: node-1\n    to: node-3\n    label: 幼なじみ");
+  });
+
+  it("keeps the line unchanged when retargeting would create an invalid connection", () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("img", { name: "World" });
+    const line = container.querySelector(".diagram-canvas-line-hit");
+    const bob = freeDrawingNode("bob");
+    expect(line).toBeInstanceOf(Element);
+
+    fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
+    const startHandle = screen.getByRole("button", { name: "Change line start" });
+    fireEvent(startHandle, pointerEvent("pointerdown", 5, 300, 120));
+    expect(bob).toHaveClass("diagram-canvas-node--connection-blocked");
+    fireEvent(canvas, pointerEvent("pointermove", 5, 420, 120));
+    fireEvent(bob, pointerEvent("pointerup", 5, 420, 120));
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByText("同じNode同士をLineでつなげません。")).toBeInTheDocument();
+  });
+
+  it("cancels line retargeting with Escape", () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("img", { name: "World" });
+    const line = container.querySelector(".diagram-canvas-line-hit");
+    const bob = freeDrawingNode("bob");
+    expect(line).toBeInstanceOf(Element);
+
+    fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
+    fireEvent(screen.getByRole("button", { name: "Change line end" }), pointerEvent("pointerdown", 5, 570, 120));
+    fireEvent.keyDown(canvas, { key: "Escape" });
+    fireEvent(bob, pointerEvent("pointerup", 5, 420, 120));
+
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("edits a line label from the label button", () => {
