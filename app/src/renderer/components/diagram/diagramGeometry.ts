@@ -35,6 +35,8 @@ export interface DiagramCanvasNodeLayout {
 }
 
 export interface DiagramCanvasLineLayout {
+  annotationLabelNodeId?: string;
+  annotationLabelSide?: DiagramNodePortSide;
   displayLayer: number;
   kind: "annotation" | "line";
   label: string;
@@ -68,16 +70,16 @@ interface RoutedSegment {
 }
 
 type RouteDirection = "h" | "none" | "v";
-type NodePortSide = "bottom" | "left" | "right" | "top";
+export type DiagramNodePortSide = "bottom" | "left" | "right" | "top";
 
 interface NodePort {
   fixed?: boolean;
   point: DiagramPoint;
-  side: NodePortSide;
+  side: DiagramNodePortSide;
 }
 
-const decisionPortSides = ["top", "right", "bottom", "left"] as const satisfies readonly NodePortSide[];
-const decisionPortVectors: Record<NodePortSide, DiagramPoint> = {
+const decisionPortSides = ["top", "right", "bottom", "left"] as const satisfies readonly DiagramNodePortSide[];
+const decisionPortVectors: Record<DiagramNodePortSide, DiagramPoint> = {
   bottom: { x: 0, y: 1 },
   left: { x: -1, y: 0 },
   right: { x: 1, y: 0 },
@@ -134,7 +136,7 @@ export function buildLineLayouts(
   const reservedSegments: RoutedSegment[] = [];
   const renderableLines = visibleDiagramLines(lines, nodes.map((node) => node.node));
   const decisionInputSideByNodeId = buildDecisionInputSideByNodeId(renderableLines, nodeById);
-  const decisionOutputSidesByNodeId = new Map<string, Set<NodePortSide>>();
+  const decisionOutputSidesByNodeId = new Map<string, Set<DiagramNodePortSide>>();
   const contexts = renderableLines.flatMap((line): LineRouteContext[] => {
     const from = nodeById.get(line.from);
     const to = nodeById.get(line.to);
@@ -172,8 +174,17 @@ export function buildLineLayouts(
       otherIndex === index ? [] : segmentsFromPoints(routedLine.route.points)
     ));
     const labelPoint = labelPointFromRoute(route.points, otherSegments);
+    const annotationLabelNode = kind === "annotation"
+      ? context.from.node.shape === "label"
+        ? context.from.node
+        : context.to.node.shape === "label"
+          ? context.to.node
+          : null
+      : null;
     return {
       label: kind === "annotation" ? "" : context.line.label,
+      annotationLabelNodeId: annotationLabelNode?.id,
+      annotationLabelSide: annotationLabelNode ? context.start.side : undefined,
       displayLayer: kind === "annotation" ? diagramFreeDrawingLabelDisplayLayer() : diagramLineDisplayLayer(context.from.node, context.to.node),
       kind,
       labelX: labelPoint.x,
@@ -232,8 +243,8 @@ function isAnnotationLine(line: RelicDiagramLine, nodes: RelicConnectedDiagramNo
 function linePorts(
   from: DiagramCanvasNodeLayout,
   to: DiagramCanvasNodeLayout,
-  decisionInputSideByNodeId: Map<string, NodePortSide>,
-  decisionOutputSidesByNodeId: Map<string, Set<NodePortSide>>
+  decisionInputSideByNodeId: Map<string, DiagramNodePortSide>,
+  decisionOutputSidesByNodeId: Map<string, Set<DiagramNodePortSide>>
 ): { end: NodePort; start: NodePort } {
   if (diagramLineKind(from.node, to.node) === "annotation") {
     return annotationLinePorts(from, to);
@@ -320,7 +331,7 @@ function diagramLinePorts(
 function buildDecisionInputSideByNodeId(
   lines: RelicDiagramLine[],
   nodeById: Map<string, DiagramCanvasNodeLayout>
-): Map<string, NodePortSide> {
+): Map<string, DiagramNodePortSide> {
   const inputVectorByNodeId = new Map<string, DiagramPoint>();
 
   lines.forEach((line) => {
@@ -347,10 +358,10 @@ function buildDecisionInputSideByNodeId(
 function reserveDecisionOutputPortSide(
   from: DiagramCanvasNodeLayout,
   to: DiagramCanvasNodeLayout,
-  inputSide: NodePortSide | undefined,
-  decisionOutputSidesByNodeId: Map<string, Set<NodePortSide>>
-): NodePortSide {
-  const usedSides = decisionOutputSidesByNodeId.get(from.node.id) ?? new Set<NodePortSide>();
+  inputSide: DiagramNodePortSide | undefined,
+  decisionOutputSidesByNodeId: Map<string, Set<DiagramNodePortSide>>
+): DiagramNodePortSide {
+  const usedSides = decisionOutputSidesByNodeId.get(from.node.id) ?? new Set<DiagramNodePortSide>();
   const availableSides = inputSide
     ? decisionPortSides.filter((side) => side !== inputSide && !usedSides.has(side))
     : decisionPortSides.filter((side) => !usedSides.has(side));
@@ -363,8 +374,8 @@ function reserveDecisionOutputPortSide(
 function closestDecisionPortSide(
   from: DiagramCanvasNodeLayout,
   to: DiagramCanvasNodeLayout,
-  availableSides: readonly NodePortSide[]
-): NodePortSide {
+  availableSides: readonly DiagramNodePortSide[]
+): DiagramNodePortSide {
   const fromCenter = nodeCenter(from);
   const toCenter = nodeCenter(to);
   return closestPortSide({
@@ -373,7 +384,7 @@ function closestDecisionPortSide(
   }, availableSides);
 }
 
-function closestPortSide(vector: DiagramPoint, availableSides: readonly NodePortSide[]): NodePortSide {
+function closestPortSide(vector: DiagramPoint, availableSides: readonly DiagramNodePortSide[]): DiagramNodePortSide {
   let bestSide = availableSides[0] ?? "right";
   let bestScore = Number.NEGATIVE_INFINITY;
 
@@ -389,7 +400,7 @@ function closestPortSide(vector: DiagramPoint, availableSides: readonly NodePort
   return bestSide;
 }
 
-function decisionPort(node: DiagramCanvasNodeLayout, side: NodePortSide): NodePort {
+function decisionPort(node: DiagramCanvasNodeLayout, side: DiagramNodePortSide): NodePort {
   const center = nodeCenter(node);
 
   switch (side) {
@@ -1057,7 +1068,7 @@ function nodeRect(node: DiagramCanvasNodeLayout): DiagramRect {
   };
 }
 
-function portOutwardDirection(side: NodePortSide): DiagramPoint {
+function portOutwardDirection(side: DiagramNodePortSide): DiagramPoint {
   switch (side) {
     case "bottom":
       return { x: 0, y: 1 };

@@ -139,6 +139,13 @@ export function DiagramCanvasSurface({
   const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
 
   const layout = useMemo(() => buildDiagramCanvasLayout(diagram), [diagram]);
+  const calloutTailSideByNodeId = useMemo(() => {
+    return new Map(layout.lines.flatMap((line) => (
+      line.kind === "annotation" && line.annotationLabelNodeId && line.annotationLabelSide
+        ? [[line.annotationLabelNodeId, line.annotationLabelSide] as const]
+        : []
+    )));
+  }, [layout.lines]);
   const previousLayoutOriginRef = useRef<{ x: number; y: number } | null>(null);
   const canvasStyle = {
     "--diagram-canvas-grid-size": `${diagramGridSize * viewport.zoom}px`,
@@ -966,9 +973,11 @@ export function DiagramCanvasSurface({
           {displayNodes.map(({ node, x, y }) => {
             const shapeOptions = isFreeDrawing && "shape" in node ? connectedShapeOptionsForNode(node, diagram.lines, diagram.nodes, freeDrawingShapeOptions) : [];
             const canAddConnectedShape = shapeOptions.length > 0;
+            const calloutTailSide = node.shape === "label" ? calloutTailSideByNodeId.get(node.id) : undefined;
 
             return (
               <DiagramNodeView
+                calloutTailSide={calloutTailSide}
                 isDragging={drag?.nodeId === node.id}
                 isTextEditing={nodeTextEdit?.nodeId === node.id}
                 isSelected={selection?.type === "node" && selection.id === node.id}

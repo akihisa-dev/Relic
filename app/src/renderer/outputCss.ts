@@ -220,14 +220,15 @@ mark {
   stroke-width: 2.2;
 }
 
-.relic-output-diagram-canvas-line-annotation-anchor {
-  fill: #fbfaf7;
-  stroke: #4f7f94;
-  stroke-width: 2;
-}
-
 .relic-output-diagram-canvas-arrow {
   fill: #4c4a45;
+}
+
+.relic-output-diagram-canvas-callout-tail {
+  fill: #edf5f7;
+  stroke: #5f8ea2;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .relic-output-diagram-canvas-label {

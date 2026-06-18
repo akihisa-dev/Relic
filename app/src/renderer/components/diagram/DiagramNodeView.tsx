@@ -9,6 +9,7 @@ import {
 
 import { type RelicConnectedDiagramNode, type RelicFreeDrawingShapeType } from "../../../shared/diagramMarkdown";
 import { diagramNodeDisplayLayer } from "./diagramLayering";
+import { type DiagramNodePortSide } from "./diagramGeometry";
 
 interface DiagramNodeViewProps {
   addShapeLabel?: string;
@@ -17,6 +18,7 @@ interface DiagramNodeViewProps {
     label: string;
     shape: RelicFreeDrawingShapeType;
   }>;
+  calloutTailSide?: DiagramNodePortSide;
   isDragging: boolean;
   isTextEditing: boolean;
   isSelected: boolean;
@@ -49,6 +51,7 @@ export function DiagramNodeView({
   addShapeLabel,
   addShapeMenuLabel,
   addShapeOptions,
+  calloutTailSide,
   isDragging,
   isTextEditing,
   isSelected,
@@ -76,6 +79,9 @@ export function DiagramNodeView({
   const isArea = node.shape === "area";
   const title = freeText;
   const shapeClass = `diagram-canvas-node--shape-${node.shape}`;
+  const calloutTailClass = node.shape === "label" && calloutTailSide
+    ? `diagram-canvas-node--callout-tail-${calloutTailSide}`
+    : "";
   const nodeStyle: DiagramNodeStyle = {
     ...nodeElevationStyle(node),
     minHeight: node.height,
@@ -94,6 +100,7 @@ export function DiagramNodeView({
       className={[
         "diagram-canvas-node",
         shapeClass,
+        calloutTailClass,
         isDragging ? "diagram-canvas-node--dragging" : "",
         isSelected ? "diagram-canvas-node--selected" : ""
       ].filter(Boolean).join(" ")}
