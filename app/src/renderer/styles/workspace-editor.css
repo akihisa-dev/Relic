@@ -1228,13 +1228,12 @@
 }
 
 .diagram-canvas-node--shape-area {
-  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
   border: 2px dashed color-mix(in srgb, var(--text-3) 58%, var(--border-medium));
   border-radius: 7px;
   box-shadow: none;
   color: var(--text-2);
   align-content: start;
-  opacity: 0.92;
   padding: 12px 14px;
 }
 

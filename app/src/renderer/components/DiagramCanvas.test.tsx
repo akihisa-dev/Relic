@@ -1015,6 +1015,13 @@ describe("DiagramCanvas", () => {
     expect(css).toMatch(/\.diagram-canvas-node--dragging\.diagram-canvas-node--shape-decision,\s*\.diagram-canvas-node--dragging\.diagram-canvas-node--shape-input-output\s*\{[^}]*box-shadow:\s*none;/s);
   });
 
+  it("keeps area shape fill translucent without fading the whole shape", () => {
+    const css = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
+
+    expect(css).toMatch(/\.diagram-canvas-node--shape-area\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--accent\) 14%, transparent\);/s);
+    expect(css).not.toMatch(/\.diagram-canvas-node--shape-area\s*\{[^}]*opacity:/s);
+  });
+
   it("moves and scales the diagram grid with the viewport", () => {
     render(
       <I18nProvider language="en">

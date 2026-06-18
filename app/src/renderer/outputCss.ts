@@ -330,7 +330,7 @@ mark {
 
 .relic-output-diagram-canvas-node--shape-area {
   align-items: flex-start;
-  background: #f3f0e8;
+  background: rgba(0, 124, 175, 0.14);
   border: 1.5px dashed #80786c;
   box-shadow: none;
   color: #4f4940;
