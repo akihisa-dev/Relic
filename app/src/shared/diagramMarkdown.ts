@@ -86,6 +86,11 @@ export interface RelicDiagramLineDirectionUpdate {
   line: RelicDiagramLine;
 }
 
+export interface RelicDiagramLineEndpointUpdate {
+  content: string;
+  line: RelicDiagramLine;
+}
+
 export interface RelicFreeDrawingNodeTextUpdate {
   content: string;
   node: RelicFreeDrawingNode;
@@ -153,6 +158,15 @@ export function isRelicDiagramType(value: unknown): value is RelicDiagramType {
 export function isRelicDiagramMarkdownContent(content: string): boolean {
   const parts = parseDiagramMarkdownParts(content);
   return parts.ok && isRelicDiagramType(parts.value.frontmatter.type);
+}
+
+export function isRelicDiagramMarkdownCandidate(content: string): boolean {
+  if (isRelicDiagramMarkdownContent(content)) return true;
+
+  const frontmatter = extractFrontmatterText(content);
+  if (frontmatter === null) return false;
+
+  return /^\s*type\s*:\s*["']?diagram["']?\s*$/m.test(frontmatter);
 }
 
 export function diagramTypeFromMarkdownContent(content: string): RelicDiagramType | null {
@@ -578,6 +592,49 @@ export function reverseRelicDiagramLineDirection(
   });
 }
 
+export function updateRelicDiagramLineEndpoints(
+  content: string,
+  lineId: string,
+  fromNodeId: string,
+  toNodeId: string
+): RelicResult<RelicDiagramLineEndpointUpdate> {
+  const parsed = parseRelicConnectedDiagramMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const id = parseRequiredText(lineId, "DIAGRAM_LINE_ID_INVALID", "Lineの id を指定してください。");
+  if (!id.ok) return id;
+  const from = parseRequiredText(fromNodeId, "DIAGRAM_LINE_FROM_INVALID", "Lineの from を指定してください。");
+  if (!from.ok) return from;
+  const to = parseRequiredText(toNodeId, "DIAGRAM_LINE_TO_INVALID", "Lineの to を指定してください。");
+  if (!to.ok) return to;
+  const line = parsed.value.lines.find((item) => item.id === id.value);
+  if (!line) {
+    return fail("DIAGRAM_LINE_MISSING", "変更するLineが見つかりません。");
+  }
+  const validation = validateDiagramLineConnection(parsed.value, {
+    from: from.value,
+    ignoreLineId: id.value,
+    to: to.value
+  });
+  if (!validation.ok) return validation;
+
+  const nextLine = {
+    ...line,
+    from: from.value,
+    to: to.value
+  };
+  const serialized = serializeRelicConnectedDiagramMarkdown({
+    ...parsed.value,
+    lines: parsed.value.lines.map((item) => item.id === id.value ? nextLine : item)
+  } as RelicConnectedDiagramDocument);
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    line: nextLine
+  });
+}
+
 export function updateRelicFreeDrawingNodeText(
   content: string,
   nodeId: string,
@@ -957,6 +1014,16 @@ function parseDiagramMarkdownParts(content: string): RelicResult<ParsedDiagramMa
   });
 }
 
+function extractFrontmatterText(content: string): string | null {
+  const normalizedContent = content.replace(/\r\n/g, "\n");
+  if (!normalizedContent.startsWith("---\n")) return null;
+
+  const endIndex = normalizedContent.indexOf("\n---", 4);
+  if (endIndex < 0) return normalizedContent.slice(4);
+
+  return normalizedContent.slice(4, endIndex);
+}
+
 function parseRelicConnectedDiagramMarkdown(content: string): RelicResult<RelicConnectedDiagramDocument> {
   const type = diagramTypeFromMarkdownContent(content);
   if (type === "diagram") return parseRelicFreeDrawingMarkdown(content);
@@ -1092,25 +1159,19 @@ function parseLines(rawLines: unknown, nodes: RelicDiagramNodeBase[]): RelicResu
     if (from.value === to.value) {
       return fail("DIAGRAM_LINE_SELF_INVALID", "同じNode同士をLineでつなげません。");
     }
-    if (!nodeIds.has(from.value) || !nodeIds.has(to.value)) {
-      return fail("DIAGRAM_LINE_NODE_MISSING", "Lineが存在しないNodeを参照しています。");
-    }
-    const directionKey = diagramLineDirectionKey(from.value, to.value);
-    if (lineDirections.has(directionKey)) {
-      return fail("DIAGRAM_LINE_DUPLICATED", "同じ向きのLineはすでに存在します。");
-    }
-    const pairKey = diagramLinePairKey(from.value, to.value);
-    const pairCount = linePairCounts.get(pairKey) ?? 0;
-    if (pairCount >= 2) {
-      return fail("DIAGRAM_LINE_PAIR_LIMIT", "同じNode一対のLineは2本までにしてください。");
-    }
+    const connection = validateRawLineConnection({
+      from: from.value,
+      lineDirections,
+      linePairCounts,
+      nodeIds,
+      to: to.value
+    });
+    if (!connection.ok) return connection;
 
     const label = parseOptionalText(rawLine.label, "DIAGRAM_LINE_LABEL_INVALID", "Lineの label は文字にしてください。");
     if (!label.ok) return label;
 
     lineIds.add(id.value);
-    lineDirections.add(directionKey);
-    linePairCounts.set(pairKey, pairCount + 1);
     lines.push({
       from: from.value,
       id: id.value,
@@ -1120,6 +1181,65 @@ function parseLines(rawLines: unknown, nodes: RelicDiagramNodeBase[]): RelicResu
   }
 
   return ok(lines);
+}
+
+function validateDiagramLineConnection(
+  diagram: RelicConnectedDiagramDocument,
+  input: { from: string; ignoreLineId?: string; to: string }
+): RelicResult<void> {
+  if (input.from === input.to) {
+    return fail("DIAGRAM_LINE_SELF_INVALID", "同じNode同士をLineでつなげません。");
+  }
+
+  const nodeById = new Map(diagram.nodes.map((node) => [node.id, node]));
+  const fromNode = nodeById.get(input.from);
+  const toNode = nodeById.get(input.to);
+  if (!fromNode || !toNode) {
+    return fail("DIAGRAM_LINE_NODE_MISSING", "Lineが存在しないNodeを参照しています。");
+  }
+  if (diagram.lines.some((line) => line.id !== input.ignoreLineId && line.from === input.from && line.to === input.to)) {
+    return fail("DIAGRAM_LINE_DUPLICATED", "同じ向きのLineはすでに存在します。");
+  }
+  const pairCount = diagram.lines.filter((line) => {
+    if (line.id === input.ignoreLineId) return false;
+    return diagramLinePairKey(line.from, line.to) === diagramLinePairKey(input.from, input.to);
+  }).length;
+  if (pairCount >= 2) {
+    return fail("DIAGRAM_LINE_PAIR_LIMIT", "同じNode一対のLineは2本までにしてください。");
+  }
+  if ("shape" in fromNode && fromNode.shape === "decision") {
+    const decisionOutgoingCount = diagram.lines.filter((line) => line.id !== input.ignoreLineId && line.from === input.from).length;
+    if (decisionOutgoingCount >= 2) {
+      return fail("DIAGRAM_LINE_DECISION_OUTPUT_LIMIT", "判断図形から出る通常Lineは2本までです。");
+    }
+  }
+
+  return ok(undefined);
+}
+
+function validateRawLineConnection(input: {
+  from: string;
+  lineDirections: Set<string>;
+  linePairCounts: Map<string, number>;
+  nodeIds: Set<string>;
+  to: string;
+}): RelicResult<void> {
+  if (!input.nodeIds.has(input.from) || !input.nodeIds.has(input.to)) {
+    return fail("DIAGRAM_LINE_NODE_MISSING", "Lineが存在しないNodeを参照しています。");
+  }
+  const directionKey = diagramLineDirectionKey(input.from, input.to);
+  if (input.lineDirections.has(directionKey)) {
+    return fail("DIAGRAM_LINE_DUPLICATED", "同じ向きのLineはすでに存在します。");
+  }
+  const pairKey = diagramLinePairKey(input.from, input.to);
+  const pairCount = input.linePairCounts.get(pairKey) ?? 0;
+  if (pairCount >= 2) {
+    return fail("DIAGRAM_LINE_PAIR_LIMIT", "同じNode一対のLineは2本までにしてください。");
+  }
+
+  input.lineDirections.add(directionKey);
+  input.linePairCounts.set(pairKey, pairCount + 1);
+  return ok(undefined);
 }
 
 function diagramLineDirectionKey(from: string, to: string): string {

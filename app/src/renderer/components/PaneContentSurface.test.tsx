@@ -114,6 +114,24 @@ describe("PaneContentSurface", () => {
     expect(textCountSpy).not.toHaveBeenCalled();
   });
 
+  it("routes invalid Diagram candidates to the Diagram canvas", () => {
+    const textCountSpy = vi.spyOn(paneViewModel, "textCount");
+    const diagramTab: FileTab = {
+      content: "---\ntype: diagram\nformatVersion: 999\n---\n\nnodes: []\nlines: []",
+      id: "tab-diagram-invalid",
+      kind: "file",
+      name: "Diagram",
+      path: "Diagram.md",
+      savedContent: "---\ntype: diagram\nformatVersion: 999\n---\n\nnodes: []\nlines: []"
+    };
+
+    renderSurface(diagramTab, false);
+
+    expect(screen.getByText("DiagramCanvas")).toBeInTheDocument();
+    expect(screen.getByText("diagram-canvas-status")).toBeInTheDocument();
+    expect(textCountSpy).not.toHaveBeenCalled();
+  });
+
   it("does not recalculate large markdown detection when content is unchanged", () => {
     const largeMarkdownSpy = vi.spyOn(largeMarkdown, "isLargeMarkdownContent");
     const fileTab: FileTab = {

@@ -7,6 +7,7 @@ import {
   diagramTypeFromMarkdownContent,
   duplicateRelicDiagramNodes,
   emptyRelicDiagramMarkdownContent,
+  isRelicDiagramMarkdownCandidate,
   isRelicDiagramMarkdownContent,
   moveRelicDiagramNodesByDelta,
   moveRelicDiagramNode,
@@ -19,6 +20,7 @@ import {
   resizeRelicDiagramNode,
   serializeRelicDiagramMarkdown,
   updateRelicFreeDrawingNodeShape,
+  updateRelicDiagramLineEndpoints,
   updateRelicDiagramLineLabel,
   updateRelicFreeDrawingNodeText
 } from "./diagramMarkdown";
@@ -154,6 +156,13 @@ describe("Diagram Markdown", () => {
     });
     expect(isRelicDiagramMarkdownContent("---\ntype: diagram\nformatVersion: 999\n---\n\nnodes: []\nlines: []")).toBe(false);
   });
+
+  it("壊れたDiagram候補をキャンバス表示対象として判定する", () => {
+    expect(isRelicDiagramMarkdownCandidate("---\ntype: diagram\nformatVersion: 999\n---\n\nnodes: []\nlines: []")).toBe(true);
+    expect(isRelicDiagramMarkdownCandidate("---\ntype: diagram\nbroken: [\n---\n\nnodes: []")).toBe(true);
+    expect(isRelicDiagramMarkdownCandidate("---\ntype: map\n---\n\nnodes: []")).toBe(false);
+    expect(isRelicDiagramMarkdownCandidate("# 通常Markdown")).toBe(false);
+  });
 });
 
 describe("Diagram operations", () => {
@@ -191,6 +200,15 @@ describe("Diagram operations", () => {
     const updatedLabel = updateRelicDiagramLineLabel(diagramContent, "line-1", "関連");
     expect(updatedLabel.ok ? updatedLabel.value.content : "").toContain("label: 関連");
 
+    const retargeted = updateRelicDiagramLineEndpoints(diagramContent, "line-1", "node-2", "node-1");
+    expect(retargeted.ok ? retargeted.value.line : null).toMatchObject({
+      from: "node-2",
+      id: "line-1",
+      label: "対立",
+      to: "node-1"
+    });
+    expect(retargeted.ok ? retargeted.value.content : "").toContain("id: line-1\n    from: node-2\n    to: node-1\n    label: 対立");
+
     const removedLine = removeRelicDiagramLine(diagramContent, "line-1");
     expect(removedLine.ok ? removedLine.value.content : "").not.toContain("id: line-1");
 
@@ -218,6 +236,35 @@ describe("Diagram operations", () => {
     expect(deleted.ok ? deleted.value.content : "").not.toContain("id: node-1");
     expect(deleted.ok ? deleted.value.content : "").not.toContain("id: node-2");
     expect(deleted.ok ? deleted.value.content : "").not.toContain("id: line-1");
+  });
+
+  it("Line端点変更で無効な接続を拒否し、元のLineを変えない", () => {
+    const unchanged = updateRelicDiagramLineEndpoints(diagramContent, "line-1", "node-1", "node-2");
+    expect(unchanged.ok ? unchanged.value.line : null).toMatchObject({
+      from: "node-1",
+      id: "line-1",
+      label: "対立",
+      to: "node-2"
+    });
+
+    const selfConnected = updateRelicDiagramLineEndpoints(diagramContent, "line-1", "node-1", "node-1");
+    expect(selfConnected).toMatchObject({
+      error: { code: "DIAGRAM_LINE_SELF_INVALID" },
+      ok: false
+    });
+
+    const missingNode = updateRelicDiagramLineEndpoints(diagramContent, "line-1", "node-1", "missing-node");
+    expect(missingNode).toMatchObject({
+      error: { code: "DIAGRAM_LINE_NODE_MISSING" },
+      ok: false
+    });
+
+    const twoLines = diagramContent.replace("lines:\n  - id: line-1", "lines:\n  - id: line-0\n    from: node-2\n    to: node-1\n    label: 戻り\n  - id: line-1");
+    const duplicateDirection = updateRelicDiagramLineEndpoints(twoLines, "line-1", "node-2", "node-1");
+    expect(duplicateDirection).toMatchObject({
+      error: { code: "DIAGRAM_LINE_DUPLICATED" },
+      ok: false
+    });
   });
 
   it("図形種類変更と整列操作をMarkdownへ反映する", () => {
