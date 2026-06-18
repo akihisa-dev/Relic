@@ -1027,6 +1027,17 @@
   stroke-width: 3;
 }
 
+.diagram-canvas-line--annotation {
+  stroke: color-mix(in srgb, var(--accent) 58%, var(--text-3));
+  stroke-dasharray: 0;
+  stroke-width: 1.8;
+}
+
+.diagram-canvas-line--annotation.diagram-canvas-line--selected {
+  stroke: var(--accent);
+  stroke-width: 2.6;
+}
+
 .diagram-canvas-line--preview {
   opacity: 0.72;
   stroke: var(--accent);
@@ -1223,8 +1234,10 @@
 }
 
 .diagram-canvas-node--shape-label {
+  background: color-mix(in srgb, var(--bg) 92%, var(--accent) 8%);
   border: 2px solid var(--diagram-node-layer-border, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)));
-  border-radius: 7px;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
 .diagram-canvas-node--shape-area {
@@ -1498,6 +1511,11 @@
 .diagram-canvas-node-label-frame--shape-input-output {
   padding-left: 28px;
   padding-right: 28px;
+}
+
+.diagram-canvas-node-label-frame--shape-label {
+  padding-left: 18px;
+  padding-right: 18px;
 }
 
 .diagram-canvas-node-label-frame--area {

@@ -81,6 +81,40 @@ describe("buildLineLayouts", () => {
     });
   });
 
+  it("treats a line to a label shape as an annotation connector", () => {
+    const [line] = buildLineLayouts([
+      {
+        from: "node-1",
+        id: "line-annotation",
+        label: "注釈線では表示しない",
+        to: "label-1"
+      }
+    ], [
+      horizontalNodes[0],
+      {
+        node: {
+          layer: 1,
+          shape: "label",
+          text: "補足",
+          height: 64,
+          id: "label-1",
+          width: 160,
+          x: 420,
+          y: 180
+        },
+        x: 420,
+        y: 180
+      }
+    ]);
+
+    expect(line).toMatchObject({
+      kind: "annotation",
+      label: "",
+      line: { id: "line-annotation" }
+    });
+    expect(line?.pathD).toContain(" Q ");
+  });
+
   it("connects diagonal lines with perpendicular node edge segments", () => {
     const [line] = buildLineLayouts([
       {
@@ -795,9 +829,29 @@ describe("buildLineLayouts", () => {
         },
         x: 620,
         y: 360
+      },
+      {
+        node: {
+          height: 64,
+          id: "label-1",
+          layer: 1,
+          shape: "label",
+          text: "補足",
+          width: 160,
+          x: 280,
+          y: 440
+        },
+        x: 280,
+        y: 440
       }
     ];
     const lines = [
+      {
+        from: "decision",
+        id: "line-annotation",
+        label: "",
+        to: "label-1"
+      },
       {
         from: "decision",
         id: "line-1",
@@ -819,10 +873,12 @@ describe("buildLineLayouts", () => {
     ];
 
     expect(visibleDiagramLines(lines, nodes.map((node) => node.node)).map((line) => line.id)).toEqual([
+      "line-annotation",
       "line-1",
       "line-2"
     ]);
     expect(buildLineLayouts(lines, nodes).map((line) => line.line.id)).toEqual([
+      "line-annotation",
       "line-1",
       "line-2"
     ]);

@@ -149,6 +149,35 @@ const freeDrawingContent = [
   ""
 ].join("\n");
 
+const freeDrawingContentWithLabelAnnotation = [
+  "---",
+  "type: diagram",
+  "title: 図解ファイル",
+  "---",
+  "",
+  "nodes:",
+  "  - id: node-1",
+  "    shape: process",
+  "    text: 主人公",
+  "    x: 120",
+  "    y: 80",
+  "    width: 160",
+  "    height: 64",
+  "  - id: label-1",
+  "    shape: label",
+  "    text: 補足",
+  "    x: 360",
+  "    y: 180",
+  "    width: 160",
+  "    height: 64",
+  "lines:",
+  "  - id: line-annotation",
+  "    from: node-1",
+  "    to: label-1",
+  "    label: ''",
+  ""
+].join("\n");
+
 const freeDrawingDecisionWithTwoOutputs = [
   "---",
   "type: diagram",
@@ -310,6 +339,28 @@ describe("DiagramCanvas", () => {
     ]);
   });
 
+  it("renders label connections as annotation callouts without line label controls", () => {
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={freeDrawingContentWithLabelAnnotation} fileName="World" />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText("主人公")).toBeInTheDocument();
+    expect(screen.getByText("補足")).toBeInTheDocument();
+    const line = container.querySelector(".diagram-canvas-line");
+    expect(line).toHaveClass("diagram-canvas-line--annotation");
+    expect(line?.getAttribute("d")).toContain(" Q ");
+    expect(line?.getAttribute("marker-end")).toBeNull();
+
+    const hit = container.querySelector(".diagram-canvas-line-hit");
+    expect(hit).toBeInstanceOf(Element);
+    fireEvent(hit as Element, pointerEvent("pointerdown", 4, 10, 10));
+
+    expect(screen.queryByRole("button", { name: "Edit line label" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reverse arrow direction" })).not.toBeInTheDocument();
+  });
+
   it("renders diagram text nodes and edits their text in Markdown", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
@@ -435,6 +486,43 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("to: node-3");
   });
 
+  it("adds a label shape as an annotation connector instead of a normal flow line", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
+
+    const source = freeDrawingNode("主人公");
+
+    fireEvent(source, pointerEvent("pointerdown", 2, 130, 90));
+    fireEvent(source, pointerEvent("pointerup", 2, 130, 90));
+    const addButton = screen.getByRole("button", { name: "Add connected shape" });
+    fireEvent(addButton, pointerEvent("pointerdown", 3, 310, 120));
+
+    const menu = screen.getByRole("menu", { name: "Shape to connect" });
+    fireEvent(within(menu).getByRole("menuitem", { name: "Label" }), pointerEvent("pointerdown", 4, 340, 120));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: node-3");
+    expect(onChange.mock.calls[0]?.[0]).toContain("shape: label");
+    expect(onChange.mock.calls[0]?.[0]).toContain("from: node-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("to: node-3");
+    expect(onChange.mock.calls[0]?.[0]).toContain("label: ''");
+  });
+
+  it("does not show the connected-shape add button from a label shape", () => {
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={freeDrawingContentWithLabelAnnotation} fileName="World" />
+      </I18nProvider>
+    );
+
+    const label = freeDrawingNode("補足");
+
+    fireEvent(label, pointerEvent("pointerdown", 2, 370, 190));
+    fireEvent(label, pointerEvent("pointerup", 2, 370, 190));
+
+    expect(screen.queryByRole("button", { name: "Add connected shape" })).not.toBeInTheDocument();
+  });
+
   it("adds a YES standard choice label when connecting from a decision shape", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
@@ -501,10 +589,11 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("label: 'NO'");
   });
 
-  it("does not show the connected-shape add button for a decision with two outgoing lines", () => {
+  it("only offers an annotation label from a decision with two outgoing flow lines", () => {
+    const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <DiagramCanvas content={freeDrawingDecisionWithTwoOutputs} fileName="図解ファイル" />
+        <DiagramCanvas content={freeDrawingDecisionWithTwoOutputs} fileName="図解ファイル" onChange={onChange} />
       </I18nProvider>
     );
 
@@ -513,7 +602,12 @@ describe("DiagramCanvas", () => {
     fireEvent(decision, pointerEvent("pointerdown", 2, 300, 180));
     fireEvent(decision, pointerEvent("pointerup", 2, 300, 180));
 
-    expect(screen.queryByRole("button", { name: "Add connected shape" })).not.toBeInTheDocument();
+    const addButton = screen.getByRole("button", { name: "Add connected shape" });
+    fireEvent(addButton, pointerEvent("pointerdown", 3, 470, 220));
+
+    const menu = screen.getByRole("menu", { name: "Shape to connect" });
+    expect(within(menu).getByRole("menuitem", { name: "Label" })).toBeInTheDocument();
+    expect(within(menu).queryByRole("menuitem", { name: "Process" })).not.toBeInTheDocument();
   });
 
   it("does not add a third outgoing line from a decision shape by dragging its outline", () => {

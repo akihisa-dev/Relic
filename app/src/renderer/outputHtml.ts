@@ -174,7 +174,7 @@ function buildDiagramCanvasOutputHtml(
     "</marker>",
     "</defs>",
     ...layout.lines.flatMap((line) => [
-      `<path class="relic-output-diagram-canvas-line" d="${escapeHtmlAttribute(line.pathD)}" marker-end="url(#${markerId})" />`,
+      `<path class="${line.kind === "annotation" ? "relic-output-diagram-canvas-line relic-output-diagram-canvas-line--annotation" : "relic-output-diagram-canvas-line"}" d="${escapeHtmlAttribute(line.pathD)}"${line.kind === "annotation" ? "" : ` marker-end="url(#${markerId})"`} />`,
       line.label.trim()
         ? `<text class="relic-output-diagram-canvas-label" x="${line.labelX}" y="${line.labelY}">${escapeHtml(line.label)}</text>`
         : ""
