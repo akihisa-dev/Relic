@@ -1028,14 +1028,23 @@
 }
 
 .diagram-canvas-line--annotation {
-  stroke: color-mix(in srgb, var(--accent) 58%, var(--text-3));
+  filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.12));
+  stroke: color-mix(in srgb, var(--accent) 68%, var(--text-3));
   stroke-dasharray: 0;
-  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-width: 2.2;
 }
 
 .diagram-canvas-line--annotation.diagram-canvas-line--selected {
   stroke: var(--accent);
   stroke-width: 2.6;
+}
+
+.diagram-canvas-line-annotation-anchor {
+  fill: var(--bg);
+  pointer-events: none;
+  stroke: color-mix(in srgb, var(--accent) 74%, var(--text-3));
+  stroke-width: 2;
 }
 
 .diagram-canvas-line--preview {
@@ -1234,10 +1243,13 @@
 }
 
 .diagram-canvas-node--shape-label {
-  background: color-mix(in srgb, var(--bg) 92%, var(--accent) 8%);
-  border: 2px solid var(--diagram-node-layer-border, color-mix(in srgb, var(--text-3) 64%, var(--border-medium)));
-  border-radius: 999px;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg) 96%, white 4%), color-mix(in srgb, var(--bg) 86%, var(--accent) 14%));
+  border: 2px solid color-mix(in srgb, var(--accent) 58%, var(--diagram-node-layer-border, var(--border-medium)));
+  border-radius: 18px;
+  box-shadow:
+    0 8px 20px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
 .diagram-canvas-node--shape-area {
@@ -1514,8 +1526,8 @@
 }
 
 .diagram-canvas-node-label-frame--shape-label {
-  padding-left: 18px;
-  padding-right: 18px;
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 .diagram-canvas-node-label-frame--area {
