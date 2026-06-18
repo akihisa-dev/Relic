@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -62,6 +62,34 @@ describe("appSettings", () => {
     expect(files[0]).toMatch(/^app-settings\.corrupt-\d+\.json$/);
   });
 
+  it("v0アプリ設定は読み込み時に現行schemaVersionで保存される", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      schemaVersion: 0,
+      featureToggles: {
+        calendar: true,
+        chronicle: false,
+        chronicleSettings: false,
+        frontmatter: false,
+        rightPanel: false,
+        tools: false
+      },
+      workspaces: []
+    }), "utf8");
+
+    await readAppSettings(userDataPath);
+    const afterFirstRead = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
+    expect(afterFirstRead.schemaVersion).toBe(1);
+
+    await delay(1100);
+    const firstMtime = (await stat(getAppSettingsPath(userDataPath))).mtimeMs;
+    await readAppSettings(userDataPath);
+    const secondMtime = (await stat(getAppSettingsPath(userDataPath))).mtimeMs;
+
+    expect(secondMtime).toBe(firstMtime);
+  });
+
   it("同時更新は更新ヘルパーで直列化される", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
@@ -96,6 +124,42 @@ describe("appSettings", () => {
     expect(loaded.lastWorkspaceId).toBe("ws-1");
     expect(loaded.workspaces).toEqual([{ id: "ws-1", name: "Notes", path: "/tmp/notes" }]);
     expect(loaded.featureToggles.tools).toBe(true);
+  });
+
+  it("移行読み込みと同時更新で更新値が上書きされない", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      schemaVersion: 0,
+      featureToggles: {
+        calendar: false,
+        chronicle: false,
+        chronicleSettings: false,
+        tools: false,
+        frontmatter: false
+      }
+    }), "utf8");
+
+    const update = updateAppSettings(userDataPath, async (settings) => {
+      await delay(40);
+      return {
+        ...settings,
+        featureToggles: {
+          ...settings.featureToggles,
+          tools: true
+        }
+      };
+    });
+    const readWhileUpdating = (async () => {
+      await delay(10);
+      return readAppSettings(userDataPath);
+    })();
+
+    await Promise.all([update, readWhileUpdating]);
+
+    const raw = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
+    expect(raw.schemaVersion).toBe(1);
+    expect((raw.featureToggles as Record<string, unknown>)?.tools).toBe(true);
   });
 
   it("旧rightPanel機能設定を右パネル個別設定へ引き継ぐ", async () => {

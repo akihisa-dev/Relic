@@ -42,22 +42,34 @@ export interface MarkdownLinkTarget {
 
 export type AliasIndex = Record<string, string[]>;
 
-export function parseWikiLinks(markdown: string): WikiLink[] {
-  return scanWikiLinks(markdown).map(({ body: _body, bodyFrom: _bodyFrom, bodyTo: _bodyTo, from: _from, rawTargetBase: _rawTargetBase, targetBase: _targetBase, to: _to, ...link }) => link);
+interface ScanWikiLinksOptions {
+  ignoreCode?: boolean;
+  limit?: number;
 }
 
-export function scanWikiLinks(markdown: string, options: { ignoreCode?: boolean } = {}): WikiLinkMatch[] {
+export function parseWikiLinks(markdown: string, options: ScanWikiLinksOptions = {}): WikiLink[] {
+  return scanWikiLinks(markdown, options).map(({ body: _body, bodyFrom: _bodyFrom, bodyTo: _bodyTo, from: _from, rawTargetBase: _rawTargetBase, targetBase: _targetBase, to: _to, ...link }) => link);
+}
+
+export function scanWikiLinks(markdown: string, options: ScanWikiLinksOptions = {}): WikiLinkMatch[] {
   const links: WikiLinkMatch[] = [];
-  const source = options.ignoreCode === false ? markdown : maskMarkdownCodeRanges(markdown);
+  const codeRanges = options.ignoreCode === false ? [] : collectMarkdownCodeRanges(markdown);
+  const limit = Number.isInteger(options.limit) && Number(options.limit) >= 0
+    ? Number(options.limit)
+    : Number.POSITIVE_INFINITY;
   const pattern = /(!)?\[\[([^\]\n]+)\]\]/g;
 
-  for (const match of source.matchAll(pattern)) {
+  if (limit === 0) return links;
+
+  for (const match of markdown.matchAll(pattern)) {
     const from = match.index;
+    if (from === undefined || isOffsetInRanges(from, codeRanges)) continue;
+
     const raw = match[0] ?? "";
     const body = match[2] ?? "";
     const parsed = parseWikiLinkBody(body);
 
-    if (from !== undefined && raw && parsed) {
+    if (raw && parsed) {
       links.push({
         ...parsed,
         body,
@@ -68,6 +80,8 @@ export function scanWikiLinks(markdown: string, options: { ignoreCode?: boolean 
         raw,
         to: from + raw.length
       });
+
+      if (links.length >= limit) break;
     }
   }
 
@@ -156,21 +170,22 @@ export function resolveWikiLinks(
   markdown: string,
   sourcePath: string,
   existingMarkdownPaths: Iterable<string>,
-  aliasesByPath: AliasIndex = {}
+  aliasesByPath: AliasIndex = {},
+  options: ScanWikiLinksOptions = {}
 ): ResolvedWikiLink[] {
-  return createWikiLinkResolver(existingMarkdownPaths, aliasesByPath)(markdown, sourcePath);
+  return createWikiLinkResolver(existingMarkdownPaths, aliasesByPath)(markdown, sourcePath, options);
 }
 
 export function createWikiLinkResolver(
   existingMarkdownPaths: Iterable<string>,
   aliasesByPath: AliasIndex = {}
-): (markdown: string, sourcePath: string) => ResolvedWikiLink[] {
+): (markdown: string, sourcePath: string, options?: ScanWikiLinksOptions) => ResolvedWikiLink[] {
   const normalizedExistingPaths = [...existingMarkdownPaths].map(normalizePathSegments);
   const existingPaths = new Set(normalizedExistingPaths);
   const uniqueBasenameTargets = buildUniqueBasenameTargetMap(normalizedExistingPaths);
   const aliasTargets = buildAliasTargetMap(aliasesByPath);
 
-  return (markdown, sourcePath) => parseWikiLinks(markdown).map((wikiLink) => {
+  return (markdown, sourcePath, options = {}) => parseWikiLinks(markdown, options).map((wikiLink) => {
     const resolvedPath = resolveWikiLinkPath(wikiLink.target, sourcePath);
     const uniqueBasenamePath = existingPaths.has(resolvedPath)
       ? null
@@ -260,12 +275,18 @@ function markdownPathKey(path: string): string {
   return `${stripMarkdownExtension(path)}.md`;
 }
 
-function maskMarkdownCodeRanges(markdown: string): string {
+function collectMarkdownCodeRanges(markdown: string): Array<{ from: number; to: number }> {
+  const ranges: Array<{ from: number; to: number }> = [];
   const lines = markdown.match(/[^\n]*(?:\n|$)/g) ?? [];
   let fence: { marker: "`" | "~"; length: number } | null = null;
+  let offset = 0;
 
-  return lines.map((line) => {
-    if (line === "") return line;
+  for (const line of lines) {
+    const lineStart = offset;
+    const lineEnd = lineStart + line.length;
+    offset = lineEnd;
+
+    if (line === "") continue;
 
     if (fence) {
       const closesFence = new RegExp(`^ {0,3}\\${fence.marker}{${fence.length},}`).test(line);
@@ -273,7 +294,8 @@ function maskMarkdownCodeRanges(markdown: string): string {
         fence = null;
       }
 
-      return maskText(line);
+      ranges.push({ from: lineStart, to: lineEnd });
+      continue;
     }
 
     const fenceStart = line.match(/^ {0,3}(`{3,}|~{3,})/);
@@ -284,25 +306,28 @@ function maskMarkdownCodeRanges(markdown: string): string {
         marker: markerRun[0] as "`" | "~"
       };
 
-      return maskText(line);
+      ranges.push({ from: lineStart, to: lineEnd });
+      continue;
     }
 
     if (/^(?: {4}|\t)/.test(line)) {
-      return maskText(line);
+      ranges.push({ from: lineStart, to: lineEnd });
+      continue;
     }
 
-    return maskInlineCodeSpans(line);
-  }).join("");
+    ranges.push(...collectInlineCodeRanges(line, lineStart));
+  }
+
+  return ranges;
 }
 
-function maskInlineCodeSpans(line: string): string {
-  let output = "";
+function collectInlineCodeRanges(line: string, lineStart: number): Array<{ from: number; to: number }> {
+  const ranges: Array<{ from: number; to: number }> = [];
   let cursor = 0;
 
   while (cursor < line.length) {
     const start = line.indexOf("`", cursor);
     if (start < 0) {
-      output += line.slice(cursor);
       break;
     }
 
@@ -314,20 +339,23 @@ function maskInlineCodeSpans(line: string): string {
     const marker = "`".repeat(markerLength);
     const end = line.indexOf(marker, start + markerLength);
     if (end < 0) {
-      output += line.slice(cursor);
       break;
     }
 
-    output += line.slice(cursor, start);
-    output += maskText(line.slice(start, end + markerLength));
+    ranges.push({ from: lineStart + start, to: lineStart + end + markerLength });
     cursor = end + markerLength;
   }
 
-  return output;
+  return ranges;
 }
 
-function maskText(value: string): string {
-  return " ".repeat(value.length);
+function isOffsetInRanges(offset: number, ranges: Array<{ from: number; to: number }>): boolean {
+  for (const range of ranges) {
+    if (offset < range.from) return false;
+    if (offset >= range.from && offset < range.to) return true;
+  }
+
+  return false;
 }
 
 function normalizePathSegments(value: string): string {

@@ -511,6 +511,40 @@ describe("App search and links", () => {
     expect(readMarkdownFile).toHaveBeenCalledWith({ path: "source.md" });
   });
 
+  it("リンクパネルを表示するまでバックリンクを取得しない", async () => {
+    const getBacklinks = vi.fn().mockResolvedValue({
+      ok: true,
+      value: [{ count: 1, sourceName: "source", sourcePath: "source.md" }]
+    });
+
+    window.relic = makeRelicApi({
+      getBacklinks,
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "target", path: "target.md", type: "file" },
+            { name: "source", path: "source.md", type: "file" }
+          ]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "[[source]]", name: "target", path: "target.md" }
+      })
+    });
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /target/ }));
+    await waitFor(() => expect(screen.getByText("target")).toBeInTheDocument());
+    expect(getBacklinks).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "リンク" }));
+    await waitFor(() => expect(getBacklinks).toHaveBeenCalledWith({ path: "target.md" }));
+  });
+
   it("未作成リンクをクリックすると同じフォルダにファイルを作成して開く", async () => {
     const readMarkdownFile = vi.fn(({ path }: { path: string }) => Promise.resolve(
       path === "folder/読書メモ.md"

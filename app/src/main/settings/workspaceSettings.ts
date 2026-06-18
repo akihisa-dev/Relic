@@ -38,6 +38,10 @@ const defaultWorkspaceSettings: WorkspaceSettings = {
 };
 
 const currentWorkspaceSettingsSchemaVersion = 1;
+type MigrationResult<T> = {
+  didMigrate: boolean;
+  settings: T;
+};
 const WORKSPACE_SETTINGS_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 type SerializedUpdate = Promise<unknown>;
 const workspaceSettingsUpdateQueues = new Map<string, SerializedUpdate>();
@@ -68,6 +72,14 @@ export async function readWorkspaceSettings(
   userDataPath: string,
   workspaceId: string
 ): Promise<WorkspaceSettings> {
+  return readWorkspaceSettingsInternal(userDataPath, workspaceId, { persistMigration: true });
+}
+
+async function readWorkspaceSettingsInternal(
+  userDataPath: string,
+  workspaceId: string,
+  options: { persistMigration: boolean }
+): Promise<WorkspaceSettings> {
   try {
     const settingsPath = getWorkspaceSettingsPath(userDataPath, workspaceId);
     const raw = await readFile(settingsPath, "utf8");
@@ -85,12 +97,19 @@ export async function readWorkspaceSettings(
     }
 
     const migrated = migrateWorkspaceSettings(parsed, settingsPath);
+    if (migrated.didMigrate && options.persistMigration) {
+      try {
+        await persistMigratedWorkspaceSettings(workspaceId, settingsPath);
+      } catch {
+        // 書き戻し失敗時も読み込み結果は捨てず、続行する
+      }
+    }
 
     return {
-      chronicleCalendars: parseChronicleCalendars(migrated.chronicleCalendars),
-      charts: parseCharts(migrated.charts),
-      pinnedPaths: parsePinnedPaths(migrated.pinnedPaths),
-      workspacePath: typeof migrated.workspacePath === "string" ? migrated.workspacePath : ""
+      chronicleCalendars: parseChronicleCalendars(migrated.settings.chronicleCalendars),
+      charts: parseCharts(migrated.settings.charts),
+      pinnedPaths: parsePinnedPaths(migrated.settings.pinnedPaths),
+      workspacePath: typeof migrated.settings.workspacePath === "string" ? migrated.settings.workspacePath : ""
     };
   } catch (error) {
     if (isMissingFileError(error) || isInvalidWorkspaceSettingsIdError(error)) {
@@ -238,7 +257,7 @@ export async function updateWorkspaceSettings(
   update: (current: WorkspaceSettings) => Promise<WorkspaceSettings> | WorkspaceSettings
 ): Promise<WorkspaceSettings> {
   return queueWorkspaceSettingsUpdate(workspaceId, async () => {
-    const current = await readWorkspaceSettings(userDataPath, workspaceId);
+    const current = await readWorkspaceSettingsInternal(userDataPath, workspaceId, { persistMigration: false });
     const next = await update(current);
     await writeWorkspaceSettings(userDataPath, workspaceId, next);
     return next;
@@ -270,20 +289,68 @@ function parseSettingsObject(raw: unknown): PersistedWorkspaceSettings | null {
   return raw as PersistedWorkspaceSettings;
 }
 
-function migrateWorkspaceSettings(raw: PersistedWorkspaceSettings, settingsPath: string): PersistedWorkspaceSettings {
+function migrateWorkspaceSettings(
+  raw: PersistedWorkspaceSettings,
+  settingsPath: string
+): MigrationResult<PersistedWorkspaceSettings> {
   const schemaVersion = readWorkspaceSettingsSchemaVersion(raw.schemaVersion, settingsPath);
 
-  if (schemaVersion === currentWorkspaceSettingsSchemaVersion) return raw;
+  if (schemaVersion === currentWorkspaceSettingsSchemaVersion) {
+    return { didMigrate: false, settings: raw };
+  }
 
   if (schemaVersion === 0) {
     return {
-      ...raw,
-      charts: raw.charts ?? raw.ganttCharts,
-      schemaVersion: currentWorkspaceSettingsSchemaVersion
+      didMigrate: true,
+      settings: {
+        ...raw,
+        charts: raw.charts ?? raw.ganttCharts,
+        schemaVersion: currentWorkspaceSettingsSchemaVersion
+      }
     };
   }
 
   throw createUnsupportedWorkspaceSettingsVersionError(settingsPath, schemaVersion);
+}
+
+async function persistMigratedWorkspaceSettings(
+  workspaceId: string,
+  settingsPath: string
+): Promise<void> {
+  return queueWorkspaceSettingsUpdate(workspaceId, async () => {
+    const raw = await readFile(settingsPath, "utf8");
+    const parsedJson = parseSettingsJson(raw);
+
+    if (!parsedJson.ok) {
+      return;
+    }
+
+    const parsedSettings = parseSettingsObject(parsedJson.value);
+    if (!parsedSettings) {
+      return;
+    }
+
+    const latestMigration = migrateWorkspaceSettings(parsedSettings, settingsPath);
+    if (!latestMigration.didMigrate) {
+      return;
+    }
+
+    await writeMigratedWorkspaceSettings(settingsPath, latestMigration.settings);
+  });
+}
+
+async function writeMigratedWorkspaceSettings(
+  settingsPath: string,
+  settings: PersistedWorkspaceSettings
+): Promise<void> {
+  await mkdir(path.dirname(settingsPath), { recursive: true });
+  await atomicWriteTextFile(
+    settingsPath,
+    `${JSON.stringify({
+      ...settings,
+      schemaVersion: currentWorkspaceSettingsSchemaVersion
+    }, null, 2)}\n`
+  );
 }
 
 function serializeWorkspaceSettings(settings: WorkspaceSettings): Record<string, unknown> {

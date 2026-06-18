@@ -95,6 +95,16 @@ describe("scanWikiLinks", () => {
       to: markdown.indexOf(" after")
     });
   });
+
+  it("limit指定時は上限到達後に解析を止める", () => {
+    const markdown = Array.from({ length: 10_000 }, (_, index) => `[[Note${index}]]`).join(" ");
+
+    const matches = scanWikiLinks(markdown, { limit: 1001 });
+
+    expect(matches).toHaveLength(1001);
+    expect(matches[0].target).toBe("Note0.md");
+    expect(matches.at(-1)?.target).toBe("Note1000.md");
+  });
 });
 
 describe("formatWikiLink", () => {
@@ -194,6 +204,13 @@ describe("resolveWikiLinks", () => {
 
     expect(resolve("[[A]] [[bee]]", "source.md").map((link) => link.path)).toEqual(["A.md", "notes/B.md"]);
     expect(resolve("[[B]]", "notes/source.md").map((link) => link.path)).toEqual(["notes/B.md"]);
+  });
+
+  it("resolverでもlimit指定時はresolved object生成数を制限する", () => {
+    const resolve = createWikiLinkResolver([]);
+    const markdown = Array.from({ length: 10_000 }, (_, index) => `[[Note${index}]]`).join(" ");
+
+    expect(resolve(markdown, "source.md", { limit: 1001 })).toHaveLength(1001);
   });
 });
 

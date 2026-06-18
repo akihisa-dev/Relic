@@ -2,13 +2,14 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { Backlink } from "../../shared/ipc";
-import { resolveWikiLinks } from "../../shared/links";
+import { createWikiLinkResolver } from "../../shared/links";
 import { hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceAliases } from "./aliases";
 import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
+import { mapWithConcurrency } from "./concurrency";
 import { resolveWorkspaceRelativePath } from "./paths";
 
 interface BacklinksReadOperations {
@@ -18,6 +19,8 @@ interface BacklinksReadOperations {
 const defaultBacklinksReadOperations: BacklinksReadOperations = {
   readFile
 };
+
+const maxConcurrentBacklinkReads = 8;
 
 export async function readBacklinks(
   workspacePath: string,
@@ -39,29 +42,39 @@ export async function readBacklinks(
     const markdownPaths = collectMarkdownPaths(fileTree);
     const aliasesResult = await readWorkspaceAliases(workspacePath);
     const aliasesByPath = aliasesResult.ok ? aliasesResult.value : {};
+    const resolveLinks = createWikiLinkResolver(markdownPaths, aliasesByPath);
     const backlinks: Backlink[] = [];
     const files = markdownPaths.flatMap((sourcePath) => {
       if (sourcePath === targetRelativePath) return [];
       const sourceFile = resolveWorkspaceRelativePath(workspacePath, sourcePath);
       return sourceFile.ok ? [{ sourcePath, absolutePath: sourceFile.value }] : [];
     });
-    const fileContents = await Promise.all(
-      files.map(async (file) => {
+    const fileContents = await mapWithConcurrency(
+      files,
+      maxConcurrentBacklinkReads,
+      async (file) => {
         try {
-          return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
+          const content = await operations.readFile(file.absolutePath, "utf8");
+
+          if (!content.includes("[[")) {
+            return { ...file, content: null };
+          }
+
+          return { ...file, content };
         } catch {
           return null;
         }
-      })
+      }
     );
 
     for (const fileContent of fileContents) {
       if (!fileContent) continue;
 
       const { content, sourcePath } = fileContent;
-      const count = resolveWikiLinks(content, sourcePath, markdownPaths, aliasesByPath).filter(
-        (link) => link.path === targetRelativePath
-      ).length;
+      const backlinksForSource = content
+        ? resolveLinks(content, sourcePath).filter((link) => link.path === targetRelativePath)
+        : [];
+      const count = backlinksForSource.length;
 
       if (count > 0) {
         backlinks.push({

@@ -27,6 +27,9 @@ import {
 } from "../test/rendererTestUtils";
 import { useEditorStore } from "./store/editorStore";
 
+const day = (value: string): number =>
+  Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
+
 describe("App date charts", () => {
   beforeAll(installMatchMediaMock);
 
@@ -170,33 +173,46 @@ describe("App date charts", () => {
     expect(chart.scrollLeft).toBe(170);
   });
 
-  it("main側がdate行を返さない場合もMarkdownからplannedDateとactualDateを補完する", async () => {
+  it("main側のdate行をそのまま採用し、Markdown再読込をしない", async () => {
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        content: "---\nstatus: [進行中]\nplannedDate: [2026-05-01, 2026-05-05]\nactualDate: [2026-05-03, 2026-05-06]\n---\n# 実装タスク",
+        name: "実装タスク",
+        path: "tasks/implementation.md"
+      }
+    });
+
     window.relic = makeRelicApi({
       getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
-          entries: [],
+          entries: [{
+            dateKind: "actual",
+            endLabel: "2026-05-06",
+            endValue: day("2026-05-06"),
+            fileName: "実装タスク",
+            path: "tasks/implementation.md",
+            startLabel: "2026-05-03",
+            startValue: day("2026-05-03"),
+            statuses: ["進行中"]
+          }, {
+            dateKind: "planned",
+            endLabel: "2026-05-05",
+            endValue: day("2026-05-05"),
+            fileName: "実装タスク",
+            path: "tasks/implementation.md",
+            startLabel: "2026-05-01",
+            startValue: day("2026-05-01")
+          }],
           filePaths: [],
           id: "date",
           name: "date",
           source: "date"
         }]
       }),
-      getWorkspaceState: vi.fn().mockResolvedValue({
-        ok: true,
-        value: {
-          ...withWorkspace,
-          fileTree: [{ name: "実装タスク", path: "tasks/implementation.md", type: "file" }]
-        }
-      }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
-        ok: true,
-        value: {
-          content: "---\nstatus: [進行中]\nplannedDate: [2026-05-01, 2026-05-05]\nactualDate: [2026-05-03, 2026-05-06]\n---\n# 実装タスク",
-          name: "実装タスク",
-          path: "tasks/implementation.md"
-        }
-      })
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      readMarkdownFile
     });
 
     const { container } = await renderApp();
@@ -205,23 +221,26 @@ describe("App date charts", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "カレンダー" }));
 
-    await waitFor(() => expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(1));
+    await waitFor(() => expect(container.querySelectorAll('.chronicle-fill[data-date-kind="planned"]').length).toBe(1));
     expect(screen.getByText("計画")).toBeInTheDocument();
     expect(screen.getByText("実行")).toBeInTheDocument();
-    expect(container.querySelector('.chronicle-fill[data-date-kind="planned"]')).toBeInTheDocument();
-    expect(container.querySelector('.chronicle-fill[data-date-kind="actual"]')).toBeInTheDocument();
     const plannedFill = container.querySelector('.chronicle-fill[data-date-kind="planned"]') as HTMLElement;
     const actualFill = container.querySelector('.chronicle-fill[data-date-kind="actual"]') as HTMLElement;
     expect(plannedFill.querySelector(".chronicle-fill-status")).toBeNull();
-    const initialStatusLabel = actualFill.querySelector(".chronicle-fill-status") as HTMLElement;
-    expect(initialStatusLabel).toHaveTextContent("進行中");
-    expect(parseFloat(initialStatusLabel.style.width)).toBeLessThanOrEqual(parseFloat(actualFill.style.width));
-
-    const initialStatusLeft = initialStatusLabel.style.left;
-    expect(initialStatusLeft).not.toBe("");
+    expect(actualFill.querySelector(".chronicle-fill-status")).toHaveTextContent("進行中");
+    expect(readMarkdownFile).not.toHaveBeenCalled();
   });
 
-  it("main側がdate行を返さない場合も片方だけあるplannedDateまたはactualDateを補完する", async () => {
+  it("main側にdate行が空でもrenderer側でMarkdown再読込せず空表示のままにする", async () => {
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        content: "---\nstatus: [進行中]\nplannedDate: [2026-05-01, 2026-05-05]\nactualDate: [2026-05-03, 2026-05-06]\n---\n# 実装タスク",
+        name: "実装タスク",
+        path: "tasks/implementation.md"
+      }
+    });
+
     window.relic = makeRelicApi({
       getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
@@ -243,16 +262,7 @@ describe("App date charts", () => {
           ]
         }
       }),
-      readMarkdownFile: vi.fn().mockImplementation(({ path }: { path: string }) => Promise.resolve({
-        ok: true as const,
-        value: {
-          content: path === "tasks/actual-only.md"
-            ? "---\nstatus: [完了]\nactualDate: [2026-05-03]\n---\n# 実行だけ"
-            : "---\nstatus: [未着手]\nplannedDate: [2026-05-01]\n---\n# 計画だけ",
-          name: path === "tasks/actual-only.md" ? "実行だけ" : "計画だけ",
-          path
-        }
-      }))
+      readMarkdownFile
     });
 
     const { container } = await renderApp();
@@ -261,19 +271,11 @@ describe("App date charts", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "カレンダー" }));
 
-    await waitFor(() => expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(2));
-    expect(container.querySelectorAll('.chronicle-fill[data-date-kind="planned"]')).toHaveLength(1);
-    expect(container.querySelectorAll('.chronicle-fill[data-date-kind="actual"]')).toHaveLength(1);
-    expect(container.querySelector('.chronicle-file-name[title="tasks/planned-only.md"]')).toHaveTextContent("計画だけ");
-    expect(container.querySelector('.chronicle-file-name[title="tasks/actual-only.md"]')).toHaveTextContent("実行だけ");
-
-    fireEvent.change(screen.getByLabelText("ステータス"), { target: { value: "完了" } });
-
-    expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(1);
-    expect(container.querySelector('.chronicle-file-name[title="tasks/planned-only.md"]')).not.toBeInTheDocument();
-    expect(container.querySelector('.chronicle-file-name[title="tasks/actual-only.md"]')).toHaveTextContent("実行だけ");
-    expect(container.querySelectorAll('.chronicle-fill[data-date-kind="planned"]')).toHaveLength(0);
-    expect(container.querySelectorAll('.chronicle-fill[data-date-kind="actual"]')).toHaveLength(1);
+    await waitFor(() => expect(screen.getByRole("button", { name: "カレンダー" })).toHaveClass("active"));
+    expect(container.querySelectorAll(".chronicle-fill")).toHaveLength(0);
+    expect(container.querySelector(".chronicle-file-name--empty")).toBeInTheDocument();
+    expect(container.querySelectorAll(".chronicle-file-name:not(.chronicle-file-name--empty)")).toHaveLength(0);
+    expect(readMarkdownFile).not.toHaveBeenCalled();
   });
 
   it("チャートバーはクリックでファイルを開かずドラッグで日付範囲を更新する", async () => {
@@ -467,23 +469,37 @@ describe("App date charts", () => {
     expect(writeMarkdownFile).not.toHaveBeenCalled();
   });
 
-  it("旧形式の年表データが返っても年表タブを表示できる", async () => {
+  it("旧形式の年表データは表示せず空として扱う", async () => {
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        content: "---\nchronicle0: [1333]\nchronicle1: [1220, 1333]\n---\n# 鎌倉時代",
+        name: "鎌倉時代",
+        path: "history/kamakura.md"
+      }
+    });
+
     window.relic = makeRelicApi({
       getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{ endYear: 1333, fileName: "鎌倉時代", path: "history/kamakura.md", startYear: 1185 }]
       }),
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      readMarkdownFile
     });
 
-    await renderApp();
+    const { container } = await renderApp();
 
     await screen.findByText("Notes");
 
     fireEvent.click(screen.getByRole("button", { name: "年表" }));
 
-    expect(document.querySelector(".chronicle-name-column")).toBeNull();
-    expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("button", { name: "年表" })).toHaveClass("active"));
+    expect(container.querySelectorAll(".chronicle-fill")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: "鎌倉時代" })).not.toBeInTheDocument();
+    expect(screen.queryByText("鎌倉時代")).not.toBeInTheDocument();
+    expect(screen.queryByText("1185 〜 1333")).not.toBeInTheDocument();
+    expect(readMarkdownFile).not.toHaveBeenCalled();
   });
 });

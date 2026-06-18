@@ -1,5 +1,7 @@
+import { useMemo } from "react";
+
 import type { Backlink, WorkspaceTreeNode } from "../../shared/ipc";
-import { resolveWikiLinks, type AliasIndex, type ResolvedWikiLink } from "../../shared/links";
+import { createWikiLinkResolver, type AliasIndex, type ResolvedWikiLink } from "../../shared/links";
 import {
   extractOutlineHeadings,
   getActiveFileTabInPane,
@@ -16,6 +18,7 @@ interface UseActiveDocumentContextInput {
   existingMarkdownPaths: string[];
   fileTree: WorkspaceTreeNode[] | undefined;
   focusedPane: PaneId;
+  isLinksPanelActive: boolean;
   leftPane: PaneState;
   rightPane: PaneState;
   setWorkspaceError: (message: string | null) => void;
@@ -27,6 +30,7 @@ export function useActiveDocumentContext({
   existingMarkdownPaths,
   fileTree,
   focusedPane,
+  isLinksPanelActive,
   leftPane,
   rightPane,
   setWorkspaceError,
@@ -50,16 +54,31 @@ export function useActiveDocumentContext({
   const outlineHeadings = activeFileTabInFocusedPane && !isLargeMarkdown
     ? extractOutlineHeadings(activeFileTabInFocusedPane.content)
     : [];
-  const allOutgoingLinks = activeFileTabInFocusedPane && !isLargeMarkdown
-    ? resolveWikiLinks(activeFileTabInFocusedPane.content, activeFileTabInFocusedPane.path, existingMarkdownPaths, aliasesByPath)
-    : [];
+
+  const wikiLinkResolver = useMemo(
+    () => createWikiLinkResolver(existingMarkdownPaths, aliasesByPath),
+    [aliasesByPath, existingMarkdownPaths]
+  );
+  const allOutgoingLinks = useMemo(
+    () => activeFileTabInFocusedPane && !isLargeMarkdown && isLinksPanelActive
+      ? wikiLinkResolver(activeFileTabInFocusedPane.content, activeFileTabInFocusedPane.path, { limit: maxOutgoingLinks + 1 })
+      : [],
+    [
+      activeFileTabInFocusedPane?.content,
+      activeFileTabInFocusedPane?.path,
+      isLargeMarkdown,
+      isLinksPanelActive,
+      wikiLinkResolver
+    ]
+  );
   const outgoingLinksLimited = allOutgoingLinks.length > maxOutgoingLinks;
   const outgoingLinks = outgoingLinksLimited
     ? allOutgoingLinks.slice(0, maxOutgoingLinks)
     : allOutgoingLinks;
 
   const { backlinks, isLoadingBacklinks } = useBacklinksState({
-    activeFilePath: activeFileTabInFocusedPane && !isLargeMarkdown ? activeFileTabInFocusedPane.path : null,
+    activeFilePath: activeFileTabInFocusedPane && !isLargeMarkdown && isLinksPanelActive ? activeFileTabInFocusedPane.path : null,
+    enabled: isLinksPanelActive,
     fileTree,
     setWorkspaceError
   });
