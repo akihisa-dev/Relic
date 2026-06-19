@@ -474,6 +474,41 @@ describe("outputHandlers", () => {
     expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`${escapeRegExp(printPreviewDirectoryName)}\\/preview-.+\\.pdf$`)));
   });
 
+  it("印刷プレビューで検証済み用紙設定をprintToPDFへ渡す", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
+      html: validOutputHtml(),
+      printOptions: {
+        landscape: true,
+        marginType: "custom",
+        margins: {
+          bottom: 0.236,
+          left: 0.236,
+          right: 0.236,
+          top: 0.236
+        },
+        pageSize: "A3",
+        scaleFactor: 1.25
+      },
+      title: "Note"
+    });
+
+    expect(result).toEqual({ ok: true, value: { status: "printed" } });
+    expect(electronMock.printToPDF).toHaveBeenCalledWith(expect.objectContaining({
+      landscape: true,
+      margins: {
+        bottom: 0.236,
+        left: 0.236,
+        marginType: "custom",
+        right: 0.236,
+        top: 0.236
+      },
+      pageSize: "A3",
+      scaleFactor: 1.25
+    }));
+  });
+
   it("印刷プレビューでHTMLが空の場合は入力エラーになる", async () => {
     registerOutputHandlers();
 

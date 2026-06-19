@@ -9,12 +9,27 @@ export type OutputDiagramLanguage = "d2" | "mermaid";
 export interface SavePreviewAsPdfInput {
   defaultFileName: string;
   html: string;
+  printOptions?: OutputPrintOptions;
   title: string;
 }
 
 export interface PrintPreviewInput {
   html: string;
+  printOptions?: OutputPrintOptions;
   title: string;
+}
+
+export interface OutputPrintOptions {
+  landscape: boolean;
+  marginType: "custom" | "none";
+  margins: {
+    bottom: number;
+    left: number;
+    right: number;
+    top: number;
+  };
+  pageSize: "A3" | "A4" | "Legal" | "Letter";
+  scaleFactor: number;
 }
 
 export interface SaveDiagramSvgInput {

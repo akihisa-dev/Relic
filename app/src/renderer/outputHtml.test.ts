@@ -158,6 +158,74 @@ describe("outputHtml", () => {
     expect(result.html).not.toContain("text: 主人公");
   });
 
+  it("Diagramの見た目設定と印刷設定を出力へ反映する", async () => {
+    const t = createTranslator("ja");
+    const result = await buildPreviewOutputHtml({
+      content: [
+        "---",
+        "type: diagram",
+        "formatVersion: 1",
+        "title: Styled",
+        "---",
+        "",
+        "printArea:",
+        "  x: 32",
+        "  y: 64",
+        "  width: 500",
+        "  height: 300",
+        "printSettings:",
+        "  paperSize: A3",
+        "  orientation: landscape",
+        "  marginPreset: small",
+        "  scaleMode: actual",
+        "  scale: 1.25",
+        "nodes:",
+        "  - id: a",
+        "    shape: process",
+        "    text: 色付き",
+        "    x: 32",
+        "    y: 64",
+        "    width: 160",
+        "    height: 64",
+        "    layer: 1",
+        "    color: blue",
+        "    textSize: large",
+        "    textAlign: left",
+        "    verticalAlign: top",
+        "  - id: b",
+        "    shape: process",
+        "    text: 次",
+        "    x: 260",
+        "    y: 64",
+        "    width: 160",
+        "    height: 64",
+        "    layer: 1",
+        "lines:",
+        "  - id: l1",
+        "    from: a",
+        "    to: b",
+        "    label: 太い",
+        "    labelTextSize: large"
+      ].join("\n"),
+      fileName: "Styled.md",
+      path: "Styled.md",
+      t,
+      title: "Styled",
+      workspacePath: "/tmp/relic"
+    });
+
+    expect(result.html).toContain("viewBox=\"192 192 500 300\"");
+    expect(result.html).toContain("--diagram-output-node-fill: #d8e6f7");
+    expect(result.html).toContain("font-size: 16px");
+    expect(result.html).toContain("justify-content: start");
+    expect(result.html).toContain("@page { margin: 6mm; size: A3 landscape; }");
+    expect(result.printOptions).toMatchObject({
+      landscape: true,
+      pageSize: "A3",
+      scaleFactor: 1.25
+    });
+  });
+
   it("初期ファイル名に使えない文字を安全な文字にする", () => {
     expect(safeOutputFileName('A/B:C*D?"E.md')).toBe("A_B_C_D__E");
     expect(firstH1("前\n# 見出し\n本文")).toBe("見出し");
