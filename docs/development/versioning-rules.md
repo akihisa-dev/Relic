@@ -9,7 +9,7 @@ Relicのバージョン管理ルール。
 
 - アプリのバージョン正本は `app/package.json` の `version` とする
 - 表記は `MAJOR.MINOR.PATCH` 形式にする
-- Gitタグを作る場合は `vMAJOR.MINOR.PATCH` 形式にする
+- Gitタグを作る場合は `MAJOR.MINOR.PATCH` 形式にする
 - `0.0.0` は、正式な作業記録をまだ切っていない初期状態として扱う
 
 ---
