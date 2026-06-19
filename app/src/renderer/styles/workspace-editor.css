@@ -1243,30 +1243,6 @@
   z-index: 35;
 }
 
-.diagram-canvas-paper-panel label {
-  align-items: center;
-  display: grid;
-  gap: 8px;
-  grid-template-columns: 88px minmax(110px, 1fr);
-}
-
-.diagram-canvas-paper-panel span {
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.diagram-canvas-paper-panel input,
-.diagram-canvas-paper-panel select {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font: inherit;
-  font-size: 12px;
-  min-width: 0;
-  padding: 5px 7px;
-}
-
 .diagram-canvas-menu-section {
   border-top: 1px solid var(--border);
   display: grid;
@@ -1402,6 +1378,189 @@
   font-size: 12px;
   min-width: 120px;
   padding: 5px 8px;
+}
+
+.diagram-print-preview-dialog-backdrop {
+  align-items: center;
+  background: rgba(15, 23, 42, 0.38);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 20px;
+  position: absolute;
+  z-index: 80;
+}
+
+.diagram-print-preview-dialog {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  box-shadow: 0 22px 70px rgba(15, 23, 42, 0.26);
+  color: var(--text);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: min(760px, calc(100vh - 56px));
+  max-width: 1180px;
+  min-width: min(980px, calc(100vw - 40px));
+  overflow: hidden;
+}
+
+.diagram-print-preview-dialog-header {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 10px 14px;
+}
+
+.diagram-print-preview-dialog-header h2 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.diagram-print-preview-dialog-actions,
+.diagram-print-preview-dialog-controls {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.diagram-print-preview-dialog-actions button,
+.diagram-print-preview-dialog-controls button {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: inline-flex;
+  font: inherit;
+  font-size: 12px;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 9px;
+}
+
+.diagram-print-preview-dialog-actions button {
+  justify-content: center;
+  padding: 0;
+  width: 30px;
+}
+
+.diagram-print-preview-dialog-actions span {
+  color: var(--text-2);
+  font-size: 12px;
+  min-width: 44px;
+  text-align: center;
+}
+
+.diagram-print-preview-dialog-body {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.diagram-print-preview-dialog-settings {
+  border-right: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+  grid-auto-rows: max-content;
+  padding: 14px;
+}
+
+.diagram-print-preview-dialog-settings label {
+  display: grid;
+  gap: 5px;
+}
+
+.diagram-print-preview-dialog-settings span {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.diagram-print-preview-dialog-settings input,
+.diagram-print-preview-dialog-settings select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  min-width: 0;
+  padding: 6px 8px;
+}
+
+.diagram-print-preview-dialog-controls {
+  align-items: stretch;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 12px;
+}
+
+.diagram-print-preview-dialog-controls button {
+  justify-content: flex-start;
+}
+
+.diagram-print-preview-dialog-controls button:disabled {
+  color: var(--text-muted);
+  cursor: default;
+  opacity: 0.55;
+}
+
+.diagram-print-preview-dialog-preview {
+  background: #747b86;
+  display: flex;
+  min-height: 0;
+  overflow: auto;
+  padding: 28px;
+  position: relative;
+}
+
+.diagram-print-preview-dialog-paper {
+  background: #ffffff;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.28);
+  min-height: 720px;
+  min-width: 520px;
+  transform-origin: top left;
+}
+
+.diagram-print-preview-dialog-frame {
+  background: #ffffff;
+  border: 0;
+  display: block;
+  height: 720px;
+  width: 520px;
+}
+
+.diagram-print-preview-dialog-state {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1f2937;
+  display: grid;
+  gap: 10px;
+  inset: 28px;
+  justify-items: center;
+  padding: 20px;
+  position: absolute;
+  z-index: 1;
+}
+
+.diagram-print-preview-dialog-state button {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #111827;
+  display: inline-flex;
+  gap: 6px;
+  padding: 6px 10px;
+}
+
+.diagram-print-preview-dialog-status {
+  border-top: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 12px;
+  min-height: 32px;
+  padding: 8px 14px;
 }
 
 .diagram-canvas-toolbar {
