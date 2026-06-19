@@ -149,6 +149,35 @@ const freeDrawingContent = [
   ""
 ].join("\n");
 
+const diagramContentWithPrintArea = [
+  "---",
+  "type: diagram",
+  "title: 図解ファイル",
+  "---",
+  "",
+  "nodes:",
+  "  - id: node-1",
+  "    shape: process",
+  "    text: alice",
+  "    x: 120",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "lines: []",
+  "printArea:",
+  "  x: 32",
+  "  y: 64",
+  "  width: 1200",
+  "  height: 1700",
+  "printSettings:",
+  "  paperSize: A4",
+  "  orientation: portrait",
+  "  marginPreset: normal",
+  "  scaleMode: actual",
+  "  scale: 1",
+  ""
+].join("\n");
+
 const freeDrawingDecisionWithTwoOutputs = [
   "---",
   "type: diagram",
@@ -322,6 +351,53 @@ describe("DiagramCanvas", () => {
     expect(within(toolbar).getByLabelText("Current zoom")).toHaveTextContent("100%");
     expect(within(toolbar).queryByRole("button", { name: "Duplicate" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Selected shape tools")).not.toBeInTheDocument();
+  });
+
+  it("keeps a saved print area hidden until print area preview mode is opened", () => {
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContentWithPrintArea} fileName="World" onChange={vi.fn()} />
+      </I18nProvider>
+    );
+    const printAreaButton = screen.getByRole("button", { name: "Print area" });
+
+    expect(printAreaButton).toHaveAttribute("aria-pressed", "false");
+    expect(container.querySelector(".diagram-canvas-print-area")).not.toBeInTheDocument();
+
+    fireEvent.click(printAreaButton);
+
+    expect(printAreaButton).toHaveAttribute("aria-pressed", "true");
+    expect(container.querySelector(".diagram-canvas-print-area")).toBeInTheDocument();
+    expect(container.querySelectorAll(".diagram-canvas-print-page")).toHaveLength(4);
+    expect(screen.getByRole("button", { name: "Close preview" })).toBeInTheDocument();
+
+    fireEvent.click(printAreaButton);
+
+    expect(printAreaButton).toHaveAttribute("aria-pressed", "false");
+    expect(container.querySelector(".diagram-canvas-print-area")).not.toBeInTheDocument();
+  });
+
+  it("closes print area preview mode without clearing the saved print area", () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContentWithPrintArea} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Print area" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close preview" }));
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(container.querySelector(".diagram-canvas-print-area")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Print area" }));
+    expect(container.querySelector(".diagram-canvas-print-area")).toBeInTheDocument();
+
+    fireEvent.keyDown(screen.getByRole("application", { name: "World" }), { key: "Escape" });
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(container.querySelector(".diagram-canvas-print-area")).not.toBeInTheDocument();
   });
 
   it("shows node-specific actions from the explicit node context menu", () => {
