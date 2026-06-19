@@ -85,6 +85,7 @@ import { diagramShapePaletteGroups } from "./diagramShapePalette";
 import { DiagramLineLayer } from "./DiagramLineLayer";
 import { diagramFreeDrawingLabelDisplayLayer, diagramNodeDisplayLayer } from "./diagramLayering";
 import { diagramStatusCountLabels } from "./diagramCanvasStatus";
+import { buildDiagramPrintPreviewLayout } from "./diagramPrintPreview";
 import { DiagramNodeView } from "./DiagramNodeView";
 import { DiagramSnapGuides } from "./DiagramSnapGuides";
 import { diagramGridSize, snapDiagramNode, snapDiagramPointToGrid, snapDiagramSizeToGrid, type DiagramSnapGuide } from "./diagramSnap";
@@ -221,6 +222,7 @@ export function DiagramCanvasSurface({
   const [copiedNodeIds, setCopiedNodeIds] = useState<string[]>([]);
   const [keyboardConnectFromNodeId, setKeyboardConnectFromNodeId] = useState<string | null>(null);
   const [toolbarMenu, setToolbarMenu] = useState<DiagramToolbarMenu>(null);
+  const [isPrintAreaMode, setPrintAreaMode] = useState(false);
 
   const layout = useMemo(() => buildDiagramCanvasLayout(diagram), [diagram]);
   const previousLayoutOriginRef = useRef<{ x: number; y: number } | null>(null);
@@ -302,6 +304,9 @@ export function DiagramCanvasSurface({
     setHistory({ future: [], past: [] });
     setCopiedNodeIds([]);
     setKeyboardConnectFromNodeId(null);
+    setToolbarMenu(null);
+    setPrintAreaMode(false);
+    setPrintAreaDrag(null);
   }, [fileName]);
 
   useLayoutEffect(() => {
@@ -1260,6 +1265,19 @@ export function DiagramCanvasSurface({
     x: layout.originX,
     y: layout.originY
   };
+  const closePrintAreaMode = (): void => {
+    setToolbarMenu((current) => current === "printArea" ? null : current);
+    setPrintAreaDrag(null);
+    setPrintAreaMode(false);
+  };
+  const togglePrintAreaMode = (): void => {
+    setPrintAreaMode((current) => {
+      const next = !current;
+      setToolbarMenu(next ? "printArea" : null);
+      if (!next) setPrintAreaDrag(null);
+      return next;
+    });
+  };
   const updatePrintArea = (printArea: RelicDiagramPrintArea | null): void => {
     if (!onChange) return;
 
@@ -1289,6 +1307,7 @@ export function DiagramCanvasSurface({
     }
   };
   const openDiagramPrintPreview = (): void => {
+    closePrintAreaMode();
     if (!window.relic) return;
 
     void buildPreviewOutputHtml({
@@ -1484,6 +1503,10 @@ export function DiagramCanvasSurface({
     }
     if (event.key === "Escape") {
       event.preventDefault();
+      if (isPrintAreaMode) {
+        closePrintAreaMode();
+        return;
+      }
       if (contextMenu) {
         setContextMenu(null);
         return;
@@ -1561,6 +1584,10 @@ export function DiagramCanvasSurface({
     t
   ]);
   const visiblePrintArea = printAreaDrag?.currentArea ?? effectivePrintArea;
+  const printPreviewLayout = useMemo(
+    () => buildDiagramPrintPreviewLayout(visiblePrintAreaForPreview(visiblePrintArea), effectivePrintSettings),
+    [effectivePrintSettings, visiblePrintArea]
+  );
 
   useEffect(() => {
     onStatusChange?.(diagramStatusText);
@@ -1629,7 +1656,7 @@ export function DiagramCanvasSurface({
         </div>
         <div className="diagram-canvas-toolbar-separator" aria-hidden="true" />
         <div className="diagram-canvas-toolbar-group">
-          <button className="diagram-canvas-icon-button" aria-label={t("diagram.printArea")} onClick={() => setToolbarMenu((current) => current === "printArea" ? null : "printArea")} title={t("diagram.printArea")} type="button">
+          <button className={`diagram-canvas-icon-button${isPrintAreaMode ? " diagram-canvas-icon-button--active" : ""}`} aria-label={t("diagram.printArea")} aria-pressed={isPrintAreaMode} onClick={togglePrintAreaMode} title={t("diagram.printArea")} type="button">
             <DiagramActionIcon name="printArea" />
           </button>
           <button className="diagram-canvas-icon-button" aria-label={t("diagram.paperSettings")} onClick={() => setToolbarMenu((current) => current === "paper" ? null : "paper")} title={t("diagram.paperSettings")} type="button">
@@ -1640,7 +1667,7 @@ export function DiagramCanvasSurface({
           </button>
         </div>
       </div>
-      {toolbarMenu === "printArea" ? (
+      {isPrintAreaMode && toolbarMenu === "printArea" ? (
         <div className="diagram-canvas-floating-panel diagram-canvas-print-panel">
           <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={fitPrintAreaToDiagram} type="button">
             <DiagramActionIcon name="fit" />
@@ -1649,6 +1676,10 @@ export function DiagramCanvasSurface({
           <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => updatePrintArea(null)} type="button">
             <DiagramActionIcon name="reset" />
             {t("diagram.clearPrintArea")}
+          </button>
+          <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={closePrintAreaMode} type="button">
+            <DiagramActionIcon name="close" />
+            {t("diagram.closePrintAreaMode")}
           </button>
         </div>
       ) : null}
@@ -1763,7 +1794,7 @@ export function DiagramCanvasSurface({
           width: layout.width
         }}
       >
-        {toolbarMenu === "printArea" || diagram.printArea || printAreaDrag ? (
+        {isPrintAreaMode || printAreaDrag ? (
           <div
             aria-label={t("diagram.printArea")}
             className="diagram-canvas-print-area"
@@ -1776,6 +1807,32 @@ export function DiagramCanvasSurface({
               width: visiblePrintArea.width
             }}
           >
+            <div className="diagram-canvas-print-pages" aria-hidden="true">
+              {printPreviewLayout.pages.map((page) => (
+                <div
+                  className="diagram-canvas-print-page"
+                  key={page.label}
+                  style={{
+                    height: page.paperHeight,
+                    left: page.paperX - visiblePrintArea.x,
+                    top: page.paperY - visiblePrintArea.y,
+                    width: page.paperWidth
+                  }}
+                >
+                  <div
+                    className="diagram-canvas-print-page-content"
+                    style={{
+                      height: page.contentHeight,
+                      left: page.contentX - page.paperX,
+                      top: page.contentY - page.paperY,
+                      width: page.contentWidth
+                    }}
+                  >
+                    <span>{page.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
             {(["top", "right", "bottom", "left"] as const).map((edge) => (
               <button
                 aria-label={t(`diagram.printAreaHandle.${edge}`)}
@@ -2216,6 +2273,15 @@ function DiagramContextMenu({
   );
 }
 
+function visiblePrintAreaForPreview(printArea: RelicDiagramPrintArea): RelicDiagramPrintArea {
+  return {
+    height: Math.max(1, printArea.height),
+    width: Math.max(1, printArea.width),
+    x: printArea.x,
+    y: printArea.y
+  };
+}
+
 type DiagramActionIconName =
   | "actualSize"
   | "alignHorizontal"
@@ -2224,6 +2290,7 @@ type DiagramActionIconName =
   | "alignTextRight"
   | "alignTextTop"
   | "alignVertical"
+  | "close"
   | "copy"
   | "distributeHorizontal"
   | "distributeVertical"
@@ -2252,6 +2319,7 @@ function DiagramActionIcon({ name }: { name: DiagramActionIconName }): ReactElem
     alignTextRight: <><path d="M5 7h14M10 11h9M7 15h12M12 19h7" /></>,
     alignTextTop: <><path d="M5 5h14" /><path d="M8 9h8M9 13h6M10 17h4" /></>,
     alignVertical: <><path d="M12 4v16" /><rect height="6" rx="1" width="4" x="5" y="5" /><rect height="9" rx="1" width="4" x="15" y="10" /></>,
+    close: <><path d="M6 6l12 12M18 6 6 18" /></>,
     copy: <><rect height="11" rx="2" width="9" x="9" y="7" /><path d="M6 14V5a2 2 0 0 1 2-2h8" /></>,
     distributeHorizontal: <><path d="M4 5v14M20 5v14" /><rect height="6" rx="1" width="4" x="7" y="9" /><rect height="6" rx="1" width="4" x="13" y="9" /></>,
     distributeVertical: <><path d="M5 4h14M5 20h14" /><rect height="4" rx="1" width="6" x="9" y="7" /><rect height="4" rx="1" width="6" x="9" y="13" /></>,

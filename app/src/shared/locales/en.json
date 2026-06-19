@@ -236,6 +236,7 @@
   "diagram.printArea": "Print area",
   "diagram.fitPrintArea": "Fit to diagram",
   "diagram.clearPrintArea": "Use automatic area",
+  "diagram.closePrintAreaMode": "Close preview",
   "diagram.printAreaHandle.top": "Top print area edge",
   "diagram.printAreaHandle.right": "Right print area edge",
   "diagram.printAreaHandle.bottom": "Bottom print area edge",

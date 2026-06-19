@@ -236,6 +236,7 @@
   "diagram.printArea": "印刷領域",
   "diagram.fitPrintArea": "図形全体へ合わせる",
   "diagram.clearPrintArea": "自動範囲へ戻す",
+  "diagram.closePrintAreaMode": "プレビューを閉じる",
   "diagram.printAreaHandle.top": "印刷領域の上辺",
   "diagram.printAreaHandle.right": "印刷領域の右辺",
   "diagram.printAreaHandle.bottom": "印刷領域の下辺",
