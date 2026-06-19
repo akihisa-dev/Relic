@@ -1,5 +1,6 @@
 export const savePreviewAsPdfChannel = "output:savePreviewAsPdf";
 export const printPreviewChannel = "output:printPreview";
+export const printHtmlChannel = "output:printHtml";
 export const saveDiagramSvgChannel = "output:saveDiagramSvg";
 export const copyDiagramSvgChannel = "output:copyDiagramSvg";
 export const previewOutputHtmlMaxBytes = 2 * 1024 * 1024;
@@ -14,6 +15,12 @@ export interface SavePreviewAsPdfInput {
 }
 
 export interface PrintPreviewInput {
+  html: string;
+  printOptions?: OutputPrintOptions;
+  title: string;
+}
+
+export interface PrintHtmlInput {
   html: string;
   printOptions?: OutputPrintOptions;
   title: string;

@@ -79,7 +79,13 @@ import { DiagramLineLayer } from "./DiagramLineLayer";
 import { DiagramPrintPreviewDialog } from "./DiagramPrintPreviewDialog";
 import { diagramFreeDrawingLabelDisplayLayer, diagramNodeDisplayLayer } from "./diagramLayering";
 import { diagramStatusCountLabels } from "./diagramCanvasStatus";
-import { buildDiagramPrintPreviewLayout } from "./diagramPrintPreview";
+import {
+  buildAutomaticDiagramPrintArea,
+  buildDiagramPrintPreviewLayout,
+  moveDiagramPrintAreaToGrid,
+  resizeDiagramPrintAreaToGrid,
+  resolveDiagramPrintArea
+} from "./diagramPrintPreview";
 import { DiagramNodeView } from "./DiagramNodeView";
 import { DiagramSnapGuides } from "./DiagramSnapGuides";
 import { diagramGridSize, snapDiagramNode, snapDiagramPointToGrid, snapDiagramSizeToGrid, type DiagramSnapGuide } from "./diagramSnap";
@@ -1258,12 +1264,7 @@ export function DiagramCanvasSurface({
     }
   };
   const effectivePrintSettings = diagram.printSettings ?? defaultRelicDiagramPrintSettings;
-  const effectivePrintArea = diagram.printArea ?? {
-    height: layout.height,
-    width: layout.width,
-    x: layout.originX,
-    y: layout.originY
-  };
+  const effectivePrintArea = diagram.printArea ?? resolveDiagramPrintArea(diagram, effectivePrintSettings);
   const closePrintAreaMode = (): void => {
     setToolbarMenu((current) => current === "printArea" ? null : current);
     setPrintAreaDrag(null);
@@ -1292,12 +1293,7 @@ export function DiagramCanvasSurface({
     }
   };
   const fitPrintAreaToDiagram = (): void => {
-    updatePrintArea({
-      height: layout.height,
-      width: layout.width,
-      x: layout.originX,
-      y: layout.originY
-    });
+    updatePrintArea(buildAutomaticDiagramPrintArea(diagram, effectivePrintSettings));
   };
   const updatePrintSettings = (nextSettings: RelicDiagramPrintSettings): boolean => {
     if (!onChange) return false;
@@ -1350,19 +1346,9 @@ export function DiagramCanvasSurface({
     const deltaX = (event.clientX - printAreaDrag.startClientX) / viewport.zoom;
     const deltaY = (event.clientY - printAreaDrag.startClientY) / viewport.zoom;
     const area = printAreaDrag.originalArea;
-    const minSize = diagramGridSize * 2;
     const nextArea = printAreaDrag.edge === "move"
-      ? {
-          ...area,
-          x: Math.round(area.x + deltaX),
-          y: Math.round(area.y + deltaY)
-        }
-      : {
-          height: Math.round(Math.max(minSize, area.height + (printAreaDrag.edge === "bottom" ? deltaY : printAreaDrag.edge === "top" ? -deltaY : 0))),
-          width: Math.round(Math.max(minSize, area.width + (printAreaDrag.edge === "right" ? deltaX : printAreaDrag.edge === "left" ? -deltaX : 0))),
-          x: Math.round(printAreaDrag.edge === "left" ? area.x + Math.min(deltaX, area.width - minSize) : area.x),
-          y: Math.round(printAreaDrag.edge === "top" ? area.y + Math.min(deltaY, area.height - minSize) : area.y)
-        };
+      ? moveDiagramPrintAreaToGrid(area, deltaX, deltaY)
+      : resizeDiagramPrintAreaToGrid(area, printAreaDrag.edge, deltaX, deltaY);
     setPrintAreaDrag((current) => current ? { ...current, currentArea: nextArea } : current);
   };
   const finishPrintAreaDrag = (event: ReactPointerEvent<HTMLDivElement>): void => {
@@ -1983,6 +1969,7 @@ export function DiagramCanvasSurface({
               if (!("text" in node)) return null;
 
               const isArea = node.shape === "area";
+              const nodeTextColor = diagramNodeTextColor(node);
               const labelClassName = [
                 "diagram-canvas-node-label-frame",
                 `diagram-canvas-node-label-frame--shape-${node.shape}`,
@@ -1990,7 +1977,7 @@ export function DiagramCanvasSurface({
               ].filter(Boolean).join(" ");
               const labelStyle: CSSProperties = {
                 alignContent: diagramNodeAlignItems(node.verticalAlign),
-                color: diagramNodeTextColor(node) ?? undefined,
+                color: nodeTextColor ?? undefined,
                 fontSize: diagramNodeFontSize(node),
                 height: node.height,
                 justifyItems: diagramNodeJustifyItems(node.textAlign),
@@ -2023,9 +2010,9 @@ export function DiagramCanvasSurface({
                           cancelFreeDrawingNodeText();
                         }
                       }}
-                      onPointerDown={(event) => event.stopPropagation()}
+                    onPointerDown={(event) => event.stopPropagation()}
                       style={{
-                        color: diagramNodeTextColor(node) ?? undefined,
+                        color: nodeTextColor ?? undefined,
                         fontSize: diagramNodeFontSize(node),
                         textAlign: node.textAlign ?? (isArea ? "left" : "center")
                       }}
@@ -2038,7 +2025,7 @@ export function DiagramCanvasSurface({
                       isArea ? "diagram-canvas-node-name--area-name" : ""
                     ].filter(Boolean).join(" ")}
                     style={{
-                      color: diagramNodeTextColor(node) ?? undefined,
+                      color: nodeTextColor ?? undefined,
                       fontSize: diagramNodeFontSize(node),
                       textAlign: node.textAlign ?? (isArea ? "left" : "center")
                     }}
@@ -2166,7 +2153,7 @@ function DiagramContextMenu({
             </label>
           ) : null}
           <div className="diagram-canvas-menu-section" role="group" aria-label={t("diagram.nodeColor")}>
-            <button className="diagram-canvas-swatch-button diagram-canvas-swatch-button--default" onClick={() => run(() => onChangeSelectedNodesAppearance({ color: null }))} type="button">
+            <button aria-label={t("diagram.nodeColor.default")} className="diagram-canvas-swatch-button diagram-canvas-swatch-button--default" onClick={() => run(() => onChangeSelectedNodesAppearance({ color: null }))} type="button">
               <span aria-hidden="true" />
             </button>
             {relicDiagramNodeColorPresets.map((color) => (

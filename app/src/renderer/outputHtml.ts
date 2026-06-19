@@ -25,6 +25,10 @@ import {
   diagramScaleFactor
 } from "./diagramAppearance";
 import { buildDiagramCanvasLayout } from "./components/diagram/diagramGeometry";
+import {
+  buildDiagramPrintPreviewLayout,
+  resolveDiagramPrintArea
+} from "./components/diagram/diagramPrintPreview";
 import { runWithConcurrency } from "./concurrency";
 import { outputCss } from "./outputCss";
 
@@ -56,10 +60,11 @@ export async function buildPreviewOutputHtml({
 
   if (parsedDiagram.ok) {
     const printSettings = parsedDiagram.value.printSettings ?? defaultRelicDiagramPrintSettings;
+    const printArea = resolveDiagramPrintArea(parsedDiagram.value, printSettings);
     return {
       defaultFileName,
-      html: wrapOutputHtml(buildDiagramOutputHtml(parsedDiagram.value, documentTitle), documentTitle, printSettings),
-      printOptions: printOptionsFromDiagramSettings(printSettings),
+      html: wrapOutputHtml(buildDiagramOutputHtml(parsedDiagram.value, documentTitle, printArea), documentTitle, printSettings),
+      printOptions: printOptionsFromDiagramSettings(printSettings, printArea),
       title: documentTitle
     };
   }
@@ -170,21 +175,21 @@ function wrapOutputHtml(body: string, title: string, printSettings?: RelicDiagra
   ].join("");
 }
 
-function buildDiagramOutputHtml(diagram: RelicDiagramDocument, title: string): string {
-  return buildDiagramCanvasOutputHtml(diagram, title);
+function buildDiagramOutputHtml(
+  diagram: RelicDiagramDocument,
+  title: string,
+  printArea: RelicDiagramDocument["printArea"]
+): string {
+  return buildDiagramCanvasOutputHtml(diagram, title, printArea);
 }
 
 function buildDiagramCanvasOutputHtml(
   diagram: RelicDiagramDocument,
-  title: string
+  title: string,
+  printArea: RelicDiagramDocument["printArea"]
 ): string {
   const layout = buildDiagramCanvasLayout(diagram);
-  const viewBox = diagram.printArea ?? {
-    height: layout.height,
-    width: layout.width,
-    x: layout.originX,
-    y: layout.originY
-  };
+  const viewBox = printArea ?? resolveDiagramPrintArea(diagram, diagram.printSettings ?? defaultRelicDiagramPrintSettings);
   const markerId = "relic-output-diagram-arrow";
 
   return [
@@ -268,9 +273,12 @@ function outputDiagramNodeLabelStyle(node: RelicDiagramDocument["nodes"][number]
   ].join("; ");
 }
 
-export function printOptionsFromDiagramSettings(settings: RelicDiagramPrintSettings): OutputPrintOptions {
+export function printOptionsFromDiagramSettings(settings: RelicDiagramPrintSettings, printArea?: RelicDiagramDocument["printArea"]): OutputPrintOptions {
   const marginMm = marginPresetToMm(settings.marginPreset);
   const marginInches = Number((marginMm / 25.4).toFixed(3));
+  const scaleFactor = printArea
+    ? buildDiagramPrintPreviewLayout(printArea, settings).scale
+    : diagramScaleFactor(settings);
   return {
     landscape: settings.orientation === "landscape",
     marginType: marginMm === 0 ? "none" : "custom",
@@ -281,7 +289,7 @@ export function printOptionsFromDiagramSettings(settings: RelicDiagramPrintSetti
       top: marginInches
     },
     pageSize: settings.paperSize,
-    scaleFactor: diagramScaleFactor(settings)
+    scaleFactor
   };
 }
 

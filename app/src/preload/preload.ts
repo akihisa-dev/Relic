@@ -58,6 +58,8 @@ import {
   type UserDefinedField,
   mergeFilesChannel,
   type MergeFilesInput,
+  printHtmlChannel,
+  type PrintHtmlInput,
   printPreviewChannel,
   type PrintPreviewInput,
   saveDiagramSvgChannel,
@@ -188,6 +190,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(replaceInFileChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
   printPreview: (input: PrintPreviewInput) =>
     ipcRenderer.invoke(printPreviewChannel, input) as Promise<RelicResult<OutputPrintResult>>,
+  printHtml: (input: PrintHtmlInput) =>
+    ipcRenderer.invoke(printHtmlChannel, input) as Promise<RelicResult<OutputPrintResult>>,
   saveDiagramSvg: (input: SaveDiagramSvgInput) =>
     ipcRenderer.invoke(saveDiagramSvgChannel, input) as Promise<RelicResult<OutputSavedResult>>,
   saveEditorSettings: (input: EditorSettings) =>

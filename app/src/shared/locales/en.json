@@ -219,6 +219,7 @@
   "diagram.distributeVertical": "Distribute vertically",
   "diagram.changeShape": "Shape",
   "diagram.nodeColor": "Shape color",
+  "diagram.nodeColor.default": "Default shape color",
   "diagram.nodeColor.blue": "Blue",
   "diagram.nodeColor.green": "Green",
   "diagram.nodeColor.yellow": "Yellow",

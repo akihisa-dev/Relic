@@ -404,7 +404,7 @@ describe("DiagramCanvas", () => {
   it("opens a Relic-managed print preview dialog without using the old PDF preview window", async () => {
     const printPreview = vi.fn();
     const savePreviewAsPdf = vi.fn();
-    vi.stubGlobal("relic", { printPreview, savePreviewAsPdf });
+    vi.stubGlobal("relic", { printHtml: vi.fn(), printPreview, savePreviewAsPdf });
 
     const { container } = render(
       <I18nProvider language="en">
@@ -426,7 +426,7 @@ describe("DiagramCanvas", () => {
 
   it("applies dialog paper settings when saving the preview as PDF", async () => {
     const savePreviewAsPdf = vi.fn().mockResolvedValue({ ok: true, value: { filePath: "/tmp/world.pdf", status: "saved" } });
-    vi.stubGlobal("relic", { printPreview: vi.fn(), savePreviewAsPdf });
+    vi.stubGlobal("relic", { printHtml: vi.fn(), printPreview: vi.fn(), savePreviewAsPdf });
     const onChange = vi.fn();
 
     render(
@@ -454,8 +454,65 @@ describe("DiagramCanvas", () => {
     expect(onChange).toHaveBeenCalledWith(expect.stringContaining("orientation: landscape"));
   });
 
+  it("prints through the main print API with the current dialog settings", async () => {
+    const printHtml = vi.fn().mockResolvedValue({ ok: true, value: { status: "printed" } });
+    vi.stubGlobal("relic", { printHtml, printPreview: vi.fn(), savePreviewAsPdf: vi.fn() });
+    const onChange = vi.fn();
+
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContentWithPrintArea} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Print" }));
+    const dialog = await screen.findByRole("dialog", { name: "Print preview" });
+    fireEvent.change(within(dialog).getByLabelText("Paper"), { target: { value: "A3" } });
+    fireEvent.change(within(dialog).getByLabelText("Orientation"), { target: { value: "landscape" } });
+    const printButton = within(dialog).getByRole("button", { name: "Print" });
+    await waitFor(() => expect(printButton).not.toBeDisabled());
+    fireEvent.click(printButton);
+
+    await waitFor(() => expect(printHtml).toHaveBeenCalled());
+    expect(printHtml.mock.calls[0]?.[0]).toMatchObject({
+      printOptions: {
+        landscape: true,
+        pageSize: "A3"
+      }
+    });
+    expect(onChange).toHaveBeenCalledWith(expect.stringContaining("paperSize: A3"));
+    expect(onChange).toHaveBeenCalledWith(expect.stringContaining("orientation: landscape"));
+  });
+
+  it("sizes the dialog paper preview from the selected paper settings", async () => {
+    vi.stubGlobal("relic", { printHtml: vi.fn(), printPreview: vi.fn(), savePreviewAsPdf: vi.fn() });
+
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContentWithPrintArea} fileName="World" onChange={vi.fn()} />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Print" }));
+    const dialog = await screen.findByRole("dialog", { name: "Print preview" });
+    const paper = container.querySelector<HTMLElement>(".diagram-print-preview-dialog-paper");
+    await waitFor(() => expect(paper?.style.width).not.toBe(""));
+    const portraitWidth = Number.parseFloat(paper?.style.width ?? "0");
+    const portraitHeight = Number.parseFloat(paper?.style.height ?? "0");
+
+    fireEvent.change(within(dialog).getByLabelText("Orientation"), { target: { value: "landscape" } });
+
+    await waitFor(() => {
+      const nextWidth = Number.parseFloat(paper?.style.width ?? "0");
+      const nextHeight = Number.parseFloat(paper?.style.height ?? "0");
+      expect(nextWidth).toBeGreaterThan(nextHeight);
+      expect(nextWidth).toBeGreaterThan(portraitWidth);
+      expect(nextHeight).toBeLessThan(portraitHeight);
+    });
+  });
+
   it("moves from print preview to print area mode and returns to the dialog when the mode is closed", async () => {
-    vi.stubGlobal("relic", { printPreview: vi.fn(), savePreviewAsPdf: vi.fn() });
+    vi.stubGlobal("relic", { printHtml: vi.fn(), printPreview: vi.fn(), savePreviewAsPdf: vi.fn() });
     const { container } = render(
       <I18nProvider language="en">
         <DiagramCanvas content={diagramContentWithPrintArea} fileName="World" onChange={vi.fn()} />

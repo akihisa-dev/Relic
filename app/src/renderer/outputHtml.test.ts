@@ -214,10 +214,12 @@ describe("outputHtml", () => {
       workspacePath: "/tmp/relic"
     });
 
-    expect(result.html).toContain("viewBox=\"192 192 500 300\"");
+    expect(result.html).toContain("viewBox=\"192 192 512 320\"");
     expect(result.html).toContain("--diagram-output-node-fill: #d8e6f7");
     expect(result.html).toContain("font-size: 16px");
     expect(result.html).toContain("justify-content: start");
+    expect(result.html).toContain("color: #1f1d19");
+    expect(result.html).not.toContain("color: #102a4c");
     expect(result.html).toContain("@page { margin: 6mm; size: A3 landscape; }");
     expect(result.printOptions).toMatchObject({
       landscape: true,

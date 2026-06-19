@@ -8,6 +8,7 @@ import {
 
 import {
   defaultRelicDiagramPrintSettings,
+  parseRelicDiagramMarkdown,
   relicDiagramPaperSizes,
   relicDiagramPrintMarginPresets,
   relicDiagramPrintOrientations,
@@ -19,6 +20,10 @@ import type { OutputPrintOptions } from "../../../shared/ipcOutput";
 import { buildPreviewOutputHtml } from "../../outputHtml";
 import { useT } from "../../i18n";
 import { DiagramActionIcon } from "./DiagramActionIcon";
+import {
+  buildDiagramPrintPreviewLayout,
+  resolveDiagramPrintArea
+} from "./diagramPrintPreview";
 
 interface DiagramPrintPreviewPayload {
   defaultFileName: string;
@@ -45,7 +50,7 @@ export function DiagramPrintPreviewDialog({
   onEditPrintArea
 }: DiagramPrintPreviewDialogProps): ReactElement {
   const t = useT();
-  const frameRef = useRef<HTMLIFrameElement | null>(null);
+  const renderGenerationRef = useRef(0);
   const [draftSettings, setDraftSettings] = useState<RelicDiagramPrintSettings>(initialSettings ?? defaultRelicDiagramPrintSettings);
   const [isRendering, setRendering] = useState(true);
   const [payload, setPayload] = useState<DiagramPrintPreviewPayload | null>(null);
@@ -53,16 +58,28 @@ export function DiagramPrintPreviewDialog({
   const [status, setStatus] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
 
+  useEffect(() => {
+    setDraftSettings(initialSettings ?? defaultRelicDiagramPrintSettings);
+  }, [content, initialSettings]);
+
   const draftContent = useMemo(() => {
     const updated = updateRelicDiagramPrintSettings(content, draftSettings);
     if (!updated.ok) throw new Error(updated.error.message);
     return updated.value.content;
   }, [content, draftSettings]);
+  const previewLayout = useMemo(() => {
+    const parsed = parseRelicDiagramMarkdown(draftContent);
+    if (!parsed.ok) return null;
+    const printArea = resolveDiagramPrintArea(parsed.value, draftSettings);
+    return buildDiagramPrintPreviewLayout(printArea, draftSettings);
+  }, [draftContent, draftSettings]);
 
   useEffect(() => {
-    let isCurrent = true;
+    const generation = renderGenerationRef.current + 1;
+    renderGenerationRef.current = generation;
     setRendering(true);
     setPreviewError(null);
+    setPayload(null);
 
     buildPreviewOutputHtml({
       content: draftContent,
@@ -70,19 +87,15 @@ export function DiagramPrintPreviewDialog({
       t,
       title: fileName
     }).then((nextPayload) => {
-      if (!isCurrent) return;
+      if (renderGenerationRef.current !== generation) return;
       setPayload(nextPayload);
       setRendering(false);
     }).catch((error) => {
-      if (!isCurrent) return;
+      if (renderGenerationRef.current !== generation) return;
       setPayload(null);
       setPreviewError(error instanceof Error ? error.message : String(error));
       setRendering(false);
     });
-
-    return () => {
-      isCurrent = false;
-    };
   }, [draftContent, fileName, t]);
 
   const applyDraftSettings = (): boolean => {
@@ -101,13 +114,20 @@ export function DiagramPrintPreviewDialog({
     }
     setStatus(result.value.status === "saved" ? t("output.pdfSaved") : t("output.printDialogCanceled"));
   };
-  const printPreviewFrame = (): void => {
-    if (!payload || !frameRef.current?.contentWindow) return;
+  const printDiagram = async (): Promise<void> => {
+    if (!payload || !window.relic) return;
     if (!applyDraftSettings()) return;
 
-    frameRef.current.contentWindow.focus();
-    frameRef.current.contentWindow.print();
-    setStatus(t("output.printed"));
+    const result = await window.relic.printHtml({
+      html: payload.html,
+      printOptions: payload.printOptions,
+      title: payload.title
+    });
+    if (!result.ok) {
+      setStatus(result.error.message);
+      return;
+    }
+    setStatus(result.value.status === "printed" ? t("output.printed") : t("output.printDialogCanceled"));
   };
 
   return (
@@ -175,7 +195,7 @@ export function DiagramPrintPreviewDialog({
                 <DiagramActionIcon name="printArea" />
                 {t("diagram.printArea")}
               </button>
-              <button onClick={applyDraftSettings} type="button">
+              <button disabled={isRendering} onClick={applyDraftSettings} type="button">
                 <DiagramActionIcon name="check" />
                 {t("common.apply")}
               </button>
@@ -183,7 +203,7 @@ export function DiagramPrintPreviewDialog({
                 <DiagramActionIcon name="download" />
                 {t("output.savePdf")}
               </button>
-              <button disabled={!payload || isRendering} onClick={printPreviewFrame} type="button">
+              <button disabled={!payload || isRendering} onClick={() => void printDiagram()} type="button">
                 <DiagramActionIcon name="print" />
                 {t("output.print")}
               </button>
@@ -201,11 +221,21 @@ export function DiagramPrintPreviewDialog({
               </div>
             ) : null}
             {payload ? (
-              <div className="diagram-print-preview-dialog-paper" style={{ transform: `scale(${zoom})` }}>
+              <div
+                className="diagram-print-preview-dialog-paper"
+                style={{
+                  height: previewLayout?.paperHeightPx,
+                  transform: `scale(${zoom})`,
+                  width: previewLayout?.paperWidthPx
+                }}
+              >
                 <iframe
                   className="diagram-print-preview-dialog-frame"
-                  ref={frameRef}
                   srcDoc={payload.html}
+                  style={{
+                    height: previewLayout?.paperHeightPx,
+                    width: previewLayout?.paperWidthPx
+                  }}
                   title={payload.title}
                 />
               </div>

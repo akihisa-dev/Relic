@@ -108,7 +108,7 @@ NodeはMarkdownファイルを参照せず、`nodes[].shape` と `nodes[].text` 
 | nodes[].x / nodes[].y | Diagram上のNode位置 |
 | nodes[].width / nodes[].height | Nodeの固定サイズ |
 | nodes[].layer | 図形の表示レイヤー |
-| nodes[].color | 任意。図形ごとのプリセット色 |
+| nodes[].color | 任意。図形ごとの塗り色プリセット。文字色は保存しない |
 | nodes[].textSize | 任意。Nodeテキストサイズ |
 | nodes[].textAlign | 任意。Nodeテキストの水平揃え |
 | nodes[].verticalAlign | 任意。Nodeテキストの垂直揃え |
@@ -117,7 +117,7 @@ NodeはMarkdownファイルを参照せず、`nodes[].shape` と `nodes[].text` 
 | lines[].from / lines[].to | 接続するNode ID |
 | lines[].label | Line中央に表示する文字 |
 | lines[].labelTextSize | 任意。Lineラベルの文字サイズ |
-| printArea | 任意。Diagram文書単位の印刷対象キャンバス範囲 |
+| printArea | 任意。Diagram文書単位の印刷対象キャンバス範囲。未指定時は実内容から自動計算する |
 | printSettings | 任意。Diagram文書単位の用紙サイズ、向き、余白、倍率設定 |
 
 `diagram` は循環、多対多、横断関係を許可し、ファイル参照更新の対象にはしない。
