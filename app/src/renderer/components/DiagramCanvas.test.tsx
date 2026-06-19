@@ -1,4 +1,4 @@
-import { cleanup, createEvent, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, createEvent, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -305,6 +305,7 @@ function mockRect(element: Element, rect: { bottom: number; height: number; left
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
 });
 
 describe("DiagramCanvas", () => {
@@ -398,6 +399,79 @@ describe("DiagramCanvas", () => {
 
     expect(onChange).not.toHaveBeenCalled();
     expect(container.querySelector(".diagram-canvas-print-area")).not.toBeInTheDocument();
+  });
+
+  it("opens a Relic-managed print preview dialog without using the old PDF preview window", async () => {
+    const printPreview = vi.fn();
+    const savePreviewAsPdf = vi.fn();
+    vi.stubGlobal("relic", { printPreview, savePreviewAsPdf });
+
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContentWithPrintArea} fileName="World" onChange={vi.fn()} />
+      </I18nProvider>
+    );
+    const toolbar = screen.getByLabelText("Diagram editing tools");
+
+    expect(within(toolbar).queryByRole("button", { name: "Paper settings" })).not.toBeInTheDocument();
+
+    fireEvent.click(within(toolbar).getByRole("button", { name: "Print" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Print preview" });
+    expect(within(dialog).getByLabelText("Print settings")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Paper preview")).toBeInTheDocument();
+    expect(container.querySelector(".diagram-print-preview-dialog-frame")).toBeInTheDocument();
+    expect(printPreview).not.toHaveBeenCalled();
+  });
+
+  it("applies dialog paper settings when saving the preview as PDF", async () => {
+    const savePreviewAsPdf = vi.fn().mockResolvedValue({ ok: true, value: { filePath: "/tmp/world.pdf", status: "saved" } });
+    vi.stubGlobal("relic", { printPreview: vi.fn(), savePreviewAsPdf });
+    const onChange = vi.fn();
+
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContentWithPrintArea} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Print" }));
+    const dialog = await screen.findByRole("dialog", { name: "Print preview" });
+    fireEvent.change(within(dialog).getByLabelText("Paper"), { target: { value: "Letter" } });
+    fireEvent.change(within(dialog).getByLabelText("Orientation"), { target: { value: "landscape" } });
+    const saveButton = within(dialog).getByRole("button", { name: "Save as PDF" });
+    await waitFor(() => expect(saveButton).not.toBeDisabled());
+    fireEvent.click(saveButton);
+
+    await waitFor(() => expect(savePreviewAsPdf).toHaveBeenCalled());
+    expect(savePreviewAsPdf.mock.calls[0]?.[0]).toMatchObject({
+      printOptions: {
+        landscape: true,
+        pageSize: "Letter"
+      }
+    });
+    expect(onChange).toHaveBeenCalledWith(expect.stringContaining("paperSize: Letter"));
+    expect(onChange).toHaveBeenCalledWith(expect.stringContaining("orientation: landscape"));
+  });
+
+  it("moves from print preview to print area mode and returns to the dialog when the mode is closed", async () => {
+    vi.stubGlobal("relic", { printPreview: vi.fn(), savePreviewAsPdf: vi.fn() });
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContentWithPrintArea} fileName="World" onChange={vi.fn()} />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Print" }));
+    const dialog = await screen.findByRole("dialog", { name: "Print preview" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Print area" }));
+
+    expect(screen.queryByRole("dialog", { name: "Print preview" })).not.toBeInTheDocument();
+    expect(container.querySelector(".diagram-canvas-print-area")).toBeInTheDocument();
+
+    fireEvent.keyDown(screen.getByRole("application", { name: "World" }), { key: "Escape" });
+
+    expect(await screen.findByRole("dialog", { name: "Print preview" })).toBeInTheDocument();
   });
 
   it("shows node-specific actions from the explicit node context menu", () => {
