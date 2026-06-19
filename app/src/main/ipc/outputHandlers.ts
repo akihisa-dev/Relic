@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 
 import {
   copyDiagramSvgChannel,
+  printHtmlChannel,
   printPreviewChannel,
   previewOutputHtmlMaxBytes,
   saveDiagramSvgChannel,
@@ -14,6 +15,7 @@ import {
   type OutputCopyResult,
   type OutputPrintResult,
   type OutputSavedResult,
+  type PrintHtmlInput,
   type PrintPreviewInput,
   type SaveDiagramSvgInput,
   type SavePreviewAsPdfInput
@@ -64,6 +66,22 @@ export function registerOutputHandlers(): void {
         return ok({ filePath: selection.filePath, status: "saved" });
       } catch (error) {
         return fail("OUTPUT_PDF_FAILED", t("output.pdfSaveFailed"), ipcErrorDetails(error));
+      }
+    }
+  );
+
+  ipcMain.handle(
+    printHtmlChannel,
+    async (_event, input: unknown): Promise<RelicResult<OutputPrintResult>> => {
+      const t = await getMainTranslator();
+      try {
+        if (!isPrintHtmlInput(input)) {
+          return fail("OUTPUT_PRINT_INVALID_INPUT", t("output.printInvalidInput"));
+        }
+
+        return await printHtml(input.html, input.title, input.printOptions);
+      } catch (error) {
+        return fail("OUTPUT_PRINT_FAILED", t("output.printFailed"), ipcErrorDetails(error));
       }
     }
   );
@@ -217,6 +235,46 @@ async function openPrintPreview(
   return ok({ status: "printed" });
 }
 
+async function printHtml(
+  html: string,
+  title: string,
+  printOptions: OutputPrintOptions | undefined
+): Promise<RelicResult<OutputPrintResult>> {
+  const window = createOutputWindow(title, {
+    allowDataHtmlNavigation: true,
+    allowInlineScripts: false
+  });
+
+  try {
+    await loadOutputHtml(window, html);
+    const printed = await new Promise<{ failureReason?: string; success: boolean }>((resolve) => {
+      window.webContents.print({
+        landscape: printOptions?.landscape,
+        margins: printOptions ? {
+          marginType: printOptions.marginType,
+          ...printOptions.margins
+        } : undefined,
+        pageSize: printOptions?.pageSize,
+        printBackground: true,
+        scaleFactor: printOptions?.scaleFactor,
+        silent: false
+      }, (success, failureReason) => {
+        resolve({ failureReason, success });
+      });
+    });
+
+    if (!printed.success) {
+      return printed.failureReason === "cancelled"
+        ? ok({ status: "canceled" })
+        : fail("OUTPUT_PRINT_FAILED", printed.failureReason || "Print failed");
+    }
+
+    return ok({ status: "printed" });
+  } finally {
+    destroyOutputWindow(window);
+  }
+}
+
 function createOutputWindow(
   title: string,
   options: {
@@ -286,6 +344,10 @@ function isPrintPreviewInput(input: unknown): input is PrintPreviewInput {
     isSafePreviewOutputHtml(input.html) &&
     isOptionalOutputPrintOptions(input.printOptions) &&
     typeof input.title === "string";
+}
+
+function isPrintHtmlInput(input: unknown): input is PrintHtmlInput {
+  return isPrintPreviewInput(input);
 }
 
 function isOptionalOutputPrintOptions(value: unknown): value is OutputPrintOptions | undefined {

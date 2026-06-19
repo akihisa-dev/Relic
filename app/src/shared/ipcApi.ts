@@ -16,6 +16,7 @@ import type {
   CopyDiagramSvgInput,
   OutputCopyResult,
   OutputPrintResult,
+  PrintHtmlInput,
   OutputSavedResult,
   PrintPreviewInput,
   SaveDiagramSvgInput,
@@ -119,6 +120,7 @@ export interface RelicApi {
   applySearchAndReplace: (input: SearchAndReplaceInput) => Promise<RelicResult<ApplySearchAndReplaceResult>>;
   replaceInFile: (input: ReplaceInFileInput) => Promise<RelicResult<ReplaceInFileResult>>;
   printPreview: (input: PrintPreviewInput) => Promise<RelicResult<OutputPrintResult>>;
+  printHtml: (input: PrintHtmlInput) => Promise<RelicResult<OutputPrintResult>>;
   saveDiagramSvg: (input: SaveDiagramSvgInput) => Promise<RelicResult<OutputSavedResult>>;
   saveEditorSettings: (input: EditorSettings) => Promise<RelicResult<void>>;
   savePreviewAsPdf: (input: SavePreviewAsPdfInput) => Promise<RelicResult<OutputSavedResult>>;

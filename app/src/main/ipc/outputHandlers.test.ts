@@ -79,6 +79,7 @@ vi.mock("../i18n", async () => {
 
 import {
   copyDiagramSvgChannel,
+  printHtmlChannel,
   printPreviewChannel,
   saveDiagramSvgChannel,
   previewOutputHtmlMaxBytes,
@@ -132,6 +133,7 @@ describe("outputHandlers", () => {
     electronMock.getPath.mockReturnValue("/tmp");
     electronMock.isDestroyed.mockReturnValue(false);
     electronMock.loadURL.mockResolvedValue(undefined);
+    electronMock.print.mockImplementation((_options: unknown, callback: (success: boolean, failureReason?: string) => void) => callback(true));
     electronMock.printToPDF.mockResolvedValue(Buffer.from("pdf"));
     fsMock.mkdir.mockResolvedValue(undefined);
     fsMock.rename.mockResolvedValue(undefined);
@@ -231,6 +233,48 @@ describe("outputHandlers", () => {
     });
     expect(electronMock.showSaveDialog).not.toHaveBeenCalled();
     expect(electronMock.printToPDF).not.toHaveBeenCalled();
+    expect(electronMock.loadURL).not.toHaveBeenCalled();
+  });
+
+  it("実印刷ではHTMLと印刷オプションをmain側印刷へ渡す", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(printHtmlChannel)({ sender: {} }, {
+      html: validOutputHtml(),
+      printOptions: {
+        landscape: true,
+        marginType: "custom",
+        margins: { bottom: 0.25, left: 0.25, right: 0.25, top: 0.25 },
+        pageSize: "A3",
+        scaleFactor: 1.25
+      },
+      title: "Note"
+    });
+
+    expect(result).toEqual({ ok: true, value: { status: "printed" } });
+    expect(electronMock.print).toHaveBeenCalledWith(expect.objectContaining({
+      landscape: true,
+      pageSize: "A3",
+      printBackground: true,
+      scaleFactor: 1.25,
+      silent: false
+    }), expect.any(Function));
+    expect(electronMock.destroy).toHaveBeenCalled();
+  });
+
+  it("実印刷で危険なHTMLはhidden windowを作らない", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(printHtmlChannel)({ sender: {} }, {
+      html: validOutputHtml("<script>alert(1)</script>"),
+      title: "Note"
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "OUTPUT_PRINT_INVALID_INPUT" })
+    });
+    expect(electronMock.print).not.toHaveBeenCalled();
     expect(electronMock.loadURL).not.toHaveBeenCalled();
   });
 
