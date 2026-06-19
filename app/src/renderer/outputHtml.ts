@@ -6,9 +6,24 @@ import { sanitizePreviewHtml, sanitizeSvgHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
 import { escapeHtml, renderMarkdown } from "./previewMarkdown";
 import {
+  defaultRelicDiagramPrintSettings,
   parseRelicDiagramMarkdown,
-  type RelicDiagramDocument
+  type RelicDiagramDocument,
+  type RelicDiagramPrintMarginPreset,
+  type RelicDiagramPrintSettings
 } from "../shared/diagramMarkdown";
+import type { OutputPrintOptions } from "../shared/ipcOutput";
+import {
+  diagramLineLabelFontSize,
+  diagramNodeAlignItems,
+  diagramNodeBorderColor,
+  diagramNodeFillColor,
+  diagramNodeFontSize,
+  diagramNodeJustifyItems,
+  diagramNodeTextColor,
+  diagramPrintCss,
+  diagramScaleFactor
+} from "./diagramAppearance";
 import { buildDiagramCanvasLayout } from "./components/diagram/diagramGeometry";
 import { runWithConcurrency } from "./concurrency";
 import { outputCss } from "./outputCss";
@@ -29,7 +44,7 @@ export async function buildPreviewOutputHtml({
   t,
   title,
   workspacePath
-}: BuildPreviewOutputHtmlInput): Promise<{ defaultFileName: string; html: string; title: string }> {
+}: BuildPreviewOutputHtmlInput): Promise<{ defaultFileName: string; html: string; printOptions?: OutputPrintOptions; title: string }> {
   const parsedDiagram = parseRelicDiagramMarkdown(content);
   const documentTitle = title?.trim() ||
     (parsedDiagram.ok ? parsedDiagram.value.title : null) ||
@@ -40,9 +55,11 @@ export async function buildPreviewOutputHtml({
   const defaultFileName = safeOutputFileName(outputFileNameFromPath(path) || fileName || firstH1(content) || "relic-preview");
 
   if (parsedDiagram.ok) {
+    const printSettings = parsedDiagram.value.printSettings ?? defaultRelicDiagramPrintSettings;
     return {
       defaultFileName,
-      html: wrapOutputHtml(buildDiagramOutputHtml(parsedDiagram.value, documentTitle), documentTitle),
+      html: wrapOutputHtml(buildDiagramOutputHtml(parsedDiagram.value, documentTitle), documentTitle, printSettings),
+      printOptions: printOptionsFromDiagramSettings(printSettings),
       title: documentTitle
     };
   }
@@ -136,7 +153,7 @@ function normalizeOutputDiagramDom(root: ParentNode): void {
   });
 }
 
-function wrapOutputHtml(body: string, title: string): string {
+function wrapOutputHtml(body: string, title: string, printSettings?: RelicDiagramPrintSettings): string {
   return [
     "<!doctype html>",
     '<html lang="ja">',
@@ -144,7 +161,7 @@ function wrapOutputHtml(body: string, title: string): string {
     '<meta charset="utf-8">',
     '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:;">',
     `<title>${escapeHtml(title)}</title>`,
-    `<style>${outputCss}</style>`,
+    `<style>${printSettings ? `${outputCss}\n${diagramPrintCss(printSettings)}` : outputCss}</style>`,
     "</head>",
     "<body>",
     `<main class="relic-output-body">${body}</main>`,
@@ -162,12 +179,18 @@ function buildDiagramCanvasOutputHtml(
   title: string
 ): string {
   const layout = buildDiagramCanvasLayout(diagram);
+  const viewBox = diagram.printArea ?? {
+    height: layout.height,
+    width: layout.width,
+    x: layout.originX,
+    y: layout.originY
+  };
   const markerId = "relic-output-diagram-arrow";
 
   return [
     '<section class="relic-output-diagram-document relic-output-diagram-document--diagram">',
     `<h1>${escapeHtml(title)}</h1>`,
-    `<svg class="relic-output-diagram-canvas" viewBox="0 0 ${layout.width} ${layout.height}" role="img" aria-label="${escapeHtmlAttribute(title)}">`,
+    `<svg class="relic-output-diagram-canvas" viewBox="${viewBox.x - layout.originX} ${viewBox.y - layout.originY} ${viewBox.width} ${viewBox.height}" role="img" aria-label="${escapeHtmlAttribute(title)}">`,
     "<defs>",
     `<marker id="${markerId}" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4" viewBox="0 0 8 8">`,
     '<path class="relic-output-diagram-canvas-arrow" d="M 0 0 L 8 4 L 0 8 z" />',
@@ -176,12 +199,12 @@ function buildDiagramCanvasOutputHtml(
     ...layout.lines.flatMap((line) => [
       `<path class="relic-output-diagram-canvas-line" d="${escapeHtmlAttribute(line.pathD)}" marker-end="url(#${markerId})" />`,
       line.label.trim()
-        ? `<text class="relic-output-diagram-canvas-label" x="${line.labelX}" y="${line.labelY}">${escapeHtml(line.label)}</text>`
+        ? `<text class="relic-output-diagram-canvas-label" x="${line.labelX}" y="${line.labelY}" style="font-size: ${diagramLineLabelFontSize(line.line)}">${escapeHtml(line.label)}</text>`
         : ""
     ]),
     ...[...layout.nodes].sort((left, right) => outputDiagramNodeLayer(left.node) - outputDiagramNodeLayer(right.node)).map((node) => [
       `<foreignObject x="${node.x}" y="${node.y}" width="${node.node.width}" height="${node.node.height}">`,
-      `<div class="${outputDiagramNodeClassName(node.node)}" title="${escapeHtmlAttribute(outputDiagramNodeTitle(node.node))}" xmlns="http://www.w3.org/1999/xhtml">`,
+      `<div class="${outputDiagramNodeClassName(node.node)}" style="${outputDiagramNodeBodyStyle(node.node)}" title="${escapeHtmlAttribute(outputDiagramNodeTitle(node.node))}" xmlns="http://www.w3.org/1999/xhtml">`,
       outputDiagramNodeBodyHtml(node.node),
       "</div>",
       "</foreignObject>"
@@ -190,7 +213,7 @@ function buildDiagramCanvasOutputHtml(
       return [
         [
           `<foreignObject x="${node.x}" y="${node.y}" width="${node.node.width}" height="${node.node.height}">`,
-          `<div class="${outputDiagramNodeLabelClassName(node.node)}" xmlns="http://www.w3.org/1999/xhtml">`,
+          `<div class="${outputDiagramNodeLabelClassName(node.node)}" style="${outputDiagramNodeLabelStyle(node.node)}" xmlns="http://www.w3.org/1999/xhtml">`,
           `<span>${escapeHtml(node.node.text)}</span>`,
           "</div>",
           "</foreignObject>"
@@ -214,6 +237,15 @@ function outputDiagramNodeBodyHtml(_node: RelicDiagramDocument["nodes"][number])
   return "";
 }
 
+function outputDiagramNodeBodyStyle(node: RelicDiagramDocument["nodes"][number]): string {
+  const declarations = [
+    ["--diagram-output-node-fill", diagramNodeFillColor(node)],
+    ["--diagram-output-node-border", diagramNodeBorderColor(node)]
+  ].flatMap(([property, value]) => value ? [`${property}: ${value}`] : []);
+
+  return declarations.join("; ");
+}
+
 function outputDiagramNodeLabelClassName(node: RelicDiagramDocument["nodes"][number]): string {
   return [
     "relic-output-diagram-canvas-node-label",
@@ -224,6 +256,40 @@ function outputDiagramNodeLabelClassName(node: RelicDiagramDocument["nodes"][num
 
 function outputDiagramNodeTitle(node: RelicDiagramDocument["nodes"][number]): string {
   return node.text;
+}
+
+function outputDiagramNodeLabelStyle(node: RelicDiagramDocument["nodes"][number]): string {
+  return [
+    `align-items: ${diagramNodeAlignItems(node.verticalAlign)}`,
+    `color: ${diagramNodeTextColor(node) ?? (node.shape === "area" ? "#4f4940" : "#1f1d19")}`,
+    `font-size: ${diagramNodeFontSize(node)}`,
+    `justify-content: ${diagramNodeJustifyItems(node.textAlign)}`,
+    `text-align: ${node.textAlign ?? (node.shape === "area" ? "left" : "center")}`
+  ].join("; ");
+}
+
+export function printOptionsFromDiagramSettings(settings: RelicDiagramPrintSettings): OutputPrintOptions {
+  const marginMm = marginPresetToMm(settings.marginPreset);
+  const marginInches = Number((marginMm / 25.4).toFixed(3));
+  return {
+    landscape: settings.orientation === "landscape",
+    marginType: marginMm === 0 ? "none" : "custom",
+    margins: {
+      bottom: marginInches,
+      left: marginInches,
+      right: marginInches,
+      top: marginInches
+    },
+    pageSize: settings.paperSize,
+    scaleFactor: diagramScaleFactor(settings)
+  };
+}
+
+function marginPresetToMm(preset: RelicDiagramPrintMarginPreset): number {
+  if (preset === "none") return 0;
+  if (preset === "small") return 6;
+  if (preset === "large") return 20;
+  return 12.7;
 }
 
 function escapeHtmlAttribute(value: string): string {

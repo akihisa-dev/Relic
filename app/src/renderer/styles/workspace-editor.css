@@ -1230,6 +1230,127 @@
   color: var(--text);
 }
 
+.diagram-canvas-floating-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  position: absolute;
+  right: 16px;
+  top: 54px;
+  z-index: 35;
+}
+
+.diagram-canvas-paper-panel label {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 88px minmax(110px, 1fr);
+}
+
+.diagram-canvas-paper-panel span {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.diagram-canvas-paper-panel input,
+.diagram-canvas-paper-panel select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  min-width: 0;
+  padding: 5px 7px;
+}
+
+.diagram-canvas-menu-section {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 4px;
+  padding: 6px 0 0;
+}
+
+.diagram-canvas-swatch-button {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  padding: 0;
+  width: 28px;
+}
+
+.diagram-canvas-swatch-button > span {
+  border: 1.5px solid var(--border-strong);
+  display: block;
+  height: 16px;
+  width: 16px;
+}
+
+.diagram-canvas-swatch-button--selected {
+  border-color: var(--accent);
+}
+
+.diagram-canvas-swatch-button--default > span {
+  background:
+    linear-gradient(135deg, transparent 0 43%, var(--danger, #b42318) 44% 56%, transparent 57% 100%),
+    var(--bg);
+}
+
+.diagram-canvas-swatch-button--blue > span { background: #d8e6f7; border-color: #3261a1; }
+.diagram-canvas-swatch-button--green > span { background: #d8eee2; border-color: #287a54; }
+.diagram-canvas-swatch-button--yellow > span { background: #f7e8bd; border-color: #9b6b12; }
+.diagram-canvas-swatch-button--red > span { background: #f6ddda; border-color: #b43b34; }
+.diagram-canvas-swatch-button--gray > span { background: #e6e8eb; border-color: #6f7885; }
+
+.diagram-canvas-print-area {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.14);
+  box-sizing: border-box;
+  cursor: move;
+  pointer-events: auto;
+  position: absolute;
+  z-index: 12;
+}
+
+.diagram-canvas-print-area-handle {
+  appearance: none;
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  height: 14px;
+  padding: 0;
+  position: absolute;
+  width: 14px;
+}
+
+.diagram-canvas-print-area-handle--top,
+.diagram-canvas-print-area-handle--bottom {
+  cursor: ns-resize;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.diagram-canvas-print-area-handle--top { top: -8px; }
+.diagram-canvas-print-area-handle--bottom { bottom: -8px; }
+
+.diagram-canvas-print-area-handle--left,
+.diagram-canvas-print-area-handle--right {
+  cursor: ew-resize;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.diagram-canvas-print-area-handle--left { left: -8px; }
+.diagram-canvas-print-area-handle--right { right: -8px; }
+
 .diagram-canvas-label-editor {
   position: absolute;
   transform: translate(-50%, -50%);

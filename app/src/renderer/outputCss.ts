@@ -231,8 +231,8 @@ mark {
 
 .relic-output-diagram-canvas-node {
   align-items: center;
-  background: #ffffff;
-  border: 1.5px solid #80786c;
+  background: var(--diagram-output-node-fill, #ffffff);
+  border: 1.5px solid var(--diagram-output-node-border, #80786c);
   border-radius: 6px;
   box-shadow: 0 3px 8px rgba(30, 26, 18, 0.12);
   box-sizing: border-box;
@@ -309,12 +309,12 @@ mark {
 }
 
 .relic-output-diagram-canvas-node--shape-decision::before {
-  background: #80786c;
+  background: var(--diagram-output-node-border, #80786c);
   inset: 0;
 }
 
 .relic-output-diagram-canvas-node--shape-decision::after {
-  background: #ffffff;
+  background: var(--diagram-output-node-fill, #ffffff);
   inset: 1.5px;
 }
 
@@ -326,8 +326,8 @@ mark {
 
 .relic-output-diagram-canvas-node--shape-area {
   align-items: flex-start;
-  background: rgba(0, 124, 175, 0.14);
-  border: 1.5px dashed #80786c;
+  background: var(--diagram-output-node-fill, rgba(0, 124, 175, 0.14));
+  border: 1.5px dashed var(--diagram-output-node-border, #80786c);
   box-shadow: none;
   color: #4f4940;
   justify-content: flex-start;

@@ -96,22 +96,29 @@ Diagram MarkdownにはDiagram以外の本文を混ぜず、壊れた形式の場
 
 ### diagram
 
-`diagram` は自由テキストを持つ図形の図解として扱う。Node、Line、Label、Node位置、Node固定サイズを本文内のYAMLとして保持する。
+`diagram` は自由テキストを持つ図形の図解として扱う。Node、Line、Node位置、Node固定サイズ、任意の見た目設定、印刷設定を本文内のYAMLとして保持する。
 NodeはMarkdownファイルを参照せず、`nodes[].shape` と `nodes[].text` を持つ。
 
 | フィールド | 内容 |
 |-----------|------|
 | nodes | Diagram上のカード一覧 |
 | nodes[].id | Diagramファイル内で一意のNode ID |
-| nodes[].shape | 図形の種類。`terminator`、`process`、`decision`、`input-output`、`label`、`area` のいずれか |
+| nodes[].shape | 図形の種類。`terminator`、`process`、`decision`、`input-output`、`area` のいずれか |
 | nodes[].text | Node内に表示・保存する自由テキスト |
 | nodes[].x / nodes[].y | Diagram上のNode位置 |
 | nodes[].width / nodes[].height | Nodeの固定サイズ |
 | nodes[].layer | 図形の表示レイヤー |
+| nodes[].color | 任意。図形ごとのプリセット色 |
+| nodes[].textSize | 任意。Nodeテキストサイズ |
+| nodes[].textAlign | 任意。Nodeテキストの水平揃え |
+| nodes[].verticalAlign | 任意。Nodeテキストの垂直揃え |
 | lines | Node同士をつなぐLine一覧 |
 | lines[].id | Diagramファイル内で一意のLine ID |
 | lines[].from / lines[].to | 接続するNode ID |
 | lines[].label | Line中央に表示する文字 |
+| lines[].labelTextSize | 任意。Lineラベルの文字サイズ |
+| printArea | 任意。Diagram文書単位の印刷対象キャンバス範囲 |
+| printSettings | 任意。Diagram文書単位の用紙サイズ、向き、余白、倍率設定 |
 
 `diagram` は循環、多対多、横断関係を許可し、ファイル参照更新の対象にはしない。
 旧 `type: relationship`、`type: why-tree`、`type: free-drawing` はDiagram Markdownとして扱わない。

@@ -10,6 +10,7 @@ import {
   saveDiagramSvgChannel,
   savePreviewAsPdfChannel,
   type CopyDiagramSvgInput,
+  type OutputPrintOptions,
   type OutputCopyResult,
   type OutputPrintResult,
   type OutputSavedResult,
@@ -57,7 +58,7 @@ export function registerOutputHandlers(): void {
           return ok({ status: "canceled" });
         }
 
-        const pdf = await renderHtmlToPdf(input.html, input.title);
+        const pdf = await renderHtmlToPdf(input.html, input.title, input.printOptions);
         await atomicWriteFile(selection.filePath, pdf);
 
         return ok({ filePath: selection.filePath, status: "saved" });
@@ -76,7 +77,7 @@ export function registerOutputHandlers(): void {
           return fail("OUTPUT_PRINT_INVALID_INPUT", t("output.printInvalidInput"));
         }
 
-        return await openPrintPreview(input.html, input.title, BrowserWindow.fromWebContents(event.sender), t);
+        return await openPrintPreview(input.html, input.title, input.printOptions, BrowserWindow.fromWebContents(event.sender), t);
       } catch (error) {
         return fail("OUTPUT_PRINT_FAILED", t("output.printFailed"), ipcErrorDetails(error));
       }
@@ -154,7 +155,7 @@ export async function cleanupTemporaryPrintPreviewFiles(): Promise<void> {
   await mkdir(directoryPath, { recursive: true }).catch(() => undefined);
 }
 
-async function renderHtmlToPdf(html: string, title: string): Promise<Buffer> {
+async function renderHtmlToPdf(html: string, title: string, printOptions?: OutputPrintOptions): Promise<Buffer> {
   const window = createOutputWindow(title, {
     allowDataHtmlNavigation: true,
     allowInlineScripts: false
@@ -165,7 +166,15 @@ async function renderHtmlToPdf(html: string, title: string): Promise<Buffer> {
     return await window.webContents.printToPDF({
       displayHeaderFooter: false,
       generateDocumentOutline: true,
-      pageSize: "A4",
+      ...(printOptions ? {
+        landscape: printOptions.landscape,
+        margins: {
+          marginType: printOptions.marginType,
+          ...printOptions.margins
+        },
+        pageSize: printOptions.pageSize,
+        scaleFactor: printOptions.scaleFactor
+      } : { pageSize: "A4" }),
       preferCSSPageSize: true,
       printBackground: true
     });
@@ -177,10 +186,11 @@ async function renderHtmlToPdf(html: string, title: string): Promise<Buffer> {
 async function openPrintPreview(
   html: string,
   title: string,
+  printOptions: OutputPrintOptions | undefined,
   parentWindow: BrowserWindow | null,
   t: Translator
 ): Promise<RelicResult<OutputPrintResult>> {
-  const pdf = await renderHtmlToPdf(html, title);
+  const pdf = await renderHtmlToPdf(html, title, printOptions);
   const pdfPath = await temporaryPrintPreviewPath();
   await atomicWriteFile(pdfPath, pdf);
   const pdfUrl = pathToFileURL(pdfPath).toString();
@@ -265,6 +275,7 @@ function isSavePreviewAsPdfInput(input: unknown): input is SavePreviewAsPdfInput
     typeof input.html === "string" &&
     isWithinPreviewHtmlLimit(input.html) &&
     isSafePreviewOutputHtml(input.html) &&
+    isOptionalOutputPrintOptions(input.printOptions) &&
     typeof input.title === "string";
 }
 
@@ -273,7 +284,23 @@ function isPrintPreviewInput(input: unknown): input is PrintPreviewInput {
     typeof input.html === "string" &&
     isWithinPreviewHtmlLimit(input.html) &&
     isSafePreviewOutputHtml(input.html) &&
+    isOptionalOutputPrintOptions(input.printOptions) &&
     typeof input.title === "string";
+}
+
+function isOptionalOutputPrintOptions(value: unknown): value is OutputPrintOptions | undefined {
+  if (value === undefined) return true;
+  if (!isObject(value)) return false;
+  if (typeof value.landscape !== "boolean") return false;
+  if (value.marginType !== "custom" && value.marginType !== "none") return false;
+  if (value.pageSize !== "A4" && value.pageSize !== "A3" && value.pageSize !== "Letter" && value.pageSize !== "Legal") return false;
+  if (typeof value.scaleFactor !== "number" || !Number.isFinite(value.scaleFactor) || value.scaleFactor < 0.1 || value.scaleFactor > 2) return false;
+  if (!isObject(value.margins)) return false;
+  const margins = value.margins;
+  return ["top", "right", "bottom", "left"].every((key) => {
+    const margin = margins[key];
+    return typeof margin === "number" && Number.isFinite(margin) && margin >= 0 && margin <= 2;
+  });
 }
 
 function isWithinPreviewHtmlLimit(html: string): boolean {

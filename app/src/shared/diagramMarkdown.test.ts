@@ -19,9 +19,13 @@ import {
   replaceRelicDiagramNodeFileReferences,
   resizeRelicDiagramNode,
   serializeRelicDiagramMarkdown,
+  updateRelicDiagramLineAppearance,
   updateRelicFreeDrawingNodeShape,
   updateRelicDiagramLineEndpoints,
   updateRelicDiagramLineLabel,
+  updateRelicDiagramNodesAppearance,
+  updateRelicDiagramPrintArea,
+  updateRelicDiagramPrintSettings,
   updateRelicFreeDrawingNodeText
 } from "./diagramMarkdown";
 
@@ -103,6 +107,78 @@ describe("Diagram Markdown", () => {
     expect(serialized.ok ? parseRelicDiagramMarkdown(serialized.value) : null).toEqual(parsed);
   });
 
+  it("図形とLineの表示設定、印刷領域、用紙設定を任意フィールドとして保存する", () => {
+    const styled = [
+      "---",
+      "type: diagram",
+      "formatVersion: 1",
+      "---",
+      "",
+      "printArea:",
+      "  x: 0",
+      "  y: 0",
+      "  width: 640",
+      "  height: 360",
+      "printSettings:",
+      "  paperSize: A3",
+      "  orientation: landscape",
+      "  marginPreset: small",
+      "  scaleMode: actual",
+      "  scale: 1.25",
+      "nodes:",
+      "  - id: node-1",
+      "    shape: area",
+      "    text: 領域",
+      "    x: 0",
+      "    y: 0",
+      "    width: 320",
+      "    height: 200",
+      "    layer: 0",
+      "    color: green",
+      "    textSize: large",
+      "    textAlign: right",
+      "    verticalAlign: bottom",
+      "  - id: node-2",
+      "    shape: process",
+      "    text: 処理",
+      "    x: 360",
+      "    y: 0",
+      "    width: 160",
+      "    height: 64",
+      "    layer: 1",
+      "lines:",
+      "  - id: line-1",
+      "    from: node-1",
+      "    to: node-2",
+      "    label: 関連",
+      "    labelTextSize: large",
+      "  - id: line-2",
+      "    from: node-2",
+      "    to: node-1",
+      "    label: 戻る",
+      ""
+    ].join("\n");
+
+    const parsed = parseRelicDiagramMarkdown(styled);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.value.lines.find((line) => line.id === "line-1")).toMatchObject({ labelTextSize: "large" });
+    expect(parsed.value.nodes.find((node) => node.id === "node-1")).toMatchObject({
+      color: "green",
+      textAlign: "right",
+      textSize: "large",
+      verticalAlign: "bottom"
+    });
+    expect(parsed.value.printArea).toEqual({ height: 360, width: 640, x: 0, y: 0 });
+    expect(parsed.value.printSettings).toEqual({ marginPreset: "small", orientation: "landscape", paperSize: "A3", scale: 1.25, scaleMode: "actual" });
+
+    const serialized = serializeRelicDiagramMarkdown(parsed.value);
+    expect(serialized.ok ? serialized.value : "").toContain("color: green");
+    expect(serialized.ok ? serialized.value : "").toContain("labelTextSize: large");
+    expect(serialized.ok ? serialized.value : "").toContain("printArea:");
+    expect(serialized.ok ? serialized.value : "").toContain("printSettings:");
+  });
+
   it("formatVersionなしの旧図解ファイルはv1へ移行して読み込む", () => {
     const legacyContent = [
       "---",
@@ -145,6 +221,8 @@ describe("Diagram Markdown", () => {
     expect(parseRelicDiagramMarkdown("---\ntype: relationship\n---\n\nnodes: []\nlines: []").ok).toBe(false);
     expect(parseRelicDiagramMarkdown("---\ntype: why-tree\n---\n\nlabels: {}\nphenomenon: {}").ok).toBe(false);
     expect(parseRelicDiagramMarkdown("---\ntype: free-drawing\n---\n\nnodes: []\nlines: []").ok).toBe(false);
+    expect(parseRelicDiagramMarkdown("---\ntype: diagram\n---\n\nnodes:\n  - id: node-1\n    shape: process\n    text: x\n    x: 0\n    y: 0\n    width: 100\n    height: 80\n    color: neon\nlines: []")).toMatchObject({ error: { code: "DIAGRAM_NODE_COLOR_INVALID" }, ok: false });
+    expect(parseRelicDiagramMarkdown("---\ntype: diagram\n---\n\nnodes: []\nlines: []\nprintSettings:\n  scale: 9")).toMatchObject({ error: { code: "DIAGRAM_PRINT_SCALE_INVALID" }, ok: false });
   });
 
   it("未知の将来formatVersionは旧形式として誤読しない", () => {
@@ -236,6 +314,46 @@ describe("Diagram operations", () => {
     expect(deleted.ok ? deleted.value.content : "").not.toContain("id: node-1");
     expect(deleted.ok ? deleted.value.content : "").not.toContain("id: node-2");
     expect(deleted.ok ? deleted.value.content : "").not.toContain("id: line-1");
+  });
+
+  it("複数Nodeの見た目、Lineラベルサイズ、印刷設定をMarkdownへ反映し既定へ戻せる", () => {
+    const styledNodes = updateRelicDiagramNodesAppearance(diagramContent, ["node-1", "node-2"], {
+      color: "blue",
+      textAlign: "left",
+      textSize: "large",
+      verticalAlign: "top"
+    });
+    expect(styledNodes.ok ? styledNodes.value.nodeIds : []).toEqual(["node-1", "node-2"]);
+    expect(styledNodes.ok ? styledNodes.value.content : "").toContain("color: blue");
+    expect(styledNodes.ok ? styledNodes.value.content : "").toContain("textAlign: left");
+
+    const resetNodes = updateRelicDiagramNodesAppearance(styledNodes.ok ? styledNodes.value.content : diagramContent, ["node-1"], {
+      color: null,
+      textAlign: null,
+      textSize: null,
+      verticalAlign: null
+    });
+    const resetParsed = parseRelicDiagramMarkdown(resetNodes.ok ? resetNodes.value.content : "");
+    expect(resetParsed.ok ? resetParsed.value.nodes.find((node) => node.id === "node-1") : null).not.toMatchObject({
+      color: "blue"
+    });
+
+    const styledLine = updateRelicDiagramLineAppearance(diagramContent, "line-1", { labelTextSize: "large" });
+    expect(styledLine.ok ? styledLine.value.content : "").toContain("labelTextSize: large");
+
+    const printArea = updateRelicDiagramPrintArea(diagramContent, { height: 360, width: 640, x: 32, y: 64 });
+    expect(printArea.ok ? printArea.value.content : "").toContain("printArea:");
+    expect(printArea.ok ? printArea.value.content : "").toContain("width: 640");
+
+    const printSettings = updateRelicDiagramPrintSettings(diagramContent, {
+      marginPreset: "large",
+      orientation: "landscape",
+      paperSize: "Letter",
+      scale: 1.5,
+      scaleMode: "actual"
+    });
+    expect(printSettings.ok ? printSettings.value.content : "").toContain("paperSize: Letter");
+    expect(printSettings.ok ? printSettings.value.content : "").toContain("orientation: landscape");
   });
 
   it("Line端点変更で無効な接続を拒否し、元のLineを変えない", () => {

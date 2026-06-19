@@ -10,10 +10,43 @@ export type RelicFreeDrawingShapeType = typeof relicFreeDrawingShapeTypes[number
 export const relicFreeDrawingAreaLayer = 0;
 export const relicFreeDrawingShapeLayer = 1;
 export const relicFreeDrawingLabelLayer = 2;
+export const relicDiagramNodeColorPresets = ["blue", "green", "yellow", "red", "gray"] as const;
+export type RelicDiagramNodeColorPreset = typeof relicDiagramNodeColorPresets[number];
+export const relicDiagramTextSizes = ["small", "normal", "large"] as const;
+export type RelicDiagramTextSize = typeof relicDiagramTextSizes[number];
+export const relicDiagramHorizontalAlignments = ["left", "center", "right"] as const;
+export type RelicDiagramHorizontalAlignment = typeof relicDiagramHorizontalAlignments[number];
+export const relicDiagramVerticalAlignments = ["top", "center", "bottom"] as const;
+export type RelicDiagramVerticalAlignment = typeof relicDiagramVerticalAlignments[number];
+export const relicDiagramPaperSizes = ["A4", "A3", "Letter", "Legal"] as const;
+export type RelicDiagramPaperSize = typeof relicDiagramPaperSizes[number];
+export const relicDiagramPrintOrientations = ["portrait", "landscape"] as const;
+export type RelicDiagramPrintOrientation = typeof relicDiagramPrintOrientations[number];
+export const relicDiagramPrintMarginPresets = ["none", "small", "normal", "large"] as const;
+export type RelicDiagramPrintMarginPreset = typeof relicDiagramPrintMarginPresets[number];
+export const relicDiagramPrintScaleModes = ["fit", "width", "actual"] as const;
+export type RelicDiagramPrintScaleMode = typeof relicDiagramPrintScaleModes[number];
+
+export interface RelicDiagramPrintArea {
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+}
+
+export interface RelicDiagramPrintSettings {
+  marginPreset: RelicDiagramPrintMarginPreset;
+  orientation: RelicDiagramPrintOrientation;
+  paperSize: RelicDiagramPaperSize;
+  scale: number;
+  scaleMode: RelicDiagramPrintScaleMode;
+}
 
 export interface RelicFreeDrawingDiagramDocument {
   lines: RelicDiagramLine[];
   nodes: RelicFreeDrawingNode[];
+  printArea?: RelicDiagramPrintArea;
+  printSettings?: RelicDiagramPrintSettings;
   title?: string;
   type: "diagram";
 }
@@ -30,9 +63,13 @@ export interface RelicDiagramNodeBase {
 }
 
 export interface RelicFreeDrawingNode extends RelicDiagramNodeBase {
+  color?: RelicDiagramNodeColorPreset;
   layer: number;
   shape: RelicFreeDrawingShapeType;
   text: string;
+  textAlign?: RelicDiagramHorizontalAlignment;
+  textSize?: RelicDiagramTextSize;
+  verticalAlign?: RelicDiagramVerticalAlignment;
 }
 
 export type RelicConnectedDiagramNode = RelicFreeDrawingNode;
@@ -41,6 +78,7 @@ export interface RelicDiagramLine {
   from: string;
   id: string;
   label: string;
+  labelTextSize?: RelicDiagramTextSize;
   to: string;
 }
 
@@ -117,6 +155,16 @@ export interface RelicDiagramMultiNodeUpdate {
   nodeIds: string[];
 }
 
+export interface RelicDiagramPrintAreaUpdate {
+  content: string;
+  printArea?: RelicDiagramPrintArea;
+}
+
+export interface RelicDiagramPrintSettingsUpdate {
+  content: string;
+  printSettings: RelicDiagramPrintSettings;
+}
+
 interface DiagramFrontmatter {
   formatVersion: number;
   title?: string;
@@ -128,14 +176,21 @@ interface ParsedDiagramMarkdownParts {
   frontmatter: DiagramFrontmatter;
 }
 
-const freeDrawingBodyKeys = new Set(["nodes", "lines"]);
-const freeDrawingNodeKeys = new Set(["id", "shape", "text", "x", "y", "width", "height", "layer"]);
-const diagramLineKeys = new Set(["id", "from", "to", "label"]);
+const freeDrawingBodyKeys = new Set(["nodes", "lines", "printArea", "printSettings"]);
+const freeDrawingNodeKeys = new Set(["id", "shape", "text", "x", "y", "width", "height", "layer", "color", "textSize", "textAlign", "verticalAlign"]);
+const diagramLineKeys = new Set(["id", "from", "to", "label", "labelTextSize"]);
 const currentDiagramFormatVersion = 1;
 const diagramFrontmatterKeys = new Set(["type", "title", "formatVersion"]);
 const diagramNodeGridSize = 32;
 const defaultNodeWidth = diagramNodeGridSize * 5;
 const defaultNodeHeight = diagramNodeGridSize * 2;
+export const defaultRelicDiagramPrintSettings: RelicDiagramPrintSettings = {
+  marginPreset: "normal",
+  orientation: "portrait",
+  paperSize: "A4",
+  scale: 1,
+  scaleMode: "fit"
+};
 
 export const emptyRelicFreeDrawingMarkdownContent = [
   "---",
@@ -236,14 +291,21 @@ export function serializeRelicFreeDrawingMarkdown(document: RelicFreeDrawingDiag
         y: node.y,
         width: node.width,
         height: node.height,
-        layer: node.layer
+        layer: node.layer,
+        ...(node.color ? { color: node.color } : {}),
+        ...(node.textSize ? { textSize: node.textSize } : {}),
+        ...(node.textAlign ? { textAlign: node.textAlign } : {}),
+        ...(node.verticalAlign ? { verticalAlign: node.verticalAlign } : {})
       })),
       lines: validated.value.lines.map((line) => ({
         id: line.id,
         from: line.from,
         to: line.to,
-        label: line.label
-      }))
+        label: line.label,
+        ...(line.labelTextSize ? { labelTextSize: line.labelTextSize } : {})
+      })),
+      ...(validated.value.printArea ? { printArea: validated.value.printArea } : {}),
+      ...(validated.value.printSettings ? { printSettings: validated.value.printSettings } : {})
     },
     yamlDumpOptions()
   ).replace(/\n(\s*)'y':/g, "\n$1y:");
@@ -935,6 +997,151 @@ export function distributeRelicDiagramNodes(
   return ok({ content: serialized.value, nodeIds: selected.map((node) => node.id) });
 }
 
+export function updateRelicDiagramNodesAppearance(
+  content: string,
+  nodeIds: Iterable<string>,
+  appearance: {
+    color?: RelicDiagramNodeColorPreset | null;
+    textAlign?: RelicDiagramHorizontalAlignment | null;
+    textSize?: RelicDiagramTextSize | null;
+    verticalAlign?: RelicDiagramVerticalAlignment | null;
+  }
+): RelicResult<RelicDiagramMultiNodeUpdate> {
+  const parsed = parseRelicFreeDrawingMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const ids = new Set([...nodeIds]);
+  if (ids.size === 0) {
+    return fail("DIAGRAM_NODE_MISSING", "変更するNodeが見つかりません。");
+  }
+
+  const color = parseNullableEnum(appearance.color, relicDiagramNodeColorPresets, "DIAGRAM_NODE_COLOR_INVALID", "Nodeの color は対応する色名にしてください。");
+  if (!color.ok) return color;
+  const textSize = parseNullableEnum(appearance.textSize, relicDiagramTextSizes, "DIAGRAM_NODE_TEXT_SIZE_INVALID", "Nodeの textSize は対応する文字サイズにしてください。");
+  if (!textSize.ok) return textSize;
+  const textAlign = parseNullableEnum(appearance.textAlign, relicDiagramHorizontalAlignments, "DIAGRAM_NODE_TEXT_ALIGN_INVALID", "Nodeの textAlign は対応する文字揃えにしてください。");
+  if (!textAlign.ok) return textAlign;
+  const verticalAlign = parseNullableEnum(appearance.verticalAlign, relicDiagramVerticalAlignments, "DIAGRAM_NODE_VERTICAL_ALIGN_INVALID", "Nodeの verticalAlign は対応する縦位置にしてください。");
+  if (!verticalAlign.ok) return verticalAlign;
+
+  const updatedIds: string[] = [];
+  const nodes = parsed.value.nodes.map((node) => {
+    if (!ids.has(node.id)) return node;
+    updatedIds.push(node.id);
+    let nextNode = { ...node };
+    if (appearance.color !== undefined) {
+      const { color: _removed, ...rest } = nextNode;
+      nextNode = color.value ? { ...rest, color: color.value } : rest;
+    }
+    if (appearance.textSize !== undefined) {
+      const { textSize: _removed, ...rest } = nextNode;
+      nextNode = textSize.value ? { ...rest, textSize: textSize.value } : rest;
+    }
+    if (appearance.textAlign !== undefined) {
+      const { textAlign: _removed, ...rest } = nextNode;
+      nextNode = textAlign.value ? { ...rest, textAlign: textAlign.value } : rest;
+    }
+    if (appearance.verticalAlign !== undefined) {
+      const { verticalAlign: _removed, ...rest } = nextNode;
+      nextNode = verticalAlign.value ? { ...rest, verticalAlign: verticalAlign.value } : rest;
+    }
+    return nextNode;
+  });
+  if (updatedIds.length === 0) {
+    return fail("DIAGRAM_NODE_MISSING", "変更するNodeが見つかりません。");
+  }
+
+  const serialized = serializeRelicFreeDrawingMarkdown({
+    ...parsed.value,
+    nodes
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({ content: serialized.value, nodeIds: updatedIds });
+}
+
+export function updateRelicDiagramLineAppearance(
+  content: string,
+  lineId: string,
+  appearance: { labelTextSize?: RelicDiagramTextSize | null }
+): RelicResult<RelicDiagramLineLabelUpdate> {
+  const parsed = parseRelicConnectedDiagramMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const id = parseRequiredText(lineId, "DIAGRAM_LINE_ID_INVALID", "Lineの id を指定してください。");
+  if (!id.ok) return id;
+  const labelTextSize = parseNullableEnum(
+    appearance.labelTextSize,
+    relicDiagramTextSizes,
+    "DIAGRAM_LINE_LABEL_TEXT_SIZE_INVALID",
+    "Lineの labelTextSize は対応する文字サイズにしてください。"
+  );
+  if (!labelTextSize.ok) return labelTextSize;
+
+  const line = parsed.value.lines.find((item) => item.id === id.value);
+  if (!line) {
+    return fail("DIAGRAM_LINE_MISSING", "変更するLineが見つかりません。");
+  }
+
+  let nextLine = { ...line };
+  if (appearance.labelTextSize !== undefined) {
+    const { labelTextSize: _removed, ...rest } = nextLine;
+    nextLine = labelTextSize.value ? { ...rest, labelTextSize: labelTextSize.value } : rest;
+  }
+  const serialized = serializeRelicConnectedDiagramMarkdown({
+    ...parsed.value,
+    lines: parsed.value.lines.map((item) => item.id === id.value ? nextLine : item)
+  } as RelicConnectedDiagramDocument);
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    line: nextLine
+  });
+}
+
+export function updateRelicDiagramPrintArea(
+  content: string,
+  printArea: RelicDiagramPrintArea | null
+): RelicResult<RelicDiagramPrintAreaUpdate> {
+  const parsed = parseRelicFreeDrawingMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const nextPrintArea = parseNullablePrintArea(printArea);
+  if (!nextPrintArea.ok) return nextPrintArea;
+  const serialized = serializeRelicFreeDrawingMarkdown({
+    ...parsed.value,
+    ...(nextPrintArea.value ? { printArea: nextPrintArea.value } : { printArea: undefined })
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    ...(nextPrintArea.value ? { printArea: nextPrintArea.value } : {})
+  });
+}
+
+export function updateRelicDiagramPrintSettings(
+  content: string,
+  printSettings: RelicDiagramPrintSettings
+): RelicResult<RelicDiagramPrintSettingsUpdate> {
+  const parsed = parseRelicFreeDrawingMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const nextPrintSettings = parsePrintSettings(printSettings);
+  if (!nextPrintSettings.ok) return nextPrintSettings;
+  const serialized = serializeRelicFreeDrawingMarkdown({
+    ...parsed.value,
+    printSettings: nextPrintSettings.value
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    printSettings: nextPrintSettings.value
+  });
+}
+
 function validateRelicFreeDrawingDocument(raw: unknown): RelicResult<RelicFreeDrawingDiagramDocument> {
   if (!isRecord(raw)) {
     return fail("DIAGRAM_FORMAT_INVALID", "図解ファイルの形式が正しくありません。");
@@ -957,10 +1164,16 @@ function validateRelicFreeDrawingDocument(raw: unknown): RelicResult<RelicFreeDr
 
   const lines = parseLines(raw.lines, nodes.value);
   if (!lines.ok) return lines;
+  const printArea = parseOptionalPrintArea(raw.printArea);
+  if (!printArea.ok) return printArea;
+  const printSettings = parseOptionalPrintSettings(raw.printSettings);
+  if (!printSettings.ok) return printSettings;
 
   return ok({
     lines: lines.value,
     nodes: nodes.value,
+    ...(printArea.value ? { printArea: printArea.value } : {}),
+    ...(printSettings.value ? { printSettings: printSettings.value } : {}),
     ...(title?.value ? { title: title.value } : {}),
     type: "diagram"
   });
@@ -1107,14 +1320,46 @@ function parseFreeDrawingNodes(rawNodes: unknown): RelicResult<RelicFreeDrawingN
     if (!height.ok) return height;
     const layer = parseOptionalLayer(rawNode.layer);
     if (!layer.ok) return layer;
+    const color = parseOptionalEnum(
+      rawNode.color,
+      relicDiagramNodeColorPresets,
+      "DIAGRAM_NODE_COLOR_INVALID",
+      "Nodeの color は対応する色名にしてください。"
+    );
+    if (!color.ok) return color;
+    const textSize = parseOptionalEnum(
+      rawNode.textSize,
+      relicDiagramTextSizes,
+      "DIAGRAM_NODE_TEXT_SIZE_INVALID",
+      "Nodeの textSize は対応する文字サイズにしてください。"
+    );
+    if (!textSize.ok) return textSize;
+    const textAlign = parseOptionalEnum(
+      rawNode.textAlign,
+      relicDiagramHorizontalAlignments,
+      "DIAGRAM_NODE_TEXT_ALIGN_INVALID",
+      "Nodeの textAlign は対応する文字揃えにしてください。"
+    );
+    if (!textAlign.ok) return textAlign;
+    const verticalAlign = parseOptionalEnum(
+      rawNode.verticalAlign,
+      relicDiagramVerticalAlignments,
+      "DIAGRAM_NODE_VERTICAL_ALIGN_INVALID",
+      "Nodeの verticalAlign は対応する縦位置にしてください。"
+    );
+    if (!verticalAlign.ok) return verticalAlign;
 
     nodeIds.add(id.value);
     nodes.push({
+      ...(color.value ? { color: color.value } : {}),
       height: height.value,
       id: id.value,
       layer: normalizeFreeDrawingNodeLayer(shape.value, layer.value),
       shape: shape.value,
       text: text.value,
+      ...(textAlign.value ? { textAlign: textAlign.value } : {}),
+      ...(textSize.value ? { textSize: textSize.value } : {}),
+      ...(verticalAlign.value ? { verticalAlign: verticalAlign.value } : {}),
       width: width.value,
       x: x.value,
       y: y.value
@@ -1170,12 +1415,20 @@ function parseLines(rawLines: unknown, nodes: RelicDiagramNodeBase[]): RelicResu
 
     const label = parseOptionalText(rawLine.label, "DIAGRAM_LINE_LABEL_INVALID", "Lineの label は文字にしてください。");
     if (!label.ok) return label;
+    const labelTextSize = parseOptionalEnum(
+      rawLine.labelTextSize,
+      relicDiagramTextSizes,
+      "DIAGRAM_LINE_LABEL_TEXT_SIZE_INVALID",
+      "Lineの labelTextSize は対応する文字サイズにしてください。"
+    );
+    if (!labelTextSize.ok) return labelTextSize;
 
     lineIds.add(id.value);
     lines.push({
       from: from.value,
       id: id.value,
       label: label.value,
+      ...(labelTextSize.value ? { labelTextSize: labelTextSize.value } : {}),
       to: to.value
     });
   }
@@ -1431,6 +1684,107 @@ function parseOptionalLayer(raw: unknown): RelicResult<number> {
   if (!parsed.ok) return parsed;
 
   return ok(Math.round(parsed.value));
+}
+
+function parseOptionalEnum<T extends string>(
+  raw: unknown,
+  values: readonly T[],
+  code: string,
+  message: string
+): RelicResult<T | undefined> {
+  if (raw === undefined) return ok(undefined);
+  if (typeof raw !== "string" || !values.includes(raw as T)) return fail(code, message);
+
+  return ok(raw as T);
+}
+
+function parseNullableEnum<T extends string>(
+  raw: T | null | undefined,
+  values: readonly T[],
+  code: string,
+  message: string
+): RelicResult<T | undefined> {
+  if (raw === undefined || raw === null) return ok(undefined);
+  if (!values.includes(raw)) return fail(code, message);
+
+  return ok(raw);
+}
+
+function parseOptionalPrintArea(raw: unknown): RelicResult<RelicDiagramPrintArea | undefined> {
+  if (raw === undefined) return ok(undefined);
+  return parseNullablePrintArea(raw);
+}
+
+function parseNullablePrintArea(raw: unknown): RelicResult<RelicDiagramPrintArea | undefined> {
+  if (raw === null) return ok(undefined);
+  if (!isRecord(raw)) {
+    return fail("DIAGRAM_PRINT_AREA_INVALID", "印刷領域は x、y、width、height を持つ値にしてください。");
+  }
+
+  const unknownKey = firstUnknownKey(raw, new Set(["x", "y", "width", "height"]));
+  if (unknownKey) {
+    return fail("DIAGRAM_PRINT_AREA_UNKNOWN_FIELD", `印刷領域に未対応の項目があります: ${unknownKey}`);
+  }
+
+  const x = parseFiniteNumber(raw.x, "DIAGRAM_PRINT_AREA_X_INVALID", "印刷領域の x は数値にしてください。");
+  if (!x.ok) return x;
+  const y = parseFiniteNumber(raw.y, "DIAGRAM_PRINT_AREA_Y_INVALID", "印刷領域の y は数値にしてください。");
+  if (!y.ok) return y;
+  const width = parsePositiveNumber(raw.width, "DIAGRAM_PRINT_AREA_WIDTH_INVALID", "印刷領域の width は0より大きい数値にしてください。");
+  if (!width.ok) return width;
+  const height = parsePositiveNumber(raw.height, "DIAGRAM_PRINT_AREA_HEIGHT_INVALID", "印刷領域の height は0より大きい数値にしてください。");
+  if (!height.ok) return height;
+
+  if (width.value > 20000 || height.value > 20000) {
+    return fail("DIAGRAM_PRINT_AREA_SIZE_INVALID", "印刷領域が大きすぎます。");
+  }
+
+  return ok({
+    height: Math.round(height.value),
+    width: Math.round(width.value),
+    x: Math.round(x.value),
+    y: Math.round(y.value)
+  });
+}
+
+function parseOptionalPrintSettings(raw: unknown): RelicResult<RelicDiagramPrintSettings | undefined> {
+  if (raw === undefined) return ok(undefined);
+  return parsePrintSettings(raw);
+}
+
+function parsePrintSettings(raw: unknown): RelicResult<RelicDiagramPrintSettings> {
+  if (!isRecord(raw)) {
+    return fail("DIAGRAM_PRINT_SETTINGS_INVALID", "用紙設定の形式が正しくありません。");
+  }
+
+  const unknownKey = firstUnknownKey(raw, new Set(["paperSize", "orientation", "marginPreset", "scaleMode", "scale"]));
+  if (unknownKey) {
+    return fail("DIAGRAM_PRINT_SETTINGS_UNKNOWN_FIELD", `用紙設定に未対応の項目があります: ${unknownKey}`);
+  }
+
+  const paperSize = parseOptionalEnum(raw.paperSize, relicDiagramPaperSizes, "DIAGRAM_PRINT_PAPER_SIZE_INVALID", "用紙サイズは対応する値にしてください。");
+  if (!paperSize.ok) return paperSize;
+  const orientation = parseOptionalEnum(raw.orientation, relicDiagramPrintOrientations, "DIAGRAM_PRINT_ORIENTATION_INVALID", "用紙方向は縦または横にしてください。");
+  if (!orientation.ok) return orientation;
+  const marginPreset = parseOptionalEnum(raw.marginPreset, relicDiagramPrintMarginPresets, "DIAGRAM_PRINT_MARGIN_INVALID", "余白は対応する値にしてください。");
+  if (!marginPreset.ok) return marginPreset;
+  const scaleMode = parseOptionalEnum(raw.scaleMode, relicDiagramPrintScaleModes, "DIAGRAM_PRINT_SCALE_MODE_INVALID", "倍率の収め方は対応する値にしてください。");
+  if (!scaleMode.ok) return scaleMode;
+  const scale = raw.scale === undefined
+    ? ok(defaultRelicDiagramPrintSettings.scale)
+    : parseFiniteNumber(raw.scale, "DIAGRAM_PRINT_SCALE_INVALID", "倍率は数値にしてください。");
+  if (!scale.ok) return scale;
+  if (scale.value < 0.1 || scale.value > 2) {
+    return fail("DIAGRAM_PRINT_SCALE_INVALID", "倍率は10%から200%の範囲にしてください。");
+  }
+
+  return ok({
+    marginPreset: marginPreset.value ?? defaultRelicDiagramPrintSettings.marginPreset,
+    orientation: orientation.value ?? defaultRelicDiagramPrintSettings.orientation,
+    paperSize: paperSize.value ?? defaultRelicDiagramPrintSettings.paperSize,
+    scale: Number(scale.value.toFixed(2)),
+    scaleMode: scaleMode.value ?? defaultRelicDiagramPrintSettings.scaleMode
+  });
 }
 
 function parseFiniteNumber(raw: unknown, code: string, message: string): RelicResult<number> {

@@ -8,6 +8,10 @@ import {
 } from "react";
 
 import { type RelicConnectedDiagramNode } from "../../../shared/diagramMarkdown";
+import {
+  diagramNodeBorderColor,
+  diagramNodeFillColor
+} from "../../diagramAppearance";
 import { diagramNodeDisplayLayer } from "./diagramLayering";
 
 interface DiagramNodeViewProps {
@@ -161,19 +165,21 @@ function nodeElevationStyle(node: RelicConnectedDiagramNode): Pick<
   "--diagram-node-layer-border" |
   "--diagram-node-layer-fill"
 > {
+  const configuredBorder = diagramNodeBorderColor(node);
+  const configuredFill = diagramNodeFillColor(node);
   if (node.shape === "area") {
     return {
       "--diagram-node-elevation-filter": "none",
       "--diagram-node-elevation-shadow": "0 0 0 rgba(15, 23, 42, 0)",
-      "--diagram-node-layer-border": "color-mix(in srgb, var(--text-3) 58%, var(--border-medium))",
-      "--diagram-node-layer-fill": "color-mix(in srgb, var(--accent) 8%, var(--bg))"
+      "--diagram-node-layer-border": configuredBorder ?? "color-mix(in srgb, var(--text-3) 58%, var(--border-medium))",
+      "--diagram-node-layer-fill": configuredFill ?? "color-mix(in srgb, var(--accent) 8%, var(--bg))"
     };
   }
 
   return {
     "--diagram-node-elevation-filter": "drop-shadow(0 8px 24px rgba(15, 23, 42, 0.1))",
     "--diagram-node-elevation-shadow": "0 8px 24px rgba(15, 23, 42, 0.1)",
-    "--diagram-node-layer-border": "color-mix(in srgb, var(--text-3) 64%, var(--border-medium))",
-    "--diagram-node-layer-fill": "var(--bg)"
+    "--diagram-node-layer-border": configuredBorder ?? "color-mix(in srgb, var(--text-3) 64%, var(--border-medium))",
+    "--diagram-node-layer-fill": configuredFill ?? "var(--bg)"
   };
 }

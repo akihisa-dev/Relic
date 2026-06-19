@@ -20,8 +20,14 @@ import {
   addRelicFreeDrawingNode,
   addRelicDiagramLine,
   alignRelicDiagramNodes,
+  defaultRelicDiagramPrintSettings,
   distributeRelicDiagramNodes,
   duplicateRelicDiagramNodes,
+  relicDiagramNodeColorPresets,
+  relicDiagramPaperSizes,
+  relicDiagramPrintMarginPresets,
+  relicDiagramPrintOrientations,
+  relicDiagramPrintScaleModes,
   moveRelicDiagramNode,
   moveRelicDiagramNodesByDelta,
   moveRelicFreeDrawingAreaWithContents,
@@ -31,7 +37,11 @@ import {
   removeRelicDiagramNodes,
   reverseRelicDiagramLineDirection,
   resizeRelicDiagramNode,
+  updateRelicDiagramLineAppearance,
   updateRelicFreeDrawingNodeShape,
+  updateRelicDiagramNodesAppearance,
+  updateRelicDiagramPrintArea,
+  updateRelicDiagramPrintSettings,
   updateRelicFreeDrawingNodeText,
   updateRelicDiagramLineEndpoints,
   updateRelicDiagramLineLabel,
@@ -39,8 +49,22 @@ import {
   type RelicConnectedDiagramNode,
   type RelicDiagramLine,
   type RelicDiagramNodeBase,
+  type RelicDiagramPrintArea,
+  type RelicDiagramPrintSettings,
+  type RelicDiagramTextSize,
   type RelicFreeDrawingShapeType
 } from "../../../shared/diagramMarkdown";
+import {
+  buildPreviewOutputHtml,
+  printOptionsFromDiagramSettings
+} from "../../outputHtml";
+import {
+  diagramLineLabelFontSize,
+  diagramNodeAlignItems,
+  diagramNodeFontSize,
+  diagramNodeJustifyItems,
+  diagramNodeTextColor
+} from "../../diagramAppearance";
 import { editorContextMenuPosition } from "../../editorContextMenuModel";
 import { useT } from "../../i18n";
 import { type TranslationKey, type Translator } from "../../i18nModel";
@@ -133,6 +157,15 @@ interface RangeSelectState {
   startY: number;
 }
 
+interface PrintAreaDragState {
+  currentArea: RelicDiagramPrintArea;
+  edge: "bottom" | "left" | "move" | "right" | "top";
+  originalArea: RelicDiagramPrintArea;
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
+}
+
 type DiagramSelection =
   | { id: string; type: "line" }
   | { id: string; type: "node" };
@@ -156,6 +189,8 @@ type DiagramContextMenuState =
   | { type: "line"; lineId: string; x: number; y: number }
   | { type: "node"; nodeId: string; x: number; y: number };
 
+type DiagramToolbarMenu = "paper" | "printArea" | null;
+
 export function DiagramCanvasSurface({
   content,
   diagram,
@@ -174,6 +209,7 @@ export function DiagramCanvasSurface({
   const [pan, setPan] = useState<PanState | null>(null);
   const [rangeSelect, setRangeSelect] = useState<RangeSelectState | null>(null);
   const [resize, setResize] = useState<ResizeState | null>(null);
+  const [printAreaDrag, setPrintAreaDrag] = useState<PrintAreaDragState | null>(null);
   const [lineRetarget, setLineRetarget] = useState<LineRetargetState | null>(null);
   const [paletteDropPreview, setPaletteDropPreview] = useState<{ height: number; width: number; x: number; y: number } | null>(null);
   const [selection, setSelection] = useState<DiagramSelection | null>(null);
@@ -184,6 +220,7 @@ export function DiagramCanvasSurface({
   const [history, setHistory] = useState<{ future: string[]; past: string[] }>({ future: [], past: [] });
   const [copiedNodeIds, setCopiedNodeIds] = useState<string[]>([]);
   const [keyboardConnectFromNodeId, setKeyboardConnectFromNodeId] = useState<string | null>(null);
+  const [toolbarMenu, setToolbarMenu] = useState<DiagramToolbarMenu>(null);
 
   const layout = useMemo(() => buildDiagramCanvasLayout(diagram), [diagram]);
   const previousLayoutOriginRef = useRef<{ x: number; y: number } | null>(null);
@@ -1181,6 +1218,29 @@ export function DiagramCanvasSurface({
       showNotice(distributed.error.message);
     }
   };
+  const changeSelectedNodesAppearance = (appearance: Parameters<typeof updateRelicDiagramNodesAppearance>[2]): void => {
+    if (!onChange || selectedNodeIdList.length === 0) return;
+
+    const updated = updateRelicDiagramNodesAppearance(content, selectedNodeIdList, appearance);
+    if (updated.ok) {
+      applyContentChange(updated.value.content);
+      setSelectedNodeIds(new Set(updated.value.nodeIds));
+      setSelection({ id: updated.value.nodeIds[0], type: "node" });
+    } else {
+      showNotice(updated.error.message);
+    }
+  };
+  const changeSelectedLineLabelSize = (labelTextSize: RelicDiagramTextSize | null): void => {
+    if (!onChange || !selectedLineLayout) return;
+
+    const updated = updateRelicDiagramLineAppearance(content, selectedLineLayout.line.id, { labelTextSize });
+    if (updated.ok) {
+      applyContentChange(updated.value.content);
+      setSelection({ id: updated.value.line.id, type: "line" });
+    } else {
+      showNotice(updated.error.message);
+    }
+  };
   const changeSelectedNodeShape = (shape: RelicFreeDrawingShapeType): void => {
     if (!onChange || !selectedEditableNode) return;
 
@@ -1192,6 +1252,106 @@ export function DiagramCanvasSurface({
     } else {
       showNotice(updated.error.message);
     }
+  };
+  const effectivePrintSettings = diagram.printSettings ?? defaultRelicDiagramPrintSettings;
+  const effectivePrintArea = diagram.printArea ?? {
+    height: layout.height,
+    width: layout.width,
+    x: layout.originX,
+    y: layout.originY
+  };
+  const updatePrintArea = (printArea: RelicDiagramPrintArea | null): void => {
+    if (!onChange) return;
+
+    const updated = updateRelicDiagramPrintArea(content, printArea);
+    if (updated.ok) {
+      applyContentChange(updated.value.content);
+    } else {
+      showNotice(updated.error.message);
+    }
+  };
+  const fitPrintAreaToDiagram = (): void => {
+    updatePrintArea({
+      height: layout.height,
+      width: layout.width,
+      x: layout.originX,
+      y: layout.originY
+    });
+  };
+  const updatePrintSettings = (nextSettings: RelicDiagramPrintSettings): void => {
+    if (!onChange) return;
+
+    const updated = updateRelicDiagramPrintSettings(content, nextSettings);
+    if (updated.ok) {
+      applyContentChange(updated.value.content);
+    } else {
+      showNotice(updated.error.message);
+    }
+  };
+  const openDiagramPrintPreview = (): void => {
+    if (!window.relic) return;
+
+    void buildPreviewOutputHtml({
+      content,
+      fileName,
+      t,
+      title: fileName
+    }).then(async (payload) => {
+      const result = await window.relic!.printPreview({
+        html: payload.html,
+        printOptions: printOptionsFromDiagramSettings(effectivePrintSettings),
+        title: payload.title
+      });
+      if (!result.ok) {
+        showNotice(result.error.message);
+        return;
+      }
+      showNotice(t("output.printed"));
+    }).catch((error) => {
+      showNotice(error instanceof Error ? error.message : String(error));
+    });
+  };
+  const startPrintAreaDrag = (
+    edge: PrintAreaDragState["edge"],
+    event: ReactPointerEvent<HTMLElement>
+  ): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setPrintAreaDrag({
+      currentArea: effectivePrintArea,
+      edge,
+      originalArea: effectivePrintArea,
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY
+    });
+  };
+  const updatePrintAreaDrag = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!printAreaDrag || event.pointerId !== printAreaDrag.pointerId) return;
+
+    const deltaX = (event.clientX - printAreaDrag.startClientX) / viewport.zoom;
+    const deltaY = (event.clientY - printAreaDrag.startClientY) / viewport.zoom;
+    const area = printAreaDrag.originalArea;
+    const minSize = diagramGridSize * 2;
+    const nextArea = printAreaDrag.edge === "move"
+      ? {
+          ...area,
+          x: Math.round(area.x + deltaX),
+          y: Math.round(area.y + deltaY)
+        }
+      : {
+          height: Math.round(Math.max(minSize, area.height + (printAreaDrag.edge === "bottom" ? deltaY : printAreaDrag.edge === "top" ? -deltaY : 0))),
+          width: Math.round(Math.max(minSize, area.width + (printAreaDrag.edge === "right" ? deltaX : printAreaDrag.edge === "left" ? -deltaX : 0))),
+          x: Math.round(printAreaDrag.edge === "left" ? area.x + Math.min(deltaX, area.width - minSize) : area.x),
+          y: Math.round(printAreaDrag.edge === "top" ? area.y + Math.min(deltaY, area.height - minSize) : area.y)
+        };
+    setPrintAreaDrag((current) => current ? { ...current, currentArea: nextArea } : current);
+  };
+  const finishPrintAreaDrag = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!printAreaDrag || event.pointerId !== printAreaDrag.pointerId) return;
+    updatePrintArea(printAreaDrag.currentArea);
+    setPrintAreaDrag(null);
   };
   const lineRetargetNodeState = (nodeId: string): "available" | "blocked" | undefined => {
     if (!lineRetarget) return undefined;
@@ -1400,6 +1560,7 @@ export function DiagramCanvasSurface({
     statusCounts,
     t
   ]);
+  const visiblePrintArea = printAreaDrag?.currentArea ?? effectivePrintArea;
 
   useEffect(() => {
     onStatusChange?.(diagramStatusText);
@@ -1421,12 +1582,14 @@ export function DiagramCanvasSurface({
         updateConnect(event);
         updateLineRetarget(event);
         updatePan(event);
+        updatePrintAreaDrag(event);
         updateRangeSelect(event);
       }}
       onPointerUp={(event) => {
         cancelConnect(event);
         cancelLineRetarget(event);
         cancelNodeResize(event);
+        finishPrintAreaDrag(event);
         finishPan(event);
         finishRangeSelect(event);
       }}
@@ -1464,7 +1627,82 @@ export function DiagramCanvasSurface({
             <DiagramActionIcon name="actualSize" />
           </button>
         </div>
+        <div className="diagram-canvas-toolbar-separator" aria-hidden="true" />
+        <div className="diagram-canvas-toolbar-group">
+          <button className="diagram-canvas-icon-button" aria-label={t("diagram.printArea")} onClick={() => setToolbarMenu((current) => current === "printArea" ? null : "printArea")} title={t("diagram.printArea")} type="button">
+            <DiagramActionIcon name="printArea" />
+          </button>
+          <button className="diagram-canvas-icon-button" aria-label={t("diagram.paperSettings")} onClick={() => setToolbarMenu((current) => current === "paper" ? null : "paper")} title={t("diagram.paperSettings")} type="button">
+            <DiagramActionIcon name="paper" />
+          </button>
+          <button className="diagram-canvas-icon-button" aria-label={t("output.print")} onClick={openDiagramPrintPreview} title={t("output.print")} type="button">
+            <DiagramActionIcon name="print" />
+          </button>
+        </div>
       </div>
+      {toolbarMenu === "printArea" ? (
+        <div className="diagram-canvas-floating-panel diagram-canvas-print-panel">
+          <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={fitPrintAreaToDiagram} type="button">
+            <DiagramActionIcon name="fit" />
+            {t("diagram.fitPrintArea")}
+          </button>
+          <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => updatePrintArea(null)} type="button">
+            <DiagramActionIcon name="reset" />
+            {t("diagram.clearPrintArea")}
+          </button>
+        </div>
+      ) : null}
+      {toolbarMenu === "paper" ? (
+        <div className="diagram-canvas-floating-panel diagram-canvas-paper-panel">
+          <label>
+            <span>{t("diagram.paperSize")}</span>
+            <select
+              value={effectivePrintSettings.paperSize}
+              onChange={(event) => updatePrintSettings({ ...effectivePrintSettings, paperSize: event.currentTarget.value as RelicDiagramPrintSettings["paperSize"] })}
+            >
+              {relicDiagramPaperSizes.map((paperSize) => <option key={paperSize} value={paperSize}>{paperSize}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>{t("diagram.paperOrientation")}</span>
+            <select
+              value={effectivePrintSettings.orientation}
+              onChange={(event) => updatePrintSettings({ ...effectivePrintSettings, orientation: event.currentTarget.value as RelicDiagramPrintSettings["orientation"] })}
+            >
+              {relicDiagramPrintOrientations.map((orientation) => <option key={orientation} value={orientation}>{t(`diagram.printOrientation.${orientation}`)}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>{t("diagram.paperMargin")}</span>
+            <select
+              value={effectivePrintSettings.marginPreset}
+              onChange={(event) => updatePrintSettings({ ...effectivePrintSettings, marginPreset: event.currentTarget.value as RelicDiagramPrintSettings["marginPreset"] })}
+            >
+              {relicDiagramPrintMarginPresets.map((margin) => <option key={margin} value={margin}>{t(`diagram.printMargin.${margin}`)}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>{t("diagram.printScaleMode")}</span>
+            <select
+              value={effectivePrintSettings.scaleMode}
+              onChange={(event) => updatePrintSettings({ ...effectivePrintSettings, scaleMode: event.currentTarget.value as RelicDiagramPrintSettings["scaleMode"] })}
+            >
+              {relicDiagramPrintScaleModes.map((scaleMode) => <option key={scaleMode} value={scaleMode}>{t(`diagram.printScaleMode.${scaleMode}`)}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>{t("diagram.printScale")}</span>
+            <input
+              max={200}
+              min={10}
+              onChange={(event) => updatePrintSettings({ ...effectivePrintSettings, scale: Number(event.currentTarget.value) / 100 })}
+              step={5}
+              type="number"
+              value={Math.round(effectivePrintSettings.scale * 100)}
+            />
+          </label>
+        </div>
+      ) : null}
       {contextMenu ? (
         <DiagramContextMenu
           contextMenu={contextMenu}
@@ -1472,6 +1710,8 @@ export function DiagramCanvasSurface({
           selectedLineLayout={selectedLineLayout ?? null}
           selectedNodeIdList={selectedNodeIdList}
           onAlignSelection={alignSelection}
+          onChangeLineLabelSize={changeSelectedLineLabelSize}
+          onChangeSelectedNodesAppearance={changeSelectedNodesAppearance}
           onChangeSelectedNodeShape={changeSelectedNodeShape}
           onClose={() => setContextMenu(null)}
           onCopySelection={copySelection}
@@ -1523,6 +1763,31 @@ export function DiagramCanvasSurface({
           width: layout.width
         }}
       >
+        {toolbarMenu === "printArea" || diagram.printArea || printAreaDrag ? (
+          <div
+            aria-label={t("diagram.printArea")}
+            className="diagram-canvas-print-area"
+            onPointerDown={(event) => startPrintAreaDrag("move", event)}
+            role="group"
+            style={{
+              height: visiblePrintArea.height,
+              left: visiblePrintArea.x - layout.originX,
+              top: visiblePrintArea.y - layout.originY,
+              width: visiblePrintArea.width
+            }}
+          >
+            {(["top", "right", "bottom", "left"] as const).map((edge) => (
+              <button
+                aria-label={t(`diagram.printAreaHandle.${edge}`)}
+                className={`diagram-canvas-print-area-handle diagram-canvas-print-area-handle--${edge}`}
+                key={edge}
+                onPointerDown={(event) => startPrintAreaDrag(edge, event)}
+                tabIndex={-1}
+                type="button"
+              />
+            ))}
+          </div>
+        ) : null}
         <DiagramLineLayer
           height={layout.height}
           lines={displayLines}
@@ -1562,6 +1827,7 @@ export function DiagramCanvasSurface({
                   key={line.line.id}
                   onSubmit={submitLabelEdit}
                   style={{
+                    fontSize: diagramLineLabelFontSize(line.line),
                     left: line.labelX,
                     top: line.labelY,
                     zIndex: line.displayLayer
@@ -1592,6 +1858,7 @@ export function DiagramCanvasSurface({
                 className="diagram-canvas-line-controls"
                 key={line.line.id}
                 style={{
+                  fontSize: diagramLineLabelFontSize(line.line),
                   left: line.labelX,
                   top: line.labelY,
                   zIndex: line.displayLayer
@@ -1711,7 +1978,11 @@ export function DiagramCanvasSurface({
                 isArea ? "diagram-canvas-node-label-frame--area" : ""
               ].filter(Boolean).join(" ");
               const labelStyle: CSSProperties = {
+                alignContent: diagramNodeAlignItems(node.verticalAlign),
+                color: diagramNodeTextColor(node) ?? undefined,
+                fontSize: diagramNodeFontSize(node),
                 height: node.height,
+                justifyItems: diagramNodeJustifyItems(node.textAlign),
                 left: x,
                 top: y,
                 width: node.width,
@@ -1742,6 +2013,11 @@ export function DiagramCanvasSurface({
                         }
                       }}
                       onPointerDown={(event) => event.stopPropagation()}
+                      style={{
+                        color: diagramNodeTextColor(node) ?? undefined,
+                        fontSize: diagramNodeFontSize(node),
+                        textAlign: node.textAlign ?? (isArea ? "left" : "center")
+                      }}
                       value={nodeTextEdit.value}
                     />
                   ) : (
@@ -1750,6 +2026,11 @@ export function DiagramCanvasSurface({
                       "diagram-canvas-node-name--free-text",
                       isArea ? "diagram-canvas-node-name--area-name" : ""
                     ].filter(Boolean).join(" ")}
+                    style={{
+                      color: diagramNodeTextColor(node) ?? undefined,
+                      fontSize: diagramNodeFontSize(node),
+                      textAlign: node.textAlign ?? (isArea ? "left" : "center")
+                    }}
                     >
                       {node.text || (isArea ? t("diagram.freeDrawingAreaName") : t("diagram.freeDrawingNodeText"))}
                     </span>
@@ -1770,6 +2051,8 @@ interface DiagramContextMenuProps {
   selectedLineLayout: DiagramCanvasLineLayout | null | undefined;
   selectedNodeIdList: string[];
   onAlignSelection: (direction: "horizontal" | "vertical") => void;
+  onChangeLineLabelSize: (labelTextSize: RelicDiagramTextSize | null) => void;
+  onChangeSelectedNodesAppearance: (appearance: Parameters<typeof updateRelicDiagramNodesAppearance>[2]) => void;
   onChangeSelectedNodeShape: (shape: RelicFreeDrawingShapeType) => void;
   onClose: () => void;
   onCopySelection: () => void;
@@ -1786,6 +2069,8 @@ function DiagramContextMenu({
   selectedLineLayout,
   selectedNodeIdList,
   onAlignSelection,
+  onChangeLineLabelSize,
+  onChangeSelectedNodesAppearance,
   onChangeSelectedNodeShape,
   onClose,
   onCopySelection,
@@ -1869,6 +2154,34 @@ function DiagramContextMenu({
               </select>
             </label>
           ) : null}
+          <div className="diagram-canvas-menu-section" role="group" aria-label={t("diagram.nodeColor")}>
+            <button className="diagram-canvas-swatch-button diagram-canvas-swatch-button--default" onClick={() => run(() => onChangeSelectedNodesAppearance({ color: null }))} type="button">
+              <span aria-hidden="true" />
+            </button>
+            {relicDiagramNodeColorPresets.map((color) => (
+              <button
+                aria-label={t(`diagram.nodeColor.${color}`)}
+                className={`diagram-canvas-swatch-button diagram-canvas-swatch-button--${color}${selectedEditableNode?.color === color ? " diagram-canvas-swatch-button--selected" : ""}`}
+                key={color}
+                onClick={() => run(() => onChangeSelectedNodesAppearance({ color }))}
+                type="button"
+              >
+                <span aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+          <div className="diagram-canvas-menu-section" role="group" aria-label={t("diagram.nodeTextSize")}>
+            <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(() => onChangeSelectedNodesAppearance({ textSize: "small" }))} type="button"><DiagramActionIcon name="textSmall" />{t("diagram.textSize.small")}</button>
+            <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(() => onChangeSelectedNodesAppearance({ textSize: null }))} type="button"><DiagramActionIcon name="reset" />{t("diagram.textSize.default")}</button>
+            <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(() => onChangeSelectedNodesAppearance({ textSize: "large" }))} type="button"><DiagramActionIcon name="textLarge" />{t("diagram.textSize.large")}</button>
+          </div>
+          <div className="diagram-canvas-menu-section" role="group" aria-label={t("diagram.nodeTextAlign")}>
+            <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(() => onChangeSelectedNodesAppearance({ textAlign: "left" }))} type="button"><DiagramActionIcon name="alignTextLeft" />{t("diagram.textAlign.left")}</button>
+            <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(() => onChangeSelectedNodesAppearance({ textAlign: null, verticalAlign: null }))} type="button"><DiagramActionIcon name="reset" />{t("diagram.textAlign.default")}</button>
+            <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(() => onChangeSelectedNodesAppearance({ textAlign: "right" }))} type="button"><DiagramActionIcon name="alignTextRight" />{t("diagram.textAlign.right")}</button>
+            <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(() => onChangeSelectedNodesAppearance({ verticalAlign: "top" }))} type="button"><DiagramActionIcon name="alignTextTop" />{t("diagram.verticalAlign.top")}</button>
+            <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(() => onChangeSelectedNodesAppearance({ verticalAlign: "bottom" }))} type="button"><DiagramActionIcon name="alignTextBottom" />{t("diagram.verticalAlign.bottom")}</button>
+          </div>
           <button className="tab-context-menu-item tab-context-menu-item--icon danger" onClick={() => run(onDeleteSelection)} role="menuitem" type="button">
             <DiagramActionIcon name="trash" />
             {t("diagram.deleteSelection")}
@@ -1888,6 +2201,11 @@ function DiagramContextMenu({
             <DiagramActionIcon name="reverse" />
             {t("diagram.reverseLineDirection")}
           </button>
+          <div className="diagram-canvas-menu-section" role="group" aria-label={t("diagram.lineLabelTextSize")}>
+            <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(() => onChangeLineLabelSize("small"))} type="button"><DiagramActionIcon name="textSmall" />{t("diagram.textSize.small")}</button>
+            <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(() => onChangeLineLabelSize(null))} type="button"><DiagramActionIcon name="reset" />{t("diagram.textSize.default")}</button>
+            <button className="tab-context-menu-item tab-context-menu-item--icon" onClick={() => run(() => onChangeLineLabelSize("large"))} type="button"><DiagramActionIcon name="textLarge" />{t("diagram.textSize.large")}</button>
+          </div>
           <button className="tab-context-menu-item tab-context-menu-item--icon danger" onClick={() => run(onDeleteSelection)} role="menuitem" type="button">
             <DiagramActionIcon name="trash" />
             {t("diagram.deleteSelection")}
@@ -1901,15 +2219,25 @@ function DiagramContextMenu({
 type DiagramActionIconName =
   | "actualSize"
   | "alignHorizontal"
+  | "alignTextBottom"
+  | "alignTextLeft"
+  | "alignTextRight"
+  | "alignTextTop"
   | "alignVertical"
   | "copy"
   | "distributeHorizontal"
   | "distributeVertical"
   | "duplicate"
   | "fit"
+  | "paper"
+  | "print"
+  | "printArea"
   | "redo"
+  | "reset"
   | "reverse"
   | "shapes"
+  | "textLarge"
+  | "textSmall"
   | "trash"
   | "undo"
   | "zoomIn"
@@ -1919,15 +2247,25 @@ function DiagramActionIcon({ name }: { name: DiagramActionIconName }): ReactElem
   const paths: Record<DiagramActionIconName, ReactElement> = {
     actualSize: <><path d="M7 7h10v10H7z" /><path d="M4 4h4M4 4v4M20 4h-4M20 4v4M4 20h4M4 20v-4M20 20h-4M20 20v-4" /></>,
     alignHorizontal: <><path d="M4 12h16" /><rect height="4" rx="1" width="6" x="5" y="5" /><rect height="4" rx="1" width="9" x="10" y="15" /></>,
+    alignTextBottom: <><path d="M5 19h14" /><path d="M8 15h8M9 11h6M10 7h4" /></>,
+    alignTextLeft: <><path d="M5 7h14M5 11h9M5 15h12M5 19h7" /></>,
+    alignTextRight: <><path d="M5 7h14M10 11h9M7 15h12M12 19h7" /></>,
+    alignTextTop: <><path d="M5 5h14" /><path d="M8 9h8M9 13h6M10 17h4" /></>,
     alignVertical: <><path d="M12 4v16" /><rect height="6" rx="1" width="4" x="5" y="5" /><rect height="9" rx="1" width="4" x="15" y="10" /></>,
     copy: <><rect height="11" rx="2" width="9" x="9" y="7" /><path d="M6 14V5a2 2 0 0 1 2-2h8" /></>,
     distributeHorizontal: <><path d="M4 5v14M20 5v14" /><rect height="6" rx="1" width="4" x="7" y="9" /><rect height="6" rx="1" width="4" x="13" y="9" /></>,
     distributeVertical: <><path d="M5 4h14M5 20h14" /><rect height="4" rx="1" width="6" x="9" y="7" /><rect height="4" rx="1" width="6" x="9" y="13" /></>,
     duplicate: <><rect height="9" rx="2" width="9" x="8" y="8" /><path d="M5 13V7a2 2 0 0 1 2-2h6" /><path d="M19 12h-4M17 10v4" /></>,
     fit: <><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5" /><path d="M8 8 3 3M16 8l5-5M8 16l-5 5M16 16l5 5" /></>,
+    paper: <><rect height="16" rx="1.5" width="12" x="6" y="4" /><path d="M9 8h6M9 12h6M9 16h4" /></>,
+    print: <><path d="M7 8V4h10v4" /><rect height="8" rx="1.5" width="10" x="7" y="12" /><path d="M6 18H4V9h16v9h-2" /><path d="M8 15h8" /></>,
+    printArea: <><rect height="14" rx="1.5" width="18" x="3" y="5" /><path d="M7 9h10v6H7z" /><path d="M7 3v4M17 3v4M7 17v4M17 17v4" /></>,
     redo: <><path d="M20 7v6h-6" /><path d="M20 13a8 8 0 1 1-2.3-5.7" /></>,
+    reset: <><path d="M4 4v6h6" /><path d="M20 20v-6h-6" /><path d="M5 10a7 7 0 0 1 11.9-4.9L20 8" /><path d="M19 14a7 7 0 0 1-11.9 4.9L4 16" /></>,
     reverse: <><path d="M7 7h10l-3-3M17 17H7l3 3" /><path d="M17 7 7 17" /></>,
     shapes: <><rect height="7" rx="1.5" width="7" x="4" y="4" /><path d="M16.5 4 21 8.5 16.5 13 12 8.5z" /><circle cx="9" cy="17" r="3" /></>,
+    textLarge: <><path d="M4 18 10 6h2l6 12" /><path d="M7 13h8" /></>,
+    textSmall: <><path d="M7 18 11 9h2l4 9" /><path d="M9 14h6" /></>,
     trash: <><path d="M4 7h16" /><path d="M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></>,
     undo: <><path d="M4 7v6h6" /><path d="M4 13a8 8 0 1 0 2.3-5.7" /></>,
     zoomIn: <><circle cx="10" cy="10" r="5" /><path d="M10 7v6M7 10h6M14 14l6 6" /></>,

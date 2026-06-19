@@ -1816,6 +1816,22 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("label: best friends");
     expect(onChange.mock.calls[0]?.[0]).toContain("id: line-1");
   });
+
+  it("applies a preset color from the node context menu", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+
+    fireEvent.contextMenu(freeDrawingNode("alice"));
+    fireEvent.click(screen.getByRole("button", { name: "Blue" }));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: node-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("color: blue");
+  });
 });
 
 function pointerEvent(
