@@ -4,9 +4,7 @@ import type { PointerEvent } from "react";
 import type { ChartEntry, ChartEntryEditKind, ChartSource, UpdateChartEntryInput } from "../../shared/ipc";
 import {
   createAdaptiveChroniclePointerDelta,
-  createStablePointerDelta,
   chronicleCalendarPatch,
-  dateKindPatch,
   type DragPreview
 } from "../chronicleTimeline";
 import { startWindowPointerDrag } from "./windowPointerDrag";
@@ -52,9 +50,7 @@ export function useChronicleEntryDrag({
     const originalEndValue = entry.endValue;
     const startClientX = event.clientX;
     const target = event.currentTarget;
-    const dragDelta = activeSource === "chronicle"
-      ? createAdaptiveChroniclePointerDelta(startClientX, unitWidth, event.timeStamp)
-      : createStablePointerDelta(startClientX, unitWidth);
+    const dragDelta = createAdaptiveChroniclePointerDelta(startClientX, unitWidth, event.timeStamp);
     let currentPreviewRange = { endValue: originalEndValue, startValue: originalStartValue };
 
     const nextRangeForDelta = (delta: number): { endValue: number; startValue: number } => {
@@ -95,7 +91,6 @@ export function useChronicleEntryDrag({
           path: entry.path,
           source: activeSource,
           ...chronicleCalendarPatch(entry),
-          ...dateKindPatch(entry),
           ...nextRange
       });
     };
@@ -116,7 +111,6 @@ export function useChronicleEntryDrag({
         originalStartValue,
         path: entry.path,
         ...chronicleCalendarPatch(entry),
-        ...dateKindPatch(entry),
         source: activeSource,
         startValue: nextRange.startValue
       })).finally(() => setDragPreview(null));
@@ -132,7 +126,6 @@ export function useChronicleEntryDrag({
       path: entry.path,
       source: activeSource,
       ...chronicleCalendarPatch(entry),
-      ...dateKindPatch(entry),
       startValue: entry.startValue
     });
     startWindowPointerDrag({

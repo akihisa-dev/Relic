@@ -10,7 +10,6 @@ export function normalizeWorkspaceCharts(value: unknown): WorkspaceChart[] {
 
 function fixedWorkspaceCharts(charts: WorkspaceChart[]): WorkspaceChart[] {
   const chronicle = charts.find((chart) => chart.source === "chronicle" || chart.id === "chronicle");
-  const date = charts.find((chart) => chart.source === "date" || chart.id === "date");
 
   return [
     {
@@ -19,13 +18,6 @@ function fixedWorkspaceCharts(charts: WorkspaceChart[]): WorkspaceChart[] {
       id: "chronicle",
       name: "chronicle",
       source: "chronicle"
-    },
-    {
-      entries: date?.entries ?? [],
-      filePaths: date?.filePaths ?? [],
-      id: "date",
-      name: "date",
-      source: "date"
     }
   ];
 }
@@ -37,7 +29,7 @@ function isWorkspaceChart(value: unknown): value is WorkspaceChart {
   return (
     typeof chart.id === "string" &&
     typeof chart.name === "string" &&
-    (chart.source === "chronicle" || chart.source === "date") &&
+    chart.source === "chronicle" &&
     Array.isArray(chart.entries) &&
     (!("filePaths" in chart) || Array.isArray(chart.filePaths))
   );

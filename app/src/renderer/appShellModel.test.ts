@@ -27,7 +27,6 @@ const emptyPane = (activeTabId: string | null = null): PaneState => ({
 
 const tabs: Record<string, Tab> = {
   "chart-charts": { chartId: "charts", id: "chart-charts", kind: "chart", name: "Chronicle" },
-  "chart-date": { chartId: "date", id: "chart-date", kind: "chart", name: "Calendar" },
   "panel-frontmatter": { id: "panel-frontmatter", kind: "panel", name: "Frontmatter", panel: "frontmatter" },
   "panel-tools": { id: "panel-tools", kind: "panel", name: "Tools", panel: "tools" },
   "tab-note": { content: "Note", id: "tab-note", kind: "file", name: "Note", path: "Folder/Note.md", savedContent: "Note" }
@@ -63,12 +62,12 @@ describe("appShellModel", () => {
       tabs
     )).toEqual(new Set(["frontmatter"]));
     expect(isChartTabOpenInTabs(tabs)).toBe(true);
-    expect(openChartIdsForTabs(tabs)).toEqual(new Set(["charts", "date"]));
+    expect(openChartIdsForTabs(tabs)).toEqual(new Set(["charts"]));
     expect(activeChartIdsForPanes(
       emptyPane("panel-frontmatter"),
-      emptyPane("chart-date"),
+      emptyPane("chart-charts"),
       tabs
-    )).toEqual(new Set(["date"]));
+    )).toEqual(new Set(["charts"]));
     expect(isChartTabActiveInPanes(
       emptyPane("panel-frontmatter"),
       emptyPane("chart-charts"),
@@ -76,7 +75,7 @@ describe("appShellModel", () => {
     )).toBe(true);
     expect(isChartTabActiveInPanes(
       emptyPane("panel-frontmatter"),
-      emptyPane("chart-date"),
+      emptyPane("panel-tools"),
       tabs
     )).toBe(false);
   });
@@ -95,21 +94,18 @@ describe("appShellModel", () => {
   it("filters and splits rail views without changing order", () => {
     const railViews: AppRailView[] = [
       { icon: null, id: "files", label: "Files" },
-      { icon: null, id: "diagram", label: "Diagram" },
       { icon: null, id: "tools", label: "Tools" },
       { icon: null, id: "frontmatter", label: "Frontmatter" },
       { icon: null, id: "chronicle", label: "Timeline" },
-      { icon: null, id: "calendar", label: "Calendar" },
       { icon: null, id: "chronicleSettings", label: "Calendar Settings" },
       { icon: null, id: "settings", label: "Settings" }
     ];
 
     const defaultEnabled = enabledRailViewsForFeatures(railViews, defaultFeatureToggles);
-    expect(defaultEnabled.map((view) => view.id)).toEqual(["files", "diagram", "calendar", "settings"]);
+    expect(defaultEnabled.map((view) => view.id)).toEqual(["files", "settings"]);
 
     const enabled = enabledRailViewsForFeatures(railViews, {
       ...defaultFeatureToggles,
-      calendar: false,
       chronicle: false,
       chronicleSettings: false,
       frontmatter: false,
@@ -117,11 +113,10 @@ describe("appShellModel", () => {
     });
     const split = splitRailViews(enabled);
 
-    expect(enabled.map((view) => view.id)).toEqual(["files", "diagram", "settings"]);
-    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files", "diagram"]);
+    expect(enabled.map((view) => view.id)).toEqual(["files", "settings"]);
+    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files"]);
     expect(split.chartRailViews.map((view) => view.id)).toEqual([]);
     expect(split.panelRailViews.map((view) => view.id)).toEqual(["settings"]);
     expect(chartIdForRailView("chronicle")).toBe("chronicle");
-    expect(chartIdForRailView("calendar")).toBe("date");
   });
 });

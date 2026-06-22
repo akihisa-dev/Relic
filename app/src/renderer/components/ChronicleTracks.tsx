@@ -2,24 +2,17 @@ import { useState, type CSSProperties, type PointerEvent, type ReactElement } fr
 
 import type { ChartEntry, ChartEntryEditKind, ChartSource } from "../../shared/ipc";
 import {
-  ROW_HEIGHT,
-  dateFillHeight,
-  dateFillOffset,
   entryKey,
-  formatDateKindLabel,
   formatRange,
   isPreviewForEntry,
   labelWidthForText,
   previewEntryForDrag,
-  statusLabelForEntry,
   type ChartGuideTick,
   type ChartRow,
-  type DateScale,
   type DragPreview
 } from "../chronicleTimeline";
-import { useT } from "../i18n";
 import { IconFiles } from "./RailNavigationIcons";
-import { ChartGuideLines, TodayLine } from "./chronicleChartParts";
+import { ChartGuideLines } from "./chronicleChartParts";
 
 const CHRONICLE_MIN_SEGMENT_HEIGHT = 38;
 const CHRONICLE_LABEL_HEIGHT = 18;
@@ -68,9 +61,7 @@ interface ChronicleEntryShape {
 
 export function ChronicleTracks({
   activeSource,
-  axisEnd,
   axisStart,
-  dateScale,
   dragPreview,
   guideTicks,
   onStartEntryEdit,
@@ -82,9 +73,7 @@ export function ChronicleTracks({
   unitWidth
 }: {
   activeSource: ChartSource;
-  axisEnd: number;
   axisStart: number;
-  dateScale: DateScale | null;
   dragPreview: DragPreview | null;
   guideTicks: ChartGuideTick[];
   onStartEntryEdit: (
@@ -115,7 +104,6 @@ export function ChronicleTracks({
   const chronicleShapes = activeSource === "chronicle"
     ? buildChronicleEntryShapes(rows, dragPreview, chronicleLaneIndexes, {
         axisStart,
-        dateScale,
         laneHeight: chronicleLaneHeight,
         scrollLeft,
         unitWidth
@@ -130,13 +118,11 @@ export function ChronicleTracks({
   const activeChronicleShape = activeSource === "chronicle"
     ? hoveredChronicleShape ?? selectedChronicleShape
     : null;
-  const trackHeight = activeSource === "date"
-    ? Math.max(1, rows.length) * ROW_HEIGHT
-    : chronicleTrackHeight;
+  const trackHeight = chronicleTrackHeight;
 
   return (
     <div
-      className={`chronicle-tracks${activeSource === "date" ? " chronicle-tracks--date" : ""}`}
+      className="chronicle-tracks"
       style={{
         height: trackHeight,
         width: timelineWidth
@@ -144,15 +130,11 @@ export function ChronicleTracks({
     >
       <ChartGuideLines
         axisStart={axisStart}
-        dateScale={dateScale}
-        rowCount={activeSource === "date" ? Math.max(1, rows.length) : 0}
+        rowCount={0}
         source={activeSource}
         ticks={guideTicks}
         unitWidth={unitWidth}
       />
-      {activeSource === "date" ? (
-        <TodayLine axisEnd={axisEnd} axisStart={axisStart} unitWidth={unitWidth} />
-      ) : null}
       {activeSource === "chronicle" ? (
         <svg
           aria-label="年表"
@@ -169,7 +151,6 @@ export function ChronicleTracks({
         >
           {chronicleShapes.map((shape) => (
             <ChronicleEntrySvgShape
-              dateScale={dateScale}
               dragPreview={dragPreview}
               onHoverEntry={(key) => setHoveredChronicleKey(key)}
               onLeaveEntry={(key) => {
@@ -188,29 +169,9 @@ export function ChronicleTracks({
             />
           ) : null}
         </svg>
-      ) : rows.map((row, index) => row.entries.map((entry) => (
-        <ChronicleEntryBar
-          activeSource={activeSource}
-          axisStart={axisStart}
-          continuesFromPrevious={false}
-          continuesToNext={false}
-          dateScale={dateScale}
-          displayEntry={entry}
-          dragPreview={dragPreview}
-          entry={entry}
-          key={entryKey(entry)}
-          onStartEntryEdit={onStartEntryEdit}
-          overlapCount={1}
-          overlapIndex={0}
-          rowIndex={activeSource === "date" ? index : 0}
-          scrollLeft={scrollLeft}
-          trackHeight={trackHeight}
-          unitWidth={unitWidth}
-        />
-      )))}
+      ) : null}
       {activeChronicleShape ? (
         <ChronicleEntryCard
-          dateScale={dateScale}
           onOpenFile={onOpenFile}
           shape={activeChronicleShape}
           timelineWidth={timelineWidth}
@@ -226,13 +187,11 @@ function buildChronicleEntryShapes(
   laneIndexes: Record<number, number>,
   {
     axisStart,
-    dateScale,
     laneHeight,
     scrollLeft,
     unitWidth
   }: {
     axisStart: number;
-    dateScale: DateScale | null;
     laneHeight: number;
     scrollLeft: number;
     unitWidth: number;
@@ -256,7 +215,7 @@ function buildChronicleEntryShapes(
     const endValue = item.displayEntry.endValue;
     const valueLeft = Math.max(0, (startValue - axisStart) * unitWidth);
     const isSingleValue = startValue === endValue;
-    const rangeLabel = formatRange(item.displayEntry, "chronicle", dateScale);
+    const rangeLabel = formatRange(item.displayEntry);
     const fileNameLabelWidth = labelWidthForText(item.entry.fileName);
     const labelWidth = labelWidthForText(rangeLabel);
     const naturalWidth = isSingleValue ? unitWidth : (endValue - startValue + 1) * unitWidth;
@@ -387,7 +346,6 @@ function findAvailableLaneIndex(laneEndValues: number[], startValue: number): nu
 }
 
 function ChronicleEntrySvgShape({
-  dateScale,
   dragPreview,
   onHoverEntry,
   onLeaveEntry,
@@ -395,7 +353,6 @@ function ChronicleEntrySvgShape({
   onStartEntryEdit,
   shape
 }: {
-  dateScale: DateScale | null;
   dragPreview: DragPreview | null;
   onHoverEntry: (key: string) => void;
   onLeaveEntry: (key: string) => void;
@@ -407,15 +364,14 @@ function ChronicleEntrySvgShape({
   ) => void;
   shape: ChronicleEntryShape;
 }): ReactElement {
-  const t = useT();
   const { entry } = shape;
-  const rangeLabel = formatRange(shape.displayEntry, "chronicle", dateScale);
+  const rangeLabel = formatRange(shape.displayEntry);
   const colorStyle = chronicleColorStyleForEntry(entry);
   const isDragging = isPreviewForEntry(entry, dragPreview, "chronicle");
 
   return (
     <g
-      aria-label={`${entry.fileName} ${formatDateKindLabel(entry.dateKind, t)} ${rangeLabel}`}
+      aria-label={`${entry.fileName} ${rangeLabel}`}
       className={`chronicle-fill chronicle-fill--chronicle${isDragging ? " chronicle-fill--dragging" : ""}`}
       onPointerDown={(event) => {
         onSelectEntry(shape.key);
@@ -555,17 +511,15 @@ function ChronicleHoverFileNameLabel({
 }
 
 function ChronicleEntryCard({
-  dateScale,
   onOpenFile,
   shape,
   timelineWidth
 }: {
-  dateScale: DateScale | null;
   onOpenFile: (path: string) => void;
   shape: ChronicleEntryShape;
   timelineWidth: number;
 }): ReactElement {
-  const rangeLabel = formatRange(shape.displayEntry, "chronicle", dateScale);
+  const rangeLabel = formatRange(shape.displayEntry);
   const left = Math.max(8, Math.min(timelineWidth - 260, shape.x + 10));
   const top = shape.y + 10;
 
@@ -591,133 +545,6 @@ function ChronicleEntryCard({
         <div className="chronicle-entry-card-range">{rangeLabel}</div>
       </div>
     </div>
-  );
-}
-
-function ChronicleEntryBar({
-  activeSource,
-  axisStart,
-  continuesFromPrevious,
-  continuesToNext,
-  dateScale,
-  displayEntry,
-  dragPreview,
-  entry,
-  onStartEntryEdit,
-  overlapCount,
-  overlapIndex,
-  rowIndex,
-  scrollLeft,
-  segmentEndValue,
-  segmentStartValue,
-  trackHeight,
-  unitWidth,
-  zIndex
-}: {
-  activeSource: ChartSource;
-  axisStart: number;
-  continuesFromPrevious: boolean;
-  continuesToNext: boolean;
-  dateScale: DateScale | null;
-  displayEntry: ChartEntry;
-  dragPreview: DragPreview | null;
-  entry: ChartEntry;
-  onStartEntryEdit: (
-    event: PointerEvent<Element>,
-    entry: ChartEntry,
-    kind: ChartEntryEditKind
-  ) => void;
-  overlapCount: number;
-  overlapIndex: number;
-  rowIndex?: number;
-  scrollLeft: number;
-  segmentEndValue?: number;
-  segmentStartValue?: number;
-  trackHeight: number;
-  unitWidth: number;
-  zIndex?: number;
-}): ReactElement {
-  const t = useT();
-  const previewEntry = activeSource === "chronicle" ? displayEntry : previewEntryForDrag(entry, dragPreview);
-  const startValue = segmentStartValue ?? previewEntry.startValue;
-  const endValue = segmentEndValue ?? previewEntry.endValue;
-  const valueLeft = Math.max(0, (startValue - axisStart) * unitWidth);
-  const isSingleValue = startValue === endValue;
-  const rangeLabel = formatRange(previewEntry, activeSource, dateScale);
-  const labelWidth = labelWidthForText(rangeLabel);
-  const naturalWidth = isSingleValue ? unitWidth : (endValue - startValue + 1) * unitWidth;
-  const width = Math.max(4, naturalWidth);
-  const left = activeSource === "chronicle" && isSingleValue
-    ? Math.max(0, valueLeft + (naturalWidth - width) / 2)
-    : valueLeft;
-  const maxLabelLeft = Math.max(0, width - labelWidth);
-  const labelLeft = isSingleValue
-    ? (width - labelWidth) / 2
-    : Math.max(7, Math.min(maxLabelLeft, scrollLeft - left + 7));
-  const top = activeSource === "date"
-    ? (rowIndex ?? 0) * ROW_HEIGHT + dateFillOffset()
-    : (trackHeight / overlapCount) * overlapIndex;
-  const fillHeight = activeSource === "date" ? dateFillHeight() : trackHeight / overlapCount;
-  const showStartResize = activeSource === "date" || startValue === previewEntry.startValue;
-  const showEndResize = activeSource === "date" || endValue === previewEntry.endValue;
-  const showRangeLabel = activeSource === "date" || !continuesFromPrevious;
-  const borderRadius = activeSource === "chronicle"
-    ? `${continuesFromPrevious ? 0 : 3}px ${continuesToNext ? 0 : 3}px ${continuesToNext ? 0 : 3}px ${continuesFromPrevious ? 0 : 3}px`
-    : undefined;
-  const chronicleColorStyle = activeSource === "chronicle" ? chronicleColorStyleForEntry(entry) : {};
-  const dateKind = entry.dateKind ?? "planned";
-  const statusLabel = activeSource === "date" && dateKind === "actual"
-    ? statusLabelForEntry(entry)
-    : "";
-  const statusLabelWidth = statusLabel ? labelWidthForText(statusLabel) : 0;
-  const statusBadgeWidth = statusLabel ? statusLabelWidth + 2 : 0;
-  const visibleTimelineStart = Math.max(0, scrollLeft);
-  const statusLabelLeft = Math.max(
-    5,
-    Math.min(Math.max(5, width - statusBadgeWidth - 5), visibleTimelineStart - left + 5)
-  );
-
-  return (
-    <button
-      aria-label={`${entry.fileName} ${formatDateKindLabel(entry.dateKind, t)} ${rangeLabel}${statusLabel ? ` ${statusLabel}` : ""}`}
-      className={`chronicle-fill${activeSource === "date" ? ` chronicle-fill--date chronicle-fill--${dateKind}` : " chronicle-fill--chronicle"}${isPreviewForEntry(entry, dragPreview, activeSource) ? " chronicle-fill--dragging" : ""}`}
-      data-date-kind={entry.dateKind}
-      onPointerDown={(event) => onStartEntryEdit(event, entry, "move")}
-      style={{
-        ...chronicleColorStyle,
-        height: fillHeight,
-        left,
-        borderRadius,
-        top,
-        width,
-        zIndex
-      }}
-      title={`${entry.fileName}${activeSource === "date" ? ` ${formatDateKindLabel(entry.dateKind, t)}: ` : " "}${rangeLabel}`}
-      type="button"
-    >
-      {showStartResize ? (
-        <span
-          aria-hidden="true"
-          className="chronicle-fill-resize chronicle-fill-resize--start"
-          onPointerDown={(event) => onStartEntryEdit(event, entry, "resize-start")}
-        />
-      ) : null}
-      {showRangeLabel ? (
-        <span className="chronicle-fill-label" style={{ left: labelLeft, width: labelWidth }}>{rangeLabel}</span>
-      ) : null}
-      {statusLabel ? (
-        <span className="chronicle-fill-status" style={{ left: statusLabelLeft, width: statusBadgeWidth }}>
-          {statusLabel}
-        </span>
-      ) : null}
-      {showEndResize ? (
-        <span
-          aria-hidden="true"
-          className="chronicle-fill-resize chronicle-fill-resize--end"
-          onPointerDown={(event) => onStartEntryEdit(event, entry, "resize-end")}
-        />
-      ) : null}
-    </button>
   );
 }
 

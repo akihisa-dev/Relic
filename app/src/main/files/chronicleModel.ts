@@ -1,14 +1,7 @@
-import { rangeToArray } from "../../shared/chartTime";
 import type {
   ChronicleCalendarId,
-  ChronicleCalendarSettings,
-  ChartDateKind
+  ChronicleCalendarSettings
 } from "../../shared/ipc";
-
-export interface DateRange {
-  endDate: string;
-  startDate: string;
-}
 
 export function extractFirstChronicleRangeFromData(
   data: Record<string, unknown>,
@@ -44,49 +37,6 @@ export function extractChronicleRangeFromData(
   return { endYear, startYear };
 }
 
-export function extractDateRangeFromData(data: Record<string, unknown>, kind: ChartDateKind): DateRange | null {
-  return extractRawDateRangeFromData(data, dateFieldNameForKind(kind));
-}
-
-export function extractRawDateRangeFromData(data: Record<string, unknown>, fieldName: string): DateRange | null {
-  const value = data[fieldName];
-
-  if (!Array.isArray(value) || (value.length !== 1 && value.length !== 2)) return null;
-  const dates = value.map(normalizeDateValue);
-  if (dates.some((date) => date === null)) return null;
-
-  const startDate = dates[0];
-  const endDate = dates.length === 1 ? startDate : dates[1];
-  if (!startDate || !endDate) return null;
-  if (startDate > endDate) return null;
-
-  return { endDate, startDate };
-}
-
-export function normalizeDateFieldsForWrite(data: Record<string, unknown>): Record<string, unknown> {
-  const next = { ...data };
-
-  for (const fieldName of ["plannedDate", "actualDate"]) {
-    const range = extractRawDateRangeFromData(data, fieldName);
-    if (range) next[fieldName] = rangeToArray(range.startDate, range.endDate);
-  }
-
-  return next;
-}
-
-export function dateFieldNameForKind(kind: ChartDateKind): "actualDate" | "plannedDate" {
-  return kind === "actual" ? "actualDate" : "plannedDate";
-}
-
-export function dateKindOrder(kind: ChartDateKind | undefined): number {
-  if (kind === "actual") return 1;
-  return 0;
-}
-
-export function dateYear(value: string): number {
-  return Number(value.slice(0, 4));
-}
-
 export function calendarById(
   calendars: ChronicleCalendarSettings[],
   id: ChronicleCalendarId
@@ -117,23 +67,6 @@ function isValidChronicleYear(value: unknown, allowZeroOrNegative: boolean): val
 function isChronicleCalendarActive(calendar: ChronicleCalendarSettings): boolean {
   return calendar.id === "chronicle0" ||
     (Number.isInteger(calendar.startYear) && Number(calendar.startYear) >= 1);
-}
-
-function normalizeDateValue(value: unknown): string | null {
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
-  }
-
-  if (typeof value !== "string") return null;
-
-  const trimmed = value.trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    const fallbackDate = new Date(trimmed.replace(/\s*\([^)]*\)\s*$/, ""));
-    return Number.isNaN(fallbackDate.getTime()) ? null : fallbackDate.toISOString().slice(0, 10);
-  }
-
-  const date = new Date(`${trimmed}T00:00:00.000Z`);
-  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === trimmed ? trimmed : null;
 }
 
 function formatYear(year: number): string {

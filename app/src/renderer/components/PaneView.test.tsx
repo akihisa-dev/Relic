@@ -392,46 +392,8 @@ describe("PaneView", () => {
     expect(props.onLargeMarkdownFallback).not.toHaveBeenCalled();
   });
 
-  it("Diagram Markdownは通常エディタではなくDiagram表示で開く", () => {
-    const content = [
-      "---",
-      "type: diagram",
-      "---",
-      "",
-      "nodes:",
-      "  - id: node-1",
-      "    shape: process",
-      "    text: alice",
-      "    x: 120",
-      "    y: 80",
-      "    width: 180",
-      "    height: 80",
-      "lines: []",
-      ""
-    ].join("\n");
-    setPaneState(
-      {
-        [fileTab.id]: {
-          ...fileTab,
-          content,
-          name: "World",
-          path: "diagrams/World.md",
-          savedContent: content
-        }
-      },
-      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
-    );
-
-    renderPaneView({ sourceMode: false });
-
-    expect(screen.getByRole("application", { name: "World" })).toBeInTheDocument();
-    expect(screen.getByText("alice")).toBeInTheDocument();
-    expect(document.querySelector(".pane-status")?.textContent).toBe("1 shape / 0 lines");
-    expect(document.querySelector(".cm-content")).toBeNull();
-  });
-
-  it("Diagram Markdownもソースモードでは通常エディタで開く", async () => {
-    const content = "---\ntype: diagram\n---\n\nnodes: []\nlines: []\n";
+  it("通常Markdownをソースモードで通常エディタで開く", async () => {
+    const content = "# World\n\n本文\n";
     setPaneState(
       {
         [fileTab.id]: {

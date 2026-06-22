@@ -1,8 +1,7 @@
-import type { ChartDateKind, ChartEntry, ChartEntryEditKind, ChartSource, WorkspaceChart } from "../shared/ipc";
-import { axisToYear, dayToDate } from "../shared/chartTime";
+import type { ChartEntry, ChartEntryEditKind, ChartSource, WorkspaceChart } from "../shared/ipc";
+import { axisToYear } from "../shared/chartTime";
 import { fixedStatusValues } from "../shared/status";
 import { formatAxisValue } from "./chronicleTimelineAxis";
-import type { Translator } from "./i18nModel";
 
 export interface ChartRow {
   entries: ChartEntry[];
@@ -14,7 +13,6 @@ export interface ChartRow {
 
 export interface DragPreview {
   chronicleCalendarId?: ChartEntry["chronicleCalendarId"];
-  dateKind?: ChartDateKind;
   endValue: number;
   editKind: ChartEntryEditKind;
   path: string;
@@ -35,39 +33,13 @@ export function chartsForView(chart: WorkspaceChart | null, charts: WorkspaceCha
 }
 
 export function buildChartRows(entries: ChartEntry[], source: ChartSource): ChartRow[] {
-  if (source !== "date") {
-    return entries.map((entry) => ({
-      entries: [entry],
-      fileName: entry.fileName,
-      key: entryKey(entry),
-      path: entry.path,
-      statuses: entry.statuses ?? []
-    }));
-  }
-
-  const rows = new Map<string, ChartRow>();
-
-  for (const entry of entries) {
-    const current = rows.get(entry.path);
-
-    if (current) {
-      current.entries.push(entry);
-      current.statuses = mergeStatuses(current.statuses, entry.statuses ?? []);
-      continue;
-    }
-
-    rows.set(entry.path, {
-      entries: [entry],
-      fileName: entry.fileName,
-      key: entry.path,
-      path: entry.path,
-      statuses: entry.statuses ?? []
-    });
-  }
-
-  return Array.from(rows.values()).map((row) => ({
-    ...row,
-    entries: sortDateRowEntries(row.entries)
+  void source;
+  return entries.map((entry) => ({
+    entries: [entry],
+    fileName: entry.fileName,
+    key: entryKey(entry),
+    path: entry.path,
+    statuses: []
   }));
 }
 
@@ -126,37 +98,14 @@ export function rowCenterValue(row: ChartRow): number {
   return (rowStartValue(row) + rowEndValue(row)) / 2;
 }
 
-function sortDateRowEntries(entries: ChartEntry[]): ChartEntry[] {
-  return entries.toSorted((a, b) => dateKindOrder(a.dateKind) - dateKindOrder(b.dateKind));
-}
-
-function dateKindOrder(kind: ChartDateKind | undefined): number {
-  return kind === "actual" ? 1 : 0;
-}
-
-function mergeStatuses(current: string[], next: string[]): string[] {
-  return [...new Set([...current, ...next])];
-}
-
 export function statusValuesForEntries(entries: ChartEntry[]): string[] {
   void entries;
   return [...fixedStatusValues];
 }
 
 export function statusLabelForEntry(entry: ChartEntry): string {
-  return (entry.statuses ?? [])
-    .filter((status) => status.trim() !== "")
-    .join(" / ");
-}
-
-export function dateSummaryForRow(row: ChartRow, kind: ChartDateKind): string {
-  const entry = row.entries.find((candidate) => (candidate.dateKind ?? "planned") === kind);
-  if (!entry) return "";
-
-  const sameYear = entry.startLabel.slice(0, 4) === entry.endLabel.slice(0, 4);
-  const start = formatDateSummaryLabel(entry.startLabel, sameYear);
-  const end = formatDateSummaryLabel(entry.endLabel, sameYear);
-  return start === end ? start : `${start}-${end}`;
+  void entry;
+  return "";
 }
 
 export function chronicleSummaryForRow(row: ChartRow): string {
@@ -174,8 +123,8 @@ export function chronicleSummaryForRow(row: ChartRow): string {
 
   const start = Math.min(...row.entries.map((entry) => entry.startValue));
   const end = Math.max(...row.entries.map((entry) => entry.endValue));
-  const startLabel = formatAxisValue(start, "chronicle");
-  const endLabel = formatAxisValue(end, "chronicle");
+  const startLabel = formatAxisValue(start);
+  const endLabel = formatAxisValue(end);
 
   return startLabel === endLabel ? startLabel : `${startLabel}-${endLabel}`;
 }
@@ -187,17 +136,8 @@ function chronicleYearLabelWithoutCalendarName(label: string, calendarName: stri
     : trimmed;
 }
 
-function formatDateSummaryLabel(value: string, omitYear: boolean): string {
-  const normalized = value.replace(/-/g, "/");
-  return omitYear ? normalized.slice(5) : normalized;
-}
-
 export function entryKey(entry: ChartEntry): string {
-  return `${entry.path}:${entry.dateKind ?? "default"}`;
-}
-
-export function dateKindPatch(entry: ChartEntry): { dateKind: ChartDateKind } | Record<string, never> {
-  return entry.dateKind ? { dateKind: entry.dateKind } : {};
+  return `${entry.path}:${entry.chronicleCalendarId ?? "chronicle0"}`;
 }
 
 export function chronicleCalendarPatch(entry: ChartEntry): Pick<ChartEntry, "chronicleCalendarId" | "chronicleCalendarStartYear"> {
@@ -216,8 +156,7 @@ export function isPreviewForEntry(
     preview &&
       preview.path === entry.path &&
       preview.source === source &&
-      (preview.chronicleCalendarId ?? "chronicle0") === (entry.chronicleCalendarId ?? "chronicle0") &&
-      (preview.dateKind ?? "planned") === (entry.dateKind ?? "planned")
+      (preview.chronicleCalendarId ?? "chronicle0") === (entry.chronicleCalendarId ?? "chronicle0")
   );
 }
 
@@ -225,16 +164,11 @@ export function previewEntryForDrag(entry: ChartEntry, preview: DragPreview | nu
   if (
     !preview ||
     preview.path !== entry.path ||
-    (preview.chronicleCalendarId ?? "chronicle0") !== (entry.chronicleCalendarId ?? "chronicle0") ||
-    (preview.dateKind ?? "planned") !== (entry.dateKind ?? "planned")
+    (preview.chronicleCalendarId ?? "chronicle0") !== (entry.chronicleCalendarId ?? "chronicle0")
   ) return entry;
 
-  const startLabel = preview.source === "date"
-    ? dayToDate(preview.startValue)
-    : formatEntryCalendarLabel(entry, preview.startValue);
-  const endLabel = preview.source === "date"
-    ? dayToDate(preview.endValue)
-    : formatEntryCalendarLabel(entry, preview.endValue);
+  const startLabel = formatEntryCalendarLabel(entry, preview.startValue);
+  const endLabel = formatEntryCalendarLabel(entry, preview.endValue);
 
   return {
     ...entry,
@@ -251,9 +185,5 @@ function formatEntryCalendarLabel(entry: ChartEntry, value: number): string {
   const year = axisToYear(value) - startYear + 1;
   const label = year < 0 ? `−${Math.abs(year)}` : String(year);
 
-  return name ? `${name} ${label}` : formatAxisValue(value, "chronicle");
-}
-
-export function formatDateKindLabel(kind: ChartDateKind | undefined, t: Translator): string {
-  return kind === "actual" ? t("chronicle.actualDate") : t("chronicle.plannedDate");
+  return name ? `${name} ${label}` : formatAxisValue(value);
 }

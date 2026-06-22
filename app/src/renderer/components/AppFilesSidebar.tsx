@@ -2,9 +2,7 @@ import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 
 import type { AppRailView } from "../appShellModel";
 import type { SidebarView } from "../store/uiStore";
-import type { RelicDiagramType } from "../../shared/diagramMarkdown";
 import { FilesSidebar, type FilesSidebarProps } from "./FilesSidebar";
-import { DiagramSidebar } from "./DiagramSidebar";
 
 interface AppFilesSidebarProps extends Omit<FilesSidebarProps, "onSelectedCountChange"> {
   activeSidebarView: SidebarView;
@@ -12,7 +10,6 @@ interface AppFilesSidebarProps extends Omit<FilesSidebarProps, "onSelectedCountC
   isSidebarOpen: boolean;
   isSidebarResizing: boolean;
   onCloseSidebar: () => void;
-  onCreateDiagramFile: (type: RelicDiagramType) => void;
   onSelectedCountChange: (count: number) => void;
   selectedCountLabel: string;
   sidebarViews: Array<Pick<AppRailView<ReactElement>, "id" | "label">>;
@@ -26,7 +23,6 @@ export function AppFilesSidebar({
   isSidebarOpen,
   isSidebarResizing,
   onCloseSidebar,
-  onCreateDiagramFile,
   onSelectedCountChange,
   selectedCountLabel: _selectedCountLabel,
   sidebarViews,
@@ -67,21 +63,6 @@ export function AppFilesSidebar({
           <FilesSidebar
             {...filesSidebarProps}
             onSelectedCountChange={onSelectedCountChange}
-          />
-        ) : null}
-        {activeSidebarView === "diagram" ? (
-          <DiagramSidebar
-            isCreatingFile={filesSidebarProps.isCreatingFile}
-            isCreatingWorkspace={filesSidebarProps.isCreatingWorkspace}
-            isOpeningWorkspace={filesSidebarProps.isOpeningWorkspace}
-            onCreateWorkspace={filesSidebarProps.onCreateWorkspace}
-            onCreateDiagramFile={onCreateDiagramFile}
-            onDeleteItem={filesSidebarProps.onDeleteItem}
-            onOpenFile={filesSidebarProps.onOpenFile}
-            onOpenWorkspace={filesSidebarProps.onOpenWorkspace}
-            openingFilePath={filesSidebarProps.openingFilePath}
-            openFilePaths={filesSidebarProps.openFilePaths}
-            workspaceState={filesSidebarProps.workspaceState}
           />
         ) : null}
       </div>

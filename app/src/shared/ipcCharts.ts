@@ -1,5 +1,4 @@
-export type ChartSource = "chronicle" | "date";
-export type ChartDateKind = "actual" | "planned";
+export type ChartSource = "chronicle";
 export type ChronicleCalendarId =
   | "chronicle0"
   | "chronicle1"
@@ -46,14 +45,12 @@ export interface ChartEntry {
   chronicleCalendarId?: ChronicleCalendarId;
   chronicleCalendarName?: string;
   chronicleCalendarStartYear?: number;
-  dateKind?: ChartDateKind;
   endLabel: string;
   endValue: number;
   fileName: string;
   path: string;
   startLabel: string;
   startValue: number;
-  statuses?: string[];
 }
 
 export interface WorkspaceChart extends ChartSettings {
@@ -65,7 +62,6 @@ export type ChartEntryEditKind = "move" | "resize-start" | "resize-end";
 export interface UpdateChartEntryInput {
   chronicleCalendarId?: ChronicleCalendarId;
   chronicleCalendarStartYear?: number;
-  dateKind?: ChartDateKind;
   endValue: number;
   kind: ChartEntryEditKind;
   originalEndValue: number;

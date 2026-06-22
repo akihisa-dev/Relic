@@ -26,8 +26,7 @@ type PersistedWorkspaceSettings = Partial<Omit<WorkspaceSettings, "charts">> & {
 };
 
 export const defaultCharts: ChartSettings[] = [
-  { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
-  { filePaths: [], id: "date", name: "date", source: "date" }
+  { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" }
 ];
 
 const defaultWorkspaceSettings: WorkspaceSettings = {
@@ -219,7 +218,7 @@ function parseChartFilePaths(raw: unknown): string[] | undefined {
 }
 
 function isChartSource(value: unknown): value is ChartSource {
-  return value === "chronicle" || value === "date";
+  return value === "chronicle";
 }
 
 function isChronicleCalendarId(value: string): value is ChronicleCalendarId {
@@ -227,7 +226,8 @@ function isChronicleCalendarId(value: string): value is ChronicleCalendarId {
 }
 
 function defaultChartName(source: ChartSource): string {
-  return source === "date" ? "日付チャート" : "年表";
+  void source;
+  return "年表";
 }
 
 function assertSafeWorkspaceSettingsId(workspaceId: string): void {

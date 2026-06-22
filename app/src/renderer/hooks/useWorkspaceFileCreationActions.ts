@@ -4,13 +4,8 @@ import { ensureMarkdownExtension } from "../../shared/markdownExtension";
 import {
   findCreatedMarkdownPath,
   nextUniqueFileName,
-  nextUniqueDiagramFileName,
   nextUniqueFolderName
 } from "./workspaceFileActionHelpers";
-import {
-  emptyRelicDiagramMarkdownContent,
-  type RelicDiagramType
-} from "../../shared/diagramMarkdown";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 import type { Translator } from "../i18nModel";
 
@@ -100,60 +95,6 @@ export function useWorkspaceFileCreationActions({
     workspaceState
   ]);
 
-  const handleCreateDiagramFile = useCallback((diagramType: RelicDiagramType = "diagram"): void => {
-    if (!window.relic) return;
-
-    const fileName = nextUniqueDiagramFileName(workspaceState, t, diagramType);
-    const expectedPath = ensureMarkdownExtension(fileName);
-    const content = emptyRelicDiagramMarkdownContent;
-
-    setIsCreatingFile(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .createMarkdownFile({ name: fileName })
-      .then(async (createResult) => {
-        if (!createResult.ok) {
-          setWorkspaceError(createResult.error.message);
-          return;
-        }
-
-        const createdPath = findCreatedMarkdownPath(createResult.value.fileTree, expectedPath) ?? expectedPath;
-        const writeResult = await window.relic!.writeMarkdownFile({
-          content,
-          expectedContent: "",
-          path: createdPath
-        });
-
-        if (!writeResult.ok) {
-          setWorkspaceError(writeResult.error.message);
-          return;
-        }
-
-        const workspaceResult = await window.relic!.getWorkspaceState();
-        if (!workspaceResult.ok) {
-          setWorkspaceError(workspaceResult.error.message);
-          return;
-        }
-
-        setWorkspaceState(workspaceResult.value);
-        const readResult = await window.relic!.readMarkdownFile({ path: createdPath });
-        if (readResult.ok) {
-          openFileInPane(focusedPane, readResult.value);
-        } else {
-          setWorkspaceError(readResult.error.message);
-        }
-      })
-      .finally(() => setIsCreatingFile(false));
-  }, [
-    focusedPane,
-    openFileInPane,
-    setWorkspaceError,
-    setWorkspaceState,
-    t,
-    workspaceState
-  ]);
-
   const handleCreateFolder = useCallback((): void => {
     if (!window.relic) return;
 
@@ -177,7 +118,6 @@ export function useWorkspaceFileCreationActions({
     fileNameDraft,
     folderNameDraft,
     handleCreateFile,
-    handleCreateDiagramFile,
     handleCreateFolder,
     handleCreateNoteFromPane,
     isCreatingFile,

@@ -1,37 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
 
 import type { ChronicleCalendarSettings, ChartSource, WorkspaceChart } from "../../shared/ipc";
 import {
-  DATE_NAME_COLUMN_WIDTH,
-  DATE_SCALES,
   CHRONICLE_TICK_WIDTH,
-  ROW_HEIGHT,
   chronicleAxisHeightForCalendars,
   buildChartRows,
   buildGuideTicks,
   buildTicks,
   chartsForView,
   chronicleUnitWidth,
-  clamp,
-  dateAxisHeightForScale,
-  dateOffscreenBarIndicators,
-  dateUnitWidth,
   filterRows,
-  isChartSource,
-  minimapItemsForEntries,
-  minimapViewportRange,
   sortRows,
-  statusValuesForEntries,
   timelineBounds,
   timelineOffscreenBarIndicators,
   visibleEntries,
   type ChartGuideTick,
   type ChartRow,
   type ChronicleSortKey,
-  type DateOffscreenIndicator,
-  type DateScale,
-  type MinimapItem
+  type TimelineOffscreenIndicator
 } from "../chronicleTimeline";
 import { useUiStore } from "../store/uiStore";
 import { useStableTimelineBounds } from "./useStableTimelineBounds";
@@ -48,22 +34,14 @@ export interface ChronicleChartModel {
   availableCharts: WorkspaceChart[];
   axisEnd: number;
   axisStart: number;
-  dateAxisHeight: number;
-  dateScale: DateScale | null;
+  axisHeight: number;
   entries: ReturnType<typeof visibleEntries>;
   guideTicks: ChartGuideTick[];
-  minimapItems: MinimapItem[];
   nameColumnWidth: number;
-  query: string;
   rows: ChartRow[];
   refreshRowOrder: () => void;
   selectChart: (chart: WorkspaceChart) => void;
-  setQuery: Dispatch<SetStateAction<string>>;
-  setSortKey: Dispatch<SetStateAction<ChronicleSortKey>>;
-  setStatusFilter: Dispatch<SetStateAction<string>>;
   sortKey: ChronicleSortKey;
-  statusFilter: string;
-  statusOptions: string[];
   tickInterval: number;
   ticks: number[];
   timelineWidth: number;
@@ -71,13 +49,9 @@ export interface ChronicleChartModel {
 }
 
 export interface ChronicleViewportState {
-  chronicleOffscreenIndicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
-  dateOffscreenIndicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
-  minimapViewport: { leftPercent: number; widthPercent: number };
+  chronicleOffscreenIndicators: { left: TimelineOffscreenIndicator | null; right: TimelineOffscreenIndicator | null };
   visibleEndValue: number;
   visibleStartValue: number;
-  verticalMinimapViewport: { heightPercent: number; topPercent: number };
-  verticalOffscreenIndicators: { bottom: { count: number; targetIndex: number } | null; top: { count: number; targetIndex: number } | null };
 }
 
 export function useChronicleChartModel({
@@ -88,23 +62,16 @@ export function useChronicleChartModel({
   const availableCharts = useMemo(() => chartsForView(chart, charts), [chart, charts]);
   const selectedChartId = useUiStore((state) => state.selectedChartId);
   const setSelectedChartId = useUiStore((state) => state.setSelectedChartId);
-  const [query, setQuery] = useState("");
-  const [sortKey, setSortKey] = useState<ChronicleSortKey>("start-asc");
-  const [statusFilter, setStatusFilter] = useState("");
   const [rowOrderKeys, setRowOrderKeys] = useState<string[]>([]);
   const rowOrderResetKeyRef = useRef<string | null>(null);
   const activeChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedChartId) ?? availableCharts[0] ?? null;
-  const activeSource = activeChart && isChartSource(activeChart.source) ? activeChart.source : "chronicle";
+  const activeSource: ChartSource = activeChart?.source === "chronicle" ? activeChart.source : "chronicle";
   const allEntries = visibleEntries(activeChart);
-  const statusOptions = useMemo(() => statusValuesForEntries(allEntries), [allEntries]);
   const tickInterval = 1;
-  const dateScale = activeSource === "date" ? DATE_SCALES[0] : null;
-  const effectiveQuery = activeSource === "date" ? query : "";
-  const effectiveSortKey = activeSource === "date" ? sortKey : "start-asc";
-  const effectiveStatusFilter = activeSource === "date" && (statusFilter === "" || statusOptions.includes(statusFilter)) ? statusFilter : "";
+  const effectiveSortKey: ChronicleSortKey = "start-asc";
   const filteredRows = useMemo(
-    () => filterRows(buildChartRows(allEntries, activeSource), effectiveQuery, effectiveStatusFilter),
-    [activeSource, allEntries, effectiveQuery, effectiveStatusFilter]
+    () => filterRows(buildChartRows(allEntries, activeSource), "", ""),
+    [activeSource, allEntries]
   );
   const sortedRows = useMemo(
     () => sortRows(filteredRows, effectiveSortKey),
@@ -117,7 +84,7 @@ export function useChronicleChartModel({
   const refreshRowOrder = useCallback((): void => {
     setRowOrderKeys(sortedRows.map((row) => row.key));
   }, [sortedRows]);
-  const rowOrderResetKey = `${activeChart?.id ?? "none"}:${activeSource}:${effectiveQuery}:${effectiveStatusFilter}`;
+  const rowOrderResetKey = `${activeChart?.id ?? "none"}:${activeSource}`;
 
   useEffect(() => {
     if (rowOrderResetKeyRef.current === rowOrderResetKey) return;
@@ -127,26 +94,22 @@ export function useChronicleChartModel({
   }, [rowOrderResetKey, sortedRows]);
 
   const entries = useMemo(() => rows.flatMap((row) => row.entries), [rows]);
-  const computedBounds = timelineBounds(entries, tickInterval, activeSource, dateScale);
-  const boundsKey = `${activeChart?.id ?? "none"}:${activeSource}:${effectiveQuery}`;
+  const computedBounds = timelineBounds(entries, tickInterval);
+  const boundsKey = `${activeChart?.id ?? "none"}:${activeSource}`;
   const { axisEnd, axisStart } = useStableTimelineBounds(computedBounds, boundsKey);
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
-  const unitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : chronicleUnitWidth(tickInterval, CHRONICLE_TICK_WIDTH);
-  const nameColumnWidth = activeSource === "date" ? DATE_NAME_COLUMN_WIDTH : 0;
+  const unitWidth = chronicleUnitWidth(tickInterval, CHRONICLE_TICK_WIDTH);
+  const nameColumnWidth = 0;
   const timelineWidth = Math.max(720, axisSpan * unitWidth);
   const ticks = useMemo(
-    () => buildTicks(axisStart, axisEnd, tickInterval, activeSource, dateScale),
-    [activeSource, axisEnd, axisStart, dateScale, tickInterval]
+    () => buildTicks(axisStart, axisEnd, tickInterval),
+    [axisEnd, axisStart, tickInterval]
   );
   const guideTicks = useMemo(
-    () => buildGuideTicks(axisStart, axisEnd, ticks, tickInterval, activeSource, dateScale),
-    [activeSource, axisEnd, axisStart, dateScale, tickInterval, ticks]
+    () => buildGuideTicks(axisStart, axisEnd, ticks, tickInterval),
+    [axisEnd, axisStart, tickInterval, ticks]
   );
-  const dateAxisHeight = activeSource === "date" ? dateAxisHeightForScale(dateScale) : chronicleAxisHeightForCalendars(chronicleCalendars);
-  const minimapItems = useMemo(
-    () => minimapItemsForEntries(entries, axisStart, axisEnd),
-    [axisEnd, axisStart, entries]
-  );
+  const axisHeight = chronicleAxisHeightForCalendars(chronicleCalendars);
   const selectChart = useCallback((nextChart: WorkspaceChart): void => {
     setSelectedChartId(nextChart.id);
   }, [setSelectedChartId]);
@@ -167,22 +130,14 @@ export function useChronicleChartModel({
     availableCharts,
     axisEnd,
     axisStart,
-    dateAxisHeight,
-    dateScale,
+    axisHeight,
     entries,
     guideTicks,
-    minimapItems,
     nameColumnWidth,
-    query,
     refreshRowOrder,
     rows,
     selectChart,
-    setQuery,
-    setSortKey,
-    setStatusFilter,
-    sortKey,
-    statusFilter: effectiveStatusFilter,
-    statusOptions,
+    sortKey: effectiveSortKey,
     tickInterval,
     ticks,
     timelineWidth,
@@ -205,8 +160,6 @@ function orderRowsByKeys(rows: ChartRow[], orderKeys: string[], fallbackRows: Ch
 }
 
 export function buildChronicleViewportState({
-  activeSource,
-  axisEnd,
   axisStart,
   chartViewportWidth,
   entries,
@@ -214,8 +167,6 @@ export function buildChronicleViewportState({
   scrollLeft,
   unitWidth
 }: {
-  activeSource: ChartSource;
-  axisEnd: number;
   axisStart: number;
   chartViewportWidth: number;
   entries: ReturnType<typeof visibleEntries>;
@@ -228,61 +179,8 @@ export function buildChronicleViewportState({
   const visibleEndValue = axisStart + (scrollLeft + viewportTimelineWidth) / unitWidth;
 
   return {
-    chronicleOffscreenIndicators: activeSource === "chronicle"
-      ? timelineOffscreenBarIndicators(entries, visibleStartValue, visibleEndValue)
-      : { left: null, right: null },
-    dateOffscreenIndicators: activeSource === "date"
-      ? dateOffscreenBarIndicators(entries, visibleStartValue, visibleEndValue)
-      : { left: null, right: null },
-    minimapViewport: minimapViewportRange(axisStart, axisEnd, visibleStartValue, visibleEndValue),
+    chronicleOffscreenIndicators: timelineOffscreenBarIndicators(entries, visibleStartValue, visibleEndValue),
     visibleEndValue,
-    visibleStartValue,
-    verticalMinimapViewport: { heightPercent: 100, topPercent: 0 },
-    verticalOffscreenIndicators: { bottom: null, top: null }
-  };
-}
-
-export function buildChronicleVerticalViewportState({
-  chartViewportHeight,
-  dateAxisHeight,
-  rowCount,
-  scrollTop
-}: {
-  chartViewportHeight: number;
-  dateAxisHeight: number;
-  rowCount: number;
-  scrollTop: number;
-}): {
-  verticalMinimapViewport: { heightPercent: number; topPercent: number };
-  verticalOffscreenIndicators: { bottom: { count: number; targetIndex: number } | null; top: { count: number; targetIndex: number } | null };
-} {
-  if (rowCount <= 0) {
-    return {
-      verticalMinimapViewport: { heightPercent: 100, topPercent: 0 },
-      verticalOffscreenIndicators: { bottom: null, top: null }
-    };
-  }
-
-  const visibleRowAreaHeight = Math.max(1, chartViewportHeight - dateAxisHeight);
-  const visibleRowCount = Math.max(1, Math.floor(visibleRowAreaHeight / ROW_HEIGHT));
-  const maxStartIndex = Math.max(0, rowCount - visibleRowCount);
-  const visibleStartIndex = clamp(Math.floor(scrollTop / ROW_HEIGHT), 0, maxStartIndex);
-  const visibleEndIndex = Math.min(rowCount - 1, visibleStartIndex + visibleRowCount - 1);
-  const hiddenTopCount = visibleStartIndex;
-  const hiddenBottomCount = Math.max(0, rowCount - visibleEndIndex - 1);
-  const heightPercent = clamp((visibleRowCount / rowCount) * 100, 4, 100);
-  const maxTopPercent = 100 - heightPercent;
-  const topPercent = maxStartIndex === 0 ? 0 : clamp((visibleStartIndex / maxStartIndex) * maxTopPercent, 0, maxTopPercent);
-
-  return {
-    verticalMinimapViewport: { heightPercent, topPercent },
-    verticalOffscreenIndicators: {
-      bottom: hiddenBottomCount > 0
-        ? { count: hiddenBottomCount, targetIndex: Math.min(rowCount - 1, visibleEndIndex + 1) }
-        : null,
-      top: hiddenTopCount > 0
-        ? { count: hiddenTopCount, targetIndex: Math.max(0, visibleStartIndex - visibleRowCount) }
-        : null
-    }
+    visibleStartValue
   };
 }

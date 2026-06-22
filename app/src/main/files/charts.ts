@@ -14,8 +14,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import {
   collectChartEntriesForMarkdown,
-  sortChronicleEntries,
-  sortDateEntries
+  sortChronicleEntries
 } from "./chronicleData";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
@@ -23,7 +22,7 @@ import { readWorkspaceFileTree } from "./fileTree";
 import { resolveExistingWorkspacePath, resolveWorkspaceRelativePath } from "./paths";
 import { mapWithConcurrency } from "./concurrency";
 
-export { extractChronicleRange, extractDateRange } from "./chronicleData";
+export { extractChronicleRange } from "./chronicleData";
 
 interface ChartReadOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
@@ -47,10 +46,7 @@ export async function readWorkspaceCharts(
 ): Promise<RelicResult<WorkspaceChart[]>> {
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
-    const entriesBySource: Record<ChartSettings["source"], ChartEntry[]> = {
-      chronicle: [],
-      date: []
-    };
+    const entriesBySource: Record<ChartSettings["source"], ChartEntry[]> = { chronicle: [] };
     const files = collectMarkdownPaths(fileTree).flatMap((relativePath) => {
       const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
       return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
@@ -73,12 +69,10 @@ export async function readWorkspaceCharts(
       const { content, relativePath } = fileContent;
       const fileEntries = collectChartEntriesForMarkdown(relativePath, content, calendars);
       entriesBySource.chronicle.push(...fileEntries.chronicle);
-      entriesBySource.date.push(...fileEntries.date);
     }
 
     const sortedEntriesBySource = {
-      chronicle: sortChronicleEntries(entriesBySource.chronicle),
-      date: sortDateEntries(entriesBySource.date)
+      chronicle: sortChronicleEntries(entriesBySource.chronicle)
     };
 
     return ok(charts.map((chart) => ({

@@ -1,11 +1,10 @@
 import * as yaml from "js-yaml";
 
-import { axisToYear, dayToDate, isDateString, rangeToStringArray, shiftDateYears } from "./chartTime";
+import { axisToYear, rangeToStringArray } from "./chartTime";
 import {
   defaultChronicleCalendars,
   type ChronicleCalendarId,
   type ChronicleCalendarSettings,
-  type ChartDateKind,
   type UpdateChartEntryInput
 } from "./ipcCharts";
 import { fail, ok, type RelicResult } from "./result";
@@ -90,22 +89,10 @@ function chartFrontmatterUpdates(
   input: UpdateChartEntryInput,
   calendars: ChronicleCalendarSettings[]
 ): RelicResult<Record<string, string[]>> {
+  void data;
   const start = Math.min(input.startValue, input.endValue);
   const end = Math.max(input.startValue, input.endValue);
 
-  if (input.source === "date") {
-    const startDate = dayToDate(start);
-    const endDate = dayToDate(end);
-    const dateField = dateFieldNameForKind(input.dateKind ?? "planned");
-
-    return ok({
-      chronicle0: rangeToStringArray(dateYear(startDate), dateYear(endDate)),
-      [dateField]: rangeToStringArray(startDate, endDate)
-    });
-  }
-
-  const originalStartYear = axisToYear(input.originalStartValue);
-  const originalEndYear = axisToYear(input.originalEndValue);
   const startYear = axisToYear(start);
   const endYear = axisToYear(end);
   const calendar = calendarForInput(input, calendars);
@@ -117,18 +104,6 @@ function chartFrontmatterUpdates(
   const updates: Record<string, string[]> = {
     [calendar.value.id]: rangeToStringArray(nextStartYear, nextEndYear)
   };
-
-  for (const kind of ["planned", "actual"] as const) {
-    const dateRange = extractDateRangeFromData(data, kind);
-
-    if (dateRange) {
-      const fieldName = dateFieldNameForKind(kind);
-      updates[fieldName] = rangeToStringArray(
-        shiftDateYears(dateRange.startDate, startYear - originalStartYear),
-        shiftDateYears(dateRange.endDate, endYear - originalEndYear)
-      );
-    }
-  }
 
   return ok(updates);
 }
@@ -204,42 +179,6 @@ function nextLineEnd(text: string, from: number): number {
 function trailingComment(line: string): string {
   const match = /(\s+#.*)$/.exec(line);
   return match ? match[1] : "";
-}
-
-function extractDateRangeFromData(data: Record<string, unknown>, kind: ChartDateKind): { endDate: string; startDate: string } | null {
-  const value = kind === "planned" ? data.plannedDate : data.actualDate;
-
-  if (!Array.isArray(value) || (value.length !== 1 && value.length !== 2)) return null;
-  const dates = value.map(normalizeDateValue);
-  if (dates.some((date) => date === null)) return null;
-
-  const startDate = dates[0];
-  const endDate = dates.length === 1 ? startDate : dates[1];
-  if (!startDate || !endDate || startDate > endDate) return null;
-
-  return { endDate, startDate };
-}
-
-function normalizeDateValue(value: unknown): string | null {
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
-  }
-
-  if (typeof value !== "string") return null;
-
-  const trimmed = value.trim();
-  if (isDateString(trimmed)) return trimmed;
-
-  const fallbackDate = new Date(trimmed.replace(/\s*\([^)]*\)\s*$/, ""));
-  return Number.isNaN(fallbackDate.getTime()) ? null : fallbackDate.toISOString().slice(0, 10);
-}
-
-function dateFieldNameForKind(kind: ChartDateKind): "actualDate" | "plannedDate" {
-  return kind === "actual" ? "actualDate" : "plannedDate";
-}
-
-function dateYear(value: string): number {
-  return Number(value.slice(0, 4));
 }
 
 function mainYearToCalendarYear(calendar: { startYear: number }, mainYear: number): number {

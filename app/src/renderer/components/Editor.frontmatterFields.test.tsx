@@ -139,7 +139,7 @@ describe("Editor frontmatter fields", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12, 2026-05-20]");
   });
 
-  it("plannedDateプロパティは日付表示順設定にかかわらずカレンダー入力で編集できる", async () => {
+  it("plannedDateプロパティは日付表示順設定にかかわらず日付入力で編集できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor

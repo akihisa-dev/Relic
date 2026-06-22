@@ -1,5 +1,4 @@
 import type { WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
-import type { RelicDiagramType } from "../../shared/diagramMarkdown";
 import type { Translator } from "../i18nModel";
 import type { Tab } from "../store/editorStore";
 import { displayNameFromPath } from "../workspacePaths";
@@ -34,25 +33,6 @@ export function nextUniqueFileName(workspaceState: WorkspaceState | null, t: Tra
 
   for (let i = 1; ; i += 1) {
     const baseName = t("files.createNote");
-    const name = i === 1 ? baseName : `${baseName} ${i}`;
-    if (!existing.has(`${name}.md`)) return name;
-  }
-}
-
-export function nextUniqueDiagramFileName(
-  workspaceState: WorkspaceState | null,
-  t: Translator,
-  type: RelicDiagramType = "diagram"
-): string {
-  void type;
-  const existing = new Set<string>();
-
-  walkWorkspaceTree(workspaceState?.fileTree ?? [], (node) => {
-    if (node.type === "file") existing.add(node.path);
-  });
-
-  for (let i = 1; ; i += 1) {
-    const baseName = t("diagram.defaultNewFileName");
     const name = i === 1 ? baseName : `${baseName} ${i}`;
     if (!existing.has(`${name}.md`)) return name;
   }

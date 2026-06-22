@@ -2,7 +2,6 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { LinkUpdateImpact, LinkUpdateImpactKind } from "../../shared/ipc";
-import { replaceRelicDiagramNodeFileReferences } from "../../shared/diagramMarkdown";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
@@ -178,19 +177,11 @@ async function buildLinkUpdatePatches(
     replacement.content = movedSourceReplacement.content;
     replacement.count += movedSourceReplacement.count;
 
-    const mapReplacement = replaceRelicDiagramNodeFileReferences(
-      replacement.content,
-      kind,
-      normalizedOldPath,
-      normalizedNewPath
-    );
-    if (!mapReplacement.ok) return mapReplacement;
-
-    if (mapReplacement.value.content !== content) {
+    if (replacement.content !== content) {
       patches.push({
         absolutePath: absoluteSourcePath.value,
-        linkCount: replacement.count + mapReplacement.value.count,
-        nextContent: mapReplacement.value.content,
+        linkCount: replacement.count,
+        nextContent: replacement.content,
         previousContent: content
       });
     }
