@@ -3,7 +3,6 @@ import type { Translator } from "./i18nModel";
 import { fixedFrontmatterFieldNames } from "./editorFrontmatter";
 
 const basicFixedFieldNames = ["aliases", "tags", "status"] as const;
-const dateFixedFieldNames = ["plannedDate", "actualDate"] as const;
 
 export interface FrontmatterPropertyMenuGroup {
   id: string;
@@ -33,12 +32,6 @@ export function buildFrontmatterPropertyMenuState(
   const usedKeySet = new Set(usedKeys);
   const availableKeys = new Set(fixedFrontmatterFieldNames.filter((key) => !usedKeySet.has(key)));
   const groups = [
-    frontmatterPropertyGroup(
-      "date",
-      t("frontmatter.propertyGroupDate"),
-      dateFixedFieldNames.filter((key) => availableKeys.has(key)),
-      t
-    ),
     frontmatterPropertyGroup(
       "basic",
       t("frontmatter.propertyGroupBasic"),
@@ -73,7 +66,5 @@ function frontmatterPropertyLabel(key: string, t: Translator): string {
   if (key === "aliases") return t("frontmatter.propertyAliases");
   if (key === "tags") return t("frontmatter.propertyTags");
   if (key === "status") return t("frontmatter.propertyStatus");
-  if (key === "plannedDate") return t("frontmatter.propertyPlannedDate");
-  if (key === "actualDate") return t("frontmatter.propertyActualDate");
   return key;
 }

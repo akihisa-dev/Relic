@@ -279,7 +279,8 @@ describe("appSettings", () => {
     await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
       userDefinedFields: [
         { choices: ["draft", "done"], name: "category", type: "select" },
-        { name: "memo", type: "text" }
+        { name: "memo", type: "text" },
+        { name: "plannedDate", type: "date" }
       ]
     });
   });

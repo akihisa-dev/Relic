@@ -17,7 +17,6 @@ export {
   frontmatterFieldNamePattern,
   inputTypeFor,
   isEditableScalar,
-  isFixedDateRangeField,
   isSingleValueField,
   parseChronicleYearInput,
   parseDateInput,

@@ -221,7 +221,7 @@ describe("Editor frontmatter", () => {
     const onChange = vi.fn();
     const { container } = render(
       <Editor
-        content={"---\nversion: v1.0\nplannedDate:\n---\n# 本文"}
+        content={"---\nversion: v1.0\nstatus:\n---\n# 本文"}
         onChange={onChange}
         settings={settings}
         viewRef={viewRef}
@@ -232,12 +232,14 @@ describe("Editor frontmatter", () => {
 
     fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
     const items = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"));
+    expect(items.some((item) => item.textContent?.includes("status"))).toBe(false);
     expect(items.some((item) => item.textContent?.includes("plannedDate"))).toBe(false);
-    const actualDateItem = items.find((item) => item.textContent?.includes("actualDate")) as HTMLButtonElement;
-    fireEvent.click(actualDateItem);
+    expect(items.some((item) => item.textContent?.includes("actualDate"))).toBe(false);
+    const aliasesItem = items.find((item) => item.textContent?.includes("aliases")) as HTMLButtonElement;
+    fireEvent.click(aliasesItem);
 
-    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("actualDate:"));
-    expect(viewRef.current?.state.doc.toString()).toContain("---\nversion: v1.0\nplannedDate:\nactualDate:\n---");
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("aliases:"));
+    expect(viewRef.current?.state.doc.toString()).toContain("---\nversion: v1.0\nstatus:\naliases:\n---");
   });
 
   it("常設プラスボタンからフロントマターを新規作成できる", async () => {
@@ -259,12 +261,12 @@ describe("Editor frontmatter", () => {
     expect(container.querySelector(".cm-frontmatter-add-input")).toBeNull();
 
     fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
-    const plannedDateItem = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"))
-      .find((item) => item.textContent?.includes("plannedDate")) as HTMLButtonElement;
-    fireEvent.click(plannedDateItem);
+    const statusItem = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"))
+      .find((item) => item.textContent?.includes("status")) as HTMLButtonElement;
+    fireEvent.click(statusItem);
 
-    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("plannedDate:"));
-    expect(viewRef.current?.state.doc.toString()).toBe("---\nplannedDate:\n---\n# 本文");
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("status:"));
+    expect(viewRef.current?.state.doc.toString()).toBe("---\nstatus:\n---\n# 本文");
   });
 
   it("削除後に作り直したフロントマターは以前の展開状態を勝手に引き継がない", async () => {
@@ -283,9 +285,9 @@ describe("Editor frontmatter", () => {
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).toBeNull());
 
     fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
-    const plannedDateItem = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"))
-      .find((item) => item.textContent?.includes("plannedDate")) as HTMLButtonElement;
-    fireEvent.click(plannedDateItem);
+    const statusItem = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"))
+      .find((item) => item.textContent?.includes("status")) as HTMLButtonElement;
+    fireEvent.click(statusItem);
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
     expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("true");

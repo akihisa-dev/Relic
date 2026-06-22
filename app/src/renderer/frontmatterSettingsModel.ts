@@ -60,16 +60,6 @@ export const STANDARD_FIXED_FIELDS: FixedFieldDefinition[] = [
     name: "status",
     descriptionKey: "settings.fixedFieldStatusDescription",
     examples: ["settings.fixedFieldStatusSingleExample"]
-  },
-  {
-    name: "plannedDate",
-    descriptionKey: "settings.fixedFieldPlannedDateDescription",
-    examples: ["settings.fixedFieldPlannedDateSingleExample", "settings.fixedFieldPlannedDateRangeExample"]
-  },
-  {
-    name: "actualDate",
-    descriptionKey: "settings.fixedFieldActualDateDescription",
-    examples: ["settings.fixedFieldActualDateSingleExample", "settings.fixedFieldActualDateRangeExample"]
   }
 ];
 
