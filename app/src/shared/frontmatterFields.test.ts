@@ -14,7 +14,6 @@ describe("frontmatterFields", () => {
     expect(reservedFrontmatterFieldNames).toEqual([
       "aliases",
       "tags",
-      "status",
       "chronicle0",
       "chronicle1",
       "chronicle2",
@@ -29,7 +28,7 @@ describe("frontmatterFields", () => {
   });
 
   it("detects reserved frontmatter names", () => {
-    expect(isReservedFrontmatterFieldName("status")).toBe(true);
+    expect(isReservedFrontmatterFieldName("status")).toBe(false);
     expect(isReservedFrontmatterFieldName("plannedDate")).toBe(false);
     expect(isReservedFrontmatterFieldName("actualDate")).toBe(false);
     expect(isReservedFrontmatterFieldName("custom")).toBe(false);
@@ -56,7 +55,7 @@ describe("frontmatterFields", () => {
 
   it("validates user-defined field names with reserved names", () => {
     expect(isValidUserDefinedFieldName("project")).toBe(true);
-    expect(isValidUserDefinedFieldName("status")).toBe(false);
+    expect(isValidUserDefinedFieldName("status")).toBe(true);
     expect(isValidUserDefinedFieldName(" planned")).toBe(false);
     expect(isValidUserDefinedFieldName("bad:name")).toBe(false);
   });

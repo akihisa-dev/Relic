@@ -18,7 +18,7 @@ describe("editorFrontmatterPropertyMenuModel", () => {
 
     expect(state.unavailable).toBe(false);
     expect(state.groups.map((group) => group.id)).toEqual(["basic", "chronicle"]);
-    expect(state.groups.find((group) => group.id === "basic")?.options.map((option) => option.key)).toEqual(["tags", "status"]);
+    expect(state.groups.find((group) => group.id === "basic")?.options.map((option) => option.key)).toEqual(["tags"]);
     expect(state.groups.find((group) => group.id === "chronicle")?.options.map((option) => option.key)).not.toContain("chronicle0");
   });
 
@@ -28,7 +28,7 @@ describe("editorFrontmatterPropertyMenuModel", () => {
 
     expect(labelsByKey.get("aliases")).toBe("別名");
     expect(labelsByKey.get("tags")).toBe("タグ");
-    expect(labelsByKey.get("status")).toBe("状態");
+    expect(labelsByKey.has("status")).toBe(false);
     expect(labelsByKey.has("plannedDate")).toBe(false);
     expect(labelsByKey.has("actualDate")).toBe(false);
     expect(labelsByKey.get("chronicle0")).toBe("chronicle0");

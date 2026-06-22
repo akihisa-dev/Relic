@@ -28,7 +28,6 @@ describe("filesSidebarModel", () => {
       "chronicle9",
       "custom",
       "date",
-      "status",
       "tags"
     ]);
   });

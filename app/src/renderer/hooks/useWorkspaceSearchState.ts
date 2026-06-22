@@ -7,7 +7,6 @@ import type {
   WorkspaceSearchResult,
   WorkspaceState
 } from "../../shared/ipc";
-import { fixedStatusValues } from "../../shared/status";
 import { knownFrontmatterSearchFields } from "../filesSidebarModel";
 
 interface UseWorkspaceSearchStateInput {
@@ -61,7 +60,6 @@ export function useWorkspaceSearchState({
     : null;
   const frontmatterCandidates = useMemo(() => {
     const result: Record<string, string[]> = hasActiveWorkspace ? { ...workspaceFrontmatterCandidates } : {};
-    result.status = [...fixedStatusValues];
 
     for (const field of userDefinedFields) {
       result[field.name] = mergeCandidates(result[field.name] ?? [], field.choices ?? []);

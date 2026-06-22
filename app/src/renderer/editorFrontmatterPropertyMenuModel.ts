@@ -2,7 +2,7 @@ import { chronicleCalendarIds } from "../shared/ipc";
 import type { Translator } from "./i18nModel";
 import { fixedFrontmatterFieldNames } from "./editorFrontmatter";
 
-const basicFixedFieldNames = ["aliases", "tags", "status"] as const;
+const basicFixedFieldNames = ["aliases", "tags"] as const;
 
 export interface FrontmatterPropertyMenuGroup {
   id: string;
@@ -65,6 +65,5 @@ function frontmatterPropertyGroup(
 function frontmatterPropertyLabel(key: string, t: Translator): string {
   if (key === "aliases") return t("frontmatter.propertyAliases");
   if (key === "tags") return t("frontmatter.propertyTags");
-  if (key === "status") return t("frontmatter.propertyStatus");
   return key;
 }

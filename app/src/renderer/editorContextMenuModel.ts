@@ -1,5 +1,3 @@
-import { fixedStatusValues } from "../shared/status";
-
 export interface EditorContextMenuState {
   selectionFrom: number;
   selectionText: string;
@@ -38,7 +36,5 @@ export function frontmatterDialogCandidatesFor(
   key: string,
   candidates: Record<string, string[]>
 ): string[] {
-  if (key === "status") return [...fixedStatusValues];
-
   return candidates[key] ?? [];
 }
