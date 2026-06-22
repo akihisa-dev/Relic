@@ -17,20 +17,16 @@ const userDefinedFieldTypesSet = new Set<UserDefinedFieldType>(userDefinedFieldT
 export const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
 
 export type FixedFrontmatterFieldName =
-  | "actualDate"
   | "aliases"
   | "tags"
   | "status"
-  | ChronicleCalendarId
-  | "plannedDate";
+  | ChronicleCalendarId;
 
 export const reservedFrontmatterFieldNames: FixedFrontmatterFieldName[] = [
   "aliases",
   "tags",
   "status",
-  ...chronicleCalendarIds,
-  "plannedDate",
-  "actualDate"
+  ...chronicleCalendarIds
 ];
 
 const reservedFrontmatterFieldNameSet = new Set<string>(reservedFrontmatterFieldNames);

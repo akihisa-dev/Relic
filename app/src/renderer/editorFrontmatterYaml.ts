@@ -4,8 +4,6 @@ import * as yaml from "js-yaml";
 import type { UserDefinedField } from "../shared/ipc";
 import {
   fieldFor,
-  isFixedDateRangeField,
-  parseDateInput,
   shouldSerializeArrayAsFlowSequence
 } from "./editorFrontmatterFields";
 
@@ -80,8 +78,8 @@ export function findTopLevelYamlFieldEntries(lines: string[]): YamlFieldEntry[] 
 }
 
 function serializeFlowScalar(key: string, value: unknown): string {
-  if (isFixedDateRangeField(key) && typeof value === "string" && parseDateInput(value) !== null) return value;
-  if (isFixedDateRangeField(key) && value instanceof Date) return value.toISOString().slice(0, 10);
+  void key;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
   if (typeof value === "string") return JSON.stringify(value);
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   if (value === null) return "null";

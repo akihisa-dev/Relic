@@ -12,7 +12,6 @@ import {
   inputTypeFor,
   isChronicleField,
   isEditableScalar,
-  isFixedDateRangeField,
   isSingleValueField,
   parseChronicleYearInput,
   parseDateInputForFormat,
@@ -205,9 +204,6 @@ function FrontmatterValueControl({
   if (isChronicleField(name)) {
     return <ChronicleControl name={name} value={Array.isArray(value) ? value : []} onUpdateField={onUpdateField} />;
   }
-  if (isFixedDateRangeField(name)) {
-    return <DateRangeControl dateFormat={dateFormat} name={name} value={Array.isArray(value) ? value : value == null ? [] : [value]} onUpdateField={onUpdateField} />;
-  }
   if (field?.type === "boolean") {
     const checkedValue = firstArrayValue(value);
     return (
@@ -355,48 +351,6 @@ function ChronicleControl({
     <span className="cm-frontmatter-input-wrap cm-frontmatter-chronicle">
       <input aria-label={`${name} ${t("frontmatter.rangeStart")}`} className="cm-frontmatter-input" defaultValue={startValue} inputMode="numeric" onBlur={(event) => commit(event.target.value, event.currentTarget.parentElement?.querySelectorAll("input")[1]?.value ?? "")} placeholder={t("frontmatter.rangeStart")} type="text" />
       <input aria-label={`${name} ${t("frontmatter.rangeEnd")}`} className="cm-frontmatter-input" defaultValue={endValue} inputMode="numeric" onBlur={(event) => commit(event.currentTarget.parentElement?.querySelectorAll("input")[0]?.value ?? "", event.target.value)} placeholder={t("frontmatter.rangeEnd")} type="text" />
-      {error ? <span className="cm-frontmatter-input-error">{error}</span> : null}
-    </span>
-  );
-}
-
-function DateRangeControl({
-  dateFormat,
-  name,
-  onUpdateField,
-  value
-}: {
-  dateFormat: EditorSettings["frontmatterDateFormat"];
-  name: string;
-  onUpdateField: (key: string, value: unknown) => void;
-  value: unknown[];
-}): ReactElement {
-  const t = useT();
-  const [error, setError] = useState<string | null>(null);
-  const startValue = dateInputValue(value[0]);
-  const endValue = value.length > 1 ? dateInputValue(value[1]) : "";
-
-  const commit = (startRaw: string, endRaw: string): void => {
-    const startDate = parseDateTextValue(startRaw, dateFormat);
-    const endDate = parseDateTextValue(endRaw, dateFormat);
-    if (startDate === null || endDate === null) return;
-    if (startDate === undefined) {
-      setError(null);
-      onUpdateField(name, undefined);
-      return;
-    }
-    if (endDate !== undefined && startDate > endDate) {
-      setError(t("frontmatter.invalidDateRange"));
-      return;
-    }
-    setError(null);
-    onUpdateField(name, endDate === undefined || endDate === startDate ? [startDate] : [startDate, endDate]);
-  };
-
-  return (
-    <span className="cm-frontmatter-input-wrap cm-frontmatter-date-range">
-      <input aria-label={`${name} ${t("frontmatter.rangeStart")}`} className="cm-frontmatter-input" defaultValue={startValue} onBlur={(event) => commit(event.target.value, event.currentTarget.parentElement?.querySelectorAll("input")[1]?.value ?? "")} type="date" />
-      <input aria-label={`${name} ${t("frontmatter.rangeEnd")}`} className="cm-frontmatter-input" defaultValue={endValue} onBlur={(event) => commit(event.currentTarget.parentElement?.querySelectorAll("input")[0]?.value ?? "", event.target.value)} type="date" />
       {error ? <span className="cm-frontmatter-input-error">{error}</span> : null}
     </span>
   );

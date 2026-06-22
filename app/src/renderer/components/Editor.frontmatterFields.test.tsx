@@ -111,11 +111,11 @@ describe("Editor frontmatter fields", () => {
     expect(inputs[0].getAttribute("aria-invalid")).toBe("true");
   });
 
-  it("plannedDateプロパティは年月日の単日・期間を1行配列として編集する", async () => {
+  it("plannedDateプロパティは未登録なら固定日付範囲入力として扱わない", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
-        content={"---\nplannedDate:\n---\n# 本文"}
+        content={"---\nplannedDate: [2026-05-12]\n---\n# 本文"}
         onChange={vi.fn()}
         settings={settings}
         viewRef={viewRef}
@@ -123,65 +123,12 @@ describe("Editor frontmatter fields", () => {
     );
 
     await expandFrontmatter(container);
-    await expandFrontmatter(container);
-    await expandFrontmatter(container);
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
-    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
-    fireEvent.change(inputs[0], { target: { value: "2026-05-12" } });
-
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-row")).not.toBeNull());
+    expect(container.querySelector(".cm-frontmatter-date-range")).toBeNull();
+    const input = container.querySelector(".cm-frontmatter-input") as HTMLInputElement;
+    expect(input.type).toBe("text");
+    expect(input.value).toBe("2026-05-12");
     expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12]");
-
-    await expandFrontmatter(container);
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
-    const nextInputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
-    fireEvent.change(nextInputs[1], { target: { value: "2026-05-20" } });
-
-    expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12, 2026-05-20]");
-  });
-
-  it("plannedDateプロパティは日付表示順設定にかかわらず日付入力で編集できる", async () => {
-    const viewRef = createRef<EditorView | null>();
-    const { container } = render(
-      <Editor
-        content={"---\nplannedDate: [2026-05-12]\n---\n# 本文"}
-        onChange={vi.fn()}
-        settings={{ ...settings, frontmatterDateFormat: "dmy" }}
-        viewRef={viewRef}
-      />
-    );
-
-    await expandFrontmatter(container);
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
-    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
-    expect(inputs[0].type).toBe("date");
-    expect(inputs[0].value).toBe("2026-05-12");
-    fireEvent.change(inputs[1], { target: { value: "2026-05-20" } });
-
-    expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12, 2026-05-20]");
-  });
-
-  it("plannedDateプロパティは逆順の期間を書き戻さない", async () => {
-    const viewRef = createRef<EditorView | null>();
-    const { container } = render(
-      <I18nProvider language="ja">
-        <Editor
-          content={"---\nplannedDate: [2026-05-12]\n---\n# 本文"}
-          onChange={vi.fn()}
-          settings={settings}
-          viewRef={viewRef}
-        />
-      </I18nProvider>
-    );
-
-    await expandFrontmatter(container);
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
-    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
-    fireEvent.change(inputs[1], { target: { value: "2026-05-01" } });
-
-    expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12]");
-    expect(viewRef.current?.state.doc.toString()).not.toContain("plannedDate: [2026-05-01, 2026-05-12]");
-    expect(container.querySelector(".cm-frontmatter-input-error")?.textContent).toBe("開始日は終了日以前にしてください。");
-    expect(inputs[0].getAttribute("aria-invalid")).toBe("true");
   });
 
   it("プロパティ編集時にYAMLのコメント行とフィールド順をできるだけ保つ", async () => {

@@ -32,7 +32,8 @@ describe("frontmatterSettingsModel", () => {
     expect(isFieldNameAvailable(fields, "phase")).toBe(false);
     expect(isFieldNameAvailable(fields, "phase", 0)).toBe(true);
     expect(isFieldNameAvailable(fields, "tags")).toBe(false);
-    expect(isFieldNameAvailable(fields, "plannedDate")).toBe(false);
+    expect(isFieldNameAvailable(fields, "plannedDate")).toBe(true);
+    expect(isFieldNameAvailable(fields, "actualDate")).toBe(true);
     expect(isFieldNameAvailable(fields, " bad")).toBe(false);
     expect(isFieldNameAvailable(fields, "bad:name")).toBe(false);
   });

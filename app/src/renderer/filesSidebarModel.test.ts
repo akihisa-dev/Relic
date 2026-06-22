@@ -15,7 +15,6 @@ describe("filesSidebarModel", () => {
       { name: "custom", type: "text" },
       { name: "date", type: "date" }
     ])).toEqual([
-      "actualDate",
       "aliases",
       "chronicle0",
       "chronicle1",
@@ -29,7 +28,6 @@ describe("filesSidebarModel", () => {
       "chronicle9",
       "custom",
       "date",
-      "plannedDate",
       "status",
       "tags"
     ]);

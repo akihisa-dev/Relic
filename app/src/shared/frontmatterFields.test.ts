@@ -24,15 +24,14 @@ describe("frontmatterFields", () => {
       "chronicle6",
       "chronicle7",
       "chronicle8",
-      "chronicle9",
-      "plannedDate",
-      "actualDate"
+      "chronicle9"
     ]);
   });
 
   it("detects reserved frontmatter names", () => {
     expect(isReservedFrontmatterFieldName("status")).toBe(true);
-    expect(isReservedFrontmatterFieldName("plannedDate")).toBe(true);
+    expect(isReservedFrontmatterFieldName("plannedDate")).toBe(false);
+    expect(isReservedFrontmatterFieldName("actualDate")).toBe(false);
     expect(isReservedFrontmatterFieldName("custom")).toBe(false);
   });
 

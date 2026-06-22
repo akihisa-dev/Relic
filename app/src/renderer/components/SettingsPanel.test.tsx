@@ -108,7 +108,7 @@ describe("FrontmatterPanel", () => {
     expect(screen.getByText("source: [https://example.com]")).toBeInTheDocument();
   });
 
-  it("aliasesとtagsとstatusとchronicle0〜9と計画/実行dateを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
+  it("aliasesとtagsとstatusとchronicle0〜9を固定プロパティとして表示し、plannedDateとactualDateはカスタムプロパティに追加できる", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
     renderFrontmatterPanel({ onUserDefinedFieldsSave });
@@ -125,8 +125,8 @@ describe("FrontmatterPanel", () => {
     expect(screen.getByRole("button", { name: "chronicle0-chronicle9 10 fields" })).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("chronicle0")).not.toBeNull();
     expect(screen.getByText("chronicle9")).not.toBeNull();
-    expect(screen.getByText("plannedDate")).not.toBeNull();
-    expect(screen.getByText("actualDate")).not.toBeNull();
+    expect(screen.queryByText("plannedDate")).toBeNull();
+    expect(screen.queryByText("actualDate")).toBeNull();
     expect(screen.getByText("At the very top of the Markdown file, make a settings block that starts with --- and ends with ---. Write each property inside that block on its own line.")).toBeInTheDocument();
     expect(screen.getByText((_, element) => element?.tagName === "CODE" && element.textContent === "---\nproperty: [value]\n---\nStart writing here")).toBeInTheDocument();
     expect(screen.getByText("Alternative names that can link to this file. Used for link resolution and file name search. Write one or many values as the same one-line array.")).toBeInTheDocument();
@@ -141,12 +141,8 @@ describe("FrontmatterPanel", () => {
     expect(screen.getAllByText("Places this file on the timeline as a single year or range. Write a single year or range as the same one-line array.").length).toBeGreaterThan(0);
     expect(screen.getAllByText("chronicle0: [1185]").length).toBeGreaterThan(0);
     expect(screen.getAllByText("chronicle0: [1185, 1333]").length).toBeGreaterThan(0);
-    expect(screen.getByText("The planned date or date range for this file. Write dates without times as the same one-line array for a single day or range.")).toBeInTheDocument();
-    expect(screen.getByText("plannedDate: [2026-05-12]")).toBeInTheDocument();
-    expect(screen.getByText("plannedDate: [2026-05-12, 2026-05-20]")).toBeInTheDocument();
-    expect(screen.getByText("The actual date or date range for this file. Write dates without times as the same one-line array for a single day or range.")).toBeInTheDocument();
-    expect(screen.getByText("actualDate: [2026-05-12]")).toBeInTheDocument();
-    expect(screen.getByText("actualDate: [2026-05-12, 2026-05-20]")).toBeInTheDocument();
+    expect(screen.queryByText("plannedDate: [2026-05-12]")).toBeNull();
+    expect(screen.queryByText("actualDate: [2026-05-12]")).toBeNull();
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "aliases" } });
 
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
@@ -165,11 +161,11 @@ describe("FrontmatterPanel", () => {
 
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "plannedDate" } });
 
-    expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Add" })).toBeEnabled();
 
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "actualDate" } });
 
-    expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Add" })).toBeEnabled();
 
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "status" } });
 

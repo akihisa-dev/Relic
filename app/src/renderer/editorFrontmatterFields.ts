@@ -12,12 +12,8 @@ export const frontmatterDialogRequestEvent = "relic-frontmatter-dialog-request";
 export const frontmatterFieldNamePattern = /^[^#\s:][^\r\n:]*$/;
 export const fixedFrontmatterFieldNames = reservedFrontmatterFieldNames;
 
-export function isFixedDateRangeField(key: string): boolean {
-  return key === "plannedDate" || key === "actualDate";
-}
-
 export function shouldSerializeArrayAsFlowSequence(key: string, field?: UserDefinedField): boolean {
-  return isFixedDateRangeField(key) || key === "aliases" || key === "tags" || isChronicleField(key) || Boolean(field);
+  return key === "aliases" || key === "tags" || isChronicleField(key) || Boolean(field);
 }
 
 export function isSingleValueField(field?: UserDefinedField): boolean {
@@ -36,7 +32,6 @@ export function fieldFor(key: string, userDefinedFields: UserDefinedField[]): Us
   if (key === "aliases" || key === "tags") return { name: key, type: "multi-select" };
   if (key === "status") return { name: key, type: "select", choices: [...fixedStatusValues] };
   if (isChronicleField(key)) return { name: key, type: "number" };
-  if (isFixedDateRangeField(key)) return { name: key, type: "date" };
   return userDefinedFields.find((field) => field.name === key);
 }
 
