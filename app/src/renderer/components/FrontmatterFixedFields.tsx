@@ -10,7 +10,7 @@ export function FrontmatterFixedFields(): ReactElement {
   return (
     <>
       <div className="frontmatter-field-group-label">{t("settings.fixedFields")}</div>
-      {STANDARD_FIXED_FIELDS.slice(0, 3).map((field) => <FixedFieldCard field={field} key={field.name} />)}
+      {STANDARD_FIXED_FIELDS.map((field) => <FixedFieldCard field={field} key={field.name} />)}
       <section className="frontmatter-field-collapse">
         <button
           aria-expanded={chronicleExpanded}
@@ -24,7 +24,6 @@ export function FrontmatterFixedFields(): ReactElement {
         </button>
       </section>
       {chronicleExpanded ? CHRONICLE_FIXED_FIELDS.map((field) => <FixedFieldCard field={field} key={field.name} />) : null}
-      {STANDARD_FIXED_FIELDS.slice(3).map((field) => <FixedFieldCard field={field} key={field.name} />)}
     </>
   );
 }

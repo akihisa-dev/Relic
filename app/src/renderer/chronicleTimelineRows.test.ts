@@ -6,9 +6,7 @@ import {
   chronicleCalendarPatch,
   entryKey,
   isPreviewForEntry,
-  previewEntryForDrag,
-  statusLabelForEntry,
-  statusValuesForEntries
+  previewEntryForDrag
 } from "./chronicleTimelineRows";
 
 function entry(overrides: Partial<ChartEntry> = {}): ChartEntry {
@@ -35,8 +33,6 @@ describe("chronicleTimelineRows", () => {
       chronicleCalendarId: "chronicle1",
       chronicleCalendarStartYear: 100
     });
-    expect(statusLabelForEntry(item)).toBe("");
-    expect(statusValuesForEntries([item])).toEqual(["未着手", "進行中", "完了", "中断", "中止"]);
   });
 
   it("年表行はentryごとに作り、drag previewは対象entryだけを差し替える", () => {

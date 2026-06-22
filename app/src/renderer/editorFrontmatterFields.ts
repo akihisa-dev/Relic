@@ -2,7 +2,6 @@ import { EditorView } from "@codemirror/view";
 
 import { reservedFrontmatterFieldNames } from "../shared/frontmatterFields";
 import { chronicleCalendarIds, type ChronicleCalendarId, type FrontmatterDateFormat, type UserDefinedField } from "../shared/ipc";
-import { fixedStatusValues } from "../shared/status";
 
 export type FrontmatterDialogRequest =
   | { type: "array-value"; key: string }
@@ -30,7 +29,6 @@ export function isEditableScalar(value: unknown): boolean {
 
 export function fieldFor(key: string, userDefinedFields: UserDefinedField[]): UserDefinedField | undefined {
   if (key === "aliases" || key === "tags") return { name: key, type: "multi-select" };
-  if (key === "status") return { name: key, type: "select", choices: [...fixedStatusValues] };
   if (isChronicleField(key)) return { name: key, type: "number" };
   return userDefinedFields.find((field) => field.name === key);
 }
@@ -45,7 +43,6 @@ export function choicesFor(
   candidates: Record<string, string[]>
 ): string[] {
   if (key === "aliases") return [];
-  if (key === "status") return [...fixedStatusValues];
   return Array.from(new Set([...(field?.choices ?? []), ...(candidates[key] ?? [])]))
     .sort((a, b) => a.localeCompare(b));
 }

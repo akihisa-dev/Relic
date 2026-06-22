@@ -1,6 +1,5 @@
 import type { ChartEntry, ChartEntryEditKind, ChartSource, WorkspaceChart } from "../shared/ipc";
 import { axisToYear } from "../shared/chartTime";
-import { fixedStatusValues } from "../shared/status";
 import { formatAxisValue } from "./chronicleTimelineAxis";
 
 export interface ChartRow {
@@ -96,16 +95,6 @@ function rowEndValue(row: ChartRow): number {
 
 export function rowCenterValue(row: ChartRow): number {
   return (rowStartValue(row) + rowEndValue(row)) / 2;
-}
-
-export function statusValuesForEntries(entries: ChartEntry[]): string[] {
-  void entries;
-  return [...fixedStatusValues];
-}
-
-export function statusLabelForEntry(entry: ChartEntry): string {
-  void entry;
-  return "";
 }
 
 export function chronicleSummaryForRow(row: ChartRow): string {

@@ -13,14 +13,8 @@ describe("editorContextMenuModel", () => {
     expect(editorContextMenuPosition(490, 780, { innerHeight: 800, innerWidth: 500 })).toEqual({ x: 152, y: 172 });
   });
 
-  it("returns fixed status values and field candidates for frontmatter dialogs", () => {
-    expect(frontmatterDialogCandidatesFor("status", { status: ["custom"] })).toEqual([
-      "未着手",
-      "進行中",
-      "完了",
-      "中断",
-      "中止"
-    ]);
+  it("returns field candidates for frontmatter dialogs", () => {
+    expect(frontmatterDialogCandidatesFor("status", { status: ["custom"] })).toEqual(["custom"]);
     expect(frontmatterDialogCandidatesFor("tags", { tags: ["draft"] })).toEqual(["draft"]);
     expect(frontmatterDialogCandidatesFor("missing", {})).toEqual([]);
   });

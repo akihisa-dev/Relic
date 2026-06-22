@@ -299,17 +299,17 @@ describe("App search and links", () => {
   it("フロントマター検索で field と値を渡す", async () => {
     const searchWorkspace = vi.fn().mockResolvedValue({
       ok: true,
-      value: searchResultSet([{ fileName: "読書メモ", lineNumber: null, lineText: "status: draft", path: "読書メモ.md" }])
+      value: searchResultSet([{ fileName: "読書メモ", lineNumber: null, lineText: "category: draft", path: "読書メモ.md" }])
     });
 
     window.relic = makeRelicApi({
       getFrontmatterValueCandidates: vi.fn().mockResolvedValue({
         ok: true,
-        value: { date: ["2026-05-12"], status: ["draft"] }
+        value: { category: ["draft"], date: ["2026-05-12"] }
       }),
       getUserDefinedFields: vi.fn().mockResolvedValue({
         ok: true,
-        value: [{ choices: ["draft", "published"], name: "reviewer", type: "text" }]
+        value: [{ choices: ["draft", "published"], name: "category", type: "select" }]
       }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
       searchWorkspace
@@ -320,10 +320,10 @@ describe("App search and links", () => {
     await screen.findByLabelText("ファイル検索");
     fireEvent.click(screen.getByRole("button", { name: "検索方法" }));
     fireEvent.click(await screen.findByRole("option", { name: "プロパティ" }));
-    expect(screen.getByRole("option", { name: "reviewer" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "category" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "date" })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("プロパティ名"), {
-      target: { value: "status" }
+      target: { value: "category" }
     });
     fireEvent.change(screen.getByLabelText("ファイル検索"), {
       target: { value: "draft" }
@@ -331,12 +331,12 @@ describe("App search and links", () => {
 
     await waitFor(() => {
       expect(searchWorkspace).toHaveBeenCalledWith({
-        frontmatterField: "status",
+        frontmatterField: "category",
         mode: "frontmatter",
         query: "draft"
       });
     });
-    expect(await screen.findByText("status: draft")).toBeInTheDocument();
+    expect(await screen.findByText("category: draft")).toBeInTheDocument();
   });
 
   it("右パネルにアウトゴーイングリンクを表示する", async () => {

@@ -304,7 +304,7 @@ describe("Editor frontmatter fields", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("published: [true]");
   });
 
-  it("statusプロパティは固定候補を単一選択の入力補助に使う", async () => {
+  it("statusプロパティは未登録なら通常テキストとして編集する", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
@@ -319,11 +319,10 @@ describe("Editor frontmatter fields", () => {
     await expandFrontmatter(container);
     expect(container.querySelector(".cm-frontmatter-pill-add")).toBeNull();
 
-    const input = container.querySelector("select.cm-frontmatter-input") as HTMLSelectElement;
+    const input = container.querySelector(".cm-frontmatter-input") as HTMLInputElement;
+    expect(input.tagName).toBe("INPUT");
     expect(input.value).toBe("未着手");
-    const candidates = Array.from(input.querySelectorAll("option"))
-      .map((option) => (option as HTMLOptionElement).value);
-    expect(candidates).toEqual(["未着手", "進行中", "完了", "中断", "中止"]);
+    expect(input.getAttribute("list")).toBeNull();
 
     fireEvent.change(input, { target: { value: "完了" } });
     expect(viewRef.current?.state.doc.toString()).toContain("status: [\"完了\"]");

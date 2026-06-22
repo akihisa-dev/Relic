@@ -29,6 +29,7 @@ describe("frontmatterSettingsModel", () => {
 
     expect(isFieldNameAvailable(fields, "deadline")).toBe(true);
     expect(isFieldNameAvailable(fields, "date")).toBe(true);
+    expect(isFieldNameAvailable(fields, "status")).toBe(true);
     expect(isFieldNameAvailable(fields, "phase")).toBe(false);
     expect(isFieldNameAvailable(fields, "phase", 0)).toBe(true);
     expect(isFieldNameAvailable(fields, "tags")).toBe(false);
@@ -39,7 +40,7 @@ describe("frontmatterSettingsModel", () => {
   });
 
   it("formats YAML examples for representative field types", () => {
-    expect(formatYamlExample("", "text", [], t)).toBe("status: [note]");
+    expect(formatYamlExample("", "text", [], t)).toBe("category: [note]");
     expect(formatYamlExample("published", "boolean", [], t)).toBe("published: [true]");
     expect(formatYamlExample("deadline", "date", [], t)).toBe("deadline: [2026-05-20]");
     expect(formatYamlExample("phase", "select", ["draft"], t)).toBe("phase: [draft]");

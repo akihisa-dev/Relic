@@ -250,7 +250,6 @@ describe("Editor frontmatter", () => {
         content={"# 本文"}
         onChange={onChange}
         settings={settings}
-        userDefinedFields={[{ name: "status", type: "select" }]}
         viewRef={viewRef}
       />
     );
@@ -261,12 +260,12 @@ describe("Editor frontmatter", () => {
     expect(container.querySelector(".cm-frontmatter-add-input")).toBeNull();
 
     fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
-    const statusItem = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"))
-      .find((item) => item.textContent?.includes("status")) as HTMLButtonElement;
-    fireEvent.click(statusItem);
+    const tagsItem = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"))
+      .find((item) => item.textContent?.includes("tags")) as HTMLButtonElement;
+    fireEvent.click(tagsItem);
 
-    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("status:"));
-    expect(viewRef.current?.state.doc.toString()).toBe("---\nstatus:\n---\n# 本文");
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("tags:"));
+    expect(viewRef.current?.state.doc.toString()).toBe("---\ntags:\n---\n# 本文");
   });
 
   it("削除後に作り直したフロントマターは以前の展開状態を勝手に引き継がない", async () => {
@@ -285,9 +284,9 @@ describe("Editor frontmatter", () => {
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).toBeNull());
 
     fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
-    const statusItem = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"))
-      .find((item) => item.textContent?.includes("status")) as HTMLButtonElement;
-    fireEvent.click(statusItem);
+    const tagsItem = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"))
+      .find((item) => item.textContent?.includes("tags")) as HTMLButtonElement;
+    fireEvent.click(tagsItem);
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
     expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("true");
