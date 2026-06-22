@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, KeyboardEvent, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
-import { isRelicDiagramMarkdownCandidate } from "../../shared/diagramMarkdown";
 import { hasInvalidFrontmatterYaml } from "../editorFrontmatter";
 import { isLargeMarkdownContent } from "../largeMarkdown";
 import { textCount } from "../paneViewModel";
@@ -11,8 +10,6 @@ import type { PanelTabKind, Tab } from "../store/editorStore";
 import { useT } from "../i18n";
 import { SourceModeButton } from "./AppMainActions";
 import { Editor } from "./Editor";
-import { DiagramCanvas } from "./DiagramCanvas";
-import { diagramCanvasStatus } from "./diagram/diagramCanvasStatus";
 
 interface PaneContentSurfaceProps {
   activeTab: Tab | null | undefined;
@@ -72,13 +69,10 @@ export function PaneContentSurface({
   const activeFileTab = activeTab?.kind === "file" ? activeTab : null;
   const activeFileContent = activeFileTab?.content ?? "";
   const isLargeMarkdown = useMemo(() => isLargeMarkdownContent(activeFileContent), [activeFileContent]);
-  const isDiagramMarkdown = activeFileTab ? isRelicDiagramMarkdownCandidate(activeFileTab.content) : false;
-  const showWordCount = !isDiagramMarkdown || sourceMode;
-  const [diagramStatus, setDiagramStatus] = useState<string | null>(null);
   const textCountResult = useMemo(() => {
-    if (!showWordCount || !activeFileTab) return null;
+    if (!activeFileTab) return null;
     return textCount(activeFileTab.content);
-  }, [activeFileTab?.content, showWordCount]);
+  }, [activeFileTab?.content]);
   const [frontmatterAddButtonHost, setFrontmatterAddButtonHost] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -98,38 +92,27 @@ export function PaneContentSurface({
       "--editor-file-title-max-width": editorContentMaxWidth ?? "100%"
     } as CSSProperties;
 
-    const diagramHeader = isDiagramMarkdown ? (
-      <DiagramFileHeader
-        isSourceMode={sourceMode}
-        name={activeFileTab.name}
-        onRename={(name) => onRenameFile(activeFileTab.path, name)}
-        onSourceModeToggle={onSourceModeToggle}
-      />
-    ) : null;
-
     return (
       <div
         className={`editor-surface${editorActionPulse > 0 ? ` editor-surface--action-${editorActionPulse % 2 === 0 ? "even" : "odd"}` : ""}`}
       >
         <div className="editor-body">
-          {diagramHeader ?? (
-            <div className="editor-file-title-row" style={editorTitleRowStyle}>
-              <div className="editor-file-title-slot">
-                <EditableFileTitle
-                  key={activeFileTab.id}
-                  name={activeFileTab.name}
-                  onRename={(name) => onRenameFile(activeFileTab.path, name)}
-                />
-              </div>
-              <div className="editor-file-title-actions">
-                <SourceModeButton
-                  isSourceMode={sourceMode}
-                  onSourceModeToggle={onSourceModeToggle}
-                />
-                <div className="editor-file-title-frontmatter-action" ref={setFrontmatterAddButtonHost} />
-              </div>
+          <div className="editor-file-title-row" style={editorTitleRowStyle}>
+            <div className="editor-file-title-slot">
+              <EditableFileTitle
+                key={activeFileTab.id}
+                name={activeFileTab.name}
+                onRename={(name) => onRenameFile(activeFileTab.path, name)}
+              />
             </div>
-          )}
+            <div className="editor-file-title-actions">
+              <SourceModeButton
+                isSourceMode={sourceMode}
+                onSourceModeToggle={onSourceModeToggle}
+              />
+              <div className="editor-file-title-frontmatter-action" ref={setFrontmatterAddButtonHost} />
+            </div>
+          </div>
           {activeFileTab.externalConflict ? (
             <output
               className="editor-conflict-banner"
@@ -162,40 +145,27 @@ export function PaneContentSurface({
               <span>{t("frontmatter.invalidYamlBanner")}</span>
             </output>
           ) : null}
-          {isDiagramMarkdown && !sourceMode ? (
-            <DiagramCanvas
-              content={activeFileTab.content}
-              fileName={activeFileTab.name}
-              key={activeFileTab.id}
-              onChange={(content) => onUpdateTabContent(activeFileTab.id, content)}
-              onSourceModeToggle={onSourceModeToggle}
-              onStatusChange={setDiagramStatus}
-            />
-          ) : (
-            <Editor
-              allFilePaths={allFilePaths}
-              content={activeFileTab.content}
-              filePath={activeFileTab.path}
-              frontmatterCandidates={frontmatterCandidates}
-              key={activeFileTab.id}
-              onChange={(content) => onUpdateTabContent(activeFileTab.id, content)}
-              onOpenLink={onOpenLink}
-              onOpenWikiLink={onOpenWikiLink}
-              settings={editorSettings}
-              sourceMode={sourceMode || isLargeMarkdown}
-              frontmatterAddButtonHost={frontmatterAddButtonHost}
-              typewriterMode={typewriterMode}
-              userDefinedFields={userDefinedFields}
-              viewRef={viewRef}
-              onEditorAction={onEditorAction}
-            />
-          )}
+          <Editor
+            allFilePaths={allFilePaths}
+            content={activeFileTab.content}
+            filePath={activeFileTab.path}
+            frontmatterCandidates={frontmatterCandidates}
+            key={activeFileTab.id}
+            onChange={(content) => onUpdateTabContent(activeFileTab.id, content)}
+            onOpenLink={onOpenLink}
+            onOpenWikiLink={onOpenWikiLink}
+            settings={editorSettings}
+            sourceMode={sourceMode || isLargeMarkdown}
+            frontmatterAddButtonHost={frontmatterAddButtonHost}
+            typewriterMode={typewriterMode}
+            userDefinedFields={userDefinedFields}
+            viewRef={viewRef}
+            onEditorAction={onEditorAction}
+          />
         </div>
         <div className="pane-status">
           <span>
-            {isDiagramMarkdown && !sourceMode
-              ? (diagramStatus ?? diagramCanvasStatus(activeFileTab.content, t))
-              : t("app.wordCount", { chars: textCountResult?.chars ?? 0, words: textCountResult?.words ?? 0 })}
+            {t("app.wordCount", { chars: textCountResult?.chars ?? 0, words: textCountResult?.words ?? 0 })}
           </span>
         </div>
       </div>
@@ -235,38 +205,6 @@ export function PaneContentSurface({
           </button>
         </div>
       ) : null}
-    </div>
-  );
-}
-
-interface DiagramFileHeaderProps {
-  isSourceMode: boolean;
-  name: string;
-  onRename: (name: string) => void;
-  onSourceModeToggle: () => void;
-}
-
-function DiagramFileHeader({
-  isSourceMode,
-  name,
-  onRename,
-  onSourceModeToggle
-}: DiagramFileHeaderProps): ReactElement {
-  return (
-    <div className="diagram-file-header">
-      <div className="diagram-file-title-slot">
-        <EditableFileTitle
-          key={name}
-          name={name}
-          onRename={onRename}
-        />
-      </div>
-      <div className="diagram-file-title-actions">
-        <SourceModeButton
-          isSourceMode={isSourceMode}
-          onSourceModeToggle={onSourceModeToggle}
-        />
-      </div>
     </div>
   );
 }

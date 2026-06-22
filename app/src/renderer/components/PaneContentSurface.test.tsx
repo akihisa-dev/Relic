@@ -1,32 +1,17 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { EditorView } from "@codemirror/view";
-import { useEffect, type ReactElement } from "react";
+import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
-import { emptyRelicDiagramMarkdownContent } from "../../shared/diagramMarkdown";
 import { I18nProvider } from "../i18n";
 import type { FileTab } from "../store/editorStore";
 import * as paneViewModel from "../paneViewModel";
 import * as largeMarkdown from "../largeMarkdown";
 import { PaneContentSurface } from "./PaneContentSurface";
 
-vi.mock("./DiagramCanvas", () => ({
-  DiagramCanvas: ({ onStatusChange }: { onStatusChange?: (status: string) => void }) => {
-    useEffect(() => {
-      onStatusChange?.("diagram-live-status");
-    }, [onStatusChange]);
-
-    return <div>DiagramCanvas</div>;
-  }
-}));
-
 vi.mock("./Editor", () => ({
   Editor: () => <div>Editor</div>
-}));
-
-vi.mock("./diagram/diagramCanvasStatus", () => ({
-  diagramCanvasStatus: () => "diagram-canvas-status"
 }));
 
 const buildSurfaceElement = (activeTab: FileTab, sourceMode = false): ReactElement => (
@@ -102,59 +87,22 @@ describe("PaneContentSurface", () => {
     expect(textCountSpy).toHaveBeenCalledTimes(2);
   });
 
-  it("does not call text count in diagram mode", () => {
+  it("treats frontmatter markdown as normal markdown", () => {
     const textCountSpy = vi.spyOn(paneViewModel, "textCount");
-    const diagramTab: FileTab = {
-      content: emptyRelicDiagramMarkdownContent,
-      id: "tab-diagram",
+    const content = "---\ntitle: Note\n---\n\n# Note";
+    const fileTab: FileTab = {
+      content,
+      id: "tab-frontmatter",
       kind: "file",
-      name: "Diagram",
-      path: "Diagram.md",
-      savedContent: emptyRelicDiagramMarkdownContent
+      name: "Note",
+      path: "Note.md",
+      savedContent: content
     };
 
-    renderSurface(diagramTab, false);
+    renderSurface(fileTab, false);
 
-    expect(screen.getByText("DiagramCanvas")).toBeInTheDocument();
-    expect(screen.getByText("Diagram")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Source" })).toBeInTheDocument();
-    expect(screen.getByText("diagram-live-status")).toBeInTheDocument();
-    expect(textCountSpy).not.toHaveBeenCalled();
-  });
-
-  it("keeps the compact Diagram header in source mode", () => {
-    const diagramTab: FileTab = {
-      content: emptyRelicDiagramMarkdownContent,
-      id: "tab-diagram",
-      kind: "file",
-      name: "Diagram",
-      path: "Diagram.md",
-      savedContent: emptyRelicDiagramMarkdownContent
-    };
-
-    renderSurface(diagramTab, true);
-
-    expect(screen.queryByText("DiagramCanvas")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Source" })).toHaveClass("active");
-    expect(screen.getByText("74 characters / 12 words")).toBeInTheDocument();
-  });
-
-  it("routes invalid Diagram candidates to the Diagram canvas", () => {
-    const textCountSpy = vi.spyOn(paneViewModel, "textCount");
-    const diagramTab: FileTab = {
-      content: "---\ntype: diagram\nformatVersion: 999\n---\n\nnodes: []\nlines: []",
-      id: "tab-diagram-invalid",
-      kind: "file",
-      name: "Diagram",
-      path: "Diagram.md",
-      savedContent: "---\ntype: diagram\nformatVersion: 999\n---\n\nnodes: []\nlines: []"
-    };
-
-    renderSurface(diagramTab, false);
-
-    expect(screen.getByText("DiagramCanvas")).toBeInTheDocument();
-    expect(screen.getByText("diagram-live-status")).toBeInTheDocument();
-    expect(textCountSpy).not.toHaveBeenCalled();
+    expect(screen.getByText("27 characters / 6 words")).toBeInTheDocument();
+    expect(textCountSpy).toHaveBeenCalledTimes(1);
   });
 
   it("does not recalculate large markdown detection when content is unchanged", () => {

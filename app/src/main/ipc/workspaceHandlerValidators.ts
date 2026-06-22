@@ -19,7 +19,7 @@ import {
 } from "../../shared/frontmatterFields";
 import { isWorkspaceRelativeInputPath } from "../files/paths";
 
-const chartSources: ChartSource[] = ["chronicle", "date"];
+const chartSources: ChartSource[] = ["chronicle"];
 const workspaceIdPattern = /^[A-Za-z0-9_-]+$/;
 
 export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
@@ -54,7 +54,7 @@ export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedFi
 }
 
 export function isChartsInput(input: unknown): input is ChartSettings[] {
-  if (!Array.isArray(input) || input.length !== 2) return false;
+  if (!Array.isArray(input) || input.length !== 1) return false;
 
   const sources = new Set<ChartSource>();
 
@@ -88,7 +88,6 @@ export function isUpdateChartEntryInput(input: unknown): input is UpdateChartEnt
     chartSources.includes(candidate.source as ChartSource) &&
     (!("chronicleCalendarId" in candidate) || isChronicleCalendarId(candidate.chronicleCalendarId)) &&
     (!("chronicleCalendarStartYear" in candidate) || (Number.isInteger(candidate.chronicleCalendarStartYear) && Number(candidate.chronicleCalendarStartYear) >= 1)) &&
-    (!("dateKind" in candidate) || candidate.dateKind === "planned" || candidate.dateKind === "actual") &&
     (candidate.kind === "move" || candidate.kind === "resize-start" || candidate.kind === "resize-end") &&
     Number.isInteger(candidate.originalStartValue) &&
     Number.isInteger(candidate.originalEndValue) &&
@@ -147,7 +146,6 @@ export function isFeatureTogglesInput(input: unknown): input is FeatureToggles {
 
   const candidate = input as Record<string, unknown>;
   return (
-    typeof candidate.calendar === "boolean" &&
     typeof candidate.chronicle === "boolean" &&
     typeof candidate.chronicleSettings === "boolean" &&
     typeof candidate.tools === "boolean" &&

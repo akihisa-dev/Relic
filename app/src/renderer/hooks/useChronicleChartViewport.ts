@@ -1,18 +1,16 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { PointerEvent, RefObject, UIEvent } from "react";
 
-import type { ChartEntry, ChartSource, WorkspaceChart } from "../../shared/ipc";
+import type { ChartEntry, WorkspaceChart } from "../../shared/ipc";
 import {
   ROW_HEIGHT,
   chronicleNavigationTarget,
-  clamp,
-  dateNavigationTarget
+  clamp
 } from "../chronicleTimeline";
 import { startWindowPointerDrag } from "./windowPointerDrag";
 
 interface UseChronicleChartViewportInput {
   activeChart: WorkspaceChart | null;
-  activeSource: ChartSource;
   axisEnd: number;
   axisStart: number;
   entries: ChartEntry[];
@@ -25,14 +23,11 @@ export interface ChronicleChartViewport {
   chartViewportHeight: number;
   chartViewportWidth: number;
   handleChartScroll: (event: UIEvent<HTMLDivElement>) => void;
-  handleMinimapPointer: (event: PointerEvent<HTMLDivElement>) => void;
   handleVerticalMinimapPointer: (event: PointerEvent<HTMLDivElement>) => void;
-  minimapRef: RefObject<HTMLDivElement | null>;
   scrollLeft: number;
   scrollToRowIndex: (rowIndex: number) => void;
   scrollToChronicleFocus: () => void;
   scrollToTimelineValue: (value: number) => void;
-  scrollToToday: () => void;
   scrollTop: number;
   startChartPan: (event: PointerEvent<HTMLDivElement>) => void;
   verticalMinimapRef: RefObject<HTMLDivElement | null>;
@@ -40,7 +35,6 @@ export interface ChronicleChartViewport {
 
 export function useChronicleChartViewport({
   activeChart,
-  activeSource,
   axisEnd,
   axisStart,
   entries,
@@ -52,10 +46,8 @@ export function useChronicleChartViewport({
   const [chartViewportHeight, setChartViewportHeight] = useState(420);
   const [chartViewportWidth, setChartViewportWidth] = useState(720);
   const chartRef = useRef<HTMLDivElement | null>(null);
-  const minimapRef = useRef<HTMLDivElement | null>(null);
   const verticalMinimapRef = useRef<HTMLDivElement | null>(null);
   const previousAxisStartRef = useRef<number | null>(null);
-  const initialDateScrollKeyRef = useRef<string | null>(null);
   const initialChronicleScrollKeyRef = useRef<string | null>(null);
 
   const updateChartViewportSize = useCallback((): void => {
@@ -84,10 +76,6 @@ export function useChronicleChartViewport({
     setScrollLeft(targetScrollLeft);
   }, [axisStart, chartViewportWidth, nameColumnWidth, unitWidth]);
 
-  const scrollToToday = useCallback((): void => {
-    scrollToTimelineValue(dateNavigationTarget(entries, axisStart, axisEnd));
-  }, [axisEnd, axisStart, entries, scrollToTimelineValue]);
-
   const scrollToChronicleFocus = useCallback((): void => {
     const target = chronicleNavigationTarget(entries, axisStart, axisEnd);
     if (target !== null) scrollToTimelineValue(target);
@@ -114,25 +102,6 @@ export function useChronicleChartViewport({
 
     startWindowPointerDrag({ event, onMove: move });
   }, []);
-
-  const handleMinimapPointer = useCallback((event: PointerEvent<HTMLDivElement>): void => {
-    if (event.button > 0) return;
-
-    const minimapElement = minimapRef.current;
-    if (!minimapElement) return;
-
-    const scrollFromClientX = (clientX: number): void => {
-      const rect = minimapElement.getBoundingClientRect();
-      const ratio = rect.width > 0 ? clamp((clientX - rect.left) / rect.width, 0, 1) : 0;
-      const targetValue = axisStart + ratio * Math.max(1, axisEnd - axisStart + 1);
-      scrollToTimelineValue(targetValue);
-    };
-
-    scrollFromClientX(event.clientX);
-
-    const move = (moveEvent: globalThis.PointerEvent): void => scrollFromClientX(moveEvent.clientX);
-    startWindowPointerDrag({ event, onMove: move, pointerCaptureTarget: minimapElement });
-  }, [axisEnd, axisStart, scrollToTimelineValue]);
 
   const scrollToRowIndex = useCallback((rowIndex: number): void => {
     const chartElement = chartRef.current;
@@ -206,38 +175,25 @@ export function useChronicleChartViewport({
   }, [axisStart, unitWidth]);
 
   useLayoutEffect(() => {
-    if (activeSource !== "date" || !activeChart) return;
-
-    const key = activeChart.id;
-    if (initialDateScrollKeyRef.current === key) return;
-
-    initialDateScrollKeyRef.current = key;
-    scrollToToday();
-  }, [activeChart, activeSource, scrollToToday]);
-
-  useLayoutEffect(() => {
-    if (activeSource !== "chronicle" || !activeChart) return;
+    if (!activeChart) return;
 
     const key = activeChart.id;
     if (initialChronicleScrollKeyRef.current === key) return;
 
     initialChronicleScrollKeyRef.current = key;
     scrollToChronicleFocus();
-  }, [activeChart, activeSource, scrollToChronicleFocus]);
+  }, [activeChart, scrollToChronicleFocus]);
 
   return {
     chartRef,
     chartViewportHeight,
     chartViewportWidth,
     handleChartScroll,
-    handleMinimapPointer,
     handleVerticalMinimapPointer,
-    minimapRef,
     scrollLeft,
     scrollToRowIndex,
     scrollToChronicleFocus,
     scrollToTimelineValue,
-    scrollToToday,
     scrollTop,
     startChartPan,
     verticalMinimapRef

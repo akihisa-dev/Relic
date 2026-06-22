@@ -2,27 +2,19 @@ import type { PointerEvent, ReactElement, RefObject, UIEvent } from "react";
 
 import type { ChronicleCalendarSettings, ChartEntry, ChartEntryEditKind, ChartSource, WorkspaceChart } from "../../shared/ipc";
 import {
-  DATE_SCALES,
   buildVisibleChronicleGuideTicks,
-  buildVisibleDateGuideTicks,
   chronicleAxisTickInterval,
   timelineVisibleRange,
   type ChartGuideTick,
   type ChartRow,
-  type DateOffscreenIndicator,
-  type DateScale,
+  type TimelineOffscreenIndicator,
   type DragPreview
 } from "../chronicleTimeline";
 import { useT } from "../i18n";
-import { ChronicleNameColumn } from "./ChronicleNameColumn";
 import { ChronicleTracks } from "./ChronicleTracks";
 import {
   ChronicleAxis,
-  DateAxis,
-  DateOffscreenJumpButtons,
-  TimelineOffscreenJumpButtons,
-  VerticalMinimap,
-  VerticalOffscreenJumpButtons
+  TimelineOffscreenJumpButtons
 } from "./chronicleChartParts";
 
 export interface ChronicleChartGridProps {
@@ -33,11 +25,9 @@ export interface ChronicleChartGridProps {
   chartRef: RefObject<HTMLDivElement | null>;
   chartViewportHeight: number;
   chartViewportWidth: number;
-  chronicleOffscreenIndicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
+  chronicleOffscreenIndicators: { left: TimelineOffscreenIndicator | null; right: TimelineOffscreenIndicator | null };
   chronicleCalendars: ChronicleCalendarSettings[];
-  dateAxisHeight: number;
-  dateOffscreenIndicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
-  dateScale: DateScale | null;
+  axisHeight: number;
   dragPreview: DragPreview | null;
   guideTicks: ChartGuideTick[];
   nameColumnWidth: number;
@@ -50,16 +40,11 @@ export interface ChronicleChartGridProps {
     entry: ChartEntry,
     kind: ChartEntryEditKind
   ) => void;
-  onVerticalJump: (rowIndex: number) => void;
-  onVerticalMinimapPointerDown: (event: PointerEvent<HTMLDivElement>) => void;
   rows: ChartRow[];
   scrollLeft: number;
   tickInterval: number;
   timelineWidth: number;
   unitWidth: number;
-  verticalMinimapRef: RefObject<HTMLDivElement | null>;
-  verticalMinimapViewport: { heightPercent: number; topPercent: number };
-  verticalOffscreenIndicators: { bottom: { count: number; targetIndex: number } | null; top: { count: number; targetIndex: number } | null };
 }
 
 export function ChronicleChartGrid({
@@ -72,9 +57,7 @@ export function ChronicleChartGrid({
   chartViewportWidth,
   chronicleOffscreenIndicators,
   chronicleCalendars,
-  dateAxisHeight,
-  dateOffscreenIndicators,
-  dateScale,
+  axisHeight,
   dragPreview,
   guideTicks,
   nameColumnWidth,
@@ -83,19 +66,13 @@ export function ChronicleChartGrid({
   onJump,
   onOpenFile,
   onStartEntryEdit,
-  onVerticalJump,
-  onVerticalMinimapPointerDown,
   rows,
   scrollLeft,
   tickInterval,
   timelineWidth,
-  unitWidth,
-  verticalMinimapRef,
-  verticalMinimapViewport,
-  verticalOffscreenIndicators
+  unitWidth
 }: ChronicleChartGridProps): ReactElement {
   const t = useT();
-  const showNameColumn = activeSource === "date";
 
   if (!activeChart) {
     return <div className="frontmatter-field-empty">{t("chronicle.empty")}</div>;
@@ -109,11 +86,9 @@ export function ChronicleChartGrid({
     unitWidth,
     viewportWidth: timelineViewportWidth
   });
-  const visibleGuideTicks = activeSource === "date" && dateScale
-    ? buildVisibleDateGuideTicks(axisStart, axisEnd, dateScale, visibleRange)
-    : activeSource === "chronicle"
-      ? buildVisibleChronicleGuideTicks(axisStart, axisEnd, chronicleAxisTickInterval(tickInterval), visibleRange)
-      : guideTicks;
+  const visibleGuideTicks = activeSource === "chronicle"
+    ? buildVisibleChronicleGuideTicks(axisStart, axisEnd, chronicleAxisTickInterval(tickInterval), visibleRange)
+    : guideTicks;
 
   return (
     <div className={`chronicle-chart-layout${activeSource === "chronicle" ? " chronicle-chart-layout--chronicle" : ""}`}>
@@ -124,88 +99,40 @@ export function ChronicleChartGrid({
         onScroll={onChartScroll}
         ref={chartRef}
       >
-        {activeSource === "date" ? (
-          <DateOffscreenJumpButtons
-            indicators={dateOffscreenIndicators}
-            onJump={onJump}
-            t={t}
-          />
-        ) : activeSource === "chronicle" ? (
-          <TimelineOffscreenJumpButtons
-            indicators={chronicleOffscreenIndicators}
-            leftOffset={nameColumnWidth}
-            onJump={onJump}
-            t={t}
-          />
-        ) : null}
+        <TimelineOffscreenJumpButtons
+          indicators={chronicleOffscreenIndicators}
+          leftOffset={nameColumnWidth}
+          onJump={onJump}
+          t={t}
+        />
         <div className="chronicle-grid" style={{ width: nameColumnWidth + timelineWidth }}>
-          {showNameColumn ? (
-            <ChronicleNameColumn
-              activeSource={activeSource}
-              chronicleCalendars={chronicleCalendars}
-              dateAxisHeight={dateAxisHeight}
-              nameColumnWidth={nameColumnWidth}
-              onJump={onJump}
-              onOpenFile={onOpenFile}
-              rows={rows}
-            />
-          ) : null}
           <div className="chronicle-timeline" style={{ marginLeft: nameColumnWidth, width: timelineWidth }}>
-            {activeSource === "date" ? (
-              <DateAxis
-                axisEnd={axisEnd}
-                axisStart={axisStart}
-                scale={dateScale ?? DATE_SCALES[0]}
-                scrollLeft={scrollLeft}
-                unitWidth={unitWidth}
-                viewportWidth={timelineViewportWidth}
-                width={timelineWidth}
-              />
-            ) : (
-              <ChronicleAxis
-                axisEnd={axisEnd}
-                axisStart={axisStart}
-                calendars={chronicleCalendars}
-                interval={chronicleAxisTickInterval(tickInterval)}
-                scrollLeft={scrollLeft}
-                unitWidth={unitWidth}
-                viewportWidth={timelineViewportWidth}
-                width={timelineWidth}
-              />
-            )}
-            <ChronicleTracks
-              activeSource={activeSource}
+            <ChronicleAxis
               axisEnd={axisEnd}
               axisStart={axisStart}
-              dateScale={dateScale}
+              calendars={chronicleCalendars}
+              interval={chronicleAxisTickInterval(tickInterval)}
+              scrollLeft={scrollLeft}
+              unitWidth={unitWidth}
+              viewportWidth={timelineViewportWidth}
+              width={timelineWidth}
+            />
+            <ChronicleTracks
+              activeSource={activeSource}
+              axisStart={axisStart}
               dragPreview={dragPreview}
               guideTicks={visibleGuideTicks}
               onOpenFile={onOpenFile}
               onStartEntryEdit={onStartEntryEdit}
               rows={rows}
               scrollLeft={scrollLeft}
-              trackViewportHeight={Math.max(1, chartViewportHeight - dateAxisHeight)}
+              trackViewportHeight={Math.max(1, chartViewportHeight - axisHeight)}
               timelineWidth={timelineWidth}
               unitWidth={unitWidth}
             />
           </div>
         </div>
       </div>
-      {activeSource === "date" ? (
-        <aside className="chronicle-vertical-panel">
-          <VerticalOffscreenJumpButtons
-            indicators={verticalOffscreenIndicators}
-            onJump={onVerticalJump}
-            t={t}
-          />
-          <VerticalMinimap
-            label={t("chronicle.verticalMinimap")}
-            minimapRef={verticalMinimapRef}
-            onPointerDown={onVerticalMinimapPointerDown}
-            viewport={verticalMinimapViewport}
-          />
-        </aside>
-      ) : null}
     </div>
   );
 }

@@ -47,8 +47,7 @@ describe("workspaceSettings", () => {
         { id: "chronicle3", name: "", startYear: 200 }
       ],
       charts: [
-        { filePaths: ["history/kamakura.md"], id: "chronicle", name: "歴史", source: "chronicle" },
-        { filePaths: [], id: "schedule", name: "予定", source: "date" }
+        { filePaths: ["history/kamakura.md"], id: "chronicle", name: "歴史", source: "chronicle" }
       ],
       pinnedPaths: ["notes/readme.md", "docs"],
       workspacePath: "/Users/test/notes"
@@ -62,8 +61,7 @@ describe("workspaceSettings", () => {
       { id: "chronicle3", name: "", startYear: 200 }
     ]);
     expect(settings.charts).toEqual([
-      { filePaths: ["history/kamakura.md"], id: "chronicle", name: "chronicle", source: "chronicle" },
-      { filePaths: [], id: "date", name: "date", source: "date" }
+      { filePaths: ["history/kamakura.md"], id: "chronicle", name: "chronicle", source: "chronicle" }
     ]);
     expect(settings.pinnedPaths).toEqual(["notes/readme.md", "docs"]);
     expect(settings.workspacePath).toBe("/Users/test/notes");
@@ -119,12 +117,6 @@ describe("workspaceSettings", () => {
           id: "chronicle",
           name: "歴史",
           source: "chronicle"
-        },
-        {
-          filePaths: ["schedule.md"],
-          id: "date",
-          name: "予定",
-          source: "date"
         }
       ],
       pinnedPaths: [],
@@ -134,8 +126,7 @@ describe("workspaceSettings", () => {
     const settings = await readWorkspaceSettings(userDataPath, "ws-chart-paths");
 
     expect(settings.charts).toEqual([
-      { filePaths: ["history/old.md", "notes/today.md"], id: "chronicle", name: "chronicle", source: "chronicle" },
-      { filePaths: ["schedule.md"], id: "date", name: "date", source: "date" }
+      { filePaths: ["history/old.md", "notes/today.md"], id: "chronicle", name: "chronicle", source: "chronicle" }
     ]);
   });
 
@@ -148,8 +139,7 @@ describe("workspaceSettings", () => {
     await writeFile(settingsPath, JSON.stringify({
       chronicleCalendars: defaultChronicleCalendars,
       ganttCharts: [
-        { filePaths: ["history.md"], id: "chronicle", name: "歴史", source: "chronicle" },
-        { filePaths: ["schedule.md"], id: "date", name: "予定", source: "date" }
+        { filePaths: ["history.md"], id: "chronicle", name: "歴史", source: "chronicle" }
       ],
       pinnedPaths: [],
       workspacePath: "/Users/test/legacy"
@@ -158,8 +148,7 @@ describe("workspaceSettings", () => {
     const settings = await readWorkspaceSettings(userDataPath, "ws-legacy");
 
     expect(settings.charts).toEqual([
-      { filePaths: ["history.md"], id: "chronicle", name: "chronicle", source: "chronicle" },
-      { filePaths: ["schedule.md"], id: "date", name: "date", source: "date" }
+      { filePaths: ["history.md"], id: "chronicle", name: "chronicle", source: "chronicle" }
     ]);
   });
 
@@ -172,14 +161,7 @@ describe("workspaceSettings", () => {
     await writeFile(settingsPath, JSON.stringify({
       schemaVersion: 0,
       chronicleCalendars: defaultChronicleCalendars,
-      charts: [
-        {
-          filePaths: ["schedule.md"],
-          id: "date",
-          name: "予定",
-          source: "date"
-        }
-      ],
+      charts: defaultCharts,
       pinnedPaths: ["notes.md"],
       workspacePath: "/Users/test/workspace"
     }), "utf8");

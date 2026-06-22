@@ -248,7 +248,7 @@ describe("updateLinksForFileRename", () => {
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("![[new]]");
   });
 
-  it("type: mapはDiagramとして扱わずNode参照更新で上書きしない", async () => {
+  it("通常のMarkdown本文はリンク更新対象がなければ上書きしない", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-map-invalid-"));
     temporaryPaths.push(ws);
 

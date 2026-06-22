@@ -195,7 +195,7 @@ describe("AppRightPanel", () => {
     expect(screen.queryByDisplayValue("broken")).not.toBeInTheDocument();
   });
 
-  it("uses calendar inputs for registered date properties in the frontmatter panel", () => {
+  it("uses date inputs for registered date properties in the frontmatter panel", () => {
     const activeFileTab: FileTab = {
       content: "---\ndeadline: 2026-06-08\n---\n# Body",
       id: "tab-1",

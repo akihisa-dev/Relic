@@ -20,13 +20,11 @@ describe("readWorkspaceFileIndex", () => {
     );
   });
 
-  it("Markdownファイル一覧とDiagram判定と行単位テキストを作る", async () => {
+  it("Markdownファイル一覧と行単位テキストを作る", async () => {
     const workspacePath = await createWorkspace();
     await writeFile(path.join(workspacePath, "note.md"), "# Note\n本文", "utf8");
-    await writeFile(path.join(workspacePath, "diagram.md"), "---\ntype: diagram\n---\n\nnodes: []\nlines: []", "utf8");
-    await writeFile(path.join(workspacePath, "relationship.md"), "---\ntype: relationship\n---\n\nnodes: []\nlines: []", "utf8");
-    await writeFile(path.join(workspacePath, "why.md"), "---\ntype: why-tree\n---\n\nlabels:\n  root: ルート\n  node: ノード\n  fact: メモ\n  solution: 関連項目\n  action: アクション\nphenomenon:\n  title: 問題\n  facts: []\n  solutions: []\n  actions: []", "utf8");
-    await writeFile(path.join(workspacePath, "ignored.txt"), "---\ntype: diagram\n---", "utf8");
+    await writeFile(path.join(workspacePath, "extra.md"), "# Extra\n本文", "utf8");
+    await writeFile(path.join(workspacePath, "ignored.txt"), "# ignored", "utf8");
 
     const index = await readWorkspaceFileIndex(workspacePath);
 
@@ -36,20 +34,11 @@ describe("readWorkspaceFileIndex", () => {
       path: filePath,
       readStatus
     }))).toEqual([
-      { kind: "diagram", name: "diagram", path: "diagram.md", readStatus: "ok" },
-      { kind: "markdown", name: "note", path: "note.md", readStatus: "ok" },
-      { kind: "markdown", name: "relationship", path: "relationship.md", readStatus: "ok" },
-      { kind: "markdown", name: "why", path: "why.md", readStatus: "ok" }
+      { kind: "markdown", name: "extra", path: "extra.md", readStatus: "ok" },
+      { kind: "markdown", name: "note", path: "note.md", readStatus: "ok" }
     ]);
     expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["# Note", "本文"]);
-    expect(index.records.find((record) => record.path === "diagram.md")?.lines).toEqual([
-      "---",
-      "type: diagram",
-      "---",
-      "",
-      "nodes: []",
-      "lines: []"
-    ]);
+    expect(index.records.find((record) => record.path === "extra.md")?.lines).toEqual(["# Extra", "本文"]);
   });
 
   it("大文字のMarkdown拡張子を持つファイルも検索インデックスに含める", async () => {
@@ -72,19 +61,14 @@ describe("readWorkspaceFileIndex", () => {
     ]);
   });
 
-  it("Diagram判定はフロントマターtypeだけを見て、type: mapは扱わない", async () => {
+  it("Markdownだけをインデックス対象にする", async () => {
     const workspacePath = await createWorkspace();
-    await writeFile(path.join(workspacePath, "not-diagram.md"), "# Title\ntype: diagram", "utf8");
-    await writeFile(path.join(workspacePath, "old-map.md"), "type: map\nnodes: []", "utf8");
-    await writeFile(path.join(workspacePath, "diagram.md"), "---\ntype: diagram\n---\nnodes: []\nlines: []", "utf8");
-    await writeFile(path.join(workspacePath, "old-relationship.md"), "---\ntype: relationship\n---\nnodes: []\nlines: []", "utf8");
+    await writeFile(path.join(workspacePath, "note.md"), "# Title", "utf8");
+    await writeFile(path.join(workspacePath, "ignored.txt"), "# Ignored", "utf8");
 
     const index = await readWorkspaceFileIndex(workspacePath);
 
-    expect(index.entries.find((entry) => entry.path === "not-diagram.md")?.kind).toBe("markdown");
-    expect(index.entries.find((entry) => entry.path === "old-map.md")?.kind).toBe("markdown");
-    expect(index.entries.find((entry) => entry.path === "diagram.md")?.kind).toBe("diagram");
-    expect(index.entries.find((entry) => entry.path === "old-relationship.md")?.kind).toBe("markdown");
+    expect(index.entries.map((entry) => entry.path)).toEqual(["note.md"]);
   });
 
   it("キャッシュは本文行を保存しない", async () => {
@@ -204,9 +188,9 @@ describe("readWorkspaceFileIndex", () => {
     expect(cache.records[0]).not.toHaveProperty("lines");
   });
 
-  it("大きすぎるMarkdownは全文検索用本文を持たず先頭部分だけでDiagram判定する", async () => {
+  it("大きすぎるMarkdownは全文検索用本文を持たない", async () => {
     const workspacePath = await createWorkspace();
-    await writeFile(path.join(workspacePath, "large-diagram.md"), `---\ntype: diagram\n---\n${"x".repeat(64)}`, "utf8");
+    await writeFile(path.join(workspacePath, "large-note.md"), `# Large\n${"x".repeat(64)}`, "utf8");
 
     const index = await readWorkspaceFileIndex(workspacePath, {
       maxSearchFileBytes: 8,
@@ -218,9 +202,9 @@ describe("readWorkspaceFileIndex", () => {
     });
 
     expect(index.records).toMatchObject([{
-      kind: "diagram",
+      kind: "markdown",
       lines: [],
-      path: "large-diagram.md",
+      path: "large-note.md",
       searchable: false
     }]);
   });

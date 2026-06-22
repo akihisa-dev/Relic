@@ -68,7 +68,6 @@ describe("appSettings", () => {
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
       schemaVersion: 0,
       featureToggles: {
-        calendar: true,
         chronicle: false,
         chronicleSettings: false,
         frontmatter: false,
@@ -132,7 +131,6 @@ describe("appSettings", () => {
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
       schemaVersion: 0,
       featureToggles: {
-        calendar: false,
         chronicle: false,
         chronicleSettings: false,
         tools: false,
@@ -167,7 +165,6 @@ describe("appSettings", () => {
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
       featureToggles: {
-        calendar: true,
         chronicle: false,
         chronicleSettings: false,
         frontmatter: false,

@@ -165,7 +165,6 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
   const s = raw as Record<string, unknown>;
 
   return {
-    calendar: typeof s.calendar === "boolean" ? s.calendar : true,
     chronicle: typeof s.chronicle === "boolean" ? s.chronicle : false,
     chronicleSettings: typeof s.chronicleSettings === "boolean" ? s.chronicleSettings : false,
     tools: typeof s.tools === "boolean" ? s.tools : false,

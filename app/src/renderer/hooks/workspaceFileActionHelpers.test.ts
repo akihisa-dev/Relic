@@ -10,7 +10,6 @@ import {
   matchesAnyTreeItemPath,
   matchesTreeItemPath,
   nextUniqueFileName,
-  nextUniqueDiagramFileName,
   nextUniqueFolderName,
   removeCoveredItems
 } from "./workspaceFileActionHelpers";
@@ -69,23 +68,6 @@ describe("workspaceFileActionHelpers", () => {
 
     expect(nextUniqueFileName(state, t)).toBe("新規ファイル 3");
     expect(nextUniqueFolderName(state, t)).toBe("新規フォルダ 2");
-  });
-
-  it("rootに存在する図解名を避けて次のDiagramファイル名を返す", () => {
-    const state = workspaceState([
-      { name: "図解ファイル.md", path: "図解ファイル.md", type: "file" },
-      { name: "図解ファイル 2.md", path: "図解ファイル 2.md", type: "file" },
-      {
-        children: [
-          { name: "図解ファイル.md", path: "Nested/図解ファイル.md", type: "file" }
-        ],
-        name: "Nested",
-        path: "Nested",
-        type: "folder"
-      }
-    ]);
-
-    expect(nextUniqueDiagramFileName(state, t, "diagram")).toBe("図解ファイル 3");
   });
 
   it("作成後のMarkdown pathを末尾一致で探す", () => {

@@ -1,11 +1,10 @@
 import path from "node:path";
 
-import { axisToYear, dateToDay, dayToDate, rangeToArray, shiftDateYears, yearToAxis } from "../../shared/chartTime";
+import { axisToYear, rangeToArray, yearToAxis } from "../../shared/chartTime";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import {
   defaultChronicleCalendars,
   type ChronicleCalendarSettings,
-  type ChartDateKind,
   type ChartEntry,
   type UpdateChartEntryInput
 } from "../../shared/ipc";
@@ -14,26 +13,17 @@ import {
   calendarById,
   calendarMainStartYear,
   calendarYearToMainYear,
-  dateFieldNameForKind,
-  dateKindOrder,
-  dateYear,
-  extractDateRangeFromData,
   extractFirstChronicleRangeFromData,
   formatCalendarYear,
-  mainYearToCalendarYear,
-  normalizeDateFieldsForWrite,
-  type DateRange
+  mainYearToCalendarYear
 } from "./chronicleModel";
 
 export function collectChartEntriesForMarkdown(
   relativePath: string,
   content: string,
   calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
-): Record<"chronicle" | "date", ChartEntry[]> {
-  const entriesBySource: Record<"chronicle" | "date", ChartEntry[]> = {
-    chronicle: [],
-    date: []
-  };
+): Record<"chronicle", ChartEntry[]> {
+  const entriesBySource: Record<"chronicle", ChartEntry[]> = { chronicle: [] };
   const fileName = stripMarkdownExtension(path.basename(relativePath));
   const frontmatter = parseFrontmatter(content);
   const range = extractFirstChronicleRangeFromData(frontmatter.data, calendars);
@@ -54,27 +44,6 @@ export function collectChartEntriesForMarkdown(
     });
   }
 
-  const dateRanges: Array<{ kind: ChartDateKind; range: DateRange }> = [];
-  const plannedDateRange = extractDateRangeFromData(frontmatter.data, "planned");
-  const actualDateRange = extractDateRangeFromData(frontmatter.data, "actual");
-  const statuses = extractStatusValues(frontmatter.data);
-
-  if (plannedDateRange) dateRanges.push({ kind: "planned", range: plannedDateRange });
-  if (actualDateRange) dateRanges.push({ kind: "actual", range: actualDateRange });
-
-  for (const { kind, range: dateRange } of dateRanges) {
-    entriesBySource.date.push({
-      dateKind: kind,
-      endLabel: dateRange.endDate,
-      endValue: dateToDay(dateRange.endDate),
-      fileName,
-      path: relativePath,
-      startLabel: dateRange.startDate,
-      startValue: dateToDay(dateRange.startDate),
-      statuses
-    });
-  }
-
   return entriesBySource;
 }
 
@@ -86,16 +55,6 @@ export function sortChronicleEntries(entries: ChartEntry[]): ChartEntry[] {
   );
 }
 
-export function sortDateEntries(entries: ChartEntry[]): ChartEntry[] {
-  return entries.toSorted((a, b) =>
-    a.fileName.localeCompare(b.fileName, "ja") ||
-      a.path.localeCompare(b.path, "ja") ||
-      dateKindOrder(a.dateKind) - dateKindOrder(b.dateKind) ||
-      a.startValue - b.startValue ||
-      a.endValue - b.endValue
-  );
-}
-
 export function updateChronicleDataForChartEdit(
   data: Record<string, unknown>,
   input: UpdateChartEntryInput,
@@ -104,48 +63,22 @@ export function updateChronicleDataForChartEdit(
   const start = Math.min(input.startValue, input.endValue);
   const end = Math.max(input.startValue, input.endValue);
 
-  if (input.source === "chronicle") {
-    const originalStartYear = axisToYear(input.originalStartValue);
-    const originalEndYear = axisToYear(input.originalEndValue);
-    const startYear = axisToYear(start);
-    const endYear = axisToYear(end);
-    const calendar = calendarById(calendars, input.chronicleCalendarId ?? "chronicle0");
-    const fieldName = calendar?.id ?? "chronicle0";
-    const nextStartYear = calendar ? mainYearToCalendarYear(calendar, startYear) : startYear;
-    const nextEndYear = calendar ? mainYearToCalendarYear(calendar, endYear) : endYear;
-    const next: Record<string, unknown> = {
-      ...data,
-      [fieldName]: rangeToArray(nextStartYear, nextEndYear)
-    };
-    for (const kind of ["planned", "actual"] as const) {
-      const dateRange = extractDateRangeFromData(data, kind);
-
-      if (dateRange) {
-        const fieldName = dateFieldNameForKind(kind);
-        const nextStartDate = shiftDateYears(dateRange.startDate, startYear - originalStartYear);
-        const nextEndDate = shiftDateYears(dateRange.endDate, endYear - originalEndYear);
-        const nextDateRange = rangeToArray(nextStartDate, nextEndDate);
-        next[fieldName] = nextDateRange;
-      }
-    }
-
-    return normalizeDateFieldsForWrite(next);
-  }
-
-  const startDate = dayToDate(start);
-  const endDate = dayToDate(end);
-  const dateKind = input.dateKind ?? "planned";
-  const fieldName = dateFieldNameForKind(dateKind);
+  const originalStartYear = axisToYear(input.originalStartValue);
+  const originalEndYear = axisToYear(input.originalEndValue);
+  void originalStartYear;
+  void originalEndYear;
+  const startYear = axisToYear(start);
+  const endYear = axisToYear(end);
+  const calendar = calendarById(calendars, input.chronicleCalendarId ?? "chronicle0");
+  const fieldName = calendar?.id ?? "chronicle0";
+  const nextStartYear = calendar ? mainYearToCalendarYear(calendar, startYear) : startYear;
+  const nextEndYear = calendar ? mainYearToCalendarYear(calendar, endYear) : endYear;
   const next: Record<string, unknown> = {
     ...data,
-    [fieldName]: rangeToArray(startDate, endDate)
+    [fieldName]: rangeToArray(nextStartYear, nextEndYear)
   };
 
-  const startYear = dateYear(startDate);
-  const endYear = dateYear(endDate);
-  next.chronicle0 = rangeToArray(startYear, endYear);
-
-  return normalizeDateFieldsForWrite(next);
+  return next;
 }
 
 export function extractChronicleRange(
@@ -157,21 +90,4 @@ export function extractChronicleRange(
   if (!range) return null;
 
   return { endYear: range.endYear, startYear: range.startYear };
-}
-
-export function extractDateRange(markdown: string): DateRange | null {
-  const { data } = parseFrontmatter(markdown);
-  return extractDateRangeFromData(data, "planned");
-}
-
-function extractStatusValues(data: Record<string, unknown>): string[] {
-  const value = data.status;
-  const rawValues = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
-  const statuses = rawValues.flatMap((candidate) => {
-    if (typeof candidate !== "string") return [];
-    const status = candidate.trim();
-    return status ? [status] : [];
-  });
-
-  return [...new Set(statuses)];
 }

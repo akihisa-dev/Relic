@@ -31,7 +31,6 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 | [project/overview.md](project/overview.md) | Relicの目的、対象ユーザー、判断思想、リポジトリ構成 |
 | [project/terms.md](project/terms.md) | 用語定義。コード・UI・ドキュメントで使う言葉の統一基準 |
 | [features/](features/) | 機能の振る舞い・詳細仕様 |
-| [features/diagrams.md](features/diagrams.md) | Diagram / 図解ファイルの仕様 |
 | [design/DESIGN.md](design/DESIGN.md) | デザイン正本。デザインシステム、画面一覧と構成、画面遷移フロー |
 | [engineering/architecture.md](engineering/architecture.md) | アーキテクチャ全体像 |
 | [engineering/data-model.md](engineering/data-model.md) | データモデル定義 |
@@ -54,9 +53,9 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 | [development/phases/P12.md](development/phases/P12.md) | P12正本。ヴィジュアルデザイン・UIの調整・修正フェーズの対象範囲、ルール、作業記録 |
 | [development/phases/P13.md](development/phases/P13.md) | P13正本。全体整理・リファクタリング・不具合修正フェーズの対象範囲、ルール、作業記録 |
 | [development/phases/P14.md](development/phases/P14.md) | P14正本。ファイル加工ツールの機能改善・修正フェーズの対象範囲、ルール、作業記録 |
-| [development/phases/P15.md](development/phases/P15.md) | P15正本。カレンダーと年表機能の全般フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P15.md](development/phases/P15.md) | P15正本。年表機能の全般フェーズの対象範囲、ルール、作業記録 |
 | [development/phases/P16.md](development/phases/P16.md) | P16正本。フロントマター入力方式改善と全般バグ修正フェーズの対象範囲、ルール、作業記録 |
-| [development/phases/P17.md](development/phases/P17.md) | P17正本。Diagram / 図解機能追加フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P17.md](development/phases/P17.md) | P17正本。機能追加フェーズの対象範囲、ルール、作業記録 |
 | [development/phases/P18.md](development/phases/P18.md) | P18正本。リファクタリング・開発体制の調整・文書整理フェーズの対象範囲、ルール、作業記録 |
 | [development/phases/P19.md](development/phases/P19.md) | 現在フェーズ正本。機能改善・修正・追加フェーズの対象範囲、ルール、作業記録 |
 | [development/questions.md](development/questions.md) | 未決定事項の正本 |

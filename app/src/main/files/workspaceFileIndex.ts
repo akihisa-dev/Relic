@@ -4,7 +4,6 @@ import type { Stats } from "node:fs";
 import path from "node:path";
 
 import type { WorkspaceFileIndexEntry, WorkspaceFileKind, WorkspaceTreeNode } from "../../shared/ipc";
-import { isRelicDiagramMarkdownContent } from "../../shared/diagramMarkdown";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
@@ -174,7 +173,7 @@ async function readIndexRecord(
       return recordFor(
         relativePath,
         fileStats,
-        isRelicDiagramMarkdownContent(head) ? "diagram" : "markdown",
+        "markdown",
         [],
         false,
         fileHash(head)
@@ -189,7 +188,7 @@ async function readIndexRecord(
     return recordFor(
       relativePath,
       fileStats,
-      isRelicDiagramMarkdownContent(content) ? "diagram" : "markdown",
+      "markdown",
       includeSearchContent ? content.split("\n") : [],
       true,
       fileHash(content)
@@ -285,7 +284,7 @@ function parseCachedRecord(raw: unknown): WorkspaceFileIndexRecord[] {
   if (record.readStatus === "ok" && (typeof record.contentHash !== "string" || record.contentHash === "")) return [];
 
   return [{
-    kind: record.kind,
+    kind: "markdown",
     lines: [],
     mtimeMs: record.mtimeMs,
     name: record.name,

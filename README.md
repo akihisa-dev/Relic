@@ -54,13 +54,11 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 - Print and PDF export from Markdown preview.
 - Copy and save diagram SVG output.
 
-### Timelines and Dates
+### Timeline
 
-- Timeline and date chart views for Markdown content with date information.
+- Timeline view for Markdown content.
 
 ![Relic timeline screenshot](assets/relic-timeline-screenshot.png)
-
-![Relic calendar screenshot](assets/relic-calendar-screenshot.png)
 
 ### File Processing Tools
 
@@ -310,13 +308,11 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 - Markdownプレビューの印刷 / PDF保存
 - 図表SVGのコピー / 保存
 
-### 年表と日付
+### 年表
 
-- 日付情報を持つMarkdown内容の年表 / 日付チャート表示
+- Markdown内容の年表表示
 
 ![Relic timeline screenshot](assets/relic-timeline-screenshot.png)
-
-![Relic calendar screenshot](assets/relic-calendar-screenshot.png)
 
 ### ファイル加工ツール
 

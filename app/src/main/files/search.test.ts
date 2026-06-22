@@ -59,59 +59,37 @@ describe("searchWorkspace", () => {
     });
   });
 
-  it("Diagram Markdownも全文検索対象に含める", async () => {
+  it("通常Markdownの本文を全文検索対象に含める", async () => {
     const workspacePath = await createSearchWorkspace();
-    await writeFile(path.join(workspacePath, "図解ファイル.md"), "---\ntype: diagram\n---\n\nnodes: []\nlines:\n  - label: 幼なじみ", "utf8");
+    await writeFile(path.join(workspacePath, "人物メモ.md"), "# 人物メモ\n\n幼なじみとの関係を記録する。", "utf8");
 
     await expect(searchWorkspace(workspacePath, "幼なじみ", "fullText")).resolves.toEqual({
       ok: true,
       value: searchResultSet([{
-        fileName: "図解ファイル",
-        lineNumber: 7,
-        lineText: "- label: 幼なじみ",
-        path: "図解ファイル.md"
+        fileName: "人物メモ",
+        lineNumber: 3,
+        lineText: "幼なじみとの関係を記録する。",
+        path: "人物メモ.md"
       }])
     });
   });
 
-  it("Diagram内の図形テキストを全文検索対象に含める", async () => {
+  it("通常Markdownの複数行本文を全文検索対象に含める", async () => {
     const workspacePath = await createSearchWorkspace();
-    await writeFile(path.join(workspacePath, "原因分析.md"), [
-      "---",
-      "type: diagram",
-      "---",
-      "",
-      "nodes:",
-      "  - id: node-1",
-      "    shape: process",
-      "    text: 問題が起きている",
-      "    x: 120",
-      "    y: 80",
-      "    width: 180",
-      "    height: 80",
-      "  - id: node-2",
-      "    shape: decision",
-      "    text: 根本原因",
-      "    x: 360",
-      "    y: 80",
-      "    width: 180",
-      "    height: 80",
-      "lines: []",
-      ""
-    ].join("\n"), "utf8");
+    await writeFile(path.join(workspacePath, "原因分析.md"), "# 原因分析\n\n問題が起きている\n根本原因", "utf8");
 
     await expect(searchWorkspace(workspacePath, "問題が起きている", "fullText")).resolves.toEqual({
       ok: true,
       value: searchResultSet([{
         fileName: "原因分析",
-        lineNumber: 8,
-        lineText: "text: 問題が起きている",
+        lineNumber: 3,
+        lineText: "問題が起きている",
         path: "原因分析.md"
       }])
     });
     await expect(searchWorkspace(workspacePath, "根本原因", "fullText")).resolves.toMatchObject({
       ok: true,
-      value: { results: [{ fileName: "原因分析", lineText: "text: 根本原因", path: "原因分析.md" }] }
+      value: { results: [{ fileName: "原因分析", lineText: "根本原因", path: "原因分析.md" }] }
     });
   });
 

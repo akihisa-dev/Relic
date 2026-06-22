@@ -7,14 +7,6 @@ export const IconFiles = (_props: { sidebarOpen?: boolean } = {}): ReactElement 
   </svg>
 );
 
-export const IconDiagram = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
-    <path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3z" />
-    <path d="M9 3v15" />
-    <path d="M15 6v15" />
-  </svg>
-);
-
 export const IconTools = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
     <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9" />
@@ -44,20 +36,6 @@ export const IconChronicle = (): ReactElement => (
     <path d="M9.414 13.414a2 2 0 0 0 1.414.586H19a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-8.172a2 2 0 0 0-1.414.586L8 12z" />
     <path d="M9.414 21.414a2 2 0 0 0 1.414.586H19a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-8.172a2 2 0 0 0-1.414.586L8 20z" />
     <path d="M9.414 5.414A2 2 0 0 0 10.828 6H19a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1h-8.172a2 2 0 0 0-1.414.586L8 4z" />
-  </svg>
-);
-
-export const IconCalendar = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
-    <rect height="18" rx="2" width="18" x="3" y="4" />
-    <path d="M8 2v4" />
-    <path d="M16 2v4" />
-    <path d="M3 10h18" />
-    <path d="M8 14h.01" />
-    <path d="M12 14h.01" />
-    <path d="M16 14h.01" />
-    <path d="M8 18h.01" />
-    <path d="M12 18h.01" />
   </svg>
 );
 

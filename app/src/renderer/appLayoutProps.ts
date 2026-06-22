@@ -108,7 +108,6 @@ export interface AppLayoutFilesSidebarInput {
   handleCreateFileInFolder: FilesSidebarProps["onCreateFileInFolder"];
   handleCreateFolderFromSidebar: FilesSidebarProps["onCreateFolder"];
   handleCreateFolderInFolder: FilesSidebarProps["onCreateFolderInFolder"];
-  handleCreateDiagramFile: FilesSidebarProps["onCreateDiagramFile"];
   handleCreateNewWorkspace: FilesSidebarProps["onCreateWorkspace"];
   handleDeleteTreeItem: FilesSidebarProps["onDeleteItem"];
   handleDeleteTreeItems: FilesSidebarProps["onDeleteItems"];

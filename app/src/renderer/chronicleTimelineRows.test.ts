@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { ChartEntry } from "../shared/ipc";
 import {
   buildChartRows,
-  dateKindPatch,
+  chronicleCalendarPatch,
   entryKey,
   isPreviewForEntry,
   previewEntryForDrag,
@@ -13,61 +13,54 @@ import {
 
 function entry(overrides: Partial<ChartEntry> = {}): ChartEntry {
   return {
-    endLabel: "2026-05-05",
-    endValue: 20_848,
-    fileName: "実装タスク",
-    path: "tasks/implementation.md",
-    startLabel: "2026-05-01",
-    startValue: 20_844,
+    chronicleCalendarId: "chronicle1",
+    chronicleCalendarName: "王国暦",
+    chronicleCalendarStartYear: 100,
+    endLabel: "王国暦 5",
+    endValue: 104,
+    fileName: "王国史",
+    path: "history/kingdom.md",
+    startLabel: "王国暦 3",
+    startValue: 102,
     ...overrides
   };
 }
 
 describe("chronicleTimelineRows", () => {
-  it("row key、dateKind patch、status label の既存表現を維持する", () => {
-    const planned = entry({ statuses: ["未着手", "", "進行中"] });
-    const actual = entry({ dateKind: "actual" });
+  it("年表の row key と暦patchを維持する", () => {
+    const item = entry();
 
-    expect(entryKey(planned)).toBe("tasks/implementation.md:default");
-    expect(entryKey(actual)).toBe("tasks/implementation.md:actual");
-    expect(dateKindPatch(planned)).toEqual({});
-    expect(dateKindPatch(actual)).toEqual({ dateKind: "actual" });
-    expect(statusLabelForEntry(planned)).toBe("未着手 / 進行中");
-    expect(statusValuesForEntries([planned])).toEqual(["未着手", "進行中", "完了", "中断", "中止"]);
+    expect(entryKey(item)).toBe("history/kingdom.md:chronicle1");
+    expect(chronicleCalendarPatch(item)).toEqual({
+      chronicleCalendarId: "chronicle1",
+      chronicleCalendarStartYear: 100
+    });
+    expect(statusLabelForEntry(item)).toBe("");
+    expect(statusValuesForEntries([item])).toEqual(["未着手", "進行中", "完了", "中断", "中止"]);
   });
 
-  it("date rows は path ごとに集約し、planned を actual より前に置く", () => {
-    const rows = buildChartRows([
-      entry({ dateKind: "actual", statuses: ["完了"] }),
-      entry({ dateKind: "planned", statuses: ["進行中"] })
-    ], "date");
-
-    expect(rows).toHaveLength(1);
-    expect(rows[0].key).toBe("tasks/implementation.md");
-    expect(rows[0].statuses).toEqual(["完了", "進行中"]);
-    expect(rows[0].entries.map((item) => item.dateKind)).toEqual(["planned", "actual"]);
-  });
-
-  it("drag preview は対象entryだけを差し替える", () => {
-    const planned = entry();
-    const actual = entry({ dateKind: "actual" });
+  it("年表行はentryごとに作り、drag previewは対象entryだけを差し替える", () => {
+    const item = entry();
+    const other = entry({ chronicleCalendarId: "chronicle2", path: "history/other.md" });
+    const rows = buildChartRows([item, other], "chronicle");
     const preview = {
-      dateKind: "planned" as const,
+      chronicleCalendarId: "chronicle1" as const,
+      chronicleCalendarStartYear: 100,
       editKind: "move" as const,
-      endValue: 20_850,
-      path: "tasks/implementation.md",
-      source: "date" as const,
-      startValue: 20_849
+      endValue: 106,
+      path: "history/kingdom.md",
+      source: "chronicle" as const,
+      startValue: 105
     };
 
-    expect(isPreviewForEntry(planned, preview, "date")).toBe(true);
-    expect(isPreviewForEntry(actual, preview, "date")).toBe(false);
-    expect(previewEntryForDrag(planned, preview)).toMatchObject({
-      endLabel: "2027-02-01",
-      endValue: 20_850,
-      startLabel: "2027-01-31",
-      startValue: 20_849
+    expect(rows.map((row) => row.key)).toEqual(["history/kingdom.md:chronicle1", "history/other.md:chronicle2"]);
+    expect(isPreviewForEntry(item, preview, "chronicle")).toBe(true);
+    expect(isPreviewForEntry(other, preview, "chronicle")).toBe(false);
+    expect(previewEntryForDrag(item, preview)).toMatchObject({
+      endLabel: "王国暦 8",
+      endValue: 106,
+      startLabel: "王国暦 7",
+      startValue: 105
     });
-    expect(previewEntryForDrag(actual, preview)).toBe(actual);
   });
 });
