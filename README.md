@@ -45,7 +45,7 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 ### Front Matter and Tags
 
 - YAML front matter editing support.
-- Front matter settings for fixed properties and custom property input.
+- Front matter settings for fixed properties (`aliases`, `tags`, `chronicle0`-`chronicle9`) and custom property input.
 - Tags from front matter `tags:`.
 
 ### Diagrams and Export
@@ -56,7 +56,7 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 
 ### Timeline
 
-- Timeline view for Markdown content.
+- Timeline view from `chronicle0`-`chronicle9` front matter values.
 
 ![Relic timeline screenshot](assets/relic-timeline-screenshot.png)
 
@@ -299,7 +299,7 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 ### フロントマターとタグ
 
 - フロントマター（YAML）編集補助
-- フロントマター設定（固定プロパティ確認・カスタムプロパティ入力能力）
+- フロントマター設定（`aliases`、`tags`、`chronicle0`〜`chronicle9` の固定プロパティ確認・カスタムプロパティ入力能力）
 - フロントマター `tags:` によるタグ扱い
 
 ### 図表と出力
@@ -310,7 +310,7 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 
 ### 年表
 
-- Markdown内容の年表表示
+- `chronicle0`〜`chronicle9` フロントマター値による年表表示
 
 ![Relic timeline screenshot](assets/relic-timeline-screenshot.png)
 
