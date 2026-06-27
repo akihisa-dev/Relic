@@ -44,7 +44,7 @@
 | `assets/` | READMEなどで使う画像素材 |
 | `docs/` | プロジェクト文書 |
 | `docs/design/` | デザイン正本と関連資料 |
-| `docs/development/` | 開発ルール、コーディング規約、テスト方針、リリース手順 |
+| `docs/development/` | 開発ルール、未決定事項 |
 | `docs/engineering/` | アーキテクチャ、データモデル、技術選定、設計判断 |
 | `docs/features/` | 機能仕様 |
 | `docs/logo/` | ロゴ素材 |
@@ -59,12 +59,12 @@
 |------|------|------|
 | AI行動規範 | `AGENTS.md` | AIエージェントの普遍的な振る舞いだけを扱う |
 | リポジトリ索引 | `docs/INDEX.md` | 全ファイル、全フォルダ、主要入口を扱う |
-| 文書運用 | `docs/document-rules.md` | ドキュメント作成・管理のルールを扱う |
 | プロジェクト | `docs/project/` | Relicの目的、対象ユーザー、用語を扱う |
 | 機能 | `docs/features/` | アプリ機能の振る舞いを扱う |
 | デザイン | `docs/design/` | 画面構成、画面遷移、デザインシステムを扱う |
 | エンジニアリング | `docs/engineering/` | アーキテクチャ、データモデル、技術選定、設計判断を扱う |
-| 開発運用 | `docs/development/` | 開発ルール、コーディング規約、検証方針、未決定事項、バージョン管理を扱う |
+| 開発運用 | `docs/development/development.md` | Relicの開発ルール全体を扱う |
+| 未決定事項 | `docs/development/questions.md` | Relic開発で未決定の問いを扱う |
 
 ---
 
@@ -557,13 +557,8 @@
     - `LITHOMORPHISM.md`
     - `LITHOMORPHISM.png`
   - `development/`
-    - `coding-rules.md`
     - `development.md`
     - `questions.md`
-    - `refactor-notes.md`
-    - `release-rules.md`
-    - `testing-rules.md`
-    - `versioning-rules.md`
   - `engineering/`
     - `architecture.md`
     - `data-model.md`
@@ -585,7 +580,6 @@
   - `project/`
     - `overview.md`
     - `terms.md`
-  - `document-rules.md`
   - `INDEX.md`
 - `scripts/`
   - `debug.bat`
