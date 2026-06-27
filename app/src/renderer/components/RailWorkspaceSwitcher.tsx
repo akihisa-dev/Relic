@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { createPortal } from "react-dom";
 
@@ -36,18 +36,11 @@ export function RailWorkspaceSwitcher({
 }: RailWorkspaceSwitcherProps): ReactElement | null {
   const [contextMenu, setContextMenu] = useState<{ workspaceId: string; name: string; x: number; y: number } | null>(null);
   const [renamingWorkspace, setRenamingWorkspace] = useState<{ id: string; name: string; value: string } | null>(null);
-  const [isComposingRename, setIsComposingRename] = useState(false);
+  const isComposingRenameRef = useRef(false);
   const isCommittingRenameRef = useRef(false);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const skipNextRenameEnterKeyUpRef = useRef(false);
-  const isRenamingWorkspace = renamingWorkspace !== null;
-
-  useEffect(() => {
-    onRenameActiveChange?.(isRenamingWorkspace);
-  }, [isRenamingWorkspace, onRenameActiveChange]);
-
-  useEffect(() => {
-    return () => onRenameActiveChange?.(false);
-  }, [onRenameActiveChange]);
+  const renamingWorkspaceId = renamingWorkspace?.id ?? null;
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -65,6 +58,13 @@ export function RailWorkspaceSwitcher({
     };
   }, [contextMenu]);
 
+  useLayoutEffect(() => {
+    if (!renamingWorkspaceId) return;
+
+    renameInputRef.current?.focus();
+    renameInputRef.current?.select();
+  }, [renamingWorkspaceId]);
+
   if (workspaces.length === 0) return null;
 
   const startRename = (workspaceId: string, name: string): void => {
@@ -72,6 +72,7 @@ export function RailWorkspaceSwitcher({
     isCommittingRenameRef.current = false;
     skipNextRenameEnterKeyUpRef.current = false;
     setRenamingWorkspace({ id: workspaceId, name, value: name });
+    onRenameActiveChange?.(true);
   };
 
   const commitRename = async (value = renamingWorkspace?.value ?? ""): Promise<void> => {
@@ -85,19 +86,22 @@ export function RailWorkspaceSwitcher({
 
     if (!nextName || nextName === previousName) {
       setRenamingWorkspace(null);
+      onRenameActiveChange?.(false);
       return;
     }
 
     await onRenameWorkspace(workspaceId, nextName);
     onRenameComplete?.();
     setRenamingWorkspace(null);
+    onRenameActiveChange?.(false);
   };
 
   const cancelRename = (): void => {
-    setIsComposingRename(false);
+    isComposingRenameRef.current = false;
     isCommittingRenameRef.current = false;
     skipNextRenameEnterKeyUpRef.current = false;
     setRenamingWorkspace(null);
+    onRenameActiveChange?.(false);
   };
 
   return (
@@ -114,7 +118,6 @@ export function RailWorkspaceSwitcher({
                 <span className="workspace-switcher-icon">{initial}</span>
                 <input
                   aria-label={renameLabel}
-                  autoFocus
                   className="workspace-switcher-input"
                   onBlur={(event) => {
                     void commitRename(event.currentTarget.value);
@@ -127,11 +130,15 @@ export function RailWorkspaceSwitcher({
                     ));
                   }}
                   onClick={(event) => event.stopPropagation()}
-                  onCompositionEnd={() => setIsComposingRename(false)}
-                  onCompositionStart={() => setIsComposingRename(true)}
+                  onCompositionEnd={() => {
+                    isComposingRenameRef.current = false;
+                  }}
+                  onCompositionStart={() => {
+                    isComposingRenameRef.current = true;
+                  }}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
-                      if (isComposingRename || event.nativeEvent.isComposing) {
+                      if (isComposingRenameRef.current || event.nativeEvent.isComposing) {
                         skipNextRenameEnterKeyUpRef.current = true;
                         return;
                       }
@@ -149,10 +156,11 @@ export function RailWorkspaceSwitcher({
                       skipNextRenameEnterKeyUpRef.current = false;
                       return;
                     }
-                    if (isComposingRename || event.nativeEvent.isComposing) return;
+                    if (isComposingRenameRef.current || event.nativeEvent.isComposing) return;
                     event.preventDefault();
                     void commitRename(event.currentTarget.value);
                   }}
+                  ref={renameInputRef}
                   value={renamingWorkspace.value}
                 />
               </div>

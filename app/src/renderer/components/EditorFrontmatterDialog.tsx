@@ -26,10 +26,12 @@ export function EditorFrontmatterDialog({
 }: EditorFrontmatterDialogProps): ReactElement | null {
   if (!dialog) return null;
 
+  const title = dialog.type === "property" ? t("frontmatter.addProperty") : t("frontmatter.addValueToField", { field: dialog.key });
+
   return (
-    <dialog aria-modal="true" className="frontmatter-add-dialog" open>
-      <div className="frontmatter-add-dialog-title">
-        {dialog.type === "property" ? t("frontmatter.addProperty") : t("frontmatter.addValueToField", { field: dialog.key })}
+    <dialog aria-labelledby="frontmatter-add-dialog-title" aria-modal="true" className="frontmatter-add-dialog" open>
+      <div className="frontmatter-add-dialog-title" id="frontmatter-add-dialog-title">
+        {title}
       </div>
       <input
         aria-label={dialog.type === "property" ? t("frontmatter.propertyName") : t("frontmatter.value")}

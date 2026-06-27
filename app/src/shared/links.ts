@@ -275,6 +275,24 @@ function markdownPathKey(path: string): string {
   return `${stripMarkdownExtension(path)}.md`;
 }
 
+function closesMarkdownFence(line: string, fence: { marker: "`" | "~"; length: number }): boolean {
+  let index = 0;
+
+  while (index < line.length && line[index] === " ") {
+    index += 1;
+  }
+
+  if (index > 3) return false;
+
+  let markerLength = 0;
+
+  while (line[index + markerLength] === fence.marker) {
+    markerLength += 1;
+  }
+
+  return markerLength >= fence.length;
+}
+
 function collectMarkdownCodeRanges(markdown: string): Array<{ from: number; to: number }> {
   const ranges: Array<{ from: number; to: number }> = [];
   const lines = markdown.match(/[^\n]*(?:\n|$)/g) ?? [];
@@ -289,7 +307,7 @@ function collectMarkdownCodeRanges(markdown: string): Array<{ from: number; to: 
     if (line === "") continue;
 
     if (fence) {
-      const closesFence = new RegExp(`^ {0,3}\\${fence.marker}{${fence.length},}`).test(line);
+      const closesFence = closesMarkdownFence(line, fence);
       if (closesFence) {
         fence = null;
       }
