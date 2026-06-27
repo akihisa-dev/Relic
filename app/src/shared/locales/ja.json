@@ -444,6 +444,7 @@
   "frontmatter.duplicateProperty": "同じプロパティが既にあります",
   "frontmatter.removeProperty": "プロパティを削除",
   "frontmatter.removeValue": "値を削除",
+  "editor.tableActions": "表操作",
   "editor.tableAddRowAbove": "行を上に追加",
   "editor.tableAddRowBelow": "行を下に追加",
   "editor.tableDeleteRow": "行を削除",

@@ -406,6 +406,25 @@ describe("Editor table preview", () => {
     expect(viewRef.current?.state.doc.toString()).toBe("| B | A |\n| --- | --- |\n| w | z |\n| y | x |");
   });
 
+  it("ライブプレビューの表操作ボタンから右クリックメニューと同じ操作を開ける", async () => {
+    const { container, getByText } = render(
+      <I18nProvider language="ja">
+        <Editor
+          content={"| A | B |\n| --- | --- |\n| x | y |"}
+          onChange={vi.fn()}
+          settings={settings}
+        />
+      </I18nProvider>
+    );
+
+    await waitFor(() => expect(container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="0"]')).not.toBeNull());
+    (container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="0"]') as HTMLInputElement).focus();
+    fireEvent.click(getByText("表操作"));
+
+    expect(getByText("行を下に追加")).not.toBeNull();
+    expect(getByText("列を右に追加")).not.toBeNull();
+  });
+
   it("ライブプレビューの表メニューは画面に固定表示して切れにくくする", async () => {
     const { container, getByText } = render(
       <I18nProvider language="ja">
