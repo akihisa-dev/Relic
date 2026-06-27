@@ -357,7 +357,7 @@ function createPreviewCacheKey(
 ): string {
   return JSON.stringify({
     content,
-    embeds: [...embeds.entries()].sort(([a], [b]) => a.localeCompare(b, "ja")),
+    embeds: Array.from(embeds.entries()).toSorted(([a], [b]) => a.localeCompare(b, "ja")),
     renderEmbeds,
     translatorKey: t("preview.embedLoading", { target: "__relic_cache_key__" }),
     workspacePath: workspacePath ?? null

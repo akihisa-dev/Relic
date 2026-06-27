@@ -208,8 +208,10 @@ async function openPrintPreview(
   parentWindow: BrowserWindow | null,
   t: Translator
 ): Promise<RelicResult<OutputPrintResult>> {
-  const pdf = await renderHtmlToPdf(html, title, printOptions);
-  const pdfPath = await temporaryPrintPreviewPath();
+  const [pdf, pdfPath] = await Promise.all([
+    renderHtmlToPdf(html, title, printOptions),
+    temporaryPrintPreviewPath()
+  ]);
   await atomicWriteFile(pdfPath, pdf);
   const pdfUrl = pathToFileURL(pdfPath).toString();
   const window = createOutputWindow(`${title} - ${t("output.print")}`, {
