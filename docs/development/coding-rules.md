@@ -10,7 +10,7 @@ AIがコードを書く際は、まずこのファイルで実装境界を確認
 - TypeScriptで実装する
 - 対象OSは macOS / Windows とする
 - 仕様は `docs/features/`、画面構成は `docs/design/`、データ構造は `docs/engineering/data-model.md`、技術スタックは `docs/engineering/stack.md` を正とする
-- 開発位置とフェーズ順は `docs/development/phases.md` に従う
+- 作業範囲はユーザーの直近指示、対象機能の仕様書、設計書、開発規約に従う
 - ファイルシステム・ネットワーク・設定保存に触る処理はメインプロセスに置く
 - UI・エディタ・一時的な画面状態はレンダラープロセスに置く
 - レンダラーからOS機能へ直接アクセスしない。必ずpreloadで公開したAPIとIPCを通す
@@ -222,4 +222,4 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 - 仕様変更を伴う実装をした場合は、該当する `docs/features/` または `docs/engineering/` も更新する
 - 技術選定を変更・追加した場合は、`docs/engineering/` と必要に応じて `docs/engineering/decisions.md` を更新する
 - 未決定の問いが生まれたら `docs/development/questions.md` に追加する
-- 作業区切り時の文書更新は `AGENTS.md` と `docs/development/phases.md` の現在フェーズ規則に従う。作業記録は現在フェーズ正本へ書く
+- 作業区切り時の文書更新は `AGENTS.md` と対象文書の正本ルールに従う
