@@ -14,7 +14,7 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 | 機能 | `docs/features/` | アプリ機能の振る舞い |
 | デザイン | `docs/design/` | 画面構成、画面遷移、デザインシステム |
 | エンジニアリング | `docs/engineering/` | アーキテクチャ、データモデル、技術選定、設計判断 |
-| 開発運用 | `docs/development/` | 開発規約、検証方針、未決定事項、バージョン管理 |
+| 開発運用 | `docs/development/` | 開発ルール、コーディング規約、検証方針、未決定事項、バージョン管理 |
 
 現行実装と文書の整合を確認する場合は、現行正本を実装に合わせて更新する。
 過去の履歴は現行仕様の根拠にはせず、必ず上記分類の現行正本文書を確認する。
@@ -35,6 +35,7 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 | [engineering/decisions.md](engineering/decisions.md) | 設計上の意思決定記録 |
 | [engineering/stack.md](engineering/stack.md) | 技術スタック |
 | [engineering/editor-engine.md](engineering/editor-engine.md) | エディタエンジン選定 |
+| [development/development.md](development/development.md) | Relic開発作業全体のルール |
 | [development/questions.md](development/questions.md) | 未決定事項の正本 |
 | [development/coding-rules.md](development/coding-rules.md) | コーディング規約 |
 | [development/testing-rules.md](development/testing-rules.md) | テスト方針 |
