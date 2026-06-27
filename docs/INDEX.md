@@ -101,6 +101,7 @@
     - `build-platform.mjs`
     - `check-package-artifacts.mjs`
     - `clean-out.mjs`
+    - `docs-index.mjs`
     - `generate-icons.mjs`
     - `renderer-size-report.mjs`
     - `run-forge-build.mjs`
