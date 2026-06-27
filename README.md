@@ -224,7 +224,7 @@ For distribution, provide the `out/Relic-win32-x64/` folder as-is or zip it.
 
 ## Documentation
 
-- Document index and classification: [docs/INDEX.md](docs/INDEX.md)
+- Repository index and file structure: [docs/INDEX.md](docs/INDEX.md)
 - Project overview: [docs/project/overview.md](docs/project/overview.md)
 - Glossary: [docs/project/terms.md](docs/project/terms.md)
 - Feature specifications: [docs/features](docs/features)
@@ -477,7 +477,7 @@ pnpm build:win:safe
 
 ## ドキュメント
 
-- 文書索引・分類: [docs/INDEX.md](docs/INDEX.md)
+- リポジトリ索引・ファイル構成: [docs/INDEX.md](docs/INDEX.md)
 - プロジェクト概要: [docs/project/overview.md](docs/project/overview.md)
 - 用語集: [docs/project/terms.md](docs/project/terms.md)
 - 機能仕様: [docs/features](docs/features)
