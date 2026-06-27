@@ -26,7 +26,7 @@
 | `features/` | 機能の振る舞い・詳細仕様 |
 | `design/` | 画面構成、画面遷移、デザインシステム |
 | `engineering/` | アーキテクチャ、データモデル、技術選定、設計判断 |
-| `development/` | 開発規約、未決定事項、テスト方針、バージョン管理 |
+| `development/` | 開発ルール、コーディング規約、未決定事項、テスト方針、バージョン管理 |
 
 新しいドキュメントを作る前に [INDEX.md](INDEX.md) を確認し、既存文書への追記で足りるか判断する。
 新規ファイルを作成したら [INDEX.md](INDEX.md) のドキュメントマップに追記する。
@@ -45,18 +45,16 @@
 
 ## 変更記録
 
-- 作業履歴は原則としてGitコミット、GitHub Issue、Pull Requestに残す
 - 文書内に作業ログを蓄積しない
 - 文書には現行判断に必要な仕様、設計、運用ルールだけを書く
-- コミットが必要な場合は、その時点のすべての差分をまとめてコミットする
-- バージョン更新が必要な場合は、[development/versioning-rules.md](development/versioning-rules.md) に従う
-- MAJORとMINORは、ユーザーが明示的に指示した場合だけ変更する
 - 未決定事項が生まれたら [development/questions.md](development/questions.md) にも追記する
+- 作業履歴、コミット、バージョン更新の扱いは [development/development.md](development/development.md) に従う
 
 ---
 
 ## AIへの指示
 
 - 作業開始時は `../AGENTS.md`、[project/overview.md](project/overview.md) の順に必要な文脈を確認すること
+- 開発作業を行う場合は [development/development.md](development/development.md) を確認すること
 - 作業内容に応じて、[INDEX.md](INDEX.md) から必要な現行正本文書を確認すること
 - 作業を行ったセッションは、完了報告前に必要な文書更新、検証、コミットが残っていないか確認すること
