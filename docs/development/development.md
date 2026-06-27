@@ -12,7 +12,7 @@ Relicの開発運用に関するルールはこの文書を入口とし、他の
 
 この文書では、次の詳細は扱わない。
 
-- AIエージェントの対話、確認、委任、説明ルール: [../../AGENTS.md](../../AGENTS.md)
+- AIエージェントの対話、確認、説明ルール: [../../AGENTS.md](../../AGENTS.md)
 - リポジトリ全体のファイル、フォルダ構成: [../INDEX.md](../INDEX.md)
 - Relicの目的、対象ユーザー、判断思想: [../project/overview.md](../project/overview.md)
 - 機能ごとの仕様: [../features/](../features/)
