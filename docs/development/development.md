@@ -437,7 +437,7 @@ AIが実装、修正、検証、調査、文書整理を行った場合は、完
 件名は、次の形式にする。
 
 ```text
-<type>[optional scope][!]: <description>
+<type>[optional scope][!]: v<version> <description>
 ```
 
 `type` は英語小文字にする。
@@ -450,6 +450,9 @@ Conventional Commits 1.0.0 の構造に従う。
 `scope` は省略してよい。
 付ける場合は、変更対象を英語小文字の名詞で書く。
 破壊的変更がある場合は `type` または `scope` の直後に `!` を付けるか、本文末尾に `BREAKING CHANGE:` を書く。
+
+`version` には、コミット時点の `app/package.json` の `version` を `vMAJOR.MINOR.PATCH` 形式で書く。
+バージョン更新を含むコミットでは、更新後のバージョンを書く。
 
 | type | 使う場面 |
 |------|----------|
@@ -471,10 +474,10 @@ Conventional Commits 1.0.0 の構造に従う。
 例:
 
 ```text
-docs: コミットメッセージ規則をConventional Commitsに統一
-fix: ファイル移動時のリンク更新漏れを修正
-feat(editor): 分割表示を追加
-feat!: ワークスペース設定形式を変更
+docs: v0.3.109 コミットメッセージ規則をConventional Commitsに統一
+fix: v0.3.109 ファイル移動時のリンク更新漏れを修正
+feat(editor): v0.3.109 分割表示を追加
+feat!: v1.0.0 ワークスペース設定形式を変更
 ```
 
 本文には原則として次の項目を書く。
