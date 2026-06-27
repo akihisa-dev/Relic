@@ -244,6 +244,7 @@ export class TableWidget extends WidgetType {
     });
 
     wrapper.append(table);
+    wrapper.append(this.tableActionsButton(state, wrapper));
     wrapper.append(this.coordinateHandle("column", this.t("editor.tableSelectColumn"), state, drag.beginCoordinateDrag, wrapper));
     wrapper.append(this.coordinateHandle("row", this.t("editor.tableSelectRow"), state, drag.beginCoordinateDrag, wrapper));
     wrapper.append(createTableEdgeAddButton({ axis: "column-before", block: this.block, getFocusIndex: () => state.activeRow, getInsertIndex: () => state.activeCol, t: this.t }));
@@ -290,6 +291,39 @@ export class TableWidget extends WidgetType {
 
   override ignoreEvent(): boolean {
     return true;
+  }
+
+  private tableActionsButton(
+    state: ReturnType<typeof createLiveTableInteractionState>,
+    wrapper: HTMLElement
+  ): HTMLButtonElement {
+    const button = document.createElement("button");
+    button.className = "cm-live-table-actions";
+    button.type = "button";
+    button.textContent = this.t("editor.tableActions");
+    button.title = this.t("editor.tableActions");
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const rect = button.getBoundingClientRect();
+      showLiveTableMenu({
+        block: this.block,
+        colIndex: state.activeCol,
+        event: new MouseEvent("click", {
+          bubbles: true,
+          clientX: rect.left,
+          clientY: rect.bottom + 4
+        }),
+        focusCell: (rowIndex, colIndex) => focusTableWidgetCell(wrapper, rowIndex, colIndex),
+        rowIndex: state.activeRow,
+        t: this.t,
+        updateRows: (rows) => {
+          const view = findTableWidgetView(wrapper);
+          if (view) updateTableWidgetRows(view, this.block, rows);
+        }
+      });
+    });
+    return button;
   }
 
   private coordinateHandle(

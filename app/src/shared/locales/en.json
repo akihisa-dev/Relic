@@ -444,6 +444,7 @@
   "frontmatter.duplicateProperty": "This property already exists.",
   "frontmatter.removeProperty": "Remove property",
   "frontmatter.removeValue": "Remove value",
+  "editor.tableActions": "Table actions",
   "editor.tableAddRowAbove": "Add row above",
   "editor.tableAddRowBelow": "Add row below",
   "editor.tableDeleteRow": "Delete row",
