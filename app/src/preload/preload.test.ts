@@ -22,7 +22,6 @@ import {
   copyDiagramSvgChannel,
   printHtmlChannel,
   printPreviewChannel,
-  readEditorClipboardForPasteChannel,
   saveDiagramSvgChannel,
   savePreviewAsPdfChannel,
   type RelicApi
@@ -54,7 +53,6 @@ describe("preload output API", () => {
       svg: "<svg><path /></svg>"
     });
     await api.copyDiagramSvg({ language: "d2", svg: "<svg><path /></svg>" });
-    await api.readEditorClipboardForPaste();
     await api.copyEditorTextToClipboard({ text: "selected text" });
 
     expect(electronMock.invoke).toHaveBeenCalledWith(savePreviewAsPdfChannel, {
@@ -79,10 +77,10 @@ describe("preload output API", () => {
       language: "d2",
       svg: "<svg><path /></svg>"
     });
-    expect(electronMock.invoke).toHaveBeenCalledWith(readEditorClipboardForPasteChannel);
     expect(electronMock.invoke).toHaveBeenCalledWith(copyEditorTextToClipboardChannel, {
       text: "selected text"
     });
+    expect("readEditorClipboardForPaste" in api).toBe(false);
     expect("readClipboardText" in api).toBe(false);
     expect("writeClipboardText" in api).toBe(false);
   });

@@ -3,7 +3,6 @@ import { app, clipboard, ipcMain } from "electron";
 import {
   copyEditorTextToClipboardChannel,
   getEditorSettingsChannel,
-  readEditorClipboardForPasteChannel,
   saveEditorSettingsChannel,
   type CopyEditorTextToClipboardInput,
   type EditorSettings,
@@ -15,7 +14,6 @@ import { writeMarkdownFileContent } from "../files/markdownFiles";
 import { readAppSettings, updateAppSettings } from "../settings/appSettings";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import {
-  editorClipboardMaxTextLength,
   isCopyEditorTextToClipboardInput,
   isEditorSettingsInput
 } from "./editorHandlerValidators";
@@ -84,29 +82,6 @@ export function registerEditorHandlers(): void {
         return fail(
           "EDITOR_SETTINGS_SAVE_FAILED",
           "エディタ設定を保存できませんでした。",
-          ipcErrorDetails(error)
-        );
-      }
-    }
-  );
-
-  ipcMain.handle(
-    readEditorClipboardForPasteChannel,
-    async (): Promise<RelicResult<string>> => {
-      try {
-        const text = clipboard.readText();
-        if (text.length > editorClipboardMaxTextLength) {
-          return fail(
-            "EDITOR_CLIPBOARD_TOO_LARGE",
-            "クリップボードの内容が大きすぎるため貼り付けできません。"
-          );
-        }
-
-        return ok(text);
-      } catch (error) {
-        return fail(
-          "EDITOR_CLIPBOARD_READ_FAILED",
-          "クリップボードを読み取れませんでした。",
           ipcErrorDetails(error)
         );
       }

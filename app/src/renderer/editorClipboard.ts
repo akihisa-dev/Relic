@@ -36,25 +36,3 @@ export async function writeEditorClipboardText(text: string): Promise<void> {
     throw new Error("Clipboard copy failed");
   }
 }
-
-export async function readEditorClipboardForPaste(): Promise<string> {
-  if (window.relic?.readEditorClipboardForPaste) {
-    try {
-      const result = await window.relic.readEditorClipboardForPaste();
-      if (result.ok) return result.value;
-      return "";
-    } catch {
-      // Fall through to the browser clipboard fallback.
-    }
-  }
-
-  if (navigator.clipboard?.readText) {
-    try {
-      return await navigator.clipboard.readText();
-    } catch {
-      return "";
-    }
-  }
-
-  return "";
-}

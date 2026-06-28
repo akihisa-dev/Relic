@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const electronMock = vi.hoisted(() => ({
-  clipboardReadText: vi.fn(),
   clipboardWriteText: vi.fn(),
   getPath: vi.fn(),
   handle: vi.fn()
@@ -10,22 +9,17 @@ const electronMock = vi.hoisted(() => ({
 vi.mock("electron", () => ({
   app: { getPath: electronMock.getPath },
   clipboard: {
-    readText: electronMock.clipboardReadText,
     writeText: electronMock.clipboardWriteText
   },
   ipcMain: { handle: electronMock.handle }
 }));
 
-import {
-  copyEditorTextToClipboardChannel,
-  readEditorClipboardForPasteChannel
-} from "../../shared/ipc";
+import { copyEditorTextToClipboardChannel } from "../../shared/ipc";
 import { registerEditorHandlers } from "./editorHandlers";
 
 describe("editor clipboard IPC handlers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    electronMock.clipboardReadText.mockReturnValue("pasted text");
     registerEditorHandlers();
   });
 
@@ -35,22 +29,8 @@ describe("editor clipboard IPC handlers", () => {
     return handler;
   }
 
-  it("エディタ貼り付け用途のクリップボード読み取りだけを登録する", async () => {
-    const result = await handlerFor(readEditorClipboardForPasteChannel)({});
-
-    expect(result).toEqual({ ok: true, value: "pasted text" });
-    expect(electronMock.clipboardReadText).toHaveBeenCalledTimes(1);
-  });
-
-  it("大きすぎる貼り付け内容は返さない", async () => {
-    electronMock.clipboardReadText.mockReturnValue("x".repeat(1_000_001));
-
-    const result = await handlerFor(readEditorClipboardForPasteChannel)({});
-
-    expect(result).toEqual(expect.objectContaining({
-      error: expect.objectContaining({ code: "EDITOR_CLIPBOARD_TOO_LARGE" }),
-      ok: false
-    }));
+  it("エディタ貼り付け用途のクリップボード読み取りハンドラを登録しない", () => {
+    expect(electronMock.handle.mock.calls.map(([channel]) => channel)).not.toContain("editor:readClipboardForPaste");
   });
 
   it("エディタコピー用途のテキストだけを書き込む", async () => {
