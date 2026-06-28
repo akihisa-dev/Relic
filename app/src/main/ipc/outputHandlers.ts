@@ -12,6 +12,7 @@ import {
   type SaveDiagramSvgInput,
   type SavePreviewAsPdfInput
 } from "../../shared/ipc";
+import { maxSvgInputBytes } from "../../shared/ipcLimits";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { redactSensitiveText } from "../../shared/securityRedaction";
 import { atomicWriteFile, atomicWriteTextFile } from "../files/atomicWrite";
@@ -230,6 +231,10 @@ function isWithinPreviewHtmlLimit(html: string): boolean {
   return Buffer.byteLength(html, "utf8") <= previewOutputHtmlMaxBytes;
 }
 
+function isWithinUtf8ByteLimit(value: string, maxBytes: number): boolean {
+  return Buffer.byteLength(value, "utf8") <= maxBytes;
+}
+
 function isSafePreviewOutputHtml(html: string): boolean {
   const trimmed = html.trim();
   if (trimmed === "") return false;
@@ -264,13 +269,15 @@ function isSaveDiagramSvgInput(input: unknown): input is SaveDiagramSvgInput {
   return isObject(input) &&
     typeof input.defaultFileName === "string" &&
     isOutputDiagramLanguage(input.language) &&
-    typeof input.svg === "string";
+    typeof input.svg === "string" &&
+    isWithinUtf8ByteLimit(input.svg, maxSvgInputBytes);
 }
 
 function isCopyDiagramSvgInput(input: unknown): input is CopyDiagramSvgInput {
   return isObject(input) &&
     isOutputDiagramLanguage(input.language) &&
-    typeof input.svg === "string";
+    typeof input.svg === "string" &&
+    isWithinUtf8ByteLimit(input.svg, maxSvgInputBytes);
 }
 
 function isOutputDiagramLanguage(value: unknown): value is SaveDiagramSvgInput["language"] {

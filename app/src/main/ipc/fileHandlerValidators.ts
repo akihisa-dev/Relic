@@ -14,6 +14,14 @@ import type {
   SearchWorkspaceInput,
   WriteMarkdownFileInput
 } from "../../shared/ipc";
+import {
+  maxExpectedFileSnapshots,
+  maxImportMarkdownFiles,
+  maxMarkdownWriteBytes,
+  maxReplacementBytes,
+  maxSearchQueryLength,
+  maxWorkspaceRelativePathLength
+} from "../../shared/ipcLimits";
 import { isWorkspaceRelativeInputPath, isWorkspaceRelativeInputPathOrRoot } from "../files/paths";
 import { isWorkspaceIdInput } from "./workspaceHandlerValidators";
 
@@ -26,9 +34,10 @@ export function isImportMarkdownFilesInput(input: unknown): input is ImportMarkd
 
   const candidate = input as { destinationFolder?: unknown; sourcePaths?: unknown };
   return (
-    isWorkspaceRelativeInputPathOrRoot(candidate.destinationFolder) &&
+    isLimitedWorkspaceRelativeInputPathOrRoot(candidate.destinationFolder) &&
     Array.isArray(candidate.sourcePaths) &&
     candidate.sourcePaths.length > 0 &&
+    candidate.sourcePaths.length <= maxImportMarkdownFiles &&
     candidate.sourcePaths.every((sourcePath) => (
       typeof sourcePath === "string" &&
       sourcePath.trim() === sourcePath &&
@@ -55,8 +64,8 @@ export function isLinkUpdateImpactInput(input: unknown): input is LinkUpdateImpa
   const candidate = input as Record<string, unknown>;
   return (
     (candidate.kind === "file" || candidate.kind === "folder") &&
-    isWorkspaceRelativeInputPath(candidate.oldPath) &&
-    isWorkspaceRelativeInputPath(candidate.newPath)
+      isLimitedWorkspaceRelativeInputPath(candidate.oldPath) &&
+      isLimitedWorkspaceRelativeInputPath(candidate.newPath)
   );
 }
 
@@ -74,7 +83,7 @@ export function isPathInput(input: unknown): input is { path: string } {
     typeof input === "object" &&
     input !== null &&
     "path" in input &&
-    isWorkspaceRelativeInputPath((input as { path?: unknown }).path)
+    isLimitedWorkspaceRelativeInputPath((input as { path?: unknown }).path)
   );
 }
 
@@ -83,7 +92,7 @@ export function isPathOrRootInput(input: unknown): input is { path: string } {
     typeof input === "object" &&
     input !== null &&
     "path" in input &&
-    isWorkspaceRelativeInputPathOrRoot((input as { path?: unknown }).path)
+    isLimitedWorkspaceRelativeInputPathOrRoot((input as { path?: unknown }).path)
   );
 }
 
@@ -101,7 +110,7 @@ export function isRenameMarkdownFileInput(input: unknown): input is RenameMarkdo
     input !== null &&
     "path" in input &&
     "newName" in input &&
-    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
+    isLimitedWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
     typeof (input as { newName?: unknown }).newName === "string"
   );
 }
@@ -112,7 +121,7 @@ export function isRenameFolderInput(input: unknown): input is RenameFolderInput 
     input !== null &&
     "path" in input &&
     "newName" in input &&
-    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
+    isLimitedWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
     typeof (input as { newName?: unknown }).newName === "string"
   );
 }
@@ -123,7 +132,7 @@ export function isMoveItemToTrashInput(input: unknown): input is MoveItemToTrash
     input !== null &&
     "path" in input &&
     "type" in input &&
-    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
+    isLimitedWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
     ((input as { type?: unknown }).type === "file" || (input as { type?: unknown }).type === "folder")
   );
 }
@@ -134,8 +143,8 @@ export function isMoveMarkdownFileInput(input: unknown): input is MoveMarkdownFi
     input !== null &&
     "path" in input &&
     "destinationFolder" in input &&
-    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
-    isWorkspaceRelativeInputPathOrRoot((input as { destinationFolder?: unknown }).destinationFolder)
+    isLimitedWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
+    isLimitedWorkspaceRelativeInputPathOrRoot((input as { destinationFolder?: unknown }).destinationFolder)
   );
 }
 
@@ -145,8 +154,8 @@ export function isMoveFolderInput(input: unknown): input is MoveFolderInput {
     input !== null &&
     "path" in input &&
     "destinationFolder" in input &&
-    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
-    isWorkspaceRelativeInputPathOrRoot((input as { destinationFolder?: unknown }).destinationFolder)
+    isLimitedWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
+    isLimitedWorkspaceRelativeInputPathOrRoot((input as { destinationFolder?: unknown }).destinationFolder)
   );
 }
 
@@ -158,9 +167,11 @@ export function isReplaceInFileInput(input: unknown): input is ReplaceInFileInpu
     "searchQuery" in input &&
     "replacement" in input &&
     "isRegex" in input &&
-    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
+    isLimitedWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
     typeof (input as { searchQuery?: unknown }).searchQuery === "string" &&
+    (input as { searchQuery: string }).searchQuery.length <= maxSearchQueryLength &&
     typeof (input as { replacement?: unknown }).replacement === "string" &&
+    isWithinUtf8ByteLength((input as { replacement: string }).replacement, maxReplacementBytes) &&
     typeof (input as { isRegex?: unknown }).isRegex === "boolean"
   );
 }
@@ -171,9 +182,16 @@ export function isWriteMarkdownFileInput(input: unknown): input is WriteMarkdown
     input !== null &&
     "path" in input &&
     "content" in input &&
-    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
+    isLimitedWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
     typeof (input as { content?: unknown }).content === "string" &&
-    (!("expectedContent" in input) || typeof (input as { expectedContent?: unknown }).expectedContent === "string")
+    isWithinUtf8ByteLength((input as { content: string }).content, maxMarkdownWriteBytes) &&
+    (
+      !("expectedContent" in input) ||
+      (
+        typeof (input as { expectedContent?: unknown }).expectedContent === "string" &&
+        isWithinUtf8ByteLength((input as { expectedContent: string }).expectedContent, maxMarkdownWriteBytes)
+      )
+    )
   );
 }
 
@@ -185,7 +203,9 @@ export function isSearchAndReplaceInput(input: unknown): input is SearchAndRepla
     "replacement" in input &&
     "isRegex" in input &&
     typeof (input as { searchQuery?: unknown }).searchQuery === "string" &&
+    (input as { searchQuery: string }).searchQuery.length <= maxSearchQueryLength &&
     typeof (input as { replacement?: unknown }).replacement === "string" &&
+    isWithinUtf8ByteLength((input as { replacement: string }).replacement, maxReplacementBytes) &&
     typeof (input as { isRegex?: unknown }).isRegex === "boolean" &&
     (
       !("expectedFileSnapshots" in input) ||
@@ -196,6 +216,7 @@ export function isSearchAndReplaceInput(input: unknown): input is SearchAndRepla
 
 function isSearchAndReplaceFileSnapshots(input: unknown): boolean {
   return Array.isArray(input) &&
+    input.length <= maxExpectedFileSnapshots &&
     input.every((item) =>
       typeof item === "object" &&
       item !== null &&
@@ -211,17 +232,23 @@ export function isSearchWorkspaceInput(input: unknown): input is SearchWorkspace
     "query" in input &&
     "mode" in input &&
     typeof (input as { query?: unknown }).query === "string" &&
+    (input as { query: string }).query.length <= maxSearchQueryLength &&
     isSearchMode((input as { mode?: unknown }).mode) &&
     (
       !("frontmatterField" in input) ||
       (input as { frontmatterField?: unknown }).frontmatterField === undefined ||
-      typeof (input as { frontmatterField?: unknown }).frontmatterField === "string"
+      (
+        typeof (input as { frontmatterField?: unknown }).frontmatterField === "string" &&
+        (input as { frontmatterField: string }).frontmatterField.length <= maxSearchQueryLength
+      )
     )
   );
 }
 
 export function normalizeSearchWorkspaceInput(input: unknown): SearchWorkspaceInput | null {
   if (typeof input === "string") {
+    if (input.length > maxSearchQueryLength) return null;
+
     return { mode: "fullText", query: input };
   }
 
@@ -263,11 +290,23 @@ export function normalizeSearchWorkspaceInput(input: unknown): SearchWorkspaceIn
     return null;
   }
 
+  if (query.length > maxSearchQueryLength) {
+    return null;
+  }
+
   if (
     ("frontmatterField" in input &&
       record.frontmatterField !== undefined &&
-      typeof record.frontmatterField !== "string") ||
-    ("field" in input && record.field !== undefined && typeof record.field !== "string")
+      (
+        typeof record.frontmatterField !== "string" ||
+        record.frontmatterField.length > maxSearchQueryLength
+      )) ||
+    ("field" in input &&
+      record.field !== undefined &&
+      (
+        typeof record.field !== "string" ||
+        record.field.length > maxSearchQueryLength
+      ))
   ) {
     return null;
   }
@@ -291,6 +330,10 @@ function normalizeSearchWorkspaceArgs(args: unknown[]): SearchWorkspaceInput | n
   const secondMode = parseSearchMode(second);
 
   if (typeof first === "string" && secondMode) {
+    if (first.length > maxSearchQueryLength || (typeof third === "string" && third.length > maxSearchQueryLength)) {
+      return null;
+    }
+
     return {
       frontmatterField: typeof third === "string" ? third : undefined,
       mode: secondMode,
@@ -299,6 +342,10 @@ function normalizeSearchWorkspaceArgs(args: unknown[]): SearchWorkspaceInput | n
   }
 
   if (firstMode && typeof second === "string") {
+    if (second.length > maxSearchQueryLength || (typeof third === "string" && third.length > maxSearchQueryLength)) {
+      return null;
+    }
+
     return {
       frontmatterField: typeof third === "string" ? third : undefined,
       mode: firstMode,
@@ -364,4 +411,20 @@ function parseSearchMode(value: unknown): SearchMode | null {
   }
 
   return null;
+}
+
+function isLimitedWorkspaceRelativeInputPath(input: unknown): input is string {
+  return typeof input === "string" &&
+    input.length <= maxWorkspaceRelativePathLength &&
+    isWorkspaceRelativeInputPath(input);
+}
+
+function isLimitedWorkspaceRelativeInputPathOrRoot(input: unknown): input is string {
+  return typeof input === "string" &&
+    input.length <= maxWorkspaceRelativePathLength &&
+    isWorkspaceRelativeInputPathOrRoot(input);
+}
+
+function isWithinUtf8ByteLength(value: string, maxBytes: number): boolean {
+  return Buffer.byteLength(value, "utf8") <= maxBytes;
 }

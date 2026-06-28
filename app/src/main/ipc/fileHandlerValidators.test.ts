@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  maxExpectedFileSnapshots,
+  maxImportMarkdownFiles,
+  maxMarkdownWriteBytes,
+  maxReplacementBytes,
+  maxSearchQueryLength,
+  maxWorkspaceRelativePathLength,
+  type SearchAndReplaceInput
+} from "../../shared/ipc";
+import {
   isCreateFolderInput,
   isCreateMarkdownFileInput,
   isImportMarkdownFilesInput,
@@ -95,10 +104,12 @@ describe("fileHandlerValidators", () => {
 
   it("validates path input as a normalized workspace-relative path", () => {
     expect(isPathInput({ path: "Notes/Idea.md" })).toBe(true);
+    expect(isPathInput({ path: `${"a".repeat(maxWorkspaceRelativePathLength - 3)}.md` })).toBe(true);
     expect(isPathInput({ path: "../outside.md" })).toBe(false);
     expect(isPathInput({ path: "/tmp/outside.md" })).toBe(false);
     expect(isPathInput({ path: "Notes\\Idea.md" })).toBe(false);
     expect(isPathInput({ path: " Notes/Idea.md " })).toBe(false);
+    expect(isPathInput({ path: `${"a".repeat(maxWorkspaceRelativePathLength - 2)}.md` })).toBe(false);
   });
 
   it("validates reveal workspace item input with workspace id and root path", () => {
@@ -179,6 +190,9 @@ describe("fileHandlerValidators", () => {
       query: "ファイル"
     });
     expect(normalizeSearchWorkspaceInput({ searchMode: "unknown", searchQuery: "draft" })).toBeNull();
+    expect(normalizeSearchWorkspaceInput("x".repeat(maxSearchQueryLength + 1))).toBeNull();
+    expect(normalizeSearchWorkspaceInput(["x".repeat(maxSearchQueryLength + 1), "fullText"])).toBeNull();
+    expect(normalizeSearchWorkspaceInput(["frontmatter", "draft", "x".repeat(maxSearchQueryLength + 1)])).toBeNull();
   });
 
   it("validates move and trash inputs without accepting partial objects", () => {
@@ -234,5 +248,53 @@ describe("fileHandlerValidators", () => {
     expect(isWriteMarkdownFileInput({ content: "# Note", path: " Notes/Idea.md " })).toBe(false);
     expect(isWriteMarkdownFileInput({ content: 1, path: "Note.md" })).toBe(false);
     expect(isWriteMarkdownFileInput({ content: "# Note", expectedContent: 1, path: "Note.md" })).toBe(false);
+  });
+
+  it("rejects oversized IPC inputs before file operations can use them", () => {
+    expect(isImportMarkdownFilesInput({
+      destinationFolder: "",
+      sourcePaths: Array.from({ length: maxImportMarkdownFiles + 1 }, (_value, index) => `/tmp/${index}.md`)
+    })).toBe(false);
+    expect(isWriteMarkdownFileInput({
+      content: "x".repeat(maxMarkdownWriteBytes + 1),
+      path: "Note.md"
+    })).toBe(false);
+    expect(isWriteMarkdownFileInput({
+      content: "# Note",
+      expectedContent: "x".repeat(maxMarkdownWriteBytes + 1),
+      path: "Note.md"
+    })).toBe(false);
+    expect(isSearchWorkspaceInput({
+      mode: "fullText",
+      query: "x".repeat(maxSearchQueryLength + 1)
+    })).toBe(false);
+    expect(isSearchWorkspaceInput({
+      frontmatterField: "x".repeat(maxSearchQueryLength + 1),
+      mode: "frontmatter",
+      query: "draft"
+    })).toBe(false);
+    expect(isReplaceInFileInput({
+      isRegex: false,
+      path: "Note.md",
+      replacement: "new",
+      searchQuery: "x".repeat(maxSearchQueryLength + 1)
+    })).toBe(false);
+    expect(isReplaceInFileInput({
+      isRegex: false,
+      path: "Note.md",
+      replacement: "x".repeat(maxReplacementBytes + 1),
+      searchQuery: "old"
+    })).toBe(false);
+
+    const tooManySnapshots: SearchAndReplaceInput["expectedFileSnapshots"] = Array.from(
+      { length: maxExpectedFileSnapshots + 1 },
+      (_value, index) => ({ contentHash: `hash-${index}`, path: `Note-${index}.md` })
+    );
+    expect(isSearchAndReplaceInput({
+      expectedFileSnapshots: tooManySnapshots,
+      isRegex: false,
+      replacement: "new",
+      searchQuery: "old"
+    })).toBe(false);
   });
 });
