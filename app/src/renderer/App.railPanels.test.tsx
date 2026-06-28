@@ -145,8 +145,8 @@ describe("App rail panels", () => {
       getWorkspaceChronicleCalendars: vi.fn().mockResolvedValue({
         ok: true,
         value: [
-          { id: "chronicle0", name: "王国暦" },
-          { id: "chronicle1", name: "帝国暦", startYear: 100 }
+          { name: "王国暦" },
+          { name: "帝国暦", startYear: 100 }
         ]
       }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })

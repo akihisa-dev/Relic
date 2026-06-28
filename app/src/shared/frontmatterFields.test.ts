@@ -14,16 +14,7 @@ describe("frontmatterFields", () => {
     expect(reservedFrontmatterFieldNames).toEqual([
       "aliases",
       "tags",
-      "chronicle0",
-      "chronicle1",
-      "chronicle2",
-      "chronicle3",
-      "chronicle4",
-      "chronicle5",
-      "chronicle6",
-      "chronicle7",
-      "chronicle8",
-      "chronicle9"
+      "chronicle"
     ]);
   });
 
@@ -31,6 +22,8 @@ describe("frontmatterFields", () => {
     expect(isReservedFrontmatterFieldName("status")).toBe(false);
     expect(isReservedFrontmatterFieldName("plannedDate")).toBe(false);
     expect(isReservedFrontmatterFieldName("actualDate")).toBe(false);
+    expect(isReservedFrontmatterFieldName("chronicle")).toBe(true);
+    expect(isReservedFrontmatterFieldName("chronicle0")).toBe(false);
     expect(isReservedFrontmatterFieldName("custom")).toBe(false);
   });
 

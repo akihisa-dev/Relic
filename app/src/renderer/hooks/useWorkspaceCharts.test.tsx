@@ -22,6 +22,7 @@ describe("useWorkspaceCharts API contract", () => {
     }) as RelicApi;
 
     await expect(relic.updateChartEntry({
+      chronicleEntryIndex: 0,
       endValue: 1,
       kind: "move",
       originalEndValue: 1,

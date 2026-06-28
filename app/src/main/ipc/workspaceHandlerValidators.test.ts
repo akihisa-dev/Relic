@@ -17,7 +17,8 @@ describe("workspaceHandlerValidators", () => {
     expect(isUserDefinedFieldsInput([{ name: "date", type: "date" }])).toBe(true);
     expect(isUserDefinedFieldsInput([{ name: "rating", type: "number" }, { name: "rating", type: "text" }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "tags", type: "text" }])).toBe(false);
-    expect(isUserDefinedFieldsInput([{ name: "chronicle0", type: "number" }])).toBe(false);
+    expect(isUserDefinedFieldsInput([{ name: "chronicle", type: "number" }])).toBe(false);
+    expect(isUserDefinedFieldsInput([{ name: "chronicle0", type: "number" }])).toBe(true);
     expect(isUserDefinedFieldsInput([{ name: "plannedDate", type: "date" }])).toBe(true);
     expect(isUserDefinedFieldsInput([{ name: "actualDate", type: "date" }])).toBe(true);
     expect(isUserDefinedFieldsInput([{ name: "kind", type: "select", choices: ["a", "b"] }])).toBe(true);
@@ -48,8 +49,7 @@ describe("workspaceHandlerValidators", () => {
 
   it("validates chart entry edits and frontmatter templates", () => {
     expect(isUpdateChartEntryInput({
-      chronicleCalendarId: "chronicle1",
-      chronicleCalendarStartYear: 100,
+      chronicleEntryIndex: 1,
       endValue: 3,
       kind: "move",
       originalEndValue: 2,
@@ -59,8 +59,7 @@ describe("workspaceHandlerValidators", () => {
       startValue: 2
     })).toBe(true);
     expect(isUpdateChartEntryInput({
-      chronicleCalendarId: "chronicle1",
-      chronicleCalendarStartYear: 0,
+      chronicleEntryIndex: -1,
       endValue: 3,
       kind: "move",
       originalEndValue: 2,
@@ -70,6 +69,7 @@ describe("workspaceHandlerValidators", () => {
       startValue: 2
     })).toBe(false);
     expect(isUpdateChartEntryInput({
+      chronicleEntryIndex: 0,
       endValue: 3,
       kind: "move",
       originalEndValue: 2,
@@ -79,6 +79,7 @@ describe("workspaceHandlerValidators", () => {
       startValue: 2
     })).toBe(true);
     expect(isUpdateChartEntryInput({
+      chronicleEntryIndex: 0,
       endValue: 3,
       kind: "move",
       originalEndValue: 2,
@@ -88,6 +89,7 @@ describe("workspaceHandlerValidators", () => {
       startValue: 2
     })).toBe(false);
     expect(isUpdateChartEntryInput({
+      chronicleEntryIndex: 0,
       endValue: 3,
       kind: "move",
       originalEndValue: 2,
@@ -128,19 +130,20 @@ describe("workspaceHandlerValidators", () => {
 
   it("validates chronicle calendar settings", () => {
     expect(isChronicleCalendarsInput([
-      { id: "chronicle0", name: "Main" },
-      { id: "chronicle1", name: "Sub", startYear: 100 }
+      { name: "Main" },
+      { name: "Sub", startYear: 100 }
     ])).toBe(true);
     expect(isChronicleCalendarsInput([
-      { id: "chronicle0", name: "Main" },
-      { id: "chronicle1", name: "Sub" },
-      { id: "chronicle2", name: "", startYear: 100 }
-    ])).toBe(true);
-    expect(isChronicleCalendarsInput([{ id: "chronicle1", name: "Sub", startYear: 100 }])).toBe(false);
-    expect(isChronicleCalendarsInput([{ id: "chronicle0", name: "" }])).toBe(true);
+      { name: "Main" },
+      { name: "Sub" },
+      { name: "", startYear: 100 }
+    ])).toBe(false);
+    expect(isChronicleCalendarsInput([{ name: "Sub", startYear: 100 }])).toBe(true);
+    expect(isChronicleCalendarsInput([{ name: "" }])).toBe(false);
+    expect(isChronicleCalendarsInput([{ name: "Main" }, { name: "Main", startYear: 100 }])).toBe(false);
     expect(isChronicleCalendarsInput([
-      { id: "chronicle0", name: "Main" },
-      { id: "chronicle1", name: "Sub", startYear: 0 }
+      { name: "Main" },
+      { name: "Sub", startYear: 0 }
     ])).toBe(false);
   });
 

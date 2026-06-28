@@ -2,9 +2,7 @@ import { mkdir, readFile, rm, rename } from "node:fs/promises";
 import path from "node:path";
 
 import {
-  chronicleCalendarIds,
   defaultChronicleCalendars,
-  type ChronicleCalendarId,
   type ChronicleCalendarSettings,
   type ChartSettings,
   type ChartSource
@@ -122,34 +120,24 @@ async function readWorkspaceSettingsInternal(
 export function parseChronicleCalendars(raw: unknown): ChronicleCalendarSettings[] {
   if (!Array.isArray(raw)) return defaultChronicleCalendars;
 
-  const used = new Set<ChronicleCalendarId>();
+  const usedNames = new Set<string>();
   const parsed = raw.flatMap((item): ChronicleCalendarSettings[] => {
     if (typeof item !== "object" || item === null) return [];
 
     const candidate = item as Record<string, unknown>;
-    const id = typeof candidate.id === "string" && isChronicleCalendarId(candidate.id)
-      ? candidate.id
-      : null;
     const name = typeof candidate.name === "string" ? candidate.name.trim() : "";
 
-    if (!id || used.has(id) || typeof candidate.name !== "string") return [];
-    used.add(id);
+    if (!name || usedNames.has(name) || typeof candidate.name !== "string") return [];
+    usedNames.add(name);
 
-    if (id === "chronicle0") return [{ id, name }];
-
-    if (!("startYear" in candidate)) return [{ id, name }];
+    if (!("startYear" in candidate)) return [{ name }];
 
     return Number.isInteger(candidate.startYear) && Number(candidate.startYear) >= 1
-      ? [{ id, name, startYear: Number(candidate.startYear) }]
-      : [{ id, name }];
+      ? [{ name, startYear: Number(candidate.startYear) }]
+      : [{ name }];
   });
 
-  const main = parsed.find((calendar) => calendar.id === "chronicle0") ?? defaultChronicleCalendars[0];
-  const subs = parsed
-    .filter((calendar) => calendar.id !== "chronicle0")
-    .sort((a, b) => chronicleCalendarIds.indexOf(a.id) - chronicleCalendarIds.indexOf(b.id));
-
-  return [main, ...subs];
+  return parsed.length > 0 ? parsed : defaultChronicleCalendars;
 }
 
 export function parseCharts(raw: unknown): ChartSettings[] {
@@ -219,10 +207,6 @@ function parseChartFilePaths(raw: unknown): string[] | undefined {
 
 function isChartSource(value: unknown): value is ChartSource {
   return value === "chronicle";
-}
-
-function isChronicleCalendarId(value: string): value is ChronicleCalendarId {
-  return chronicleCalendarIds.includes(value as ChronicleCalendarId);
 }
 
 function defaultChartName(source: ChartSource): string {

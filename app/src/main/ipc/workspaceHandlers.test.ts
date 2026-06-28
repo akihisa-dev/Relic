@@ -318,15 +318,15 @@ describe("workspaceHandlers", () => {
     if (!saveCalendarsHandler) throw new Error("saveWorkspaceChronicleCalendars handler was not registered");
 
     const result = await saveCalendarsHandler(undefined, [
-      { id: "chronicle0", name: " 主暦 " },
-      { id: "chronicle1", name: " 王国暦 ", startYear: 1200 }
+      { name: "主暦" },
+      { name: "王国暦", startYear: 1200 }
     ]);
 
     expect(result).toEqual({
       ok: true,
       value: [
-        { id: "chronicle0", name: "主暦" },
-        { id: "chronicle1", name: "王国暦", startYear: 1200 }
+        { name: "主暦" },
+        { name: "王国暦", startYear: 1200 }
       ]
     });
   });

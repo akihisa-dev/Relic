@@ -198,6 +198,10 @@ export function App(): ReactElement {
     setWorkspaceError,
     workspaceState
   });
+  const frontmatterCandidatesWithChronicle = useMemo(() => ({
+    ...frontmatterCandidates,
+    chronicle: chronicleCalendars.map((calendar) => calendar.name)
+  }), [chronicleCalendars, frontmatterCandidates]);
 
   const handleFileSaved = useCallback((path?: string): void => {
     void reloadCharts();
@@ -519,7 +523,7 @@ export function App(): ReactElement {
       editorActionPulse,
       editorSettings,
       focusedPane,
-      frontmatterCandidates,
+      frontmatterCandidates: frontmatterCandidatesWithChronicle,
       handleCreateNoteFromPane,
       handleDuplicateTabFile,
       handleFileSaved,

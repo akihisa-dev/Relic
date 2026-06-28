@@ -53,15 +53,16 @@ describe("editorFrontmatterModel", () => {
     })).toBe("title: \"New # text\" # keep");
   });
 
-  it("固定フィールドと登録済みフィールドを1行配列として書き戻す", () => {
+  it("固定フィールドと登録済みフィールドを仕様どおり書き戻す", () => {
     expect(serializeData({
       aliases: ["帝都", "王都"],
-      chronicle0: [1185, 1333],
+      chronicle: [["メイン暦", [[1185, null], [1333, 8]]]],
       custom: ["A", "B"],
       tags: ["資料"]
     }, [{ name: "custom", type: "multi-select" }])).toBe([
       "aliases: [\"帝都\", \"王都\"]",
-      "chronicle0: [1185, 1333]",
+      "chronicle:",
+      "  - [メイン暦, [[1185, null], [1333, 8]]]",
       "custom: [\"A\", \"B\"]",
       "tags: [\"資料\"]"
     ].join("\n"));

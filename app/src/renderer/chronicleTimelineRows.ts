@@ -1,5 +1,5 @@
 import type { ChartEntry, ChartEntryEditKind, ChartSource, WorkspaceChart } from "../shared/ipc";
-import { axisToYear } from "../shared/chartTime";
+import { monthAxisToPoint } from "../shared/chartTime";
 import { formatAxisValue } from "./chronicleTimelineAxis";
 
 export interface ChartRow {
@@ -11,7 +11,7 @@ export interface ChartRow {
 }
 
 export interface DragPreview {
-  chronicleCalendarId?: ChartEntry["chronicleCalendarId"];
+  chronicleEntryIndex: number;
   endValue: number;
   editKind: ChartEntryEditKind;
   path: string;
@@ -126,13 +126,12 @@ function chronicleYearLabelWithoutCalendarName(label: string, calendarName: stri
 }
 
 export function entryKey(entry: ChartEntry): string {
-  return `${entry.path}:${entry.chronicleCalendarId ?? "chronicle0"}`;
+  return `${entry.path}:chronicle:${entry.chronicleEntryIndex}`;
 }
 
-export function chronicleCalendarPatch(entry: ChartEntry): Pick<ChartEntry, "chronicleCalendarId" | "chronicleCalendarStartYear"> {
+export function chronicleCalendarPatch(entry: ChartEntry): Pick<ChartEntry, "chronicleEntryIndex"> {
   return {
-    ...(entry.chronicleCalendarId ? { chronicleCalendarId: entry.chronicleCalendarId } : {}),
-    ...(entry.chronicleCalendarStartYear ? { chronicleCalendarStartYear: entry.chronicleCalendarStartYear } : {})
+    chronicleEntryIndex: entry.chronicleEntryIndex
   };
 }
 
@@ -145,7 +144,7 @@ export function isPreviewForEntry(
     preview &&
       preview.path === entry.path &&
       preview.source === source &&
-      (preview.chronicleCalendarId ?? "chronicle0") === (entry.chronicleCalendarId ?? "chronicle0")
+      preview.chronicleEntryIndex === entry.chronicleEntryIndex
   );
 }
 
@@ -153,7 +152,7 @@ export function previewEntryForDrag(entry: ChartEntry, preview: DragPreview | nu
   if (
     !preview ||
     preview.path !== entry.path ||
-    (preview.chronicleCalendarId ?? "chronicle0") !== (entry.chronicleCalendarId ?? "chronicle0")
+    preview.chronicleEntryIndex !== entry.chronicleEntryIndex
   ) return entry;
 
   const startLabel = formatEntryCalendarLabel(entry, preview.startValue);
@@ -171,8 +170,10 @@ export function previewEntryForDrag(entry: ChartEntry, preview: DragPreview | nu
 function formatEntryCalendarLabel(entry: ChartEntry, value: number): string {
   const name = entry.chronicleCalendarName;
   const startYear = entry.chronicleCalendarStartYear ?? 1;
-  const year = axisToYear(value) - startYear + 1;
+  const point = monthAxisToPoint(value);
+  const year = point.year - startYear + 1;
   const label = year < 0 ? `−${Math.abs(year)}` : String(year);
+  const labelWithMonth = `${label}-${String(point.month).padStart(2, "0")}`;
 
-  return name ? `${name} ${label}` : formatAxisValue(value);
+  return name ? `${name} ${labelWithMonth}` : formatAxisValue(value);
 }

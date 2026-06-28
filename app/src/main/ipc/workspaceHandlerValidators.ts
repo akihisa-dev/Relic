@@ -1,6 +1,5 @@
 import type {
   ChronicleCalendarSettings,
-  ChronicleCalendarId,
   FeatureToggles,
   FrontmatterTemplate,
   ChartSettings,
@@ -10,7 +9,6 @@ import type {
   UpdateChartEntryInput,
   UserDefinedField,
 } from "../../shared/ipc";
-import { chronicleCalendarIds as validChronicleCalendarIds } from "../../shared/ipc";
 import {
   isUserDefinedFieldType,
   isValidUserDefinedFieldName,
@@ -86,8 +84,8 @@ export function isUpdateChartEntryInput(input: unknown): input is UpdateChartEnt
   return (
     isWorkspaceRelativeInputPath(candidate.path) &&
     chartSources.includes(candidate.source as ChartSource) &&
-    (!("chronicleCalendarId" in candidate) || isChronicleCalendarId(candidate.chronicleCalendarId)) &&
-    (!("chronicleCalendarStartYear" in candidate) || (Number.isInteger(candidate.chronicleCalendarStartYear) && Number(candidate.chronicleCalendarStartYear) >= 1)) &&
+    Number.isInteger(candidate.chronicleEntryIndex) &&
+    Number(candidate.chronicleEntryIndex) >= 0 &&
     (candidate.kind === "move" || candidate.kind === "resize-start" || candidate.kind === "resize-end") &&
     Number.isInteger(candidate.originalStartValue) &&
     Number.isInteger(candidate.originalEndValue) &&
@@ -100,23 +98,20 @@ export function isUpdateChartEntryInput(input: unknown): input is UpdateChartEnt
 export function isChronicleCalendarsInput(input: unknown): input is ChronicleCalendarSettings[] {
   if (!Array.isArray(input)) return false;
 
-  const ids = new Set<ChronicleCalendarId>();
-  let hasMain = false;
+  const names = new Set<string>();
 
   return input.every((calendar) => {
     if (typeof calendar !== "object" || calendar === null) return false;
 
     const candidate = calendar as Record<string, unknown>;
-    if (!isChronicleCalendarId(candidate.id)) return false;
-    if (ids.has(candidate.id)) return false;
-    ids.add(candidate.id);
-    if (candidate.id === "chronicle0") hasMain = true;
-    if (typeof candidate.name !== "string") return false;
-    if (candidate.id === "chronicle0") return !("startYear" in candidate);
+    if (typeof candidate.name !== "string" || candidate.name.trim() === "") return false;
+    if (candidate.name.trim() !== candidate.name) return false;
+    if (names.has(candidate.name)) return false;
+    names.add(candidate.name);
 
     return !("startYear" in candidate) ||
       (Number.isInteger(candidate.startYear) && Number(candidate.startYear) >= 1);
-  }) && hasMain;
+  }) && input.length > 0;
 }
 
 export function isFrontmatterTemplatesInput(input: unknown): input is FrontmatterTemplate[] {
@@ -179,8 +174,4 @@ export function isRenameWorkspaceInput(input: unknown): input is RenameWorkspace
     "name" in input &&
     typeof (input as { name?: unknown }).name === "string"
   );
-}
-
-function isChronicleCalendarId(value: unknown): value is ChronicleCalendarId {
-  return typeof value === "string" && validChronicleCalendarIds.includes(value as ChronicleCalendarId);
 }

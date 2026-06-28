@@ -91,6 +91,9 @@ export function serializeData(data: Record<string, unknown>, userDefinedFields: 
     .map(([key, value]) => {
       const field = fieldFor(key, userDefinedFields);
       if (value === "") return `${key}:`;
+      if (key === "chronicle") {
+        return yaml.dump({ [key]: value }, { flowLevel: 2, lineWidth: -1, quotingType: "\"", forceQuotes: false }).trimEnd();
+      }
       if (Array.isArray(value) && shouldSerializeArrayAsFlowSequence(key, field)) {
         return `${key}: [${value.map((item) => serializeFlowScalar(key, item)).join(", ")}]`;
       }
@@ -107,6 +110,10 @@ function serializeEntryPreservingQuote(
   userDefinedFields: UserDefinedField[] = []
 ): string {
   const field = fieldFor(entry.key, userDefinedFields);
+
+  if (entry.key === "chronicle") {
+    return serializeData({ [entry.key]: value }, userDefinedFields);
+  }
 
   if (
     Array.isArray(value) &&

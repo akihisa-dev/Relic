@@ -108,7 +108,7 @@ describe("FrontmatterPanel", () => {
     expect(screen.getByText("source: [https://example.com]")).toBeInTheDocument();
   });
 
-  it("aliasesとtagsとchronicle0〜9を固定プロパティとして表示し、statusとplannedDateとactualDateはカスタムプロパティに追加できる", () => {
+  it("aliasesとtagsとchronicleを固定プロパティとして表示し、statusとplannedDateとactualDateはカスタムプロパティに追加できる", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
     renderFrontmatterPanel({ onUserDefinedFieldsSave });
@@ -118,13 +118,10 @@ describe("FrontmatterPanel", () => {
     expect(screen.getByText("aliases")).not.toBeNull();
     expect(screen.getByText("tags")).not.toBeNull();
     expect(screen.queryByText("status")).toBeNull();
-    expect(screen.getByRole("button", { name: "chronicle0-chronicle9 10 fields" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText("chronicle0")).toBeNull();
-    expect(screen.queryByText("chronicle9")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "chronicle0-chronicle9 10 fields" }));
-    expect(screen.getByRole("button", { name: "chronicle0-chronicle9 10 fields" })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("chronicle0")).not.toBeNull();
-    expect(screen.getByText("chronicle9")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "chronicle 1 field" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByText("chronicle")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "chronicle 1 field" }));
+    expect(screen.getByRole("button", { name: "chronicle 1 field" })).toHaveAttribute("aria-expanded", "true");
     expect(screen.queryByText("plannedDate")).toBeNull();
     expect(screen.queryByText("actualDate")).toBeNull();
     expect(screen.getByText("At the very top of the Markdown file, make a settings block that starts with --- and ends with ---. Write each property inside that block on its own line.")).toBeInTheDocument();
@@ -135,9 +132,9 @@ describe("FrontmatterPanel", () => {
     expect(screen.getByText("Tags that classify this file. Used for tag lists, tag search, and tag filtering. Write one or many values as the same one-line array.")).toBeInTheDocument();
     expect(screen.getByText("tags: [source]")).toBeInTheDocument();
     expect(screen.getByText("tags: [source, draft]")).toBeInTheDocument();
-    expect(screen.getAllByText("Places this file on the timeline as a single year or range. Write a single year or range as the same one-line array.").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("chronicle0: [1185]").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("chronicle0: [1185, 1333]").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Places this file on the timeline with one or more calendar ranges. Each range stores a calendar name and start/end year-month points.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("chronicle: [[Main calendar, [[1185, null], [1185, null]]]]").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("chronicle: [[Main calendar, [[1185, 5], [1333, 8]]]]").length).toBeGreaterThan(0);
     expect(screen.queryByText("plannedDate: [2026-05-12]")).toBeNull();
     expect(screen.queryByText("actualDate: [2026-05-12]")).toBeNull();
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "aliases" } });
@@ -148,9 +145,13 @@ describe("FrontmatterPanel", () => {
 
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
 
-    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "chronicle0" } });
+    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "chronicle" } });
 
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
+
+    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "chronicle0" } });
+
+    expect(screen.getByRole("button", { name: "Add" })).toBeEnabled();
 
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "date" } });
 

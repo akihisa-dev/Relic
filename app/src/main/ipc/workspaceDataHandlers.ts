@@ -215,8 +215,7 @@ function normalizeChronicleCalendarsForSave(
   calendars: ChronicleCalendarSettings[]
 ): ChronicleCalendarSettings[] {
   return calendars.map((calendar) => ({
-    id: calendar.id,
     name: calendar.name.trim(),
-    ...(calendar.id === "chronicle0" ? {} : { startYear: calendar.startYear })
+    ...(calendar.startYear === undefined ? {} : { startYear: calendar.startYear })
   }));
 }

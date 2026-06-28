@@ -1,9 +1,8 @@
 import * as yaml from "js-yaml";
 
-import { axisToYear, rangeToStringArray } from "./chartTime";
+import { monthAxisToPoint } from "./chartTime";
 import {
   defaultChronicleCalendars,
-  type ChronicleCalendarId,
   type ChronicleCalendarSettings,
   type UpdateChartEntryInput
 } from "./ipcCharts";
@@ -33,13 +32,10 @@ export function updateChartFrontmatterContent(
   const data = parseYamlObject(frontmatter.yaml);
   if (!data.ok) return data;
 
-  const updates = chartFrontmatterUpdates(data.value, input, calendars);
-  if (!updates.ok) return updates;
+  const nextData = chartFrontmatterUpdates(data.value, input, calendars);
+  if (!nextData.ok) return nextData;
 
-  const nextYaml = Object.entries(updates.value).reduce(
-    (yamlText, [field, values]) => setYamlArrayField(yamlText, field, values),
-    frontmatter.yaml
-  );
+  const nextYaml = setYamlField(frontmatter.yaml, "chronicle", nextData.value.chronicle);
 
   return ok(`${frontmatter.open}${nextYaml}${frontmatter.close}${frontmatter.body}`);
 }
@@ -88,60 +84,52 @@ function chartFrontmatterUpdates(
   data: Record<string, unknown>,
   input: UpdateChartEntryInput,
   calendars: ChronicleCalendarSettings[]
-): RelicResult<Record<string, string[]>> {
-  void data;
+): RelicResult<Record<string, unknown>> {
   const start = Math.min(input.startValue, input.endValue);
   const end = Math.max(input.startValue, input.endValue);
+  const chronicle = Array.isArray(data.chronicle) ? [...data.chronicle] : [];
+  const currentEntry = chronicle[input.chronicleEntryIndex];
 
-  const startYear = axisToYear(start);
-  const endYear = axisToYear(end);
-  const calendar = calendarForInput(input, calendars);
-
-  if (!calendar.ok) return calendar;
-
-  const nextStartYear = mainYearToCalendarYear(calendar.value, startYear);
-  const nextEndYear = mainYearToCalendarYear(calendar.value, endYear);
-  const updates: Record<string, string[]> = {
-    [calendar.value.id]: rangeToStringArray(nextStartYear, nextEndYear)
-  };
-
-  return ok(updates);
-}
-
-function calendarForInput(
-  input: UpdateChartEntryInput,
-  calendars: ChronicleCalendarSettings[]
-): RelicResult<{ id: ChronicleCalendarId; startYear: number }> {
-  const id = input.chronicleCalendarId ?? "chronicle0";
-
-  if (id === "chronicle0") return ok({ id, startYear: 1 });
-
-  const configuredStartYear = calendars.find((calendar) => calendar.id === id)?.startYear;
-  const startYear = Number.isInteger(configuredStartYear) && Number(configuredStartYear) >= 1
-    ? configuredStartYear
-    : input.chronicleCalendarStartYear;
-
-  if (!Number.isInteger(startYear) || Number(startYear) < 1) {
+  if (!Array.isArray(currentEntry) || typeof currentEntry[0] !== "string") {
     return fail(
-      "CHART_CHRONICLE_CALENDAR_MISSING",
-      "サブ暦の開始年が分からないため、チャートの変更を保存できませんでした。"
+      "CHART_CHRONICLE_ENTRY_MISSING",
+      "対象の年表項目が見つからないため、チャートの変更を保存できませんでした。"
     );
   }
 
-  return ok({ id, startYear: Number(startYear) });
+  const calendarName = currentEntry[0].trim();
+  const calendar = calendars.find((item) => item.name.trim() === calendarName);
+  if (!calendar) {
+    return fail(
+      "CHART_CHRONICLE_CALENDAR_MISSING",
+      "対象の暦設定が見つからないため、チャートの変更を保存できませんでした。"
+    );
+  }
+
+  const startPoint = monthAxisToPoint(start);
+  const endPoint = monthAxisToPoint(end);
+  const startYear = mainYearToCalendarYear(calendar, startPoint.year);
+  const endYear = mainYearToCalendarYear(calendar, endPoint.year);
+
+  chronicle[input.chronicleEntryIndex] = [
+    calendarName,
+    [
+      [startYear, startPoint.month],
+      [endYear, endPoint.month]
+    ]
+  ];
+
+  return ok({ ...data, chronicle });
 }
 
-function setYamlArrayField(yamlText: string, field: string, values: string[]): string {
-  const line = `${field}: [${values.join(", ")}]`;
+function setYamlField(yamlText: string, field: string, value: unknown): string {
+  const dumped = yaml.dump({ [field]: value }, { flowLevel: 2, lineWidth: -1, quotingType: "\"", forceQuotes: false });
+  const replacement = dumped.endsWith("\n") ? dumped : `${dumped}\n`;
   const range = findTopLevelFieldRange(yamlText, field);
 
   if (!range) {
-    return `${yamlText}${yamlText.endsWith("\n") || yamlText.length === 0 ? "" : "\n"}${line}\n`;
+    return `${yamlText}${yamlText.endsWith("\n") || yamlText.length === 0 ? "" : "\n"}${replacement}`;
   }
-
-  const existingLine = yamlText.slice(range.from, range.lineEnd).replace(/\r?\n$/, "");
-  const comment = trailingComment(existingLine);
-  const replacement = `${line}${comment}\n`;
 
   return `${yamlText.slice(0, range.from)}${replacement}${yamlText.slice(range.to)}`;
 }
@@ -176,13 +164,8 @@ function nextLineEnd(text: string, from: number): number {
   return nextNewline === -1 ? text.length : nextNewline + 1;
 }
 
-function trailingComment(line: string): string {
-  const match = /(\s+#.*)$/.exec(line);
-  return match ? match[1] : "";
-}
-
-function mainYearToCalendarYear(calendar: { startYear: number }, mainYear: number): number {
-  return mainYear - calendar.startYear + 1;
+function mainYearToCalendarYear(calendar: { startYear?: number }, mainYear: number): number {
+  return mainYear - (calendar.startYear ?? 1) + 1;
 }
 
 function escapeRegExp(value: string): string {

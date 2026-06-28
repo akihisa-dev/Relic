@@ -12,8 +12,8 @@ describe("ChronicleSettingsPanel", () => {
       <I18nProvider language="ja">
         <ChronicleSettingsPanel
           calendars={[
-            { id: "chronicle0", name: "王国暦" },
-            { id: "chronicle1", name: "帝国暦", startYear: 100 }
+            { name: "王国暦" },
+            { name: "帝国暦", startYear: 100 }
           ]}
           onSave={onSave}
         />
@@ -23,19 +23,19 @@ describe("ChronicleSettingsPanel", () => {
     fireEvent.change(screen.getByLabelText("メイン暦の開始年"), { target: { value: "" } });
 
     expect(onSave).toHaveBeenLastCalledWith([
-      { id: "chronicle0", name: "王国暦" },
-      { id: "chronicle1", name: "帝国暦" }
+      { name: "王国暦" },
+      { name: "帝国暦" }
     ]);
     expect(screen.getByText("開始年を入力すると換算を確認できます。")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("暦名"), { target: { value: "" } });
+    fireEvent.change(screen.getByDisplayValue("帝国暦"), { target: { value: "帝国暦2" } });
     fireEvent.change(screen.getByLabelText("メイン暦の開始年"), { target: { value: "100" } });
 
     expect(onSave).toHaveBeenLastCalledWith([
-      { id: "chronicle0", name: "王国暦" },
-      { id: "chronicle1", name: "", startYear: 100 }
+      { name: "王国暦" },
+      { name: "帝国暦2", startYear: 100 }
     ]);
-    expect(screen.getByText("chronicle1 1年 = 王国暦100年")).toBeInTheDocument();
+    expect(screen.getByText("帝国暦21年 = 王国暦100年")).toBeInTheDocument();
   });
 
   it("不正な開始年は保存せず入力欄の近くにエラーを出す", () => {
@@ -45,8 +45,8 @@ describe("ChronicleSettingsPanel", () => {
       <I18nProvider language="ja">
         <ChronicleSettingsPanel
           calendars={[
-            { id: "chronicle0", name: "王国暦" },
-            { id: "chronicle1", name: "帝国暦", startYear: 100 }
+            { name: "王国暦" },
+            { name: "帝国暦", startYear: 100 }
           ]}
           onSave={onSave}
         />

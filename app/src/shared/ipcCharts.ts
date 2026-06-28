@@ -1,38 +1,18 @@
 export type ChartSource = "chronicle";
-export type ChronicleCalendarId =
-  | "chronicle0"
-  | "chronicle1"
-  | "chronicle2"
-  | "chronicle3"
-  | "chronicle4"
-  | "chronicle5"
-  | "chronicle6"
-  | "chronicle7"
-  | "chronicle8"
-  | "chronicle9";
 
 export interface ChronicleCalendarSettings {
-  id: ChronicleCalendarId;
   name: string;
   startYear?: number;
 }
 
-export const chronicleCalendarIds: ChronicleCalendarId[] = [
-  "chronicle0",
-  "chronicle1",
-  "chronicle2",
-  "chronicle3",
-  "chronicle4",
-  "chronicle5",
-  "chronicle6",
-  "chronicle7",
-  "chronicle8",
-  "chronicle9"
+export const defaultChronicleCalendars: ChronicleCalendarSettings[] = [
+  { name: "メイン暦" }
 ];
 
-export const defaultChronicleCalendars: ChronicleCalendarSettings[] = [
-  { id: "chronicle0", name: "メイン暦" }
-];
+export interface ChroniclePoint {
+  month: number | null;
+  year: number;
+}
 
 export interface ChartSettings {
   filePaths?: string[];
@@ -42,13 +22,15 @@ export interface ChartSettings {
 }
 
 export interface ChartEntry {
-  chronicleCalendarId?: ChronicleCalendarId;
-  chronicleCalendarName?: string;
+  chronicleCalendarName: string;
   chronicleCalendarStartYear?: number;
+  chronicleEntryIndex: number;
   endLabel: string;
   endValue: number;
   fileName: string;
   path: string;
+  startPoint: ChroniclePoint;
+  endPoint: ChroniclePoint;
   startLabel: string;
   startValue: number;
 }
@@ -60,10 +42,9 @@ export interface WorkspaceChart extends ChartSettings {
 export type ChartEntryEditKind = "move" | "resize-start" | "resize-end";
 
 export interface UpdateChartEntryInput {
-  chronicleCalendarId?: ChronicleCalendarId;
-  chronicleCalendarStartYear?: number;
   endValue: number;
   kind: ChartEntryEditKind;
+  chronicleEntryIndex: number;
   originalEndValue: number;
   originalStartValue: number;
   path: string;

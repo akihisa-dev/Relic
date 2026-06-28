@@ -165,6 +165,19 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+.right-frontmatter-control .cm-frontmatter-chronicle-entry .cm-frontmatter-input {
+  flex-basis: 58px;
+}
+
+.right-frontmatter-control .cm-frontmatter-chronicle-entry .cm-frontmatter-input:first-child {
+  flex-basis: 96px;
+}
+
+.right-frontmatter-control .cm-frontmatter-chronicle-entry .cm-frontmatter-input:nth-of-type(3),
+.right-frontmatter-control .cm-frontmatter-chronicle-entry .cm-frontmatter-input:nth-of-type(5) {
+  flex-basis: 34px;
+}
+
 .right-frontmatter-control .cm-frontmatter-yaml-input {
   border-bottom: 1px solid var(--border);
   min-height: 72px;

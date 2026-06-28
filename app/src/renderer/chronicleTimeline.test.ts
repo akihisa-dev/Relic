@@ -22,7 +22,11 @@ function entry(overrides: Partial<ChartEntry> = {}): ChartEntry {
     endLabel: "1333",
     endValue: 1332,
     fileName: "鎌倉時代",
+    chronicleCalendarName: "メイン暦",
+    chronicleEntryIndex: 0,
+    endPoint: { month: null, year: 1333 },
     path: "history/kamakura.md",
+    startPoint: { month: null, year: 1185 },
     startLabel: "1185",
     startValue: 1184,
     ...overrides
@@ -37,12 +41,12 @@ describe("chronicleTimeline", () => {
       entry({ fileName: "A", path: "a-2.md", startValue: 10, endValue: 12 })
     ], "chronicle");
 
-    expect(rows.map((row) => row.key)).toEqual(["b.md:chronicle0", "a.md:chronicle0", "a-2.md:chronicle0"]);
+    expect(rows.map((row) => row.key)).toEqual(["b.md:chronicle:0", "a.md:chronicle:0", "a-2.md:chronicle:0"]);
     expect(filterRows(rows, "a-", "")).toHaveLength(1);
     expect(sortRows(rows, "start-asc").map((row) => row.path)).toEqual(["a-2.md", "a.md", "b.md"]);
     expect(sortRows(rows, "start-desc").map((row) => row.path)).toEqual(["b.md", "a.md", "a-2.md"]);
     expect(sortRows(rows, "name-asc").map((row) => row.path)).toEqual(["a-2.md", "a.md", "b.md"]);
-    expect(chronicleSummaryForRow(rows[0])).toBe("21-22");
+    expect(chronicleSummaryForRow(rows[0])).toBe("メイン暦 1185-1333");
   });
 
   it("年表の bounds、ticks、axis segments、guide tick を計算する", () => {
@@ -50,21 +54,21 @@ describe("chronicleTimeline", () => {
       entry({ endValue: 1332, startValue: 1184 })
     ], 1);
 
-    expect(bounds).toEqual({ axisEnd: 1342, axisStart: 1174 });
+    expect(bounds).toEqual({ axisEnd: 1355, axisStart: 1152 });
     expect(chronicleAxisTickInterval(1)).toBe(1);
     expect(buildTicks(bounds.axisStart, bounds.axisEnd, 1).slice(0, 3)).toEqual([
-      1174,
-      1175,
+      1152,
+      1164,
       1176
     ]);
-    expect(buildGuideTicks(bounds.axisStart, bounds.axisEnd, [], 1).find((tick) => tick.value === 1189)).toEqual({
+    expect(buildGuideTicks(bounds.axisStart, bounds.axisEnd, [], 1).find((tick) => tick.value === 1188)).toEqual({
       isMajor: true,
-      value: 1189
+      value: 1188
     });
     expect(buildChronicleAxisSegments(bounds.axisStart, bounds.axisEnd, 1)[0]).toEqual({
-      endValue: 1174,
-      label: "1175",
-      startValue: 1174
+      endValue: 1163,
+      label: "97",
+      startValue: 1152
     });
   });
 

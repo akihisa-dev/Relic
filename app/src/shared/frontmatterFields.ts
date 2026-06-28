@@ -1,4 +1,4 @@
-import { chronicleCalendarIds, type ChronicleCalendarId, type UserDefinedFieldType } from "./ipc";
+import type { UserDefinedFieldType } from "./ipc";
 
 export const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "text",
@@ -19,12 +19,12 @@ export const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
 export type FixedFrontmatterFieldName =
   | "aliases"
   | "tags"
-  | ChronicleCalendarId;
+  | "chronicle";
 
 export const reservedFrontmatterFieldNames: FixedFrontmatterFieldName[] = [
   "aliases",
   "tags",
-  ...chronicleCalendarIds
+  "chronicle"
 ];
 
 const reservedFrontmatterFieldNameSet = new Set<string>(reservedFrontmatterFieldNames);

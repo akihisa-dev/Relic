@@ -41,10 +41,10 @@ describe("workspaceSettings", () => {
 
     await writeWorkspaceSettings(userDataPath, "ws-1", {
       chronicleCalendars: [
-        { id: "chronicle0", name: "王国暦" },
-        { id: "chronicle1", name: "帝国暦", startYear: 100 },
-        { id: "chronicle2", name: "未開始暦" },
-        { id: "chronicle3", name: "", startYear: 200 }
+        { name: "王国暦" },
+        { name: "帝国暦", startYear: 100 },
+        { name: "未開始暦" },
+        { name: "", startYear: 200 }
       ],
       charts: [
         { filePaths: ["history/kamakura.md"], id: "chronicle", name: "歴史", source: "chronicle" }
@@ -55,10 +55,9 @@ describe("workspaceSettings", () => {
 
     const settings = await readWorkspaceSettings(userDataPath, "ws-1");
     expect(settings.chronicleCalendars).toEqual([
-      { id: "chronicle0", name: "王国暦" },
-      { id: "chronicle1", name: "帝国暦", startYear: 100 },
-      { id: "chronicle2", name: "未開始暦" },
-      { id: "chronicle3", name: "", startYear: 200 }
+      { name: "王国暦" },
+      { name: "帝国暦", startYear: 100 },
+      { name: "未開始暦" }
     ]);
     expect(settings.charts).toEqual([
       { filePaths: ["history/kamakura.md"], id: "chronicle", name: "chronicle", source: "chronicle" }

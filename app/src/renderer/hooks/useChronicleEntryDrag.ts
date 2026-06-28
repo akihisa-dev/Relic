@@ -25,6 +25,32 @@ export interface ChronicleEntryDrag {
   ) => void;
 }
 
+export function chronicleRangeForEdit(
+  kind: ChartEntryEditKind,
+  originalStartValue: number,
+  originalEndValue: number,
+  delta: number
+): { endValue: number; startValue: number } {
+  if (kind === "move") {
+    return {
+      endValue: originalEndValue + delta,
+      startValue: originalStartValue + delta
+    };
+  }
+
+  if (kind === "resize-start") {
+    return {
+      endValue: originalEndValue,
+      startValue: Math.min(originalStartValue + delta, originalEndValue)
+    };
+  }
+
+  return {
+    endValue: Math.max(originalStartValue, originalEndValue + delta),
+    startValue: originalStartValue
+  };
+}
+
 export function useChronicleEntryDrag({
   activeSource,
   onUpdateEntry,
@@ -53,26 +79,7 @@ export function useChronicleEntryDrag({
     const dragDelta = createAdaptiveChroniclePointerDelta(startClientX, unitWidth, event.timeStamp);
     let currentPreviewRange = { endValue: originalEndValue, startValue: originalStartValue };
 
-    const nextRangeForDelta = (delta: number): { endValue: number; startValue: number } => {
-      if (kind === "move") {
-        return {
-          endValue: originalEndValue + delta,
-          startValue: originalStartValue + delta
-        };
-      }
-
-      if (kind === "resize-start") {
-        return {
-          endValue: originalEndValue,
-          startValue: Math.min(originalStartValue + delta, originalEndValue)
-        };
-      }
-
-      return {
-        endValue: Math.max(originalStartValue, originalEndValue + delta),
-        startValue: originalStartValue
-      };
-    };
+    const nextRangeForDelta = (delta: number): { endValue: number; startValue: number } => chronicleRangeForEdit(kind, originalStartValue, originalEndValue, delta);
 
     const move = (moveEvent: globalThis.PointerEvent): void => {
       const delta = dragDelta(moveEvent.clientX, moveEvent.timeStamp);
