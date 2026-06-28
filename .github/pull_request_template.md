@@ -4,8 +4,10 @@
 
 ## Verification
 
-- [ ] `pnpm --dir app verify`
+- [ ] `cd app && pnpm verify`
+- [ ] `cd app && pnpm docs:index:check`
 - [ ] `git diff --check`
+- [ ] GitHub CI passed
 
 ## Checklist
 
