@@ -23,6 +23,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Run secret guard self-test
+        run: .githooks/secret-guard.sh --self-test
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -38,6 +41,15 @@ jobs:
       - name: Typecheck and test
         working-directory: app
         run: pnpm verify
+
+      - name: Check SBOM and licenses
+        working-directory: app
+        run: pnpm licenses:check
+
+      - name: Audit production dependencies
+        working-directory: app
+        run: pnpm security:audit
+        continue-on-error: true
 
       - name: Check documentation index
         working-directory: app
