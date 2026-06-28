@@ -336,10 +336,6 @@ function parseSearchMode(value: unknown): SearchMode | null {
     return "tag";
   }
 
-  if (normalized === "regex" || normalized === "regular expression" || value === "正規表現") {
-    return "regex";
-  }
-
   if (
     normalized === "frontmatter" ||
     normalized === "property" ||

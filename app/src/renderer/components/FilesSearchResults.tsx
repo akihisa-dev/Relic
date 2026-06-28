@@ -43,9 +43,6 @@ export function FilesSearchResults({
             limitNotice.truncated ? t("search.truncated") : null,
             limitNotice.skippedLargeFiles > 0
               ? t("search.skippedLargeFiles", { count: limitNotice.skippedLargeFiles })
-              : null,
-            limitNotice.skippedLongLines > 0
-              ? t("search.skippedLongLines", { count: limitNotice.skippedLongLines })
               : null
           ].filter(Boolean).join(" ")}
         </div>

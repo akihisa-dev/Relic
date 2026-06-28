@@ -45,7 +45,7 @@ export interface GetBacklinksInput {
   path: string;
 }
 
-export type SearchMode = "fullText" | "fileName" | "tag" | "regex" | "frontmatter";
+export type SearchMode = "fullText" | "fileName" | "tag" | "frontmatter";
 
 export interface SearchWorkspaceInput {
   frontmatterField?: string;

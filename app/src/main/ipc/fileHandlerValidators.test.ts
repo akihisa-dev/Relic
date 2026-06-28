@@ -102,6 +102,7 @@ describe("fileHandlerValidators", () => {
     expect(isSearchWorkspaceInput({ frontmatterField: "status", mode: "frontmatter", query: "draft" })).toBe(true);
     expect(isSearchWorkspaceInput({ searchMode: "fullText", searchQuery: "relic" })).toBe(false);
     expect(isSearchWorkspaceInput({ mode: "unknown", query: "relic" })).toBe(false);
+    expect(isSearchWorkspaceInput({ mode: "regex", query: "relic" })).toBe(false);
     expect(isSearchWorkspaceInput({ mode: "fullText", query: 1 })).toBe(false);
     expect(isSearchWorkspaceInput({ frontmatterField: 1, mode: "frontmatter", query: "draft" })).toBe(false);
   });
@@ -152,6 +153,8 @@ describe("fileHandlerValidators", () => {
       mode: "tag",
       query: "資料"
     });
+    expect(normalizeSearchWorkspaceInput(["regex", "^# "])).toBeNull();
+    expect(normalizeSearchWorkspaceInput({ searchMode: "正規表現", searchQuery: "^# " })).toBeNull();
     expect(normalizeSearchWorkspaceInput("ファイル")).toEqual({
       mode: "fullText",
       query: "ファイル"

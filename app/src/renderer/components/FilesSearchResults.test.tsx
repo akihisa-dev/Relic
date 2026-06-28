@@ -70,6 +70,6 @@ describe("FilesSearchResults", () => {
 
     expect(screen.getByText(/Only some results are shown/)).toBeInTheDocument();
     expect(screen.getByText(/2 large file/)).toBeInTheDocument();
-    expect(screen.getByText(/1 line/)).toBeInTheDocument();
+    expect(screen.queryByText(/1 line/)).not.toBeInTheDocument();
   });
 });
