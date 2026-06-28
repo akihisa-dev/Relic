@@ -108,6 +108,7 @@ export function createFilesSidebarProps(input: AppLayoutFilesSidebarInput): File
     onDeleteItem: input.handleDeleteTreeItem,
     onDeleteItems: input.handleDeleteTreeItems,
     onDuplicateFile: input.handleDuplicateTreeFile,
+    onImportMarkdownFiles: input.handleImportMarkdownFiles,
     onMoveFile: input.handleMoveFile,
     onMoveFolder: input.handleMoveFolder,
     onMoveItems: input.handleMoveTreeItems,

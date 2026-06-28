@@ -8,6 +8,8 @@ import {
   duplicateMarkdownFileChannel,
   type DuplicateMarkdownFileInput,
   getLinkUpdateImpactChannel,
+  importMarkdownFilesChannel,
+  type ImportMarkdownFilesInput,
   type LinkUpdateImpactInput,
   moveMarkdownFileChannel,
   type MoveMarkdownFileInput,
@@ -22,6 +24,7 @@ import {
   createMarkdownFileAtPath,
   createMarkdownFile,
   duplicateMarkdownFile,
+  importMarkdownFiles,
   moveMarkdownFile,
   renameMarkdownFile
 } from "../files/markdownFiles";
@@ -30,6 +33,7 @@ import { resolveExistingWorkspacePathOrRoot, verifyExistingWorkspacePath } from 
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
   isCreateMarkdownFileInput,
+  isImportMarkdownFilesInput,
   isLinkUpdateImpactInput,
   isMoveMarkdownFileInput,
   isPathInput,
@@ -85,6 +89,38 @@ export function registerMarkdownFileHandlers(): void {
         return fail(
           "FILE_CREATE_FAILED",
           "ファイルを作成できませんでした。",
+          ipcErrorDetails(error)
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(
+    importMarkdownFilesChannel,
+    async (_event, input: ImportMarkdownFilesInput): Promise<RelicResult<WorkspaceState>> => {
+      try {
+        if (!isImportMarkdownFilesInput(input)) {
+          return fail("FILE_IMPORT_INVALID_INPUT", "追加するMarkdownファイルを指定してください。");
+        }
+
+        const context = await getActiveWorkspaceContext();
+        if (!context.ok) return context;
+
+        const importedFiles = await importMarkdownFiles(
+          context.value.activeWorkspace.path,
+          input.sourcePaths,
+          input.destinationFolder
+        );
+
+        if (!importedFiles.ok) {
+          return importedFiles;
+        }
+
+        return ok(await buildWorkspaceState(context.value.settings));
+      } catch (error) {
+        return fail(
+          "FILE_IMPORT_FAILED",
+          "ファイルを追加できませんでした。",
           ipcErrorDetails(error)
         );
       }

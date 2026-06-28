@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   isCreateFolderInput,
   isCreateMarkdownFileInput,
+  isImportMarkdownFilesInput,
   isLinkUpdateImpactInput,
   isMoveFolderInput,
   isMoveItemToTrashInput,
@@ -22,6 +23,11 @@ describe("fileHandlerValidators", () => {
   it("preload公開ファイル操作APIの入力をメイン側で検証できる", () => {
     const validators = [
       { accepts: { name: "Note" }, rejects: { name: 1 }, validator: isCreateMarkdownFileInput },
+      {
+        accepts: { destinationFolder: "", sourcePaths: ["/tmp/Note.md"] },
+        rejects: { destinationFolder: "../outside", sourcePaths: ["/tmp/Note.md"] },
+        validator: isImportMarkdownFilesInput
+      },
       { accepts: { path: "Folder/Note.md" }, rejects: { path: "/tmp/outside.md" }, validator: isPathInput },
       {
         accepts: { kind: "file", newPath: "Archive/Note.md", oldPath: "Note.md" },
@@ -67,6 +73,15 @@ describe("fileHandlerValidators", () => {
     expect(isCreateFolderInput({ name: "Archive", parentFolder: "../outside" })).toBe(false);
     expect(isCreateFolderInput({ name: "Archive", parentFolder: " Notes " })).toBe(false);
     expect(isCreateFolderInput({ parentFolder: "Notes" })).toBe(false);
+  });
+
+  it("validates import markdown files input", () => {
+    expect(isImportMarkdownFilesInput({ destinationFolder: "", sourcePaths: ["/tmp/Note.md"] })).toBe(true);
+    expect(isImportMarkdownFilesInput({ destinationFolder: "Archive", sourcePaths: ["C:\\Users\\me\\Note.md"] })).toBe(true);
+    expect(isImportMarkdownFilesInput({ destinationFolder: "../outside", sourcePaths: ["/tmp/Note.md"] })).toBe(false);
+    expect(isImportMarkdownFilesInput({ destinationFolder: "", sourcePaths: [] })).toBe(false);
+    expect(isImportMarkdownFilesInput({ destinationFolder: "", sourcePaths: [" /tmp/Note.md "] })).toBe(false);
+    expect(isImportMarkdownFilesInput({ destinationFolder: "", sourcePaths: ["/tmp/Note.md\0"] })).toBe(false);
   });
 
   it("validates link update impact input paths", () => {

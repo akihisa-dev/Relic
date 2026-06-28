@@ -111,6 +111,7 @@ export interface AppLayoutFilesSidebarInput {
   handleDeleteTreeItem: FilesSidebarProps["onDeleteItem"];
   handleDeleteTreeItems: FilesSidebarProps["onDeleteItems"];
   handleDuplicateTreeFile: FilesSidebarProps["onDuplicateFile"];
+  handleImportMarkdownFiles: FilesSidebarProps["onImportMarkdownFiles"];
   handleMoveFile: FilesSidebarProps["onMoveFile"];
   handleMoveFolder: FilesSidebarProps["onMoveFolder"];
   handleMoveTreeItems: FilesSidebarProps["onMoveItems"];

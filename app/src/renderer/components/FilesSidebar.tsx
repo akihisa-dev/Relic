@@ -24,6 +24,7 @@ export interface FilesSidebarProps {
   onDeleteItem: (path: string, type: WorkspaceTreeNode["type"]) => void;
   onDeleteItems: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>) => void;
   onDuplicateFile: (path: string) => void;
+  onImportMarkdownFiles: (sourcePaths: string[], destFolder: string) => void;
   onMoveFile: (path: string, destFolder: string) => void;
   onMoveFolder: (path: string, destFolder: string) => void;
   onMoveItems: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
@@ -66,6 +67,7 @@ export function FilesSidebar({
   onDeleteItem,
   onDeleteItems,
   onDuplicateFile,
+  onImportMarkdownFiles,
   onMoveFile,
   onMoveFolder,
   onMoveItems,
@@ -158,6 +160,7 @@ export function FilesSidebar({
                 onCreateFileInFolder={onCreateFileInFolder}
                 onCreateFolderInFolder={onCreateFolderInFolder}
                 onDuplicateFile={onDuplicateFile}
+                onImportMarkdownFiles={onImportMarkdownFiles}
                 onMoveFile={onMoveFile}
                 onMoveFolder={onMoveFolder}
                 onMoveItems={onMoveItems}

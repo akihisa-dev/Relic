@@ -34,6 +34,7 @@ import type {
   CreateMarkdownFileInput,
   DuplicateMarkdownFileInput,
   GetBacklinksInput,
+  ImportMarkdownFilesInput,
   LinkUpdateImpact,
   LinkUpdateImpactInput,
   MarkdownFileContent,
@@ -82,10 +83,12 @@ export interface RelicApi {
   createNewWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   togglePin: (path: string) => Promise<RelicResult<WorkspaceState>>;
   createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;
+  importMarkdownFiles: (input: ImportMarkdownFilesInput) => Promise<RelicResult<WorkspaceState>>;
   createLinkedMarkdownFile: (
     input: CreateLinkedMarkdownFileInput
   ) => Promise<RelicResult<CreateLinkedMarkdownFileResult>>;
   createMarkdownFile: (input: CreateMarkdownFileInput) => Promise<RelicResult<WorkspaceState>>;
+  getDroppedFilePath: (file: File) => string;
   duplicateMarkdownFile: (
     input: DuplicateMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;

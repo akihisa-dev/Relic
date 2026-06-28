@@ -168,6 +168,12 @@
   transform: none;
 }
 
+.file-tree--external-drag-over {
+  background: var(--accent-soft);
+  outline: 1px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
 .file-tree-row.file.drag-over {
   background: transparent;
 }

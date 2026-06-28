@@ -1,4 +1,5 @@
-import { mkdir, readFile, rename } from "node:fs/promises";
+import { constants } from "node:fs";
+import { copyFile, mkdir, readFile, rename, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 
 import type { MarkdownFileContent } from "../../shared/ipc";
@@ -121,6 +122,106 @@ export async function createMarkdownFileAtPath(
       errorDetails(error)
     );
   }
+}
+
+export async function importMarkdownFiles(
+  workspacePath: string,
+  sourcePaths: string[],
+  destinationFolder: string,
+  operations: Partial<RealpathOperations> = {}
+): Promise<RelicResult<MarkdownFileContent[]>> {
+  const destinationEntries: Array<{
+    absolutePath: string;
+    relativePath: string;
+    sourcePath: string;
+  }> = [];
+  const destinationPathSet = new Set<string>();
+  const importedFiles: MarkdownFileContent[] = [];
+
+  for (const sourcePath of sourcePaths) {
+    const sourceBaseName = path.basename(sourcePath);
+    if (!hasMarkdownExtension(sourceBaseName)) {
+      return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを追加できます。");
+    }
+
+    const normalizedName = normalizeMarkdownFileName(sourceBaseName);
+    if (!normalizedName.ok) return normalizedName;
+
+    const destinationRelativePath = destinationFolder === ""
+      ? normalizedName.value
+      : path.posix.join(destinationFolder, normalizedName.value);
+    if (destinationPathSet.has(destinationRelativePath)) {
+      return fail("FILE_ALREADY_EXISTS", "追加先に同じ名前のファイルがすでにあります。");
+    }
+    destinationPathSet.add(destinationRelativePath);
+
+    const absoluteDestinationPath = await resolveNewWorkspacePath(
+      workspacePath,
+      destinationRelativePath,
+      operations
+    );
+
+    if (!absoluteDestinationPath.ok) {
+      return absoluteDestinationPath;
+    }
+
+    try {
+      const sourceStat = await stat(sourcePath);
+      if (!sourceStat.isFile()) {
+        return fail("FILE_IMPORT_SOURCE_INVALID", "追加できるMarkdownファイルを指定してください。");
+      }
+
+      const safeDestinationPath = await verifyNewWorkspacePath(
+        workspacePath,
+        absoluteDestinationPath.value,
+        operations
+      );
+      if (!safeDestinationPath.ok) return safeDestinationPath;
+    } catch (error) {
+      if (isFileExistsError(error)) {
+        return fail("FILE_ALREADY_EXISTS", "追加先に同じ名前のファイルがすでにあります。");
+      }
+
+      return fail(
+        "FILE_IMPORT_FAILED",
+        "ファイルを追加できませんでした。",
+        errorDetails(error)
+      );
+    }
+
+    destinationEntries.push({
+      absolutePath: absoluteDestinationPath.value,
+      relativePath: destinationRelativePath,
+      sourcePath
+    });
+  }
+
+  const copiedPaths: string[] = [];
+  for (const entry of destinationEntries) {
+    try {
+      await copyFile(entry.sourcePath, entry.absolutePath, constants.COPYFILE_EXCL);
+      copiedPaths.push(entry.absolutePath);
+      const importedFile = await readMarkdownFile(workspacePath, entry.relativePath);
+      if (!importedFile.ok) {
+        await Promise.all(copiedPaths.map((copiedPath) => unlink(copiedPath).catch(() => undefined)));
+        return importedFile;
+      }
+      importedFiles.push(importedFile.value);
+    } catch (error) {
+      await Promise.all(copiedPaths.map((copiedPath) => unlink(copiedPath).catch(() => undefined)));
+      if (isFileExistsError(error)) {
+        return fail("FILE_ALREADY_EXISTS", "追加先に同じ名前のファイルがすでにあります。");
+      }
+
+      return fail(
+        "FILE_IMPORT_FAILED",
+        "ファイルを追加できませんでした。",
+        errorDetails(error)
+      );
+    }
+  }
+
+  return ok(importedFiles);
 }
 
 export async function readMarkdownFile(

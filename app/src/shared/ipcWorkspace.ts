@@ -27,6 +27,11 @@ export interface CreateMarkdownFileInput {
   name: string;
 }
 
+export interface ImportMarkdownFilesInput {
+  destinationFolder: string;
+  sourcePaths: string[];
+}
+
 export interface CreateLinkedMarkdownFileInput {
   path: string;
 }

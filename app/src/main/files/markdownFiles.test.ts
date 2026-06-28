@@ -8,6 +8,7 @@ import {
   createMarkdownFile,
   createMarkdownFileAtPath,
   duplicateMarkdownFile,
+  importMarkdownFiles,
   moveMarkdownFile,
   normalizeMarkdownFileName,
   readMarkdownFile,
@@ -207,6 +208,80 @@ describe("createMarkdownFileAtPath", () => {
       ok: false
     });
     await expect(readdir(workspacePath)).resolves.toEqual([]);
+  });
+});
+
+describe("importMarkdownFiles", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
+  it("外部Markdownファイルをワークスペース直下にコピーする", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-workspace-"));
+    const sourcePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-source-"));
+    temporaryPaths.push(workspacePath, sourcePath);
+    const markdownPath = path.join(sourcePath, "読書メモ.md");
+    await writeFile(markdownPath, "# 読書メモ", "utf8");
+
+    await expect(importMarkdownFiles(workspacePath, [markdownPath], "")).resolves.toEqual({
+      ok: true,
+      value: [{
+        content: "# 読書メモ",
+        name: "読書メモ",
+        path: "読書メモ.md"
+      }]
+    });
+    await expect(readFile(path.join(workspacePath, "読書メモ.md"), "utf8")).resolves.toBe("# 読書メモ");
+    await expect(readFile(markdownPath, "utf8")).resolves.toBe("# 読書メモ");
+  });
+
+  it("外部Markdownファイルを指定フォルダにコピーする", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-workspace-"));
+    const sourcePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-source-"));
+    temporaryPaths.push(workspacePath, sourcePath);
+    await mkdir(path.join(workspacePath, "Archive"));
+    const markdownPath = path.join(sourcePath, "Log.MD");
+    await writeFile(markdownPath, "log", "utf8");
+
+    await expect(importMarkdownFiles(workspacePath, [markdownPath], "Archive")).resolves.toEqual({
+      ok: true,
+      value: [{
+        content: "log",
+        name: "Log",
+        path: "Archive/Log.MD"
+      }]
+    });
+    await expect(readFile(path.join(workspacePath, "Archive", "Log.MD"), "utf8")).resolves.toBe("log");
+  });
+
+  it("Markdown以外と同名コピーを拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-workspace-"));
+    const sourcePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-source-"));
+    temporaryPaths.push(workspacePath, sourcePath);
+    const textPath = path.join(sourcePath, "memo.txt");
+    const markdownPath = path.join(sourcePath, "既存.md");
+    await writeFile(textPath, "text", "utf8");
+    await writeFile(markdownPath, "new", "utf8");
+    await writeFile(path.join(workspacePath, "既存.md"), "old", "utf8");
+
+    await expect(importMarkdownFiles(workspacePath, [textPath], "")).resolves.toMatchObject({
+      error: { code: "FILE_TYPE_UNSUPPORTED" },
+      ok: false
+    });
+    await expect(importMarkdownFiles(workspacePath, [markdownPath], "")).resolves.toMatchObject({
+      error: { code: "FILE_ALREADY_EXISTS" },
+      ok: false
+    });
+    await expect(readFile(path.join(workspacePath, "既存.md"), "utf8")).resolves.toBe("old");
   });
 });
 
