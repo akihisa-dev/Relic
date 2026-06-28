@@ -13,16 +13,21 @@ export function enqueueD2Render(source: string): Promise<string> {
   const cacheKey = createD2RenderCacheKey(source);
   const cached = d2RenderCache.get(cacheKey);
 
-  if (cached) return withDiagramRenderTimeout(cached, "d2");
+  if (cached) return cached;
 
-  const renderOperation = d2RenderQueue.then(() => renderD2Svg(source));
+  const renderOperation = d2RenderQueue.then(() =>
+    withDiagramRenderTimeout(renderD2Svg(source), "d2")
+  );
   rememberD2Render(cacheKey, renderOperation);
   d2RenderQueue = renderOperation.then(
     () => undefined,
-    () => undefined
+    () => {
+      d2RenderCache.delete(cacheKey);
+      d2RendererPromise = null;
+    }
   );
 
-  return withDiagramRenderTimeout(renderOperation, "d2");
+  return renderOperation;
 }
 
 function createD2RenderCacheKey(source: string): string {
