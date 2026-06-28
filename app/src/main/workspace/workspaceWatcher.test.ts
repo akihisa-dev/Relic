@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
+const electronMock = vi.hoisted(() => ({
+  getAllWindows: vi.fn().mockReturnValue([])
+}));
+
 vi.mock("electron", () => ({
-  BrowserWindow: { getAllWindows: vi.fn().mockReturnValue([]) }
+  BrowserWindow: { getAllWindows: electronMock.getAllWindows }
 }));
 
 import {
@@ -13,6 +17,7 @@ import {
 import type { AppSettings } from "../settings/appSettings";
 import {
   activeWorkspaceWatchTarget,
+  notifyWorkspaceChanged,
   shouldNotifyWorkspaceChangeEvent,
   workspaceChangeNotificationDelay,
   workspaceChangeNotifyDelayMs,
@@ -67,5 +72,23 @@ describe("workspaceWatcher", () => {
     expect(workspaceChangeNotificationDelay(1000, 1000)).toBe(workspaceChangeNotifyDelayMs);
     expect(workspaceChangeNotificationDelay(1000, 2600)).toBe(400);
     expect(workspaceChangeNotificationDelay(1000, 1000 + workspaceChangeMaxNotifyDelayMs)).toBe(0);
+  });
+
+  it("ワークスペース変更通知に絶対パスを含めない", () => {
+    const send = vi.fn();
+    electronMock.getAllWindows.mockReturnValue([
+      {
+        isDestroyed: () => false,
+        webContents: { send }
+      }
+    ]);
+
+    notifyWorkspaceChanged({ id: "ws-1", path: "/Users/alice/private notes" });
+
+    expect(send).toHaveBeenCalledWith("workspace:changed", {
+      changedAt: expect.any(String),
+      workspaceId: "ws-1"
+    });
+    expect(send.mock.calls[0][1]).not.toHaveProperty("workspacePath");
   });
 });

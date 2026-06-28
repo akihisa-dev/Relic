@@ -95,11 +95,10 @@ export function workspaceChangeNotificationDelay(firstEventAt: number, now: numb
   return Math.min(workspaceChangeNotifyDelayMs, workspaceChangeMaxNotifyDelayMs - elapsed);
 }
 
-function notifyWorkspaceChanged(target: WorkspaceWatchTarget): void {
+export function notifyWorkspaceChanged(target: WorkspaceWatchTarget): void {
   const payload: WorkspaceChangedEvent = {
     changedAt: new Date().toISOString(),
-    workspaceId: target.id,
-    workspacePath: target.path
+    workspaceId: target.id
   };
 
   for (const window of BrowserWindow.getAllWindows()) {
