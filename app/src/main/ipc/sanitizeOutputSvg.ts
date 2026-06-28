@@ -51,8 +51,24 @@ function sanitizeOutputSvgAttributes(rawAttributes: string): string {
 }
 
 function isSafeOutputSvgUri(value: string): boolean {
-  const trimmed = value.trim();
+  const trimmed = decodeNumericCharacterReferences(value).trim();
   const scheme = trimmed.replace(/[\u0000-\u0020]+/g, "").match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase();
 
   return scheme === undefined || scheme === "http" || scheme === "https" || scheme === "mailto";
+}
+
+function decodeNumericCharacterReferences(value: string): string {
+  return value.replace(/&#(x[0-9a-f]+|\d+);?/gi, (_match, rawCodePoint: string) => {
+    const codePoint = rawCodePoint.toLowerCase().startsWith("x")
+      ? Number.parseInt(rawCodePoint.slice(1), 16)
+      : Number.parseInt(rawCodePoint, 10);
+
+    if (!Number.isFinite(codePoint)) return "";
+
+    try {
+      return String.fromCodePoint(codePoint);
+    } catch {
+      return "";
+    }
+  });
 }

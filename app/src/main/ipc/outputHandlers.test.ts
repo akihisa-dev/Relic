@@ -313,12 +313,33 @@ describe("outputHandlers", () => {
     expect(electronMock.loadURL).not.toHaveBeenCalled();
   });
 
+  it("出力HTMLの必須構造がない場合は入力エラーになる", async () => {
+    registerOutputHandlers();
+
+    const invalidHtmlValues = [
+      '<html><head><meta http-equiv="Content-Security-Policy" content="default-src \'none\'"></head><body><main class="relic-output-body">本文</main></body></html>',
+      '<!doctype html><head><meta http-equiv="Content-Security-Policy" content="default-src \'none\'"></head><body><main class="relic-output-body">本文</main></body>',
+      '<!doctype html><html><meta http-equiv="Content-Security-Policy" content="default-src \'none\'"><body><main class="relic-output-body">本文</main></body></html>',
+      '<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="default-src \'none\'"></head><body><div>本文</div></body></html>'
+    ];
+
+    for (const html of invalidHtmlValues) {
+      const result = await handlerFor(printHtmlChannel)({ sender: {} }, { html, title: "Note" });
+
+      expect(result).toEqual({
+        ok: false,
+        error: expect.objectContaining({ code: "OUTPUT_PRINT_INVALID_INPUT" })
+      });
+    }
+    expect(electronMock.loadURL).not.toHaveBeenCalled();
+  });
+
   it("PDF保存で許可外タグや危険属性を含むHTMLは入力エラーになる", async () => {
     registerOutputHandlers();
 
     const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
       defaultFileName: "Note",
-      html: validOutputHtml('<script>alert(1)</script><a href="javascript:alert(1)" onclick="alert(1)">link</a>'),
+      html: validOutputHtml('<script>alert(1)</script><a href="javascript:alert(1)" onclick="alert(1)">link</a><meta http-equiv = "refresh" content="0;url=https://example.com"><span style="background:url(https://example.com/a.png)">x</span>'),
       title: "Note"
     });
 
@@ -328,6 +349,29 @@ describe("outputHandlers", () => {
     });
     expect(electronMock.showSaveDialog).not.toHaveBeenCalled();
     expect(electronMock.loadURL).not.toHaveBeenCalled();
+  });
+
+  it("出力用ウィンドウはPDF/印刷HTMLでインラインスクリプトを無効化する", async () => {
+    registerOutputHandlers();
+
+    await handlerFor(printHtmlChannel)({ sender: {} }, {
+      html: validOutputHtml(),
+      title: "Note"
+    });
+
+    expect(electronMock.browserWindowOptions.at(-1)?.webPreferences).toEqual(
+      expect.objectContaining({
+        allowRunningInsecureContent: false,
+        contextIsolation: true,
+        javascript: false,
+        nodeIntegration: false,
+        partition: "relic-output",
+        sandbox: true,
+        webSecurity: true
+      })
+    );
+    expect(electronMock.setWindowOpenHandler).toHaveBeenCalledWith(expect.any(Function));
+    expect(electronMock.setPermissionRequestHandler).toHaveBeenCalledWith(expect.any(Function));
   });
 
   it("SVG保存で空SVGを保存しない", async () => {

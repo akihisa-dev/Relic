@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   isCreateFolderInput,
+  isCreateMarkdownFileInput,
   isLinkUpdateImpactInput,
   isMoveFolderInput,
   isMoveItemToTrashInput,
@@ -11,12 +12,52 @@ import {
   isRenameFolderInput,
   isRenameMarkdownFileInput,
   isReplaceInFileInput,
+  isSearchAndReplaceInput,
   isSearchWorkspaceInput,
   isWriteMarkdownFileInput,
   normalizeSearchWorkspaceInput
 } from "./fileHandlerValidators";
 
 describe("fileHandlerValidators", () => {
+  it("preload公開ファイル操作APIの入力をメイン側で検証できる", () => {
+    const validators = [
+      { accepts: { name: "Note" }, rejects: { name: 1 }, validator: isCreateMarkdownFileInput },
+      { accepts: { path: "Folder/Note.md" }, rejects: { path: "/tmp/outside.md" }, validator: isPathInput },
+      {
+        accepts: { kind: "file", newPath: "Archive/Note.md", oldPath: "Note.md" },
+        rejects: { kind: "file", newPath: "Archive/Note.md", oldPath: "../Note.md" },
+        validator: isLinkUpdateImpactInput
+      },
+      { accepts: { newName: "New", path: "Note.md" }, rejects: { newName: "New", path: "C:\\outside.md" }, validator: isRenameMarkdownFileInput },
+      { accepts: { destinationFolder: "", path: "Note.md" }, rejects: { destinationFolder: "/tmp", path: "Note.md" }, validator: isMoveMarkdownFileInput },
+      { accepts: { path: "", workspaceId: "ws-1" }, rejects: { path: "../outside", workspaceId: "ws-1" }, validator: isRevealWorkspaceItemInput },
+      {
+        accepts: { content: "# Note", expectedContent: "old", path: "Note.md" },
+        rejects: { content: "# Note", path: "note.md\0outside" },
+        validator: isWriteMarkdownFileInput
+      },
+      {
+        accepts: { isRegex: false, path: "Note.md", replacement: "new", searchQuery: "old" },
+        rejects: { isRegex: false, path: "\\\\server\\share\\note.md", replacement: "new", searchQuery: "old" },
+        validator: isReplaceInFileInput
+      },
+      {
+        accepts: { expectedFileSnapshots: [{ contentHash: "hash", path: "Note.md" }], isRegex: false, replacement: "new", searchQuery: "old" },
+        rejects: { expectedFileSnapshots: [{ contentHash: 1, path: "Note.md" }], isRegex: false, replacement: "new", searchQuery: "old" },
+        validator: isSearchAndReplaceInput
+      },
+      { accepts: { name: "Archive", parentFolder: "" }, rejects: { name: "Archive", parentFolder: "../outside" }, validator: isCreateFolderInput },
+      { accepts: { newName: "Archive", path: "Notes" }, rejects: { newName: "Archive", path: "/tmp/Notes" }, validator: isRenameFolderInput },
+      { accepts: { destinationFolder: "", path: "Notes" }, rejects: { destinationFolder: "Archive", path: " Notes " }, validator: isMoveFolderInput },
+      { accepts: { path: "Note.md", type: "file" }, rejects: { path: "../Note.md", type: "file" }, validator: isMoveItemToTrashInput }
+    ];
+
+    for (const { accepts, rejects, validator } of validators) {
+      expect(validator(accepts)).toBe(true);
+      expect(validator(rejects)).toBe(false);
+    }
+  });
+
   it("validates create folder input including optional parent folder", () => {
     expect(isCreateFolderInput({ name: "Archive" })).toBe(true);
     expect(isCreateFolderInput({ name: "Archive", parentFolder: "Notes" })).toBe(true);

@@ -42,4 +42,20 @@ describe("sanitizeOutputSvg", () => {
 
     expect(result).toBe("<svg><a>bad</a></svg>");
   });
+
+  it("大文字小文字混在のタグと危険参照属性を除去する", () => {
+    const input = [
+      "<svg>",
+      "<ForeignObject><div>unsafe</div></ForeignObject>",
+      '<image HREF="file:///tmp/outside.svg" SRC="java&#x0a;script:alert(1)" />',
+      '<a XLINK:HREF="https://example.com/safe.svg">safe</a>',
+      "</svg>"
+    ].join("");
+    const result = sanitizeOutputSvg(input);
+
+    expect(result).toBe('<svg><image/><a XLINK:HREF="https://example.com/safe.svg">safe</a></svg>');
+    expect(result).not.toMatch(/foreignObject/i);
+    expect(result).not.toContain("file:");
+    expect(result).not.toContain("javascript:");
+  });
 });

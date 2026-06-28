@@ -1,11 +1,15 @@
+import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
   isWorkspaceRelativeInputPath,
   isWorkspaceRelativeInputPathOrRoot,
   normalizeWorkspaceRelativeInputPath,
+  resolveExistingWorkspacePath,
+  resolveExistingWorkspacePathOrRoot,
   resolveNewWorkspacePath,
   resolveWorkspaceRelativePath,
   resolveWorkspaceRelativePathOrRoot,
@@ -79,6 +83,19 @@ describe("resolveWorkspaceRelativePathOrRoot", () => {
 });
 
 describe("resolveNewWorkspacePath", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
   it("存在しない親フォルダは既存の親までたどって許可する", async () => {
     const workspacePath = path.join("/tmp", "relic-notes");
 
@@ -107,6 +124,52 @@ describe("resolveNewWorkspacePath", () => {
       }
     })).resolves.toMatchObject({
       error: { code: "WORKSPACE_PATH_INVALID" },
+      ok: false
+    });
+  });
+
+  it("書き込み先の親フォルダがシンボリックリンクでワークスペース外を指す場合は拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-outside-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+
+    await mkdir(path.join(outsidePath, "notes"));
+    await symlink(path.join(outsidePath, "notes"), path.join(workspacePath, "linked-notes"));
+
+    await expect(resolveNewWorkspacePath(workspacePath, "linked-notes/new.md")).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+  });
+});
+
+describe("resolveExistingWorkspacePath", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
+  it("既存ファイルとルート指定でもシンボリックリンク経由のワークスペース外参照を拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-outside-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+
+    await symlink(outsidePath, path.join(workspacePath, "outside-link"));
+
+    await expect(resolveExistingWorkspacePath(workspacePath, "outside-link")).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+    await expect(resolveExistingWorkspacePathOrRoot(workspacePath, "outside-link")).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
       ok: false
     });
   });
