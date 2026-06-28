@@ -1,12 +1,12 @@
 import { createHash } from "node:crypto";
-import { mkdir, open, readFile, stat } from "node:fs/promises";
+import { open, readFile, stat } from "node:fs/promises";
 import type { Stats } from "node:fs";
 import path from "node:path";
 
 import type { WorkspaceFileIndexEntry, WorkspaceFileKind, WorkspaceTreeNode } from "../../shared/ipc";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
-import { atomicWriteTextFile } from "./atomicWrite";
+import { ensurePrivateSettingsDirectory, writePrivateSettingsTextFile } from "../settings/secureSettingsFile";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveExistingWorkspacePath } from "./paths";
 import { mapWithConcurrency } from "./concurrency";
@@ -63,12 +63,12 @@ const safeWorkspaceIndexIdPattern = /^[A-Za-z0-9_-]+$/;
 const maxConcurrentIndexReads = 8;
 
 const defaultOperations: WorkspaceFileIndexOperations = {
-  mkdir,
+  mkdir: (directoryPath) => ensurePrivateSettingsDirectory(directoryPath),
   readCache: (filePath) => readFile(filePath, "utf8"),
   readFile: (filePath) => readFile(filePath, "utf8"),
   readHead: readFileHead,
   stat,
-  writeCache: atomicWriteTextFile
+  writeCache: writePrivateSettingsTextFile
 };
 
 export function getWorkspaceFileIndexCachePath(userDataPath: string, workspaceId: string): string {

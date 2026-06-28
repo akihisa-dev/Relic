@@ -202,6 +202,8 @@
       - `settings/`
         - `appSettings.test.ts`
         - `appSettings.ts`
+        - `secureSettingsFile.test.ts`
+        - `secureSettingsFile.ts`
         - `workspaceSettings.test.ts`
         - `workspaceSettings.ts`
       - `workspace/`

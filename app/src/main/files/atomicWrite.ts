@@ -7,8 +7,12 @@ interface AtomicWriteOperations {
   writeFile: (
     filePath: string,
     content: string | Uint8Array,
-    encoding?: BufferEncoding
+    options?: BufferEncoding | { encoding?: BufferEncoding; mode?: number }
   ) => Promise<void>;
+}
+
+interface AtomicWriteOptions {
+  mode?: number;
 }
 
 const atomicWriteTemporaryFileNamePattern = /^\..*\.\d+\.\d+\.[a-z0-9]+\.tmp$/;
@@ -41,21 +45,23 @@ export function isAtomicWriteTemporaryPath(filePath: string): boolean {
 export async function atomicWriteTextFile(
   filePath: string,
   content: string,
-  operations: AtomicWriteOperations = defaultOperations
+  operations: AtomicWriteOperations = defaultOperations,
+  options: AtomicWriteOptions = {}
 ): Promise<void> {
-  await atomicWriteFile(filePath, content, "utf8", operations);
+  await atomicWriteFile(filePath, content, "utf8", operations, options);
 }
 
 export async function atomicWriteFile(
   filePath: string,
   content: string | Uint8Array,
   encoding?: BufferEncoding,
-  operations: AtomicWriteOperations = defaultOperations
+  operations: AtomicWriteOperations = defaultOperations,
+  options: AtomicWriteOptions = {}
 ): Promise<void> {
   const temporaryPath = createTemporaryPath(filePath);
 
   try {
-    await operations.writeFile(temporaryPath, content, encoding);
+    await operations.writeFile(temporaryPath, content, options.mode === undefined ? encoding : { encoding, mode: options.mode });
     await operations.rename(temporaryPath, filePath);
   } catch (error) {
     await operations.unlink(temporaryPath).catch(() => undefined);

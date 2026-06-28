@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -49,6 +49,31 @@ describe("atomicWriteTextFile", () => {
     expect(isAtomicWriteTemporaryPath("/tmp/workspace/.note.md.1234.1700000000000.xyz.tmp")).toBe(true);
     expect(isAtomicWriteTemporaryPath("/tmp/workspace/.note.md.tmp")).toBe(false);
     expect(isAtomicWriteTemporaryPath("/tmp/workspace/note.md")).toBe(false);
+  });
+
+  it("指定されたmodeで一時ファイルを作成し、最終ファイルにも引き継ぐ", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-atomic-write-mode-"));
+    temporaryPaths.push(workspacePath);
+    const filePath = path.join(workspacePath, "settings.json");
+    const seenOptions: Array<BufferEncoding | { encoding?: BufferEncoding; mode?: number } | undefined> = [];
+
+    await atomicWriteTextFile(filePath, "private", {
+      rename: async (from, to) => {
+        await import("node:fs/promises").then((fs) => fs.rename(from, to));
+      },
+      unlink: async (targetPath) => {
+        await import("node:fs/promises").then((fs) => fs.unlink(targetPath));
+      },
+      writeFile: async (targetPath, content, options) => {
+        seenOptions.push(options);
+        await import("node:fs/promises").then((fs) => fs.writeFile(targetPath, content, options));
+      }
+    }, { mode: 0o600 });
+
+    expect(seenOptions).toEqual([{ encoding: "utf8", mode: 0o600 }]);
+    if (process.platform !== "win32") {
+      expect((await stat(filePath)).mode & 0o777).toBe(0o600);
+    }
   });
 
   it("新規作成時に同名ファイルがある場合は元ファイル内容を残す", async () => {

@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename } from "node:fs/promises";
+import { readFile, rename } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -18,7 +18,7 @@ import {
   userDefinedFieldNamePattern,
   userDefinedFieldTypeNeedsChoices
 } from "../../shared/frontmatterFields";
-import { atomicWriteTextFile } from "../files/atomicWrite";
+import { writePrivateSettingsTextFile } from "./secureSettingsFile";
 
 export interface AppSettings {
   editorSettings: EditorSettings;
@@ -113,8 +113,10 @@ export async function writeAppSettings(
   userDataPath: string,
   settings: AppSettings
 ): Promise<void> {
-  await mkdir(userDataPath, { recursive: true });
-  await atomicWriteTextFile(getAppSettingsPath(userDataPath), `${JSON.stringify(serializeAppSettings(settings), null, 2)}\n`);
+  await writePrivateSettingsTextFile(
+    getAppSettingsPath(userDataPath),
+    `${JSON.stringify(serializeAppSettings(settings), null, 2)}\n`
+  );
 }
 
 export async function updateAppSettings(
@@ -368,8 +370,7 @@ async function writeMigratedAppSettings(
   settingsPath: string,
   settings: Record<string, unknown>
 ): Promise<void> {
-  await mkdir(path.dirname(settingsPath), { recursive: true });
-  await atomicWriteTextFile(
+  await writePrivateSettingsTextFile(
     settingsPath,
     `${JSON.stringify({
       ...settings,
