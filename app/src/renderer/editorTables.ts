@@ -129,6 +129,7 @@ function buildSyntaxTableDecorations(
             block: true,
             widget: new TableWidget({
               from: node.from,
+              isAtDocumentEnd: node.to === state.doc.length,
               to: node.to,
               rows
             }, t)

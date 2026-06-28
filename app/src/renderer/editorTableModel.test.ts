@@ -33,6 +33,7 @@ describe("editorTableModel", () => {
 
     expect(findTableBlocks(state)).toEqual([{
       from: 8,
+      isAtDocumentEnd: false,
       rows: [
         ["Name", "Count"],
         ["b", "2"],

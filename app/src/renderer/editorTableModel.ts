@@ -2,6 +2,7 @@ import type { EditorState } from "@codemirror/state";
 
 export interface TableBlock {
   from: number;
+  isAtDocumentEnd?: boolean;
   to: number;
   rows: string[][];
 }
@@ -63,7 +64,7 @@ export function findTableBlocks(state: EditorState): TableBlock[] {
       cursor += 1;
     }
 
-    blocks.push({ from: headerLine.from, to: endLine.to, rows });
+    blocks.push({ from: headerLine.from, isAtDocumentEnd: endLine.to === doc.length, to: endLine.to, rows });
     lineNumber = cursor;
   }
 

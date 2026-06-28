@@ -261,6 +261,7 @@ export class TableWidget extends WidgetType {
     wrapper.append(createTableEdgeAddButton({ axis: "row-after", block: this.block, getFocusIndex: () => state.activeCol, getInsertIndex: () => state.activeRow + 1, t: this.t }));
     wrapper.append(createTableDeleteButton({ axis: "column", block: this.block, getColIndex: () => state.activeCol, getRowIndex: () => state.activeRow, t: this.t }));
     wrapper.append(createTableDeleteButton({ axis: "row", block: this.block, getColIndex: () => state.activeCol, getRowIndex: () => state.activeRow, t: this.t }));
+    if (this.block.isAtDocumentEnd) wrapper.append(this.createContinuationInput(wrapper));
     wrapper.addEventListener("focusout", (event) => {
       state.clearIfFocusOutside((event as FocusEvent).relatedTarget);
     });
@@ -359,5 +360,38 @@ export class TableWidget extends WidgetType {
       });
     });
     return button;
+  }
+
+  private createContinuationInput(wrapper: HTMLElement): HTMLTextAreaElement {
+    const input = document.createElement("textarea");
+    input.className = "cm-live-table-continuation";
+    input.rows = 1;
+    input.spellcheck = true;
+    input.placeholder = "";
+    input.addEventListener("input", () => {
+      const text = input.value;
+      if (text.length === 0) return;
+
+      const view = findTableWidgetView(wrapper);
+      if (!view) return;
+      view.dispatch({
+        changes: { from: this.block.to, insert: `\n${text}` },
+        scrollIntoView: true,
+        selection: { anchor: this.block.to + text.length + 1 }
+      });
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || input.value.length > 0) return;
+
+      event.preventDefault();
+      const view = findTableWidgetView(wrapper);
+      if (!view) return;
+      view.dispatch({
+        changes: { from: this.block.to, insert: "\n" },
+        scrollIntoView: true,
+        selection: { anchor: this.block.to + 1 }
+      });
+    });
+    return input;
   }
 }
