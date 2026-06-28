@@ -41,6 +41,8 @@ export function createLiveTableInteractionState(
     delete wrapper.dataset.canAddColumnAfter;
     delete wrapper.dataset.canAddRowBefore;
     delete wrapper.dataset.canAddRowAfter;
+    delete wrapper.dataset.canDeleteColumn;
+    delete wrapper.dataset.canDeleteRow;
     delete wrapper.dataset.canGrabColumn;
     delete wrapper.dataset.canGrabRow;
   };
@@ -145,6 +147,8 @@ export function createLiveTableInteractionState(
       if (colIndex === colCount - 1) wrapper.dataset.canAddRowAfter = "true";
       if (rowIndex === 0) wrapper.dataset.canGrabColumn = "true";
       if (colIndex === 0) wrapper.dataset.canGrabRow = "true";
+      if (rowIndex === 0 && colCount > 1) wrapper.dataset.canDeleteColumn = "true";
+      if (colIndex === 0 && rowIndex > 0 && rowCount > 2) wrapper.dataset.canDeleteRow = "true";
     }
   };
 

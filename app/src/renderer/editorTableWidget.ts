@@ -11,6 +11,7 @@ import {
   type TableBlock
 } from "./editorTableModel";
 import {
+  createTableDeleteButton,
   createTableEdgeAddButton,
   findTableWidgetView,
   focusTableWidgetCell,
@@ -250,6 +251,8 @@ export class TableWidget extends WidgetType {
     wrapper.append(createTableEdgeAddButton({ axis: "column-after", block: this.block, getFocusIndex: () => state.activeRow, getInsertIndex: () => state.activeCol + 1, t: this.t }));
     wrapper.append(createTableEdgeAddButton({ axis: "row-before", block: this.block, getFocusIndex: () => state.activeCol, getInsertIndex: () => Math.max(1, state.activeRow), t: this.t }));
     wrapper.append(createTableEdgeAddButton({ axis: "row-after", block: this.block, getFocusIndex: () => state.activeCol, getInsertIndex: () => state.activeRow + 1, t: this.t }));
+    wrapper.append(createTableDeleteButton({ axis: "column", block: this.block, getColIndex: () => state.activeCol, getRowIndex: () => state.activeRow, t: this.t }));
+    wrapper.append(createTableDeleteButton({ axis: "row", block: this.block, getColIndex: () => state.activeCol, getRowIndex: () => state.activeRow, t: this.t }));
     wrapper.addEventListener("focusout", (event) => {
       state.clearIfFocusOutside((event as FocusEvent).relatedTarget);
     });
