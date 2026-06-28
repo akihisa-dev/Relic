@@ -96,12 +96,19 @@ jobs:
           fi
           ditto -c -k --sequesterRsrc --keepParent "$app_bundle" release-assets/Relic-macOS-arm64.zip
           test -f release-assets/Relic-macOS-arm64.zip
+          (
+            cd release-assets
+            shasum -a 256 Relic-macOS-arm64.zip > Relic-macOS-arm64.zip.sha256
+          )
+          test -f release-assets/Relic-macOS-arm64.zip.sha256
 
       - name: Upload macOS release ZIP
         uses: actions/upload-artifact@v7
         with:
           name: Relic-macOS-arm64
-          path: app/release-assets/Relic-macOS-arm64.zip
+          path: |
+            app/release-assets/Relic-macOS-arm64.zip
+            app/release-assets/Relic-macOS-arm64.zip.sha256
           if-no-files-found: error
 
   build-windows:
@@ -145,12 +152,20 @@ jobs:
             Write-Error 'Relic-Windows.zip was not created.'
             exit 1
           }
+          $hash = (Get-FileHash release-assets/Relic-Windows.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -Path release-assets/Relic-Windows.zip.sha256 -Value "$hash  Relic-Windows.zip" -NoNewline
+          if (-not (Test-Path release-assets/Relic-Windows.zip.sha256)) {
+            Write-Error 'Relic-Windows.zip.sha256 was not created.'
+            exit 1
+          }
 
       - name: Upload Windows release ZIP
         uses: actions/upload-artifact@v7
         with:
           name: Relic-Windows
-          path: app/release-assets/Relic-Windows.zip
+          path: |
+            app/release-assets/Relic-Windows.zip
+            app/release-assets/Relic-Windows.zip.sha256
           if-no-files-found: error
 
   draft-release:
@@ -201,7 +216,7 @@ jobs:
               --verify-tag
           fi
 
-      - name: Upload release assets
+      - name: Verify release asset checksums
         shell: bash
         run: |
           set -euo pipefail
@@ -215,7 +230,9 @@ jobs:
 
           required_assets=(
             "release-assets/Relic-macOS-arm64.zip"
+            "release-assets/Relic-macOS-arm64.zip.sha256"
             "release-assets/Relic-Windows.zip"
+            "release-assets/Relic-Windows.zip.sha256"
           )
 
           for asset in "${required_assets[@]}"; do
@@ -227,7 +244,40 @@ jobs:
             fi
           done
 
+          (
+            cd release-assets
+            sha256sum -c Relic-macOS-arm64.zip.sha256
+            sha256sum -c Relic-Windows.zip.sha256
+          )
+
+      - name: Check release assets do not already exist
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          existing_assets="$(gh release view "$TAG_NAME" --json assets --jq '.assets[].name')"
+          required_asset_names=(
+            "Relic-macOS-arm64.zip"
+            "Relic-macOS-arm64.zip.sha256"
+            "Relic-Windows.zip"
+            "Relic-Windows.zip.sha256"
+          )
+
+          for asset_name in "${required_asset_names[@]}"; do
+            if printf '%s\n' "$existing_assets" | grep -Fxq "$asset_name"; then
+              echo "Release asset already exists and will not be overwritten: $asset_name" >&2
+              echo "Remove the draft asset manually before rerunning this workflow." >&2
+              exit 1
+            fi
+          done
+
+      - name: Upload release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+
           gh release upload "$TAG_NAME" \
             release-assets/Relic-macOS-arm64.zip \
+            release-assets/Relic-macOS-arm64.zip.sha256 \
             release-assets/Relic-Windows.zip \
-            --clobber
+            release-assets/Relic-Windows.zip.sha256

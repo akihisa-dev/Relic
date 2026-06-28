@@ -570,25 +570,29 @@ workflowは次を自動で行う。
 2. タグ名が `MAJOR.MINOR.PATCH` 形式であり、Gitタグから実行されていることを確認する
 3. macOS runnerで `app/` の依存関係をインストールする
 4. macOS runnerで `pnpm build:mac:safe` を実行する
-5. `app/out/darwin/` で生成された `Relic.app` を `Relic-macOS-arm64.zip` にまとめる
+5. `app/out/darwin/` で生成された `Relic.app` を `Relic-macOS-arm64.zip` にまとめ、SHA-256 checksumを生成する
 6. Windows runnerで `app/` の依存関係をインストールする
 7. Windows runnerで `pnpm build:win:safe` を実行する
-8. `app/out/win32/` で生成されたWindows向けアプリを `Relic-Windows.zip` にまとめる
+8. `app/out/win32/` で生成されたWindows向けアプリを `Relic-Windows.zip` にまとめ、SHA-256 checksumを生成する
 9. `GITHUB_TOKEN` でGitHub Releaseを確認し、存在しない場合だけDraft Releaseを作成する
 10. GitHub Releaseが存在する場合はDraftかどうかを確認し、DraftならAssets添付へ進む
 11. GitHub Releaseが存在し、Draftではない場合は失敗として停止し、Assets添付を行わない
 12. Assetsアップロード直前に再度Draftかどうかを確認し、Draftではない場合は失敗として停止する
-13. `Relic-macOS-arm64.zip` と `Relic-Windows.zip` が存在することを確認する
-14. `Relic-macOS-arm64.zip` と `Relic-Windows.zip` をAssetsに添付する
+13. `Relic-macOS-arm64.zip`、`Relic-Windows.zip`、各 `.sha256` が存在することを確認する
+14. `sha256sum -c` でZIPとchecksumの整合を確認する
+15. Draft Release上に同名Assetsがないことを確認する
+16. `Relic-macOS-arm64.zip`、`Relic-Windows.zip`、各 `.sha256` をAssetsに添付する
 
 workflow全体の権限は `contents: read` に抑え、Release作成を行う `draft-release` ジョブだけ `contents: write` を持つ。
 `draft-release` ジョブはcheckoutせずに `gh release ...` を実行するため、GitHub CLIが対象リポジトリを確実に判断できるように `GH_REPO: ${{ github.repository }}` を明示する。
 Releaseが存在しない場合は `gh release create "$TAG_NAME" --draft --generate-notes --verify-tag` で作成する。
 既に同じタグのReleaseが存在する場合は `isDraft` を確認し、Draft Releaseの場合だけ次へ進む。
 公開済みReleaseの場合は、既に利用者が取得できる状態になっている可能性があるため、workflowを失敗させてAssetsを自動更新しない。
-Assetsアップロードは `--clobber` を付け、途中失敗後の再実行でもDraft Release上の同名Assetsを更新できるようにする。
-`--clobber` は、Assetsアップロード直前にもDraft Releaseであることを確認したあとにだけ実行する。
+Draft Release上に同名Assetsがある場合も、既存ファイルを上書きせずworkflowを失敗させる。
+途中失敗後に再実行する場合は、人がDraft Release上の該当Assetsを確認して削除してから再実行する。
 アップロード対象のAssetsが見つからない場合は、実際に存在するファイル一覧を出して失敗し、Assetsアップロードを行わない。
+外部actionはGitHub公式actionを優先し、DependabotのGitHub Actions更新Pull Requestで参照更新を確認する。
+より厳密なサプライチェーン固定が必要になった場合は、action参照をcommit SHAへ固定し、更新Pull RequestでSHA差分を確認する。
 
 Draft Release作成後、GitHub上でRelease本文とAssetsを確認し、問題がなければPublishする。
 Publishは自動化しない。間違った成果物や説明文をそのまま公開しないため、最後の公開判断は人が行う。
@@ -609,7 +613,9 @@ Windows向けの最終確認は、Windows環境で起動確認できた成果物
 GitHub ReleasesのAssetsには、workflowが作成した配布ファイルを添付する。
 
 - macOS Apple Silicon: `Relic-macOS-arm64.zip`
+- macOS Apple Silicon checksum: `Relic-macOS-arm64.zip.sha256`
 - Windows: `Relic-Windows.zip`
+- Windows checksum: `Relic-Windows.zip.sha256`
 
 Intel Mac向け配布は今回は別作業とする。
 未確認の成果物、途中生成物、`app/out/` の中身を説明なくまとめたファイルは添付しない。
