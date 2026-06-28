@@ -79,6 +79,7 @@ vi.mock("../i18n", async () => {
 
 import {
   copyDiagramSvgChannel,
+  maxSvgInputBytes,
   saveDiagramSvgChannel,
   previewOutputHtmlMaxBytes,
   savePreviewAsPdfChannel
@@ -431,6 +432,23 @@ describe("outputHandlers", () => {
     expect(fsMock.writeFile).not.toHaveBeenCalled();
   });
 
+  it("SVG保存で入力サイズ上限を超えると保存処理へ進まない", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(saveDiagramSvgChannel)({ sender: {} }, {
+      defaultFileName: "Note-diagram-1-mermaid",
+      language: "mermaid",
+      svg: "x".repeat(maxSvgInputBytes + 1)
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "OUTPUT_SVG_INVALID_INPUT" })
+    });
+    expect(electronMock.showSaveDialog).not.toHaveBeenCalled();
+    expect(fsMock.writeFile).not.toHaveBeenCalled();
+  });
+
   it("SVG保存時は一時ファイル経由で保存する", async () => {
     electronMock.showSaveDialog.mockResolvedValue({ canceled: false, filePath: "/tmp/diagram.svg" });
     registerOutputHandlers();
@@ -524,6 +542,21 @@ describe("outputHandlers", () => {
     expect(result).toEqual({
       ok: false,
       error: expect.objectContaining({ code: "OUTPUT_SVG_EMPTY" })
+    });
+    expect(electronMock.clipboardWriteText).not.toHaveBeenCalled();
+  });
+
+  it("SVGコピーで入力サイズ上限を超えるとクリップボードへ書き込まない", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(copyDiagramSvgChannel)({ sender: {} }, {
+      language: "d2",
+      svg: "x".repeat(maxSvgInputBytes + 1)
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "OUTPUT_SVG_COPY_INVALID_INPUT" })
     });
     expect(electronMock.clipboardWriteText).not.toHaveBeenCalled();
   });
