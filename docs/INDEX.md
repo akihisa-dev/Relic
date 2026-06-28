@@ -155,6 +155,8 @@
         - `replaceModel.ts`
         - `search.test.ts`
         - `search.ts`
+        - `searchRequestCoordinator.test.ts`
+        - `searchRequestCoordinator.ts`
         - `tags.test.ts`
         - `tags.ts`
         - `trash.test.ts`

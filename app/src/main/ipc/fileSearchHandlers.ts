@@ -18,6 +18,7 @@ import { readBacklinks } from "../files/backlinks";
 import { readMarkdownFile } from "../files/markdownFiles";
 import { applySearchAndReplace, replaceInFile, searchAndReplace } from "../files/replace";
 import { searchWorkspace, workspaceSearchMaxFileBytes } from "../files/search";
+import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordinator";
 import {
   getWorkspaceDerivedDataSnapshot,
   invalidateWorkspaceDerivedData
@@ -54,26 +55,33 @@ export function registerFileSearchHandlers(): void {
             return ok({ results: [], skippedLongLines: 0, skippedLargeFiles: 0, truncated: false });
           }
 
-          const cachePath = getWorkspaceFileIndexCachePath(
-            context.userDataPath,
-            context.activeWorkspace.id
-          );
-          const snapshot = await getWorkspaceDerivedDataSnapshot({
-            cachePath,
-            maxSearchFileBytes: workspaceSearchMaxFileBytes,
-            workspaceId: context.activeWorkspace.id,
-            workspacePath: context.activeWorkspace.path
-          });
+          return workspaceSearchRequestCoordinator.run(
+            context.activeWorkspace.id,
+            searchRequestKey(searchInput),
+            async ({ shouldContinue }) => {
+              const cachePath = getWorkspaceFileIndexCachePath(
+                context.userDataPath,
+                context.activeWorkspace.id
+              );
+              const snapshot = await getWorkspaceDerivedDataSnapshot({
+                cachePath,
+                maxSearchFileBytes: workspaceSearchMaxFileBytes,
+                workspaceId: context.activeWorkspace.id,
+                workspacePath: context.activeWorkspace.path
+              });
 
-          return searchWorkspace(
-            context.activeWorkspace.path,
-            searchInput.query,
-            searchInput.mode,
-            searchInput.frontmatterField,
-            {
-              cachePath,
-              fileIndex: snapshot.fileIndex,
-              parseCache: snapshot.parseCache
+              return searchWorkspace(
+                context.activeWorkspace.path,
+                searchInput.query,
+                searchInput.mode,
+                searchInput.frontmatterField,
+                {
+                  cachePath,
+                  fileIndex: snapshot.fileIndex,
+                  parseCache: snapshot.parseCache,
+                  shouldContinue
+                }
+              );
             }
           );
         }
@@ -157,7 +165,10 @@ export function registerFileSearchHandlers(): void {
             input.replacement,
             input.isRegex
           );
-          if (result.ok) invalidateWorkspaceDerivedData(context.activeWorkspace.id);
+          if (result.ok) {
+            invalidateWorkspaceDerivedData(context.activeWorkspace.id);
+            workspaceSearchRequestCoordinator.invalidate(context.activeWorkspace.id);
+          }
           return result;
         }
       );
@@ -211,7 +222,10 @@ export function registerFileSearchHandlers(): void {
             undefined,
             input.expectedFileSnapshots
           );
-          if (result.ok) invalidateWorkspaceDerivedData(context.activeWorkspace.id);
+          if (result.ok) {
+            invalidateWorkspaceDerivedData(context.activeWorkspace.id);
+            workspaceSearchRequestCoordinator.invalidate(context.activeWorkspace.id);
+          }
           return result;
         }
       );
@@ -233,4 +247,16 @@ function isRegisteredFrontmatterSearchField(
 
   return isReservedFrontmatterFieldName(normalizedField) ||
     userDefinedFields.some((candidate) => candidate.name === normalizedField);
+}
+
+function searchRequestKey(input: {
+  frontmatterField?: string;
+  mode: string;
+  query: string;
+}): string {
+  return JSON.stringify({
+    frontmatterField: input.frontmatterField?.trim() ?? "",
+    mode: input.mode,
+    query: input.query.trim()
+  });
 }
