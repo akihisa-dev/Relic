@@ -271,6 +271,38 @@ describe("searchAndReplace", () => {
     });
   });
 
+  it("置換プレビューではワークスペース外を指すシンボリックリンクを対象に含めない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    const outside = await mkdtemp(path.join(os.tmpdir(), "relic-replace-outside-"));
+    temporaryPaths.push(ws, outside);
+
+    await writeFile(path.join(ws, "visible.md"), "foo visible", "utf8");
+    await writeFile(path.join(outside, "outside.md"), "foo outside", "utf8");
+    await symlink(path.join(outside, "outside.md"), path.join(ws, "linked.md"));
+
+    const result = await searchAndReplace(ws, "foo", "bar", false);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        fileSnapshots: [
+          { contentHash: expect.any(String), path: "visible.md" }
+        ],
+        matches: [
+          {
+            lineNumber: 1,
+            lineText: "foo visible",
+            newLineText: "bar visible",
+            path: "visible.md"
+          }
+        ],
+        skippedUnreadableFiles: [],
+        truncated: false
+      }
+    });
+    await expect(readFile(path.join(outside, "outside.md"), "utf8")).resolves.toBe("foo outside");
+  });
+
   it("置換プレビューの一致件数を上限で打ち切る", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
     temporaryPaths.push(ws);
@@ -448,6 +480,22 @@ describe("applySearchAndReplace", () => {
     expect(result).toEqual({ ok: true, value: { count: 1, skippedUnreadableFiles: ["blocked.md"] } });
     await expect(readFile(path.join(ws, "blocked.md"), "utf8")).resolves.toBe("foo blocked");
     await expect(readFile(path.join(ws, "visible.md"), "utf8")).resolves.toBe("bar visible");
+  });
+
+  it("一括置換ではワークスペース外を指すシンボリックリンクを書き換えない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    const outside = await mkdtemp(path.join(os.tmpdir(), "relic-replace-outside-"));
+    temporaryPaths.push(ws, outside);
+
+    await writeFile(path.join(ws, "visible.md"), "foo visible", "utf8");
+    await writeFile(path.join(outside, "outside.md"), "foo outside", "utf8");
+    await symlink(path.join(outside, "outside.md"), path.join(ws, "linked.md"));
+
+    const result = await applySearchAndReplace(ws, "foo", "bar", false);
+
+    expect(result).toEqual({ ok: true, value: { count: 1, skippedUnreadableFiles: [] } });
+    await expect(readFile(path.join(ws, "visible.md"), "utf8")).resolves.toBe("bar visible");
+    await expect(readFile(path.join(outside, "outside.md"), "utf8")).resolves.toBe("foo outside");
   });
 
   it("一括置換の途中で書き込みに失敗した場合は書き込み済みファイルを元に戻す", async () => {

@@ -535,6 +535,7 @@
       - `ipcApi.ts`
       - `ipcChannels.ts`
       - `ipcCharts.ts`
+      - `ipcLimits.ts`
       - `ipcOutput.ts`
       - `ipcSettings.ts`
       - `ipcTools.ts`

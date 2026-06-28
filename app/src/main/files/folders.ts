@@ -9,7 +9,9 @@ import {
   resolveExistingWorkspacePath,
   resolveExistingWorkspacePathOrRoot,
   resolveNewWorkspacePath,
-  toWorkspaceRelativePath
+  toWorkspaceRelativePath,
+  verifyExistingWorkspacePath,
+  verifyNewWorkspacePath
 } from "./paths";
 import {
   getRenameDestinationCollision,
@@ -45,7 +47,11 @@ export async function createFolder(
   }
 
   try {
-    await mkdir(path.join(parentPath.value, validatedName.value));
+    const destinationPath = path.join(parentPath.value, validatedName.value);
+    const safeDestinationPath = await verifyNewWorkspacePath(workspacePath, destinationPath);
+    if (!safeDestinationPath.ok) return safeDestinationPath;
+
+    await mkdir(destinationPath);
 
     return ok({
       path: nextRelativePath
@@ -174,6 +180,12 @@ async function moveFolderToPath(
   }
 
   try {
+    const safeSourcePath = await verifyExistingWorkspacePath(workspacePath, options.sourcePath);
+    if (!safeSourcePath.ok) return safeSourcePath;
+
+    const safeDestinationPath = await verifyNewWorkspacePath(workspacePath, options.destinationPath.value);
+    if (!safeDestinationPath.ok) return safeDestinationPath;
+
     const sourceStats = await stat(options.sourcePath);
 
     if (!sourceStats.isDirectory()) {

@@ -14,7 +14,7 @@ import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
-import { resolveExistingWorkspacePath } from "./paths";
+import { resolveExistingWorkspacePath, verifyExistingWorkspacePath } from "./paths";
 import { applyReplacement, buildReplacementPreviewLine, buildReplacementRegex, canMatchEmptyTextInContent } from "./replaceModel";
 import { isRegexSafeLine, validateRegexTargetText } from "./regexSafety";
 
@@ -87,6 +87,9 @@ export async function replaceInFile(
 
     if (count > 0) {
       const updated = applyReplacement(content, regex.value, replacement, isRegex);
+      const safeWritePath = await verifyExistingWorkspacePath(workspacePath, absolutePath.value);
+      if (!safeWritePath.ok) return safeWritePath;
+
       await atomicWriteTextFile(absolutePath.value, updated);
     }
 
@@ -222,6 +225,9 @@ export async function applySearchAndReplace(
         if (matches && matches.length > 0) {
           regex.value.lastIndex = 0;
           const updated = applyReplacement(content, regex.value, replacement, isRegex);
+          const safeWritePath = await verifyExistingWorkspacePath(workspacePath, absolutePath);
+          if (!safeWritePath.ok) return safeWritePath;
+
           await writeTextFile(absolutePath, updated);
           writtenPatches.push({ absolutePath, previousContent: content, writtenContent: updated });
           count += matches.length;
@@ -235,6 +241,9 @@ export async function applySearchAndReplace(
           try {
             const currentContent = await operations.readFile(patch.absolutePath, "utf8");
             if (currentContent === patch.writtenContent) {
+              const safeRollbackPath = await verifyExistingWorkspacePath(workspacePath, patch.absolutePath);
+              if (!safeRollbackPath.ok) return;
+
               await writeTextFile(patch.absolutePath, patch.previousContent);
             }
           } catch {

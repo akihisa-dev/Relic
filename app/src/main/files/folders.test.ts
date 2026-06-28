@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -77,6 +77,22 @@ describe("createFolder", () => {
 
     await expect(createFolder(workspacePath, "下書き", "../outside")).resolves.toMatchObject({
       ok: false
+    });
+  });
+
+  it("親フォルダの実体がワークスペース外のシンボリックリンクの場合は作成しない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-folder-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-folder-outside-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+
+    await symlink(outsidePath, path.join(workspacePath, "linked-out"), "dir");
+
+    await expect(createFolder(workspacePath, "下書き", "linked-out")).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+    await expect(readFile(path.join(outsidePath, "下書き"), "utf8")).rejects.toMatchObject({
+      code: "ENOENT"
     });
   });
 
@@ -185,6 +201,21 @@ describe("renameFolder", () => {
       ok: false
     });
   });
+
+  it("実体がワークスペース外のシンボリックリンクフォルダはリネームしない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-outside-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+
+    await mkdir(path.join(outsidePath, "outside-folder"));
+    await symlink(path.join(outsidePath, "outside-folder"), path.join(workspacePath, "linked-folder"), "dir");
+
+    await expect(renameFolder(workspacePath, "linked-folder", "renamed")).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+    expect((await stat(path.join(outsidePath, "outside-folder"))).isDirectory()).toBe(true);
+  });
 });
 
 describe("moveFolder", () => {
@@ -280,5 +311,23 @@ describe("moveFolder", () => {
       ok: false
     });
     expect((await stat(path.join(workspacePath, "資料"))).isDirectory()).toBe(true);
+  });
+
+  it("移動先の親がワークスペース外を指すシンボリックリンクの場合は移動しない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-folder-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-folder-outside-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+
+    await mkdir(path.join(workspacePath, "資料"));
+    await symlink(outsidePath, path.join(workspacePath, "linked-out"), "dir");
+
+    await expect(moveFolder(workspacePath, "資料", "linked-out")).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+    expect((await stat(path.join(workspacePath, "資料"))).isDirectory()).toBe(true);
+    await expect(stat(path.join(outsidePath, "資料"))).rejects.toMatchObject({
+      code: "ENOENT"
+    });
   });
 });
