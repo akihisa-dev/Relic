@@ -62,6 +62,10 @@ export class TableWidget extends WidgetType {
       const view = findTableWidgetView(wrapper);
       if (view) updateTableWidgetRows(view, this.block, rows);
     };
+    const resizeCellInput = (input: HTMLTextAreaElement): void => {
+      input.style.height = "auto";
+      input.style.height = `${input.scrollHeight}px`;
+    };
     const startRangeSelection = (event: MouseEvent | PointerEvent, rowIndex: number, colIndex: number): void => {
       if (event.button !== 0) return;
       if (wrapper.dataset.dragAxis) return;
@@ -144,17 +148,21 @@ export class TableWidget extends WidgetType {
           extendRangeSelection(rowIndex, colIndex);
         });
 
-        const input = document.createElement("input");
+        const input = document.createElement("textarea");
         input.className = "cm-live-table-cell-input";
         input.dataset.row = String(rowIndex);
         input.dataset.col = String(colIndex);
+        input.rows = 1;
+        input.wrap = "soft";
         input.value = cell;
+        requestAnimationFrame(() => resizeCellInput(input));
         const updateCell = (): void => {
           const view = findTableWidgetView(input);
           if (view) updateTableWidgetRows(view, this.block, withTableCellValue(this.block.rows, rowIndex, colIndex, input.value));
         };
 
         input.addEventListener("focus", () => state.markActive("cell", rowIndex, colIndex));
+        input.addEventListener("input", () => resizeCellInput(input));
         input.addEventListener("mouseenter", () => {
           state.setAddAffordance(rowIndex, colIndex);
         });
