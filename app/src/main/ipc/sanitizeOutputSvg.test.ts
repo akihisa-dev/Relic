@@ -26,14 +26,21 @@ describe("sanitizeOutputSvg", () => {
     const input = '<svg><text ONCLICK="alert(1)" href="java\nscript:alert(1)" xlink:href="https://example.com">safe</text></svg>';
     const result = sanitizeOutputSvg(input);
 
-    expect(result).toBe('<svg><text xlink:href="https://example.com">safe</text></svg>');
+    expect(result).toBe("<svg><text>safe</text></svg>");
   });
 
-  it("安全なURI属性は保持する", () => {
+  it("外部参照URI属性は除去する", () => {
     const input = '<svg><a href="mailto:hello@example.com" src="http://example.com/logo.svg">link</a></svg>';
     const result = sanitizeOutputSvg(input);
 
-    expect(result).toBe('<svg><a href="mailto:hello@example.com" src="http://example.com/logo.svg">link</a></svg>');
+    expect(result).toBe("<svg><a>link</a></svg>");
+  });
+
+  it("SVG内部参照は保持する", () => {
+    const input = '<svg><defs><marker id="arrow"/></defs><path marker-end="url(#arrow)" href="#arrow"/></svg>';
+    const result = sanitizeOutputSvg(input);
+
+    expect(result).toBe('<svg><defs><marker id="arrow"/></defs><path marker-end="url(#arrow)" href="#arrow"/></svg>');
   });
 
   it("空白入り制御文字入りの危険スキームは除去する", () => {
@@ -53,9 +60,10 @@ describe("sanitizeOutputSvg", () => {
     ].join("");
     const result = sanitizeOutputSvg(input);
 
-    expect(result).toBe('<svg><image/><a XLINK:HREF="https://example.com/safe.svg">safe</a></svg>');
+    expect(result).toBe("<svg><image/><a>safe</a></svg>");
     expect(result).not.toMatch(/foreignObject/i);
     expect(result).not.toContain("file:");
     expect(result).not.toContain("javascript:");
+    expect(result).not.toContain("https:");
   });
 });

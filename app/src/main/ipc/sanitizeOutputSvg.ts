@@ -52,9 +52,9 @@ function sanitizeOutputSvgAttributes(rawAttributes: string): string {
 
 function isSafeOutputSvgUri(value: string): boolean {
   const trimmed = decodeNumericCharacterReferences(value).trim();
-  const scheme = trimmed.replace(/[\u0000-\u0020]+/g, "").match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase();
+  const normalized = trimmed.replace(/[\u0000-\u0020]+/g, "");
 
-  return scheme === undefined || scheme === "http" || scheme === "https" || scheme === "mailto";
+  return /^#[A-Za-z_][\w:.-]*$/.test(normalized);
 }
 
 function decodeNumericCharacterReferences(value: string): string {
