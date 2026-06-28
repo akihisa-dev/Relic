@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, rename } from "node:fs/promises";
+import { readFile, rm, rename } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -7,8 +7,8 @@ import {
   type ChartSettings,
   type ChartSource
 } from "../../shared/ipc";
-import { atomicWriteTextFile } from "../files/atomicWrite";
 import { normalizeWorkspaceRelativeInputPath } from "../files/paths";
+import { writePrivateSettingsTextFile } from "./secureSettingsFile";
 
 export interface WorkspaceSettings {
   chronicleCalendars: ChronicleCalendarSettings[];
@@ -231,8 +231,10 @@ export async function writeWorkspaceSettings(
 ): Promise<void> {
   const settingsPath = getWorkspaceSettingsPath(userDataPath, workspaceId);
 
-  await mkdir(path.dirname(settingsPath), { recursive: true });
-  await atomicWriteTextFile(settingsPath, `${JSON.stringify(serializeWorkspaceSettings(settings), null, 2)}\n`);
+  await writePrivateSettingsTextFile(
+    settingsPath,
+    `${JSON.stringify(serializeWorkspaceSettings(settings), null, 2)}\n`
+  );
 }
 
 export async function updateWorkspaceSettings(
@@ -327,8 +329,7 @@ async function writeMigratedWorkspaceSettings(
   settingsPath: string,
   settings: PersistedWorkspaceSettings
 ): Promise<void> {
-  await mkdir(path.dirname(settingsPath), { recursive: true });
-  await atomicWriteTextFile(
+  await writePrivateSettingsTextFile(
     settingsPath,
     `${JSON.stringify({
       ...settings,

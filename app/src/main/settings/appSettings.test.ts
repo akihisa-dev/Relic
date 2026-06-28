@@ -49,6 +49,10 @@ describe("appSettings", () => {
     const raw = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
     expect(raw.schemaVersion).toBe(1);
     await expect(readdir(userDataPath)).resolves.toEqual([path.basename(getAppSettingsPath(userDataPath))]);
+    if (process.platform !== "win32") {
+      expect((await stat(userDataPath)).mode & 0o777).toBe(0o700);
+      expect((await stat(getAppSettingsPath(userDataPath))).mode & 0o777).toBe(0o600);
+    }
   });
 
   it("壊れたアプリ設定ファイルは退避したうえで読み込みエラーになる", async () => {

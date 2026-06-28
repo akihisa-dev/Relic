@@ -64,6 +64,11 @@ describe("workspaceSettings", () => {
     ]);
     expect(settings.pinnedPaths).toEqual(["notes/readme.md", "docs"]);
     expect(settings.workspacePath).toBe("/Users/test/notes");
+    if (process.platform !== "win32") {
+      const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-1");
+      expect((await stat(path.dirname(settingsPath))).mode & 0o777).toBe(0o700);
+      expect((await stat(settingsPath)).mode & 0o777).toBe(0o600);
+    }
   });
 
   it("読み込み時にピン留めパスをワークスペース相対パスだけに正規化する", async () => {
