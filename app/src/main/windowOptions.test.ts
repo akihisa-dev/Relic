@@ -58,4 +58,22 @@ describe("createMainWindowOptions", () => {
     expect(outputSessionPartition).not.toBe(transientSessionPartition);
     expect(outputSessionPartition.startsWith("persist:")).toBe(false);
   });
+
+  it("メインウィンドウのセキュリティ境界を固定する", () => {
+    const options = createMainWindowOptions({
+      appPath: "/relic",
+      platform: "darwin",
+      preloadPath: "/relic/preload.js"
+    });
+
+    expect(options.webPreferences).toEqual(expect.objectContaining({
+      allowRunningInsecureContent: false,
+      contextIsolation: true,
+      nodeIntegration: false,
+      partition: transientSessionPartition,
+      preload: "/relic/preload.js",
+      sandbox: true,
+      webSecurity: true
+    }));
+  });
 });

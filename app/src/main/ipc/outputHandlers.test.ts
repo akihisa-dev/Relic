@@ -359,6 +359,43 @@ describe("outputHandlers", () => {
     expect(electronMock.setPermissionRequestHandler).toHaveBeenCalledWith(expect.any(Function));
   });
 
+  it("PDF出力用ウィンドウは新規ウィンドウ、許可外ナビゲーション、webview、権限要求を拒否する", async () => {
+    electronMock.showSaveDialog.mockResolvedValue({ canceled: false, filePath: "/tmp/out.pdf" });
+    registerOutputHandlers();
+
+    await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
+      defaultFileName: "Note",
+      html: validOutputHtml(),
+      title: "Note"
+    });
+
+    const openHandler = electronMock.setWindowOpenHandler.mock.calls.at(-1)?.[0];
+    expect(openHandler?.({ url: "https://example.com" })).toEqual({ action: "deny" });
+
+    const navigateHandler = electronMock.webContentsOn.mock.calls
+      .filter(([channel]) => channel === "will-navigate")
+      .at(-1)?.[1];
+    const blockedNavigation = { preventDefault: vi.fn() };
+    navigateHandler?.(blockedNavigation, "https://example.com");
+    expect(blockedNavigation.preventDefault).toHaveBeenCalled();
+
+    const dataNavigation = { preventDefault: vi.fn() };
+    navigateHandler?.(dataNavigation, "data:text/html;base64,PGh0bWw+PC9odG1sPg==");
+    expect(dataNavigation.preventDefault).not.toHaveBeenCalled();
+
+    const attachWebviewHandler = electronMock.webContentsOn.mock.calls
+      .filter(([channel]) => channel === "will-attach-webview")
+      .at(-1)?.[1];
+    const attachWebviewEvent = { preventDefault: vi.fn() };
+    attachWebviewHandler?.(attachWebviewEvent);
+    expect(attachWebviewEvent.preventDefault).toHaveBeenCalled();
+
+    const permissionHandler = electronMock.setPermissionRequestHandler.mock.calls.at(-1)?.[0];
+    const permissionCallback = vi.fn();
+    permissionHandler?.({}, "notifications", permissionCallback);
+    expect(permissionCallback).toHaveBeenCalledWith(false);
+  });
+
   it("SVG保存で空SVGを保存しない", async () => {
     registerOutputHandlers();
 
