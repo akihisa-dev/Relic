@@ -57,6 +57,40 @@ describe("Editor table preview", () => {
     expect(input.value).toBe("very-long-unbroken-cell-value-that-should-wrap-inside-the-table");
   });
 
+  it("ライブプレビューの表が最終行にある場合は表の下へ本文を続けて入力できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+
+    const { container } = render(
+      <Editor
+        content={"| A | B |\n| --- | --- |\n| x | y |"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table-continuation")).not.toBeNull());
+    const input = container.querySelector(".cm-live-table-continuation") as HTMLTextAreaElement;
+
+    fireEvent.input(input, { target: { value: "表の下の本文" } });
+
+    expect(viewRef.current?.state.doc.toString()).toBe("| A | B |\n| --- | --- |\n| x | y |\n表の下の本文");
+  });
+
+  it("ライブプレビューの表が最終行ではない場合は続き入力欄を出さない", async () => {
+    const { container } = render(
+      <Editor
+        content={"| A | B |\n| --- | --- |\n| x | y |\n\nafter"}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table")).not.toBeNull());
+
+    expect(container.querySelector(".cm-live-table-continuation")).toBeNull();
+  });
+
   it("大きすぎる表はライブプレビューWidget化せず本文入力を軽く保つ", async () => {
     const content = [
       "| A | B |",

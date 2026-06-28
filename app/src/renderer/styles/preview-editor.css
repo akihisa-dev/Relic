@@ -1435,6 +1435,22 @@
   word-break: break-word;
 }
 
+.cm-live-table-continuation {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  display: block;
+  font: inherit;
+  line-height: 1.6;
+  margin-top: 8px;
+  min-height: 1.6em;
+  outline: none;
+  overflow: hidden;
+  padding: 0;
+  resize: none;
+  width: 100%;
+}
+
 .cm-live-table-active {
   background: color-mix(in srgb, var(--accent-softer) 74%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 82%, transparent);
