@@ -1,27 +1,18 @@
-import { BrowserWindow, app, clipboard, dialog, ipcMain } from "electron";
-import { mkdir, rm, unlink } from "node:fs/promises";
-import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { BrowserWindow, clipboard, dialog, ipcMain } from "electron";
 
 import {
   copyDiagramSvgChannel,
-  printHtmlChannel,
-  printPreviewChannel,
   previewOutputHtmlMaxBytes,
   saveDiagramSvgChannel,
   savePreviewAsPdfChannel,
   type CopyDiagramSvgInput,
-  type OutputPrintOptions,
+  type OutputPdfOptions,
   type OutputCopyResult,
-  type OutputPrintResult,
   type OutputSavedResult,
-  type PrintHtmlInput,
-  type PrintPreviewInput,
   type SaveDiagramSvgInput,
   type SavePreviewAsPdfInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
-import type { Translator } from "../../shared/i18n";
 import { redactSensitiveText } from "../../shared/securityRedaction";
 import { atomicWriteFile, atomicWriteTextFile } from "../files/atomicWrite";
 import { getMainTranslator } from "../i18n";
@@ -30,11 +21,8 @@ import { hasRenderableSvg, sanitizeOutputSvg } from "./sanitizeOutputSvg";
 
 const defaultPdfName = "relic-preview";
 const defaultSvgName = "relic-diagram";
-const printPreviewTemporaryDirectoryName = "relic-print-preview";
 
 export function registerOutputHandlers(): void {
-  void cleanupTemporaryPrintPreviewFiles();
-
   ipcMain.handle(
     savePreviewAsPdfChannel,
     async (event, input: unknown): Promise<RelicResult<OutputSavedResult>> => {
@@ -60,44 +48,12 @@ export function registerOutputHandlers(): void {
           return ok({ status: "canceled" });
         }
 
-        const pdf = await renderHtmlToPdf(input.html, input.title, input.printOptions);
+        const pdf = await renderHtmlToPdf(input.html, input.title, input.pdfOptions);
         await atomicWriteFile(selection.filePath, pdf);
 
         return ok({ filePath: selection.filePath, status: "saved" });
       } catch (error) {
         return fail("OUTPUT_PDF_FAILED", t("output.pdfSaveFailed"), ipcErrorDetails(error));
-      }
-    }
-  );
-
-  ipcMain.handle(
-    printHtmlChannel,
-    async (_event, input: unknown): Promise<RelicResult<OutputPrintResult>> => {
-      const t = await getMainTranslator();
-      try {
-        if (!isPrintHtmlInput(input)) {
-          return fail("OUTPUT_PRINT_INVALID_INPUT", t("output.printInvalidInput"));
-        }
-
-        return await printHtml(input.html, input.title, input.printOptions);
-      } catch (error) {
-        return fail("OUTPUT_PRINT_FAILED", t("output.printFailed"), ipcErrorDetails(error));
-      }
-    }
-  );
-
-  ipcMain.handle(
-    printPreviewChannel,
-    async (event, input: unknown): Promise<RelicResult<OutputPrintResult>> => {
-      const t = await getMainTranslator();
-      try {
-        if (!isPrintPreviewInput(input)) {
-          return fail("OUTPUT_PRINT_INVALID_INPUT", t("output.printInvalidInput"));
-        }
-
-        return await openPrintPreview(input.html, input.title, input.printOptions, BrowserWindow.fromWebContents(event.sender), t);
-      } catch (error) {
-        return fail("OUTPUT_PRINT_FAILED", t("output.printFailed"), ipcErrorDetails(error));
       }
     }
   );
@@ -167,13 +123,7 @@ export function registerOutputHandlers(): void {
   );
 }
 
-export async function cleanupTemporaryPrintPreviewFiles(): Promise<void> {
-  const directoryPath = temporaryPrintPreviewDirectoryPath();
-  await rm(directoryPath, { force: true, recursive: true }).catch(() => undefined);
-  await mkdir(directoryPath, { recursive: true }).catch(() => undefined);
-}
-
-async function renderHtmlToPdf(html: string, title: string, printOptions?: OutputPrintOptions): Promise<Buffer> {
+async function renderHtmlToPdf(html: string, title: string, pdfOptions?: OutputPdfOptions): Promise<Buffer> {
   const window = createOutputWindow(title, {
     allowDataHtmlNavigation: true,
     allowInlineScripts: false
@@ -184,94 +134,18 @@ async function renderHtmlToPdf(html: string, title: string, printOptions?: Outpu
     return await window.webContents.printToPDF({
       displayHeaderFooter: false,
       generateDocumentOutline: true,
-      ...(printOptions ? {
-        landscape: printOptions.landscape,
+      ...(pdfOptions ? {
+        landscape: pdfOptions.landscape,
         margins: {
-          marginType: printOptions.marginType,
-          ...printOptions.margins
+          marginType: pdfOptions.marginType,
+          ...pdfOptions.margins
         },
-        pageSize: printOptions.pageSize,
-        scaleFactor: printOptions.scaleFactor
+        pageSize: pdfOptions.pageSize,
+        scaleFactor: pdfOptions.scaleFactor
       } : { pageSize: "A4" }),
       preferCSSPageSize: true,
       printBackground: true
     });
-  } finally {
-    destroyOutputWindow(window);
-  }
-}
-
-async function openPrintPreview(
-  html: string,
-  title: string,
-  printOptions: OutputPrintOptions | undefined,
-  parentWindow: BrowserWindow | null,
-  t: Translator
-): Promise<RelicResult<OutputPrintResult>> {
-  const [pdf, pdfPath] = await Promise.all([
-    renderHtmlToPdf(html, title, printOptions),
-    temporaryPrintPreviewPath()
-  ]);
-  await atomicWriteFile(pdfPath, pdf);
-  const pdfUrl = pathToFileURL(pdfPath).toString();
-  const window = createOutputWindow(`${title} - ${t("output.print")}`, {
-    allowInlineScripts: true,
-    allowedNavigation: (url) => url === pdfUrl,
-    parentWindow
-  });
-
-  window.on("closed", () => {
-    void unlink(pdfPath).catch(() => undefined);
-  });
-
-  try {
-    await window.loadURL(pdfUrl);
-    window.show();
-    window.focus();
-  } catch (error) {
-    destroyOutputWindow(window);
-    await unlink(pdfPath).catch(() => undefined);
-    throw error;
-  }
-
-  return ok({ status: "printed" });
-}
-
-async function printHtml(
-  html: string,
-  title: string,
-  printOptions: OutputPrintOptions | undefined
-): Promise<RelicResult<OutputPrintResult>> {
-  const window = createOutputWindow(title, {
-    allowDataHtmlNavigation: true,
-    allowInlineScripts: false
-  });
-
-  try {
-    await loadOutputHtml(window, html);
-    const printed = await new Promise<{ failureReason?: string; success: boolean }>((resolve) => {
-      window.webContents.print({
-        landscape: printOptions?.landscape,
-        margins: printOptions ? {
-          marginType: printOptions.marginType,
-          ...printOptions.margins
-        } : undefined,
-        pageSize: printOptions?.pageSize,
-        printBackground: true,
-        scaleFactor: printOptions?.scaleFactor,
-        silent: false
-      }, (success, failureReason) => {
-        resolve({ failureReason, success });
-      });
-    });
-
-    if (!printed.success) {
-      return printed.failureReason === "cancelled"
-        ? ok({ status: "canceled" })
-        : fail("OUTPUT_PRINT_FAILED", printed.failureReason || "Print failed");
-    }
-
-    return ok({ status: "printed" });
   } finally {
     destroyOutputWindow(window);
   }
@@ -283,14 +157,12 @@ function createOutputWindow(
     allowInlineScripts: boolean;
     allowDataHtmlNavigation?: boolean;
     allowedNavigation?: (url: string) => boolean;
-    parentWindow?: BrowserWindow | null;
   }
 ): BrowserWindow {
   const window = new BrowserWindow({
     autoHideMenuBar: true,
     backgroundColor: "#ffffff",
     height: 900,
-    parent: options.parentWindow ?? undefined,
     show: false,
     title,
     webPreferences: {
@@ -335,24 +207,11 @@ function isSavePreviewAsPdfInput(input: unknown): input is SavePreviewAsPdfInput
     typeof input.html === "string" &&
     isWithinPreviewHtmlLimit(input.html) &&
     isSafePreviewOutputHtml(input.html) &&
-    isOptionalOutputPrintOptions(input.printOptions) &&
+    isOptionalOutputPdfOptions(input.pdfOptions) &&
     typeof input.title === "string";
 }
 
-function isPrintPreviewInput(input: unknown): input is PrintPreviewInput {
-  return isObject(input) &&
-    typeof input.html === "string" &&
-    isWithinPreviewHtmlLimit(input.html) &&
-    isSafePreviewOutputHtml(input.html) &&
-    isOptionalOutputPrintOptions(input.printOptions) &&
-    typeof input.title === "string";
-}
-
-function isPrintHtmlInput(input: unknown): input is PrintHtmlInput {
-  return isPrintPreviewInput(input);
-}
-
-function isOptionalOutputPrintOptions(value: unknown): value is OutputPrintOptions | undefined {
+function isOptionalOutputPdfOptions(value: unknown): value is OutputPdfOptions | undefined {
   if (value === undefined) return true;
   if (!isObject(value)) return false;
   if (typeof value.landscape !== "boolean") return false;
@@ -435,20 +294,6 @@ function sanitizeFileName(value: string, fallbackName: string): string {
 
 function ensureExtension(fileName: string, extension: "pdf" | "svg"): string {
   return fileName.toLowerCase().endsWith(`.${extension}`) ? fileName : `${fileName}.${extension}`;
-}
-
-async function temporaryPrintPreviewPath(): Promise<string> {
-  const directoryPath = temporaryPrintPreviewDirectoryPath();
-  await mkdir(directoryPath, { recursive: true });
-
-  return path.join(
-    directoryPath,
-    `preview-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`
-  );
-}
-
-function temporaryPrintPreviewDirectoryPath(): string {
-  return path.join(app.getPath("temp"), `${printPreviewTemporaryDirectoryName}-${process.pid}`);
 }
 
 function ipcErrorDetails(error: unknown): string {

@@ -480,7 +480,7 @@ export function App(): ReactElement {
     tabs
   });
 
-  const { handlePrintPreview, handleSavePreviewAsPdf } = useAppPreviewOutputActions({
+  const { handleSavePreviewAsPdf } = useAppPreviewOutputActions({
     activeFileTab: activeFileTabInFocusedPane,
     setWorkspaceError,
     showToast,
@@ -572,7 +572,6 @@ export function App(): ReactElement {
       handleOpenFile,
       handleOpenMarkdownLink,
       handleOpenWikiLink,
-      handlePrintPreview,
       handleRenameTreeItem,
       handleRevealTabFile,
       handleRightPanelViewButton,

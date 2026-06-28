@@ -48,7 +48,6 @@ export function createEditorWorkspaceProps(input: AppLayoutEditorWorkspaceInput)
     onOpenInOtherPane: input.openFileInOtherPane,
     onOpenLink: input.handleOpenMarkdownLink,
     onOpenWikiLink: input.handleOpenWikiLink,
-    onPrintPreview: input.handlePrintPreview,
     onRenameFile: (path, name) => input.handleRenameTreeItem(path, "file", name),
     onRevealTabFile: input.handleRevealTabFile,
     onRightPanelResizeStart: input.startRightPanelResize,

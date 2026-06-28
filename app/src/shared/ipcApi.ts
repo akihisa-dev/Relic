@@ -15,10 +15,7 @@ import type {
 import type {
   CopyDiagramSvgInput,
   OutputCopyResult,
-  OutputPrintResult,
-  PrintHtmlInput,
   OutputSavedResult,
-  PrintPreviewInput,
   SaveDiagramSvgInput,
   SavePreviewAsPdfInput
 } from "./ipcOutput";
@@ -118,8 +115,6 @@ export interface RelicApi {
   revealWorkspaceItem: (input: RevealWorkspaceItemInput) => Promise<RelicResult<void>>;
   applySearchAndReplace: (input: SearchAndReplaceInput) => Promise<RelicResult<ApplySearchAndReplaceResult>>;
   replaceInFile: (input: ReplaceInFileInput) => Promise<RelicResult<ReplaceInFileResult>>;
-  printPreview: (input: PrintPreviewInput) => Promise<RelicResult<OutputPrintResult>>;
-  printHtml: (input: PrintHtmlInput) => Promise<RelicResult<OutputPrintResult>>;
   saveDiagramSvg: (input: SaveDiagramSvgInput) => Promise<RelicResult<OutputSavedResult>>;
   saveEditorSettings: (input: EditorSettings) => Promise<RelicResult<void>>;
   savePreviewAsPdf: (input: SavePreviewAsPdfInput) => Promise<RelicResult<OutputSavedResult>>;

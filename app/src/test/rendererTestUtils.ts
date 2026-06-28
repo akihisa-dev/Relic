@@ -93,8 +93,6 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
       }
     }),
     replaceInFile: vi.fn(),
-    printPreview: vi.fn().mockResolvedValue({ ok: true, value: { status: "printed" } }),
-    printHtml: vi.fn().mockResolvedValue({ ok: true, value: { status: "printed" } }),
     respondToWindowCloseRequest: vi.fn(),
     revealWorkspaceItem: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),

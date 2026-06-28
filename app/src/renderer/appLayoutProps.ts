@@ -51,7 +51,6 @@ export interface AppLayoutEditorWorkspaceInput {
   handleOpenFile: EditorWorkspaceProps["onOpenFile"];
   handleOpenMarkdownLink: EditorWorkspaceProps["onOpenLink"];
   handleOpenWikiLink: EditorWorkspaceProps["onOpenWikiLink"];
-  handlePrintPreview: EditorWorkspaceProps["onPrintPreview"];
   handleRenameTreeItem: FilesSidebarProps["onRenameItem"];
   handleRevealTabFile: EditorWorkspaceProps["onRevealTabFile"];
   handleRightPanelViewButton: EditorWorkspaceProps["onRightPanelViewButton"];

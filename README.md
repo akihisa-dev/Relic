@@ -51,7 +51,7 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 ### Diagrams and Export
 
 - Mermaid and D2 diagram rendering from Markdown code blocks.
-- Print and PDF export from Markdown preview.
+- PDF export from Markdown preview.
 - Copy and save diagram SVG output.
 
 ### Timeline
@@ -304,7 +304,7 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 ### 図表と出力
 
 - MarkdownコードブロックのMermaid / D2図表表示
-- Markdownプレビューの印刷 / PDF保存
+- MarkdownプレビューのPDF保存
 - 図表SVGのコピー / 保存
 
 ### 年表

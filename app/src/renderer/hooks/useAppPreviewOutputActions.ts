@@ -19,7 +19,6 @@ export function useAppPreviewOutputActions({
   t,
   workspacePath
 }: UseAppPreviewOutputActionsInput): {
-  handlePrintPreview: (tab?: FileTab) => void;
   handleSavePreviewAsPdf: (tab?: FileTab) => void;
 } {
   const buildPreviewOutput = useCallback(async (tab?: FileTab) => {
@@ -35,27 +34,6 @@ export function useAppPreviewOutputActions({
       workspacePath
     });
   }, [activeFileTab, t, workspacePath]);
-
-  const handlePrintPreview = useCallback((tab?: FileTab): void => {
-    if (!window.relic) return;
-
-    void buildPreviewOutput(tab).then(async (payload) => {
-      if (!payload) {
-        setWorkspaceError(t("output.printNoFile"));
-        return;
-      }
-
-      const result = await window.relic!.printPreview({ html: payload.html, title: payload.title });
-      if (!result.ok) {
-        setWorkspaceError(result.error.message);
-        return;
-      }
-
-      if (result.value.status === "printed") showToast(t("output.printed"), "info");
-    }).catch((error) => {
-      setWorkspaceError(error instanceof Error ? error.message : String(error));
-    });
-  }, [buildPreviewOutput, setWorkspaceError, showToast, t]);
 
   const handleSavePreviewAsPdf = useCallback((tab?: FileTab): void => {
     if (!window.relic) return;
@@ -79,7 +57,6 @@ export function useAppPreviewOutputActions({
   }, [buildPreviewOutput, setWorkspaceError, showToast, t]);
 
   return {
-    handlePrintPreview,
     handleSavePreviewAsPdf
   };
 }

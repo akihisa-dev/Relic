@@ -20,8 +20,6 @@ vi.mock("electron", () => ({
 import {
   copyEditorTextToClipboardChannel,
   copyDiagramSvgChannel,
-  printHtmlChannel,
-  printPreviewChannel,
   saveDiagramSvgChannel,
   savePreviewAsPdfChannel,
   type RelicApi
@@ -45,8 +43,6 @@ describe("preload output API", () => {
     const api = exposedApi();
 
     await api.savePreviewAsPdf({ defaultFileName: "Note", html: "<html></html>", title: "Note" });
-    await api.printPreview({ html: "<html></html>", title: "Note" });
-    await api.printHtml({ html: "<html></html>", title: "Note" });
     await api.saveDiagramSvg({
       defaultFileName: "Note-diagram-1-mermaid",
       language: "mermaid",
@@ -57,14 +53,6 @@ describe("preload output API", () => {
 
     expect(electronMock.invoke).toHaveBeenCalledWith(savePreviewAsPdfChannel, {
       defaultFileName: "Note",
-      html: "<html></html>",
-      title: "Note"
-    });
-    expect(electronMock.invoke).toHaveBeenCalledWith(printPreviewChannel, {
-      html: "<html></html>",
-      title: "Note"
-    });
-    expect(electronMock.invoke).toHaveBeenCalledWith(printHtmlChannel, {
       html: "<html></html>",
       title: "Note"
     });
