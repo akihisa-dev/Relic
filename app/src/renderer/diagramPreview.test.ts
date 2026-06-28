@@ -1,10 +1,12 @@
-import { readFileSync } from "node:fs";
-
 import { fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { encodeDiagramSourceAttribute } from "./diagramSourceAttribute";
 import { diagramMaxSourceChars, diagramRenderTimeoutMs } from "./diagramLimits";
+import {
+  developmentRendererContentSecurityPolicy,
+  packagedRendererContentSecurityPolicy
+} from "../shared/rendererCsp";
 import {
   createAttachedContainer,
   createDeferred,
@@ -678,11 +680,18 @@ describe("diagramPreview", () => {
   });
 
   it("D2ブラウザレンダラーに必要なCSPだけを許可する", () => {
-    const html = readFileSync("index.html", "utf8");
+    expect(packagedRendererContentSecurityPolicy).toContain("script-src 'self' 'wasm-unsafe-eval'");
+    expect(packagedRendererContentSecurityPolicy).not.toContain("'unsafe-eval'");
+    expect(packagedRendererContentSecurityPolicy).toContain("worker-src 'self' blob:");
+  });
 
-    expect(html).toContain("script-src 'self' 'wasm-unsafe-eval'");
-    expect(html).not.toContain("'unsafe-eval'");
-    expect(html).toContain("worker-src 'self' blob:");
+  it("本番用CSPは開発用localhost接続を許可しない", () => {
+    expect(packagedRendererContentSecurityPolicy).toContain("connect-src 'self'");
+    expect(packagedRendererContentSecurityPolicy).not.toContain("localhost");
+    expect(packagedRendererContentSecurityPolicy).not.toContain("127.0.0.1");
+    expect(packagedRendererContentSecurityPolicy).not.toContain("ws:");
+    expect(developmentRendererContentSecurityPolicy).toContain("http://localhost:*");
+    expect(developmentRendererContentSecurityPolicy).toContain("ws://127.0.0.1:*");
   });
 
   it("通常コードブロックにはDiagramパン・ズームUIを追加しない", async () => {
