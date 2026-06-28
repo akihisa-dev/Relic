@@ -73,6 +73,7 @@
 - `.githooks/`
   - `pre-commit`
   - `pre-push`
+  - `secret-guard.sh`
 - `.github/`
   - `ISSUE_TEMPLATE/`
     - `bug_report.md`
@@ -80,6 +81,7 @@
   - `workflows/`
     - `ci.yml`
     - `draft-release.yml`
+    - `secret-guard.yml`
   - `dependabot.yml`
   - `pull_request_template.md`
 - `app/`
