@@ -10,7 +10,7 @@
 | パス | 役割 |
 |------|------|
 | `AGENTS.md` | AIエージェントの普遍的な行動規範 |
-| `docs/development/development.md` | Relicの開発作業全体のルール |
+| `docs/development.md` | Relicの開発作業全体のルール |
 | `docs/INDEX.md` | リポジトリ全体の索引 |
 | `README.md` | 対外的なプロジェクト説明 |
 | `CONTRIBUTING.md` | コントリビューション方針 |
@@ -44,7 +44,6 @@
 | `assets/` | READMEなどで使う画像素材 |
 | `docs/` | プロジェクト文書 |
 | `docs/design/` | デザイン正本と関連資料 |
-| `docs/development/` | 開発ルール、未決定事項 |
 | `docs/engineering/` | アーキテクチャ、データモデル、技術選定、設計判断 |
 | `docs/features/` | 機能仕様 |
 | `docs/logo/` | ロゴ素材 |
@@ -63,8 +62,8 @@
 | 機能 | `docs/features/` | アプリ機能の振る舞いを扱う |
 | デザイン | `docs/design/` | 画面構成、画面遷移、デザインシステムを扱う |
 | エンジニアリング | `docs/engineering/` | アーキテクチャ、データモデル、技術選定、設計判断を扱う |
-| 開発運用 | `docs/development/development.md` | Relicの開発ルール全体を扱う |
-| 未決定事項 | `docs/development/questions.md` | Relic開発で未決定の問いを扱う |
+| 開発運用 | `docs/development.md` | Relicの開発ルール全体を扱う |
+| 未決定事項 | `docs/questions.md` | Relic開発で未決定の問いを扱う |
 
 ---
 
@@ -284,6 +283,7 @@
         - `railNavigationModel.ts`
         - `railNavigationViews.tsx`
         - `RailWorkspaceSwitcher.tsx`
+        - `RightPanelFrontmatterForm.test.tsx`
         - `RightPanelFrontmatterForm.tsx`
         - `SettingsPanel.test.tsx`
         - `SettingsPanel.tsx`
@@ -320,6 +320,7 @@
         - `useBacklinksState.ts`
         - `useChronicleChartModel.ts`
         - `useChronicleChartViewport.ts`
+        - `useChronicleEntryDrag.test.ts`
         - `useChronicleEntryDrag.ts`
         - `useCommandPaletteCommands.ts`
         - `useEditorAutoSave.test.ts`
@@ -506,6 +507,7 @@
       - `locales/`
         - `en.json`
         - `ja.json`
+      - `chartFrontmatterUpdate.test.ts`
       - `chartFrontmatterUpdate.ts`
       - `chartTime.ts`
       - `frontmatterFields.test.ts`
@@ -557,9 +559,6 @@
     - `DESIGN.md`
     - `LITHOMORPHISM.md`
     - `LITHOMORPHISM.png`
-  - `development/`
-    - `development.md`
-    - `questions.md`
   - `engineering/`
     - `architecture.md`
     - `data-model.md`
@@ -581,7 +580,9 @@
   - `project/`
     - `overview.md`
     - `terms.md`
+  - `development.md`
   - `INDEX.md`
+  - `questions.md`
 - `scripts/`
   - `debug.bat`
   - `Relicをビルド.bat`
