@@ -30,7 +30,6 @@ import {
   moveMarkdownFileChannel,
   openWorkspaceChannel,
   readMarkdownFileChannel,
-  readEditorClipboardForPasteChannel,
   removeWorkspaceChannel,
   renameWorkspaceChannel,
   renameFolderChannel,
@@ -172,8 +171,6 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(openWorkspaceChannel) as Promise<RelicResult<WorkspaceState>>,
   readMarkdownFile: (input: ReadMarkdownFileInput) =>
     ipcRenderer.invoke(readMarkdownFileChannel, input) as Promise<RelicResult<MarkdownFileContent>>,
-  readEditorClipboardForPaste: () =>
-    ipcRenderer.invoke(readEditorClipboardForPasteChannel) as Promise<RelicResult<string>>,
   removeWorkspace: (input: RemoveWorkspaceInput) =>
     ipcRenderer.invoke(removeWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   renameWorkspace: (input: RenameWorkspaceInput) =>

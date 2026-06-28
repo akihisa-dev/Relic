@@ -3,10 +3,7 @@ import type { EditorState } from "@codemirror/state";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent, MutableRefObject } from "react";
 
-import {
-  readEditorClipboardForPaste,
-  writeEditorClipboardText
-} from "../editorClipboard";
+import { writeEditorClipboardText } from "../editorClipboard";
 import { setContextSelectionHighlightEffect } from "../editorContextSelectionHighlight";
 import {
   editorContextMenuPosition,
@@ -154,25 +151,15 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     }).catch(() => undefined);
   }, [contextMenu, viewRef]);
 
-  const pasteClipboard = useCallback(async (): Promise<void> => {
+  const pasteClipboard = useCallback((): void => {
     const view = viewRef.current;
     if (!view) return;
     const from = contextMenu?.selectionFrom ?? view.state.selection.main.from;
     const to = contextMenu?.selectionTo ?? view.state.selection.main.to;
-    const text = await readEditorClipboardForPaste();
 
-    if (text === "") {
-      view.dispatch({ selection: { anchor: from, head: to } });
-      view.focus();
-      document.execCommand("paste");
-      return;
-    }
-
-    view.dispatch({
-      changes: { from, insert: text, to },
-      selection: { anchor: from + text.length }
-    });
+    view.dispatch({ selection: { anchor: from, head: to } });
     view.focus();
+    document.execCommand("paste");
   }, [contextMenu, viewRef]);
 
   const selectAll = useCallback((): void => {

@@ -25,11 +25,10 @@ describe("Editor markdown editing", () => {
   });
 
   it("本文の右クリックメニューからコピー・カット・ペーストを実行できる", async () => {
-    const readEditorClipboardForPaste = vi.fn().mockResolvedValue({ ok: true, value: "!" });
     const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     const writeText = vi.fn().mockResolvedValue(undefined);
+    const execCommand = vi.fn().mockReturnValue(true);
     window.relic = makeRelicApi({
-      readEditorClipboardForPaste,
       copyEditorTextToClipboard
     });
     Object.defineProperty(navigator, "clipboard", {
@@ -38,6 +37,10 @@ describe("Editor markdown editing", () => {
         readText: vi.fn().mockResolvedValue("!"),
         writeText
       }
+    });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: execCommand
     });
 
     const { view } = await renderEditorWithView({
@@ -60,7 +63,7 @@ describe("Editor markdown editing", () => {
     fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Paste" }));
     await waitFor(() => {
-      expect(document.body.textContent).toContain("hello! world");
+      expect(execCommand).toHaveBeenCalledWith("paste");
     });
   });
 
@@ -125,10 +128,8 @@ describe("Editor markdown editing", () => {
     expect(view.state.doc.toString()).toBe(" world");
   });
 
-  it("本文への複数行日本語ペーストは1回のUndoで戻せる", async () => {
+  it("本文への複数行日本語ペーストは通常のpasteイベントで1回のUndoで戻せる", async () => {
     const pastedText = "一行目\n- 箇条書き\n```ts\nconst 値 = 1;\n```";
-    const readEditorClipboardForPaste = vi.fn().mockResolvedValue({ ok: true, value: pastedText });
-    window.relic = makeRelicApi({ readEditorClipboardForPaste });
 
     const { view } = await renderEditorWithView({
       content: "前\n後",
@@ -138,8 +139,12 @@ describe("Editor markdown editing", () => {
     const insertAt = "前\n".length;
 
     view.dispatch({ selection: { anchor: insertAt } });
-    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Paste" }));
+    fireEvent.paste(contentElement, {
+      clipboardData: {
+        getData: (type: string) => type === "text/plain" ? pastedText : "",
+        types: ["text/plain"]
+      }
+    });
 
     await waitFor(() => {
       expect(view.state.doc.toString()).toBe(`前\n${pastedText}後`);
@@ -201,16 +206,20 @@ describe("Editor markdown editing", () => {
     expect(view.state.doc.toString()).toBe(`前\n${pastedText}後`);
   });
 
-  it("Electron側のクリップボード読み取りに失敗してもブラウザ側からペーストできる", async () => {
-    const readEditorClipboardForPaste = vi.fn().mockRejectedValue(new Error("clipboard unavailable"));
-    const readText = vi.fn().mockResolvedValue("fallback paste");
-    window.relic = makeRelicApi({ readEditorClipboardForPaste });
+  it("右クリックメニューのペーストはrendererでクリップボード文字列を読まない", async () => {
+    const readText = vi.fn();
+    const execCommand = vi.fn().mockReturnValue(true);
+    window.relic = makeRelicApi();
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: {
         readText,
         writeText: vi.fn()
       }
+    });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: execCommand
     });
 
     const { view } = await renderEditorWithView({
@@ -224,9 +233,10 @@ describe("Editor markdown editing", () => {
     fireEvent.click(await screen.findByRole("menuitem", { name: "Paste" }));
 
     await waitFor(() => {
-      expect(view.state.doc.toString()).toBe("前fallback paste後");
+      expect(execCommand).toHaveBeenCalledWith("paste");
     });
-    expect(readText).toHaveBeenCalled();
+    expect(readText).not.toHaveBeenCalled();
+    expect(view.state.doc.toString()).toBe("前後");
   });
 
   it("外側からcontentが更新されたら表示中の文書も同期する", async () => {

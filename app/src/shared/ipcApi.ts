@@ -109,7 +109,6 @@ export interface RelicApi {
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   openWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   readMarkdownFile: (input: ReadMarkdownFileInput) => Promise<RelicResult<MarkdownFileContent>>;
-  readEditorClipboardForPaste: () => Promise<RelicResult<string>>;
   removeWorkspace: (input: RemoveWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   renameWorkspace: (input: RenameWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   renameMarkdownFile: (
