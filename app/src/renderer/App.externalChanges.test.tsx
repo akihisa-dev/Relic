@@ -75,7 +75,7 @@ describe("App external file changes", () => {
     const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
 
     act(() => {
-      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1", workspacePath: "/tmp/Notes" });
+      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" });
     });
 
     await waitFor(() => {
@@ -128,7 +128,7 @@ describe("App external file changes", () => {
       useEditorStore.getState().updateTabContent(activeTabId, "Relic側の編集中本文");
     });
     act(() => {
-      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1", workspacePath: "/tmp/Notes" });
+      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" });
     });
 
     expect(await screen.findByText("このファイルは外部で変更されました。自動保存を一時停止しています。")).toBeInTheDocument();
@@ -190,7 +190,7 @@ describe("App external file changes", () => {
       });
     });
     act(() => {
-      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1", workspacePath: "/tmp/Notes" });
+      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" });
     });
 
     expect(await screen.findByText("このファイルは外部で変更されました。自動保存を一時停止しています。")).toBeInTheDocument();
@@ -250,7 +250,7 @@ describe("App external file changes", () => {
       useEditorStore.getState().updateTabContent(activeTabId, "Relic側に残す未保存本文");
     });
     act(() => {
-      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1", workspacePath: "/tmp/Notes" });
+      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" });
     });
 
     expect(await screen.findByText("読書メモ は外部で移動または削除されたため、未保存本文を開いたまま保持しました。")).toHaveClass("toast--error");
@@ -299,7 +299,7 @@ describe("App external file changes", () => {
 
     act(() => {
       useEditorStore.getState().updateTabContent(activeTabId, "Relic側の編集中本文");
-      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1", workspacePath: "/tmp/Notes" });
+      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" });
     });
 
     fireEvent.click(await screen.findByRole("button", { name: "外部版を読み込む" }));
@@ -358,7 +358,7 @@ describe("App external file changes", () => {
 
     act(() => {
       useEditorStore.getState().updateTabContent(activeTabId, "Relic側の編集中本文");
-      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1", workspacePath: "/tmp/Notes" });
+      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" });
     });
 
     fireEvent.click(await screen.findByRole("button", { name: "Relic版を保存" }));

@@ -21,7 +21,6 @@ export interface WorkspaceState {
 export interface WorkspaceChangedEvent {
   changedAt: string;
   workspaceId: string;
-  workspacePath: string;
 }
 
 export interface CreateMarkdownFileInput {
