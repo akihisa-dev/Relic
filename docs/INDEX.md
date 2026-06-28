@@ -160,6 +160,8 @@
         - `trash.test.ts`
         - `trash.ts`
         - `workspaceDerivedData.ts`
+        - `workspaceDerivedDataSession.test.ts`
+        - `workspaceDerivedDataSession.ts`
         - `workspaceFileIndex.test.ts`
         - `workspaceFileIndex.ts`
       - `ipc/`

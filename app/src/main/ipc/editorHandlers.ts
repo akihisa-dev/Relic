@@ -11,6 +11,7 @@ import {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { writeMarkdownFileContent } from "../files/markdownFiles";
+import { invalidateWorkspaceDerivedData } from "../files/workspaceDerivedDataSession";
 import { readAppSettings, updateAppSettings } from "../settings/appSettings";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import {
@@ -30,12 +31,16 @@ export function registerEditorHandlers(): void {
 
         return withActiveWorkspaceContext(
           { code: "FILE_WRITE_FAILED", message: "ファイルを保存できませんでした。" },
-          async (context) => writeMarkdownFileContent(
-            context.activeWorkspace.path,
-            input.path,
-            input.content,
-            input.expectedContent
-          )
+          async (context) => {
+            const result = await writeMarkdownFileContent(
+              context.activeWorkspace.path,
+              input.path,
+              input.content,
+              input.expectedContent
+            );
+            if (result.ok) invalidateWorkspaceDerivedData(context.activeWorkspace.id);
+            return result;
+          }
         );
       } catch (error) {
         return fail(

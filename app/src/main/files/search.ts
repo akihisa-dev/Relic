@@ -7,11 +7,16 @@ import type {
   WorkspaceSearchResultSet
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { parseMarkdownTags } from "../../shared/tags";
-import { extractAliases } from "./aliases";
 import { errorDetails } from "./fileSystem";
-import { parseFrontmatter } from "./frontmatter";
-import { readWorkspaceFileIndex } from "./workspaceFileIndex";
+import {
+  aliasesForRecord,
+  frontmatterForRecord,
+  readWorkspaceDerivedFileIndex,
+  tagsForRecord,
+  type WorkspaceDerivedDataCache,
+  type WorkspaceDerivedDataOptions
+} from "./workspaceDerivedData";
+import { readWorkspaceFileIndex, type WorkspaceFileIndex } from "./workspaceFileIndex";
 
 export const workspaceSearchMaxResults = 500;
 export const workspaceSearchMaxFileBytes = 2 * 1024 * 1024;
@@ -23,7 +28,9 @@ interface SearchOperations {
 
 export interface SearchWorkspaceOptions {
   cachePath?: string;
+  fileIndex?: WorkspaceFileIndex;
   fileIndexOperations?: SearchOperations;
+  parseCache?: WorkspaceDerivedDataCache;
 }
 
 const defaultSearchOperations: SearchOperations = {
@@ -53,14 +60,26 @@ export async function searchWorkspace(
   try {
     const searchOperations = options.fileIndexOperations ?? defaultSearchOperations;
 
-    const fileIndex = await readWorkspaceFileIndex(workspacePath, {
+    const derivedOptions: WorkspaceDerivedDataOptions = {
+      cachePath: options.cachePath,
+      fileIndex: options.fileIndex,
       maxSearchFileBytes: workspaceSearchMaxFileBytes,
       operations: {
         readFile: (filePath) => searchOperations.readFile(filePath, "utf8"),
         stat: searchOperations.stat
       },
-      cachePath: options.cachePath
-    });
+      parseCache: options.parseCache
+    };
+    const fileIndex = options.fileIndex
+      ? await readWorkspaceDerivedFileIndex(workspacePath, derivedOptions)
+      : await readWorkspaceFileIndex(workspacePath, {
+        maxSearchFileBytes: workspaceSearchMaxFileBytes,
+        operations: {
+          readFile: (filePath) => searchOperations.readFile(filePath, "utf8"),
+          stat: searchOperations.stat
+        },
+        cachePath: options.cachePath
+      });
     const results: WorkspaceSearchResult[] = [];
     const skippedLargeFiles = fileIndex.records.filter(
       (record) => record.readStatus === "ok" && !record.searchable
@@ -72,11 +91,10 @@ export async function searchWorkspace(
 
       const fileName = record.name;
       const relativePath = record.path;
-      const content = record.lines.join("\n");
 
       if (mode === "fileName") {
         let alias: string | null = null;
-        for (const item of extractAliases(content)) {
+        for (const item of aliasesForRecord(record, options.parseCache)) {
           if (item.toLocaleLowerCase().includes(normalizedQueryLower)) {
             alias = item;
             break;
@@ -97,7 +115,7 @@ export async function searchWorkspace(
       if (mode === "tag") {
         const tagQuery = normalizedQuery.replace(/^#/, "");
 
-        if (new Set(parseMarkdownTags(content).tags).has(tagQuery)) {
+        if (new Set(tagsForRecord(record, options.parseCache)).has(tagQuery)) {
           results.push({ fileName, lineNumber: null, lineText: `tags: ${tagQuery}`, path: relativePath });
           if (results.length >= workspaceSearchMaxResults) {
             truncated = true;
@@ -109,7 +127,7 @@ export async function searchWorkspace(
       }
 
       if (mode === "frontmatter") {
-        const { data } = parseFrontmatter(content);
+        const { data } = frontmatterForRecord(record, options.parseCache);
         const fieldValue = data[normalizedFrontmatterField];
 
         if (matchesFrontmatterField(fieldValue, normalizedQueryLower)) {

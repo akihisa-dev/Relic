@@ -24,6 +24,7 @@ export interface WorkspaceDerivedDataOptions {
   fileIndex?: WorkspaceFileIndex;
   filePaths?: string[];
   fileTree?: WorkspaceTreeNode[];
+  maxSearchFileBytes?: number;
   operations?: WorkspaceMarkdownReadOperations;
   parseCache?: WorkspaceDerivedDataCache;
 }
@@ -54,6 +55,7 @@ export function normalizeWorkspaceDerivedDataOptions(
     "fileTree" in optionsOrOperations ||
     "filePaths" in optionsOrOperations ||
     "cachePath" in optionsOrOperations ||
+    "maxSearchFileBytes" in optionsOrOperations ||
     "parseCache" in optionsOrOperations) {
     return optionsOrOperations;
   }
@@ -84,7 +86,7 @@ export async function readWorkspaceDerivedFileIndex(
     cachePath: options.cachePath,
     filePaths: options.filePaths ?? options.fileIndex?.entries.map((entry) => entry.path),
     fileTree: options.fileTree,
-    maxSearchFileBytes: Number.MAX_SAFE_INTEGER,
+    maxSearchFileBytes: options.maxSearchFileBytes ?? Number.MAX_SAFE_INTEGER,
     operations
   });
 }

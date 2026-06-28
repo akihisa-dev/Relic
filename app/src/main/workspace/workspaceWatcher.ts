@@ -5,6 +5,7 @@ import { BrowserWindow } from "electron";
 import { workspaceChangedChannel, type WorkspaceChangedEvent } from "../../shared/ipc";
 import type { AppSettings } from "../settings/appSettings";
 import { isAtomicWriteTemporaryPath } from "../files/atomicWrite";
+import { invalidateWorkspaceDerivedData } from "../files/workspaceDerivedDataSession";
 
 interface WorkspaceWatchTarget {
   id: string;
@@ -96,6 +97,8 @@ export function workspaceChangeNotificationDelay(firstEventAt: number, now: numb
 }
 
 export function notifyWorkspaceChanged(target: WorkspaceWatchTarget): void {
+  invalidateWorkspaceDerivedData(target.id);
+
   const payload: WorkspaceChangedEvent = {
     changedAt: new Date().toISOString(),
     workspaceId: target.id

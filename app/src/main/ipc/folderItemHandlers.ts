@@ -14,6 +14,7 @@ import {
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { createFolder, moveFolder, renameFolder } from "../files/folders";
 import { moveWorkspaceItemToTrash } from "../files/trash";
+import { invalidateWorkspaceDerivedData } from "../files/workspaceDerivedDataSession";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
   isCreateFolderInput,
@@ -41,6 +42,7 @@ export function registerFolderItemHandlers(): void {
           return createdFolder;
         }
 
+        invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
         return ok(await buildWorkspaceState(context.value.settings));
       } catch (error) {
         return fail(
@@ -71,6 +73,7 @@ export function registerFolderItemHandlers(): void {
         return movedFolder;
       }
 
+      invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
       return ok(await buildWorkspaceState(context.value.settings));
     } catch (error) {
       return fail(
@@ -96,6 +99,7 @@ export function registerFolderItemHandlers(): void {
         return renamedFolder;
       }
 
+      invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
       return ok(await buildWorkspaceState(context.value.settings));
     } catch (error) {
       return fail(
@@ -128,6 +132,7 @@ export function registerFolderItemHandlers(): void {
           return movedItem;
         }
 
+        invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
         return ok(await buildWorkspaceState(context.value.settings));
       } catch (error) {
         return fail(
