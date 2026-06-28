@@ -83,6 +83,7 @@ import {
   previewOutputHtmlMaxBytes,
   savePreviewAsPdfChannel
 } from "../../shared/ipc";
+import { dangerousHtmlFragments } from "../../test/securityFixtures";
 import { registerOutputHandlers } from "./outputHandlers";
 
 function handlerFor(channel: string) {
@@ -323,6 +324,23 @@ describe("outputHandlers", () => {
     const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
       defaultFileName: "Note",
       html: validOutputHtml('<script>alert(1)</script><a href="javascript:alert(1)" onclick="alert(1)">link</a><meta http-equiv = "refresh" content="0;url=https://example.com"><span style="background:url(https://example.com/a.png)">x</span>'),
+      title: "Note"
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "OUTPUT_PDF_INVALID_INPUT" })
+    });
+    expect(electronMock.showSaveDialog).not.toHaveBeenCalled();
+    expect(electronMock.loadURL).not.toHaveBeenCalled();
+  });
+
+  it("PDF保存で攻撃文字列コーパスを含むHTMLはhidden window作成前に拒否する", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
+      defaultFileName: "Note",
+      html: validOutputHtml(dangerousHtmlFragments.join("")),
       title: "Note"
     });
 
