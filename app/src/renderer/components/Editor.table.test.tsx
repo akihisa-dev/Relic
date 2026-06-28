@@ -34,8 +34,27 @@ describe("Editor table preview", () => {
     );
 
     await waitFor(() => expect(container.querySelector(".cm-live-table")).not.toBeNull());
-    const inputs = Array.from(container.querySelectorAll(".cm-live-table-cell-input")) as HTMLInputElement[];
+    const inputs = Array.from(container.querySelectorAll(".cm-live-table-cell-input")) as HTMLTextAreaElement[];
+    expect(inputs.every((input) => input.tagName === "TEXTAREA")).toBe(true);
+    expect(inputs.every((input) => input.wrap === "soft")).toBe(true);
     expect(inputs.map((input) => input.value)).toEqual(expect.arrayContaining(["A", "B", "x", "y"]));
+  });
+
+  it("ライブプレビューの表セルは長い文字列を折り返せる入力部品で表示する", async () => {
+    const { container } = render(
+      <Editor
+        content={"| A | B |\n| --- | --- |\n| very-long-unbroken-cell-value-that-should-wrap-inside-the-table | y |"}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table-cell-input")).not.toBeNull());
+    const input = container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="0"]') as HTMLTextAreaElement;
+
+    expect(input.tagName).toBe("TEXTAREA");
+    expect(input.wrap).toBe("soft");
+    expect(input.value).toBe("very-long-unbroken-cell-value-that-should-wrap-inside-the-table");
   });
 
   it("大きすぎる表はライブプレビューWidget化せず本文入力を軽く保つ", async () => {

@@ -1385,6 +1385,7 @@
   color: var(--text);
   font-size: 14px;
   overflow: hidden;
+  table-layout: fixed;
   width: 100%;
 }
 
@@ -1417,12 +1418,21 @@
 .cm-live-table-cell-input {
   background: transparent;
   border: 0;
+  box-sizing: border-box;
   color: inherit;
+  display: block;
   font: inherit;
+  line-height: 1.45;
+  min-height: 1.45em;
   min-width: 0;
   outline: none;
+  overflow: hidden;
+  overflow-wrap: anywhere;
   padding: 0;
+  resize: none;
+  white-space: pre-wrap;
   width: 100%;
+  word-break: break-word;
 }
 
 .cm-live-table-active {

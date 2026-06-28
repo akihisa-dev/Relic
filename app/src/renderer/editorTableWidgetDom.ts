@@ -25,7 +25,7 @@ export function focusTableWidgetCell(anchor: HTMLElement, rowIndex: number, colI
     const input = searchRoot.querySelector(
       `.cm-live-table-cell-input[data-row="${rowIndex}"][data-col="${colIndex}"]`
     );
-    if (input instanceof HTMLInputElement) {
+    if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
       input.focus();
       input.select();
     }
