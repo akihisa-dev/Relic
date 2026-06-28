@@ -181,6 +181,11 @@ jobs:
       GH_REPO: ${{ github.repository }}
       TAG_NAME: ${{ github.ref_name }}
     steps:
+      - name: Checkout release metadata
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
       - name: Download release assets
         uses: actions/download-artifact@v8
         with:
@@ -233,6 +238,8 @@ jobs:
             "release-assets/Relic-macOS-arm64.zip.sha256"
             "release-assets/Relic-Windows.zip"
             "release-assets/Relic-Windows.zip.sha256"
+            "THIRD_PARTY_NOTICES.md"
+            "sbom/relic-dependencies.cdx.json"
           )
 
           for asset in "${required_assets[@]}"; do
@@ -261,6 +268,8 @@ jobs:
             "Relic-macOS-arm64.zip.sha256"
             "Relic-Windows.zip"
             "Relic-Windows.zip.sha256"
+            "THIRD_PARTY_NOTICES.md"
+            "relic-dependencies.cdx.json"
           )
 
           for asset_name in "${required_asset_names[@]}"; do
@@ -280,4 +289,6 @@ jobs:
             release-assets/Relic-macOS-arm64.zip \
             release-assets/Relic-macOS-arm64.zip.sha256 \
             release-assets/Relic-Windows.zip \
-            release-assets/Relic-Windows.zip.sha256
+            release-assets/Relic-Windows.zip.sha256 \
+            THIRD_PARTY_NOTICES.md \
+            sbom/relic-dependencies.cdx.json

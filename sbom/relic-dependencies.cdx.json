@@ -1,0 +1,344 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "application",
+      "name": "relic",
+      "version": "0.3.119",
+      "licenses": [
+        {
+          "license": {
+            "id": "AGPL-3.0-or-later"
+          }
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "@codemirror/autocomplete",
+      "version": "6.20.3",
+      "purl": "pkg:npm/%40codemirror/autocomplete@6.20.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://code.haverbeke.berlin/codemirror/autocomplete"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@codemirror/commands",
+      "version": "6.10.3",
+      "purl": "pkg:npm/%40codemirror/commands@6.10.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/codemirror/commands"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@codemirror/lang-markdown",
+      "version": "6.5.0",
+      "purl": "pkg:npm/%40codemirror/lang-markdown@6.5.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/codemirror/lang-markdown"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@codemirror/language",
+      "version": "6.12.3",
+      "purl": "pkg:npm/%40codemirror/language@6.12.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/codemirror/language"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@codemirror/state",
+      "version": "6.6.0",
+      "purl": "pkg:npm/%40codemirror/state@6.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/codemirror/state"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@codemirror/view",
+      "version": "6.43.0",
+      "purl": "pkg:npm/%40codemirror/view@6.43.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://code.haverbeke.berlin/codemirror/view"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@terrastruct/d2",
+      "version": "0.1.33",
+      "purl": "pkg:npm/%40terrastruct/d2@0.1.33",
+      "licenses": [
+        {
+          "license": {
+            "id": "MPL-2.0"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/terrastruct/d2"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "dompurify",
+      "version": "3.4.8",
+      "purl": "pkg:npm/dompurify@3.4.8",
+      "licenses": [
+        {
+          "license": {
+            "name": "(MPL-2.0 OR Apache-2.0)"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/cure53/DOMPurify"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "highlight.js",
+      "version": "11.11.1",
+      "purl": "pkg:npm/highlight.js@11.11.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/highlightjs/highlight.js"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "js-yaml",
+      "version": "4.2.0",
+      "purl": "pkg:npm/js-yaml@4.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/nodeca/js-yaml"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "katex",
+      "version": "0.16.47",
+      "purl": "pkg:npm/katex@0.16.47",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/KaTeX/KaTeX"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "marked",
+      "version": "18.0.5",
+      "purl": "pkg:npm/marked@18.0.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/markedjs/marked"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "marked-footnote",
+      "version": "1.4.0",
+      "purl": "pkg:npm/marked-footnote@1.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/bent10/marked-extensions"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "mermaid",
+      "version": "11.15.0",
+      "purl": "pkg:npm/mermaid@11.15.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/mermaid-js/mermaid"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react",
+      "version": "19.2.7",
+      "purl": "pkg:npm/react@19.2.7",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/react"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "react-dom",
+      "version": "19.2.7",
+      "purl": "pkg:npm/react-dom@19.2.7",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/facebook/react"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "zustand",
+      "version": "5.0.14",
+      "purl": "pkg:npm/zustand@5.0.14",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/pmndrs/zustand"
+        }
+      ]
+    }
+  ]
+}
