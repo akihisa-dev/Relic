@@ -11,6 +11,7 @@ import {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { writeMarkdownFileContent } from "../files/markdownFiles";
+import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordinator";
 import { invalidateWorkspaceDerivedData } from "../files/workspaceDerivedDataSession";
 import { readAppSettings, updateAppSettings } from "../settings/appSettings";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
@@ -38,7 +39,10 @@ export function registerEditorHandlers(): void {
               input.content,
               input.expectedContent
             );
-            if (result.ok) invalidateWorkspaceDerivedData(context.activeWorkspace.id);
+            if (result.ok) {
+              invalidateWorkspaceDerivedData(context.activeWorkspace.id);
+              workspaceSearchRequestCoordinator.invalidate(context.activeWorkspace.id);
+            }
             return result;
           }
         );

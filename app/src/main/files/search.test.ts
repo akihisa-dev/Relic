@@ -233,6 +233,31 @@ describe("searchWorkspace", () => {
     });
   });
 
+  it("古い検索として中断された場合はエラーにせず空結果で返す", async () => {
+    const result = await searchWorkspace("/unused", "needle", "fullText", undefined, {
+      fileIndex: {
+        entries: [{ kind: "markdown", name: "note", path: "note.md", readStatus: "ok", size: 6, mtimeMs: 1 }],
+        records: [{
+          contentHash: "hash",
+          kind: "markdown",
+          lines: ["needle"],
+          mtimeMs: 1,
+          name: "note",
+          path: "note.md",
+          readStatus: "ok",
+          searchable: true,
+          size: 6
+        }]
+      },
+      shouldContinue: () => false
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      value: searchResultSet([])
+    });
+  });
+
   async function createSearchWorkspace(): Promise<string> {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-search-"));
     temporaryPaths.push(workspacePath);

@@ -31,6 +31,7 @@ export interface SearchWorkspaceOptions {
   fileIndex?: WorkspaceFileIndex;
   fileIndexOperations?: SearchOperations;
   parseCache?: WorkspaceDerivedDataCache;
+  shouldContinue?: () => boolean;
 }
 
 const defaultSearchOperations: SearchOperations = {
@@ -58,6 +59,10 @@ export async function searchWorkspace(
   }
 
   try {
+    if (options.shouldContinue && !options.shouldContinue()) {
+      return ok(emptySearchResultSet());
+    }
+
     const searchOperations = options.fileIndexOperations ?? defaultSearchOperations;
 
     const derivedOptions: WorkspaceDerivedDataOptions = {
@@ -87,6 +92,10 @@ export async function searchWorkspace(
     let truncated = false;
 
     for (const record of fileIndex.records) {
+      if (options.shouldContinue && !options.shouldContinue()) {
+        return ok(emptySearchResultSet());
+      }
+
       if (record.readStatus !== "ok" || !record.searchable) continue;
 
       const fileName = record.name;
@@ -147,6 +156,10 @@ export async function searchWorkspace(
       }
 
       for (const [index, line] of record.lines.entries()) {
+        if (index % 50 === 0 && options.shouldContinue && !options.shouldContinue()) {
+          return ok(emptySearchResultSet());
+        }
+
         const matches = line.toLocaleLowerCase().includes(normalizedQueryLower);
 
         if (matches) {

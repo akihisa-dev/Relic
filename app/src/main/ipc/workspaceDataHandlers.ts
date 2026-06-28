@@ -15,6 +15,7 @@ import { fail } from "../../shared/result";
 import { readWorkspaceAliases } from "../files/aliases";
 import { readWorkspaceCharts, updateWorkspaceChartEntry } from "../files/charts";
 import { readFrontmatterValueCandidates } from "../files/frontmatterCandidates";
+import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordinator";
 import { readWorkspaceTags } from "../files/tags";
 import {
   getWorkspaceDerivedDataSnapshot,
@@ -215,6 +216,7 @@ export function registerWorkspaceDataHandlers(): void {
         })
       );
       invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
+      workspaceSearchRequestCoordinator.invalidate(context.value.activeWorkspace.id);
 
       return { ok: true as const, value: savedCalendars };
     } catch (error) {
@@ -245,7 +247,10 @@ export function registerWorkspaceDataHandlers(): void {
         input,
         workspaceSettings.chronicleCalendars
       );
-      if (result.ok) invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
+      if (result.ok) {
+        invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
+        workspaceSearchRequestCoordinator.invalidate(context.value.activeWorkspace.id);
+      }
       return result;
     } catch (error) {
       return fail(
