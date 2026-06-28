@@ -50,13 +50,13 @@ function openContextMenu(name: string): void {
   fireEvent.contextMenu(rowButton(name), { clientX: 40, clientY: 50 });
 }
 
-function makeDataTransfer(): DataTransfer {
+function makeDataTransfer(files: File[] = []): DataTransfer {
   const data = new Map<string, string>();
-  const types: string[] = [];
+  const types: string[] = files.length > 0 ? ["Files"] : [];
   const dataTransfer = {
     dropEffect: "none",
     effectAllowed: "all",
-    files: [],
+    files,
     getData: (type: string) => data.get(type) ?? "",
     items: [],
     setData: (type: string, value: string) => {
@@ -257,5 +257,47 @@ describe("FileTree", () => {
     fireEvent.drop(rowButton("Folder"), { dataTransfer });
 
     expect(onMoveFile).toHaveBeenCalledWith("Root.md", "Folder");
+  });
+
+  it("drops external files into a folder for import", () => {
+    const onImportMarkdownFiles = vi.fn();
+    const file = new File(["# Dropped"], "Dropped.md", { type: "text/markdown" });
+    Object.defineProperty(window, "relic", {
+      configurable: true,
+      value: {
+        getDroppedFilePath: vi.fn().mockReturnValue("/tmp/Dropped.md")
+      }
+    });
+
+    renderFileTree({ onImportMarkdownFiles });
+    const dataTransfer = makeDataTransfer([file]);
+
+    fireEvent.dragOver(rowButton("Folder"), { dataTransfer });
+    expect(dataTransfer.dropEffect).toBe("copy");
+    fireEvent.drop(rowButton("Folder"), { dataTransfer });
+
+    expect(onImportMarkdownFiles).toHaveBeenCalledWith(["/tmp/Dropped.md"], "Folder");
+  });
+
+  it("drops external files onto the root file list for import", () => {
+    const onImportMarkdownFiles = vi.fn();
+    const file = new File(["# Root"], "Root Import.md", { type: "text/markdown" });
+    Object.defineProperty(window, "relic", {
+      configurable: true,
+      value: {
+        getDroppedFilePath: vi.fn().mockReturnValue("/tmp/Root Import.md")
+      }
+    });
+
+    renderFileTree({ isRoot: true, onImportMarkdownFiles });
+    const dataTransfer = makeDataTransfer([file]);
+    const fileTree = document.querySelector(".file-tree");
+    expect(fileTree).toBeInstanceOf(HTMLUListElement);
+
+    fireEvent.dragOver(fileTree as HTMLUListElement, { dataTransfer });
+    expect(fileTree).toHaveClass("file-tree--external-drag-over");
+    fireEvent.drop(fileTree as HTMLUListElement, { dataTransfer });
+
+    expect(onImportMarkdownFiles).toHaveBeenCalledWith(["/tmp/Root Import.md"], "");
   });
 });

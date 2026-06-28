@@ -160,6 +160,20 @@ export function useWorkspaceFileMutationActions({
     })();
   }, [runWorkspaceMutation, setWorkspaceState, updateMovedFileTab]);
 
+  const handleImportMarkdownFiles = useCallback((sourcePaths: string[], destinationFolder: string): void => {
+    if (!window.relic || sourcePaths.length === 0) return;
+
+    void window.relic
+      .importMarkdownFiles({ destinationFolder, sourcePaths })
+      .then((result) => {
+        if (result.ok) {
+          setWorkspaceState(result.value);
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      });
+  }, [setWorkspaceError, setWorkspaceState]);
+
   const handleMoveFolder = useCallback((path: string, destFolder: string): void => {
     if (!window.relic) return;
 
@@ -414,6 +428,7 @@ export function useWorkspaceFileMutationActions({
     handleDeleteTreeItems,
     handleDuplicateActiveFile,
     handleDuplicateTreeFile,
+    handleImportMarkdownFiles,
     handleMoveActiveFile,
     handleMoveFile,
     handleMoveFolder,

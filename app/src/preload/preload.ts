@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
 
 import {
   applySearchAndReplaceChannel,
@@ -12,6 +12,7 @@ import {
   createLinkedMarkdownFileChannel,
   createMarkdownFileChannel,
   duplicateMarkdownFileChannel,
+  importMarkdownFilesChannel,
   getBacklinksChannel,
   getAppInfoChannel,
   getEditorSettingsChannel,
@@ -77,6 +78,7 @@ import {
   type Backlink,
   type ChronicleCalendarSettings,
   type GetBacklinksInput,
+  type ImportMarkdownFilesInput,
   type ChartSettings,
   type LinkUpdateImpact,
   type LinkUpdateImpactInput,
@@ -125,12 +127,15 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(togglePinChannel, path) as Promise<RelicResult<WorkspaceState>>,
   createFolder: (input: CreateFolderInput) =>
     ipcRenderer.invoke(createFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  importMarkdownFiles: (input: ImportMarkdownFilesInput) =>
+    ipcRenderer.invoke(importMarkdownFilesChannel, input) as Promise<RelicResult<WorkspaceState>>,
   createLinkedMarkdownFile: (input: CreateLinkedMarkdownFileInput) =>
     ipcRenderer.invoke(createLinkedMarkdownFileChannel, input) as Promise<
       RelicResult<CreateLinkedMarkdownFileResult>
     >,
   createMarkdownFile: (input: CreateMarkdownFileInput) =>
     ipcRenderer.invoke(createMarkdownFileChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  getDroppedFilePath: (file: File) => webUtils.getPathForFile(file),
   duplicateMarkdownFile: (input: DuplicateMarkdownFileInput) =>
     ipcRenderer.invoke(duplicateMarkdownFileChannel, input) as Promise<
       RelicResult<RenameMarkdownFileResult>

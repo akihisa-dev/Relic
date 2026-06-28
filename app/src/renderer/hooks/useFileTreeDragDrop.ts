@@ -37,6 +37,18 @@ const draggedItemsFromEvent = (event: DragEvent<HTMLButtonElement>): FileTreeMov
   parseFileTreeDragPayload(event.dataTransfer.getData(FILE_TREE_DRAG_MIME))
 );
 
+const isExternalFileDrag = (event: DragEvent<HTMLButtonElement>): boolean => (
+  Array.from(event.dataTransfer.types ?? []).includes("Files")
+);
+
+function droppedFilePaths(event: DragEvent<HTMLButtonElement>): string[] {
+  if (!window.relic) return [];
+
+  return Array.from(event.dataTransfer.files)
+    .map((file) => window.relic?.getDroppedFilePath(file) ?? "")
+    .filter((filePath) => filePath.length > 0);
+}
+
 export function useFileTreeDragDrop({
   actions,
   isRenaming,
@@ -57,6 +69,10 @@ export function useFileTreeDragDrop({
   );
 
   const canDropOnNode = (event: DragEvent<HTMLButtonElement>): boolean => {
+    if (actions.onImportMarkdownFiles && isExternalFileDrag(event)) {
+      return true;
+    }
+
     const destinationFolder = dropDestinationForNode();
     const draggedItems = draggedItemsFromEvent(event);
     if (draggedItems.length > 0) {
@@ -86,7 +102,7 @@ export function useFileTreeDragDrop({
   const handleDragOver = (event: DragEvent<HTMLButtonElement>): void => {
     if (!canDropOnNode(event)) return;
     event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
+    event.dataTransfer.dropEffect = isExternalFileDrag(event) ? "copy" : "move";
     setIsDragOver(true);
   };
 
@@ -96,9 +112,20 @@ export function useFileTreeDragDrop({
 
   const handleDrop = (event: DragEvent<HTMLButtonElement>): void => {
     setIsDragOver(false);
+    const destinationFolder = dropDestinationForNode();
+
+    if (actions.onImportMarkdownFiles && isExternalFileDrag(event)) {
+      const sourcePaths = droppedFilePaths(event);
+      if (sourcePaths.length === 0) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      if (node.type === "folder") setIsExpanded(true);
+      actions.onImportMarkdownFiles(sourcePaths, destinationFolder);
+      return;
+    }
 
     const items = draggedItemsFromEvent(event);
-    const destinationFolder = dropDestinationForNode();
     if (movableItemsForDestination(items, destinationFolder).length === 0) return;
 
     event.preventDefault();

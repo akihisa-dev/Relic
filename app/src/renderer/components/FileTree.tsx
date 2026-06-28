@@ -1,4 +1,5 @@
-import type { MouseEvent, ReactElement } from "react";
+import { useState } from "react";
+import type { DragEvent, MouseEvent, ReactElement } from "react";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import {
@@ -21,6 +22,7 @@ export interface FileTreeActions {
   onCreateFileInFolder?: (folderPath: string) => void;
   onCreateFolderInFolder?: (folderPath: string) => void;
   onDuplicateFile?: (path: string) => void;
+  onImportMarkdownFiles?: (sourcePaths: string[], destFolder: string) => void;
   onMoveFile?: (path: string, destFolder: string) => void;
   onMoveFolder?: (path: string, destFolder: string) => void;
   onMoveItems?: (items: FileTreeMoveItem[], destFolder: string) => void;
@@ -45,6 +47,7 @@ export interface FileTreeProps {
   onCreateFileInFolder?: (folderPath: string) => void;
   onCreateFolderInFolder?: (folderPath: string) => void;
   onDuplicateFile?: (path: string) => void;
+  onImportMarkdownFiles?: (sourcePaths: string[], destFolder: string) => void;
   onMoveFile?: (path: string, destFolder: string) => void;
   onMoveFolder?: (path: string, destFolder: string) => void;
   onMoveItems?: (items: FileTreeMoveItem[], destFolder: string) => void;
@@ -79,6 +82,7 @@ function fileTreeActionsFromProps({
   onCreateFileInFolder,
   onCreateFolderInFolder,
   onDuplicateFile,
+  onImportMarkdownFiles,
   onMoveFile,
   onMoveFolder,
   onMoveItems,
@@ -97,6 +101,7 @@ function fileTreeActionsFromProps({
     onCreateFileInFolder,
     onCreateFolderInFolder,
     onDuplicateFile,
+    onImportMarkdownFiles,
     onMoveFile,
     onMoveFolder,
     onMoveItems,
@@ -122,6 +127,7 @@ export function FileTreeItem({
   onCreateFileInFolder,
   onCreateFolderInFolder,
   onDuplicateFile,
+  onImportMarkdownFiles,
   onMoveFile,
   onMoveFolder,
   onMoveItems,
@@ -148,6 +154,7 @@ export function FileTreeItem({
     onCreateFileInFolder,
     onCreateFolderInFolder,
     onDuplicateFile,
+    onImportMarkdownFiles,
     onMoveFile,
     onMoveFolder,
     onMoveItems,
@@ -302,6 +309,7 @@ export function FileTree({
   onCreateFileInFolder,
   onCreateFolderInFolder,
   onDuplicateFile,
+  onImportMarkdownFiles,
   onMoveFile,
   onMoveFolder,
   onMoveItems,
@@ -320,6 +328,7 @@ export function FileTree({
   selectedPaths = defaultSelectedPaths
 }: FileTreeProps & { animation?: "expand" }): ReactElement {
   const t = useT();
+  const [isRootFileDragOver, setIsRootFileDragOver] = useState(false);
   const activeAppearingPaths = useFileTreeMotion(nodes, motionPaths);
   const actions = fileTreeActionsFromProps({
     actions: providedActions,
@@ -330,6 +339,7 @@ export function FileTree({
     onCreateFileInFolder,
     onCreateFolderInFolder,
     onDuplicateFile,
+    onImportMarkdownFiles,
     onMoveFile,
     onMoveFolder,
     onMoveItems,
@@ -343,11 +353,48 @@ export function FileTree({
     onTogglePin
   });
 
-  void isRoot;
+  const droppedFilePaths = (event: DragEvent<HTMLElement>): string[] => {
+    if (!window.relic) return [];
+
+    return Array.from(event.dataTransfer.files)
+      .map((file) => window.relic?.getDroppedFilePath(file) ?? "")
+      .filter((filePath) => filePath.length > 0);
+  };
+
+  const canImportDroppedFiles = (event: DragEvent<HTMLElement>): boolean => (
+    isRoot &&
+    Boolean(actions.onImportMarkdownFiles) &&
+    Array.from(event.dataTransfer.types ?? []).includes("Files")
+  );
+
+  const handleRootDragLeave = (): void => {
+    setIsRootFileDragOver(false);
+  };
+
+  const handleRootDragOver = (event: DragEvent<HTMLUListElement>): void => {
+    if (!canImportDroppedFiles(event)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    setIsRootFileDragOver(true);
+  };
+
+  const handleRootDrop = (event: DragEvent<HTMLUListElement>): void => {
+    setIsRootFileDragOver(false);
+    if (!canImportDroppedFiles(event)) return;
+
+    const sourcePaths = droppedFilePaths(event);
+    if (sourcePaths.length === 0) return;
+
+    event.preventDefault();
+    actions.onImportMarkdownFiles?.(sourcePaths, "");
+  };
 
   return (
     <ul
-      className={`file-tree${animation === "expand" ? " file-tree--expanding" : ""}`}
+      className={`file-tree${animation === "expand" ? " file-tree--expanding" : ""}${isRootFileDragOver ? " file-tree--external-drag-over" : ""}`}
+      onDragLeave={handleRootDragLeave}
+      onDragOver={handleRootDragOver}
+      onDrop={handleRootDrop}
     >
       {nodes.length === 0 ? (
         <li><div className="empty-note">{t("files.noMarkdownFiles")}</div></li>

@@ -1,6 +1,7 @@
 import type {
   CreateFolderInput,
   CreateMarkdownFileInput,
+  ImportMarkdownFilesInput,
   LinkUpdateImpactInput,
   MoveFolderInput,
   MoveItemToTrashInput,
@@ -18,6 +19,23 @@ import { isWorkspaceIdInput } from "./workspaceHandlerValidators";
 
 export function isCreateMarkdownFileInput(input: unknown): input is CreateMarkdownFileInput {
   return isNameInput(input);
+}
+
+export function isImportMarkdownFilesInput(input: unknown): input is ImportMarkdownFilesInput {
+  if (typeof input !== "object" || input === null) return false;
+
+  const candidate = input as { destinationFolder?: unknown; sourcePaths?: unknown };
+  return (
+    isWorkspaceRelativeInputPathOrRoot(candidate.destinationFolder) &&
+    Array.isArray(candidate.sourcePaths) &&
+    candidate.sourcePaths.length > 0 &&
+    candidate.sourcePaths.every((sourcePath) => (
+      typeof sourcePath === "string" &&
+      sourcePath.trim() === sourcePath &&
+      sourcePath.length > 0 &&
+      !sourcePath.includes("\0")
+    ))
+  );
 }
 
 export function isCreateFolderInput(input: unknown): input is CreateFolderInput {
