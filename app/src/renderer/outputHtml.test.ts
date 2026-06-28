@@ -44,6 +44,8 @@ describe("outputHtml", () => {
         "",
         "<script>alert(1)</script>",
         '<img src=x onerror="alert(1)">',
+        '<span style="background-image:url(https://example.com/a.png)">styled</span>',
+        '<meta http-equiv="refresh" content="0;url=https://example.com">',
         "[x](javascript:alert(1))",
         '<iframe src="https://example.com"></iframe>'
       ].join("\n"),
@@ -57,10 +59,13 @@ describe("outputHtml", () => {
     expect(result.html).not.toContain("<script>alert(1)</script>");
     expect(result.html).not.toContain("onerror");
     expect(result.html).not.toContain("<img");
+    expect(result.html).not.toContain("style=");
     expect(result.html).not.toContain("javascript:");
     expect(result.html).not.toContain("<iframe");
     expect(result.html).toContain("<h1");
-    expect(new DOMParser().parseFromString(result.html, "text/html").querySelector("a[href^='javascript:']")).toBeNull();
+    const document = new DOMParser().parseFromString(result.html, "text/html");
+    expect(document.querySelector("a[href^='javascript:']")).toBeNull();
+    expect(document.querySelector("meta[http-equiv='refresh']")).toBeNull();
   });
 
   it("印刷/PDF用HTMLでも通常Markdown、コードブロック、KaTeX、Mermaid枠を維持する", async () => {

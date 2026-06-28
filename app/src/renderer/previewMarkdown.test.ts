@@ -45,6 +45,12 @@ describe("previewMarkdown", () => {
         "<script>alert(1)</script>",
         '<img src=x onerror="alert(1)">',
         '<iframe src="https://example.com"></iframe>',
+        "<object data=\"https://example.com\"></object>",
+        "<embed src=\"https://example.com\">",
+        "<webview src=\"https://example.com\"></webview>",
+        "<base href=\"https://example.com/\">",
+        '<meta http-equiv="refresh" content="0;url=https://example.com">',
+        '<span style="background-image:url(https://example.com/a.png)">styled</span>',
         "[x](javascript:alert(1))"
       ].join("\n"),
       null,
@@ -61,8 +67,20 @@ describe("previewMarkdown", () => {
     expect(html).not.toContain("onerror");
     expect(html).not.toContain("<img");
     expect(html).not.toContain("<iframe");
+    expect(html).not.toContain("<object");
+    expect(html).not.toContain("<embed");
+    expect(html).not.toContain("<webview");
+    expect(html).not.toContain("<base");
+    expect(html).not.toContain("<meta");
+    expect(html).not.toContain("style=");
     expect(html).not.toContain("javascript:");
     expect(new DOMParser().parseFromString(html, "text/html").querySelector("a[href^='javascript:']")).toBeNull();
+  });
+
+  it("仕様上許可している下線HTMLは維持する", () => {
+    const html = renderMarkdown("<u>下線</u>", null, new Map(), true, t);
+
+    expect(html).toContain("<u>下線</u>");
   });
 
   it("file URLをリンク先として残さない", () => {

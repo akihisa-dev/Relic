@@ -26,6 +26,11 @@ const forbiddenEventAttributes = [
   "onsubmit"
 ];
 
+const forbiddenPreviewAttributes = [
+  ...forbiddenEventAttributes,
+  "style"
+];
+
 export function sanitizePreviewHtml(html: string): string {
   return DOMPurify.sanitize(stripUnsafeMarkdownLinkText(html), {
     ADD_ATTR: [
@@ -37,15 +42,15 @@ export function sanitizePreviewHtml(html: string): string {
       "id"
     ],
     ALLOWED_URI_REGEXP: allowedPreviewUriPattern,
-    FORBID_ATTR: forbiddenEventAttributes,
-    FORBID_TAGS: ["base", "embed", "form", "iframe", "img", "object", "script"]
+    FORBID_ATTR: forbiddenPreviewAttributes,
+    FORBID_TAGS: ["base", "embed", "form", "iframe", "img", "meta", "object", "script", "webview"]
   });
 }
 
 export function sanitizeSvgHtml(svg: string): string {
   return DOMPurify.sanitize(svg, {
     ALLOWED_URI_REGEXP: allowedPreviewUriPattern,
-    FORBID_ATTR: forbiddenEventAttributes,
+    FORBID_ATTR: forbiddenPreviewAttributes,
     FORBID_TAGS: ["foreignObject", "script"],
     USE_PROFILES: { svg: true, svgFilters: true }
   });

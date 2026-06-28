@@ -394,8 +394,9 @@ function hasRequiredOutputCsp(html: string): boolean {
 
 function hasUnsafeOutputHtml(html: string): boolean {
   return /<(?:script|iframe|object|embed|webview|link|base)\b/i.test(html) ||
-    /<meta\b[^>]*http-equiv=(["'])refresh\1/i.test(html) ||
+    /<meta\b[^>]*http-equiv\s*=\s*(["'])refresh\1/i.test(html) ||
     /\son[a-z]+\s*=/i.test(html) ||
+    /\bstyle\s*=\s*(["'])[\s\S]*?(?:url\s*\(|@import)[\s\S]*?\1/i.test(html) ||
     /\b(?:href|src|xlink:href)\s*=\s*(["'])\s*(?:javascript|file):/i.test(html) ||
     /\b(?:href|src|xlink:href)\s*=\s*(?:javascript|file):/i.test(html);
 }
