@@ -26,7 +26,7 @@ import {
   renameMarkdownFile
 } from "../files/markdownFiles";
 import { readLinkUpdateImpact } from "../files/linkUpdater";
-import { resolveExistingWorkspacePathOrRoot } from "../files/paths";
+import { resolveExistingWorkspacePathOrRoot, verifyExistingWorkspacePath } from "../files/paths";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
   isCreateMarkdownFileInput,
@@ -241,6 +241,9 @@ export function registerMarkdownFileHandlers(): void {
         if (!absolutePath.ok) {
           return absolutePath;
         }
+
+        const safePath = await verifyExistingWorkspacePath(workspaceSummary.path, absolutePath.value);
+        if (!safePath.ok) return safePath;
 
         shell.showItemInFolder(absolutePath.value);
         return ok(undefined);

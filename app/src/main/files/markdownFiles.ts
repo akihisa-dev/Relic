@@ -14,9 +14,12 @@ import {
   renamedMarkdownPath
 } from "./markdownFilePaths";
 import {
+  type RealpathOperations,
   resolveExistingWorkspacePath,
   resolveNewWorkspacePath,
-  toWorkspaceRelativePath
+  toWorkspaceRelativePath,
+  verifyExistingWorkspacePath,
+  verifyNewWorkspacePath
 } from "./paths";
 import {
   getRenameDestinationCollision,
@@ -31,7 +34,8 @@ export { normalizeMarkdownFileName } from "./markdownFilePaths";
 
 export async function createMarkdownFile(
   workspacePath: string,
-  name: string
+  name: string,
+  operations: Partial<RealpathOperations> = {}
 ): Promise<RelicResult<CreatedMarkdownFile>> {
   const normalizedName = normalizeMarkdownFileName(name);
 
@@ -39,13 +43,16 @@ export async function createMarkdownFile(
     return normalizedName;
   }
 
-  const absoluteFilePath = await resolveNewWorkspacePath(workspacePath, normalizedName.value);
+  const absoluteFilePath = await resolveNewWorkspacePath(workspacePath, normalizedName.value, operations);
 
   if (!absoluteFilePath.ok) {
     return absoluteFilePath;
   }
 
   try {
+    const safeFilePath = await verifyNewWorkspacePath(workspacePath, absoluteFilePath.value, operations);
+    if (!safeFilePath.ok) return safeFilePath;
+
     await atomicWriteNewTextFile(absoluteFilePath.value, "");
 
     return ok({
@@ -67,7 +74,8 @@ export async function createMarkdownFile(
 export async function createMarkdownFileAtPath(
   workspacePath: string,
   relativePath: string,
-  content = ""
+  content = "",
+  operations: Partial<RealpathOperations> = {}
 ): Promise<RelicResult<MarkdownFileContent>> {
   const normalizedRelativePath = toWorkspaceRelativePath(relativePath.replace(/\\/g, "/"));
 
@@ -85,14 +93,20 @@ export async function createMarkdownFileAtPath(
     return fail("FILE_NAME_INVALID", "Markdownファイル名を指定してください。");
   }
 
-  const absoluteFilePath = await resolveNewWorkspacePath(workspacePath, normalizedRelativePath);
+  const absoluteFilePath = await resolveNewWorkspacePath(workspacePath, normalizedRelativePath, operations);
 
   if (!absoluteFilePath.ok) {
     return absoluteFilePath;
   }
 
   try {
+    const safeParentBeforeMkdir = await verifyNewWorkspacePath(workspacePath, absoluteFilePath.value, operations);
+    if (!safeParentBeforeMkdir.ok) return safeParentBeforeMkdir;
+
     await mkdir(path.dirname(absoluteFilePath.value), { recursive: true });
+    const safeFilePath = await verifyNewWorkspacePath(workspacePath, absoluteFilePath.value, operations);
+    if (!safeFilePath.ok) return safeFilePath;
+
     await atomicWriteNewTextFile(absoluteFilePath.value, content);
 
     return readMarkdownFile(workspacePath, normalizedRelativePath);
@@ -111,19 +125,23 @@ export async function createMarkdownFileAtPath(
 
 export async function readMarkdownFile(
   workspacePath: string,
-  relativePath: string
+  relativePath: string,
+  operations: Partial<RealpathOperations> = {}
 ): Promise<RelicResult<MarkdownFileContent>> {
   if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを開けます。");
   }
 
-  const absoluteFilePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
+  const absoluteFilePath = await resolveExistingWorkspacePath(workspacePath, relativePath, operations);
 
   if (!absoluteFilePath.ok) {
     return absoluteFilePath;
   }
 
   try {
+    const safeFilePath = await verifyExistingWorkspacePath(workspacePath, absoluteFilePath.value, operations);
+    if (!safeFilePath.ok) return safeFilePath;
+
     const content = await readFile(absoluteFilePath.value, "utf8");
 
     return ok({
@@ -144,9 +162,10 @@ export async function writeMarkdownFileContent(
   workspacePath: string,
   relativePath: string,
   content: string,
-  expectedContent?: string
+  expectedContent?: string,
+  operations: Partial<RealpathOperations> = {}
 ): Promise<RelicResult<void>> {
-  const absoluteFilePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
+  const absoluteFilePath = await resolveExistingWorkspacePath(workspacePath, relativePath, operations);
 
   if (!absoluteFilePath.ok) {
     return absoluteFilePath;
@@ -158,11 +177,17 @@ export async function writeMarkdownFileContent(
 
   try {
     if (expectedContent !== undefined) {
+      const safeReadPath = await verifyExistingWorkspacePath(workspacePath, absoluteFilePath.value, operations);
+      if (!safeReadPath.ok) return safeReadPath;
+
       const currentContent = await readFile(absoluteFilePath.value, "utf8");
       if (currentContent !== expectedContent) {
         return fail("FILE_WRITE_CONFLICT", "ファイルが外部で変更されています。再読み込みしてから保存してください。");
       }
     }
+
+    const safeWritePath = await verifyExistingWorkspacePath(workspacePath, absoluteFilePath.value, operations);
+    if (!safeWritePath.ok) return safeWritePath;
 
     await atomicWriteTextFile(absoluteFilePath.value, content);
 
@@ -179,13 +204,14 @@ export async function writeMarkdownFileContent(
 export async function renameMarkdownFile(
   workspacePath: string,
   relativePath: string,
-  newName: string
+  newName: string,
+  operations: Partial<RealpathOperations> = {}
 ): Promise<RelicResult<MarkdownFileContent>> {
   if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけをリネームできます。");
   }
 
-  const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
+  const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, relativePath, operations);
 
   if (!absoluteSourcePath.ok) {
     return absoluteSourcePath;
@@ -202,6 +228,7 @@ export async function renameMarkdownFile(
     failureCode: "FILE_RENAME_FAILED",
     failureMessage: "ファイル名を変更できませんでした。",
     nextRelativePath: nextRelativePath.value,
+    operations,
     relativePath,
     sourcePath: absoluteSourcePath.value
   });
@@ -210,13 +237,14 @@ export async function renameMarkdownFile(
 export async function moveMarkdownFile(
   workspacePath: string,
   relativePath: string,
-  destinationFolder: string
+  destinationFolder: string,
+  operations: Partial<RealpathOperations> = {}
 ): Promise<RelicResult<MarkdownFileContent>> {
   if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを移動できます。");
   }
 
-  const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
+  const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, relativePath, operations);
 
   if (!absoluteSourcePath.ok) {
     return absoluteSourcePath;
@@ -229,6 +257,7 @@ export async function moveMarkdownFile(
     failureCode: "FILE_MOVE_FAILED",
     failureMessage: "ファイルを移動できませんでした。",
     nextRelativePath,
+    operations,
     relativePath,
     sourcePath: absoluteSourcePath.value
   });
@@ -241,11 +270,16 @@ async function moveMarkdownFileToPath(
     failureCode: "FILE_RENAME_FAILED" | "FILE_MOVE_FAILED";
     failureMessage: string;
     nextRelativePath: string;
+    operations: Partial<RealpathOperations>;
     relativePath: string;
     sourcePath: string;
   }
 ): Promise<RelicResult<MarkdownFileContent>> {
-  const absoluteDestinationPath = await resolveNewWorkspacePath(workspacePath, options.nextRelativePath);
+  const absoluteDestinationPath = await resolveNewWorkspacePath(
+    workspacePath,
+    options.nextRelativePath,
+    options.operations
+  );
 
   if (!absoluteDestinationPath.ok) {
     return absoluteDestinationPath;
@@ -255,6 +289,16 @@ async function moveMarkdownFileToPath(
     return readMarkdownFile(workspacePath, options.relativePath);
   }
 
+  const safeSourcePath = await verifyExistingWorkspacePath(workspacePath, options.sourcePath, options.operations);
+  if (!safeSourcePath.ok) return safeSourcePath;
+
+  const safeDestinationPath = await verifyNewWorkspacePath(
+    workspacePath,
+    absoluteDestinationPath.value,
+    options.operations
+  );
+  if (!safeDestinationPath.ok) return safeDestinationPath;
+
   const collision = await getRenameDestinationCollision(options.sourcePath, absoluteDestinationPath.value);
 
   if (collision === "different-entry") {
@@ -262,6 +306,16 @@ async function moveMarkdownFileToPath(
   }
 
   try {
+    const safeSourceBeforeRename = await verifyExistingWorkspacePath(workspacePath, options.sourcePath, options.operations);
+    if (!safeSourceBeforeRename.ok) return safeSourceBeforeRename;
+
+    const safeDestinationBeforeRename = await verifyNewWorkspacePath(
+      workspacePath,
+      absoluteDestinationPath.value,
+      options.operations
+    );
+    if (!safeDestinationBeforeRename.ok) return safeDestinationBeforeRename;
+
     await renameFileSystemEntry(
       options.sourcePath,
       absoluteDestinationPath.value,
@@ -286,26 +340,33 @@ async function moveMarkdownFileToPath(
 
 export async function duplicateMarkdownFile(
   workspacePath: string,
-  relativePath: string
+  relativePath: string,
+  operations: Partial<RealpathOperations> = {}
 ): Promise<RelicResult<MarkdownFileContent>> {
   if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを複製できます。");
   }
 
-  const sourcePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
+  const sourcePath = await resolveExistingWorkspacePath(workspacePath, relativePath, operations);
 
   if (!sourcePath.ok) {
     return sourcePath;
   }
 
   try {
+    const safeSourcePath = await verifyExistingWorkspacePath(workspacePath, sourcePath.value, operations);
+    if (!safeSourcePath.ok) return safeSourcePath;
+
     const content = await readFile(sourcePath.value, "utf8");
     const destinationRelativePath = await createCopyRelativePath(workspacePath, relativePath);
-    const destinationPath = await resolveNewWorkspacePath(workspacePath, destinationRelativePath);
+    const destinationPath = await resolveNewWorkspacePath(workspacePath, destinationRelativePath, operations);
 
     if (!destinationPath.ok) {
       return destinationPath;
     }
+
+    const safeDestinationPath = await verifyNewWorkspacePath(workspacePath, destinationPath.value, operations);
+    if (!safeDestinationPath.ok) return safeDestinationPath;
 
     await atomicWriteNewTextFile(destinationPath.value, content);
 
