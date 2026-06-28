@@ -554,6 +554,7 @@
       - `workspaceTree.ts`
     - `test/`
       - `rendererTestUtils.ts`
+      - `securityFixtures.ts`
       - `setup.ts`
   - `.npmrc`
   - `doctor.config.json`

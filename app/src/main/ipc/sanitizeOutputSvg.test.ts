@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import {
+  dangerousSvgFragments,
+  forbiddenSanitizedOutputPatterns
+} from "../../test/securityFixtures";
 import { hasRenderableSvg, sanitizeOutputSvg } from "./sanitizeOutputSvg";
 
 describe("sanitizeOutputSvg", () => {
@@ -65,5 +69,21 @@ describe("sanitizeOutputSvg", () => {
     expect(result).not.toContain("file:");
     expect(result).not.toContain("javascript:");
     expect(result).not.toContain("https:");
+  });
+
+  it("攻撃文字列コーパスを保存用SVGへ残さない", () => {
+    const result = sanitizeOutputSvg([
+      "<svg>",
+      '<defs><marker id="arrow"/></defs>',
+      '<path marker-end="url(#arrow)" href="#arrow" d="M0 0" />',
+      ...dangerousSvgFragments,
+      "</svg>"
+    ].join(""));
+
+    expect(result).toContain('<path marker-end="url(#arrow)" href="#arrow" d="M0 0"/>');
+    for (const pattern of forbiddenSanitizedOutputPatterns) {
+      expect(result).not.toMatch(pattern);
+    }
+    expect(hasRenderableSvg(result)).toBe(true);
   });
 });

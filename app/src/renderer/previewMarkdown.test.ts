@@ -11,6 +11,11 @@ import {
 } from "./previewMarkdown";
 import { createTranslator } from "./i18nModel";
 import { decodeDiagramSourceAttribute, encodeDiagramSourceAttribute } from "./diagramSourceAttribute";
+import {
+  dangerousHtmlFragments,
+  dangerousMarkdownLinks,
+  forbiddenSanitizedOutputPatterns
+} from "../test/securityFixtures";
 
 const t = createTranslator("ja");
 
@@ -75,6 +80,28 @@ describe("previewMarkdown", () => {
     expect(html).not.toContain("style=");
     expect(html).not.toContain("javascript:");
     expect(new DOMParser().parseFromString(html, "text/html").querySelector("a[href^='javascript:']")).toBeNull();
+  });
+
+  it("攻撃文字列コーパスをMarkdownプレビューHTMLへ残さない", () => {
+    const html = renderMarkdown(
+      [
+        "# 安全な見出し",
+        "",
+        "**通常Markdown**",
+        ...dangerousMarkdownLinks,
+        ...dangerousHtmlFragments
+      ].join("\n"),
+      null,
+      new Map(),
+      true,
+      t
+    );
+
+    expect(html).toContain("<h1");
+    expect(html).toContain("<strong>通常Markdown</strong>");
+    for (const pattern of forbiddenSanitizedOutputPatterns) {
+      expect(html).not.toMatch(pattern);
+    }
   });
 
   it("仕様上許可している下線HTMLは維持する", () => {
