@@ -17,7 +17,6 @@ interface PaneTabContextMenuProps {
   onCloseTabsToRight: (tabId: string) => void;
   onDuplicateTabFile?: (tabId: string) => void;
   onOpenInOtherPane: (tabId: string) => void;
-  onPrintPreview: (tab: FileTab) => void;
   onRevealTabFile?: (tabId: string) => void;
   onSavePreviewAsPdf: (tab: FileTab) => void;
   onTabClose: (tabId: string) => void;
@@ -35,7 +34,6 @@ export function PaneTabContextMenu({
   onCloseTabsToRight,
   onDuplicateTabFile,
   onOpenInOtherPane,
-  onPrintPreview,
   onRevealTabFile,
   onSavePreviewAsPdf,
   onTabClose,
@@ -101,16 +99,6 @@ export function PaneTabContextMenu({
                 type="button"
               >
                 {t("files.copyMarkdownLink")}
-              </button>
-              <button
-                className="tab-context-menu-item"
-                onClick={() => {
-                  onPrintPreview(contextTab);
-                  onClose();
-                }}
-                type="button"
-              >
-                {t("output.print")}
               </button>
               <button
                 className="tab-context-menu-item"

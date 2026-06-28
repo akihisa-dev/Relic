@@ -84,7 +84,6 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     onOpenInOtherPane: vi.fn(),
     onOpenLink: vi.fn(),
     onOpenWikiLink: vi.fn(),
-    onPrintPreview: vi.fn(),
     onRenameFile: vi.fn(),
     onRevealTabFile: vi.fn(),
     onSavePreviewAsPdf: vi.fn(),

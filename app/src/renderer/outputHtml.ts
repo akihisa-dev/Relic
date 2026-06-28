@@ -5,7 +5,7 @@ import { getRenderedDiagramSvgText } from "./diagramSvg";
 import { sanitizePreviewHtml, sanitizeSvgHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
 import { escapeHtml, renderMarkdown } from "./previewMarkdown";
-import type { OutputPrintOptions } from "../shared/ipcOutput";
+import type { OutputPdfOptions } from "../shared/ipcOutput";
 import { runWithConcurrency } from "./concurrency";
 import { outputCss } from "./outputCss";
 
@@ -25,7 +25,7 @@ export async function buildPreviewOutputHtml({
   t,
   title,
   workspacePath
-}: BuildPreviewOutputHtmlInput): Promise<{ defaultFileName: string; html: string; printOptions?: OutputPrintOptions; title: string }> {
+}: BuildPreviewOutputHtmlInput): Promise<{ defaultFileName: string; html: string; pdfOptions?: OutputPdfOptions; title: string }> {
   const documentTitle = title?.trim() ||
     firstH1(content) ||
     outputFileNameFromPath(path) ||

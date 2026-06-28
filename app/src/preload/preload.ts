@@ -57,16 +57,11 @@ import {
   type UserDefinedField,
   mergeFilesChannel,
   type MergeFilesInput,
-  printHtmlChannel,
-  type PrintHtmlInput,
-  printPreviewChannel,
-  type PrintPreviewInput,
   saveDiagramSvgChannel,
   type SaveDiagramSvgInput,
   savePreviewAsPdfChannel,
   type SavePreviewAsPdfInput,
   type OutputCopyResult,
-  type OutputPrintResult,
   type OutputSavedResult,
   searchAndReplaceChannel,
   searchWorkspaceChannel,
@@ -185,10 +180,6 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(revealWorkspaceItemChannel, input) as Promise<RelicResult<void>>,
   replaceInFile: (input: ReplaceInFileInput) =>
     ipcRenderer.invoke(replaceInFileChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
-  printPreview: (input: PrintPreviewInput) =>
-    ipcRenderer.invoke(printPreviewChannel, input) as Promise<RelicResult<OutputPrintResult>>,
-  printHtml: (input: PrintHtmlInput) =>
-    ipcRenderer.invoke(printHtmlChannel, input) as Promise<RelicResult<OutputPrintResult>>,
   saveDiagramSvg: (input: SaveDiagramSvgInput) =>
     ipcRenderer.invoke(saveDiagramSvgChannel, input) as Promise<RelicResult<OutputSavedResult>>,
   saveEditorSettings: (input: EditorSettings) =>

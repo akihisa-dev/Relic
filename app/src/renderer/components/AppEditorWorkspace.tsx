@@ -44,7 +44,6 @@ interface AppEditorWorkspaceProps {
   onOpenWikiLink: (target: string, heading?: string) => void;
   onOutlineHeadingClick: (heading: OutlineHeading) => void;
   onDuplicateTabFile?: (tabId: string) => void;
-  onPrintPreview: (tab: FileTab) => void;
   onRenameFile: (path: string, name: string) => void;
   onRevealTabFile?: (tabId: string) => void;
   onRightPanelResizeStart: (event: ReactMouseEvent) => void;
@@ -153,7 +152,6 @@ export function AppEditorWorkspace({
   onOpenWikiLink,
   onOutlineHeadingClick,
   onDuplicateTabFile,
-  onPrintPreview,
   onRenameFile,
   onRevealTabFile,
   onRightPanelResizeStart,
@@ -202,7 +200,6 @@ export function AppEditorWorkspace({
     onOpenInOtherPane,
     onOpenLink,
     onOpenWikiLink,
-    onPrintPreview,
     onRenameFile,
     onRevealTabFile,
     onSavePreviewAsPdf,

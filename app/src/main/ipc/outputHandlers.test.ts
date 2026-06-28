@@ -79,29 +79,16 @@ vi.mock("../i18n", async () => {
 
 import {
   copyDiagramSvgChannel,
-  printHtmlChannel,
-  printPreviewChannel,
   saveDiagramSvgChannel,
   previewOutputHtmlMaxBytes,
   savePreviewAsPdfChannel
 } from "../../shared/ipc";
 import { registerOutputHandlers } from "./outputHandlers";
 
-const printPreviewDirectoryName = `/tmp/relic-print-preview-${process.pid}`;
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function handlerFor(channel: string) {
   const handler = electronMock.handle.mock.calls.find(([registeredChannel]) => registeredChannel === channel)?.[1];
   if (!handler) throw new Error(`Handler not registered: ${channel}`);
   return handler as (event: { sender: unknown }, input: unknown) => Promise<unknown>;
-}
-
-function loadedHtmlAt(index: number): string {
-  const url = electronMock.loadURL.mock.calls.at(index)?.[0] as string | undefined;
-  if (!url?.startsWith("data:text/html;base64,")) throw new Error("HTML was not loaded");
-  return Buffer.from(url.replace("data:text/html;base64,", ""), "base64").toString("utf8");
 }
 
 function validOutputHtml(body = "本文"): string {
@@ -133,12 +120,9 @@ describe("outputHandlers", () => {
     electronMock.getPath.mockReturnValue("/tmp");
     electronMock.isDestroyed.mockReturnValue(false);
     electronMock.loadURL.mockResolvedValue(undefined);
-    electronMock.print.mockImplementation((_options: unknown, callback: (success: boolean, failureReason?: string) => void) => callback(true));
     electronMock.printToPDF.mockResolvedValue(Buffer.from("pdf"));
     fsMock.mkdir.mockResolvedValue(undefined);
     fsMock.rename.mockResolvedValue(undefined);
-    fsMock.rm.mockResolvedValue(undefined);
-    fsMock.unlink.mockResolvedValue(undefined);
     fsMock.writeFile.mockResolvedValue(undefined);
   });
 
@@ -218,6 +202,43 @@ describe("outputHandlers", () => {
     expect(fsMock.writeFile).not.toHaveBeenCalledWith("/tmp/out.pdf", expect.anything(), expect.anything());
   });
 
+  it("PDF保存で検証済み用紙設定をprintToPDFへ渡す", async () => {
+    electronMock.showSaveDialog.mockResolvedValue({ canceled: false, filePath: "/tmp/out.pdf" });
+    registerOutputHandlers();
+
+    const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
+      defaultFileName: "Note",
+      html: validOutputHtml(),
+      pdfOptions: {
+        landscape: true,
+        marginType: "custom",
+        margins: {
+          bottom: 0.236,
+          left: 0.236,
+          right: 0.236,
+          top: 0.236
+        },
+        pageSize: "A3",
+        scaleFactor: 1.25
+      },
+      title: "Note"
+    });
+
+    expect(result).toEqual({ ok: true, value: { filePath: "/tmp/out.pdf", status: "saved" } });
+    expect(electronMock.printToPDF).toHaveBeenCalledWith(expect.objectContaining({
+      landscape: true,
+      margins: {
+        bottom: 0.236,
+        left: 0.236,
+        marginType: "custom",
+        right: 0.236,
+        top: 0.236
+      },
+      pageSize: "A3",
+      scaleFactor: 1.25
+    }));
+  });
+
   it("PDF保存でHTMLが空の場合は入力エラーになる", async () => {
     registerOutputHandlers();
 
@@ -233,48 +254,6 @@ describe("outputHandlers", () => {
     });
     expect(electronMock.showSaveDialog).not.toHaveBeenCalled();
     expect(electronMock.printToPDF).not.toHaveBeenCalled();
-    expect(electronMock.loadURL).not.toHaveBeenCalled();
-  });
-
-  it("実印刷ではHTMLと印刷オプションをmain側印刷へ渡す", async () => {
-    registerOutputHandlers();
-
-    const result = await handlerFor(printHtmlChannel)({ sender: {} }, {
-      html: validOutputHtml(),
-      printOptions: {
-        landscape: true,
-        marginType: "custom",
-        margins: { bottom: 0.25, left: 0.25, right: 0.25, top: 0.25 },
-        pageSize: "A3",
-        scaleFactor: 1.25
-      },
-      title: "Note"
-    });
-
-    expect(result).toEqual({ ok: true, value: { status: "printed" } });
-    expect(electronMock.print).toHaveBeenCalledWith(expect.objectContaining({
-      landscape: true,
-      pageSize: "A3",
-      printBackground: true,
-      scaleFactor: 1.25,
-      silent: false
-    }), expect.any(Function));
-    expect(electronMock.destroy).toHaveBeenCalled();
-  });
-
-  it("実印刷で危険なHTMLはhidden windowを作らない", async () => {
-    registerOutputHandlers();
-
-    const result = await handlerFor(printHtmlChannel)({ sender: {} }, {
-      html: validOutputHtml("<script>alert(1)</script>"),
-      title: "Note"
-    });
-
-    expect(result).toEqual({
-      ok: false,
-      error: expect.objectContaining({ code: "OUTPUT_PRINT_INVALID_INPUT" })
-    });
-    expect(electronMock.print).not.toHaveBeenCalled();
     expect(electronMock.loadURL).not.toHaveBeenCalled();
   });
 
@@ -324,11 +303,15 @@ describe("outputHandlers", () => {
     ];
 
     for (const html of invalidHtmlValues) {
-      const result = await handlerFor(printHtmlChannel)({ sender: {} }, { html, title: "Note" });
+      const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
+        defaultFileName: "Note",
+        html,
+        title: "Note"
+      });
 
       expect(result).toEqual({
         ok: false,
-        error: expect.objectContaining({ code: "OUTPUT_PRINT_INVALID_INPUT" })
+        error: expect.objectContaining({ code: "OUTPUT_PDF_INVALID_INPUT" })
       });
     }
     expect(electronMock.loadURL).not.toHaveBeenCalled();
@@ -351,10 +334,12 @@ describe("outputHandlers", () => {
     expect(electronMock.loadURL).not.toHaveBeenCalled();
   });
 
-  it("出力用ウィンドウはPDF/印刷HTMLでインラインスクリプトを無効化する", async () => {
+  it("PDF出力用ウィンドウはインラインスクリプトを無効化する", async () => {
+    electronMock.showSaveDialog.mockResolvedValue({ canceled: false, filePath: "/tmp/out.pdf" });
     registerOutputHandlers();
 
-    await handlerFor(printHtmlChannel)({ sender: {} }, {
+    await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
+      defaultFileName: "Note",
       html: validOutputHtml(),
       title: "Note"
     });
@@ -504,153 +489,4 @@ describe("outputHandlers", () => {
     expect(electronMock.clipboardWriteText).not.toHaveBeenCalledWith(expect.stringContaining("javascript:"));
   });
 
-  it("印刷時は一時PDFをChromiumのPDFプレビューとして開く", async () => {
-    registerOutputHandlers();
-
-    const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
-      html: validOutputHtml(),
-      title: "Note"
-    });
-
-    expect(result).toEqual({ ok: true, value: { status: "printed" } });
-    expect(electronMock.printToPDF).toHaveBeenCalledWith(expect.not.objectContaining({
-      margins: expect.anything()
-    }));
-    expect(electronMock.show).toHaveBeenCalled();
-    expect(electronMock.focus).toHaveBeenCalled();
-    expect(electronMock.print).not.toHaveBeenCalled();
-    expect(electronMock.browserWindowOn).toHaveBeenCalledWith("closed", expect.any(Function));
-    expect(fsMock.rm).toHaveBeenCalledWith(printPreviewDirectoryName, { force: true, recursive: true });
-    expect(fsMock.mkdir).toHaveBeenCalledWith(printPreviewDirectoryName, { recursive: true });
-    expect(fsMock.writeFile).toHaveBeenCalledWith(
-      expect.stringMatching(new RegExp(`${escapeRegExp(printPreviewDirectoryName)}\\/\\.preview-.+\\.pdf\\..+\\.tmp$`)),
-      Buffer.from("pdf"),
-      undefined
-    );
-    expect(fsMock.rename).toHaveBeenCalledWith(
-      expect.stringMatching(new RegExp(`${escapeRegExp(printPreviewDirectoryName)}\\/\\.preview-.+\\.pdf\\..+\\.tmp$`)),
-      expect.stringMatching(new RegExp(`${escapeRegExp(printPreviewDirectoryName)}\\/preview-.+\\.pdf$`))
-    );
-    expect(electronMock.loadURL.mock.calls.at(-1)?.[0]).toMatch(new RegExp(`^file:\\/\\/\\/tmp\\/relic-print-preview-${process.pid}\\/preview-.+\\.pdf$`));
-    expect(electronMock.loadURL.mock.calls.at(-1)?.[0]).not.toContain("Note");
-    expect(electronMock.browserWindowOptions.at(-1)?.webPreferences).toEqual(
-      expect.objectContaining({
-        contextIsolation: true,
-        javascript: true,
-        nodeIntegration: false,
-        partition: "relic-output",
-        sandbox: true
-      })
-    );
-
-    const printPreviewNavigationHandler = electronMock.webContentsOn.mock.calls
-      .filter(([eventName]) => eventName === "will-navigate")
-      .at(-1)?.[1] as ((event: { preventDefault: () => void }, url: string) => void) | undefined;
-    const pdfUrl = electronMock.loadURL.mock.calls.at(-1)?.[0] as string;
-    const allowedNavigation = { preventDefault: vi.fn() };
-    const blockedNavigation = { preventDefault: vi.fn() };
-    printPreviewNavigationHandler?.(allowedNavigation, pdfUrl);
-    printPreviewNavigationHandler?.(blockedNavigation, "data:text/html,<script>alert(1)</script>");
-    expect(allowedNavigation.preventDefault).not.toHaveBeenCalled();
-    expect(blockedNavigation.preventDefault).toHaveBeenCalled();
-
-    const html = loadedHtmlAt(0);
-    expect(html).toContain("本文");
-
-    const closeHandler = electronMock.browserWindowOn.mock.calls.find(([eventName]) => eventName === "closed")?.[1] as (() => void) | undefined;
-    closeHandler?.();
-    expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`${escapeRegExp(printPreviewDirectoryName)}\\/preview-.+\\.pdf$`)));
-  });
-
-  it("印刷プレビューで検証済み用紙設定をprintToPDFへ渡す", async () => {
-    registerOutputHandlers();
-
-    const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
-      html: validOutputHtml(),
-      printOptions: {
-        landscape: true,
-        marginType: "custom",
-        margins: {
-          bottom: 0.236,
-          left: 0.236,
-          right: 0.236,
-          top: 0.236
-        },
-        pageSize: "A3",
-        scaleFactor: 1.25
-      },
-      title: "Note"
-    });
-
-    expect(result).toEqual({ ok: true, value: { status: "printed" } });
-    expect(electronMock.printToPDF).toHaveBeenCalledWith(expect.objectContaining({
-      landscape: true,
-      margins: {
-        bottom: 0.236,
-        left: 0.236,
-        marginType: "custom",
-        right: 0.236,
-        top: 0.236
-      },
-      pageSize: "A3",
-      scaleFactor: 1.25
-    }));
-  });
-
-  it("印刷プレビューでHTMLが空の場合は入力エラーになる", async () => {
-    registerOutputHandlers();
-
-    const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
-      html: "",
-      title: "Note"
-    });
-
-    expect(result).toEqual({
-      ok: false,
-      error: expect.objectContaining({ code: "OUTPUT_PRINT_INVALID_INPUT" })
-    });
-    expect(electronMock.printToPDF).not.toHaveBeenCalled();
-    expect(electronMock.loadURL).not.toHaveBeenCalled();
-  });
-
-  it("印刷プレビューでHTMLサイズ上限を超えると入力エラーになり、hidden windowを作らない", async () => {
-    registerOutputHandlers();
-
-    const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
-      html: "a".repeat(previewOutputHtmlMaxBytes + 1),
-      title: "Note"
-    });
-
-    expect(result).toEqual({
-      ok: false,
-      error: expect.objectContaining({ code: "OUTPUT_PRINT_INVALID_INPUT" })
-    });
-    expect(electronMock.printToPDF).not.toHaveBeenCalled();
-    expect(electronMock.loadURL).not.toHaveBeenCalled();
-  });
-
-  it("印刷プレビューでCSPのないHTMLは入力エラーになり、hidden windowを作らない", async () => {
-    registerOutputHandlers();
-
-    const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
-      html: "<!doctype html><html><head><title>Note</title></head><body><main class=\"relic-output-body\">本文</main></body></html>",
-      title: "Note"
-    });
-
-    expect(result).toEqual({
-      ok: false,
-      error: expect.objectContaining({ code: "OUTPUT_PRINT_INVALID_INPUT" })
-    });
-    expect(electronMock.printToPDF).not.toHaveBeenCalled();
-    expect(electronMock.loadURL).not.toHaveBeenCalled();
-  });
-
-  it("印刷プレビュー起動時の古い一時PDF削除に失敗してもハンドラ登録を続ける", async () => {
-    fsMock.rm.mockRejectedValue(new Error("cleanup failed"));
-
-    expect(() => registerOutputHandlers()).not.toThrow();
-
-    expect(fsMock.rm).toHaveBeenCalledWith(printPreviewDirectoryName, { force: true, recursive: true });
-    expect(electronMock.handle).toHaveBeenCalledWith(printPreviewChannel, expect.any(Function));
-  });
 });

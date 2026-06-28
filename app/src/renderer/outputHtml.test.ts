@@ -13,7 +13,7 @@ describe("outputHtml", () => {
     document.body.replaceChildren();
   });
 
-  it("印刷/PDF用HTMLにアプリUIを含めない", async () => {
+  it("PDF用HTMLにアプリUIを含めない", async () => {
     const t = createTranslator("ja");
     const result = await buildPreviewOutputHtml({
       content: "# タイトル\n\n本文\n\n| A | B |\n| - | - |\n| 1 | 2 |",
@@ -36,7 +36,7 @@ describe("outputHtml", () => {
     expect(result.html).not.toContain("right-panel");
   });
 
-  it("印刷/PDF用HTMLに危険なMarkdown由来HTMLを残さない", async () => {
+  it("PDF用HTMLに危険なMarkdown由来HTMLを残さない", async () => {
     const t = createTranslator("ja");
     const result = await buildPreviewOutputHtml({
       content: [
@@ -68,7 +68,7 @@ describe("outputHtml", () => {
     expect(document.querySelector("meta[http-equiv='refresh']")).toBeNull();
   });
 
-  it("印刷/PDF用HTMLでも通常Markdown、コードブロック、KaTeX、Mermaid枠を維持する", async () => {
+  it("PDF用HTMLでも通常Markdown、コードブロック、KaTeX、Mermaid枠を維持する", async () => {
     const t = createTranslator("ja");
     const result = await buildPreviewOutputHtml({
       content: [

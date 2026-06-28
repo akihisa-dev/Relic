@@ -17,7 +17,6 @@ interface PaneTabsProps {
   onCloseTabsToRight: (pane: PaneId, tabId: string) => void;
   onDuplicateTabFile?: (tabId: string) => void;
   onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
-  onPrintPreview: (tab: FileTab) => void;
   onRevealTabFile?: (tabId: string) => void;
   onSavePreviewAsPdf: (tab: FileTab) => void;
   onTabClose: (pane: PaneId, tabId: string) => void;
@@ -38,7 +37,6 @@ export function PaneTabs({
   onCloseTabsToRight,
   onDuplicateTabFile,
   onOpenInOtherPane,
-  onPrintPreview,
   onRevealTabFile,
   onSavePreviewAsPdf,
   onTabClose,
@@ -92,7 +90,6 @@ export function PaneTabs({
         onCloseTabsToRight={(tabId) => onCloseTabsToRight(pane, tabId)}
         onDuplicateTabFile={onDuplicateTabFile}
         onOpenInOtherPane={(tabId) => onOpenInOtherPane(pane, tabId)}
-        onPrintPreview={onPrintPreview}
         onRevealTabFile={onRevealTabFile}
         onSavePreviewAsPdf={onSavePreviewAsPdf}
         onTabClose={(tabId) => onTabClose(pane, tabId)}

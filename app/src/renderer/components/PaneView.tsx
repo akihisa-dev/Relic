@@ -41,7 +41,6 @@ export interface PaneViewProps {
   onLargeMarkdownFallback?: (name: string, path: string) => void;
   onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
   onRenameFile: (path: string, name: string) => void;
-  onPrintPreview: (tab: FileTab) => void;
   onRevealTabFile?: (tabId: string) => void;
   onSavePreviewAsPdf: (tab: FileTab) => void;
   onScrollTargetHandled?: () => void;
@@ -83,7 +82,6 @@ export function PaneView({
   onLargeMarkdownFallback,
   onOpenInOtherPane,
   onRenameFile,
-  onPrintPreview,
   onRevealTabFile,
   onSavePreviewAsPdf,
   onScrollTargetHandled,
@@ -161,7 +159,6 @@ export function PaneView({
         onCloseTabsToRight={onCloseTabsToRight}
         onDuplicateTabFile={onDuplicateTabFile}
         onOpenInOtherPane={onOpenInOtherPane}
-        onPrintPreview={onPrintPreview}
         onRevealTabFile={onRevealTabFile}
         onSavePreviewAsPdf={onSavePreviewAsPdf}
         onTabClose={onTabClose}

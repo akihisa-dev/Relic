@@ -1,6 +1,4 @@
 export const savePreviewAsPdfChannel = "output:savePreviewAsPdf";
-export const printPreviewChannel = "output:printPreview";
-export const printHtmlChannel = "output:printHtml";
 export const saveDiagramSvgChannel = "output:saveDiagramSvg";
 export const copyDiagramSvgChannel = "output:copyDiagramSvg";
 export const previewOutputHtmlMaxBytes = 2 * 1024 * 1024;
@@ -10,23 +8,11 @@ export type OutputDiagramLanguage = "d2" | "mermaid";
 export interface SavePreviewAsPdfInput {
   defaultFileName: string;
   html: string;
-  printOptions?: OutputPrintOptions;
+  pdfOptions?: OutputPdfOptions;
   title: string;
 }
 
-export interface PrintPreviewInput {
-  html: string;
-  printOptions?: OutputPrintOptions;
-  title: string;
-}
-
-export interface PrintHtmlInput {
-  html: string;
-  printOptions?: OutputPrintOptions;
-  title: string;
-}
-
-export interface OutputPrintOptions {
+export interface OutputPdfOptions {
   landscape: boolean;
   marginType: "custom" | "none";
   margins: {
@@ -53,10 +39,6 @@ export interface CopyDiagramSvgInput {
 export interface OutputSavedResult {
   filePath?: string;
   status: "saved" | "canceled";
-}
-
-export interface OutputPrintResult {
-  status: "printed" | "canceled";
 }
 
 export interface OutputCopyResult {
