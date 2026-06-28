@@ -162,6 +162,7 @@ function isWorkspaceDerivedDataOptions(
     "fileTree" in value ||
     "filePaths" in value ||
     "cachePath" in value ||
+    "maxSearchFileBytes" in value ||
     "parseCache" in value;
 }
 

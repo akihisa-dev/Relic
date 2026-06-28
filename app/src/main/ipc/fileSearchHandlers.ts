@@ -17,7 +17,11 @@ import { fail, ok } from "../../shared/result";
 import { readBacklinks } from "../files/backlinks";
 import { readMarkdownFile } from "../files/markdownFiles";
 import { applySearchAndReplace, replaceInFile, searchAndReplace } from "../files/replace";
-import { searchWorkspace } from "../files/search";
+import { searchWorkspace, workspaceSearchMaxFileBytes } from "../files/search";
+import {
+  getWorkspaceDerivedDataSnapshot,
+  invalidateWorkspaceDerivedData
+} from "../files/workspaceDerivedDataSession";
 import { getWorkspaceFileIndexCachePath } from "../files/workspaceFileIndex";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import {
@@ -50,16 +54,26 @@ export function registerFileSearchHandlers(): void {
             return ok({ results: [], skippedLongLines: 0, skippedLargeFiles: 0, truncated: false });
           }
 
+          const cachePath = getWorkspaceFileIndexCachePath(
+            context.userDataPath,
+            context.activeWorkspace.id
+          );
+          const snapshot = await getWorkspaceDerivedDataSnapshot({
+            cachePath,
+            maxSearchFileBytes: workspaceSearchMaxFileBytes,
+            workspaceId: context.activeWorkspace.id,
+            workspacePath: context.activeWorkspace.path
+          });
+
           return searchWorkspace(
             context.activeWorkspace.path,
             searchInput.query,
             searchInput.mode,
             searchInput.frontmatterField,
             {
-              cachePath: getWorkspaceFileIndexCachePath(
-                context.userDataPath,
-                context.activeWorkspace.id
-              )
+              cachePath,
+              fileIndex: snapshot.fileIndex,
+              parseCache: snapshot.parseCache
             }
           );
         }
@@ -100,12 +114,23 @@ export function registerFileSearchHandlers(): void {
 
       return withActiveWorkspaceContext(
         { code: "BACKLINKS_READ_FAILED", message: "バックリンクを読み込めませんでした。" },
-        async (context) => readBacklinks(context.activeWorkspace.path, input.path, {
-          cachePath: getWorkspaceFileIndexCachePath(
+        async (context) => {
+          const cachePath = getWorkspaceFileIndexCachePath(
             context.userDataPath,
             context.activeWorkspace.id
-          )
-        })
+          );
+          const snapshot = await getWorkspaceDerivedDataSnapshot({
+            cachePath,
+            workspaceId: context.activeWorkspace.id,
+            workspacePath: context.activeWorkspace.path
+          });
+
+          return readBacklinks(context.activeWorkspace.path, input.path, {
+            cachePath,
+            fileIndex: snapshot.fileIndex,
+            parseCache: snapshot.parseCache
+          });
+        }
       );
     } catch (error) {
       return fail(
@@ -124,13 +149,17 @@ export function registerFileSearchHandlers(): void {
 
       return withActiveWorkspaceContext(
         { code: "REPLACE_FAILED", message: "置換できませんでした。" },
-        async (context) => replaceInFile(
-          context.activeWorkspace.path,
-          input.path,
-          input.searchQuery,
-          input.replacement,
-          input.isRegex
-        )
+        async (context) => {
+          const result = await replaceInFile(
+            context.activeWorkspace.path,
+            input.path,
+            input.searchQuery,
+            input.replacement,
+            input.isRegex
+          );
+          if (result.ok) invalidateWorkspaceDerivedData(context.activeWorkspace.id);
+          return result;
+        }
       );
     } catch (error) {
       return fail(
@@ -173,14 +202,18 @@ export function registerFileSearchHandlers(): void {
 
       return withActiveWorkspaceContext(
         { code: "REPLACE_FAILED", message: "一括置換できませんでした。" },
-        async (context) => applySearchAndReplace(
-          context.activeWorkspace.path,
-          input.searchQuery,
-          input.replacement,
-          input.isRegex,
-          undefined,
-          input.expectedFileSnapshots
-        )
+        async (context) => {
+          const result = await applySearchAndReplace(
+            context.activeWorkspace.path,
+            input.searchQuery,
+            input.replacement,
+            input.isRegex,
+            undefined,
+            input.expectedFileSnapshots
+          );
+          if (result.ok) invalidateWorkspaceDerivedData(context.activeWorkspace.id);
+          return result;
+        }
       );
     } catch (error) {
       return fail(

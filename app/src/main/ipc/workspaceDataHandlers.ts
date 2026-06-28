@@ -16,6 +16,10 @@ import { readWorkspaceAliases } from "../files/aliases";
 import { readWorkspaceCharts, updateWorkspaceChartEntry } from "../files/charts";
 import { readFrontmatterValueCandidates } from "../files/frontmatterCandidates";
 import { readWorkspaceTags } from "../files/tags";
+import {
+  getWorkspaceDerivedDataSnapshot,
+  invalidateWorkspaceDerivedData
+} from "../files/workspaceDerivedDataSession";
 import { getWorkspaceFileIndexCachePath } from "../files/workspaceFileIndex";
 import {
   normalizeWorkspaceRelativeSettingPath,
@@ -34,9 +38,17 @@ export function registerWorkspaceDataHandlers(): void {
     try {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
+      const cachePath = getWorkspaceFileIndexCachePath(context.value.userDataPath, context.value.activeWorkspace.id);
+      const snapshot = await getWorkspaceDerivedDataSnapshot({
+        cachePath,
+        workspaceId: context.value.activeWorkspace.id,
+        workspacePath: context.value.activeWorkspace.path
+      });
 
       return readWorkspaceTags(context.value.activeWorkspace.path, {
-        cachePath: getWorkspaceFileIndexCachePath(context.value.userDataPath, context.value.activeWorkspace.id)
+        cachePath,
+        fileIndex: snapshot.fileIndex,
+        parseCache: snapshot.parseCache
       });
     } catch (error) {
       return fail(
@@ -51,9 +63,17 @@ export function registerWorkspaceDataHandlers(): void {
     try {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
+      const cachePath = getWorkspaceFileIndexCachePath(context.value.userDataPath, context.value.activeWorkspace.id);
+      const snapshot = await getWorkspaceDerivedDataSnapshot({
+        cachePath,
+        workspaceId: context.value.activeWorkspace.id,
+        workspacePath: context.value.activeWorkspace.path
+      });
 
       return readFrontmatterValueCandidates(context.value.activeWorkspace.path, {
-        cachePath: getWorkspaceFileIndexCachePath(context.value.userDataPath, context.value.activeWorkspace.id)
+        cachePath,
+        fileIndex: snapshot.fileIndex,
+        parseCache: snapshot.parseCache
       });
     } catch (error) {
       return fail(
@@ -68,9 +88,17 @@ export function registerWorkspaceDataHandlers(): void {
     try {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
+      const cachePath = getWorkspaceFileIndexCachePath(context.value.userDataPath, context.value.activeWorkspace.id);
+      const snapshot = await getWorkspaceDerivedDataSnapshot({
+        cachePath,
+        workspaceId: context.value.activeWorkspace.id,
+        workspacePath: context.value.activeWorkspace.path
+      });
 
       return readWorkspaceAliases(context.value.activeWorkspace.path, {
-        cachePath: getWorkspaceFileIndexCachePath(context.value.userDataPath, context.value.activeWorkspace.id)
+        cachePath,
+        fileIndex: snapshot.fileIndex,
+        parseCache: snapshot.parseCache
       });
     } catch (error) {
       return fail(
@@ -90,8 +118,16 @@ export function registerWorkspaceDataHandlers(): void {
         context.value.userDataPath,
         context.value.activeWorkspace.id
       );
+      const cachePath = getWorkspaceFileIndexCachePath(context.value.userDataPath, context.value.activeWorkspace.id);
+      const snapshot = await getWorkspaceDerivedDataSnapshot({
+        cachePath,
+        workspaceId: context.value.activeWorkspace.id,
+        workspacePath: context.value.activeWorkspace.path
+      });
       return readWorkspaceCharts(context.value.activeWorkspace.path, workspaceSettings.charts, workspaceSettings.chronicleCalendars, {
-        cachePath: getWorkspaceFileIndexCachePath(context.value.userDataPath, context.value.activeWorkspace.id)
+        cachePath,
+        fileIndex: snapshot.fileIndex,
+        parseCache: snapshot.parseCache
       });
     } catch (error) {
       return fail(
@@ -120,9 +156,17 @@ export function registerWorkspaceDataHandlers(): void {
           charts: savedCharts
         })
       );
+      const cachePath = getWorkspaceFileIndexCachePath(context.value.userDataPath, context.value.activeWorkspace.id);
+      const snapshot = await getWorkspaceDerivedDataSnapshot({
+        cachePath,
+        workspaceId: context.value.activeWorkspace.id,
+        workspacePath: context.value.activeWorkspace.path
+      });
 
       return readWorkspaceCharts(context.value.activeWorkspace.path, savedCharts, workspaceSettings.chronicleCalendars, {
-        cachePath: getWorkspaceFileIndexCachePath(context.value.userDataPath, context.value.activeWorkspace.id)
+        cachePath,
+        fileIndex: snapshot.fileIndex,
+        parseCache: snapshot.parseCache
       });
     } catch (error) {
       return fail(
@@ -170,6 +214,7 @@ export function registerWorkspaceDataHandlers(): void {
           chronicleCalendars: savedCalendars
         })
       );
+      invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
 
       return { ok: true as const, value: savedCalendars };
     } catch (error) {
@@ -194,12 +239,14 @@ export function registerWorkspaceDataHandlers(): void {
         context.value.userDataPath,
         context.value.activeWorkspace.id
       );
-      return updateWorkspaceChartEntry(
+      const result = await updateWorkspaceChartEntry(
         context.value.activeWorkspace.path,
         workspaceSettings.charts,
         input,
         workspaceSettings.chronicleCalendars
       );
+      if (result.ok) invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
+      return result;
     } catch (error) {
       return fail(
         "CHART_ENTRY_UPDATE_FAILED",

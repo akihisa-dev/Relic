@@ -30,6 +30,7 @@ import {
 } from "../files/markdownFiles";
 import { readLinkUpdateImpact } from "../files/linkUpdater";
 import { resolveExistingWorkspacePathOrRoot, verifyExistingWorkspacePath } from "../files/paths";
+import { invalidateWorkspaceDerivedData } from "../files/workspaceDerivedDataSession";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
   isCreateMarkdownFileInput,
@@ -84,6 +85,7 @@ export function registerMarkdownFileHandlers(): void {
           return createdFile;
         }
 
+        invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
         return ok(await buildWorkspaceState(context.value.settings));
       } catch (error) {
         return fail(
@@ -116,6 +118,7 @@ export function registerMarkdownFileHandlers(): void {
           return importedFiles;
         }
 
+        invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
         return ok(await buildWorkspaceState(context.value.settings));
       } catch (error) {
         return fail(
@@ -144,6 +147,7 @@ export function registerMarkdownFileHandlers(): void {
           return createdFile;
         }
 
+        invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
         return ok({
           file: createdFile.value,
           workspaceState: await buildWorkspaceState(context.value.settings)
@@ -173,6 +177,7 @@ export function registerMarkdownFileHandlers(): void {
         return duplicatedFile;
       }
 
+      invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
       return ok({
         file: duplicatedFile.value,
         workspaceState: await buildWorkspaceState(context.value.settings)
@@ -205,6 +210,7 @@ export function registerMarkdownFileHandlers(): void {
         return renamedFile;
       }
 
+      invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
       return ok({
         file: renamedFile.value,
         workspaceState: await buildWorkspaceState(context.value.settings)
@@ -237,6 +243,7 @@ export function registerMarkdownFileHandlers(): void {
         return movedFile;
       }
 
+      invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
       return ok({
         file: movedFile.value,
         workspaceState: await buildWorkspaceState(context.value.settings)
