@@ -251,6 +251,15 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 - `.env`、認証情報を含む `.npmrc`、秘密鍵、証明書、ローカルAI/エディタ設定はリポジトリ管理に含めない。プロジェクト設定として追跡する `.npmrc` には認証情報を書かない
 - 依存関係監査は外部 registry に依存情報を送るため、実行前にユーザーの明示許可を得る
 
+### 秘密情報検知
+
+- ローカルpush前とGitHub上のPull Request / `main` pushでは、`.githooks/secret-guard.sh` で秘密情報らしい差分を検知する
+- `.githooks/pre-push` は `.githooks/secret-guard.sh --pre-push` を呼び出し、GitHub Actionsの `Secret Guard` workflow は同じスクリプトを `--range` で呼び出す
+- 検知対象は、`.env`、credentialを示すファイル名、HTTP Authorization header、GitHub token形状、秘密鍵、provider token、認証情報を含むDB接続文字列、AWS access key IDなどに限定する
+- 画像、ZIP、実行ファイルなどtextとして扱う必要がないファイルは検知対象から除外する
+- テストや確認には `.githooks/secret-guard.sh --self-test` を使う。本物のtoken、秘密鍵、実在credentialをテストやログに含めない
+- 誤検知した場合は、検知対象文字列を含まない表現に修正する。秘密情報ではないことを理由に検知ルールを緩める場合は、対象パターンと理由を確認してから行う
+
 ### 依存関係更新
 
 - npm / pnpm 依存関係とGitHub Actionsの更新確認は `.github/dependabot.yml` でGitHub上にPull Requestを作成して行う
