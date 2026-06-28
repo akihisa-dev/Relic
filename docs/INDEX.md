@@ -63,7 +63,6 @@
 | デザイン | `docs/design/` | 画面構成、画面遷移、デザインシステムを扱う |
 | エンジニアリング | `docs/engineering/` | アーキテクチャ、データモデル、技術選定、設計判断を扱う |
 | 開発運用 | `docs/development.md` | Relicの開発ルール全体を扱う |
-| 未決定事項 | `docs/questions.md` | Relic開発で未決定の問いを扱う |
 
 ---
 
@@ -582,7 +581,6 @@
     - `terms.md`
   - `development.md`
   - `INDEX.md`
-  - `questions.md`
 - `scripts/`
   - `debug.bat`
   - `Relicをビルド.bat`
