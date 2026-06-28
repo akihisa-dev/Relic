@@ -507,6 +507,8 @@
       - `paneViewModel.ts`
       - `previewMarkdown.test.ts`
       - `previewMarkdown.ts`
+      - `previewUpdateScheduling.test.ts`
+      - `previewUpdateScheduling.ts`
       - `rightPanelFrontmatterModel.ts`
       - `styles.css`
       - `toolbarCommands.ts`
