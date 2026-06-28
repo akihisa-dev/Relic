@@ -1,7 +1,7 @@
 import { EditorView } from "@codemirror/view";
 
 import { reservedFrontmatterFieldNames } from "../shared/frontmatterFields";
-import { chronicleCalendarIds, type ChronicleCalendarId, type FrontmatterDateFormat, type UserDefinedField } from "../shared/ipc";
+import type { FrontmatterDateFormat, UserDefinedField } from "../shared/ipc";
 
 export type FrontmatterDialogRequest =
   | { type: "array-value"; key: string }
@@ -12,7 +12,7 @@ export const frontmatterFieldNamePattern = /^[^#\s:][^\r\n:]*$/;
 export const fixedFrontmatterFieldNames = reservedFrontmatterFieldNames;
 
 export function shouldSerializeArrayAsFlowSequence(key: string, field?: UserDefinedField): boolean {
-  return key === "aliases" || key === "tags" || isChronicleField(key) || Boolean(field);
+  return key === "aliases" || key === "tags" || Boolean(field);
 }
 
 export function isSingleValueField(field?: UserDefinedField): boolean {
@@ -29,12 +29,11 @@ export function isEditableScalar(value: unknown): boolean {
 
 export function fieldFor(key: string, userDefinedFields: UserDefinedField[]): UserDefinedField | undefined {
   if (key === "aliases" || key === "tags") return { name: key, type: "multi-select" };
-  if (isChronicleField(key)) return { name: key, type: "number" };
   return userDefinedFields.find((field) => field.name === key);
 }
 
-export function isChronicleField(key: string): key is ChronicleCalendarId {
-  return chronicleCalendarIds.includes(key as ChronicleCalendarId);
+export function isChronicleField(key: string): key is "chronicle" {
+  return key === "chronicle";
 }
 
 export function choicesFor(

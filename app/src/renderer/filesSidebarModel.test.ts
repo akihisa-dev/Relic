@@ -16,16 +16,7 @@ describe("filesSidebarModel", () => {
       { name: "date", type: "date" }
     ])).toEqual([
       "aliases",
-      "chronicle0",
-      "chronicle1",
-      "chronicle2",
-      "chronicle3",
-      "chronicle4",
-      "chronicle5",
-      "chronicle6",
-      "chronicle7",
-      "chronicle8",
-      "chronicle9",
+      "chronicle",
       "custom",
       "date",
       "tags"

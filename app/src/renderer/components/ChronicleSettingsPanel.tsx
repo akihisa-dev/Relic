@@ -1,11 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 
-import {
-  chronicleCalendarIds,
-  type ChronicleCalendarId,
-  type ChronicleCalendarSettings
-} from "../../shared/ipc";
+import type { ChronicleCalendarSettings } from "../../shared/ipc";
 import { useT } from "../i18n";
 
 interface ChronicleSettingsPanelProps {
@@ -14,7 +10,6 @@ interface ChronicleSettingsPanelProps {
 }
 
 interface ChronicleCalendarDraft {
-  id: ChronicleCalendarId;
   name: string;
   startYear: string;
 }
@@ -25,10 +20,7 @@ export function ChronicleSettingsPanel({
 }: ChronicleSettingsPanelProps): ReactElement {
   const t = useT();
   const [drafts, setDrafts] = useState<ChronicleCalendarDraft[]>(() => draftsForCalendars(calendars));
-  const nextSubId = useMemo(
-    () => chronicleCalendarIds.slice(1).find((id) => !drafts.some((draft) => draft.id === id)) ?? null,
-    [drafts]
-  );
+  const duplicateNames = duplicateCalendarNames(drafts);
 
   useEffect(() => {
     setDrafts(draftsForCalendars(calendars));
@@ -39,34 +31,31 @@ export function ChronicleSettingsPanel({
     if (parsed) onSave(parsed);
   };
 
-  const updateDraft = (id: ChronicleCalendarId, patch: Partial<ChronicleCalendarDraft>): void => {
+  const updateDraft = (index: number, patch: Partial<ChronicleCalendarDraft>): void => {
     setDrafts((current) => {
-      const next = current.map((draft) => draft.id === id ? { ...draft, ...patch } : draft);
+      const next = current.map((draft, draftIndex) => draftIndex === index ? { ...draft, ...patch } : draft);
       commit(next);
       return next;
     });
   };
 
   const addSubCalendar = (): void => {
-    if (!nextSubId) return;
-
-    const index = Number(nextSubId.replace("chronicle", ""));
     const next = [
       ...drafts,
-      { id: nextSubId, name: `${t("chronicleSettings.subDefaultName")} ${index}`, startYear: "1" }
+      { name: `${t("chronicleSettings.subDefaultName")} ${drafts.length}`, startYear: "1" }
     ];
     setDrafts(next);
     commit(next);
   };
 
-  const removeSubCalendar = (id: ChronicleCalendarId): void => {
-    const next = drafts.filter((draft) => draft.id !== id);
+  const removeSubCalendar = (index: number): void => {
+    const next = drafts.filter((_draft, draftIndex) => draftIndex !== index);
     setDrafts(next);
     commit(next);
   };
 
-  const mainDraft = drafts.find((draft) => draft.id === "chronicle0") ?? { id: "chronicle0", name: "", startYear: "1" };
-  const subDrafts = drafts.filter((draft) => draft.id !== "chronicle0");
+  const mainDraft = drafts[0] ?? { name: "メイン暦", startYear: "" };
+  const subDrafts = drafts.slice(1);
 
   return (
     <div className="settings-page chronicle-settings-page">
@@ -78,11 +67,12 @@ export function ChronicleSettingsPanel({
       <section className="settings-group chronicle-settings-group">
         <div className="chronicle-calendar-section-label">{t("chronicleSettings.mainCalendar")}</div>
         <label className="chronicle-calendar-row chronicle-calendar-row--main">
-          <span>{mainDraft.id}</span>
+          <span>{t("chronicleSettings.calendarName")}</span>
           <input
+            aria-invalid={duplicateNames.has(mainDraft.name.trim()) ? "true" : undefined}
             className="setting-custom-field-input"
             onBlur={() => commit(drafts)}
-            onChange={(event) => updateDraft("chronicle0", { name: event.target.value })}
+            onChange={(event) => updateDraft(0, { name: event.target.value })}
             value={mainDraft.name}
           />
           <span>{t("chronicleSettings.mainStartsAtOne")}</span>
@@ -92,7 +82,6 @@ export function ChronicleSettingsPanel({
           <span>{t("chronicleSettings.subCalendars")}</span>
           <button
             className="frontmatter-field-add-btn chronicle-calendar-add-btn"
-            disabled={!nextSubId}
             onClick={addSubCalendar}
             type="button"
           >
@@ -103,41 +92,44 @@ export function ChronicleSettingsPanel({
           <div className="chronicle-calendar-empty">{t("chronicleSettings.noSubCalendars")}</div>
         ) : (
           <div className="chronicle-calendar-list">
-            {subDrafts.map((draft) => (
-              <div className="chronicle-calendar-row" key={draft.id}>
-                <span>{draft.id}</span>
-                <input
-                  aria-label={t("chronicleSettings.calendarName")}
-                  className="setting-custom-field-input"
-                  onBlur={() => commit(drafts)}
-                  onChange={(event) => updateDraft(draft.id, { name: event.target.value })}
-                  value={draft.name}
-                />
-                <input
-                  aria-label={t("chronicleSettings.startYear")}
-                  aria-invalid={chronicleStartYearError(t, draft) ? "true" : undefined}
-                  className="setting-custom-field-input chronicle-calendar-start-input"
-                  inputMode="numeric"
-                  onBlur={() => commit(drafts)}
-                  onChange={(event) => updateDraft(draft.id, { startYear: event.target.value })}
-                  type="text"
-                  value={draft.startYear}
-                />
-                <button
-                  className="frontmatter-field-delete"
-                  onClick={() => removeSubCalendar(draft.id)}
-                  type="button"
-                >
-                  {t("common.delete")}
-                </button>
-                <div className="chronicle-calendar-preview">
-                  {previewForSubCalendar(t, mainDraft, draft)}
+            {subDrafts.map((draft, subIndex) => {
+              const index = subIndex + 1;
+              const error = chronicleCalendarError(t, draft, duplicateNames);
+              return (
+                <div className="chronicle-calendar-row" key={`${index}-${draft.name}`}>
+                  <span>{t("chronicleSettings.calendarName")}</span>
+                  <input
+                    aria-label={t("chronicleSettings.calendarName")}
+                    aria-invalid={error ? "true" : undefined}
+                    className="setting-custom-field-input"
+                    onBlur={() => commit(drafts)}
+                    onChange={(event) => updateDraft(index, { name: event.target.value })}
+                    value={draft.name}
+                  />
+                  <input
+                    aria-label={t("chronicleSettings.startYear")}
+                    aria-invalid={error ? "true" : undefined}
+                    className="setting-custom-field-input chronicle-calendar-start-input"
+                    inputMode="numeric"
+                    onBlur={() => commit(drafts)}
+                    onChange={(event) => updateDraft(index, { startYear: event.target.value })}
+                    type="text"
+                    value={draft.startYear}
+                  />
+                  <button
+                    className="frontmatter-field-delete"
+                    onClick={() => removeSubCalendar(index)}
+                    type="button"
+                  >
+                    {t("common.delete")}
+                  </button>
+                  <div className="chronicle-calendar-preview">
+                    {previewForSubCalendar(t, mainDraft, draft)}
+                  </div>
+                  {error ? <div className="chronicle-calendar-error">{error}</div> : null}
                 </div>
-                {chronicleStartYearError(t, draft) ? (
-                  <div className="chronicle-calendar-error">{chronicleStartYearError(t, draft)}</div>
-                ) : null}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
@@ -146,41 +138,59 @@ export function ChronicleSettingsPanel({
 }
 
 function draftsForCalendars(calendars: ChronicleCalendarSettings[]): ChronicleCalendarDraft[] {
-  return calendars.map((calendar) => ({
-    id: calendar.id,
+  const drafts = calendars.map((calendar) => ({
     name: calendar.name,
-    startYear: calendar.id === "chronicle0" ? "1" : calendar.startYear === undefined ? "" : String(calendar.startYear)
+    startYear: calendar.startYear === undefined ? "" : String(calendar.startYear)
   }));
+  return drafts.length > 0 ? drafts : [{ name: "メイン暦", startYear: "" }];
 }
 
 function parseDrafts(drafts: ChronicleCalendarDraft[]): ChronicleCalendarSettings[] | null {
+  const names = new Set<string>();
   const parsed: ChronicleCalendarSettings[] = [];
 
-  for (const draft of drafts) {
+  for (const [index, draft] of drafts.entries()) {
     const name = draft.name.trim();
+    if (!name || names.has(name)) return null;
+    names.add(name);
 
-    if (draft.id === "chronicle0") {
-      parsed.push({ id: draft.id, name });
+    if (index === 0) {
+      parsed.push({ name });
       continue;
     }
 
     if (draft.startYear.trim() === "") {
-      parsed.push({ id: draft.id, name });
+      parsed.push({ name });
       continue;
     }
 
     const startYear = Number(draft.startYear);
     if (!Number.isInteger(startYear) || startYear < 1) return null;
-    parsed.push({ id: draft.id, name, startYear });
+    parsed.push({ name, startYear });
   }
 
-  return parsed.sort((a, b) => chronicleCalendarIds.indexOf(a.id) - chronicleCalendarIds.indexOf(b.id));
+  return parsed;
 }
 
-function chronicleStartYearError(
+function duplicateCalendarNames(drafts: ChronicleCalendarDraft[]): Set<string> {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  for (const draft of drafts) {
+    const name = draft.name.trim();
+    if (!name) continue;
+    if (seen.has(name)) duplicates.add(name);
+    seen.add(name);
+  }
+  return duplicates;
+}
+
+function chronicleCalendarError(
   t: ReturnType<typeof useT>,
-  draft: ChronicleCalendarDraft
+  draft: ChronicleCalendarDraft,
+  duplicateNames: Set<string>
 ): string | null {
+  if (!draft.name.trim()) return t("frontmatter.chronicleStartRequired");
+  if (duplicateNames.has(draft.name.trim())) return t("frontmatter.duplicateProperty");
   if (draft.startYear.trim() === "") return null;
   const startYear = Number(draft.startYear);
   return Number.isInteger(startYear) && startYear >= 1 ? null : t("chronicleSettings.invalidStartYear");
@@ -197,20 +207,9 @@ function previewForSubCalendar(
     return t("chronicleSettings.conversionPreviewUnavailable");
   }
 
-  const mainName = mainDraft.name.trim() || mainDraft.id;
-  const subName = draft.name.trim();
-
-  if (!subName) {
-    return t("chronicleSettings.conversionPreviewFallback", {
-      mainName,
-      startYear,
-      subId: draft.id
-    });
-  }
-
   return t("chronicleSettings.conversionPreview", {
-    mainName,
+    mainName: mainDraft.name.trim() || "メイン暦",
     startYear,
-    subName
+    subName: draft.name.trim() || t("chronicleSettings.subDefaultName")
   });
 }

@@ -4,7 +4,7 @@ import {
   userDefinedFieldTypes,
   userDefinedFieldTypeNeedsChoices
 } from "../shared/frontmatterFields";
-import { chronicleCalendarIds, type UserDefinedField, type UserDefinedFieldType } from "../shared/ipc";
+import type { UserDefinedField, UserDefinedFieldType } from "../shared/ipc";
 import type { TranslationKey, Translator } from "./i18nModel";
 
 export const FIELD_TYPES = userDefinedFieldTypes;
@@ -39,11 +39,11 @@ export type FixedFieldDefinition = {
   examples: TranslationKey[];
 };
 
-export const CHRONICLE_FIXED_FIELDS: FixedFieldDefinition[] = chronicleCalendarIds.map((name) => ({
-  name,
+export const CHRONICLE_FIXED_FIELDS: FixedFieldDefinition[] = [{
+  name: "chronicle",
   descriptionKey: "settings.fixedFieldChronicleDescription",
   examples: ["settings.fixedFieldChronicleSingleExample", "settings.fixedFieldChronicleRangeExample"]
-}));
+}];
 
 export const STANDARD_FIXED_FIELDS: FixedFieldDefinition[] = [
   {

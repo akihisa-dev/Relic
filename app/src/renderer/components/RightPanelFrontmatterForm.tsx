@@ -1,11 +1,10 @@
 import * as yaml from "js-yaml";
 import type { ChangeEvent, ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import {
   choicesFor,
-  chronicleInputValue,
   dateInputValue,
   fieldFor,
   firstArrayValue,
@@ -202,7 +201,7 @@ function FrontmatterValueControl({
   value: unknown;
 }): ReactElement {
   if (isChronicleField(name)) {
-    return <ChronicleControl name={name} value={Array.isArray(value) ? value : []} onUpdateField={onUpdateField} />;
+    return <ChronicleControl calendarCandidates={candidates[name] ?? []} name={name} value={Array.isArray(value) ? value : []} onUpdateField={onUpdateField} />;
   }
   if (field?.type === "boolean") {
     const checkedValue = firstArrayValue(value);
@@ -309,50 +308,93 @@ function ScalarControl({
 }
 
 function ChronicleControl({
+  calendarCandidates,
   name,
   onUpdateField,
   value
 }: {
+  calendarCandidates: string[];
   name: string;
   onUpdateField: (key: string, value: unknown) => void;
   value: unknown[];
 }): ReactElement {
-  const t = useT();
-  const [error, setError] = useState<string | null>(null);
-  const startValue = chronicleInputValue(value[0]);
-  const endValue = value.length > 1 ? chronicleInputValue(value[1]) : "";
-
-  const commit = (startRaw: string, endRaw: string): void => {
-    const allowZeroOrNegative = name !== "chronicle0";
-    const startYear = parseChronicleYearInput(startRaw.trim(), allowZeroOrNegative);
-    const endYear = parseChronicleYearInput(endRaw.trim(), allowZeroOrNegative);
-    if (!startRaw.trim() && !endRaw.trim()) {
-      setError(null);
-      onUpdateField(name, undefined);
-      return;
-    }
-    if (!startRaw.trim()) {
-      setError(t("frontmatter.chronicleStartRequired"));
-      return;
-    }
-    if (startYear === null || (endRaw.trim() && endYear === null)) {
-      setError(t(allowZeroOrNegative ? "frontmatter.invalidSubChronicleYear" : "frontmatter.invalidChronicleYear"));
-      return;
-    }
-    if (endYear !== null && startYear > endYear) {
-      setError(t("frontmatter.invalidChronicleRange"));
-      return;
-    }
-    setError(null);
-    onUpdateField(name, endYear === null || endYear === startYear ? [startYear] : [startYear, endYear]);
+  const entries = normalizeChronicleEntries(value);
+  const updateEntry = (index: number, entry: ChronicleFormEntry): void => {
+    onUpdateField(name, entries.map((item, entryIndex) => entryIndex === index ? serializeChronicleEntry(entry) : serializeChronicleEntry(item)));
   };
 
   return (
-    <span className="cm-frontmatter-input-wrap cm-frontmatter-chronicle">
-      <input aria-label={`${name} ${t("frontmatter.rangeStart")}`} className="cm-frontmatter-input" defaultValue={startValue} inputMode="numeric" onBlur={(event) => commit(event.target.value, event.currentTarget.parentElement?.querySelectorAll("input")[1]?.value ?? "")} placeholder={t("frontmatter.rangeStart")} type="text" />
-      <input aria-label={`${name} ${t("frontmatter.rangeEnd")}`} className="cm-frontmatter-input" defaultValue={endValue} inputMode="numeric" onBlur={(event) => commit(event.currentTarget.parentElement?.querySelectorAll("input")[0]?.value ?? "", event.target.value)} placeholder={t("frontmatter.rangeEnd")} type="text" />
+    <div className="cm-frontmatter-input-wrap cm-frontmatter-chronicle cm-frontmatter-chronicle-list">
+      {entries.map((entry, index) => (
+        <ChronicleEntryControl
+          entry={entry}
+          index={index}
+          key={index}
+          calendarCandidates={calendarCandidates}
+          onDelete={() => onUpdateField(name, entries.flatMap((item, entryIndex) => entryIndex === index ? [] : [serializeChronicleEntry(item)]))}
+          onUpdate={(nextEntry) => updateEntry(index, nextEntry)}
+        />
+      ))}
+      <button
+        className="cm-frontmatter-pill-add"
+        onClick={() => onUpdateField(name, [...entries.map(serializeChronicleEntry), serializeChronicleEntry(emptyChronicleEntry())])}
+        type="button"
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
+interface ChronicleFormEntry {
+  calendarName: string;
+  endMonth: string;
+  endYear: string;
+  startMonth: string;
+  startYear: string;
+}
+
+function ChronicleEntryControl({
+  calendarCandidates,
+  entry,
+  index,
+  onDelete,
+  onUpdate
+}: {
+  calendarCandidates: string[];
+  entry: ChronicleFormEntry;
+  index: number;
+  onDelete: () => void;
+  onUpdate: (entry: ChronicleFormEntry) => void;
+}): ReactElement {
+  const [draft, setDraft] = useState(entry);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDraft(entry);
+  }, [entry.calendarName, entry.endMonth, entry.endYear, entry.startMonth, entry.startYear]);
+
+  const commit = (): void => {
+    const validation = validateChronicleEntry(draft);
+    setError(validation);
+    if (!validation) onUpdate(draft);
+  };
+
+  return (
+    <div className="cm-frontmatter-chronicle-entry">
+      <input aria-label={`chronicle ${index} calendar`} className="cm-frontmatter-input" list={`right-chronicle-calendar-options-${index}`} onBlur={commit} onChange={(event) => setDraft({ ...draft, calendarName: event.target.value })} placeholder="暦名" type="text" value={draft.calendarName} />
+      {calendarCandidates.length > 0 ? (
+        <datalist id={`right-chronicle-calendar-options-${index}`}>
+          {calendarCandidates.map((candidate) => <option key={candidate} label={candidate} value={candidate}>{candidate}</option>)}
+        </datalist>
+      ) : null}
+      <input aria-label={`chronicle ${index} start year`} className="cm-frontmatter-input" onBlur={commit} onChange={(event) => setDraft({ ...draft, startYear: event.target.value })} placeholder="開始" type="text" value={draft.startYear} />
+      <input aria-label={`chronicle ${index} start month`} className="cm-frontmatter-input" onBlur={commit} onChange={(event) => setDraft({ ...draft, startMonth: event.target.value })} placeholder="月" type="text" value={draft.startMonth} />
+      <input aria-label={`chronicle ${index} end year`} className="cm-frontmatter-input" onBlur={commit} onChange={(event) => setDraft({ ...draft, endYear: event.target.value })} placeholder="終了" type="text" value={draft.endYear} />
+      <input aria-label={`chronicle ${index} end month`} className="cm-frontmatter-input" onBlur={commit} onChange={(event) => setDraft({ ...draft, endMonth: event.target.value })} placeholder="月" type="text" value={draft.endMonth} />
+      <button className="cm-frontmatter-pill-remove" onClick={onDelete} type="button">×</button>
       {error ? <span className="cm-frontmatter-input-error">{error}</span> : null}
-    </span>
+    </div>
   );
 }
 
@@ -467,6 +509,81 @@ function parseDateTextValue(value: string, dateFormat: EditorSettings["frontmatt
   const rawValue = value.trim();
   if (rawValue === "") return undefined;
   return parseDateInputForFormat(rawValue, dateFormat);
+}
+
+function normalizeChronicleEntries(value: unknown[]): ChronicleFormEntry[] {
+  return value.flatMap((entry): ChronicleFormEntry[] => {
+    if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== "string") return [];
+    const range = entry[1];
+    if (!Array.isArray(range) || range.length !== 2) return [];
+    const start = chroniclePointInputValue(range[0]);
+    const end = chroniclePointInputValue(range[1]);
+    if (!start || !end) return [];
+    return [{
+      calendarName: entry[0],
+      endMonth: end.month,
+      endYear: end.year,
+      startMonth: start.month,
+      startYear: start.year
+    }];
+  });
+}
+
+function chroniclePointInputValue(value: unknown): { month: string; year: string } | null {
+  if (!Array.isArray(value) || value.length !== 2) return null;
+  const [year, month] = value;
+  if (!Number.isInteger(year)) return null;
+  if (month !== null && !Number.isInteger(month)) return null;
+  return {
+    month: month === null ? "" : String(month),
+    year: String(year)
+  };
+}
+
+function emptyChronicleEntry(): ChronicleFormEntry {
+  return {
+    calendarName: "メイン暦",
+    endMonth: "",
+    endYear: "1",
+    startMonth: "",
+    startYear: "1"
+  };
+}
+
+function serializeChronicleEntry(entry: ChronicleFormEntry): unknown[] {
+  const startYear = Number(entry.startYear);
+  const endYear = Number(entry.endYear || entry.startYear);
+  const startMonth = entry.startMonth ? Number(entry.startMonth) : null;
+  const endMonth = entry.endMonth ? Number(entry.endMonth) : null;
+
+  return [
+    entry.calendarName.trim(),
+    [
+      [startYear, startMonth],
+      [endYear, endMonth]
+    ]
+  ];
+}
+
+function validateChronicleEntry(entry: ChronicleFormEntry): string | null {
+  if (!entry.calendarName.trim()) return "暦名を入力してください。";
+  const startYear = parseChronicleYearInput(entry.startYear, true);
+  const endYear = entry.endYear ? parseChronicleYearInput(entry.endYear, true) : startYear;
+  const startMonth = parseChronicleMonthInput(entry.startMonth);
+  const endMonth = entry.endMonth ? parseChronicleMonthInput(entry.endMonth) : null;
+
+  if (startYear === null || endYear === null || startYear === 0 || endYear === 0) return "年は0以外の整数で入力してください。";
+  if (startMonth === false || endMonth === false) return "月は1〜12で入力してください。";
+  const startValue = startYear * 12 + ((startMonth || 1) - 1);
+  const endValue = endYear * 12 + ((endMonth || 1) - 1);
+  return startValue <= endValue ? null : "開始年月は終了年月以下にしてください。";
+}
+
+function parseChronicleMonthInput(value: string): number | null | false {
+  if (!value.trim()) return null;
+  if (!/^\d+$/.test(value.trim())) return false;
+  const month = Number(value);
+  return Number.isInteger(month) && month >= 1 && month <= 12 ? month : false;
 }
 
 function safeId(value: string): string {

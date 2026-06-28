@@ -9,6 +9,26 @@ export function yearToAxis(year: number): number {
   return year < 0 ? year : year - 1;
 }
 
+export function pointToMonthAxis(year: number, month: number | null): number {
+  const normalizedMonth = month ?? 1;
+  return yearToAxis(year) * 12 + normalizedMonth - 1;
+}
+
+export function monthAxisToYear(value: number): number {
+  return axisToYear(Math.floor(value / 12));
+}
+
+export function monthAxisToMonth(value: number): number {
+  return modulo(value, 12) + 1;
+}
+
+export function monthAxisToPoint(value: number): { month: number; year: number } {
+  return {
+    month: monthAxisToMonth(value),
+    year: monthAxisToYear(value)
+  };
+}
+
 export function dateToDay(value: string): number {
   return Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / dayMilliseconds);
 }
@@ -43,4 +63,8 @@ export function shiftDateYears(value: string, deltaYears: number): string {
   const next = new Date(Date.UTC(nextYear, month, Math.min(day, lastDay)));
 
   return next.toISOString().slice(0, 10);
+}
+
+function modulo(value: number, divisor: number): number {
+  return ((value % divisor) + divisor) % divisor;
 }

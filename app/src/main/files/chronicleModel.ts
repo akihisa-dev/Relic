@@ -1,51 +1,91 @@
 import type {
-  ChronicleCalendarId,
-  ChronicleCalendarSettings
+  ChronicleCalendarSettings,
+  ChroniclePoint
 } from "../../shared/ipc";
 
-export function extractFirstChronicleRangeFromData(
+export interface ChronicleRange {
+  calendar: ChronicleCalendarSettings;
+  calendarName: string;
+  end: ChroniclePoint;
+  entryIndex: number;
+  start: ChroniclePoint;
+}
+
+export type ChronicleYamlEntry = [
+  string,
+  [
+    [number, number | null],
+    [number, number | null]
+  ]
+];
+
+export function extractChronicleRangesFromData(
   data: Record<string, unknown>,
   calendars: ChronicleCalendarSettings[]
-): { calendar: ChronicleCalendarSettings; endYear: number; startYear: number } | null {
-  for (const calendar of calendars) {
-    if (!isChronicleCalendarActive(calendar)) continue;
+): ChronicleRange[] {
+  const chronicle = data.chronicle;
+  if (!Array.isArray(chronicle)) return [];
 
-    const range = extractChronicleRangeFromData(data, calendar.id);
+  return chronicle.flatMap((entry, entryIndex): ChronicleRange[] => {
+    const parsed = parseChronicleYamlEntry(entry);
+    if (!parsed) return [];
 
-    if (range) return { ...range, calendar };
-  }
+    const calendar = calendarByName(calendars, parsed[0]);
+    if (!calendar) return [];
 
-  return null;
+    const start = tupleToPoint(parsed[1][0]);
+    const end = tupleToPoint(parsed[1][1]);
+
+    if (!isValidChronicleRange(start, end)) return [];
+
+    return [{
+      calendar,
+      calendarName: parsed[0],
+      end,
+      entryIndex,
+      start
+    }];
+  });
 }
 
-export function extractChronicleRangeFromData(
-  data: Record<string, unknown>,
-  fieldName: ChronicleCalendarId
-): { endYear: number; startYear: number } | null {
-  const value = data[fieldName];
+export function parseChronicleYamlEntry(value: unknown): ChronicleYamlEntry | null {
+  if (!Array.isArray(value) || value.length !== 2) return null;
 
-  if (!Array.isArray(value) || (value.length !== 1 && value.length !== 2)) return null;
-  if (!value.every((year) => isValidChronicleYear(year, fieldName !== "chronicle0"))) return null;
+  const [calendarName, range] = value;
+  if (typeof calendarName !== "string" || calendarName.trim() === "") return null;
+  if (!Array.isArray(range) || range.length !== 2) return null;
 
-  const startYear = value[0];
-  const endYear = value.length === 1 ? startYear : value[1];
+  const start = parseChroniclePointTuple(range[0]);
+  const end = parseChroniclePointTuple(range[1]);
+  if (!start || !end) return null;
 
-  if (typeof startYear !== "number" || typeof endYear !== "number") return null;
-
-  if (startYear > endYear) return null;
-
-  return { endYear, startYear };
+  return [calendarName.trim(), [start, end]];
 }
 
-export function calendarById(
+export function chronicleYamlEntry(
+  calendarName: string,
+  start: ChroniclePoint,
+  end: ChroniclePoint
+): ChronicleYamlEntry {
+  return [
+    calendarName.trim(),
+    [
+      [start.year, start.month],
+      [end.year, end.month]
+    ]
+  ];
+}
+
+export function calendarByName(
   calendars: ChronicleCalendarSettings[],
-  id: ChronicleCalendarId
+  name: string
 ): ChronicleCalendarSettings | null {
-  return calendars.find((calendar) => calendar.id === id) ?? null;
+  const normalized = name.trim();
+  return calendars.find((calendar) => calendar.name.trim() === normalized) ?? null;
 }
 
 export function calendarMainStartYear(calendar: ChronicleCalendarSettings): number {
-  return calendar.id === "chronicle0" ? 1 : calendar.startYear ?? 1;
+  return calendar.startYear ?? 1;
 }
 
 export function calendarYearToMainYear(calendar: ChronicleCalendarSettings, year: number): number {
@@ -56,19 +96,37 @@ export function mainYearToCalendarYear(calendar: ChronicleCalendarSettings, main
   return mainYear - calendarMainStartYear(calendar) + 1;
 }
 
-export function formatCalendarYear(calendar: ChronicleCalendarSettings, year: number): string {
-  return `${calendar.name.trim() || calendar.id} ${formatYear(year)}`;
+export function formatCalendarPoint(calendarName: string, point: ChroniclePoint): string {
+  return `${calendarName} ${formatPoint(point)}`;
 }
 
-function isValidChronicleYear(value: unknown, allowZeroOrNegative: boolean): value is number {
-  return typeof value === "number" && Number.isInteger(value) && (allowZeroOrNegative || value >= 1);
+export function formatPoint(point: ChroniclePoint): string {
+  const year = point.year < 0 ? `−${Math.abs(point.year)}` : String(point.year);
+  return point.month === null ? year : `${year}-${String(point.month).padStart(2, "0")}`;
 }
 
-function isChronicleCalendarActive(calendar: ChronicleCalendarSettings): boolean {
-  return calendar.id === "chronicle0" ||
-    (Number.isInteger(calendar.startYear) && Number(calendar.startYear) >= 1);
+export function isValidChronicleRange(start: ChroniclePoint, end: ChroniclePoint): boolean {
+  return compareChroniclePoints(start, end) <= 0;
 }
 
-function formatYear(year: number): string {
-  return year < 0 ? `−${Math.abs(year)}` : String(year);
+export function compareChroniclePoints(a: ChroniclePoint, b: ChroniclePoint): number {
+  return pointSortValue(a) - pointSortValue(b);
+}
+
+function parseChroniclePointTuple(value: unknown): [number, number | null] | null {
+  if (!Array.isArray(value) || value.length !== 2) return null;
+  const [year, month] = value;
+
+  if (!Number.isInteger(year) || Number(year) === 0) return null;
+  if (month !== null && (!Number.isInteger(month) || Number(month) < 1 || Number(month) > 12)) return null;
+
+  return [Number(year), month === null ? null : Number(month)];
+}
+
+function tupleToPoint(tuple: [number, number | null]): ChroniclePoint {
+  return { month: tuple[1], year: tuple[0] };
+}
+
+function pointSortValue(point: ChroniclePoint): number {
+  return point.year * 12 + (point.month ?? 1);
 }

@@ -4,7 +4,6 @@ import * as yaml from "js-yaml";
 import type { FrontmatterDateFormat, UserDefinedField } from "../shared/ipc";
 import {
   choicesFor,
-  chronicleInputValue,
   dateInputValue,
   firstArrayValue,
   inputTypeFor,
@@ -40,7 +39,7 @@ export function createFrontmatterValueInput({
   value: unknown;
   view: EditorView;
 }): HTMLElement {
-  if (isChronicleField(key)) return chronicleInput(view, key, Array.isArray(value) ? value : [], updateField, t);
+  if (isChronicleField(key)) return chronicleInput(view, Array.isArray(value) ? value : [], updateField, t, candidates[key] ?? []);
   if (field?.type === "boolean") return booleanInput(view, key, firstArrayValue(value), updateField, true);
   if (isSingleValueField(field)) {
     return scalarInput(view, key, firstArrayValue(value), field, candidates, updateField, dateFormat, true);
@@ -194,92 +193,51 @@ function booleanInput(
 
 function chronicleInput(
   view: EditorView,
-  key: string,
   value: unknown[],
   updateField: FrontmatterFieldUpdater,
-  t: Translator
+  t: Translator,
+  calendarCandidates: string[]
 ): HTMLElement {
-  const wrap = document.createElement("span");
-  wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-chronicle";
+  const wrap = document.createElement("div");
+  wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-chronicle cm-frontmatter-chronicle-list";
+  const entries = normalizeChronicleEntries(value);
+  const calendarListId = `chronicle-calendar-options-${Math.random().toString(36).slice(2)}`;
 
-  const startInput = document.createElement("input");
-  startInput.className = "cm-frontmatter-input";
-  startInput.inputMode = "numeric";
-  startInput.placeholder = t("frontmatter.rangeStart");
-  startInput.type = "text";
-  startInput.value = chronicleInputValue(value[0]);
-
-  const endInput = document.createElement("input");
-  endInput.className = "cm-frontmatter-input";
-  endInput.inputMode = "numeric";
-  endInput.placeholder = t("frontmatter.rangeEnd");
-  endInput.type = "text";
-  endInput.value = value.length > 1 ? chronicleInputValue(value[1]) : "";
-  const error = document.createElement("span");
-  error.className = "cm-frontmatter-input-error";
-
-  const setError = (message: string | null): void => {
-    if (!message) {
-      startInput.removeAttribute("aria-invalid");
-      endInput.removeAttribute("aria-invalid");
-      error.textContent = "";
-      return;
-    }
-
-    startInput.setAttribute("aria-invalid", "true");
-    endInput.setAttribute("aria-invalid", "true");
-    error.textContent = message;
+  const commit = (nextEntries: ChronicleFormEntry[]): void => {
+    updateField(view, "chronicle", nextEntries.map(serializeChronicleEntry));
   };
 
-  const commit = (write: boolean): void => {
-    const startRaw = startInput.value.trim();
-    const endRaw = endInput.value.trim();
-    const allowZeroOrNegative = key !== "chronicle0";
-    const startYear = parseChronicleYearInput(startRaw, allowZeroOrNegative);
-    const endYear = parseChronicleYearInput(endRaw, allowZeroOrNegative);
+  entries.forEach((entry, index) => {
+    wrap.append(chronicleEntryInput({
+      entry,
+      index,
+      calendarListId,
+      onDelete: () => commit(entries.filter((_item, entryIndex) => entryIndex !== index)),
+      onUpdate: (nextEntry) => commit(entries.map((item, entryIndex) => entryIndex === index ? nextEntry : item)),
+      t
+    }));
+  });
 
-    if (!startRaw && !endRaw) {
-      setError(null);
-      if (write) updateField(view, key, undefined);
-      return;
+  const addButton = document.createElement("button");
+  addButton.className = "cm-frontmatter-pill-add";
+  addButton.ariaLabel = t("frontmatter.addValue");
+  addButton.title = t("frontmatter.addValue");
+  addButton.textContent = "+";
+  addButton.type = "button";
+  addButton.addEventListener("click", () => commit([...entries, emptyChronicleEntry()]));
+  wrap.append(addButton);
+  if (calendarCandidates.length > 0) {
+    const list = document.createElement("datalist");
+    list.id = calendarListId;
+    for (const candidate of calendarCandidates) {
+      const option = document.createElement("option");
+      option.value = candidate;
+      option.label = candidate;
+      list.append(option);
     }
+    wrap.append(list);
+  }
 
-    if (!startRaw) {
-      setError(t("frontmatter.chronicleStartRequired"));
-      return;
-    }
-
-    if (startYear === null || (endRaw && endYear === null)) {
-      setError(t(allowZeroOrNegative ? "frontmatter.invalidSubChronicleYear" : "frontmatter.invalidChronicleYear"));
-      return;
-    }
-
-    if (endYear !== null && startYear > endYear) {
-      setError(t("frontmatter.invalidChronicleRange"));
-      return;
-    }
-
-    setError(null);
-
-    if (!write) return;
-
-    if (startYear === null) {
-      updateField(view, key, undefined);
-      return;
-    }
-
-    if (endYear === null || endYear === startYear) {
-      updateField(view, key, [startYear]);
-      return;
-    }
-
-    updateField(view, key, [startYear, endYear]);
-  };
-
-  startInput.addEventListener("change", () => commit(true));
-  endInput.addEventListener("change", () => commit(true));
-  wrap.append(startInput, endInput, error);
-  commit(false);
   return wrap;
 }
 
@@ -298,6 +256,161 @@ function parseDateTextInput(input: HTMLInputElement, dateFormat: FrontmatterDate
 
   input.removeAttribute("aria-invalid");
   return parsedValue;
+}
+
+interface ChronicleFormEntry {
+  calendarName: string;
+  endMonth: string;
+  endYear: string;
+  startMonth: string;
+  startYear: string;
+}
+
+function chronicleEntryInput({
+  calendarListId,
+  entry,
+  index,
+  onDelete,
+  onUpdate,
+  t
+}: {
+  calendarListId: string;
+  entry: ChronicleFormEntry;
+  index: number;
+  onDelete: () => void;
+  onUpdate: (entry: ChronicleFormEntry) => void;
+  t: Translator;
+}): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "cm-frontmatter-chronicle-entry";
+  const error = document.createElement("span");
+  error.className = "cm-frontmatter-input-error";
+
+  const calendarInput = chronicleTextInput(`chronicle-${index}-calendar`, entry.calendarName, "暦名");
+  calendarInput.setAttribute("list", calendarListId);
+  const startYearInput = chronicleTextInput(`chronicle-${index}-start-year`, entry.startYear, t("frontmatter.rangeStart"));
+  const startMonthInput = chronicleTextInput(`chronicle-${index}-start-month`, entry.startMonth, "月");
+  const endYearInput = chronicleTextInput(`chronicle-${index}-end-year`, entry.endYear, t("frontmatter.rangeEnd"));
+  const endMonthInput = chronicleTextInput(`chronicle-${index}-end-month`, entry.endMonth, "月");
+
+  const readEntry = (): ChronicleFormEntry => ({
+    calendarName: calendarInput.value.trim(),
+    endMonth: endMonthInput.value.trim(),
+    endYear: endYearInput.value.trim(),
+    startMonth: startMonthInput.value.trim(),
+    startYear: startYearInput.value.trim()
+  });
+
+  const commit = (): void => {
+    const next = readEntry();
+    const validation = validateChronicleEntry(next);
+    error.textContent = validation;
+    for (const input of [calendarInput, startYearInput, startMonthInput, endYearInput, endMonthInput]) {
+      if (validation) input.setAttribute("aria-invalid", "true");
+      else input.removeAttribute("aria-invalid");
+    }
+    if (!validation) onUpdate(next);
+  };
+
+  for (const input of [calendarInput, startYearInput, startMonthInput, endYearInput, endMonthInput]) {
+    input.addEventListener("change", commit);
+  }
+
+  const deleteButton = document.createElement("button");
+  deleteButton.className = "cm-frontmatter-pill-remove";
+  deleteButton.textContent = "×";
+  deleteButton.type = "button";
+  deleteButton.addEventListener("click", onDelete);
+
+  row.append(calendarInput, startYearInput, startMonthInput, endYearInput, endMonthInput, deleteButton, error);
+  return row;
+}
+
+function chronicleTextInput(label: string, value: string, placeholder: string): HTMLInputElement {
+  const input = document.createElement("input");
+  input.ariaLabel = label;
+  input.className = "cm-frontmatter-input";
+  input.placeholder = placeholder;
+  input.type = "text";
+  input.value = value;
+  return input;
+}
+
+function normalizeChronicleEntries(value: unknown[]): ChronicleFormEntry[] {
+  return value.flatMap((entry): ChronicleFormEntry[] => {
+    if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== "string") return [];
+    const range = entry[1];
+    if (!Array.isArray(range) || range.length !== 2) return [];
+    const start = chroniclePointInputValue(range[0]);
+    const end = chroniclePointInputValue(range[1]);
+    if (!start || !end) return [];
+
+    return [{
+      calendarName: entry[0],
+      endMonth: end.month,
+      endYear: end.year,
+      startMonth: start.month,
+      startYear: start.year
+    }];
+  });
+}
+
+function chroniclePointInputValue(value: unknown): { month: string; year: string } | null {
+  if (!Array.isArray(value) || value.length !== 2) return null;
+  const [year, month] = value;
+  if (!Number.isInteger(year)) return null;
+  if (month !== null && !Number.isInteger(month)) return null;
+  return {
+    month: month === null ? "" : String(month),
+    year: String(year)
+  };
+}
+
+function emptyChronicleEntry(): ChronicleFormEntry {
+  return {
+    calendarName: "メイン暦",
+    endMonth: "",
+    endYear: "1",
+    startMonth: "",
+    startYear: "1"
+  };
+}
+
+function serializeChronicleEntry(entry: ChronicleFormEntry): unknown[] {
+  const startYear = Number(entry.startYear);
+  const endYear = Number(entry.endYear || entry.startYear);
+  const startMonth = entry.startMonth ? Number(entry.startMonth) : null;
+  const endMonth = entry.endMonth ? Number(entry.endMonth) : null;
+
+  return [
+    entry.calendarName.trim(),
+    [
+      [startYear, startMonth],
+      [endYear, endMonth]
+    ]
+  ];
+}
+
+function validateChronicleEntry(entry: ChronicleFormEntry): string | null {
+  if (!entry.calendarName.trim()) return "暦名を入力してください。";
+  const startYear = parseChronicleYearInput(entry.startYear, true);
+  const endYear = entry.endYear ? parseChronicleYearInput(entry.endYear, true) : startYear;
+  const startMonth = parseChronicleMonthInput(entry.startMonth);
+  const endMonth = entry.endMonth ? parseChronicleMonthInput(entry.endMonth) : null;
+
+  if (startYear === null || endYear === null) return "年は0以外の整数で入力してください。";
+  if (startYear === 0 || endYear === 0) return "年は0以外の整数で入力してください。";
+  if (startMonth === false || endMonth === false) return "月は1〜12で入力してください。";
+  const startValue = startYear * 12 + ((startMonth || 1) - 1);
+  const endValue = endYear * 12 + ((endMonth || 1) - 1);
+  return startValue <= endValue ? null : "開始年月は終了年月以下にしてください。";
+}
+
+function parseChronicleMonthInput(value: string): number | null | false {
+  if (!value.trim()) return null;
+  if (!/^\d+$/.test(value.trim())) return false;
+  const month = Number(value);
+  return Number.isInteger(month) && month >= 1 && month <= 12 ? month : false;
 }
 
 function arrayInput(

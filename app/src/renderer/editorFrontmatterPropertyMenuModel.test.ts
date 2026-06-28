@@ -14,12 +14,11 @@ describe("editorFrontmatterPropertyMenuModel", () => {
   });
 
   it("使用済みの固定プロパティを候補から外して分類する", () => {
-    const state = buildFrontmatterPropertyMenuState(true, ["aliases", "chronicle0"], t);
+    const state = buildFrontmatterPropertyMenuState(true, ["aliases", "chronicle"], t);
 
     expect(state.unavailable).toBe(false);
-    expect(state.groups.map((group) => group.id)).toEqual(["basic", "chronicle"]);
+    expect(state.groups.map((group) => group.id)).toEqual(["basic"]);
     expect(state.groups.find((group) => group.id === "basic")?.options.map((option) => option.key)).toEqual(["tags"]);
-    expect(state.groups.find((group) => group.id === "chronicle")?.options.map((option) => option.key)).not.toContain("chronicle0");
   });
 
   it("基本・chronicle系フィールドの表示名を維持する", () => {
@@ -31,6 +30,6 @@ describe("editorFrontmatterPropertyMenuModel", () => {
     expect(labelsByKey.has("status")).toBe(false);
     expect(labelsByKey.has("plannedDate")).toBe(false);
     expect(labelsByKey.has("actualDate")).toBe(false);
-    expect(labelsByKey.get("chronicle0")).toBe("chronicle0");
+    expect(labelsByKey.get("chronicle")).toBe("chronicle");
   });
 });

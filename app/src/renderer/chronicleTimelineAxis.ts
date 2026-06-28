@@ -3,7 +3,7 @@ import {
   type ChronicleCalendarSettings,
   type ChartEntry
 } from "../shared/ipc";
-import { axisToYear, yearToAxis } from "../shared/chartTime";
+import { monthAxisToYear, pointToMonthAxis } from "../shared/chartTime";
 import {
   LABEL_HORIZONTAL_PADDING
 } from "./chronicleTimelineConstants";
@@ -44,12 +44,12 @@ export function timelineBounds(
   const paddedEnd = max + padding;
 
   const boundsInterval = chronicleAxisTickInterval(tickInterval);
-  const startYear = Math.floor(axisToYear(paddedStart) / boundsInterval) * boundsInterval - boundsInterval;
-  const endYear = Math.ceil(axisToYear(paddedEnd) / boundsInterval) * boundsInterval + boundsInterval;
+  const startYear = Math.floor(monthAxisToYear(paddedStart) / boundsInterval) * boundsInterval - boundsInterval;
+  const endYear = Math.ceil(monthAxisToYear(paddedEnd) / boundsInterval) * boundsInterval + boundsInterval;
 
   return {
-    axisEnd: yearToAxis(endYear === 0 ? boundsInterval : endYear),
-    axisStart: yearToAxis(startYear === 0 ? -boundsInterval : startYear)
+    axisEnd: pointToMonthAxis(endYear === 0 ? boundsInterval : endYear, 12),
+    axisStart: pointToMonthAxis(startYear === 0 ? -boundsInterval : startYear, 1)
   };
 }
 
@@ -125,13 +125,13 @@ export function buildVisibleChronicleGuideTicks(
 }
 
 function buildChronicleTicks(axisStart: number, axisEnd: number, interval: number): number[] {
-  const first = firstChronicleTickYear(axisToYear(axisStart), interval);
-  const endYear = axisToYear(axisEnd);
+  const first = firstChronicleTickYear(monthAxisToYear(axisStart), interval);
+  const endYear = monthAxisToYear(axisEnd);
   const ticks: number[] = [];
 
   for (let year = first; year <= endYear; year += interval) {
     if (year === 0) continue;
-    const tick = yearToAxis(year);
+    const tick = pointToMonthAxis(year, 1);
     if (tick < axisStart || tick > axisEnd) continue;
     ticks.push(tick);
   }
@@ -165,7 +165,7 @@ export function formatRange(entry: ChartEntry): string {
 }
 
 export function formatAxisValue(value: number): string {
-  const year = axisToYear(value);
+  const year = monthAxisToYear(value);
   return year < 0 ? `−${Math.abs(year)}` : String(year);
 }
 
@@ -186,15 +186,15 @@ export function buildVisibleChronicleAxisSegments(
   const visibleStart = clamp(visibleRange.visibleStart, axisStart, axisEnd);
   const visibleEnd = clamp(visibleRange.visibleEnd, visibleStart, axisEnd);
   const segments: ChronicleAxisSegment[] = [];
-  const first = firstChronicleTickYear(axisToYear(visibleStart), interval);
-  const endYear = axisToYear(visibleEnd);
+  const first = firstChronicleTickYear(monthAxisToYear(visibleStart), interval);
+  const endYear = monthAxisToYear(visibleEnd);
 
   for (let year = first; year <= endYear; year += interval) {
     if (year === 0) continue;
 
     const nextYear = year + interval;
-    const startValue = Math.max(axisStart, yearToAxis(year));
-    const endValue = Math.min(axisEnd, yearToAxis(nextYear) - 1);
+    const startValue = Math.max(axisStart, pointToMonthAxis(year, 1));
+    const endValue = Math.min(axisEnd, pointToMonthAxis(nextYear, 1) - 1);
 
     if (endValue >= visibleStart && endValue >= startValue) {
       segments.push({
@@ -210,15 +210,15 @@ export function buildVisibleChronicleAxisSegments(
 
 export function buildChronicleAxisSegments(axisStart: number, axisEnd: number, interval: number): ChronicleAxisSegment[] {
   const segments: ChronicleAxisSegment[] = [];
-  const first = firstChronicleTickYear(axisToYear(axisStart), interval);
-  const endYear = axisToYear(axisEnd);
+  const first = firstChronicleTickYear(monthAxisToYear(axisStart), interval);
+  const endYear = monthAxisToYear(axisEnd);
 
   for (let year = first; year <= endYear; year += interval) {
     if (year === 0) continue;
 
     const nextYear = year + interval;
-    const startValue = Math.max(axisStart, yearToAxis(year));
-    const endValue = Math.min(axisEnd, yearToAxis(nextYear) - 1);
+    const startValue = Math.max(axisStart, pointToMonthAxis(year, 1));
+    const endValue = Math.min(axisEnd, pointToMonthAxis(nextYear, 1) - 1);
 
     if (endValue >= startValue) {
       segments.push({
@@ -233,23 +233,21 @@ export function buildChronicleAxisSegments(axisStart: number, axisEnd: number, i
 }
 
 export function chronicleUnitWidth(interval: number, tickWidth: number): number {
-  if (interval === 1) return tickWidth / 2;
-  return tickWidth / interval;
+  return tickWidth / (interval * 12);
 }
 
 export function activeChronicleAxisCalendars(calendars: ChronicleCalendarSettings[]): ChronicleCalendarSettings[] {
-  const mainCalendar = calendars.find((calendar) => calendar.id === "chronicle0") ?? defaultChronicleCalendars[0];
-  const subCalendars = calendars.filter((calendar) =>
-    calendar.id !== "chronicle0" &&
-      Number.isInteger(calendar.startYear) &&
+  const mainCalendar = calendars[0] ?? defaultChronicleCalendars[0];
+  const subCalendars = calendars.slice(1).filter((calendar) =>
+    Number.isInteger(calendar.startYear) &&
       Number(calendar.startYear) >= 1
   );
 
   return [
-    { ...mainCalendar, name: mainCalendar.name.trim() || mainCalendar.id },
+    { ...mainCalendar, name: mainCalendar.name.trim() || defaultChronicleCalendars[0].name },
     ...subCalendars.map((calendar) => ({
       ...calendar,
-      name: calendar.name.trim() || calendar.id
+      name: calendar.name.trim()
     }))
   ];
 }
@@ -259,7 +257,7 @@ export function chronicleAxisHeightForCalendars(calendars: ChronicleCalendarSett
 }
 
 export function formatChronicleCalendarAxisLabel(calendar: ChronicleCalendarSettings, mainYear: number): string {
-  const year = calendar.id === "chronicle0" ? mainYear : mainYear - (calendar.startYear ?? 1) + 1;
+  const year = mainYear - (calendar.startYear ?? 1) + 1;
   return formatChronicleAxisSegmentLabel(year);
 }
 

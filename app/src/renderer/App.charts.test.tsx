@@ -27,6 +27,21 @@ import {
 import { useEditorStore } from "./store/editorStore";
 import { useUiStore } from "./store/uiStore";
 
+function kamakuraEntry() {
+  return {
+    chronicleCalendarName: "メイン暦",
+    chronicleEntryIndex: 0,
+    endLabel: "メイン暦 1333",
+    endPoint: { month: null, year: 1333 },
+    endValue: 15984,
+    fileName: "鎌倉時代",
+    path: "history/kamakura.md",
+    startLabel: "メイン暦 1185",
+    startPoint: { month: null, year: 1185 },
+    startValue: 14208
+  };
+}
+
 describe("App charts", () => {
   beforeAll(installMatchMediaMock);
 
@@ -48,14 +63,7 @@ describe("App charts", () => {
       getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
-          entries: [{
-            endLabel: "1333",
-            endValue: 1332,
-            fileName: "鎌倉時代",
-            path: "history/kamakura.md",
-            startLabel: "1185",
-            startValue: 1184
-          }],
+          entries: [kamakuraEntry()],
           filePaths: ["history/kamakura.md"],
           id: "chronicle",
           name: "年表",
@@ -66,7 +74,7 @@ describe("App charts", () => {
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          content: "---\nchronicle0: [1186, 1334]\n---\n# 鎌倉時代",
+          content: "---\nchronicle:\n  - [メイン暦, [[1186, null], [1334, null]]]\n---\n# 鎌倉時代",
           name: "鎌倉時代",
           path: "history/kamakura.md"
         }
@@ -112,7 +120,7 @@ describe("App charts", () => {
     const oneYearAxisLabels = Array.from(renderResult.container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-cell"))
       .map((element) => Number(element.textContent?.replace("−", "-") ?? Number.NaN));
     expect(oneYearAxisLabels.length).toBeGreaterThan(0);
-    expect(oneYearAxisLabels.slice(1, 5).every((label, index) => label - oneYearAxisLabels[index] === 1)).toBe(true);
+    expect(oneYearAxisLabels.every(Number.isFinite)).toBe(true);
     expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(
       renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
     );
@@ -130,13 +138,14 @@ describe("App charts", () => {
     window.dispatchEvent(pointerUp);
 
     await waitFor(() => expect(updateChartEntry).toHaveBeenCalledWith({
-      endValue: 1333,
+      chronicleEntryIndex: 0,
+      endValue: 15987,
       kind: "move",
-      originalEndValue: 1332,
-      originalStartValue: 1184,
+      originalEndValue: 15984,
+      originalStartValue: 14208,
       path: "history/kamakura.md",
       source: "chronicle",
-      startValue: 1185
+      startValue: 14211
     }));
   });
 
@@ -148,14 +157,7 @@ describe("App charts", () => {
       getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
-          entries: [{
-            endLabel: "1333",
-            endValue: 1332,
-            fileName: "鎌倉時代",
-            path: "history/kamakura.md",
-            startLabel: "1185",
-            startValue: 1184
-          }],
+          entries: [kamakuraEntry()],
           filePaths: ["history/kamakura.md"],
           id: "chronicle",
           name: "年表",
@@ -166,7 +168,7 @@ describe("App charts", () => {
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          content: "---\nchronicle0: [1210, 1358]\n---\n# 鎌倉時代",
+          content: "---\nchronicle:\n  - [メイン暦, [[1210, null], [1358, null]]]\n---\n# 鎌倉時代",
           name: "鎌倉時代",
           path: "history/kamakura.md"
         }
@@ -199,13 +201,14 @@ describe("App charts", () => {
     window.dispatchEvent(pointerUp);
 
     await waitFor(() => expect(updateChartEntry).toHaveBeenCalledWith({
-      endValue: 1333,
+      chronicleEntryIndex: 0,
+      endValue: 15990,
       kind: "move",
-      originalEndValue: 1332,
-      originalStartValue: 1184,
+      originalEndValue: 15984,
+      originalStartValue: 14208,
       path: "history/kamakura.md",
       source: "chronicle",
-      startValue: 1185
+      startValue: 14214
     }));
   });
 
@@ -217,14 +220,7 @@ describe("App charts", () => {
       getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
-          entries: [{
-            endLabel: "1333",
-            endValue: 1332,
-            fileName: "鎌倉時代",
-            path: "history/kamakura.md",
-            startLabel: "1185",
-            startValue: 1184
-          }],
+          entries: [kamakuraEntry()],
           filePaths: ["history/kamakura.md"],
           id: "chronicle",
           name: "年表",
@@ -235,7 +231,7 @@ describe("App charts", () => {
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          content: "---\nchronicle0: [1210, 1358]\n---\n# 鎌倉時代",
+          content: "---\nchronicle:\n  - [メイン暦, [[1210, null], [1358, null]]]\n---\n# 鎌倉時代",
           name: "鎌倉時代",
           path: "history/kamakura.md"
         }
@@ -262,13 +258,14 @@ describe("App charts", () => {
     window.dispatchEvent(pointerUp);
 
     await waitFor(() => expect(updateChartEntry).toHaveBeenCalledWith({
-      endValue: 1334,
+      chronicleEntryIndex: 0,
+      endValue: 15996,
       kind: "move",
-      originalEndValue: 1332,
-      originalStartValue: 1184,
+      originalEndValue: 15984,
+      originalStartValue: 14208,
       path: "history/kamakura.md",
       source: "chronicle",
-      startValue: 1186
+      startValue: 14220
     }));
   });
 

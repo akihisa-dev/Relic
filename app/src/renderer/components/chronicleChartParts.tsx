@@ -51,13 +51,13 @@ export function ChronicleAxis({
       {axisCalendars.map((calendar, rowIndex) => (
         <div
           className={`chronicle-axis-row chronicle-axis-row--chronicle${rowIndex < axisCalendars.length - 1 ? " chronicle-axis-row--divider" : ""}`}
-          key={`chronicle-axis-${calendar.id}`}
+          key={`chronicle-axis-${calendar.name}`}
           style={{ height: rowHeight }}
         >
           {segments.map((segment) => (
             <span
               className="chronicle-axis-cell"
-              key={`${calendar.id}-${segment.startValue}`}
+              key={`${calendar.name}-${segment.startValue}`}
               style={{
                 left: (segment.startValue - axisStart) * unitWidth,
                 width: Math.max(1, (segment.endValue - segment.startValue + 1) * unitWidth)
