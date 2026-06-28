@@ -251,6 +251,16 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 - `.env`、認証情報を含む `.npmrc`、秘密鍵、証明書、ローカルAI/エディタ設定はリポジトリ管理に含めない。プロジェクト設定として追跡する `.npmrc` には認証情報を書かない
 - 依存関係監査は外部 registry に依存情報を送るため、実行前にユーザーの明示許可を得る
 
+### 依存関係更新
+
+- npm / pnpm 依存関係とGitHub Actionsの更新確認は `.github/dependabot.yml` でGitHub上にPull Requestを作成して行う
+- Dependabotは `app/` のnpm依存関係と、リポジトリ全体のGitHub Actionsを対象にする
+- Dependabotによる更新Pull Requestでは、`app/package.json`、`app/pnpm-lock.yaml`、`.github/workflows/` の差分を確認する
+- 依存更新Pull Requestでは、`pnpm.overrides` の対象がまだ必要かを確認し、不要になった固定は同じPull Requestまたは別Issueで外す
+- 依存更新Pull Requestでは、`app/` で `pnpm verify` と `pnpm docs:index:check` を実行し、リポジトリルートで `git diff --check` を実行する
+- GitHub上のDependabot、GitHub Advisory、依存更新Pull Requestは、GitHubへ依存関係情報を送る運用として許可する
+- 手元で `pnpm audit` など外部 registry へ依存情報を送る監査コマンドを実行する場合は、既存方針どおり事前にユーザーの明示許可を得る
+
 ### 設定
 
 - アプリ設定とワークスペース設定を分ける

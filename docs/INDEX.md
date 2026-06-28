@@ -80,6 +80,7 @@
   - `workflows/`
     - `ci.yml`
     - `draft-release.yml`
+  - `dependabot.yml`
   - `pull_request_template.md`
 - `app/`
   - `assets/`
