@@ -94,9 +94,12 @@ class FrontmatterPropertiesWidget extends WidgetType {
     return this.block.from === other.block.from &&
       this.block.to === other.block.to &&
       JSON.stringify(this.block.data) === JSON.stringify(other.block.data) &&
+      JSON.stringify(this.userDefinedFields) === JSON.stringify(other.userDefinedFields) &&
+      JSON.stringify(this.candidates) === JSON.stringify(other.candidates) &&
       this.lineNumber === other.lineNumber &&
       this.collapsed === other.collapsed &&
-      this.dateFormat === other.dateFormat;
+      this.dateFormat === other.dateFormat &&
+      this.t === other.t;
   }
 
   override toDOM(view: EditorView): HTMLElement {

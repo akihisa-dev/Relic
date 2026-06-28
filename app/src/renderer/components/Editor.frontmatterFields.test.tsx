@@ -40,6 +40,44 @@ describe("Editor frontmatter fields", () => {
     ].join("\n"));
   });
 
+  it("chronicleプロパティは暦設定の候補更新をライブプレビューへ反映する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const content = "---\nchronicle:\n  - [メイン暦, [[1185, null], [1185, null]]]\n---\n# 本文";
+    const { container, rerender } = render(
+      <I18nProvider language="ja">
+        <Editor
+          content={content}
+          frontmatterCandidates={{ chronicle: ["メイン暦"] }}
+          onChange={vi.fn()}
+          settings={settings}
+          viewRef={viewRef}
+        />
+      </I18nProvider>
+    );
+
+    await expandFrontmatter(container);
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
+    const initialSelect = container.querySelector(".cm-frontmatter-chronicle select.cm-frontmatter-input") as HTMLSelectElement;
+    expect(Array.from(initialSelect.options).map((option) => option.value)).toEqual(["メイン暦"]);
+
+    rerender(
+      <I18nProvider language="ja">
+        <Editor
+          content={content}
+          frontmatterCandidates={{ chronicle: ["メイン暦", "帝国暦"] }}
+          onChange={vi.fn()}
+          settings={settings}
+          viewRef={viewRef}
+        />
+      </I18nProvider>
+    );
+
+    await waitFor(() => {
+      const updatedSelect = container.querySelector(".cm-frontmatter-chronicle select.cm-frontmatter-input") as HTMLSelectElement;
+      expect(Array.from(updatedSelect.options).map((option) => option.value)).toEqual(["メイン暦", "帝国暦"]);
+    });
+  });
+
   it("chronicleプロパティは不正な月や逆順を書き戻さない", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
