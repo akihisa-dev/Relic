@@ -14,6 +14,30 @@ import {
   renameMarkdownFile,
   writeMarkdownFileContent
 } from "./markdownFiles";
+import type { RealpathOperations } from "./paths";
+
+function createRealpathRaceOperations(options: {
+  changingPath: string;
+  safeRealPath: string;
+  unsafeRealPath: string;
+  workspacePath: string;
+}): RealpathOperations {
+  let changingPathChecks = 0;
+
+  return {
+    async realpath(filePath) {
+      if (filePath === options.workspacePath) return options.workspacePath;
+      if (filePath === options.changingPath) {
+        changingPathChecks += 1;
+        return changingPathChecks === 1
+          ? options.safeRealPath
+          : options.unsafeRealPath;
+      }
+
+      return filePath;
+    }
+  };
+}
 
 describe("normalizeMarkdownFileName", () => {
   it("拡張子なしのファイル名に .md を付与する", () => {
@@ -166,6 +190,24 @@ describe("createMarkdownFileAtPath", () => {
       ok: false
     });
   });
+
+  it("検証後に親フォルダの実体がワークスペース外へ変わったMarkdown作成を直前再確認で拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-linked-file-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-outside-file-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+    const linkedParentPath = path.join(workspacePath, "linked");
+
+    await expect(createMarkdownFileAtPath(workspacePath, "linked/new.md", "", createRealpathRaceOperations({
+      changingPath: linkedParentPath,
+      safeRealPath: path.join(workspacePath, "inside-linked"),
+      unsafeRealPath: path.join(outsidePath, "linked"),
+      workspacePath
+    }))).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+    await expect(readdir(workspacePath)).resolves.toEqual([]);
+  });
 });
 
 describe("readMarkdownFile", () => {
@@ -219,6 +261,25 @@ describe("readMarkdownFile", () => {
     await symlink(path.join(outsidePath, "outside.md"), path.join(workspacePath, "linked.md"));
 
     await expect(readMarkdownFile(workspacePath, "linked.md")).resolves.toMatchObject({
+      ok: false
+    });
+  });
+
+  it("検証後に実体がワークスペース外へ変わったMarkdown読み込みを直前再確認で拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-read-file-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-outside-file-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+    const notePath = path.join(workspacePath, "note.md");
+
+    await writeFile(notePath, "# Note", "utf8");
+
+    await expect(readMarkdownFile(workspacePath, "note.md", createRealpathRaceOperations({
+      changingPath: notePath,
+      safeRealPath: notePath,
+      unsafeRealPath: path.join(outsidePath, "note.md"),
+      workspacePath
+    }))).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
       ok: false
     });
   });
@@ -288,6 +349,26 @@ describe("writeMarkdownFileContent", () => {
       ok: false
     });
     await expect(readFile(path.join(outsidePath, "outside.md"), "utf8")).resolves.toBe("outside");
+  });
+
+  it("検証後に実体がワークスペース外へ変わったMarkdown書き込みを直前再確認で拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-write-file-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-outside-file-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+    const notePath = path.join(workspacePath, "note.md");
+
+    await writeFile(notePath, "old", "utf8");
+
+    await expect(writeMarkdownFileContent(workspacePath, "note.md", "new", undefined, createRealpathRaceOperations({
+      changingPath: notePath,
+      safeRealPath: notePath,
+      unsafeRealPath: path.join(outsidePath, "note.md"),
+      workspacePath
+    }))).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+    await expect(readFile(notePath, "utf8")).resolves.toBe("old");
   });
 });
 
@@ -393,6 +474,26 @@ describe("renameMarkdownFile", () => {
     });
     await expect(readFile(path.join(outsidePath, "outside.md"), "utf8")).resolves.toBe("outside");
   });
+
+  it("検証後に実体がワークスペース外へ変わったMarkdownリネームを直前再確認で拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-file-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-outside-file-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+    const notePath = path.join(workspacePath, "note.md");
+
+    await writeFile(notePath, "# Note", "utf8");
+
+    await expect(renameMarkdownFile(workspacePath, "note.md", "renamed", createRealpathRaceOperations({
+      changingPath: notePath,
+      safeRealPath: notePath,
+      unsafeRealPath: path.join(outsidePath, "note.md"),
+      workspacePath
+    }))).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+    await expect(readFile(notePath, "utf8")).resolves.toBe("# Note");
+  });
 });
 
 describe("duplicateMarkdownFile", () => {
@@ -454,6 +555,26 @@ describe("duplicateMarkdownFile", () => {
     await expect(duplicateMarkdownFile(workspacePath, "../outside.md")).resolves.toMatchObject({
       ok: false
     });
+  });
+
+  it("検証後に実体がワークスペース外へ変わったMarkdown複製を直前再確認で拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-duplicate-file-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-outside-file-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+    const notePath = path.join(workspacePath, "note.md");
+
+    await writeFile(notePath, "# Note", "utf8");
+
+    await expect(duplicateMarkdownFile(workspacePath, "note.md", createRealpathRaceOperations({
+      changingPath: notePath,
+      safeRealPath: notePath,
+      unsafeRealPath: path.join(outsidePath, "note.md"),
+      workspacePath
+    }))).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+    await expect(readdir(workspacePath)).resolves.toEqual(["note.md"]);
   });
 });
 
@@ -559,5 +680,26 @@ describe("moveMarkdownFile", () => {
       ok: false
     });
     await expect(readFile(path.join(outsidePath, "outside.md"), "utf8")).resolves.toBe("outside");
+  });
+
+  it("検証後に実体がワークスペース外へ変わったMarkdown移動を直前再確認で拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-outside-file-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+    const notePath = path.join(workspacePath, "note.md");
+
+    await mkdir(path.join(workspacePath, "archive"));
+    await writeFile(notePath, "# Note", "utf8");
+
+    await expect(moveMarkdownFile(workspacePath, "note.md", "archive", createRealpathRaceOperations({
+      changingPath: notePath,
+      safeRealPath: notePath,
+      unsafeRealPath: path.join(outsidePath, "note.md"),
+      workspacePath
+    }))).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+    await expect(readFile(notePath, "utf8")).resolves.toBe("# Note");
   });
 });

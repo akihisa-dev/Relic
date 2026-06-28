@@ -4,7 +4,7 @@ import path from "node:path";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { isMissingFileError } from "./fileSystem";
 
-interface RealpathOperations {
+export interface RealpathOperations {
   realpath(filePath: string): Promise<string>;
 }
 
@@ -96,27 +96,15 @@ export function resolveWorkspaceRelativePathOrRoot(
 
 export async function resolveExistingWorkspacePath(
   workspacePath: string,
-  relativePath: string
+  relativePath: string,
+  operations: Partial<RealpathOperations> = {}
 ): Promise<RelicResult<string>> {
   const resolved = resolveWorkspaceRelativePath(workspacePath, relativePath);
 
   if (!resolved.ok) return resolved;
+  const realpathOperations = { ...defaultRealpathOperations, ...operations };
 
-  let realWorkspace: string;
-  let realTarget: string;
-
-  try {
-    realWorkspace = await realpath(workspacePath);
-    realTarget = await realpath(resolved.value);
-  } catch {
-    return fail("WORKSPACE_PATH_INVALID", "ワークスペース内のファイルを確認できませんでした。");
-  }
-
-  if (!isPathInside(realWorkspace, realTarget)) {
-    return fail("WORKSPACE_PATH_OUTSIDE", "ワークスペース外のファイルは開けません。");
-  }
-
-  return ok(resolved.value);
+  return verifyExistingWorkspacePath(workspacePath, resolved.value, realpathOperations);
 }
 
 export async function resolveNewWorkspacePath(
@@ -152,18 +140,30 @@ export async function resolveNewWorkspacePath(
 
 export async function resolveExistingWorkspacePathOrRoot(
   workspacePath: string,
-  relativePath: string
+  relativePath: string,
+  operations: Partial<RealpathOperations> = {}
 ): Promise<RelicResult<string>> {
   const resolved = resolveWorkspaceRelativePathOrRoot(workspacePath, relativePath);
 
   if (!resolved.ok) return resolved;
+  const realpathOperations = { ...defaultRealpathOperations, ...operations };
+
+  return verifyExistingWorkspacePath(workspacePath, resolved.value, realpathOperations);
+}
+
+export async function verifyExistingWorkspacePath(
+  workspacePath: string,
+  absolutePath: string,
+  operations: Partial<RealpathOperations> = {}
+): Promise<RelicResult<string>> {
+  const realpathOperations = { ...defaultRealpathOperations, ...operations };
 
   let realWorkspace: string;
   let realTarget: string;
 
   try {
-    realWorkspace = await realpath(workspacePath);
-    realTarget = await realpath(resolved.value);
+    realWorkspace = await realpathOperations.realpath(workspacePath);
+    realTarget = await realpathOperations.realpath(absolutePath);
   } catch {
     return fail("WORKSPACE_PATH_INVALID", "ワークスペース内のファイルを確認できませんでした。");
   }
@@ -172,7 +172,35 @@ export async function resolveExistingWorkspacePathOrRoot(
     return fail("WORKSPACE_PATH_OUTSIDE", "ワークスペース外のファイルは開けません。");
   }
 
-  return ok(resolved.value);
+  return ok(absolutePath);
+}
+
+export async function verifyNewWorkspacePath(
+  workspacePath: string,
+  absolutePath: string,
+  operations: Partial<RealpathOperations> = {}
+): Promise<RelicResult<string>> {
+  const realpathOperations = { ...defaultRealpathOperations, ...operations };
+
+  let realWorkspace: string;
+  let realParent: string;
+
+  try {
+    realWorkspace = await realpathOperations.realpath(workspacePath);
+    realParent = await realpathNearestExistingParent(
+      workspacePath,
+      path.dirname(absolutePath),
+      realpathOperations
+    );
+  } catch {
+    return fail("WORKSPACE_PATH_INVALID", "ワークスペース内のファイルを確認できませんでした。");
+  }
+
+  if (!isPathInside(realWorkspace, realParent)) {
+    return fail("WORKSPACE_PATH_OUTSIDE", "ワークスペース外のファイルは開けません。");
+  }
+
+  return ok(absolutePath);
 }
 
 function isPathInside(realWorkspacePath: string, realTargetPath: string): boolean {
