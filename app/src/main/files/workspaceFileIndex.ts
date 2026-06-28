@@ -38,7 +38,7 @@ interface PersistedWorkspaceFileIndexRecord {
   contentHash?: unknown;
 }
 
-interface WorkspaceFileIndexOptions {
+export interface WorkspaceFileIndexOptions {
   cachePath?: string;
   filePaths?: string[];
   fileTree?: WorkspaceTreeNode[];
@@ -47,7 +47,7 @@ interface WorkspaceFileIndexOptions {
   operations?: Partial<WorkspaceFileIndexOperations>;
 }
 
-interface WorkspaceFileIndexOperations {
+export interface WorkspaceFileIndexOperations {
   mkdir(directoryPath: string, options: { recursive: true }): Promise<unknown>;
   readCache(filePath: string): Promise<string>;
   readFile(filePath: string): Promise<string>;
@@ -110,36 +110,45 @@ export async function readWorkspaceFileIndex(
       }
 
       const cached = cacheByPath.get(relativePath);
+      const isWithinCurrentSearchLimit = fileStats.size <= maxSearchFileBytes;
       if (
         cached?.readStatus === "ok" &&
         typeof cached.contentHash === "string" &&
         cached.size === fileStats.size &&
         cached.mtimeMs === fileStats.mtimeMs
       ) {
+        if (!isWithinCurrentSearchLimit) {
+          if (!cached.searchable) {
+            try {
+              const head = await operations.readHead(absolutePath.value, mapMarkerHeadBytes);
+              if (cached.contentHash === fileHash(head)) {
+                return { ...cached, lines: [] };
+              }
+            } catch {
+              return unreadableRecord(relativePath, fileStats);
+            }
+          }
+
+          return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent);
+        }
+
+        if (!cached.searchable) {
+          return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent);
+        }
+
         if (!includeSearchContent) {
           return { ...cached, lines: [] };
         }
 
-        if (cached.searchable) {
-          try {
-            const content = await operations.readFile(absolutePath.value);
-            const contentHash = fileHash(content);
+        try {
+          const content = await operations.readFile(absolutePath.value);
+          const contentHash = fileHash(content);
 
-            if (cached.contentHash === contentHash) {
-              return recordFor(relativePath, fileStats, cached.kind, content.split("\n"), cached.searchable, cached.contentHash);
-            }
-          } catch {
-            return unreadableRecord(relativePath, fileStats);
+          if (cached.contentHash === contentHash) {
+            return recordFor(relativePath, fileStats, cached.kind, content.split("\n"), cached.searchable, cached.contentHash);
           }
-        } else {
-          try {
-            const head = await operations.readHead(absolutePath.value, mapMarkerHeadBytes);
-            if (cached.contentHash === fileHash(head)) {
-              return { ...cached, lines: [] };
-            }
-          } catch {
-            return unreadableRecord(relativePath, fileStats);
-          }
+        } catch {
+          return unreadableRecord(relativePath, fileStats);
         }
       }
 

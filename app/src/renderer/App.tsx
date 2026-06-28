@@ -1,5 +1,6 @@
 import type { EditorView } from "@codemirror/view";
 import { useCallback, useMemo, useRef, useState, type ReactElement } from "react";
+import { useShallow } from "zustand/react/shallow";
 
 import { type WorkspaceState } from "../shared/ipc";
 import type { AppLinkContextMenu } from "./appLinks";
@@ -91,7 +92,33 @@ export function App(): ReactElement {
     updateTabContent,
     updateTabFromExternal,
     updateTabMeta
-  } = useEditorStore();
+  } = useEditorStore(useShallow((state) => ({
+    closeAllTabs: state.closeAllTabs,
+    closeAllTabsInPane: state.closeAllTabsInPane,
+    closeOtherTabs: state.closeOtherTabs,
+    closeTab: state.closeTab,
+    closeTabsToRight: state.closeTabsToRight,
+    editorSettings: state.editorSettings,
+    focusedPane: state.focusedPane,
+    isSplit: state.isSplit,
+    leftPane: state.leftPane,
+    markTabSaved: state.markTabSaved,
+    moveTab: state.moveTab,
+    openChartInPane: state.openChartInPane,
+    openFileInPane: state.openFileInPane,
+    openPanelInPane: state.openPanelInPane,
+    rightPane: state.rightPane,
+    setEditorSettings: state.setEditorSettings,
+    setFocusedPane: state.setFocusedPane,
+    setTabActive: state.setTabActive,
+    setTabExternalConflict: state.setTabExternalConflict,
+    tabs: state.tabs,
+    toggleSplit: state.toggleSplit,
+    toggleTabPinned: state.toggleTabPinned,
+    updateTabContent: state.updateTabContent,
+    updateTabFromExternal: state.updateTabFromExternal,
+    updateTabMeta: state.updateTabMeta
+  })));
 
   const {
     activeSidebarView,
@@ -105,7 +132,19 @@ export function App(): ReactElement {
     toggleRightPanel,
     toggleSidebar: toggleSidebarState,
     toggleTypewriterMode
-  } = useUiStore();
+  } = useUiStore(useShallow((state) => ({
+    activeSidebarView: state.activeSidebarView,
+    closeSidebar: state.closeSidebar,
+    isRightPanelOpen: state.isRightPanelOpen,
+    isSidebarOpen: state.isSidebarOpen,
+    isTypewriterMode: state.isTypewriterMode,
+    rightPanelView: state.rightPanelView,
+    setRightPanelView: state.setRightPanelView,
+    setSidebarView: state.setSidebarView,
+    toggleRightPanel: state.toggleRightPanel,
+    toggleSidebar: state.toggleSidebar,
+    toggleTypewriterMode: state.toggleTypewriterMode
+  })));
   const hasOpenChart = useMemo(
     () => Object.values(tabs).some((tab) => tab.kind === "chart"),
     [tabs]
@@ -194,7 +233,9 @@ export function App(): ReactElement {
     workspaceState
   });
   const { chronicleCalendars, handleSaveChronicleCalendars } = useWorkspaceChronicleCalendars({
-    onSaved: () => { void reloadCharts(); },
+    onSaved: () => {
+      if (hasOpenChart) void reloadCharts();
+    },
     setWorkspaceError,
     workspaceState
   });
@@ -204,7 +245,7 @@ export function App(): ReactElement {
   }), [chronicleCalendars, frontmatterCandidates]);
 
   const handleFileSaved = useCallback((path?: string): void => {
-    void reloadCharts();
+    if (hasOpenChart) void reloadCharts();
     if (!path || !window.relic) return;
 
     void window.relic.getWorkspaceState().then((result) => {
@@ -217,7 +258,7 @@ export function App(): ReactElement {
     }).catch((error) => {
       setWorkspaceError(error instanceof Error ? error.message : String(error));
     });
-  }, [reloadCharts, setWorkspaceError, setWorkspaceState]);
+  }, [hasOpenChart, reloadCharts, setWorkspaceError, setWorkspaceState]);
 
   const { flushTabsBeforeClose, saveStatusByTabId } = useEditorAutoSave({
     conflictCloseBlockedMessage: t("pane.externalConflictCloseBlocked"),

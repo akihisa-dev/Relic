@@ -11,16 +11,21 @@ import {
 import { updateChartFrontmatterContent } from "../../shared/chartFrontmatterUpdate";
 import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import {
-  collectChartEntriesForMarkdown,
   sortChronicleEntries
 } from "./chronicleData";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
-import { readWorkspaceFileTree } from "./fileTree";
-import { resolveExistingWorkspacePath, resolveWorkspaceRelativePath } from "./paths";
-import { mapWithConcurrency } from "./concurrency";
+import { resolveExistingWorkspacePath } from "./paths";
+import {
+  chartEntriesForRecord,
+  createWorkspaceDerivedDataCache,
+  normalizeWorkspaceDerivedDataOptions,
+  readableWorkspaceMarkdownRecords,
+  readWorkspaceDerivedFileIndex,
+  type WorkspaceDerivedDataOptions,
+  type WorkspaceMarkdownReadOperations
+} from "./workspaceDerivedData";
 
 export { extractChronicleRange } from "./chronicleData";
 
@@ -36,38 +41,21 @@ const defaultChartOperations: ChartWriteOperations = {
   readFile,
   writeTextFile: atomicWriteTextFile
 };
-const maxConcurrentChartReads = 8;
 
 export async function readWorkspaceCharts(
   workspacePath: string,
   charts: ChartSettings[],
   calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars,
-  operations: ChartReadOperations = defaultChartOperations
+  optionsOrOperations: WorkspaceDerivedDataOptions | WorkspaceMarkdownReadOperations = {}
 ): Promise<RelicResult<WorkspaceChart[]>> {
   try {
-    const fileTree = await readWorkspaceFileTree(workspacePath);
+    const options = normalizeWorkspaceDerivedDataOptions(optionsOrOperations);
+    const parseCache = options.parseCache ?? createWorkspaceDerivedDataCache();
+    const fileIndex = await readWorkspaceDerivedFileIndex(workspacePath, options);
     const entriesBySource: Record<ChartSettings["source"], ChartEntry[]> = { chronicle: [] };
-    const files = collectMarkdownPaths(fileTree).flatMap((relativePath) => {
-      const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
-      return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
-    });
-    const fileContents = await mapWithConcurrency(
-      files,
-      maxConcurrentChartReads,
-      async (file) => {
-        try {
-          return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
-        } catch {
-          return null;
-        }
-      }
-    );
 
-    for (const fileContent of fileContents) {
-      if (!fileContent) continue;
-
-      const { content, relativePath } = fileContent;
-      const fileEntries = collectChartEntriesForMarkdown(relativePath, content, calendars);
+    for (const record of readableWorkspaceMarkdownRecords(fileIndex)) {
+      const fileEntries = chartEntriesForRecord(record, calendars, parseCache);
       entriesBySource.chronicle.push(...fileEntries.chronicle);
     }
 
@@ -122,7 +110,7 @@ export async function updateWorkspaceChartEntry(
 
     await operations.writeTextFile(absolutePath.value, nextContent.value);
 
-    return readWorkspaceCharts(workspacePath, charts, calendars, operations);
+    return readWorkspaceCharts(workspacePath, charts, calendars, { operations });
   } catch (error) {
     return fail(
       "CHART_ENTRY_UPDATE_FAILED",

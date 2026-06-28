@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { readBacklinks } from "./backlinks";
+import { readWorkspaceFileIndex } from "./workspaceFileIndex";
 
 describe("readBacklinks", () => {
   const temporaryPaths: string[] = [];
@@ -85,6 +86,28 @@ describe("readBacklinks", () => {
       ok: true,
       value: [
         { count: 1, sourceName: "visible", sourcePath: "visible.md" }
+      ]
+    });
+  });
+
+  it("既に読み取ったWorkspaceFileIndexからaliasesとバックリンクを集計する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-index-"));
+    temporaryPaths.push(workspacePath);
+    await writeFile(path.join(workspacePath, "target.md"), "---\naliases: [Target Alias]\n---\n# Target", "utf8");
+    await writeFile(path.join(workspacePath, "source.md"), "[[Target Alias]]", "utf8");
+    const fileIndex = await readWorkspaceFileIndex(workspacePath);
+
+    await expect(readBacklinks(workspacePath, "target.md", {
+      fileIndex,
+      operations: {
+        async readFile() {
+          throw new Error("file should not be reread");
+        }
+      }
+    })).resolves.toEqual({
+      ok: true,
+      value: [
+        { count: 1, sourceName: "source", sourcePath: "source.md" }
       ]
     });
   });

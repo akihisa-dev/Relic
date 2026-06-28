@@ -209,6 +209,66 @@ describe("readWorkspaceFileIndex", () => {
     }]);
   });
 
+  it("全量読み取り済みキャッシュがあっても現在のサイズ上限を超えるMarkdownは本文を読まない", async () => {
+    const workspacePath = await createWorkspace();
+    const userDataPath = await createWorkspace("relic-index-user-data-");
+    const cachePath = getWorkspaceFileIndexCachePath(userDataPath, "workspace_1");
+    await writeFile(path.join(workspacePath, "large-note.md"), `# Large\n${"x".repeat(64)}`, "utf8");
+
+    await readWorkspaceFileIndex(workspacePath, {
+      cachePath,
+      maxSearchFileBytes: Number.MAX_SAFE_INTEGER
+    });
+
+    const index = await readWorkspaceFileIndex(workspacePath, {
+      cachePath,
+      maxSearchFileBytes: 8,
+      operations: {
+        async readFile() {
+          throw new Error("large file should not be fully read");
+        }
+      }
+    });
+
+    expect(index.records).toMatchObject([{
+      kind: "markdown",
+      lines: [],
+      path: "large-note.md",
+      searchable: false
+    }]);
+  });
+
+  it("サイズ上限で本文なしだったキャッシュも必要になれば全量読み取りへ更新する", async () => {
+    const workspacePath = await createWorkspace();
+    const userDataPath = await createWorkspace("relic-index-user-data-");
+    const cachePath = getWorkspaceFileIndexCachePath(userDataPath, "workspace_1");
+    await writeFile(path.join(workspacePath, "large-note.md"), `# Large\n${"x".repeat(64)}`, "utf8");
+
+    await readWorkspaceFileIndex(workspacePath, {
+      cachePath,
+      maxSearchFileBytes: 8
+    });
+
+    let readCount = 0;
+    const index = await readWorkspaceFileIndex(workspacePath, {
+      cachePath,
+      maxSearchFileBytes: Number.MAX_SAFE_INTEGER,
+      operations: {
+        async readFile(filePath) {
+          readCount += 1;
+          return readFile(filePath, "utf8");
+        },
+        stat: readStat
+      }
+    });
+
+    expect(index.records.find((record) => record.path === "large-note.md")).toMatchObject({
+      lines: ["# Large", "x".repeat(64)],
+      searchable: true
+    });
+    expect(readCount).toBe(1);
+  });
+
   it("fileTreeを渡すと、その木からMarkdownパスを抽出して対象を限定できる", async () => {
     const workspacePath = await createWorkspace();
     await writeFile(path.join(workspacePath, "note.md"), "# Note\n", "utf8");
