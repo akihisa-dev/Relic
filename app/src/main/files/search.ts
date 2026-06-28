@@ -11,7 +11,6 @@ import { parseMarkdownTags } from "../../shared/tags";
 import { extractAliases } from "./aliases";
 import { errorDetails } from "./fileSystem";
 import { parseFrontmatter } from "./frontmatter";
-import { isRegexSafeLine, validateSafeRegexPattern } from "./regexSafety";
 import { readWorkspaceFileIndex } from "./workspaceFileIndex";
 
 export const workspaceSearchMaxResults = 500;
@@ -51,19 +50,6 @@ export async function searchWorkspace(
     return ok(emptySearchResultSet());
   }
 
-  let regex: RegExp | null = null;
-
-  if (mode === "regex") {
-    const safePattern = validateSafeRegexPattern(normalizedQuery, "検索");
-    if (!safePattern.ok) return safePattern;
-
-    try {
-      regex = new RegExp(normalizedQuery, "i");
-    } catch {
-      return fail("SEARCH_REGEX_INVALID", "正規表現が正しくありません。");
-    }
-  }
-
   try {
     const searchOperations = options.fileIndexOperations ?? defaultSearchOperations;
 
@@ -79,7 +65,6 @@ export async function searchWorkspace(
     const skippedLargeFiles = fileIndex.records.filter(
       (record) => record.readStatus === "ok" && !record.searchable
     ).length;
-    let skippedLongLines = 0;
     let truncated = false;
 
     for (const record of fileIndex.records) {
@@ -144,15 +129,7 @@ export async function searchWorkspace(
       }
 
       for (const [index, line] of record.lines.entries()) {
-        if (mode === "regex" && !isRegexSafeLine(line)) {
-          skippedLongLines += 1;
-          continue;
-        }
-
-        const matches =
-          mode === "regex"
-            ? regex!.test(line)
-            : line.toLocaleLowerCase().includes(normalizedQueryLower);
+        const matches = line.toLocaleLowerCase().includes(normalizedQueryLower);
 
         if (matches) {
           results.push({
@@ -171,7 +148,7 @@ export async function searchWorkspace(
       if (truncated) break;
     }
 
-    return ok({ results, skippedLargeFiles, skippedLongLines, truncated });
+    return ok({ results, skippedLargeFiles, skippedLongLines: 0, truncated });
   } catch (error) {
     return fail(
       "SEARCH_FAILED",

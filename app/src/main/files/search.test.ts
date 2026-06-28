@@ -5,7 +5,6 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { WorkspaceSearchResultSet } from "../../shared/ipcWorkspace";
 
-import { regexMaxLineLength, regexMaxPatternLength } from "./regexSafety";
 import { searchWorkspace, workspaceSearchMaxFileBytes, workspaceSearchMaxResults } from "./search";
 
 describe("searchWorkspace", () => {
@@ -119,56 +118,6 @@ describe("searchWorkspace", () => {
       value: { results: [
         { fileName: "読書メモ", path: "読書メモ.md" }
       ] }
-    });
-  });
-
-  it("正規表現検索と無効な正規表現エラーに対応する", async () => {
-    const workspacePath = await createSearchWorkspace();
-
-    const result = await searchWorkspace(workspacePath, "^# ", "regex");
-
-    expect(result).toMatchObject({ ok: true });
-    expect(result.ok ? result.value.results : []).toContainEqual({
-      fileName: "読書メモ",
-      lineNumber: 7,
-      lineText: "# 読書メモ",
-      path: "読書メモ.md"
-    });
-    await expect(searchWorkspace(workspacePath, "[", "regex")).resolves.toMatchObject({
-      ok: false,
-      error: { code: "SEARCH_REGEX_INVALID" }
-    });
-  });
-
-  it("重すぎる可能性がある正規表現検索は実行前に拒否する", async () => {
-    const workspacePath = await createSearchWorkspace();
-
-    await expect(searchWorkspace(workspacePath, "(a+)+$", "regex")).resolves.toMatchObject({
-      error: expect.objectContaining({ code: "REGEX_TOO_COMPLEX" }),
-      ok: false
-    });
-    await expect(searchWorkspace(workspacePath, "a".repeat(regexMaxPatternLength + 1), "regex")).resolves.toMatchObject({
-      error: expect.objectContaining({ code: "REGEX_TOO_COMPLEX" }),
-      ok: false
-    });
-  });
-
-  it("正規表現検索では長すぎる行を評価しない", async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-search-regex-long-line-"));
-    temporaryPaths.push(workspacePath);
-    await writeFile(path.join(workspacePath, "long.md"), `${"a".repeat(regexMaxLineLength + 1)}needle`, "utf8");
-    await writeFile(path.join(workspacePath, "short.md"), "needle", "utf8");
-
-    const result = await searchWorkspace(workspacePath, "needle", "regex");
-
-    expect(result).toEqual({
-      ok: true,
-      value: searchResultSet([{
-        fileName: "short",
-        lineNumber: 1,
-        lineText: "needle",
-        path: "short.md"
-      }], { skippedLongLines: 1 })
     });
   });
 

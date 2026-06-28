@@ -57,6 +57,7 @@ describe("App search and links", () => {
     expect(screen.getByRole("option", { name: "ファイル名" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "タグ" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "プロパティ" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "正規表現" })).not.toBeInTheDocument();
   });
 
   it("検索語句を入力すると検索結果を表示し、クリックでファイルを開く", async () => {
@@ -227,53 +228,6 @@ describe("App search and links", () => {
     });
     expect(searchWorkspace.mock.calls.at(-1)?.[0]).toStrictEqual({ mode: "fileName", query: "読書" });
     expect(await screen.findByText("読書メモ.md")).toBeInTheDocument();
-  });
-
-  it("検索方法で正規表現を選ぶと正規表現検索に切り替える", async () => {
-    const searchWorkspace = vi.fn().mockResolvedValue({
-      ok: true,
-      value: searchResultSet([{ fileName: "読書メモ", lineNumber: 1, lineText: "# 読書メモ", path: "読書メモ.md" }])
-    });
-
-    window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      searchWorkspace
-    });
-
-    await renderApp();
-
-    await screen.findByLabelText("ファイル検索");
-    fireEvent.click(screen.getByRole("button", { name: "検索方法" }));
-    fireEvent.click(await screen.findByRole("option", { name: "正規表現" }));
-    fireEvent.change(screen.getByLabelText("ファイル検索"), {
-      target: { value: "^# " }
-    });
-
-    await waitFor(() => {
-      expect(searchWorkspace).toHaveBeenCalledWith({ mode: "regex", query: "^# " });
-    });
-    expect(await screen.findByText("1: # 読書メモ")).toBeInTheDocument();
-  });
-
-  it("無効な正規表現の検索エラーを表示する", async () => {
-    window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      searchWorkspace: vi.fn().mockResolvedValue({
-        ok: false,
-        error: { code: "SEARCH_REGEX_INVALID", message: "正規表現が正しくありません。" }
-      })
-    });
-
-    await renderApp();
-
-    await screen.findByLabelText("ファイル検索");
-    fireEvent.click(screen.getByRole("button", { name: "検索方法" }));
-    fireEvent.click(await screen.findByRole("option", { name: "正規表現" }));
-    fireEvent.change(screen.getByLabelText("ファイル検索"), {
-      target: { value: "[" }
-    });
-
-    expect(await screen.findByText("正規表現が正しくありません。")).toBeInTheDocument();
   });
 
   it("トーストを閉じると退場反応を通る", async () => {

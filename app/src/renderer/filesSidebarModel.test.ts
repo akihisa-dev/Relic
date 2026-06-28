@@ -46,8 +46,7 @@ describe("filesSidebarModel", () => {
       "fullText",
       "fileName",
       "tag",
-      "frontmatter",
-      "regex"
+      "frontmatter"
     ]);
     expect(activeFileSearchModeLabel(options, "frontmatter", "Full text")).toBe("Property");
     expect(activeFileSearchModeLabel(options, "fullText", "Full text")).toBe("Full text");

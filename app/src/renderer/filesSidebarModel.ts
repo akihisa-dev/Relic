@@ -40,8 +40,7 @@ export function fileSearchModeOptions(t: Translator): FileSearchModeOption[] {
     { label: t("files.searchModeFullText"), mode: "fullText" },
     { label: t("files.searchModeFileName"), mode: "fileName" },
     { label: t("files.searchModeTag"), mode: "tag" },
-    { label: t("files.searchModeFrontmatter"), mode: "frontmatter" },
-    { label: t("files.searchModeRegex"), mode: "regex" }
+    { label: t("files.searchModeFrontmatter"), mode: "frontmatter" }
   ];
 }
 
