@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type PointerEvent, type ReactElement } from "react";
+import { useMemo, useState, type CSSProperties, type PointerEvent, type ReactElement } from "react";
 
 import type { ChartEntry, ChartEntryEditKind, ChartSource } from "../../shared/ipc";
 import {
@@ -9,7 +9,8 @@ import {
   previewEntryForDrag,
   type ChartGuideTick,
   type ChartRow,
-  type DragPreview
+  type DragPreview,
+  type TimelineVisibleRange
 } from "../chronicleTimeline";
 import { IconFiles } from "./RailNavigationIcons";
 import { ChartGuideLines } from "./chronicleChartParts";
@@ -70,7 +71,8 @@ export function ChronicleTracks({
   scrollLeft,
   trackViewportHeight,
   timelineWidth,
-  unitWidth
+  unitWidth,
+  visibleRange
 }: {
   activeSource: ChartSource;
   axisStart: number;
@@ -87,12 +89,16 @@ export function ChronicleTracks({
   trackViewportHeight: number;
   timelineWidth: number;
   unitWidth: number;
+  visibleRange?: TimelineVisibleRange;
 }): ReactElement {
   const [hoveredChronicleKey, setHoveredChronicleKey] = useState<string | null>(null);
   const [selectedChronicleKey, setSelectedChronicleKey] = useState<string | null>(null);
-  const chronicleLaneIndexes = activeSource === "chronicle"
-    ? buildChronicleLaneIndexes(rows, dragPreview)
-    : {};
+  const chronicleLaneIndexes = useMemo(
+    () => activeSource === "chronicle"
+      ? buildChronicleLaneIndexes(rows, dragPreview)
+      : {},
+    [activeSource, dragPreview, rows]
+  );
   const chronicleLaneCount = activeSource === "chronicle"
     ? Math.max(1, Object.values(chronicleLaneIndexes).reduce((max, laneIndex) => Math.max(max, laneIndex + 1), 1))
     : 1;
@@ -101,14 +107,17 @@ export function ChronicleTracks({
     trackViewportHeight / chronicleLaneCount
   );
   const chronicleTrackHeight = chronicleLaneCount * chronicleLaneHeight;
-  const chronicleShapes = activeSource === "chronicle"
-    ? buildChronicleEntryShapes(rows, dragPreview, chronicleLaneIndexes, {
+  const chronicleShapes = useMemo(
+    () => activeSource === "chronicle"
+      ? buildChronicleEntryShapes(rows, dragPreview, chronicleLaneIndexes, {
         axisStart,
         laneHeight: chronicleLaneHeight,
         scrollLeft,
         unitWidth
       })
-    : [];
+      : [],
+    [activeSource, axisStart, chronicleLaneHeight, chronicleLaneIndexes, dragPreview, rows, scrollLeft, unitWidth]
+  );
   const hoveredChronicleShape = activeSource === "chronicle"
     ? chronicleShapes.find((shape) => shape.key === hoveredChronicleKey) ?? null
     : null;
@@ -118,6 +127,16 @@ export function ChronicleTracks({
   const activeChronicleShape = activeSource === "chronicle"
     ? hoveredChronicleShape ?? selectedChronicleShape
     : null;
+  const visibleChronicleShapes = useMemo(
+    () => activeSource === "chronicle"
+      ? visibleChronicleEntryShapes(chronicleShapes, {
+        activeKey: activeChronicleShape?.key ?? null,
+        dragPreview,
+        visibleRange
+      })
+      : [],
+    [activeChronicleShape?.key, activeSource, chronicleShapes, dragPreview, visibleRange]
+  );
   const trackHeight = chronicleTrackHeight;
 
   return (
@@ -149,7 +168,7 @@ export function ChronicleTracks({
           viewBox={`0 0 ${timelineWidth} ${trackHeight}`}
           width={timelineWidth}
         >
-          {chronicleShapes.map((shape) => (
+          {visibleChronicleShapes.map((shape) => (
             <ChronicleEntrySvgShape
               dragPreview={dragPreview}
               onHoverEntry={(key) => setHoveredChronicleKey(key)}
@@ -256,6 +275,35 @@ function buildChronicleEntryShapes(
       y
     };
   });
+}
+
+function visibleChronicleEntryShapes(
+  shapes: ChronicleEntryShape[],
+  {
+    activeKey,
+    dragPreview,
+    visibleRange
+  }: {
+    activeKey: string | null;
+    dragPreview: DragPreview | null;
+    visibleRange?: TimelineVisibleRange;
+  }
+): ChronicleEntryShape[] {
+  if (!visibleRange) return shapes;
+
+  const buffer = Math.max(1, Math.floor((visibleRange.visibleEnd - visibleRange.visibleStart + 1) * 0.25));
+  const startValue = visibleRange.visibleStart - buffer;
+  const endValue = visibleRange.visibleEnd + buffer;
+
+  return shapes.filter((shape) => (
+    shape.key === activeKey ||
+    isPreviewForEntry(shape.entry, dragPreview, "chronicle") ||
+    rangesOverlap(shape.displayEntry.startValue, shape.displayEntry.endValue, startValue, endValue)
+  ));
+}
+
+function rangesOverlap(startA: number, endA: number, startB: number, endB: number): boolean {
+  return startA <= endB && endA >= startB;
 }
 
 function labelFitsInBar(labelWidth: number, barWidth: number, labelLeft: number): boolean {
