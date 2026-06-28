@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { DragEvent, MouseEvent, ReactElement } from "react";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import {
   childMotionPathsForAppearingFolder,
+  buildVisibleFileTreeRows,
   shouldUseSelectedFileTreeItems,
   type FileTreeExpansionAction,
   type FileTreeExpansionRequest,
@@ -74,6 +75,7 @@ export interface FileTreeItemProps extends Omit<FileTreeProps, "isRoot" | "motio
 
 const defaultSelectedItems: FileTreeMoveItem[] = [];
 const defaultSelectedPaths = new Set<string>();
+const largeFileTreeRowThreshold = 1000;
 
 function fileTreeActionsFromProps({
   actions,
@@ -330,6 +332,11 @@ export function FileTree({
   const t = useT();
   const [isRootFileDragOver, setIsRootFileDragOver] = useState(false);
   const activeAppearingPaths = useFileTreeMotion(nodes, motionPaths);
+  const visibleRows = useMemo(
+    () => buildVisibleFileTreeRows(nodes, { pinnedPaths }),
+    [nodes, pinnedPaths]
+  );
+  const isLargeTree = isRoot && visibleRows.length >= largeFileTreeRowThreshold;
   const actions = fileTreeActionsFromProps({
     actions: providedActions,
     expansionRequest,
@@ -391,7 +398,8 @@ export function FileTree({
 
   return (
     <ul
-      className={`file-tree${animation === "expand" ? " file-tree--expanding" : ""}${isRootFileDragOver ? " file-tree--external-drag-over" : ""}`}
+      className={`file-tree${animation === "expand" ? " file-tree--expanding" : ""}${isRootFileDragOver ? " file-tree--external-drag-over" : ""}${isLargeTree ? " file-tree--large" : ""}`}
+      data-visible-row-count={isRoot ? visibleRows.length : undefined}
       onDragLeave={handleRootDragLeave}
       onDragOver={handleRootDragOver}
       onDrop={handleRootDrop}

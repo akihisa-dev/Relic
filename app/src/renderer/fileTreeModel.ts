@@ -31,6 +31,13 @@ export interface FileTreeRenameCommit {
   shouldCommit: boolean;
 }
 
+export interface VisibleFileTreeRow {
+  depth: number;
+  isExpanded: boolean;
+  isPinned: boolean;
+  node: WorkspaceTreeNode;
+}
+
 export function findNodeByPath(nodes: WorkspaceTreeNode[], targetPath: string): WorkspaceTreeNode | null {
   for (const node of nodes) {
     if (node.path === targetPath) return node;
@@ -52,6 +59,46 @@ export function collectNodePaths(nodes: WorkspaceTreeNode[]): Set<string> {
 
   nodes.forEach(walk);
   return paths;
+}
+
+export function collectFolderPaths(nodes: WorkspaceTreeNode[]): Set<string> {
+  const paths = new Set<string>();
+  const walk = (node: WorkspaceTreeNode): void => {
+    if (node.type !== "folder") return;
+    paths.add(node.path);
+    node.children.forEach(walk);
+  };
+
+  nodes.forEach(walk);
+  return paths;
+}
+
+export function buildVisibleFileTreeRows(
+  nodes: WorkspaceTreeNode[],
+  options: {
+    expandedPaths?: Set<string>;
+    pinnedPaths?: Set<string>;
+  } = {}
+): VisibleFileTreeRow[] {
+  const expandedPaths = options.expandedPaths ?? collectFolderPaths(nodes);
+  const rows: VisibleFileTreeRow[] = [];
+
+  const walk = (node: WorkspaceTreeNode, depth: number): void => {
+    const isExpanded = node.type === "folder" && expandedPaths.has(node.path);
+    rows.push({
+      depth,
+      isExpanded,
+      isPinned: options.pinnedPaths?.has(node.path) ?? false,
+      node
+    });
+
+    if (node.type === "folder" && isExpanded) {
+      node.children.forEach((child) => walk(child, depth + 1));
+    }
+  };
+
+  nodes.forEach((node) => walk(node, 0));
+  return rows;
 }
 
 export function addedNodePaths(previousPaths: Set<string>, nodes: WorkspaceTreeNode[]): Set<string> {
