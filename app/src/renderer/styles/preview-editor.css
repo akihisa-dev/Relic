@@ -1345,7 +1345,7 @@
 }
 
 .cm-live-table {
-  margin: 10px 0;
+  margin: 16px 0;
   overflow: visible;
   position: relative;
 }
@@ -1378,24 +1378,40 @@
 }
 
 .cm-live-table table {
-  border-collapse: collapse;
+  border: 1px solid var(--border);
+  border-collapse: separate;
+  border-radius: 6px;
+  border-spacing: 0;
   color: var(--text);
   font-size: 14px;
+  overflow: hidden;
   width: 100%;
 }
 
 .cm-live-table th,
 .cm-live-table td {
-  border: 1px solid var(--border);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
   min-width: 0;
-  padding: 7px 10px;
+  padding: 8px 11px;
   position: relative;
   text-align: left;
 }
 
+.cm-live-table th:last-child,
+.cm-live-table td:last-child {
+  border-right: 0;
+}
+
+.cm-live-table tr:last-child td {
+  border-bottom: 0;
+}
+
 .cm-live-table th {
-  background: var(--hover);
-  font-weight: 700;
+  background: color-mix(in srgb, var(--hover) 72%, var(--bg));
+  border-bottom-color: var(--border-medium);
+  font-weight: 650;
 }
 
 .cm-live-table-cell-input {
@@ -1410,13 +1426,13 @@
 }
 
 .cm-live-table-active {
-  background: var(--accent-softer);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  background: color-mix(in srgb, var(--accent-softer) 74%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 82%, transparent);
 }
 
 .cm-live-table-selected {
-  background: var(--accent-softer);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  background: color-mix(in srgb, var(--accent-softer) 78%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 82%, transparent);
 }
 
 .cm-live-table-handle,
@@ -1428,7 +1444,7 @@
   color: var(--text-3);
   display: flex;
   font: inherit;
-  font-size: 16px;
+  font-size: 14px;
   justify-content: center;
   line-height: 1;
   min-height: 0;
@@ -1472,139 +1488,90 @@
 }
 
 .cm-live-table-handle {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 92%, var(--bg));
+  border-color: transparent;
   color: #ffffff;
 }
 
 .cm-live-table-handle--column {
-  border-radius: 6px 6px 0 0;
-  height: 22px;
-  left: var(--table-active-col-start);
-  top: -21px;
-  width: var(--table-active-col-width);
+  border-radius: 0;
+  height: 24px;
+  left: calc(var(--table-active-col-center) - 13px);
+  top: -30px;
+  transform: translateX(-50%);
+  width: 24px;
 }
 
 .cm-live-table-handle--row {
-  border-radius: 6px 0 0 6px;
-  height: var(--table-active-row-height);
-  left: -22px;
-  top: var(--table-active-row-start);
-  width: 22px;
+  border-radius: 0;
+  height: 24px;
+  left: -36px;
+  top: calc(var(--table-active-row-center) - 13px);
+  transform: translateY(-50%);
+  width: 24px;
 }
 
 .cm-live-table-add {
   color: var(--text-3);
+  height: 24px;
+  width: 24px;
 }
 
 .cm-live-table-delete {
-  border-color: color-mix(in srgb, var(--danger, #b42318) 32%, var(--border));
-  border-radius: 999px;
-  color: var(--danger, #b42318);
+  color: color-mix(in srgb, var(--danger, #b42318) 86%, var(--text-3));
   font-size: 14px;
-  height: 20px;
-  width: 20px;
+  height: 24px;
+  width: 24px;
 }
 
 .cm-live-table-add::before {
-  background: var(--border-medium);
-  content: "";
-  position: absolute;
+  content: none;
 }
 
 .cm-live-table-add--column-before,
 .cm-live-table-add--column-after {
-  height: 18px;
-  width: 28px;
+  top: -30px;
 }
 
 .cm-live-table-add--column-before {
-  bottom: -28px;
-  left: var(--table-active-col-start);
+  border-radius: 5px 0 0 5px;
+  left: calc(var(--table-active-col-center) - 39px);
+  transform: translateX(-50%);
 }
 
 .cm-live-table-add--column-after {
-  left: var(--table-active-col-after);
-  top: -28px;
-}
-
-.cm-live-table-add--column-before::before,
-.cm-live-table-add--column-after::before {
-  height: 14px;
-  left: 50%;
+  border-radius: 0 5px 5px 0;
+  left: calc(var(--table-active-col-center) + 39px);
   transform: translateX(-50%);
-  width: 1px;
-}
-
-.cm-live-table-add--column-before::before {
-  bottom: 18px;
-}
-
-.cm-live-table-add--column-after::before {
-  top: 18px;
 }
 
 .cm-live-table-add--row-before,
 .cm-live-table-add--row-after {
-  height: 28px;
-  width: 18px;
+  left: -36px;
 }
 
 .cm-live-table-add--row-before {
-  left: -28px;
-  top: var(--table-active-row-start);
-}
-
-.cm-live-table-add--row-after {
-  right: -28px;
-  top: var(--table-active-row-after);
-}
-
-.cm-live-table-add--row-before::before,
-.cm-live-table-add--row-after::before {
-  height: 1px;
-  top: 50%;
+  border-radius: 5px 5px 0 0;
+  top: calc(var(--table-active-row-center) - 39px);
   transform: translateY(-50%);
-  width: 14px;
-}
-
-.cm-live-table-add--row-before::before {
-  left: 18px;
-}
-
-.cm-live-table-add--row-after::before {
-  right: 18px;
-}
-
-.cm-live-table-add--column-before,
-.cm-live-table-add--column-after {
-  transform: translateX(-50%);
-}
-
-.cm-live-table-add--row-before,
-.cm-live-table-add--row-after {
-  transform: translate(-50%, -50%);
 }
 
 .cm-live-table-add--row-after {
-  transform: translate(50%, -50%);
+  border-radius: 0 0 5px 5px;
+  top: calc(var(--table-active-row-center) + 39px);
+  transform: translateY(-50%);
 }
 
 .cm-live-table-delete--column {
-  left: var(--table-active-col-after);
-  top: -52px;
+  left: calc(var(--table-active-col-center) + 13px);
+  top: -30px;
   transform: translateX(-50%);
 }
 
 .cm-live-table-delete--row {
-  left: -52px;
-  top: var(--table-active-row-after);
-  transform: translate(-50%, -50%);
-}
-
-.cm-live-table-handle--row {
-  transform: translateY(0);
-  width: 28px;
+  left: -36px;
+  top: calc(var(--table-active-row-center) + 13px);
+  transform: translateY(-50%);
 }
 
 .cm-live-table-handle:hover,
@@ -1617,14 +1584,16 @@
 
 .cm-live-table-add:hover,
 .cm-live-table-add:focus-visible {
+  background: var(--hover);
+  border-color: var(--border-medium);
   color: var(--accent);
   outline: none;
 }
 
 .cm-live-table-delete:hover,
 .cm-live-table-delete:focus-visible {
-  background: color-mix(in srgb, var(--danger, #b42318) 9%, var(--bg));
-  border-color: var(--danger, #b42318);
+  background: color-mix(in srgb, var(--danger, #b42318) 8%, var(--bg));
+  border-color: color-mix(in srgb, var(--danger, #b42318) 34%, var(--border));
   outline: none;
 }
 
