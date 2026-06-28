@@ -78,6 +78,7 @@
     - `bug_report.md`
     - `feature_request.md`
   - `workflows/`
+    - `ci.yml`
     - `draft-release.yml`
   - `pull_request_template.md`
 - `app/`
@@ -527,6 +528,7 @@
       - `links.ts`
       - `markdownExtension.ts`
       - `mermaidText.ts`
+      - `rendererCsp.ts`
       - `result.test.ts`
       - `result.ts`
       - `securityRedaction.test.ts`
