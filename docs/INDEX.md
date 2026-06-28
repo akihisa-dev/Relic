@@ -585,6 +585,7 @@
     - `decisions.md`
     - `dependency-licenses.md`
     - `editor-engine.md`
+    - `file-access-boundaries.md`
     - `stack.md`
   - `features/`
     - `commands.md`
