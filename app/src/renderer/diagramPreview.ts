@@ -189,10 +189,20 @@ export function openDiagramOverlay(
   window.requestAnimationFrame(() => handle.fitToViewport());
 }
 
-export function renderDiagramElements(root: ParentNode, t: Translator = createTranslator("system")): void {
-  const diagrams = root.querySelectorAll<HTMLElement>(".preview-diagram");
+export interface RenderDiagramElementsOptions {
+  rootMargin?: string;
+}
 
-  diagrams.forEach((diagram) => {
+export function renderDiagramElements(
+  root: ParentNode,
+  t: Translator = createTranslator("system"),
+  options: RenderDiagramElementsOptions = {}
+): () => void {
+  const diagrams = root.querySelectorAll<HTMLElement>(".preview-diagram");
+  const renderDiagram = (diagram: HTMLElement) => {
+    if (diagram.dataset.diagramRenderQueued === "true") return;
+    diagram.dataset.diagramRenderQueued = "true";
+
     const language = diagramLanguageFor(diagram.dataset.diagramLanguage);
     if (!language) return;
 
@@ -201,7 +211,28 @@ export function renderDiagramElements(root: ParentNode, t: Translator = createTr
       : decodeDiagramSourceAttribute(diagram.dataset.diagramSource);
     if (!source) return;
     void renderDiagramElement(diagram, language, source, t);
+  };
+
+  if (typeof IntersectionObserver === "undefined") {
+    diagrams.forEach(renderDiagram);
+    return () => undefined;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const diagram = entry.target;
+      if (!(diagram instanceof HTMLElement)) continue;
+      observer.unobserve(diagram);
+      renderDiagram(diagram);
+    }
+  }, {
+    root: root instanceof Element ? root : null,
+    rootMargin: options.rootMargin ?? "320px 0px"
   });
+
+  diagrams.forEach((diagram) => observer.observe(diagram));
+  return () => observer.disconnect();
 }
 
 async function renderDiagramSvg(language: DiagramLanguage, source: string): Promise<string> {

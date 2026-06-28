@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import type { EditorSettings } from "../../shared/ipc";
@@ -8,6 +8,7 @@ import { sanitizePreviewHtml } from "../htmlSanitizer";
 import { useT } from "../i18n";
 import { renderDiagramElements } from "../diagramPreview";
 import { renderMarkdown, slugifyHeading, toggleNthCheckbox } from "../previewMarkdown";
+import { previewUpdateDelayMs } from "../previewUpdateScheduling";
 
 interface PreviewProps {
   content: string;
@@ -31,19 +32,32 @@ export function Preview({
   const containerRef = useRef<HTMLDivElement>(null);
   const handlePreviewActivationRef = useRef<(event: MouseEvent | KeyboardEvent) => void>(() => {});
   const onScrollTargetHandledRef = useRef(onScrollTargetHandled);
-  const embeds = usePreviewEmbeds(content, workspacePath);
+  const [previewContent, setPreviewContent] = useState(content);
+  const embeds = usePreviewEmbeds(previewContent, workspacePath);
   const t = useT();
 
+  useEffect(() => {
+    const delay = previewUpdateDelayMs(content);
+
+    if (delay === 0) {
+      setPreviewContent(content);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setPreviewContent(content), delay);
+    return () => window.clearTimeout(timer);
+  }, [content]);
+
   const html = useMemo(() => {
-    return renderMarkdown(content, workspacePath, embeds, true, t);
-  }, [content, embeds, t, workspacePath]);
+    return renderMarkdown(previewContent, workspacePath, embeds, true, t);
+  }, [embeds, previewContent, t, workspacePath]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     container.innerHTML = sanitizePreviewHtml(html);
-    renderDiagramElements(container, t);
+    return renderDiagramElements(container, t);
   }, [html, settings.theme, t]);
 
   useEffect(() => {

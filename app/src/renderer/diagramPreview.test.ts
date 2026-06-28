@@ -49,6 +49,60 @@ describe("diagramPreview", () => {
     });
   });
 
+  it("IntersectionObserverがある場合は見える範囲に入った図表から描画する", async () => {
+    const observed: Element[] = [];
+    const observerCallbacks: IntersectionObserverCallback[] = [];
+    class FakeIntersectionObserver {
+      constructor(callback: IntersectionObserverCallback) {
+        observerCallbacks.push(callback);
+      }
+
+      disconnect = vi.fn();
+      observe = vi.fn((element: Element) => observed.push(element));
+      unobserve = vi.fn();
+      takeRecords = vi.fn(() => []);
+    }
+    Object.defineProperty(globalThis, "IntersectionObserver", {
+      configurable: true,
+      value: FakeIntersectionObserver
+    });
+
+    const { renderDiagramElements } = await loadDiagramPreviewModule();
+    renderMock.mockResolvedValueOnce({ svg: "<svg><text>visible</text></svg>" });
+    const container = createAttachedContainer();
+    const source = "graph TD; A-->B";
+    container.innerHTML = [
+      `<div class="preview-diagram preview-diagram--mermaid" data-diagram-language="mermaid" data-diagram-source="${encodeDiagramSourceAttribute(source)}">`,
+      '<pre><code class="language-mermaid">from-code</code></pre>',
+      "</div>"
+    ].join("");
+
+    const cleanup = renderDiagramElements(container);
+
+    expect(observed).toHaveLength(1);
+    expect(renderMock).not.toHaveBeenCalled();
+
+    observerCallbacks[0]([{
+      boundingClientRect: {} as DOMRectReadOnly,
+      intersectionRatio: 1,
+      intersectionRect: {} as DOMRectReadOnly,
+      isIntersecting: true,
+      rootBounds: null,
+      target: observed[0] as Element,
+      time: 0
+    }], {} as IntersectionObserver);
+
+    await vi.waitFor(() => {
+      expect(renderMock).toHaveBeenCalledWith(expect.stringMatching(/^relic-mermaid-/), source);
+    });
+
+    cleanup();
+    Object.defineProperty(globalThis, "IntersectionObserver", {
+      configurable: true,
+      value: undefined
+    });
+  });
+
   it("renderDiagramElementsはエンコード済みdata-diagram-sourceを復元して描画する", async () => {
     const { renderDiagramElements } = await loadDiagramPreviewModule();
     renderMock.mockResolvedValueOnce({ svg: "<svg><text>ok</text></svg>" });
