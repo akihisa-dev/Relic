@@ -103,8 +103,11 @@
     - `build-platform.mjs`
     - `check-package-artifacts.mjs`
     - `clean-out.mjs`
+    - `dependency-metadata.mjs`
     - `docs-index.mjs`
     - `generate-icons.mjs`
+    - `generate-sbom.mjs`
+    - `generate-third-party-notices.mjs`
     - `renderer-size-report.mjs`
     - `run-forge-build.mjs`
   - `src/`
@@ -569,6 +572,7 @@
     - `architecture.md`
     - `data-model.md`
     - `decisions.md`
+    - `dependency-licenses.md`
     - `editor-engine.md`
     - `stack.md`
   - `features/`
@@ -588,6 +592,8 @@
     - `terms.md`
   - `development.md`
   - `INDEX.md`
+- `sbom/`
+  - `relic-dependencies.cdx.json`
 - `scripts/`
   - `debug.bat`
   - `Relicをビルド.bat`
@@ -602,3 +608,4 @@
 - `LICENSE`
 - `README.md`
 - `SECURITY.md`
+- `THIRD_PARTY_NOTICES.md`

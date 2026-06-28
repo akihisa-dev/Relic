@@ -266,6 +266,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 - Dependabotは `app/` のnpm依存関係と、リポジトリ全体のGitHub Actionsを対象にする
 - Dependabotによる更新Pull Requestでは、`app/package.json`、`app/pnpm-lock.yaml`、`.github/workflows/` の差分を確認する
 - 依存更新Pull Requestでは、`pnpm.overrides` の対象がまだ必要かを確認し、不要になった固定は同じPull Requestまたは別Issueで外す
+- production dependencies を追加・削除・更新した場合は、`app/` で `pnpm licenses:generate` と `pnpm licenses:check` を実行し、`THIRD_PARTY_NOTICES.md` と `sbom/relic-dependencies.cdx.json` を更新する
 - 依存更新Pull Requestでは、`app/` で `pnpm verify` と `pnpm docs:index:check` を実行し、リポジトリルートで `git diff --check` を実行する
 - GitHub上のDependabot、GitHub Advisory、依存更新Pull Requestは、GitHubへ依存関係情報を送る運用として許可する
 - 手元で `pnpm audit` など外部 registry へ依存情報を送る監査コマンドを実行する場合は、既存方針どおり事前にユーザーの明示許可を得る
@@ -587,13 +588,14 @@ workflowは次を自動で行う。
 10. GitHub Releaseが存在する場合はDraftかどうかを確認し、DraftならAssets添付へ進む
 11. GitHub Releaseが存在し、Draftではない場合は失敗として停止し、Assets添付を行わない
 12. Assetsアップロード直前に再度Draftかどうかを確認し、Draftではない場合は失敗として停止する
-13. `Relic-macOS-arm64.zip`、`Relic-Windows.zip`、各 `.sha256` が存在することを確認する
+13. `Relic-macOS-arm64.zip`、`Relic-Windows.zip`、各 `.sha256`、`THIRD_PARTY_NOTICES.md`、`relic-dependencies.cdx.json` が存在することを確認する
 14. `sha256sum -c` でZIPとchecksumの整合を確認する
 15. Draft Release上に同名Assetsがないことを確認する
-16. `Relic-macOS-arm64.zip`、`Relic-Windows.zip`、各 `.sha256` をAssetsに添付する
+16. `Relic-macOS-arm64.zip`、`Relic-Windows.zip`、各 `.sha256`、`THIRD_PARTY_NOTICES.md`、`relic-dependencies.cdx.json` をAssetsに添付する
 
 workflow全体の権限は `contents: read` に抑え、Release作成を行う `draft-release` ジョブだけ `contents: write` を持つ。
-`draft-release` ジョブはcheckoutせずに `gh release ...` を実行するため、GitHub CLIが対象リポジトリを確実に判断できるように `GH_REPO: ${{ github.repository }}` を明示する。
+`draft-release` ジョブは `THIRD_PARTY_NOTICES.md` とSBOMをAssetsへ添付するためにcheckoutする。
+GitHub CLIが対象リポジトリを確実に判断できるように、checkoutの有無にかかわらず `GH_REPO: ${{ github.repository }}` を明示する。
 Releaseが存在しない場合は `gh release create "$TAG_NAME" --draft --generate-notes --verify-tag` で作成する。
 既に同じタグのReleaseが存在する場合は `isDraft` を確認し、Draft Releaseの場合だけ次へ進む。
 公開済みReleaseの場合は、既に利用者が取得できる状態になっている可能性があるため、workflowを失敗させてAssetsを自動更新しない。
@@ -625,6 +627,8 @@ GitHub ReleasesのAssetsには、workflowが作成した配布ファイルを添
 - macOS Apple Silicon checksum: `Relic-macOS-arm64.zip.sha256`
 - Windows: `Relic-Windows.zip`
 - Windows checksum: `Relic-Windows.zip.sha256`
+- Third-party notices: `THIRD_PARTY_NOTICES.md`
+- SBOM: `relic-dependencies.cdx.json`
 
 Intel Mac向け配布は今回は別作業とする。
 未確認の成果物、途中生成物、`app/out/` の中身を説明なくまとめたファイルは添付しない。
