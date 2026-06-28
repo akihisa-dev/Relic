@@ -1,7 +1,8 @@
 import react from "@vitejs/plugin-react";
-import { mergeConfig } from "vite";
+import { mergeConfig, type Plugin } from "vite";
 
 import baseConfig from "./vite.base.config";
+import { rendererContentSecurityPolicy } from "./src/shared/rendererCsp";
 
 const mermaidPreviewPackages = [
   "@braintree/sanitize-url",
@@ -45,6 +46,18 @@ function isMermaidPreviewDependency(id: string): boolean {
   return mermaidPreviewPackages.some((packageName) => normalized.includes(`/node_modules/${packageName}`));
 }
 
+function rendererCspPlugin(): Plugin {
+  return {
+    name: "relic-renderer-csp",
+    transformIndexHtml(html, context) {
+      return html.replace(
+        "__RELIC_RENDERER_CSP__",
+        rendererContentSecurityPolicy(Boolean(context.server))
+      );
+    }
+  };
+}
+
 export default mergeConfig(baseConfig, {
   build: {
     rollupOptions: {
@@ -68,5 +81,5 @@ export default mergeConfig(baseConfig, {
   optimizeDeps: {
     entries: ["index.html"]
   },
-  plugins: [react()]
+  plugins: [rendererCspPlugin(), react()]
 });
