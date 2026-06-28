@@ -374,20 +374,31 @@ function ChronicleEntryControl({
     setDraft(entry);
   }, [entry.calendarName, entry.endMonth, entry.endYear, entry.startMonth, entry.startYear]);
 
-  const commit = (): void => {
-    const validation = validateChronicleEntry(draft);
+  const commitEntry = (nextEntry: ChronicleFormEntry): void => {
+    const validation = validateChronicleEntry(nextEntry);
     setError(validation);
-    if (!validation) onUpdate(draft);
+    if (!validation) onUpdate(nextEntry);
   };
+
+  const commit = (): void => {
+    commitEntry(draft);
+  };
+  const calendarOptions = chronicleCalendarOptions(draft.calendarName, calendarCandidates);
 
   return (
     <div className="cm-frontmatter-chronicle-entry">
-      <input aria-label={`chronicle ${index} calendar`} className="cm-frontmatter-input" list={`right-chronicle-calendar-options-${index}`} onBlur={commit} onChange={(event) => setDraft({ ...draft, calendarName: event.target.value })} placeholder="暦名" type="text" value={draft.calendarName} />
-      {calendarCandidates.length > 0 ? (
-        <datalist id={`right-chronicle-calendar-options-${index}`}>
-          {calendarCandidates.map((candidate) => <option key={candidate} label={candidate} value={candidate}>{candidate}</option>)}
-        </datalist>
-      ) : null}
+      <select
+        aria-label={`chronicle ${index} calendar`}
+        className="cm-frontmatter-input cm-frontmatter-select"
+        onChange={(event) => {
+          const nextEntry = { ...draft, calendarName: event.target.value };
+          setDraft(nextEntry);
+          commitEntry(nextEntry);
+        }}
+        value={draft.calendarName || calendarOptions[0] || ""}
+      >
+        {calendarOptions.map((candidate) => <option key={candidate} value={candidate}>{candidate}</option>)}
+      </select>
       <input aria-label={`chronicle ${index} start year`} className="cm-frontmatter-input" onBlur={commit} onChange={(event) => setDraft({ ...draft, startYear: event.target.value })} placeholder="開始" type="text" value={draft.startYear} />
       <input aria-label={`chronicle ${index} start month`} className="cm-frontmatter-input" onBlur={commit} onChange={(event) => setDraft({ ...draft, startMonth: event.target.value })} placeholder="月" type="text" value={draft.startMonth} />
       <input aria-label={`chronicle ${index} end year`} className="cm-frontmatter-input" onBlur={commit} onChange={(event) => setDraft({ ...draft, endYear: event.target.value })} placeholder="終了" type="text" value={draft.endYear} />
@@ -396,6 +407,19 @@ function ChronicleEntryControl({
       {error ? <span className="cm-frontmatter-input-error">{error}</span> : null}
     </div>
   );
+}
+
+function chronicleCalendarOptions(value: string, candidates: string[]): string[] {
+  const currentValue = value.trim();
+  const options = candidates.reduce<string[]>((items, candidate) => {
+    const option = candidate.trim();
+    if (option && !items.includes(option)) items.push(option);
+    return items;
+  }, []);
+
+  if (currentValue && !options.includes(currentValue)) return [currentValue, ...options];
+  if (options.length > 0) return options;
+  return [currentValue || "メイン暦"];
 }
 
 function ArrayControl({
