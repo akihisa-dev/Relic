@@ -246,6 +246,7 @@
         - `chronicleChartParts.tsx`
         - `ChronicleSettingsPanel.test.tsx`
         - `ChronicleSettingsPanel.tsx`
+        - `ChronicleTracks.test.tsx`
         - `ChronicleTracks.tsx`
         - `CommandPalette.tsx`
         - `Editor.accessibility.test.tsx`

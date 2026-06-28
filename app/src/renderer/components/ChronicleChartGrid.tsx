@@ -129,6 +129,7 @@ export function ChronicleChartGrid({
               trackViewportHeight={Math.max(1, chartViewportHeight - axisHeight)}
               timelineWidth={timelineWidth}
               unitWidth={unitWidth}
+              visibleRange={visibleRange}
             />
           </div>
         </div>
