@@ -3,7 +3,7 @@
 Relicへのコントリビューションを歓迎します。
 
 Relicは、Markdownファイルを正本として保ちながら編集・閲覧・検索・可視化・出力を広げるローカルアプリです。変更提案では、既存のMarkdown保存形式、ローカルファイル操作、ユーザーのデータを壊さないことを特に重視してください。
-開発ルールの詳細は [docs/development/development.md](docs/development/development.md) を確認してください。
+開発ルールの詳細は [docs/development.md](docs/development.md) を確認してください。
 
 ## ライセンス
 
@@ -22,7 +22,7 @@ Pull Requestを送ることで、提出内容をAGPL-3.0-or-laterで配布・改
 
 ## 開発ルール
 
-文書更新を含む開発ルールは [docs/development/development.md](docs/development/development.md) に従ってください。
+文書更新を含む開発ルールは [docs/development.md](docs/development.md) に従ってください。
 
 ## 開発
 
