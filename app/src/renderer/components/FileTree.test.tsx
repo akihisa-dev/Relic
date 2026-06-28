@@ -75,6 +75,21 @@ afterEach(() => {
 });
 
 describe("FileTree", () => {
+  it("rootに表示行数を保持する", () => {
+    const { container } = render(
+      <I18nProvider language="en">
+        <FileTree
+          isRoot
+          nodes={tree}
+          onOpenFile={vi.fn()}
+          onSelectFolder={vi.fn()}
+        />
+      </I18nProvider>
+    );
+
+    expect(container.querySelector(":scope > .file-tree")).toHaveAttribute("data-visible-row-count", "5");
+  });
+
   it("opens files and toggles folders from rows", () => {
     const props = renderFileTree();
 

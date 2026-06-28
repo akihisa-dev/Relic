@@ -10,6 +10,12 @@
   padding: 0;
 }
 
+.file-tree--large {
+  contain: layout style paint;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 720px;
+}
+
 .file-tree .file-tree {
   border-left: 1px solid var(--border);
   margin-left: 14px;

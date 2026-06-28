@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import type { WorkspaceTreeNode } from "../shared/ipc";
 import {
   addedNodePaths,
+  buildVisibleFileTreeRows,
   childMotionPathsForAppearingFolder,
+  collectFolderPaths,
   expansionRequestAppliesTo,
   fileTreeMarkdownLinkForPath,
   fileTreeOperationItems,
@@ -99,6 +101,36 @@ describe("fileTreeModel", () => {
     expect(childMotionPathsForAppearingFolder(tree[0]!, true)).toEqual(new Set(["Folder", "Folder/Child.md", "Folder/Nested"]));
     expect(childMotionPathsForAppearingFolder(tree[1]!, true)).toBeUndefined();
     expect(childMotionPathsForAppearingFolder(tree[0]!, false)).toBeUndefined();
+  });
+
+  it("展開状態から表示行を深さ付きで作る", () => {
+    const rows = buildVisibleFileTreeRows(tree, {
+      expandedPaths: new Set(["Folder"]),
+      pinnedPaths: new Set(["Root.md"])
+    });
+
+    expect(rows.map((row) => ({
+      depth: row.depth,
+      isExpanded: row.isExpanded,
+      isPinned: row.isPinned,
+      path: row.node.path
+    }))).toEqual([
+      { depth: 0, isExpanded: true, isPinned: false, path: "Folder" },
+      { depth: 1, isExpanded: false, isPinned: false, path: "Folder/Child.md" },
+      { depth: 1, isExpanded: false, isPinned: false, path: "Folder/Nested" },
+      { depth: 0, isExpanded: false, isPinned: true, path: "Root.md" }
+    ]);
+  });
+
+  it("全フォルダ展開時の表示行を作れる", () => {
+    expect([...collectFolderPaths(tree)]).toEqual(["Folder", "Folder/Nested"]);
+    expect(buildVisibleFileTreeRows(tree).map((row) => row.node.path)).toEqual([
+      "Folder",
+      "Folder/Child.md",
+      "Folder/Nested",
+      "Folder/Nested/Nested.md",
+      "Root.md"
+    ]);
   });
 
   it("filters no-op and invalid folder moves", () => {
