@@ -53,10 +53,11 @@ describe("RightPanelFrontmatterForm chronicle", () => {
   it("chronicleの暦名を候補から選べる", () => {
     renderForm();
 
-    const input = screen.getByLabelText("chronicle 0 calendar");
+    const select = screen.getByLabelText("chronicle 0 calendar") as HTMLSelectElement;
 
-    expect(input).toHaveAttribute("list", "right-chronicle-calendar-options-0");
-    expect(document.querySelector("datalist#right-chronicle-calendar-options-0 option[value='帝国暦']")).not.toBeNull();
+    expect(select.tagName).toBe("SELECT");
+    expect(Array.from(select.options).map((option) => option.value)).toEqual(["メイン暦", "帝国暦"]);
+    expect(document.querySelector("datalist#right-chronicle-calendar-options-0 option[value='帝国暦']")).toBeNull();
   });
 
   it("chronicle entryの年月編集を新形式で書き戻す", async () => {
