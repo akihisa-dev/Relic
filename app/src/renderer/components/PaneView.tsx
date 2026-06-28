@@ -1,5 +1,6 @@
 import { EditorView } from "@codemirror/view";
 import type { MutableRefObject, ReactElement, ReactNode } from "react";
+import { useShallow } from "zustand/react/shallow";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import type { FileTab } from "../store/editorStore";
@@ -101,7 +102,14 @@ export function PaneView({
     rightPane,
     tabs,
     updateTabContent
-  } = useEditorStore();
+  } = useEditorStore(useShallow((state) => ({
+    leftPane: state.leftPane,
+    markTabSaved: state.markTabSaved,
+    resolveTabExternalConflict: state.resolveTabExternalConflict,
+    rightPane: state.rightPane,
+    tabs: state.tabs,
+    updateTabContent: state.updateTabContent
+  })));
   const paneState = pane === "left" ? leftPane : rightPane;
   const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
 

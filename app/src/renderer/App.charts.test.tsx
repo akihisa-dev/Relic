@@ -57,19 +57,20 @@ describe("App charts", () => {
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
     const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
+    const getWorkspaceCharts = vi.fn().mockResolvedValue({
+      ok: true,
+      value: [{
+        entries: [kamakuraEntry()],
+        filePaths: ["history/kamakura.md"],
+        id: "chronicle",
+        name: "年表",
+        source: "chronicle"
+      }]
+    });
 
     window.relic = makeRelicApi({
       getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
-      getWorkspaceCharts: vi.fn().mockResolvedValue({
-        ok: true,
-        value: [{
-          entries: [kamakuraEntry()],
-          filePaths: ["history/kamakura.md"],
-          id: "chronicle",
-          name: "年表",
-          source: "chronicle"
-        }]
-      }),
+      getWorkspaceCharts,
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
@@ -85,8 +86,10 @@ describe("App charts", () => {
     const renderResult = await renderApp();
 
     await screen.findByText("Notes");
+    expect(getWorkspaceCharts).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    await waitFor(() => expect(getWorkspaceCharts).toHaveBeenCalledTimes(1));
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
     expect(activeTabId).toBe("chart-chronicle");
@@ -95,8 +98,8 @@ describe("App charts", () => {
       kind: "chart"
     });
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
+    await screen.findByText("1185 〜 1333");
     expect(renderResult.container.querySelector(".chronicle-sidebar")).toBeNull();
-    expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
     expect(renderResult.container.querySelector(".chronicle-name-column")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-year-summary")).toBeNull();
     expect(screen.queryByText("年代")).not.toBeInTheDocument();
@@ -181,6 +184,7 @@ describe("App charts", () => {
     await screen.findByText("Notes");
 
     fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    await waitFor(() => expect(container.querySelector(".chronicle-fill")).not.toBeNull());
     expect(container.querySelector(".chronicle-actions")).toBeNull();
 
     const fill = container.querySelector(".chronicle-fill") as HTMLElement;
@@ -244,6 +248,7 @@ describe("App charts", () => {
     await screen.findByText("Notes");
 
     fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    await waitFor(() => expect(container.querySelector(".chronicle-fill")).not.toBeNull());
     expect(container.querySelector(".chronicle-actions")).toBeNull();
 
     const fill = container.querySelector(".chronicle-fill") as HTMLElement;

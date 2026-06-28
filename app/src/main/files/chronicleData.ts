@@ -22,10 +22,21 @@ export function collectChartEntriesForMarkdown(
   content: string,
   calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
 ): Record<"chronicle", ChartEntry[]> {
+  return collectChartEntriesForFrontmatterData(
+    relativePath,
+    parseFrontmatter(content).data,
+    calendars
+  );
+}
+
+export function collectChartEntriesForFrontmatterData(
+  relativePath: string,
+  data: Record<string, unknown>,
+  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
+): Record<"chronicle", ChartEntry[]> {
   const entriesBySource: Record<"chronicle", ChartEntry[]> = { chronicle: [] };
   const fileName = stripMarkdownExtension(path.basename(relativePath));
-  const frontmatter = parseFrontmatter(content);
-  const ranges = extractChronicleRangesFromData(frontmatter.data, calendars);
+  const ranges = extractChronicleRangesFromData(data, calendars);
 
   for (const range of ranges) {
     const startPoint = {

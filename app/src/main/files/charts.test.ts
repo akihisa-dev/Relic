@@ -5,6 +5,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { extractChronicleRange, readWorkspaceCharts, updateWorkspaceChartEntry } from "./charts";
+import { readWorkspaceFileIndex } from "./workspaceFileIndex";
 
 describe("extractChronicleRange", () => {
   it("単年と期間を読む", () => {
@@ -48,6 +49,36 @@ describe("readWorkspaceCharts", () => {
           entries: [
             { chronicleCalendarName: "主暦", fileName: "main", path: "main.MD" },
             { chronicleCalendarName: "副暦", fileName: "sub", path: "sub.md", startValue: 1216 }
+          ],
+          id: "chronicle"
+        }
+      ]
+    });
+  });
+
+  it("既に読み取ったWorkspaceFileIndexから年表entryを読む", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-chart-index-"));
+    await writeFile(path.join(workspacePath, "main.md"), "---\nchronicle:\n  - [メイン暦, [[10, null], [10, null]]]\n---\n# Main\n", "utf8");
+    const fileIndex = await readWorkspaceFileIndex(workspacePath);
+
+    await expect(readWorkspaceCharts(
+      workspacePath,
+      [{ filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" }],
+      [{ name: "メイン暦" }],
+      {
+        fileIndex,
+        operations: {
+          async readFile() {
+            throw new Error("file should not be reread");
+          }
+        }
+      }
+    )).resolves.toMatchObject({
+      ok: true,
+      value: [
+        {
+          entries: [
+            { chronicleCalendarName: "メイン暦", fileName: "main", path: "main.md" }
           ],
           id: "chronicle"
         }

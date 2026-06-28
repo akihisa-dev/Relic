@@ -1,48 +1,28 @@
-import { readFile } from "node:fs/promises";
-
 import type { WorkspaceTagSummary } from "../../shared/ipc";
-import { parseMarkdownTags } from "../../shared/tags";
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { errorDetails } from "./fileSystem";
-import { readWorkspaceFileTree } from "./fileTree";
-import { resolveWorkspaceRelativePath } from "./paths";
-
-interface TagsReadOperations {
-  readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
-}
-
-const defaultTagsReadOperations: TagsReadOperations = {
-  readFile
-};
+import {
+  createWorkspaceDerivedDataCache,
+  normalizeWorkspaceDerivedDataOptions,
+  readableWorkspaceMarkdownRecords,
+  readWorkspaceDerivedFileIndex,
+  tagsForRecord,
+  type WorkspaceDerivedDataOptions,
+  type WorkspaceMarkdownReadOperations
+} from "./workspaceDerivedData";
 
 export async function readWorkspaceTags(
   workspacePath: string,
-  operations: TagsReadOperations = defaultTagsReadOperations
+  optionsOrOperations: WorkspaceDerivedDataOptions | WorkspaceMarkdownReadOperations = {}
 ): Promise<RelicResult<WorkspaceTagSummary[]>> {
   try {
-    const fileTree = await readWorkspaceFileTree(workspacePath);
+    const options = normalizeWorkspaceDerivedDataOptions(optionsOrOperations);
+    const parseCache = options.parseCache ?? createWorkspaceDerivedDataCache();
+    const fileIndex = await readWorkspaceDerivedFileIndex(workspacePath, options);
     const tagCounts = new Map<string, number>();
-    const files = collectMarkdownPaths(fileTree).flatMap((relativePath) => {
-      const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
-      return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
-    });
-    const fileContents = await Promise.all(
-      files.map(async (file) => {
-        try {
-          return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
-        } catch {
-          return null;
-        }
-      })
-    );
 
-    for (const fileContent of fileContents) {
-      if (!fileContent) continue;
-
-      const { content } = fileContent;
-
-      for (const tag of parseMarkdownTags(content).tags) {
+    for (const record of readableWorkspaceMarkdownRecords(fileIndex)) {
+      for (const tag of tagsForRecord(record, parseCache)) {
         tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
       }
     }

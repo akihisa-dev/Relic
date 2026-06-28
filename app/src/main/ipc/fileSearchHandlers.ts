@@ -100,7 +100,12 @@ export function registerFileSearchHandlers(): void {
 
       return withActiveWorkspaceContext(
         { code: "BACKLINKS_READ_FAILED", message: "バックリンクを読み込めませんでした。" },
-        async (context) => readBacklinks(context.activeWorkspace.path, input.path)
+        async (context) => readBacklinks(context.activeWorkspace.path, input.path, {
+          cachePath: getWorkspaceFileIndexCachePath(
+            context.userDataPath,
+            context.activeWorkspace.id
+          )
+        })
       );
     } catch (error) {
       return fail(

@@ -53,36 +53,11 @@ export function useWorkspaceCharts({
   }, [setWorkspaceError, workspaceState?.activeWorkspace?.id]);
 
   useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic) {
+    if (!hasOpenChart) {
+      setCharts((current) => current.length === 0 ? current : []);
       return;
     }
 
-    let canceled = false;
-
-    if (!isRelicApiContractCompatible(window.relic)) {
-      setCharts([]);
-      setWorkspaceError(apiContractMismatchMessage());
-      return;
-    }
-
-    void window.relic.getWorkspaceCharts().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        setCharts(normalizeWorkspaceCharts(result.value));
-      } else {
-        setCharts([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-
-    return () => {
-      canceled = true;
-    };
-  }, [setWorkspaceError, workspaceState?.activeWorkspace?.id]);
-
-  useEffect(() => {
-    if (!hasOpenChart) return;
     void reloadCharts();
   }, [hasOpenChart, reloadCharts]);
 

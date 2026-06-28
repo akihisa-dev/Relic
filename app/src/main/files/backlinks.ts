@@ -1,31 +1,26 @@
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { Backlink } from "../../shared/ipc";
 import { createWikiLinkResolver } from "../../shared/links";
 import { hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceAliases } from "./aliases";
 import { errorDetails } from "./fileSystem";
-import { readWorkspaceFileTree } from "./fileTree";
-import { mapWithConcurrency } from "./concurrency";
 import { resolveWorkspaceRelativePath } from "./paths";
-
-interface BacklinksReadOperations {
-  readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
-}
-
-const defaultBacklinksReadOperations: BacklinksReadOperations = {
-  readFile
-};
-
-const maxConcurrentBacklinkReads = 8;
+import {
+  createWorkspaceDerivedDataCache,
+  markdownContentForRecord,
+  normalizeWorkspaceDerivedDataOptions,
+  readableWorkspaceMarkdownRecords,
+  readWorkspaceDerivedFileIndex,
+  type WorkspaceDerivedDataOptions,
+  type WorkspaceMarkdownReadOperations
+} from "./workspaceDerivedData";
 
 export async function readBacklinks(
   workspacePath: string,
   targetRelativePath: string,
-  operations: BacklinksReadOperations = defaultBacklinksReadOperations
+  optionsOrOperations: WorkspaceDerivedDataOptions | WorkspaceMarkdownReadOperations = {}
 ): Promise<RelicResult<Backlink[]>> {
   if (!hasMarkdownExtension(targetRelativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけバックリンクを確認できます。");
@@ -38,49 +33,33 @@ export async function readBacklinks(
   }
 
   try {
-    const fileTree = await readWorkspaceFileTree(workspacePath);
-    const markdownPaths = collectMarkdownPaths(fileTree);
-    const aliasesResult = await readWorkspaceAliases(workspacePath);
+    const options = normalizeWorkspaceDerivedDataOptions(optionsOrOperations);
+    const parseCache = options.parseCache ?? createWorkspaceDerivedDataCache();
+    const fileIndex = await readWorkspaceDerivedFileIndex(workspacePath, options);
+    const markdownPaths = fileIndex.entries.map((entry) => entry.path);
+    const aliasesResult = await readWorkspaceAliases(workspacePath, {
+      ...options,
+      fileIndex,
+      parseCache
+    });
     const aliasesByPath = aliasesResult.ok ? aliasesResult.value : {};
     const resolveLinks = createWikiLinkResolver(markdownPaths, aliasesByPath);
     const backlinks: Backlink[] = [];
-    const files = markdownPaths.flatMap((sourcePath) => {
-      if (sourcePath === targetRelativePath) return [];
-      const sourceFile = resolveWorkspaceRelativePath(workspacePath, sourcePath);
-      return sourceFile.ok ? [{ sourcePath, absolutePath: sourceFile.value }] : [];
-    });
-    const fileContents = await mapWithConcurrency(
-      files,
-      maxConcurrentBacklinkReads,
-      async (file) => {
-        try {
-          const content = await operations.readFile(file.absolutePath, "utf8");
 
-          if (!content.includes("[[")) {
-            return { ...file, content: null };
-          }
+    for (const record of readableWorkspaceMarkdownRecords(fileIndex)) {
+      if (record.path === targetRelativePath) continue;
 
-          return { ...file, content };
-        } catch {
-          return null;
-        }
-      }
-    );
-
-    for (const fileContent of fileContents) {
-      if (!fileContent) continue;
-
-      const { content, sourcePath } = fileContent;
-      const backlinksForSource = content
-        ? resolveLinks(content, sourcePath).filter((link) => link.path === targetRelativePath)
+      const content = markdownContentForRecord(record, parseCache);
+      const backlinksForSource = content.includes("[[")
+        ? resolveLinks(content, record.path).filter((link) => link.path === targetRelativePath)
         : [];
       const count = backlinksForSource.length;
 
       if (count > 0) {
         backlinks.push({
           count,
-          sourceName: stripMarkdownExtension(path.basename(sourcePath)),
-          sourcePath
+          sourceName: stripMarkdownExtension(path.basename(record.path)),
+          sourcePath: record.path
         });
       }
     }

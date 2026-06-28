@@ -108,6 +108,7 @@
       - `files/`
         - `aliases.test.ts`
         - `aliases.ts`
+        - `aliasesModel.ts`
         - `atomicWrite.test.ts`
         - `atomicWrite.ts`
         - `backlinks.test.ts`
@@ -151,6 +152,7 @@
         - `tags.ts`
         - `trash.test.ts`
         - `trash.ts`
+        - `workspaceDerivedData.ts`
         - `workspaceFileIndex.test.ts`
         - `workspaceFileIndex.ts`
       - `ipc/`

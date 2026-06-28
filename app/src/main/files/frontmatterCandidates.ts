@@ -1,46 +1,27 @@
-import { readFile } from "node:fs/promises";
-
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { errorDetails } from "./fileSystem";
-import { parseFrontmatter } from "./frontmatter";
-import { readWorkspaceFileTree } from "./fileTree";
-import { resolveWorkspaceRelativePath } from "./paths";
-
-interface FrontmatterCandidateReadOperations {
-  readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
-}
-
-const defaultFrontmatterCandidateReadOperations: FrontmatterCandidateReadOperations = {
-  readFile
-};
+import {
+  createWorkspaceDerivedDataCache,
+  frontmatterForRecord,
+  normalizeWorkspaceDerivedDataOptions,
+  readableWorkspaceMarkdownRecords,
+  readWorkspaceDerivedFileIndex,
+  type WorkspaceDerivedDataOptions,
+  type WorkspaceMarkdownReadOperations
+} from "./workspaceDerivedData";
 
 export async function readFrontmatterValueCandidates(
   workspacePath: string,
-  operations: FrontmatterCandidateReadOperations = defaultFrontmatterCandidateReadOperations
+  optionsOrOperations: WorkspaceDerivedDataOptions | WorkspaceMarkdownReadOperations = {}
 ): Promise<RelicResult<Record<string, string[]>>> {
   try {
-    const fileTree = await readWorkspaceFileTree(workspacePath);
+    const options = normalizeWorkspaceDerivedDataOptions(optionsOrOperations);
+    const parseCache = options.parseCache ?? createWorkspaceDerivedDataCache();
+    const fileIndex = await readWorkspaceDerivedFileIndex(workspacePath, options);
     const valuesByField = new Map<string, Set<string>>();
-    const files = collectMarkdownPaths(fileTree).flatMap((relativePath) => {
-      const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
-      return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
-    });
-    const fileContents = await Promise.all(
-      files.map(async (file) => {
-        try {
-          return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
-        } catch {
-          return null;
-        }
-      })
-    );
 
-    for (const fileContent of fileContents) {
-      if (!fileContent) continue;
-
-      const { content } = fileContent;
-      const { data } = parseFrontmatter(content);
+    for (const record of readableWorkspaceMarkdownRecords(fileIndex)) {
+      const { data } = frontmatterForRecord(record, parseCache);
 
       for (const [fieldName, value] of Object.entries(data)) {
         const fieldValues = valuesByField.get(fieldName) ?? new Set<string>();
