@@ -345,6 +345,8 @@ describe("Editor table preview", () => {
     expect(table.dataset.canAddRowAfter).toBeUndefined();
     expect(table.dataset.canGrabRow).toBe("true");
     expect(table.dataset.canGrabColumn).toBeUndefined();
+    expect(table.dataset.canDeleteRow).toBeUndefined();
+    expect(table.dataset.canDeleteColumn).toBeUndefined();
 
     fireEvent.mouseEnter(container.querySelector('.cm-live-table-cell-input[data-row="0"][data-col="0"]') as HTMLInputElement);
     expect(table.dataset.canAddColumnAfter).toBe("true");
@@ -352,6 +354,8 @@ describe("Editor table preview", () => {
     expect(table.dataset.canAddRowAfter).toBeUndefined();
     expect(table.dataset.canGrabColumn).toBe("true");
     expect(table.dataset.canGrabRow).toBe("true");
+    expect(table.dataset.canDeleteColumn).toBe("true");
+    expect(table.dataset.canDeleteRow).toBeUndefined();
 
     fireEvent.mouseEnter(container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="1"]') as HTMLInputElement);
     expect(table.dataset.canAddColumnAfter).toBeUndefined();
@@ -360,23 +364,39 @@ describe("Editor table preview", () => {
     expect(table.dataset.canAddRowBefore).toBeUndefined();
     expect(table.dataset.canGrabColumn).toBeUndefined();
     expect(table.dataset.canGrabRow).toBeUndefined();
+    expect(table.dataset.canDeleteColumn).toBeUndefined();
+    expect(table.dataset.canDeleteRow).toBeUndefined();
   });
 
-  it("ライブプレビューの表で削除ボタンを出さず、行列選択ハンドルを出す", async () => {
+  it("ライブプレビューの表で側面の削除ボタンから選択行列を削除できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+
     const { container } = render(
       <Editor
-        content={"| A | B |\n| --- | --- |\n| x | y |"}
+        content={"| A | B | C |\n| --- | --- | --- |\n| x | y | z |\n| 1 | 2 | 3 |"}
         onChange={vi.fn()}
         settings={settings}
+        viewRef={viewRef}
       />
     );
 
     await waitFor(() => expect(container.querySelector(".cm-live-table-handle--column")).not.toBeNull());
 
-    expect(container.querySelector('button[title="列を削除"]')).toBeNull();
-    expect(container.querySelector('button[title="行を削除"]')).toBeNull();
     expect(container.querySelector(".cm-live-table-handle--column")).not.toBeNull();
     expect(container.querySelector(".cm-live-table-handle--row")).not.toBeNull();
+
+    fireEvent.mouseEnter(container.querySelector('.cm-live-table-cell-input[data-row="0"][data-col="1"]') as HTMLInputElement);
+    expect((container.querySelector(".cm-live-table") as HTMLElement).dataset.canDeleteColumn).toBe("true");
+    fireEvent.click(container.querySelector(".cm-live-table-delete--column") as HTMLButtonElement);
+
+    expect(viewRef.current?.state.doc.toString()).toBe("| A | C |\n| --- | --- |\n| x | z |\n| 1 | 3 |");
+
+    await waitFor(() => expect(container.querySelector('.cm-live-table-cell-input[data-row="2"][data-col="0"]')).not.toBeNull());
+    fireEvent.mouseEnter(container.querySelector('.cm-live-table-cell-input[data-row="2"][data-col="0"]') as HTMLInputElement);
+    expect((container.querySelector(".cm-live-table") as HTMLElement).dataset.canDeleteRow).toBe("true");
+    fireEvent.click(container.querySelector(".cm-live-table-delete--row") as HTMLButtonElement);
+
+    expect(viewRef.current?.state.doc.toString()).toBe("| A | C |\n| --- | --- |\n| x | z |");
   });
 
   it("ライブプレビューの表で右クリックメニューから行列を操作できる", async () => {
@@ -618,6 +638,52 @@ describe("Editor table preview", () => {
     fireEvent.mouseUp(document, { clientX: 80, clientY: 65 });
 
     expect(viewRef.current?.state.doc.toString()).toBe("| A | B |\n| --- | --- |\n| z | w |\n| x | y |");
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: originalElementFromPoint
+    });
+  });
+
+  it("ライブプレビューの表で列ハンドルを上側の帯のままドラッグして移動できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const originalElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: vi.fn(() => null)
+    });
+
+    const { container } = render(
+      <Editor
+        content={"| A | B | C |\n| --- | --- | --- |\n| x | y | z |"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector("table")).not.toBeNull());
+    const table = container.querySelector("table") as HTMLTableElement;
+    vi.spyOn(table, "getBoundingClientRect").mockReturnValue({
+      bottom: 130,
+      height: 90,
+      left: 100,
+      right: 400,
+      top: 40,
+      width: 300,
+      x: 100,
+      y: 40,
+      toJSON: () => ({})
+    } as DOMRect);
+
+    (container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="2"]') as HTMLInputElement).focus();
+    fireEvent.mouseDown(container.querySelector(".cm-live-table-handle--column") as HTMLButtonElement, {
+      clientX: 350,
+      clientY: 20
+    });
+    fireEvent.mouseMove(document, { clientX: 130, clientY: 20 });
+    fireEvent.mouseUp(document, { clientX: 130, clientY: 20 });
+
+    expect(viewRef.current?.state.doc.toString()).toBe("| C | A | B |\n| --- | --- | --- |\n| z | x | y |");
     Object.defineProperty(document, "elementFromPoint", {
       configurable: true,
       value: originalElementFromPoint

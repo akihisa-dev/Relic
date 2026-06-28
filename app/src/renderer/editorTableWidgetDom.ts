@@ -1,14 +1,18 @@
 import { EditorView } from "@codemirror/view";
 
 import {
+  deleteTableColumn,
+  deleteTableRow,
   formatTable,
   insertTableColumn,
   insertTableRow,
+  tableColumnCount,
   type TableBlock
 } from "./editorTableModel";
 import type { Translator } from "./i18nModel";
 
 export type TableEdgeAddAxis = "column-before" | "column-after" | "row-before" | "row-after";
+export type TableDeleteAxis = "column" | "row";
 
 export function findTableWidgetView(element: HTMLElement): EditorView | null {
   const editor = element.closest(".cm-editor");
@@ -72,6 +76,46 @@ export function createTableEdgeAddButton({
       isColumn ? Math.min(getFocusIndex(), block.rows.length - 1) : index,
       isColumn ? index : getFocusIndex()
     );
+  });
+  return button;
+}
+
+export function createTableDeleteButton({
+  axis,
+  block,
+  getColIndex,
+  getRowIndex,
+  t
+}: {
+  axis: TableDeleteAxis;
+  block: TableBlock;
+  getColIndex: () => number;
+  getRowIndex: () => number;
+  t: Translator;
+}): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `cm-live-table-delete cm-live-table-delete--${axis}`;
+  button.textContent = "-";
+  button.title = axis === "column" ? t("editor.tableDeleteColumn") : t("editor.tableDeleteRow");
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const view = findTableWidgetView(button);
+    if (!view) return;
+
+    const colIndex = getColIndex();
+    const rowIndex = getRowIndex();
+    if (axis === "column") {
+      if (tableColumnCount(block.rows) <= 1) return;
+      updateTableWidgetRows(view, block, deleteTableColumn(block.rows, colIndex));
+      focusTableWidgetCell(button, rowIndex, Math.max(0, colIndex - 1));
+      return;
+    }
+
+    if (rowIndex === 0 || block.rows.length <= 2) return;
+    updateTableWidgetRows(view, block, deleteTableRow(block.rows, rowIndex));
+    focusTableWidgetCell(button, Math.max(1, Math.min(rowIndex, block.rows.length - 2)), colIndex);
   });
   return button;
 }
