@@ -127,11 +127,11 @@ AIが実装、修正、検証、調査、文書整理を行った場合は、完
 コミットメッセージは日本語で書く。
 文書内に作業履歴を蓄積しない代わりに、コミット本文を後から作業内容が分かる粒度で書く。
 
-コミットメッセージの構造は Conventional Commits 1.0.0 に従う。
+コミットメッセージの構造は Conventional Commits 1.0.0 を基本にする。
 件名は、次の形式にする。
 
 ```text
-<type>[optional scope][!]: <version> <description>
+<type>[!]: <version> <description>
 ```
 
 `type` は英語小文字にする。
@@ -139,9 +139,9 @@ Conventional Commits 1.0.0 の構造に従う。
 次の中から1つだけ選ぶ。
 表にない `type` をその場で作らない。
 
-`scope` は省略してよい。
-付ける場合は、変更対象を英語小文字の名詞で書く。
-破壊的変更がある場合は `type` または `scope` の直後に `!` を付けるか、本文末尾に `BREAKING CHANGE:` を書く。
+件名には `scope` を書かない。
+変更対象や影響範囲は、本文の `scope:` に英語小文字の名詞で必ず書く。
+破壊的変更がある場合は `type` の直後に `!` を付けるか、本文末尾に `BREAKING CHANGE:` を書く。
 
 `version` には、コミット時点の `app/package.json` の `version` を `MAJOR.MINOR.PATCH` 形式で書く。
 バージョン更新を含むコミットでは、更新後のバージョンを書く。
@@ -168,13 +168,16 @@ Conventional Commits 1.0.0 の構造に従う。
 ```text
 docs: 0.3.109 コミットメッセージ規則をConventional Commitsに統一
 fix: 0.3.109 ファイル移動時のリンク更新漏れを修正
-feat(editor): 0.3.109 分割表示を追加
+feat: 0.3.109 分割表示を追加
 feat!: 1.0.0 ワークスペース設定形式を変更
 ```
 
 本文には原則として次の項目を書く。
 
 ```text
+scope:
+- 変更対象や影響範囲
+
 目的:
 - なぜこの変更を行ったか
 
