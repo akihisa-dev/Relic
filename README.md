@@ -40,12 +40,12 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 - Outline view.
 - Quick switcher.
 - Command palette.
-- Full-text search, filename search, tag search, front matter search, regular expression search, and search-and-replace.
+- Full-text search, filename search, tag search, and front matter search.
 
 ### Front Matter and Tags
 
 - YAML front matter editing support.
-- Front matter settings for fixed properties (`aliases`, `tags`, `chronicle`) and custom property input.
+- Optional front matter settings for fixed properties (`aliases`, `tags`, `chronicle`) and custom property input.
 - Tags from front matter `tags:`.
 
 ### Diagrams and Export
@@ -56,16 +56,19 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 
 ### Timeline
 
-- Timeline view from `chronicle` front matter values.
+- Optional timeline view from `chronicle` front matter values.
 
 ![Relic timeline screenshot](assets/relic-timeline-screenshot.png)
 
 ### File Processing Tools
 
+- Optional file processing tools are available from feature toggles.
 - Merge files.
 - Generate title lists.
 - Generate tables of contents.
 - Generate tag indexes.
+
+Front matter settings, calendar settings, timeline, and file processing tools are implemented but hidden by default. They can be enabled from Settings feature toggles.
 
 ---
 
@@ -146,7 +149,7 @@ cd app
 pnpm verify
 ```
 
-Run verification plus whitespace checks for code and documentation diffs:
+Run verification plus documentation index and whitespace checks for code and documentation diffs:
 
 ```sh
 cd app
@@ -158,6 +161,7 @@ Run checks individually:
 ```sh
 pnpm typecheck
 pnpm test
+pnpm docs:index:check
 git -C .. diff --check
 ```
 
@@ -168,7 +172,7 @@ pnpm test:mac
 pnpm test:win
 ```
 
-`verify:full` runs `pnpm verify` and then runs `git diff --check` from the repository root. The packaged app under `app/out/` is checked only when distribution build verification is explicitly requested.
+`verify:full` runs `pnpm verify`, `pnpm docs:index:check`, and then `git -C .. diff --check`. The packaged app under `app/out/` is checked only when distribution build verification is explicitly requested.
 
 ---
 
@@ -293,12 +297,12 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 - アウトライン表示
 - クイックスイッチャー
 - コマンドパレット
-- 全文検索、ファイル名検索、タグ検索、フロントマター検索、正規表現検索、検索置換
+- 全文検索、ファイル名検索、タグ検索、フロントマター検索
 
 ### フロントマターとタグ
 
 - フロントマター（YAML）編集補助
-- フロントマター設定（`aliases`、`tags`、`chronicle` の固定プロパティ確認・カスタムプロパティ入力能力）
+- 任意で有効化できるフロントマター設定（`aliases`、`tags`、`chronicle` の固定プロパティ確認・カスタムプロパティ入力能力）
 - フロントマター `tags:` によるタグ扱い
 
 ### 図表と出力
@@ -309,16 +313,19 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 
 ### 年表
 
-- `chronicle` フロントマター値による年表表示
+- 任意で有効化できる `chronicle` フロントマター値による年表表示
 
 ![Relic timeline screenshot](assets/relic-timeline-screenshot.png)
 
 ### ファイル加工ツール
 
+- ファイル加工ツールは機能トグルで任意に有効化できます
 - ファイルのマージ
 - タイトル一覧の生成
 - 目次生成
 - タグ別索引生成
+
+フロントマター設定、暦設定、年表、ファイル加工ツールは実装済みですが、初期状態では非表示です。設定の機能トグルから有効化できます。
 
 ---
 
@@ -399,7 +406,7 @@ cd app
 pnpm verify
 ```
 
-コードや文書の差分確認までまとめて行う場合:
+文書索引とコード・文書の差分確認までまとめて行う場合:
 
 ```sh
 cd app
@@ -411,6 +418,7 @@ pnpm verify:full
 ```sh
 pnpm typecheck
 pnpm test
+pnpm docs:index:check
 git -C .. diff --check
 ```
 
@@ -421,7 +429,7 @@ pnpm test:mac
 pnpm test:win
 ```
 
-`verify:full` は `pnpm verify` の後に、リポジトリルートの `git diff --check` を実行します。`app/out/` 配下のパッケージ版アプリは、配布ビルド確認を明示した場合だけ確認対象にします。
+`verify:full` は `pnpm verify`、`pnpm docs:index:check`、`git -C .. diff --check` を順に実行します。`app/out/` 配下のパッケージ版アプリは、配布ビルド確認を明示した場合だけ確認対象にします。
 
 ---
 
