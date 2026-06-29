@@ -6,7 +6,7 @@
     "component": {
       "type": "application",
       "name": "relic",
-      "version": "0.3.141",
+      "version": "0.3.143",
       "licenses": [
         {
           "license": {
@@ -39,8 +39,8 @@
     {
       "type": "library",
       "name": "@codemirror/commands",
-      "version": "6.10.3",
-      "purl": "pkg:npm/%40codemirror/commands@6.10.3",
+      "version": "6.10.4",
+      "purl": "pkg:npm/%40codemirror/commands@6.10.4",
       "licenses": [
         {
           "license": {
@@ -51,7 +51,7 @@
       "externalReferences": [
         {
           "type": "vcs",
-          "url": "https://github.com/codemirror/commands"
+          "url": "https://code.haverbeke.berlin/codemirror/commands"
         }
       ]
     },
@@ -77,8 +77,8 @@
     {
       "type": "library",
       "name": "@codemirror/language",
-      "version": "6.12.3",
-      "purl": "pkg:npm/%40codemirror/language@6.12.3",
+      "version": "6.12.4",
+      "purl": "pkg:npm/%40codemirror/language@6.12.4",
       "licenses": [
         {
           "license": {
@@ -89,15 +89,15 @@
       "externalReferences": [
         {
           "type": "vcs",
-          "url": "https://github.com/codemirror/language"
+          "url": "https://code.haverbeke.berlin/codemirror/language"
         }
       ]
     },
     {
       "type": "library",
       "name": "@codemirror/state",
-      "version": "6.6.0",
-      "purl": "pkg:npm/%40codemirror/state@6.6.0",
+      "version": "6.7.0",
+      "purl": "pkg:npm/%40codemirror/state@6.7.0",
       "licenses": [
         {
           "license": {
@@ -108,15 +108,15 @@
       "externalReferences": [
         {
           "type": "vcs",
-          "url": "https://github.com/codemirror/state"
+          "url": "https://code.haverbeke.berlin/codemirror/state"
         }
       ]
     },
     {
       "type": "library",
       "name": "@codemirror/view",
-      "version": "6.43.0",
-      "purl": "pkg:npm/%40codemirror/view@6.43.0",
+      "version": "6.43.4",
+      "purl": "pkg:npm/%40codemirror/view@6.43.4",
       "licenses": [
         {
           "license": {
@@ -153,8 +153,8 @@
     {
       "type": "library",
       "name": "dompurify",
-      "version": "3.4.8",
-      "purl": "pkg:npm/dompurify@3.4.8",
+      "version": "3.4.11",
+      "purl": "pkg:npm/dompurify@3.4.11",
       "licenses": [
         {
           "license": {
@@ -191,8 +191,8 @@
     {
       "type": "library",
       "name": "js-yaml",
-      "version": "4.2.0",
-      "purl": "pkg:npm/js-yaml@4.2.0",
+      "version": "4.3.0",
+      "purl": "pkg:npm/js-yaml@4.3.0",
       "licenses": [
         {
           "license": {
@@ -210,8 +210,8 @@
     {
       "type": "library",
       "name": "katex",
-      "version": "0.16.47",
-      "purl": "pkg:npm/katex@0.16.47",
+      "version": "0.17.0",
+      "purl": "pkg:npm/katex@0.17.0",
       "licenses": [
         {
           "license": {
@@ -267,8 +267,8 @@
     {
       "type": "library",
       "name": "mermaid",
-      "version": "11.15.0",
-      "purl": "pkg:npm/mermaid@11.15.0",
+      "version": "11.16.0",
+      "purl": "pkg:npm/mermaid@11.16.0",
       "licenses": [
         {
           "license": {
