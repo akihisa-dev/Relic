@@ -15,7 +15,7 @@ is_text_path() {
 
 is_guard_path() {
   case "$1" in
-    .githooks/pre-commit|.githooks/pre-push|.githooks/secret-guard.sh)
+    .githooks/pre-commit|.githooks/pre-push|.githooks/secret-guard.sh|.github/workflows/secret-guard.yml)
       return 0
       ;;
   esac
@@ -25,6 +25,10 @@ is_guard_path() {
 check_path_name() {
   path="$1"
   base=$(basename "$path")
+
+  if is_guard_path "$path"; then
+    return 0
+  fi
 
   case "$base" in
     .env|.env.*|*.env|*.env.*)
