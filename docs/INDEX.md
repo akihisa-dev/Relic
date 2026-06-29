@@ -576,8 +576,7 @@
   - `design/`
     - `DESIGN.html`
     - `DESIGN.md`
-    - `LITHOMORPHISM.md`
-    - `LITHOMORPHISM.png`
+    - `LIQUID_CHARCOAL.md`
   - `engineering/`
     - `architecture.md`
     - `data-model.md`
