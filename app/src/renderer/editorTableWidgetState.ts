@@ -142,13 +142,9 @@ export function createLiveTableInteractionState(
       clearAffordance();
 
       if (rowIndex === 0) wrapper.dataset.canAddColumnAfter = "true";
-      if (rowIndex === rowCount - 1) wrapper.dataset.canAddColumnBefore = "true";
-      if (colIndex === 0) wrapper.dataset.canAddRowBefore = "true";
       if (colIndex === colCount - 1) wrapper.dataset.canAddRowAfter = "true";
       if (rowIndex === 0) wrapper.dataset.canGrabColumn = "true";
       if (colIndex === 0) wrapper.dataset.canGrabRow = "true";
-      if (rowIndex === 0 && colCount > 1) wrapper.dataset.canDeleteColumn = "true";
-      if (colIndex === 0 && rowIndex > 0 && rowCount > 2) wrapper.dataset.canDeleteRow = "true";
     }
   };
 

@@ -11,7 +11,6 @@ import {
   type TableBlock
 } from "./editorTableModel";
 import {
-  createTableDeleteButton,
   createTableEdgeAddButton,
   findTableWidgetView,
   focusTableWidgetCell,
@@ -255,12 +254,8 @@ export class TableWidget extends WidgetType {
     wrapper.append(table);
     wrapper.append(this.coordinateHandle("column", this.t("editor.tableSelectColumn"), state, drag.beginCoordinateDrag, wrapper));
     wrapper.append(this.coordinateHandle("row", this.t("editor.tableSelectRow"), state, drag.beginCoordinateDrag, wrapper));
-    wrapper.append(createTableEdgeAddButton({ axis: "column-before", block: this.block, getFocusIndex: () => state.activeRow, getInsertIndex: () => state.activeCol, t: this.t }));
-    wrapper.append(createTableEdgeAddButton({ axis: "column-after", block: this.block, getFocusIndex: () => state.activeRow, getInsertIndex: () => state.activeCol + 1, t: this.t }));
-    wrapper.append(createTableEdgeAddButton({ axis: "row-before", block: this.block, getFocusIndex: () => state.activeCol, getInsertIndex: () => Math.max(1, state.activeRow), t: this.t }));
-    wrapper.append(createTableEdgeAddButton({ axis: "row-after", block: this.block, getFocusIndex: () => state.activeCol, getInsertIndex: () => state.activeRow + 1, t: this.t }));
-    wrapper.append(createTableDeleteButton({ axis: "column", block: this.block, getColIndex: () => state.activeCol, getRowIndex: () => state.activeRow, t: this.t }));
-    wrapper.append(createTableDeleteButton({ axis: "row", block: this.block, getColIndex: () => state.activeCol, getRowIndex: () => state.activeRow, t: this.t }));
+    wrapper.append(createTableEdgeAddButton({ axis: "column-after", block: this.block, getFocusIndex: () => state.activeRow, getInsertIndex: () => tableColumnCount(this.block.rows), t: this.t }));
+    wrapper.append(createTableEdgeAddButton({ axis: "row-after", block: this.block, getFocusIndex: () => state.activeCol, getInsertIndex: () => this.block.rows.length, t: this.t }));
     if (this.block.isAtDocumentEnd) wrapper.append(this.createContinuationInput(wrapper));
     wrapper.addEventListener("focusout", (event) => {
       state.clearIfFocusOutside((event as FocusEvent).relatedTarget);
