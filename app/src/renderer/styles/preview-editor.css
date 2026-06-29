@@ -1465,8 +1465,9 @@
 }
 
 .cm-live-table[data-active-axis="cell"] .cm-live-table-active {
-  background: transparent;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 72%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--accent) 76%, transparent);
 }
 
 .cm-live-table-selected {
@@ -1582,36 +1583,36 @@
 
 .cm-live-table-add--column-before,
 .cm-live-table-add--column-after {
-  top: -21px;
+  top: 50%;
 }
 
 .cm-live-table-add--column-before {
   border-radius: 0;
-  left: var(--table-active-col-start);
-  transform: translateX(-50%);
+  left: 0;
+  transform: translate(-50%, -50%);
 }
 
 .cm-live-table-add--column-after {
   border-radius: 0;
-  left: var(--table-active-col-after);
-  transform: translateX(-50%);
+  left: 100%;
+  transform: translate(-50%, -50%);
 }
 
 .cm-live-table-add--row-before,
 .cm-live-table-add--row-after {
-  left: -25px;
+  left: 50%;
 }
 
 .cm-live-table-add--row-before {
   border-radius: 0;
-  top: var(--table-active-row-start);
-  transform: translateY(-50%);
+  top: 0;
+  transform: translate(-50%, -50%);
 }
 
 .cm-live-table-add--row-after {
   border-radius: 0;
-  top: var(--table-active-row-after);
-  transform: translateY(-50%);
+  top: 100%;
+  transform: translate(-50%, -50%);
 }
 
 .cm-live-table-delete--column {
@@ -1638,6 +1639,13 @@
 .cm-live-table .cm-live-table-add--row-after:not(:disabled):active,
 .cm-live-table .cm-live-table-delete--row:not(:disabled):active {
   transform: translateY(-50%);
+}
+
+.cm-live-table .cm-live-table-add--column-before:not(:disabled):active,
+.cm-live-table .cm-live-table-add--column-after:not(:disabled):active,
+.cm-live-table .cm-live-table-add--row-before:not(:disabled):active,
+.cm-live-table .cm-live-table-add--row-after:not(:disabled):active {
+  transform: translate(-50%, -50%);
 }
 
 .cm-live-table-handle:hover,
