@@ -319,6 +319,7 @@ function ChronicleControl({
   value: unknown[];
 }): ReactElement {
   const entries = normalizeChronicleEntries(value);
+  const entryKeyCounts = new Map<string, number>();
   const updateEntry = (index: number, entry: ChronicleFormEntry): void => {
     onUpdateField(name, entries.map((item, entryIndex) => entryIndex === index ? serializeChronicleEntry(entry) : serializeChronicleEntry(item)));
   };
@@ -329,7 +330,7 @@ function ChronicleControl({
         <ChronicleEntryControl
           entry={entry}
           index={index}
-          key={index}
+          key={chronicleEntryKey(entry, entryKeyCounts)}
           calendarCandidates={calendarCandidates}
           onDelete={() => onUpdateField(name, entries.flatMap((item, entryIndex) => entryIndex === index ? [] : [serializeChronicleEntry(item)]))}
           onUpdate={(nextEntry) => updateEntry(index, nextEntry)}
@@ -407,6 +408,20 @@ function ChronicleEntryControl({
       {error ? <span className="cm-frontmatter-input-error">{error}</span> : null}
     </div>
   );
+}
+
+function chronicleEntryKey(entry: ChronicleFormEntry, counts: Map<string, number>): string {
+  const baseKey = [
+    entry.calendarName,
+    entry.startYear,
+    entry.startMonth,
+    entry.endYear,
+    entry.endMonth
+  ].join("\u0000");
+  const count = counts.get(baseKey) ?? 0;
+  counts.set(baseKey, count + 1);
+
+  return count === 0 ? baseKey : `${baseKey}\u0000${count}`;
 }
 
 function chronicleCalendarOptions(value: string, candidates: string[]): string[] {

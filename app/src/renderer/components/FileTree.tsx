@@ -77,6 +77,18 @@ const defaultSelectedItems: FileTreeMoveItem[] = [];
 const defaultSelectedPaths = new Set<string>();
 const largeFileTreeRowThreshold = 1000;
 
+function droppedFilePathsFromEvent(event: DragEvent<HTMLElement>): string[] {
+  if (!window.relic) return [];
+
+  const filePaths: string[] = [];
+  for (const file of Array.from(event.dataTransfer.files)) {
+    const filePath = window.relic.getDroppedFilePath(file);
+    if (filePath) filePaths.push(filePath);
+  }
+
+  return filePaths;
+}
+
 function fileTreeActionsFromProps({
   actions,
   onDeleteItem,
@@ -360,14 +372,6 @@ export function FileTree({
     onTogglePin
   });
 
-  const droppedFilePaths = (event: DragEvent<HTMLElement>): string[] => {
-    if (!window.relic) return [];
-
-    return Array.from(event.dataTransfer.files)
-      .map((file) => window.relic?.getDroppedFilePath(file) ?? "")
-      .filter((filePath) => filePath.length > 0);
-  };
-
   const canImportDroppedFiles = (event: DragEvent<HTMLElement>): boolean => (
     isRoot &&
     Boolean(actions.onImportMarkdownFiles) &&
@@ -389,7 +393,7 @@ export function FileTree({
     setIsRootFileDragOver(false);
     if (!canImportDroppedFiles(event)) return;
 
-    const sourcePaths = droppedFilePaths(event);
+    const sourcePaths = droppedFilePathsFromEvent(event);
     if (sourcePaths.length === 0) return;
 
     event.preventDefault();

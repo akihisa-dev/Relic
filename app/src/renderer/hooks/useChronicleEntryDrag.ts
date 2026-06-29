@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import type { PointerEvent } from "react";
 
 import type { ChartEntry, ChartEntryEditKind, ChartSource, UpdateChartEntryInput } from "../../shared/ipc";
@@ -57,10 +57,19 @@ export function useChronicleEntryDrag({
   resetKey,
   unitWidth
 }: UseChronicleEntryDragInput): ChronicleEntryDrag {
-  const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
+  const [dragState, setDragState] = useState<{ preview: DragPreview | null; resetKey: string | null }>(() => ({
+    preview: null,
+    resetKey
+  }));
 
-  useEffect(() => {
-    setDragPreview(null);
+  if (dragState.resetKey !== resetKey) {
+    setDragState({ preview: null, resetKey });
+  }
+
+  const dragPreview = dragState.resetKey === resetKey ? dragState.preview : null;
+
+  const setDragPreview = useCallback((preview: DragPreview | null): void => {
+    setDragState({ preview, resetKey });
   }, [resetKey]);
 
   const startEntryEdit = useCallback((
@@ -142,7 +151,7 @@ export function useChronicleEntryDrag({
       onUp: stop,
       pointerCaptureTarget: target
     });
-  }, [activeSource, onUpdateEntry, unitWidth]);
+  }, [activeSource, onUpdateEntry, setDragPreview, unitWidth]);
 
   return { dragPreview, startEntryEdit };
 }

@@ -44,9 +44,13 @@ const isExternalFileDrag = (event: DragEvent<HTMLButtonElement>): boolean => (
 function droppedFilePaths(event: DragEvent<HTMLButtonElement>): string[] {
   if (!window.relic) return [];
 
-  return Array.from(event.dataTransfer.files)
-    .map((file) => window.relic?.getDroppedFilePath(file) ?? "")
-    .filter((filePath) => filePath.length > 0);
+  const filePaths: string[] = [];
+  for (const file of Array.from(event.dataTransfer.files)) {
+    const filePath = window.relic.getDroppedFilePath(file);
+    if (filePath) filePaths.push(filePath);
+  }
+
+  return filePaths;
 }
 
 export function useFileTreeDragDrop({
