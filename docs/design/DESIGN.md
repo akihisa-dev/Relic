@@ -18,13 +18,13 @@ Relicのデザイン系文書の正本。画面構成、画面遷移、デザイ
 
 このデザインシステムは、情報の構造化・可読性・集中体験を重視したナレッジワーク向けインターフェースである。
 
-Relicの色、素材、質感の基礎思想は [LITHOMORPHISM.md](LITHOMORPHISM.md) を正とし、この文書ではその思想をRelicの画面構成、色、UI部品へ適用する。
+Relicの色、素材、質感の基礎思想は [LIQUID_CHARCOAL.md](LIQUID_CHARCOAL.md) を正とし、この文書ではその思想をRelicの画面構成、色、UI部品へ適用する。
 
-Relicでは、青は鉱物顔料や設計図面の青、白は石灰石や上質紙の白、灰色は石粉やコンクリートの面として扱う。
+Relicでは、白は情報を書くための紙面、黒は操作状態と文字の基準、灰色は面の階層と境界として扱う。
 
-質感は色そのものを変えず、低光沢で乾いた表面処理として扱う。
+質感は写実的な素材再現ではなく、液体のように滑らかな階調と、木炭のように沈んだ黒の対比として扱う。
 
-装飾的な要素を最小限に抑えながら、強いタイポグラフィ、明確な境界線、幾何学的な構成を用いて情報階層を視覚化する。
+装飾的な要素を最小限に抑えながら、黒い文字、細い境界線、十分な余白、控えめな選択状態によって情報階層を視覚化する。
 
 デザインの目的は「美しく見せること」ではなく、「情報構造を理解しやすくすること」にある。
 
@@ -40,31 +40,31 @@ Relicでは、青は鉱物顔料や設計図面の青、白は石灰石や上質
 
 ---
 
-### Strong Typography
+### Clear Typography
 
 タイポグラフィはUIの主要な表現手段である。
 
 サイズ、ウェイト、余白によって情報の優先順位を示す。
 
-色や装飾への依存を避ける。
+大きな見出しは黒い文字で示し、大文字化や装飾線で強調しすぎない。
 
 ---
 
-### Geometric Consistency
+### Quiet Monochrome
 
-直線、矩形、境界線を基本要素とする。
+色は白、黒、灰色を中心にする。
 
-過度な曲線や有機的表現は避ける。
+状態表示や主要操作にも青などの有彩色を使わず、黒い線、黒い面、淡いグレーの背景で示す。
 
 ---
 
-### Calm Technology
+### Thin Boundaries
 
-未来的でありながら過剰に派手ではない。
+境界線は1pxを基本にし、パネル、タブ、表、サイドバーの関係を静かに分ける。
 
-知的で落ち着いた作業環境を提供する。
+影による浮遊感は避け、必要な場合も薄い影に留める。
 
-低光沢な面、落ち着いた鉱物色、明確な境界によって、静かで観測的な空気感を作る。
+画面全体は、明るい白い面と薄い線で構成する。
 
 ---
 
@@ -81,8 +81,9 @@ Relicでは、青は鉱物顔料や設計図面の青、白は石灰石や上質
 
 #### Secondary
 
-- Square Accent
-- Orthogonal Guide Motif
+- Subtle Rounded Rectangle
+- Thin Active Indicator
+- Divider Line
 
 装飾要素は情報の邪魔にならない範囲で使用する。
 
@@ -104,12 +105,12 @@ border-color: var(--border-primary);
 ### Corners
 
 ```css
-corner-radius: 0;
+corner-radius: 4px;
 ```
 
-角丸は使用しない。
+角丸は検索欄、ボタン、選択行、カードなど小さな操作対象にだけ控えめに使用する。
 
-矩形、直角、直線の境界を基本とする。
+アプリの大きなカラム、タブ境界、左右パネルの境界は直線を基本とする。
 
 ---
 
@@ -117,29 +118,30 @@ corner-radius: 0;
 
 ### Core Colors
 
-#### Primary Blue
+#### Primary Ink
 
-主要アクセントカラー。LITHOMORPHISMでは、Webの青ではなく鉱物顔料や設計図面の青として扱う。
+主要アクセントカラー。Liquid Charcoalでは、文字、アクティブ線、主要ボタンに使う黒として扱う。
 
 ```css
---color-primary: #3261A1;
+--color-primary: #111111;
 ```
 
 用途:
 
-- Headers
+- Active indicators
+- Primary buttons
 - Links
 - Icons
-- Accents
+- High-emphasis labels
 
 ---
 
-#### Sub Blue
+#### Secondary Charcoal
 
-補助アクセントカラー。LITHOMORPHISMでは、経年した青、補助的な印刷インクの青として扱う。
+補助アクセントカラー。黒より弱いテキスト、補助アイコン、ホバー状態に使うチャコールグレーとして扱う。
 
 ```css
---color-accent: #6C8BB7;
+--color-accent: #5F6368;
 ```
 
 用途:
@@ -155,50 +157,50 @@ corner-radius: 0;
 #### Background
 
 ```css
---color-bg: #F2F1EE;
+--color-bg: #FFFFFF;
 ```
 
-エディタ背景、ページ全体の背景色。LITHOMORPHISMでは、純白ではなく石灰石や上質紙に近い白として扱う。
+エディタ背景、ページ全体の背景色。情報を書くための白い紙面として扱う。
 
 ---
 
 #### Surface
 
 ```css
---color-surface: #E7E7E7;
+--color-surface: #FAFAFA;
 ```
 
-サイドバー、ツールバー、パネル背景。LITHOMORPHISMでは、石粉を含んだ乾いた面として扱う。
+サイドバー、ツールバー、パネル背景。白い紙面より一段低い淡い面として扱う。
 
 ---
 
 #### Surface Alt
 
 ```css
---color-surface-alt: #DDDEDF;
+--color-surface-alt: #F3F3F2;
 ```
 
-選択中の項目背景、カード背景。LITHOMORPHISMでは、コンクリートに近い低彩度の面として扱う。
+選択中の項目背景、カード背景。状態を示すための淡いグレーとして扱う。
 
 ---
 
 #### Border
 
 ```css
---color-border: #C3C8CE;
+--color-border: #DEDEDE;
 ```
 
-区切り線。LITHOMORPHISMでは、薄いセメント線のような境界として扱う。
+区切り線。パネル、タブ、表、フォームを分ける細い線として扱う。
 
 ---
 
 #### Border Strong
 
 ```css
---color-border-strong: #A4AEBD;
+--color-border-strong: #B8B8B8;
 ```
 
-重要な境界。LITHOMORPHISMでは、鉱物系の強い境界として扱う。
+重要な境界。通常境界より少し強いが、黒い主線とは区別する。
 
 ---
 
@@ -207,43 +209,43 @@ corner-radius: 0;
 #### Primary Text
 
 ```css
---color-text: #232B36;
+--color-text: #111111;
 ```
 
-石や紙に沈んだ濃色インクとして扱う。
+本文、見出し、主要ラベルに使う黒として扱う。
 
 ---
 
 #### Secondary Text
 
 ```css
---color-text-secondary: #89909A;
+--color-text-secondary: #5F6368;
 ```
 
-石粉を含んだグレーとして扱う。
+補助情報、非アクティブなタブ、二次ラベルに使う。
 
 ---
 
 #### Muted Text
 
 ```css
---color-text-muted: #89909A;
+--color-text-muted: #9A9A9A;
 ```
 
-石粉を含んだグレーとして扱う。
+さらに弱い説明文、プレースホルダー、補助メタ情報に使う。
 
 ---
 
 ## Typography
 
-書体はOSのシステムフォントに従う。
+書体はInter、Noto Sans JP、OSのシステムフォントの順に使用する。
 
-Relic固有のブランドフォントは選定しない。
+フォントファイルはアプリに同梱しない。ユーザー環境にない場合はOS標準フォントへ自然にフォールバックする。
 
 macOS、Windows、Linuxそれぞれの標準的なUIフォントで自然に見えることを優先する。
 
 ```css
-font-family: system-ui, sans-serif;
+font-family: Inter, "Noto Sans JP", system-ui, sans-serif;
 ```
 
 ### Heading
@@ -251,7 +253,7 @@ font-family: system-ui, sans-serif;
 スタイル:
 
 ```css
-font-weight: 800;
+font-weight: 700;
 letter-spacing: 0;
 ```
 
@@ -262,8 +264,8 @@ letter-spacing: 0;
 ```css
 font-size: 12px;
 font-weight: 700;
-letter-spacing: 0.08em;
-text-transform: uppercase;
+letter-spacing: 0;
+text-transform: none;
 ```
 
 ---
@@ -314,10 +316,10 @@ max-width: 820px;
 
 ### Active Item
 
-選択状態は背景色ではなく左側インジケーターで表現する。
+選択状態は淡い背景色と左側の黒いインジケーターで表現する。
 
 ```css
-width: 4px;
+width: 3px;
 background: var(--color-primary);
 ```
 
@@ -329,7 +331,7 @@ background: var(--color-primary);
 
 見出し階層は左余白と細い境界線で表現する。
 
-青い番号ブロックや大きな装飾見出しは使用しない。
+番号ブロックや大きな装飾見出しは使用しない。
 
 例:
 
@@ -348,7 +350,7 @@ Overview
 
 - 明確な境界線
 - 過剰な影を使用しない
-- アクティブ状態は青色ラインで表現
+- アクティブ状態は黒い細線、黒い文字、白い面で表現
 
 ---
 
@@ -382,18 +384,18 @@ border: 1px solid var(--color-border);
 
 装飾要素は機能的なレイアウトを補助する目的でのみ使用する。
 
-装飾はLITHOMORPHISMの素材感を誇張するためではなく、情報構造、境界、視線誘導を支えるために使う。
+装飾はLiquid Charcoalの質感を誇張するためではなく、情報構造、境界、視線誘導を支えるために使う。
 
 許可される要素:
 
-- 斜線
-- 四角形アクセント
-- 直角ガイドモチーフ
-- グリッドライン
+- 細い境界線
+- 淡いグレー面
+- 黒いアクティブインジケーター
+- 控えめなグラデーション
 
 装飾が情報を上回ってはならない。
 
-強いノイズ、汚れ加工、グロー、ガラス反射、金属光沢、ネオン化は使用しない。
+強いノイズ、汚れ加工、グロー、ガラス反射、金属光沢、ネオン化、有彩色の強いアクセントは使用しない。
 
 ---
 
@@ -404,13 +406,12 @@ border: 1px solid var(--color-border);
 - Structured
 - Intelligent
 - Calm
-- Technical
 - Focused
 - Durable
-- Architectural
 - Functional
-- Permanent
 - Observational
+- Clean
+- Monochrome
 
 避けるべき印象:
 
@@ -426,6 +427,7 @@ border: 1px solid var(--color-border);
 - Glassy
 - Neon
 - Wet
+- Colorful
 
 ---
 
