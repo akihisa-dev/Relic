@@ -331,7 +331,7 @@ describe("Editor table preview", () => {
     expect(document.activeElement).toBe(input);
   });
 
-  it("ライブプレビューの表で側面の追加ボタンから選択行列の後ろに追加できる", async () => {
+  it("ライブプレビューの表で端の追加ボタンから末尾に行列を追加できる", async () => {
     const viewRef = createRef<EditorView | null>();
 
     const { container } = render(
@@ -346,12 +346,12 @@ describe("Editor table preview", () => {
     await waitFor(() => expect(container.querySelector('.cm-live-table-add--column-after')).not.toBeNull());
     fireEvent.click(container.querySelector('.cm-live-table-add--column-after') as HTMLButtonElement);
 
-    expect(viewRef.current?.state.doc.toString()).toBe("| A |  | B |\n| --- | --- | --- |\n| x |  | y |");
+    expect(viewRef.current?.state.doc.toString()).toBe("| A | B |  |\n| --- | --- | --- |\n| x | y |  |");
 
     await waitFor(() => expect(container.querySelector('.cm-live-table-add--row-after')).not.toBeNull());
     fireEvent.click(container.querySelector('.cm-live-table-add--row-after') as HTMLButtonElement);
 
-    expect(viewRef.current?.state.doc.toString()).toBe("| A |  | B |\n| --- | --- | --- |\n| x |  | y |\n|  |  |  |");
+    expect(viewRef.current?.state.doc.toString()).toBe("| A | B |  |\n| --- | --- | --- |\n| x | y |  |\n|  |  |  |");
   });
 
   it("ライブプレビューの表で追加ボタンへ移動してもボタンが消えずクリックできる", async () => {
@@ -379,7 +379,7 @@ describe("Editor table preview", () => {
     expect(viewRef.current?.state.doc.toString()).toBe("| A | B |\n| --- | --- |\n| x | y |\n|  |  |");
   });
 
-  it("ライブプレビューの表で追加ボタンはヘッダーと端セルに触れた時だけ出す", async () => {
+  it("ライブプレビューの表で追加ボタンはObsidian同様に右端と下端だけ扱う", async () => {
     const { container } = render(
       <Editor
         content={"| A | B |\n| --- | --- |\n| x | y |"}
@@ -392,9 +392,9 @@ describe("Editor table preview", () => {
     const table = container.querySelector(".cm-live-table") as HTMLElement;
 
     fireEvent.mouseEnter(container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="0"]') as HTMLInputElement);
-    expect(table.dataset.canAddColumnBefore).toBe("true");
+    expect(table.dataset.canAddColumnBefore).toBeUndefined();
     expect(table.dataset.canAddColumnAfter).toBeUndefined();
-    expect(table.dataset.canAddRowBefore).toBe("true");
+    expect(table.dataset.canAddRowBefore).toBeUndefined();
     expect(table.dataset.canAddRowAfter).toBeUndefined();
     expect(table.dataset.canGrabRow).toBe("true");
     expect(table.dataset.canGrabColumn).toBeUndefined();
@@ -403,16 +403,16 @@ describe("Editor table preview", () => {
 
     fireEvent.mouseEnter(container.querySelector('.cm-live-table-cell-input[data-row="0"][data-col="0"]') as HTMLInputElement);
     expect(table.dataset.canAddColumnAfter).toBe("true");
-    expect(table.dataset.canAddRowBefore).toBe("true");
+    expect(table.dataset.canAddRowBefore).toBeUndefined();
     expect(table.dataset.canAddRowAfter).toBeUndefined();
     expect(table.dataset.canGrabColumn).toBe("true");
     expect(table.dataset.canGrabRow).toBe("true");
-    expect(table.dataset.canDeleteColumn).toBe("true");
+    expect(table.dataset.canDeleteColumn).toBeUndefined();
     expect(table.dataset.canDeleteRow).toBeUndefined();
 
     fireEvent.mouseEnter(container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="1"]') as HTMLInputElement);
     expect(table.dataset.canAddColumnAfter).toBeUndefined();
-    expect(table.dataset.canAddColumnBefore).toBe("true");
+    expect(table.dataset.canAddColumnBefore).toBeUndefined();
     expect(table.dataset.canAddRowAfter).toBe("true");
     expect(table.dataset.canAddRowBefore).toBeUndefined();
     expect(table.dataset.canGrabColumn).toBeUndefined();
@@ -421,15 +421,12 @@ describe("Editor table preview", () => {
     expect(table.dataset.canDeleteRow).toBeUndefined();
   });
 
-  it("ライブプレビューの表で側面の削除ボタンから選択行列を削除できる", async () => {
-    const viewRef = createRef<EditorView | null>();
-
+  it("ライブプレビューの表はObsidian同様に側面へ削除ボタンを出さない", async () => {
     const { container } = render(
       <Editor
         content={"| A | B | C |\n| --- | --- | --- |\n| x | y | z |\n| 1 | 2 | 3 |"}
         onChange={vi.fn()}
         settings={settings}
-        viewRef={viewRef}
       />
     );
 
@@ -437,19 +434,8 @@ describe("Editor table preview", () => {
 
     expect(container.querySelector(".cm-live-table-handle--column")).not.toBeNull();
     expect(container.querySelector(".cm-live-table-handle--row")).not.toBeNull();
-
-    fireEvent.mouseEnter(container.querySelector('.cm-live-table-cell-input[data-row="0"][data-col="1"]') as HTMLInputElement);
-    expect((container.querySelector(".cm-live-table") as HTMLElement).dataset.canDeleteColumn).toBe("true");
-    fireEvent.click(container.querySelector(".cm-live-table-delete--column") as HTMLButtonElement);
-
-    expect(viewRef.current?.state.doc.toString()).toBe("| A | C |\n| --- | --- |\n| x | z |\n| 1 | 3 |");
-
-    await waitFor(() => expect(container.querySelector('.cm-live-table-cell-input[data-row="2"][data-col="0"]')).not.toBeNull());
-    fireEvent.mouseEnter(container.querySelector('.cm-live-table-cell-input[data-row="2"][data-col="0"]') as HTMLInputElement);
-    expect((container.querySelector(".cm-live-table") as HTMLElement).dataset.canDeleteRow).toBe("true");
-    fireEvent.click(container.querySelector(".cm-live-table-delete--row") as HTMLButtonElement);
-
-    expect(viewRef.current?.state.doc.toString()).toBe("| A | C |\n| --- | --- |\n| x | z |");
+    expect(container.querySelector(".cm-live-table-delete--column")).toBeNull();
+    expect(container.querySelector(".cm-live-table-delete--row")).toBeNull();
   });
 
   it("ライブプレビューの表で右クリックメニューから行列を操作できる", async () => {

@@ -14,6 +14,27 @@ import type { Translator } from "./i18nModel";
 export type TableEdgeAddAxis = "column-before" | "column-after" | "row-before" | "row-after";
 export type TableDeleteAxis = "column" | "row";
 
+function appendTableAddIcon(button: HTMLButtonElement): void {
+  const namespace = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(namespace, "svg");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("height", "16");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-linecap", "round");
+  svg.setAttribute("stroke-linejoin", "round");
+  svg.setAttribute("stroke-width", "2");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("width", "16");
+
+  const horizontal = document.createElementNS(namespace, "path");
+  horizontal.setAttribute("d", "M5 12h14");
+  const vertical = document.createElementNS(namespace, "path");
+  vertical.setAttribute("d", "M12 5v14");
+  svg.append(horizontal, vertical);
+  button.append(svg);
+}
+
 export function findTableWidgetView(element: HTMLElement): EditorView | null {
   const editor = element.closest(".cm-editor");
   return editor instanceof HTMLElement ? EditorView.findFromDOM(editor) : EditorView.findFromDOM(element);
@@ -58,7 +79,7 @@ export function createTableEdgeAddButton({
   const button = document.createElement("button");
   button.type = "button";
   button.className = `cm-live-table-add cm-live-table-add--${axis}`;
-  button.textContent = "+";
+  appendTableAddIcon(button);
   button.title = axis.startsWith("column")
     ? axis.endsWith("before") ? t("editor.tableAddColumnLeft") : t("editor.tableAddColumnRight")
     : axis.endsWith("before") ? t("editor.tableAddRowAbove") : t("editor.tableAddRowBelow");
