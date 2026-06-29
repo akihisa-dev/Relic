@@ -1480,13 +1480,12 @@
 .cm-live-table-add,
 .cm-live-table-delete {
   align-items: center;
-  background: color-mix(in srgb, var(--bg) 94%, var(--hover));
-  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  background: color-mix(in srgb, var(--bg) 98%, var(--hover));
+  border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
   color: var(--text-3);
   display: flex;
   font: inherit;
-  font-size: 14px;
+  font-size: 12px;
   justify-content: center;
   line-height: 1;
   min-height: 0;
@@ -1498,8 +1497,7 @@
     background-color 120ms ease,
     border-color 120ms ease,
     color 120ms ease,
-    opacity 120ms ease,
-    transform 120ms ease;
+    opacity 120ms ease;
   z-index: 2;
 }
 
@@ -1536,33 +1534,33 @@
 
 .cm-live-table-handle--column {
   border-radius: 0;
-  height: 20px;
+  height: 18px;
   left: var(--table-active-col-center);
-  top: -26px;
+  top: -24px;
   transform: translateX(-50%);
-  width: 30px;
+  width: 28px;
 }
 
 .cm-live-table-handle--row {
   border-radius: 0;
-  height: 30px;
-  left: -32px;
+  height: 28px;
+  left: -30px;
   top: var(--table-active-row-center);
   transform: translateY(-50%);
-  width: 20px;
+  width: 18px;
 }
 
 .cm-live-table-add {
   color: var(--text-3);
-  height: 22px;
-  width: 22px;
+  height: 20px;
+  width: 20px;
 }
 
 .cm-live-table-delete {
   color: color-mix(in srgb, var(--danger, #b42318) 86%, var(--text-3));
-  font-size: 14px;
-  height: 22px;
-  width: 22px;
+  font-size: 12px;
+  height: 20px;
+  width: 20px;
 }
 
 .cm-live-table-handle::before {
@@ -1587,54 +1585,68 @@
 
 .cm-live-table-add--column-before,
 .cm-live-table-add--column-after {
-  top: -27px;
+  top: -25px;
 }
 
 .cm-live-table-add--column-before {
   border-radius: 0;
-  left: calc(var(--table-active-col-center) - 31px);
+  left: calc(var(--table-active-col-center) - 29px);
   transform: translateX(-50%);
 }
 
 .cm-live-table-add--column-after {
   border-radius: 0;
-  left: calc(var(--table-active-col-center) + 31px);
+  left: calc(var(--table-active-col-center) + 29px);
   transform: translateX(-50%);
 }
 
 .cm-live-table-add--row-before,
 .cm-live-table-add--row-after {
-  left: -33px;
+  left: -31px;
 }
 
 .cm-live-table-add--row-before {
   border-radius: 0;
-  top: calc(var(--table-active-row-center) - 31px);
+  top: calc(var(--table-active-row-center) - 29px);
   transform: translateY(-50%);
 }
 
 .cm-live-table-add--row-after {
   border-radius: 0;
-  top: calc(var(--table-active-row-center) + 31px);
+  top: calc(var(--table-active-row-center) + 29px);
   transform: translateY(-50%);
 }
 
 .cm-live-table-delete--column {
-  left: calc(var(--table-active-col-center) + 16px);
-  top: -27px;
+  left: calc(var(--table-active-col-center) + 15px);
+  top: -25px;
   transform: translateX(-50%);
 }
 
 .cm-live-table-delete--row {
-  left: -33px;
-  top: calc(var(--table-active-row-center) + 16px);
+  left: -31px;
+  top: calc(var(--table-active-row-center) + 15px);
+  transform: translateY(-50%);
+}
+
+.cm-live-table .cm-live-table-handle--column:not(:disabled):active,
+.cm-live-table .cm-live-table-add--column-before:not(:disabled):active,
+.cm-live-table .cm-live-table-add--column-after:not(:disabled):active,
+.cm-live-table .cm-live-table-delete--column:not(:disabled):active {
+  transform: translateX(-50%);
+}
+
+.cm-live-table .cm-live-table-handle--row:not(:disabled):active,
+.cm-live-table .cm-live-table-add--row-before:not(:disabled):active,
+.cm-live-table .cm-live-table-add--row-after:not(:disabled):active,
+.cm-live-table .cm-live-table-delete--row:not(:disabled):active {
   transform: translateY(-50%);
 }
 
 .cm-live-table-handle:hover,
 .cm-live-table-handle:focus-visible {
-  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
-  border-color: color-mix(in srgb, var(--accent) 44%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
   color: var(--accent);
   outline: none;
 }
