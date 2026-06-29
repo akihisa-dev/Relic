@@ -315,7 +315,7 @@ export class TableWidget extends WidgetType {
     button.className = `cm-live-table-handle cm-live-table-handle--${axis}`;
     button.type = "button";
     button.title = title;
-    button.textContent = "•••";
+    button.setAttribute("aria-label", title);
     const markAxis = (): void => {
       state.markActive(axis, state.activeRow, state.activeCol);
     };
