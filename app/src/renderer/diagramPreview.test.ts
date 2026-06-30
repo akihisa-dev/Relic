@@ -762,6 +762,11 @@ describe("diagramPreview", () => {
     expect(packagedRendererContentSecurityPolicy).toContain("worker-src 'self' blob:");
   });
 
+  it("PDF表示に必要なdata frameだけを許可する", () => {
+    expect(packagedRendererContentSecurityPolicy).toContain("frame-src data:");
+    expect(packagedRendererContentSecurityPolicy).toContain("object-src 'none'");
+  });
+
   it("本番用CSPは開発用localhost接続を許可しない", () => {
     expect(packagedRendererContentSecurityPolicy).toContain("connect-src 'self'");
     expect(packagedRendererContentSecurityPolicy).not.toContain("localhost");

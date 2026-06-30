@@ -36,6 +36,7 @@ import {
   defaultFeatureToggles,
   defaultFrontmatterTemplates,
   readImageFileChannel,
+  readPdfFileChannel,
   revealWorkspaceItemChannel
 } from "../../shared/ipc";
 import { writeAppSettings } from "../settings/appSettings";
@@ -141,6 +142,44 @@ describe("markdownFileHandlers", () => {
     expect(result).toEqual({
       ok: true,
       value: { dataUrl: `data:image/png;base64,${Buffer.from("png-data").toString("base64")}` }
+    });
+  });
+
+  it("PDF読み込みではワークスペース内のPDFを返す", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
+    temporaryPaths.push(userDataPath, workspacePath);
+
+    await mkdir(path.join(workspacePath, "assets"));
+    await writeFile(path.join(workspacePath, "assets", "reference.pdf"), "%PDF-1.7");
+
+    const workspace = createWorkspaceSummary(workspacePath);
+    const settings = addOrActivateWorkspace(
+      {
+        editorSettings: defaultEditorSettings,
+        featureToggles: defaultFeatureToggles,
+        frontmatterTemplates: defaultFrontmatterTemplates,
+        lastWorkspaceId: null,
+        userDefinedFields: [],
+        workspaces: []
+      },
+      workspace
+    );
+    await writeAppSettings(userDataPath, settings);
+
+    electronMock.getPath.mockReturnValue(userDataPath);
+    registerMarkdownFileHandlers();
+    const readHandler = electronMock.handle.mock.calls.find(
+      ([channel]) => channel === readPdfFileChannel
+    )?.[1];
+
+    if (!readHandler) throw new Error("read PDF file handler was not registered");
+
+    const result = await readHandler(undefined, { path: "assets/reference.pdf" });
+
+    expect(result).toEqual({
+      ok: true,
+      value: { dataUrl: `data:application/pdf;base64,${Buffer.from("%PDF-1.7").toString("base64")}` }
     });
   });
 });

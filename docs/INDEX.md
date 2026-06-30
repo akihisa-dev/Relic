@@ -149,6 +149,7 @@
         - `names.ts`
         - `paths.test.ts`
         - `paths.ts`
+        - `pdfFiles.ts`
         - `regexSafety.ts`
         - `renameOperations.ts`
         - `replace.test.ts`
@@ -549,6 +550,7 @@
       - `links.ts`
       - `markdownExtension.ts`
       - `mermaidText.ts`
+      - `pdfFiles.ts`
       - `rendererCsp.ts`
       - `result.test.ts`
       - `result.ts`

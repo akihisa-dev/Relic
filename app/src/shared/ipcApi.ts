@@ -46,6 +46,8 @@ import type {
   ReadMarkdownFileInput,
   ReadImageFileInput,
   ReadImageFileResult,
+  ReadPdfFileInput,
+  ReadPdfFileResult,
   RemoveWorkspaceInput,
   RenameFolderInput,
   RenameMarkdownFileInput,
@@ -91,6 +93,7 @@ export interface RelicApi {
   importMarkdownFiles: (input: ImportMarkdownFilesInput) => Promise<RelicResult<WorkspaceState>>;
   importImageFile: (input: ImportImageFileInput) => Promise<RelicResult<ImportImageFileResult>>;
   readImageFile: (input: ReadImageFileInput) => Promise<RelicResult<ReadImageFileResult>>;
+  readPdfFile: (input: ReadPdfFileInput) => Promise<RelicResult<ReadPdfFileResult>>;
   createLinkedMarkdownFile: (
     input: CreateLinkedMarkdownFileInput
   ) => Promise<RelicResult<CreateLinkedMarkdownFileResult>>;

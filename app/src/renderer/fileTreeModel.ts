@@ -1,4 +1,4 @@
-import type { WorkspaceTreeNode } from "../shared/ipc";
+import type { WorkspaceTreeFileKind, WorkspaceTreeNode } from "../shared/ipc";
 import { parentFolderOf } from "./workspacePaths";
 
 export type FileTreeExpansionAction = "expand" | "collapse";
@@ -10,7 +10,7 @@ export interface FileTreeExpansionRequest {
 }
 
 export type FileTreeMoveItem = {
-  kind?: "image" | "markdown";
+  kind?: WorkspaceTreeFileKind;
   path: string;
   type: WorkspaceTreeNode["type"];
 };

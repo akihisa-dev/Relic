@@ -84,6 +84,24 @@ describe("editorStore", () => {
     });
   });
 
+  it("同じパスのPDFを再度開くとPDFタブが重複しない", () => {
+    const { openPdfInPane } = useEditorStore.getState();
+
+    openPdfInPane("left", { name: "reference.pdf", path: "assets/reference.pdf" });
+    openPdfInPane("left", { name: "reference.pdf", path: "assets/reference.pdf" });
+
+    const state = useEditorStore.getState();
+    const tabId = state.leftPane.activeTabId!;
+
+    expect(state.leftPane.tabIds).toHaveLength(1);
+    expect(state.tabs[tabId]).toMatchObject({
+      kind: "pdf",
+      name: "reference.pdf",
+      path: "assets/reference.pdf"
+    });
+  });
+
+
   it("新しいファイルタブは現在のアクティブタブの右側に追加される", () => {
     const { openFileInPane, setTabActive } = useEditorStore.getState();
 

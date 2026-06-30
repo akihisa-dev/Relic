@@ -2,6 +2,7 @@ import { useCallback } from "react";
 
 import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import { resolveMarkdownLinkPath, resolveWikiLinkPathWithAliases } from "../../shared/links";
+import { isSupportedPdfPath } from "../../shared/pdfFiles";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 
 type WorkspaceFileOpenInput = Pick<
@@ -13,6 +14,7 @@ type WorkspaceFileOpenInput = Pick<
   | "leftPane"
   | "openFileInPane"
   | "openImageInPane"
+  | "openPdfInPane"
   | "rightPane"
   | "setLeftPaneScrollHeading"
   | "setRightPaneScrollHeading"
@@ -29,6 +31,7 @@ export function useWorkspaceFileOpenActions({
   leftPane,
   openFileInPane,
   openImageInPane,
+  openPdfInPane,
   rightPane,
   setLeftPaneScrollHeading,
   setRightPaneScrollHeading,
@@ -44,13 +47,22 @@ export function useWorkspaceFileOpenActions({
       const activeTabId = paneState.activeTabId;
       const activeTab = activeTabId ? tabs[activeTabId] : null;
 
-      if (activeTabId && (activeTab?.kind === "file" || activeTab?.kind === "image") && activeTab.path === path) {
+      if (
+        activeTabId &&
+        (activeTab?.kind === "file" || activeTab?.kind === "image" || activeTab?.kind === "pdf") &&
+        activeTab.path === path
+      ) {
         closeTab(focusedPane, activeTabId);
         return;
       }
 
       if (isSupportedMarkdownImagePath(path)) {
         openImageInPane(focusedPane, { name: path.split("/").at(-1) ?? path, path });
+        return;
+      }
+
+      if (isSupportedPdfPath(path)) {
+        openPdfInPane(focusedPane, { name: path.split("/").at(-1) ?? path, path });
         return;
       }
 
@@ -62,7 +74,7 @@ export function useWorkspaceFileOpenActions({
         }
       });
     },
-    [closeTab, focusedPane, leftPane, openFileInPane, openImageInPane, rightPane, setWorkspaceError, tabs]
+    [closeTab, focusedPane, leftPane, openFileInPane, openImageInPane, openPdfInPane, rightPane, setWorkspaceError, tabs]
   );
 
   const handleOpenWikiLink = useCallback(

@@ -5,6 +5,7 @@ import path from "node:path";
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import { hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
+import { isSupportedPdfPath } from "../../shared/pdfFiles";
 import { toWorkspaceRelativePath } from "./paths";
 import { mapWithConcurrency } from "./concurrency";
 
@@ -78,6 +79,15 @@ async function readDirectory(
       if (entry.isFile() && isSupportedMarkdownImagePath(entry.name)) {
         return {
           kind: "image",
+          name: entry.name,
+          path: relativePath,
+          type: "file"
+        };
+      }
+
+      if (entry.isFile() && isSupportedPdfPath(entry.name)) {
+        return {
+          kind: "pdf",
           name: entry.name,
           path: relativePath,
           type: "file"

@@ -1,5 +1,5 @@
 import type { EditorSettings, MarkdownFileContent } from "../../shared/ipc";
-import type { FileTab, ChartTab, ImageTab, PaneId, PaneState, PanelTab, PanelTabKind, Tab } from "./editorStore";
+import type { FileTab, ChartTab, ImageTab, PaneId, PaneState, PdfTab, PanelTab, PanelTabKind, Tab } from "./editorStore";
 
 export interface EditorStoreModelState {
   editorSettings: EditorSettings;
@@ -94,6 +94,38 @@ export function openImageTabState(
     kind: "image",
     name: image.name,
     path: image.path
+  };
+
+  return {
+    focusedPane: pane,
+    tabs: { ...state.tabs, [id]: newTab },
+    [paneKey]: activateTab(insertTabAfterActive(paneState, id), id)
+  };
+}
+
+export function openPdfTabState(
+  state: EditorStoreModelState,
+  pane: PaneId,
+  pdf: { name: string; path: string },
+  id: string
+): Partial<EditorStoreModelState> {
+  const existing = Object.values(state.tabs).find((tab) => tab.kind === "pdf" && tab.path === pdf.path);
+  const paneKey = paneKeyFor(pane);
+  const paneState = state[paneKey];
+
+  if (existing) {
+    const nextPane = activateTab(insertTabAfterActive(paneState, existing.id), existing.id);
+    return {
+      focusedPane: pane,
+      [paneKey]: reorderPinnedTabs(nextPane, state.tabs)
+    };
+  }
+
+  const newTab: PdfTab = {
+    id,
+    kind: "pdf",
+    name: pdf.name,
+    path: pdf.path
   };
 
   return {

@@ -19,6 +19,8 @@ import {
   type MoveMarkdownFileInput,
   readImageFileChannel,
   type ReadImageFileInput,
+  readPdfFileChannel,
+  type ReadPdfFileInput,
   renameMarkdownFileChannel,
   type RenameMarkdownFileInput,
   revealWorkspaceItemChannel,
@@ -37,6 +39,7 @@ import {
   renameMarkdownFile
 } from "../files/markdownFiles";
 import { importImageFile, readImageFile } from "../files/imageFiles";
+import { readPdfFile } from "../files/pdfFiles";
 import { readLinkUpdateImpact } from "../files/linkUpdater";
 import {
   resolveExistingWorkspacePath,
@@ -54,6 +57,7 @@ import {
   isMoveMarkdownFileInput,
   isPathInput,
   isReadImageFileInput,
+  isReadPdfFileInput,
   isRenameMarkdownFileInput,
   isRevealWorkspaceItemInput,
   isStartWorkspaceFileDragInput
@@ -200,6 +204,28 @@ export function registerMarkdownFileHandlers(): void {
         return fail(
           "IMAGE_READ_FAILED",
           "画像ファイルを表示できませんでした。",
+          ipcErrorDetails(error)
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(
+    readPdfFileChannel,
+    async (_event, input: ReadPdfFileInput) => {
+      try {
+        if (!isReadPdfFileInput(input)) {
+          return fail("PDF_READ_INVALID_INPUT", "表示するPDFファイルを指定してください。");
+        }
+
+        const context = await getActiveWorkspaceContext();
+        if (!context.ok) return context;
+
+        return readPdfFile(context.value.activeWorkspace.path, input.path);
+      } catch (error) {
+        return fail(
+          "PDF_READ_FAILED",
+          "PDFファイルを表示できませんでした。",
           ipcErrorDetails(error)
         );
       }

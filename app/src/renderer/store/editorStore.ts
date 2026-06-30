@@ -11,6 +11,7 @@ import {
   moveTabState,
   openFileTabState,
   openImageTabState,
+  openPdfTabState,
   markFileTabSavedState,
   openChartTabState,
   openPanelTabState,
@@ -63,7 +64,15 @@ export interface ImageTab {
   path: string;
 }
 
-export type Tab = FileTab | ChartTab | ImageTab | PanelTab;
+export interface PdfTab {
+  id: string;
+  isPinned?: boolean;
+  kind: "pdf";
+  name: string;
+  path: string;
+}
+
+export type Tab = FileTab | ChartTab | ImageTab | PdfTab | PanelTab;
 export type PaneId = "left" | "right";
 
 export interface PaneState {
@@ -88,6 +97,7 @@ interface EditorStore {
   markTabSaved: (tabId: string, content: string) => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
   openImageInPane: (pane: PaneId, image: { name: string; path: string }) => void;
+  openPdfInPane: (pane: PaneId, pdf: { name: string; path: string }) => void;
   openChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
   resolveTabExternalConflict: (tabId: string, choice: "external" | "relic") => void;
@@ -122,6 +132,13 @@ export const useEditorStore = create<EditorStore>((set) => ({
     const id = `image-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     set((state) => {
       return openImageTabState(state, pane, image, id);
+    });
+  },
+
+  openPdfInPane: (pane, pdf) => {
+    const id = `pdf-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    set((state) => {
+      return openPdfTabState(state, pane, pdf, id);
     });
   },
 

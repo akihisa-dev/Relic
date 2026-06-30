@@ -6,7 +6,7 @@ const baseRendererCspDirectives = [
   "img-src 'self' file: data:",
   "font-src 'self' data:",
   "object-src 'none'",
-  "frame-src 'none'",
+  "frame-src data:",
   "base-uri 'none'",
   "form-action 'none'"
 ];
