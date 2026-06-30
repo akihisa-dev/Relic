@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 
 import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
+import { isSupportedPdfPath } from "../../shared/pdfFiles";
 import type { MarkdownFileContent, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
 import { ensureMarkdownExtension } from "../../shared/markdownExtension";
 import type { HeadingScrollTarget } from "../editorDerivedState";
@@ -14,6 +15,7 @@ interface UseAppPaneFileActionsInput {
   isSplit: boolean;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
   openImageInPane: (pane: PaneId, image: { name: string; path: string }) => void;
+  openPdfInPane: (pane: PaneId, pdf: { name: string; path: string }) => void;
   openChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
   setLeftPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
@@ -30,6 +32,7 @@ export function useAppPaneFileActions({
   isSplit,
   openFileInPane,
   openImageInPane,
+  openPdfInPane,
   openChartInPane,
   openPanelInPane,
   setLeftPaneScrollHeading,
@@ -57,18 +60,25 @@ export function useAppPaneFileActions({
       openFileInPane(otherPane, { content: tab.content, name: tab.name, path: tab.path });
     } else if (tab.kind === "image") {
       openImageInPane(otherPane, { name: tab.name, path: tab.path });
+    } else if (tab.kind === "pdf") {
+      openPdfInPane(otherPane, { name: tab.name, path: tab.path });
     } else if (tab.kind === "panel") {
       openPanelInPane(otherPane, tab.panel, tab.name);
     } else {
       openChartInPane(otherPane, { id: tab.chartId, name: tab.name });
     }
-  }, [tabs, isSplit, openFileInPane, openImageInPane, openChartInPane, openPanelInPane]);
+  }, [tabs, isSplit, openFileInPane, openImageInPane, openPdfInPane, openChartInPane, openPanelInPane]);
 
   const openTreeFileInOtherPane = useCallback((path: string): void => {
     if (!window.relic || !isSplit) return;
     const otherPane = focusedPane === "left" ? "right" : "left";
     if (isSupportedMarkdownImagePath(path)) {
       openImageInPane(otherPane, { name: path.split("/").at(-1) ?? path, path });
+      return;
+    }
+
+    if (isSupportedPdfPath(path)) {
+      openPdfInPane(otherPane, { name: path.split("/").at(-1) ?? path, path });
       return;
     }
 
@@ -79,7 +89,7 @@ export function useAppPaneFileActions({
         setWorkspaceError(result.error.message);
       }
     });
-  }, [focusedPane, isSplit, openFileInPane, openImageInPane, setWorkspaceError]);
+  }, [focusedPane, isSplit, openFileInPane, openImageInPane, openPdfInPane, setWorkspaceError]);
 
   const openWorkspacePathInOtherPane = useCallback((path: string, heading?: string): void => {
     if (!window.relic || !isSplit) return;

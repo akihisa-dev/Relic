@@ -61,6 +61,7 @@ export function FileTreeItemRow({
   const t = useT();
   const isFolder = node.type === "folder";
   const isImage = node.type === "file" && node.kind === "image";
+  const isPdf = node.type === "file" && node.kind === "pdf";
   const rowClassName = `file-tree-row ${node.type}${isOpening ? " file-tree-row--opening" : ""}${isSelected ? " selected" : ""}${useSelectedItems ? " multi-selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`;
   const icon = (
     <span className={`file-tree-icon${isFolder ? " file-tree-icon--folder" : ""}${isFolder && isExpanded ? " file-tree-icon--expanded" : ""}`}>
@@ -72,7 +73,7 @@ export function FileTreeItemRow({
       ) : (
         <>
           <span className="file-tree-file-accessible-dot">·</span>
-          {isImage ? <ImageTypeIcon /> : <FileTypeIcon />}
+          {isImage ? <ImageTypeIcon /> : isPdf ? <PdfTypeIcon /> : <FileTypeIcon />}
         </>
       )}
     </span>
@@ -121,7 +122,7 @@ export function FileTreeItemRow({
         onDoubleClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (isImage) return;
+          if (isImage || isPdf) return;
           onStartRename();
         }}
         onClick={onActivate}
@@ -181,6 +182,19 @@ function ImageTypeIcon(): ReactElement {
       <rect height="18" rx="2" width="18" x="3" y="3" />
       <circle cx="8.5" cy="8.5" r="1.5" />
       <path d="m21 15-5-5L5 21" />
+    </svg>
+  );
+}
+
+function PdfTypeIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" className="file-tree-file-icon" fill="none" height="15" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4" viewBox="0 0 24 24" width="15">
+      <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.7.7l3.6 3.6A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2Z" />
+      <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+      <path d="M7.5 17h1.2a1.3 1.3 0 0 0 0-2.6H7.5v4.1" />
+      <path d="M12 18.5v-4.1h1a2 2 0 0 1 0 4.1Z" />
+      <path d="M16.4 18.5v-4.1h2.1" />
+      <path d="M16.4 16.4h1.6" />
     </svg>
   );
 }

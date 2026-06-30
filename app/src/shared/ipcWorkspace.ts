@@ -49,6 +49,14 @@ export interface ReadImageFileResult {
   dataUrl: string;
 }
 
+export interface ReadPdfFileInput {
+  path: string;
+}
+
+export interface ReadPdfFileResult {
+  dataUrl: string;
+}
+
 export interface CreateLinkedMarkdownFileInput {
   path: string;
 }
@@ -213,7 +221,7 @@ export interface WorkspaceSearchResultSet {
 }
 
 export type WorkspaceFileKind = "markdown";
-export type WorkspaceTreeFileKind = "image" | "markdown";
+export type WorkspaceTreeFileKind = "image" | "markdown" | "pdf";
 
 export type WorkspaceFileReadStatus = "ok" | "unreadable";
 

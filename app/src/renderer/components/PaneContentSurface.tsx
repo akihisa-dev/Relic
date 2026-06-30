@@ -187,6 +187,10 @@ export function PaneContentSurface({
     return <ImageTabSurface name={activeTab.name} path={activeTab.path} />;
   }
 
+  if (activeTab?.kind === "pdf") {
+    return <PdfTabSurface name={activeTab.name} path={activeTab.path} />;
+  }
+
   if (activeTab?.kind === "chart") {
     return (
       <div className="editor-surface panel-tab-surface">
@@ -210,6 +214,63 @@ export function PaneContentSurface({
           </button>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+interface PdfTabSurfaceProps {
+  name: string;
+  path: string;
+}
+
+function PdfTabSurface({ name, path }: PdfTabSurfaceProps): ReactElement {
+  const [pdfSrc, setPdfSrc] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setPdfSrc(null);
+    setLoadError(null);
+
+    void window.relic?.readPdfFile({ path }).then((result) => {
+      if (!active) return;
+
+      if (result.ok) {
+        setPdfSrc(result.value.dataUrl);
+        return;
+      }
+
+      setLoadError(result.error.message);
+    }).catch(() => {
+      if (!active) return;
+      setLoadError("PDFファイルを表示できませんでした。");
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [path]);
+
+  return (
+    <div className="editor-surface pdf-tab-surface">
+      <div className="image-tab-title-row">
+        <div className="editor-file-title-slot">
+          <div className="editor-file-title" title={path}>{name}</div>
+        </div>
+      </div>
+      <div className="pdf-tab-body">
+        {pdfSrc ? (
+          <iframe
+            className="pdf-tab-frame"
+            src={pdfSrc}
+            title={name}
+          />
+        ) : (
+          <output className="editor-conflict-banner">
+            <span>{loadError ?? "PDFを読み込んでいます。"}</span>
+          </output>
+        )}
+      </div>
     </div>
   );
 }

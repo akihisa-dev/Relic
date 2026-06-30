@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { MouseEvent } from "react";
 
-import type { WorkspaceTreeNode } from "../../shared/ipc";
+import type { WorkspaceTreeFileKind, WorkspaceTreeNode } from "../../shared/ipc";
 
 type SelectableTreeItem = {
-  kind?: "image" | "markdown";
+  kind?: WorkspaceTreeFileKind;
   path: string;
   type: WorkspaceTreeNode["type"];
 };

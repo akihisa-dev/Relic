@@ -8,6 +8,7 @@ import type {
   MoveItemToTrashInput,
   MoveMarkdownFileInput,
   ReadImageFileInput,
+  ReadPdfFileInput,
   RenameFolderInput,
   RenameMarkdownFileInput,
   ReplaceInFileInput,
@@ -18,6 +19,7 @@ import type {
   WriteMarkdownFileInput
 } from "../../shared/ipc";
 import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
+import { isSupportedPdfPath } from "../../shared/pdfFiles";
 import {
   maxExpectedFileSnapshots,
   maxImportMarkdownFiles,
@@ -66,6 +68,10 @@ export function isImportImageFileInput(input: unknown): input is ImportImageFile
 
 export function isReadImageFileInput(input: unknown): input is ReadImageFileInput {
   return isPathInput(input) && isSupportedMarkdownImagePath(input.path);
+}
+
+export function isReadPdfFileInput(input: unknown): input is ReadPdfFileInput {
+  return isPathInput(input) && isSupportedPdfPath(input.path);
 }
 
 export function isCreateFolderInput(input: unknown): input is CreateFolderInput {

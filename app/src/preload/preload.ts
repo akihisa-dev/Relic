@@ -15,6 +15,7 @@ import {
   importImageFileChannel,
   importMarkdownFilesChannel,
   readImageFileChannel,
+  readPdfFileChannel,
   getBacklinksChannel,
   getAppInfoChannel,
   getEditorSettingsChannel,
@@ -86,6 +87,8 @@ import {
   type ImportMarkdownFilesInput,
   type ReadImageFileInput,
   type ReadImageFileResult,
+  type ReadPdfFileInput,
+  type ReadPdfFileResult,
   type ChartSettings,
   type LinkUpdateImpact,
   type LinkUpdateImpactInput,
@@ -141,6 +144,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(importImageFileChannel, input) as Promise<RelicResult<ImportImageFileResult>>,
   readImageFile: (input: ReadImageFileInput) =>
     ipcRenderer.invoke(readImageFileChannel, input) as Promise<RelicResult<ReadImageFileResult>>,
+  readPdfFile: (input: ReadPdfFileInput) =>
+    ipcRenderer.invoke(readPdfFileChannel, input) as Promise<RelicResult<ReadPdfFileResult>>,
   createLinkedMarkdownFile: (input: CreateLinkedMarkdownFileInput) =>
     ipcRenderer.invoke(createLinkedMarkdownFileChannel, input) as Promise<
       RelicResult<CreateLinkedMarkdownFileResult>

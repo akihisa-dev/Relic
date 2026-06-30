@@ -3,9 +3,10 @@ import type { MouseEvent } from "react";
 
 import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import type { MarkdownFileContent } from "../../shared/ipc";
+import { isSupportedPdfPath } from "../../shared/pdfFiles";
 import type { HeadingScrollTarget } from "../editorDerivedState";
 import type { Translator } from "../i18nModel";
-import { useEditorStore, type ImageTab, type PaneId } from "../store/editorStore";
+import { useEditorStore, type ImageTab, type PaneId, type PdfTab } from "../store/editorStore";
 import type { SidebarCreateFlight } from "./useRailFlights";
 
 interface UseSidebarFileInteractionsInput {
@@ -15,6 +16,7 @@ interface UseSidebarFileInteractionsInput {
   onFileOpenMotion: () => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
   openImageInPane: (pane: PaneId, image: { name: string; path: string }) => void;
+  openPdfInPane: (pane: PaneId, pdf: { name: string; path: string }) => void;
   setLeftPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
   setRightPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
   setTabActive: (pane: PaneId, tabId: string) => void;
@@ -34,6 +36,7 @@ export function useSidebarFileInteractions({
   onFileOpenMotion,
   openFileInPane,
   openImageInPane,
+  openPdfInPane,
   setLeftPaneScrollHeading,
   setRightPaneScrollHeading,
   setTabActive,
@@ -82,6 +85,15 @@ export function useSidebarFileInteractions({
     openImageInPane(pane, { name: path.split("/").at(-1) ?? path, path });
   }, [openImageInPane]);
 
+  const openPdfPath = useCallback((pane: PaneId, path: string, existingTab?: PdfTab | null): void => {
+    if (existingTab) {
+      openPdfInPane(pane, { name: existingTab.name, path: existingTab.path });
+      return;
+    }
+
+    openPdfInPane(pane, { name: path.split("/").at(-1) ?? path, path });
+  }, [openPdfInPane]);
+
   const handleSidebarOpenFile = useCallback((path: string, event?: MouseEvent<HTMLButtonElement>, options?: OpenFileOptions): void => {
     if (!event) {
       markOpeningFile(path);
@@ -103,11 +115,14 @@ export function useSidebarFileInteractions({
 
     const openTabIdInPane = paneState.tabIds.find((tabId) => {
       const tab = editorState.tabs[tabId];
-      return (tab?.kind === "file" || tab?.kind === "image") && tab.path === path;
+      return (tab?.kind === "file" || tab?.kind === "image" || tab?.kind === "pdf") && tab.path === path;
     });
     const openTabInPane = openTabIdInPane ? editorState.tabs[openTabIdInPane] : null;
 
-    if (openTabIdInPane && (openTabInPane?.kind === "file" || openTabInPane?.kind === "image")) {
+    if (
+      openTabIdInPane &&
+      (openTabInPane?.kind === "file" || openTabInPane?.kind === "image" || openTabInPane?.kind === "pdf")
+    ) {
       markOpeningFile(path);
       setTabActive(targetPane, openTabIdInPane);
       scrollToLine(targetPane, options?.lineNumber);
@@ -115,7 +130,9 @@ export function useSidebarFileInteractions({
       return;
     }
 
-    const existingTab = Object.values(editorState.tabs).find((tab) => (tab.kind === "file" || tab.kind === "image") && tab.path === path);
+    const existingTab = Object.values(editorState.tabs).find((tab) => (
+      tab.kind === "file" || tab.kind === "image" || tab.kind === "pdf"
+    ) && tab.path === path);
     markOpeningFile(path);
 
     if (existingTab?.kind === "file") {
@@ -131,8 +148,20 @@ export function useSidebarFileInteractions({
       return;
     }
 
+    if (existingTab?.kind === "pdf") {
+      openPdfPath(targetPane, path, existingTab);
+      onFileOpenMotion();
+      return;
+    }
+
     if (isSupportedMarkdownImagePath(path)) {
       openImagePath(targetPane, path);
+      onFileOpenMotion();
+      return;
+    }
+
+    if (isSupportedPdfPath(path)) {
+      openPdfPath(targetPane, path);
       onFileOpenMotion();
       return;
     }
@@ -154,7 +183,7 @@ export function useSidebarFileInteractions({
         setWorkspaceError(result.error.message);
       }
     });
-  }, [handleOpenFile, markOpeningFile, onFileOpenMotion, openFileInPane, openImagePath, scrollToLine, setTabActive, setWorkspaceError]);
+  }, [handleOpenFile, markOpeningFile, onFileOpenMotion, openFileInPane, openImagePath, openPdfPath, scrollToLine, setTabActive, setWorkspaceError]);
 
   const handleCreateFileFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
     void event;

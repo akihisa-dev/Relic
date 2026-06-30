@@ -883,6 +883,10 @@
   grid-template-rows: auto minmax(0, 1fr);
 }
 
+.pdf-tab-surface {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
 .image-tab-title-row {
   align-items: start;
   box-sizing: border-box;
@@ -912,6 +916,21 @@
   max-height: 100%;
   max-width: 100%;
   object-fit: contain;
+}
+
+.pdf-tab-body {
+  box-sizing: border-box;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.pdf-tab-frame {
+  border: 0;
+  display: block;
+  height: 100%;
+  width: 100%;
 }
 
 /* ────────────────────────────────── */
