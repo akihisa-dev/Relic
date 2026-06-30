@@ -430,6 +430,7 @@
       - `chronicleTimelineNavigation.ts`
       - `chronicleTimelineRows.test.ts`
       - `chronicleTimelineRows.ts`
+      - `colorSwatches.ts`
       - `concurrency.ts`
       - `d2Renderer.ts`
       - `designCompliance.test.ts`

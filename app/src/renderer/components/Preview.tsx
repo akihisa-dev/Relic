@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 
 import type { EditorSettings } from "../../shared/ipc";
 import { appFontFamilyMap } from "../appFont";
+import { enhancePreviewTableColorSwatches } from "../colorSwatches";
 import { usePreviewEmbeds } from "../hooks/usePreviewEmbeds";
 import { sanitizePreviewHtml } from "../htmlSanitizer";
 import { useT } from "../i18n";
@@ -57,6 +58,7 @@ export function Preview({
     if (!container) return;
 
     container.innerHTML = sanitizePreviewHtml(html);
+    enhancePreviewTableColorSwatches(container);
     return renderDiagramElements(container, t);
   }, [html, settings.theme, t]);
 

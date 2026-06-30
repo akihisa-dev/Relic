@@ -57,6 +57,25 @@ describe("Editor table preview", () => {
     expect(input.value).toBe("very-long-unbroken-cell-value-that-should-wrap-inside-the-table");
   });
 
+  it("ライブプレビューの表セルにHEXカラーの色見本を表示する", async () => {
+    const { container } = render(
+      <Editor
+        content={"| Name | Value |\n| --- | --- |\n| Primary | `#111111` |\n| Accent | #5F6368 |"}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table-color-swatch")).not.toBeNull());
+
+    const colorCells = Array.from(container.querySelectorAll(".cm-live-table-color-cell"));
+    const swatches = Array.from(container.querySelectorAll<HTMLElement>(".cm-live-table-color-swatch:not([hidden])"));
+
+    expect(colorCells).toHaveLength(2);
+    expect(swatches).toHaveLength(2);
+    expect(swatches.map((swatch) => swatch.style.backgroundColor)).toEqual(["rgb(17, 17, 17)", "rgb(95, 99, 104)"]);
+  });
+
   it("ライブプレビューの表が最終行にある場合は表の下へ本文を続けて入力できる", async () => {
     const viewRef = createRef<EditorView | null>();
 
