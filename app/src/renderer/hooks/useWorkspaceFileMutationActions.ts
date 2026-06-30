@@ -1,7 +1,9 @@
 import { useCallback } from "react";
 
+import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import type { LinkUpdateImpactKind } from "../../shared/ipcWorkspace";
 import type { WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
+import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import type { RelicResult } from "../../shared/result";
 import type { Translator } from "../i18nModel";
 import {
@@ -44,12 +46,34 @@ interface LinkImpactRequest {
   oldPath: string;
 }
 
+interface DroppedWorkspaceFiles {
+  imageSourcePaths: string[];
+  markdownSourcePaths: string[];
+}
+
 const linkUpdateImpactFileThreshold = 30;
 const linkUpdateImpactLinkThreshold = 100;
 
 function fileTabIdForPath(tabs: WorkspaceFileMutationInput["tabs"], path: string): string | null {
   const tabEntry = Object.entries(tabs).find(([, tab]) => tab.kind === "file" && tab.path === path);
   return tabEntry?.[0] ?? null;
+}
+
+function splitDroppedWorkspaceFiles(sourcePaths: string[]): DroppedWorkspaceFiles {
+  const imageSourcePaths: string[] = [];
+  const markdownSourcePaths: string[] = [];
+
+  for (const sourcePath of sourcePaths) {
+    if (hasMarkdownExtension(sourcePath)) {
+      markdownSourcePaths.push(sourcePath);
+    } else if (isSupportedMarkdownImagePath(sourcePath)) {
+      imageSourcePaths.push(sourcePath);
+    } else {
+      markdownSourcePaths.push(sourcePath);
+    }
+  }
+
+  return { imageSourcePaths, markdownSourcePaths };
 }
 
 export function useWorkspaceFileMutationActions({
@@ -163,15 +187,29 @@ export function useWorkspaceFileMutationActions({
   const handleImportMarkdownFiles = useCallback((sourcePaths: string[], destinationFolder: string): void => {
     if (!window.relic || sourcePaths.length === 0) return;
 
-    void window.relic
-      .importMarkdownFiles({ destinationFolder, sourcePaths })
-      .then((result) => {
-        if (result.ok) {
-          setWorkspaceState(result.value);
-        } else {
+    const { imageSourcePaths, markdownSourcePaths } = splitDroppedWorkspaceFiles(sourcePaths);
+
+    void (async () => {
+      if (markdownSourcePaths.length > 0) {
+        const result = await window.relic!.importMarkdownFiles({
+          destinationFolder,
+          sourcePaths: markdownSourcePaths
+        });
+        if (!result.ok) {
           setWorkspaceError(result.error.message);
+          return;
         }
-      });
+        setWorkspaceState(result.value);
+      }
+
+      for (const sourcePath of imageSourcePaths) {
+        const result = await window.relic!.importImageFile({ destinationFolder, sourcePath });
+        if (!result.ok) {
+          setWorkspaceError(result.error.message);
+          return;
+        }
+      }
+    })();
   }, [setWorkspaceError, setWorkspaceState]);
 
   const handleMoveFolder = useCallback((path: string, destFolder: string): void => {
