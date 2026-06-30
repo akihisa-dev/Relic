@@ -2,10 +2,11 @@ import { markdown } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
 import { GFM } from "@lezer/markdown";
 import { fireEvent, render, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { headingFoldRange } from "../editorHeadingFolding";
 import { I18nProvider } from "../i18n";
+import { makeRelicApi } from "../../test/rendererTestUtils";
 import { Editor } from "./Editor";
 import {
   collectInlineLivePreviewWidgetClasses,
@@ -13,6 +14,21 @@ import {
   renderEditorWithView,
   settings
 } from "./editorTestHelpers";
+
+function makeDataTransfer(files: File[] = []): DataTransfer {
+  return {
+    dropEffect: "none",
+    effectAllowed: "all",
+    files,
+    items: [],
+    types: files.length > 0 ? ["Files"] : []
+  } as unknown as DataTransfer;
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  window.relic = undefined;
+});
 
 describe("Editor preview", () => {
   it("本文は設定幅の内側で折り返す", async () => {
@@ -168,6 +184,37 @@ describe("Editor preview", () => {
     });
 
     await waitFor(() => expect(container.querySelector(".cm-live-bold")).not.toBeNull());
+  });
+
+  it("エディタへ画像をドロップしたら画像を取り込んでMarkdown画像記法を挿入する", async () => {
+    const importImageFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { path: "notes/diagram.png" }
+    });
+    window.relic = makeRelicApi({
+      getDroppedFilePath: vi.fn().mockReturnValue("/tmp/diagram.png"),
+      importImageFile
+    });
+    const onChange = vi.fn();
+    const { container } = await renderEditorWithView({
+      content: "",
+      filePath: "notes/entry.md",
+      onChange
+    });
+    const editorContainer = container.querySelector(".cm-editor-container") as HTMLElement;
+    const dataTransfer = makeDataTransfer([new File([""], "diagram.png", { type: "image/png" })]);
+
+    fireEvent.dragOver(editorContainer, { dataTransfer });
+    fireEvent.drop(editorContainer, { clientX: 0, clientY: 0, dataTransfer });
+
+    expect(dataTransfer.dropEffect).toBe("copy");
+    await waitFor(() => {
+      expect(importImageFile).toHaveBeenCalledWith({
+        destinationFolder: "notes",
+        sourcePath: "/tmp/diagram.png"
+      });
+    });
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith("![diagram](notes/diagram.png)"));
   });
 
   it("ライブプレビューでフォーカスが外れたらカーソル行もレンダリングする", async () => {

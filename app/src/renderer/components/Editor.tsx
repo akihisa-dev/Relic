@@ -151,7 +151,10 @@ export function Editor({
       if (sourcePaths.length === 0) return;
 
       event.preventDefault();
-      event.dataTransfer!.dropEffect = "copy";
+      event.stopPropagation();
+      if (event.dataTransfer) {
+        event.dataTransfer.dropEffect = "copy";
+      }
     };
     const handleDrop = (event: DragEvent): void => {
       const view = internalViewRef.current;
@@ -166,8 +169,8 @@ export function Editor({
     };
 
     container.addEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
-    container.addEventListener("dragover", handleDragOver);
-    container.addEventListener("drop", handleDrop);
+    container.addEventListener("dragover", handleDragOver, true);
+    container.addEventListener("drop", handleDrop, true);
     container.addEventListener("pointerdown", restoreEditableForEditorClick, true);
     container.addEventListener("mousedown", restoreEditableForEditorClick, true);
     container.addEventListener("pointerdown", handleRightButtonDown, true);
@@ -178,8 +181,8 @@ export function Editor({
 
     return () => {
       container.removeEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
-      container.removeEventListener("dragover", handleDragOver);
-      container.removeEventListener("drop", handleDrop);
+      container.removeEventListener("dragover", handleDragOver, true);
+      container.removeEventListener("drop", handleDrop, true);
       container.removeEventListener("pointerdown", restoreEditableForEditorClick, true);
       container.removeEventListener("mousedown", restoreEditableForEditorClick, true);
       container.removeEventListener("pointerdown", handleRightButtonDown, true);
