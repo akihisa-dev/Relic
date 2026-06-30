@@ -33,7 +33,6 @@ describe("ChronicleTracks", () => {
         axisStart={0}
         dragPreview={null}
         guideTicks={[]}
-        laneLayoutResetKey="test"
         onOpenFile={vi.fn()}
         onStartEntryEdit={vi.fn()}
         rows={[

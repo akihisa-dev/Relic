@@ -48,15 +48,6 @@ export function ChartView({ chart = null, charts = defaultCharts, chronicleCalen
     resetKey: model.activeChart?.id ?? null,
     unitWidth: model.unitWidth
   });
-  const laneLayoutResetKey = useMemo(
-    () => model.activeChart
-      ? [
-        model.activeChart.id,
-        ...model.entries.map((entry) => `${entry.path}:${entry.chronicleEntryIndex}:${entry.startValue}:${entry.endValue}`)
-      ].join("|")
-      : null,
-    [model.activeChart, model.entries]
-  );
 
   return (
     <div className="chronicle-panel">
@@ -73,7 +64,6 @@ export function ChartView({ chart = null, charts = defaultCharts, chronicleCalen
         axisHeight={model.axisHeight}
         dragPreview={entryDrag.dragPreview}
         guideTicks={model.guideTicks}
-        laneLayoutResetKey={laneLayoutResetKey}
         nameColumnWidth={model.nameColumnWidth}
         onChartPointerDown={viewport.startChartPan}
         onChartScroll={viewport.handleChartScroll}
