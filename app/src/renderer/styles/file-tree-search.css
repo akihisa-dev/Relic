@@ -811,8 +811,8 @@
 }
 
 .tag-pill {
-  background: rgba(18, 100, 163, 0.08);
-  border: 1px solid rgba(18, 100, 163, 0.18);
+  background: var(--accent-softer);
+  border: 1px solid var(--accent-ring);
   color: var(--link);
   min-width: 0;
   overflow: hidden;

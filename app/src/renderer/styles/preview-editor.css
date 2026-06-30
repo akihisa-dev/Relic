@@ -132,8 +132,8 @@
 }
 
 .preview-diagram-error {
-  background: color-mix(in srgb, var(--danger, #b42318) 7%, var(--bg));
-  border: 1px solid color-mix(in srgb, var(--danger, #b42318) 26%, var(--border));
+  background: color-mix(in srgb, var(--text) 7%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--text) 26%, var(--border));
   border-radius: 6px;
   color: var(--text);
   padding: 12px 14px;
@@ -446,8 +446,8 @@
 
 .editor-conflict-banner {
   align-items: center;
-  background: color-mix(in srgb, var(--warning, #b7791f) 12%, var(--bg));
-  border: 1px solid color-mix(in srgb, var(--warning, #b7791f) 35%, var(--border));
+  background: color-mix(in srgb, var(--text-2) 12%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--text-2) 35%, var(--border));
   border-radius: 6px;
   box-sizing: border-box;
   color: var(--text);
@@ -1351,9 +1351,9 @@
   --live-table-drag-handle-size: 16px;
   --live-table-handle-active-color: #ffffff;
   --live-table-handle-color: #ababab;
-  --live-table-selection: hsla(258, 88%, 66%, 0.1);
+  --live-table-selection: color-mix(in srgb, var(--text) 8%, transparent);
   --live-table-selection-blend-mode: darken;
-  --live-table-selection-border-color: hsl(257, 89%, 71%);
+  --live-table-selection-border-color: var(--text);
   --live-table-selection-border-radius: 4px;
   --live-table-selection-border-width: 2px;
   margin: 18px 0;
@@ -1608,7 +1608,7 @@
 }
 
 .cm-live-table-delete {
-  color: color-mix(in srgb, var(--danger, #b42318) 86%, var(--text-3));
+  color: color-mix(in srgb, var(--text) 86%, var(--text-3));
   font-size: 12px;
   height: 18px;
   width: 18px;
