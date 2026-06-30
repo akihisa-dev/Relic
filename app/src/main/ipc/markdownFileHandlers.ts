@@ -1,4 +1,6 @@
-import { ipcMain, shell } from "electron";
+import { app, ipcMain, nativeImage, shell } from "electron";
+import { stat } from "node:fs/promises";
+import path from "node:path";
 
 import {
   createLinkedMarkdownFileChannel,
@@ -17,6 +19,8 @@ import {
   type RenameMarkdownFileInput,
   revealWorkspaceItemChannel,
   type RevealWorkspaceItemInput,
+  startWorkspaceFileDragChannel,
+  type StartWorkspaceFileDragInput,
   type WorkspaceState
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
@@ -29,7 +33,11 @@ import {
   renameMarkdownFile
 } from "../files/markdownFiles";
 import { readLinkUpdateImpact } from "../files/linkUpdater";
-import { resolveExistingWorkspacePathOrRoot, verifyExistingWorkspacePath } from "../files/paths";
+import {
+  resolveExistingWorkspacePath,
+  resolveExistingWorkspacePathOrRoot,
+  verifyExistingWorkspacePath
+} from "../files/paths";
 import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordinator";
 import { invalidateWorkspaceDerivedData } from "../files/workspaceDerivedDataSession";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
@@ -40,9 +48,19 @@ import {
   isMoveMarkdownFileInput,
   isPathInput,
   isRenameMarkdownFileInput,
-  isRevealWorkspaceItemInput
+  isRevealWorkspaceItemInput,
+  isStartWorkspaceFileDragInput
 } from "./fileHandlerValidators";
 import { buildWorkspaceState } from "./workspaceState";
+
+function workspaceFileDragIcon(): Electron.NativeImage {
+  const icon = nativeImage.createFromPath(path.join(app.getAppPath(), "assets/icon.iconset/icon_32x32.png"));
+  if (!icon.isEmpty()) return icon;
+
+  return nativeImage.createFromDataURL(
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lDqWqgAAAABJRU5ErkJggg=="
+  );
+}
 
 export function registerMarkdownFileHandlers(): void {
   ipcMain.handle(getLinkUpdateImpactChannel, async (_event, input: LinkUpdateImpactInput) => {
@@ -129,6 +147,40 @@ export function registerMarkdownFileHandlers(): void {
           "ファイルを追加できませんでした。",
           ipcErrorDetails(error)
         );
+      }
+    }
+  );
+
+  ipcMain.on(
+    startWorkspaceFileDragChannel,
+    async (event, input: StartWorkspaceFileDragInput): Promise<void> => {
+      try {
+        if (!isStartWorkspaceFileDragInput(input)) return;
+
+        const context = await getActiveWorkspaceContext();
+        if (!context.ok) return;
+
+        const filePaths: string[] = [];
+        for (const relativePath of input.paths) {
+          const absolutePath = await resolveExistingWorkspacePath(
+            context.value.activeWorkspace.path,
+            relativePath
+          );
+          if (!absolutePath.ok) return;
+
+          const fileStat = await stat(absolutePath.value);
+          if (!fileStat.isFile()) return;
+          filePaths.push(absolutePath.value);
+        }
+
+        if (filePaths.length === 0) return;
+        event.sender.startDrag({
+          file: filePaths[0]!,
+          files: filePaths,
+          icon: workspaceFileDragIcon()
+        });
+      } catch {
+        // Drag start is a fire-and-forget user gesture; invalid or stale paths simply do not start an OS drag.
       }
     }
   );

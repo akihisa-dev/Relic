@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const electronMock = vi.hoisted(() => ({
   exposeInMainWorld: vi.fn(),
   getPathForFile: vi.fn(),
-  invoke: vi.fn()
+  invoke: vi.fn(),
+  send: vi.fn()
 }));
 
 vi.mock("electron", () => ({
@@ -14,7 +15,7 @@ vi.mock("electron", () => ({
     invoke: electronMock.invoke,
     on: vi.fn(),
     removeListener: vi.fn(),
-    send: vi.fn()
+    send: electronMock.send
   },
   webUtils: {
     getPathForFile: electronMock.getPathForFile
@@ -26,6 +27,7 @@ import {
   copyDiagramSvgChannel,
   saveDiagramSvgChannel,
   savePreviewAsPdfChannel,
+  startWorkspaceFileDragChannel,
   type RelicApi
 } from "../shared/ipc";
 
@@ -55,6 +57,7 @@ describe("preload output API", () => {
     });
     await api.copyDiagramSvg({ language: "d2", svg: "<svg><path /></svg>" });
     await api.copyEditorTextToClipboard({ text: "selected text" });
+    api.startWorkspaceFileDrag({ paths: ["Note.md"] });
     expect(api.getDroppedFilePath(new File([""], "Note.md"))).toBe("/tmp/Note.md");
 
     expect(electronMock.invoke).toHaveBeenCalledWith(savePreviewAsPdfChannel, {
@@ -73,6 +76,9 @@ describe("preload output API", () => {
     });
     expect(electronMock.invoke).toHaveBeenCalledWith(copyEditorTextToClipboardChannel, {
       text: "selected text"
+    });
+    expect(electronMock.send).toHaveBeenCalledWith(startWorkspaceFileDragChannel, {
+      paths: ["Note.md"]
     });
     expect(electronMock.getPathForFile).toHaveBeenCalledWith(expect.any(File));
     expect("readEditorClipboardForPaste" in api).toBe(false);

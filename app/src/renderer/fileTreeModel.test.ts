@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { WorkspaceTreeNode } from "../shared/ipc";
 import {
   addedNodePaths,
+  attachableFileTreePaths,
   buildVisibleFileTreeRows,
   childMotionPathsForAppearingFolder,
   collectFolderPaths,
@@ -79,6 +80,14 @@ describe("fileTreeModel", () => {
     expect(shouldUseSelectedFileTreeItems(false, selectedItems)).toBe(false);
     expect(fileTreeOperationItems(node, selectedItems, true)).toEqual(selectedItems);
     expect(fileTreeOperationItems(node, selectedItems, false)).toEqual([{ path: "Root.md", type: "file" }]);
+  });
+
+  it("collects only file paths for external attachment drags", () => {
+    expect(attachableFileTreePaths([
+      { path: "Root.md", type: "file" },
+      { path: "Folder", type: "folder" },
+      { path: "Folder/Child.md", type: "file" }
+    ])).toEqual(["Root.md", "Folder/Child.md"]);
   });
 
   it("serializes and parses file tree drag payloads", () => {

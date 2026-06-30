@@ -5,6 +5,7 @@ import type { WorkspaceTreeNode } from "../../shared/ipc";
 import type { FileTreeActions } from "../components/FileTree";
 import {
   FILE_TREE_DRAG_MIME,
+  attachableFileTreePaths,
   fileTreeOperationItems,
   movableItemsForDestination,
   moveItemsToDestination,
@@ -93,8 +94,12 @@ export function useFileTreeDragDrop({
     }
 
     const items = dragItemsForNode();
-    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.effectAllowed = "copyMove";
     event.dataTransfer.setData(FILE_TREE_DRAG_MIME, serializeFileTreeDragPayload(items));
+    const filePaths = attachableFileTreePaths(items);
+    if (filePaths.length > 0 && typeof window.relic?.startWorkspaceFileDrag === "function") {
+      window.relic.startWorkspaceFileDrag({ paths: filePaths });
+    }
     setIsDragging(true);
   };
 

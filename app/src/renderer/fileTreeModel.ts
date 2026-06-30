@@ -138,6 +138,10 @@ export function fileTreeOperationItems(
   return useSelectedItems ? selectedItems : [{ path: node.path, type: node.type }];
 }
 
+export function attachableFileTreePaths(items: FileTreeMoveItem[]): string[] {
+  return items.filter((item) => item.type === "file").map((item) => item.path);
+}
+
 export function serializeFileTreeDragPayload(items: FileTreeMoveItem[]): string {
   return JSON.stringify({ items } satisfies FileTreeDragPayload);
 }

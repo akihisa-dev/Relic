@@ -2,17 +2,32 @@ import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const electronMock = vi.hoisted(() => ({
+  getAppPath: vi.fn(),
   getPath: vi.fn(),
   handle: vi.fn(),
+  isEmpty: vi.fn(),
+  on: vi.fn(),
+  createFromDataURL: vi.fn(),
+  createFromPath: vi.fn(),
   showItemInFolder: vi.fn()
 }));
 
 vi.mock("electron", () => ({
-  app: { getPath: electronMock.getPath },
-  ipcMain: { handle: electronMock.handle },
+  app: {
+    getAppPath: electronMock.getAppPath,
+    getPath: electronMock.getPath
+  },
+  ipcMain: {
+    handle: electronMock.handle,
+    on: electronMock.on
+  },
+  nativeImage: {
+    createFromDataURL: electronMock.createFromDataURL,
+    createFromPath: electronMock.createFromPath
+  },
   shell: { showItemInFolder: electronMock.showItemInFolder }
 }));
 
@@ -39,6 +54,14 @@ describe("markdownFileHandlers", () => {
         })
       )
     );
+  });
+
+  beforeEach(() => {
+    const icon = { isEmpty: electronMock.isEmpty };
+    electronMock.createFromDataURL.mockReturnValue(icon);
+    electronMock.createFromPath.mockReturnValue(icon);
+    electronMock.getAppPath.mockReturnValue("/tmp/relic-app");
+    electronMock.isEmpty.mockReturnValue(false);
   });
 
   it("場所表示ではワークスペース外を指すシンボリックリンクを開かない", async () => {

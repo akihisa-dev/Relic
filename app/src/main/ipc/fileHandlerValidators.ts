@@ -12,6 +12,7 @@ import type {
   SearchAndReplaceInput,
   SearchMode,
   SearchWorkspaceInput,
+  StartWorkspaceFileDragInput,
   WriteMarkdownFileInput
 } from "../../shared/ipc";
 import {
@@ -101,6 +102,18 @@ export function isRevealWorkspaceItemInput(input: unknown): input is { path: str
   return (
     isPathOrRootInput(input) &&
     (workspaceId === undefined || isWorkspaceIdInput({ workspaceId }))
+  );
+}
+
+export function isStartWorkspaceFileDragInput(input: unknown): input is StartWorkspaceFileDragInput {
+  if (typeof input !== "object" || input === null) return false;
+
+  const candidate = input as { paths?: unknown };
+  return (
+    Array.isArray(candidate.paths) &&
+    candidate.paths.length > 0 &&
+    candidate.paths.length <= maxImportMarkdownFiles &&
+    candidate.paths.every(isLimitedWorkspaceRelativeInputPath)
   );
 }
 

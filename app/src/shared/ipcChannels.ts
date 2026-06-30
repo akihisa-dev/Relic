@@ -26,6 +26,7 @@ export const renameWorkspaceChannel = "workspace:rename";
 export const renameMarkdownFileChannel = "workspace:renameMarkdownFile";
 export const renameFolderChannel = "workspace:renameFolder";
 export const revealWorkspaceItemChannel = "workspace:revealItem";
+export const startWorkspaceFileDragChannel = "workspace:startFileDrag";
 export const searchWorkspaceChannel = "workspace:search";
 export const switchWorkspaceChannel = "workspace:switch";
 export const writeMarkdownFileChannel = "workspace:writeMarkdownFile";
