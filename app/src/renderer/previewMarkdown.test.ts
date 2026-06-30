@@ -9,6 +9,7 @@ import {
   renderMarkdown,
   toggleNthCheckbox
 } from "./previewMarkdown";
+import { enhancePreviewTableColorSwatches } from "./colorSwatches";
 import { createTranslator } from "./i18nModel";
 import { decodeDiagramSourceAttribute, encodeDiagramSourceAttribute } from "./diagramSourceAttribute";
 import {
@@ -201,6 +202,20 @@ describe("previewMarkdown", () => {
     expect(html).toContain("katex");
     expect(html).toContain("hljs language-js");
     expect(html).toContain("const");
+  });
+
+  it("通常プレビューの表セルにHEXカラーの色見本を追加できる", () => {
+    const html = renderMarkdown("| Name | Value |\n| --- | --- |\n| Primary | `#111111` |", null, new Map(), true, t);
+    const document = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
+    const container = document.body.firstElementChild as HTMLElement;
+
+    enhancePreviewTableColorSwatches(container);
+
+    const swatch = container.querySelector<HTMLElement>(".preview-color-swatch");
+
+    expect(swatch).not.toBeNull();
+    expect(swatch?.style.backgroundColor).toBe("rgb(17, 17, 17)");
+    expect(container.querySelector(".preview-color-cell")?.textContent).toContain("#111111");
   });
 
   it("同じ入力ではコードハイライトとKaTeX結果を再利用する", () => {

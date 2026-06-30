@@ -1,6 +1,7 @@
 import { WidgetType } from "@codemirror/view";
 
 import { writeEditorClipboardText } from "./editorClipboard";
+import { colorValueFromTableCell, createColorSwatch } from "./colorSwatches";
 import {
   insertTableRow,
   moveTableColumnTo,
@@ -154,6 +155,15 @@ export class TableWidget extends WidgetType {
         input.rows = 1;
         input.wrap = "soft";
         input.value = cell;
+        const swatch = createColorSwatch("#000000");
+        swatch.classList.add("cm-live-table-color-swatch");
+        const updateColorSwatch = (): void => {
+          const color = colorValueFromTableCell(input.value);
+          td.classList.toggle("cm-live-table-color-cell", Boolean(color));
+          swatch.hidden = !color;
+          if (color) swatch.style.backgroundColor = color;
+        };
+        updateColorSwatch();
         requestAnimationFrame(() => resizeCellInput(input));
         const updateCell = (): void => {
           const view = findTableWidgetView(input);
@@ -161,7 +171,10 @@ export class TableWidget extends WidgetType {
         };
 
         input.addEventListener("focus", () => state.markActive("cell", rowIndex, colIndex));
-        input.addEventListener("input", () => resizeCellInput(input));
+        input.addEventListener("input", () => {
+          resizeCellInput(input);
+          updateColorSwatch();
+        });
         input.addEventListener("mouseenter", () => {
           state.setAddAffordance(rowIndex, colIndex);
         });
@@ -244,7 +257,7 @@ export class TableWidget extends WidgetType {
             focusCell(rowIndex, nextCol);
           }
         });
-        td.append(input);
+        td.append(swatch, input);
         tr.append(td);
       });
 
