@@ -346,7 +346,6 @@
   --pane-tab-inline-padding: 8px;
   --pane-tab-split-edge-padding: 10px;
   --pane-tab-width: 220px;
-  --pane-tab-fit-width: 104px;
   --pane-tab-split-width: 180px;
   --pane-tab-min-width: 64px;
   --pane-tab-split-min-width: 48px;
@@ -431,8 +430,8 @@
 }
 
 .panes-container--split .pane-tab {
-  flex: 0 1 var(--pane-tab-split-width);
-  max-width: 100%;
+  flex: 1 1 0;
+  max-width: none;
   min-width: var(--pane-tab-split-min-width);
 }
 
@@ -492,12 +491,12 @@
   color: var(--text-3);
   cursor: default;
   display: flex;
-  flex: 0 1 var(--pane-tab-width);
+  flex: 1 1 0;
   font-size: 13px;
   font-weight: 700;
   gap: 6px;
   height: var(--pane-tab-height);
-  max-width: var(--pane-tab-width);
+  max-width: none;
   min-width: var(--pane-tab-min-width);
   padding: 0 var(--pane-tab-padding-inline);
   position: relative;
@@ -512,10 +511,6 @@
   user-select: none;
   will-change: max-width, min-width, opacity, padding;
   z-index: 1;
-}
-
-.pane-tab-bar--fit .pane-tab {
-  flex-basis: var(--pane-tab-fit-width);
 }
 
 .pane-tab:hover:not(.pane-tab--active):not(.pane-tab--closing) {
@@ -574,6 +569,8 @@
 }
 
 .pane-tab--closing {
+  flex-basis: 0;
+  flex-grow: 0;
   max-width: 0;
   min-width: 0;
   opacity: 0;
