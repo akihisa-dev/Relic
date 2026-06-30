@@ -744,7 +744,8 @@
 }
 
 .outline-item {
-  border-left: 1px solid transparent;
+  background-repeat: no-repeat;
+  background-size: var(--outline-guide-size, 0 0);
   border-radius: 0;
   color: var(--text-2);
   cursor: default;
@@ -762,7 +763,7 @@
 }
 
 .outline-item:hover {
-  background: var(--hover);
+  background-color: var(--hover);
   color: var(--text);
 }
 
@@ -799,17 +800,61 @@
 .outline-item--h4,
 .outline-item--h5,
 .outline-item--h6 {
-  border-left-color: var(--border);
+  background-image: var(--outline-guide-image);
+  background-position: var(--outline-guide-position);
   color: var(--text-2);
   font-weight: 450;
-  margin-left: 16px;
 }
 
-.outline-item--h2 .outline-item-button { padding: 5px 12px 5px 12px; }
-.outline-item--h3 .outline-item-button { padding: 5px 12px 5px 24px; }
-.outline-item--h4 .outline-item-button { padding: 5px 12px 5px 36px; }
-.outline-item--h5 .outline-item-button { padding: 5px 12px 5px 48px; }
-.outline-item--h6 .outline-item-button { padding: 5px 12px 5px 60px; }
+.outline-item--h2 {
+  --outline-guide-image: linear-gradient(var(--border), var(--border));
+  --outline-guide-position: 16px 0;
+  --outline-guide-size: 1px 100%;
+}
+
+.outline-item--h3 {
+  --outline-guide-image:
+    linear-gradient(var(--border), var(--border)),
+    linear-gradient(var(--border), var(--border));
+  --outline-guide-position: 16px 0, 32px 0;
+  --outline-guide-size: 1px 100%, 1px 100%;
+}
+
+.outline-item--h4 {
+  --outline-guide-image:
+    linear-gradient(var(--border), var(--border)),
+    linear-gradient(var(--border), var(--border)),
+    linear-gradient(var(--border), var(--border));
+  --outline-guide-position: 16px 0, 32px 0, 48px 0;
+  --outline-guide-size: 1px 100%, 1px 100%, 1px 100%;
+}
+
+.outline-item--h5 {
+  --outline-guide-image:
+    linear-gradient(var(--border), var(--border)),
+    linear-gradient(var(--border), var(--border)),
+    linear-gradient(var(--border), var(--border)),
+    linear-gradient(var(--border), var(--border));
+  --outline-guide-position: 16px 0, 32px 0, 48px 0, 64px 0;
+  --outline-guide-size: 1px 100%, 1px 100%, 1px 100%, 1px 100%;
+}
+
+.outline-item--h6 {
+  --outline-guide-image:
+    linear-gradient(var(--border), var(--border)),
+    linear-gradient(var(--border), var(--border)),
+    linear-gradient(var(--border), var(--border)),
+    linear-gradient(var(--border), var(--border)),
+    linear-gradient(var(--border), var(--border));
+  --outline-guide-position: 16px 0, 32px 0, 48px 0, 64px 0, 80px 0;
+  --outline-guide-size: 1px 100%, 1px 100%, 1px 100%, 1px 100%, 1px 100%;
+}
+
+.outline-item--h2 .outline-item-button { padding: 5px 12px 5px 28px; }
+.outline-item--h3 .outline-item-button { padding: 5px 12px 5px 44px; }
+.outline-item--h4 .outline-item-button { padding: 5px 12px 5px 60px; }
+.outline-item--h5 .outline-item-button { padding: 5px 12px 5px 76px; }
+.outline-item--h6 .outline-item-button { padding: 5px 12px 5px 92px; }
 
 /* ────────────────────────────────── */
 /* Status bar                         */
