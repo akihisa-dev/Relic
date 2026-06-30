@@ -430,8 +430,8 @@
 }
 
 .panes-container--split .pane-tab {
-  flex: 1 1 0;
-  max-width: none;
+  flex: 1 1 var(--pane-tab-split-width);
+  max-width: var(--pane-tab-split-width);
   min-width: var(--pane-tab-split-min-width);
 }
 
@@ -491,12 +491,12 @@
   color: var(--text-3);
   cursor: default;
   display: flex;
-  flex: 1 1 0;
+  flex: 1 1 var(--pane-tab-width);
   font-size: 13px;
   font-weight: 700;
   gap: 6px;
   height: var(--pane-tab-height);
-  max-width: none;
+  max-width: var(--pane-tab-width);
   min-width: var(--pane-tab-min-width);
   padding: 0 var(--pane-tab-padding-inline);
   position: relative;
