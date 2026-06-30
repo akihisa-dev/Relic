@@ -61,8 +61,8 @@ describe("AppTitleBar", () => {
     expect(editorCss).toMatch(/--pane-tab-split-min-width:\s*48px;/);
     expect(editorCss).toMatch(/--pane-tab-drop-indicator-width:\s*3px;/);
     expect(editorCss).toMatch(/\.pane-tab-bar-shell\s*\{[^}]*align-items:\s*flex-start;/s);
-    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*1 1 0;/s);
-    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*max-width:\s*none;/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*1 1 var\(--pane-tab-width\);/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*max-width:\s*var\(--pane-tab-width\);/s);
     expect(editorCss).toMatch(/\.pane-tab--closing\s*\{[^}]*flex-basis:\s*0;[^}]*flex-grow:\s*0;/s);
     expect(editorCss).toMatch(/\.pane-tab-bar--drop-end::after\s*\{[^}]*position:\s*static;/s);
   });
@@ -73,7 +73,7 @@ describe("AppTitleBar", () => {
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--left\.pane-tabs--has-tabs\s*\{[^}]*inset -1px 0 0 var\(--chrome-top-border, var\(--border\)\)/s);
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right\.pane-tabs--has-tabs\s*\{[^}]*inset -1px 0 0 var\(--chrome-top-border, var\(--border\)\)/s);
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tab-bar-shell\s*\{[^}]*padding-inline:\s*var\(--pane-tab-inline-padding\);/s);
-    expect(editorCss).toMatch(/\.panes-container--split \.pane-tab\s*\{[^}]*flex:\s*1 1 0;[^}]*max-width:\s*none;[^}]*min-width:\s*var\(--pane-tab-split-min-width\);/s);
+    expect(editorCss).toMatch(/\.panes-container--split \.pane-tab\s*\{[^}]*flex:\s*1 1 var\(--pane-tab-split-width\);[^}]*max-width:\s*var\(--pane-tab-split-width\);[^}]*min-width:\s*var\(--pane-tab-split-min-width\);/s);
   });
 
   it("does not render diagonal blue panel decorations", () => {
