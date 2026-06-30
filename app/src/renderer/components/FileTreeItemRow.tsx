@@ -60,6 +60,7 @@ export function FileTreeItemRow({
 }: FileTreeItemRowProps): ReactElement {
   const t = useT();
   const isFolder = node.type === "folder";
+  const isImage = node.type === "file" && node.kind === "image";
   const rowClassName = `file-tree-row ${node.type}${isOpening ? " file-tree-row--opening" : ""}${isSelected ? " selected" : ""}${useSelectedItems ? " multi-selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`;
   const icon = (
     <span className={`file-tree-icon${isFolder ? " file-tree-icon--folder" : ""}${isFolder && isExpanded ? " file-tree-icon--expanded" : ""}`}>
@@ -71,7 +72,7 @@ export function FileTreeItemRow({
       ) : (
         <>
           <span className="file-tree-file-accessible-dot">·</span>
-          <FileTypeIcon />
+          {isImage ? <ImageTypeIcon /> : <FileTypeIcon />}
         </>
       )}
     </span>
@@ -120,6 +121,7 @@ export function FileTreeItemRow({
         onDoubleClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          if (isImage) return;
           onStartRename();
         }}
         onClick={onActivate}
@@ -169,6 +171,16 @@ function FileTypeIcon(): ReactElement {
       <path d="M11 18h2" />
       <path d="M12 12v6" />
       <path d="M9 13v-.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v.5" />
+    </svg>
+  );
+}
+
+function ImageTypeIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" className="file-tree-file-icon" fill="none" height="15" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="15">
+      <rect height="18" rx="2" width="18" x="3" y="3" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="m21 15-5-5L5 21" />
     </svg>
   );
 }

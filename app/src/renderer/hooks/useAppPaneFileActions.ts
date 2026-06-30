@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 
+import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import type { MarkdownFileContent, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
 import { ensureMarkdownExtension } from "../../shared/markdownExtension";
 import type { HeadingScrollTarget } from "../editorDerivedState";
@@ -12,6 +13,7 @@ interface UseAppPaneFileActionsInput {
   handleDuplicateTreeFile: (path: string) => void;
   isSplit: boolean;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
+  openImageInPane: (pane: PaneId, image: { name: string; path: string }) => void;
   openChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
   setLeftPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
@@ -27,6 +29,7 @@ export function useAppPaneFileActions({
   handleDuplicateTreeFile,
   isSplit,
   openFileInPane,
+  openImageInPane,
   openChartInPane,
   openPanelInPane,
   setLeftPaneScrollHeading,
@@ -52,16 +55,22 @@ export function useAppPaneFileActions({
     const otherPane = fromPane === "left" ? "right" : "left";
     if (tab.kind === "file") {
       openFileInPane(otherPane, { content: tab.content, name: tab.name, path: tab.path });
+    } else if (tab.kind === "image") {
+      openImageInPane(otherPane, { name: tab.name, path: tab.path });
     } else if (tab.kind === "panel") {
       openPanelInPane(otherPane, tab.panel, tab.name);
     } else {
       openChartInPane(otherPane, { id: tab.chartId, name: tab.name });
     }
-  }, [tabs, isSplit, openFileInPane, openChartInPane, openPanelInPane]);
+  }, [tabs, isSplit, openFileInPane, openImageInPane, openChartInPane, openPanelInPane]);
 
   const openTreeFileInOtherPane = useCallback((path: string): void => {
     if (!window.relic || !isSplit) return;
     const otherPane = focusedPane === "left" ? "right" : "left";
+    if (isSupportedMarkdownImagePath(path)) {
+      openImageInPane(otherPane, { name: path.split("/").at(-1) ?? path, path });
+      return;
+    }
 
     void window.relic.readMarkdownFile({ path }).then((result) => {
       if (result.ok) {
@@ -70,7 +79,7 @@ export function useAppPaneFileActions({
         setWorkspaceError(result.error.message);
       }
     });
-  }, [focusedPane, isSplit, openFileInPane, setWorkspaceError]);
+  }, [focusedPane, isSplit, openFileInPane, openImageInPane, setWorkspaceError]);
 
   const openWorkspacePathInOtherPane = useCallback((path: string, heading?: string): void => {
     if (!window.relic || !isSplit) return;

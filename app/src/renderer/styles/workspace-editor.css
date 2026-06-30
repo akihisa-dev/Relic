@@ -879,4 +879,39 @@
   width: min(100%, 920px);
 }
 
+.image-tab-surface {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.image-tab-title-row {
+  align-items: start;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns:
+    minmax(32px, 1fr)
+    minmax(0, var(--editor-file-title-max-width, 820px))
+    minmax(48px, 1fr);
+  margin: 0 auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.image-tab-body {
+  align-items: center;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  padding: 20px;
+}
+
+.image-tab-image {
+  display: block;
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
 /* ────────────────────────────────── */

@@ -6,6 +6,7 @@ import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import { hasInvalidFrontmatterYaml } from "../editorFrontmatter";
 import { isLargeMarkdownContent } from "../largeMarkdown";
 import { textCount } from "../paneViewModel";
+import { resolveWorkspaceImageSrc } from "../previewMarkdown";
 import type { PanelTabKind, Tab } from "../store/editorStore";
 import { useT } from "../i18n";
 import { SourceModeButton } from "./AppMainActions";
@@ -178,6 +179,29 @@ export function PaneContentSurface({
       <div className="editor-surface panel-tab-surface">
         <div className="panel-tab-body">
           {renderPanelTab(activeTab.panel)}
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab?.kind === "image") {
+    const imageSrc = resolveWorkspaceImageSrc(activeTab.path, workspacePath);
+
+    return (
+      <div className="editor-surface image-tab-surface">
+        <div className="image-tab-title-row">
+          <div className="editor-file-title-slot">
+            <div className="editor-file-title" title={activeTab.path}>{activeTab.name}</div>
+          </div>
+        </div>
+        <div className="image-tab-body">
+          {imageSrc ? (
+            <img alt={activeTab.name} className="image-tab-image" src={imageSrc} />
+          ) : (
+            <output className="editor-conflict-banner">
+              <span>{activeTab.name}</span>
+            </output>
+          )}
         </div>
       </div>
     );

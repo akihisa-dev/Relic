@@ -108,6 +108,10 @@ export function PaneTabBar({
                 <span className="pane-tab-icon" aria-hidden="true">
                   <ChartTabIcon />
                 </span>
+              ) : tab.kind === "image" ? (
+                <span className="pane-tab-icon" aria-hidden="true">
+                  <ImageTabIcon />
+                </span>
               ) : null}
               {tab.kind === "file" && tab.content !== tab.savedContent ? (
                 <span className="pane-tab-dirty-dot" aria-hidden="true" />
@@ -157,6 +161,16 @@ function ChartTabIcon(): ReactElement {
       <path d="M3 3v16a2 2 0 0 0 2 2h16" />
       <rect height="4" rx="1" width="9" x="7" y="13" />
       <rect height="4" rx="1" width="12" x="7" y="5" />
+    </svg>
+  );
+}
+
+function ImageTabIcon(): ReactElement {
+  return (
+    <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="14">
+      <rect height="18" rx="2" width="18" x="3" y="3" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="m21 15-5-5L5 21" />
     </svg>
   );
 }

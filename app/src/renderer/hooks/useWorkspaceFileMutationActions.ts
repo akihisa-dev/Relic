@@ -31,6 +31,7 @@ type WorkspaceFileMutationInput = Pick<
   | "focusedPane"
   | "leftPane"
   | "openFileInPane"
+  | "openImageInPane"
   | "rightPane"
   | "setWorkspaceError"
   | "setWorkspaceState"
@@ -82,6 +83,7 @@ export function useWorkspaceFileMutationActions({
   focusedPane,
   leftPane,
   openFileInPane,
+  openImageInPane,
   rightPane,
   setWorkspaceError,
   setWorkspaceState,
@@ -202,15 +204,26 @@ export function useWorkspaceFileMutationActions({
         setWorkspaceState(result.value);
       }
 
+      const importedImagePaths: string[] = [];
       for (const sourcePath of imageSourcePaths) {
         const result = await window.relic!.importImageFile({ destinationFolder, sourcePath });
         if (!result.ok) {
           setWorkspaceError(result.error.message);
           return;
         }
+        importedImagePaths.push(result.value.path);
+      }
+
+      if (importedImagePaths.length > 0) {
+        const stateResult = await window.relic!.getWorkspaceState();
+        if (stateResult.ok) setWorkspaceState(stateResult.value);
+      }
+
+      for (const imagePath of importedImagePaths) {
+        openImageInPane(focusedPane, { name: imagePath.split("/").at(-1) ?? imagePath, path: imagePath });
       }
     })();
-  }, [setWorkspaceError, setWorkspaceState]);
+  }, [focusedPane, openImageInPane, setWorkspaceError, setWorkspaceState]);
 
   const handleMoveFolder = useCallback((path: string, destFolder: string): void => {
     if (!window.relic) return;

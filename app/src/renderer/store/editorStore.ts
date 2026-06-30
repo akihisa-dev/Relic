@@ -10,6 +10,7 @@ import {
   emptyPane,
   moveTabState,
   openFileTabState,
+  openImageTabState,
   markFileTabSavedState,
   openChartTabState,
   openPanelTabState,
@@ -54,7 +55,15 @@ export interface ChartTab {
   name: string;
 }
 
-export type Tab = FileTab | ChartTab | PanelTab;
+export interface ImageTab {
+  id: string;
+  isPinned?: boolean;
+  kind: "image";
+  name: string;
+  path: string;
+}
+
+export type Tab = FileTab | ChartTab | ImageTab | PanelTab;
 export type PaneId = "left" | "right";
 
 export interface PaneState {
@@ -78,6 +87,7 @@ interface EditorStore {
   moveTab: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
   markTabSaved: (tabId: string, content: string) => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
+  openImageInPane: (pane: PaneId, image: { name: string; path: string }) => void;
   openChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
   resolveTabExternalConflict: (tabId: string, choice: "external" | "relic") => void;
@@ -105,6 +115,13 @@ export const useEditorStore = create<EditorStore>((set) => ({
     const id = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     set((state) => {
       return openFileTabState(state, pane, file, id);
+    });
+  },
+
+  openImageInPane: (pane, image) => {
+    const id = `image-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    set((state) => {
+      return openImageTabState(state, pane, image, id);
     });
   },
 

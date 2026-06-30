@@ -205,6 +205,7 @@ export interface WorkspaceSearchResultSet {
 }
 
 export type WorkspaceFileKind = "markdown";
+export type WorkspaceTreeFileKind = "image" | "markdown";
 
 export type WorkspaceFileReadStatus = "ok" | "unreadable";
 
@@ -240,6 +241,7 @@ export interface WorkspaceFolderNode {
 }
 
 export interface WorkspaceFileNode {
+  kind?: WorkspaceTreeFileKind;
   name: string;
   path: string;
   type: "file";

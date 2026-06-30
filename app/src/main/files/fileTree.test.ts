@@ -21,14 +21,15 @@ describe("readWorkspaceFileTree", () => {
     );
   });
 
-  it("フォルダとMarkdownファイルだけをワークスペース相対パスで返す", async () => {
+  it("フォルダ、Markdownファイル、対応画像ファイルをワークスペース相対パスで返す", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-tree-"));
     temporaryPaths.push(workspacePath);
 
     await mkdir(path.join(workspacePath, "notes"));
     await writeFile(path.join(workspacePath, "index.md"), "# Index", "utf8");
     await writeFile(path.join(workspacePath, "notes", "idea.md"), "# Idea", "utf8");
-    await writeFile(path.join(workspacePath, "notes", "image.png"), "", "utf8");
+    await writeFile(path.join(workspacePath, "notes", "image.webp"), "", "utf8");
+    await writeFile(path.join(workspacePath, "notes", "ignored.txt"), "", "utf8");
 
     await expect(readWorkspaceFileTree(workspacePath)).resolves.toEqual([
       {
@@ -36,6 +37,12 @@ describe("readWorkspaceFileTree", () => {
           {
             name: "idea",
             path: "notes/idea.md",
+            type: "file"
+          },
+          {
+            kind: "image",
+            name: "image.webp",
+            path: "notes/image.webp",
             type: "file"
           }
         ],
