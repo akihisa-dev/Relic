@@ -6,7 +6,6 @@ import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import { hasInvalidFrontmatterYaml } from "../editorFrontmatter";
 import { isLargeMarkdownContent } from "../largeMarkdown";
 import { textCount } from "../paneViewModel";
-import { resolveWorkspaceImageSrc } from "../previewMarkdown";
 import type { PanelTabKind, Tab } from "../store/editorStore";
 import { useT } from "../i18n";
 import { SourceModeButton } from "./AppMainActions";
@@ -185,26 +184,7 @@ export function PaneContentSurface({
   }
 
   if (activeTab?.kind === "image") {
-    const imageSrc = resolveWorkspaceImageSrc(activeTab.path, workspacePath);
-
-    return (
-      <div className="editor-surface image-tab-surface">
-        <div className="image-tab-title-row">
-          <div className="editor-file-title-slot">
-            <div className="editor-file-title" title={activeTab.path}>{activeTab.name}</div>
-          </div>
-        </div>
-        <div className="image-tab-body">
-          {imageSrc ? (
-            <img alt={activeTab.name} className="image-tab-image" src={imageSrc} />
-          ) : (
-            <output className="editor-conflict-banner">
-              <span>{activeTab.name}</span>
-            </output>
-          )}
-        </div>
-      </div>
-    );
+    return <ImageTabSurface name={activeTab.name} path={activeTab.path} />;
   }
 
   if (activeTab?.kind === "chart") {
@@ -230,6 +210,59 @@ export function PaneContentSurface({
           </button>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+interface ImageTabSurfaceProps {
+  name: string;
+  path: string;
+}
+
+function ImageTabSurface({ name, path }: ImageTabSurfaceProps): ReactElement {
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setImageSrc(null);
+    setLoadError(null);
+
+    void window.relic?.readImageFile({ path }).then((result) => {
+      if (!active) return;
+
+      if (result.ok) {
+        setImageSrc(result.value.dataUrl);
+        return;
+      }
+
+      setLoadError(result.error.message);
+    }).catch(() => {
+      if (!active) return;
+      setLoadError("画像ファイルを表示できませんでした。");
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [path]);
+
+  return (
+    <div className="editor-surface image-tab-surface">
+      <div className="image-tab-title-row">
+        <div className="editor-file-title-slot">
+          <div className="editor-file-title" title={path}>{name}</div>
+        </div>
+      </div>
+      <div className="image-tab-body">
+        {imageSrc ? (
+          <img alt={name} className="image-tab-image" src={imageSrc} />
+        ) : (
+          <output className="editor-conflict-banner">
+            <span>{loadError ?? "画像を読み込んでいます。"}</span>
+          </output>
+        )}
+      </div>
     </div>
   );
 }

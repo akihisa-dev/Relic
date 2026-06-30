@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { importImageFile } from "./imageFiles";
+import { importImageFile, readImageFile } from "./imageFiles";
 
 describe("importImageFile", () => {
   const temporaryPaths: string[] = [];
@@ -67,6 +67,60 @@ describe("importImageFile", () => {
 
     expect(result).toMatchObject({
       error: { code: "IMAGE_IMPORT_TYPE_UNSUPPORTED" },
+      ok: false
+    });
+  });
+});
+
+describe("readImageFile", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
+  it("ワークスペース内の対応画像をdata URLとして返す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-workspace-"));
+    temporaryPaths.push(workspacePath);
+    await mkdir(path.join(workspacePath, "assets"));
+    await writeFile(path.join(workspacePath, "assets", "diagram.png"), "png-data");
+
+    const result = await readImageFile(workspacePath, "assets/diagram.png");
+
+    expect(result).toEqual({
+      ok: true,
+      value: { dataUrl: `data:image/png;base64,${Buffer.from("png-data").toString("base64")}` }
+    });
+  });
+
+  it("ワークスペース外参照は読まない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-workspace-"));
+    temporaryPaths.push(workspacePath);
+
+    const result = await readImageFile(workspacePath, "../outside.png");
+
+    expect(result).toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+  });
+
+  it("未対応形式は表示しない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-workspace-"));
+    temporaryPaths.push(workspacePath);
+    await writeFile(path.join(workspacePath, "note.txt"), "text");
+
+    const result = await readImageFile(workspacePath, "note.txt");
+
+    expect(result).toMatchObject({
+      error: { code: "IMAGE_READ_TYPE_UNSUPPORTED" },
       ok: false
     });
   });

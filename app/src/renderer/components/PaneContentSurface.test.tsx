@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
+import { makeRelicApi } from "../../test/rendererTestUtils";
 import { I18nProvider } from "../i18n";
 import type { FileTab, Tab } from "../store/editorStore";
 import * as paneViewModel from "../paneViewModel";
@@ -46,10 +47,17 @@ const renderSurface = (activeTab: Tab, sourceMode = false): ReturnType<typeof re
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  window.relic = undefined;
 });
 
 describe("PaneContentSurface", () => {
-  it("画像タブはワークスペース内画像を実画像として表示する", () => {
+  it("画像タブはワークスペース内画像を実画像として表示する", async () => {
+    const readImageFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { dataUrl: "data:image/jpeg;base64,aW1hZ2U=" }
+    });
+    window.relic = makeRelicApi({ readImageFile });
+
     renderSurface({
       id: "image-tab",
       kind: "image",
@@ -57,10 +65,11 @@ describe("PaneContentSurface", () => {
       path: "assets/map.jpg"
     });
 
-    expect(screen.getByRole("img", { name: "map.jpg" })).toHaveAttribute(
+    expect(await screen.findByRole("img", { name: "map.jpg" })).toHaveAttribute(
       "src",
-      "file:///workspace/assets/map.jpg"
+      "data:image/jpeg;base64,aW1hZ2U="
     );
+    expect(readImageFile).toHaveBeenCalledWith({ path: "assets/map.jpg" });
     expect(screen.queryByText(/characters/)).not.toBeInTheDocument();
   });
 

@@ -18,6 +18,7 @@ import {
   isMoveItemToTrashInput,
   isMoveMarkdownFileInput,
   isPathInput,
+  isReadImageFileInput,
   isRevealWorkspaceItemInput,
   isRenameFolderInput,
   isRenameMarkdownFileInput,
@@ -70,6 +71,7 @@ describe("fileHandlerValidators", () => {
       { accepts: { name: "Archive", parentFolder: "" }, rejects: { name: "Archive", parentFolder: "../outside" }, validator: isCreateFolderInput },
       { accepts: { newName: "Archive", path: "Notes" }, rejects: { newName: "Archive", path: "/tmp/Notes" }, validator: isRenameFolderInput },
       { accepts: { destinationFolder: "", path: "Notes" }, rejects: { destinationFolder: "Archive", path: " Notes " }, validator: isMoveFolderInput },
+      { accepts: { path: "assets/image.webp" }, rejects: { path: "assets/file.txt" }, validator: isReadImageFileInput },
       { accepts: { path: "Note.md", type: "file" }, rejects: { path: "../Note.md", type: "file" }, validator: isMoveItemToTrashInput }
     ];
 

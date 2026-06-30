@@ -435,7 +435,7 @@ export function FileTree({
       onDrop={handleRootDrop}
     >
       {nodes.length === 0 ? (
-        <li><div className="empty-note">{t("files.noMarkdownFiles")}</div></li>
+        <li><div className="empty-note">{t("files.noFiles")}</div></li>
       ) : null}
       {nodes.map((node) => (
         <FileTreeItem
