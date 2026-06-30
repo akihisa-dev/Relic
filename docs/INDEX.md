@@ -136,6 +136,8 @@
         - `frontmatter.ts`
         - `frontmatterCandidates.test.ts`
         - `frontmatterCandidates.ts`
+        - `imageFiles.test.ts`
+        - `imageFiles.ts`
         - `linkUpdater.test.ts`
         - `linkUpdater.ts`
         - `linkUpdaterModel.ts`
@@ -468,6 +470,8 @@
       - `editorFrontmatterWidgetInputs.ts`
       - `editorFrontmatterYaml.ts`
       - `editorHeadingFolding.ts`
+      - `editorImageDrop.test.ts`
+      - `editorImageDrop.ts`
       - `editorListInput.ts`
       - `editorLivePreview.ts`
       - `editorLivePreviewModel.test.ts`
@@ -531,6 +535,7 @@
       - `frontmatterFields.ts`
       - `i18n.test.ts`
       - `i18n.ts`
+      - `imageFiles.ts`
       - `ipc.ts`
       - `ipcApi.ts`
       - `ipcChannels.ts`

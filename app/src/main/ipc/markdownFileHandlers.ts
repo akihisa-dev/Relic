@@ -10,6 +10,8 @@ import {
   duplicateMarkdownFileChannel,
   type DuplicateMarkdownFileInput,
   getLinkUpdateImpactChannel,
+  importImageFileChannel,
+  type ImportImageFileInput,
   importMarkdownFilesChannel,
   type ImportMarkdownFilesInput,
   type LinkUpdateImpactInput,
@@ -32,6 +34,7 @@ import {
   moveMarkdownFile,
   renameMarkdownFile
 } from "../files/markdownFiles";
+import { importImageFile } from "../files/imageFiles";
 import { readLinkUpdateImpact } from "../files/linkUpdater";
 import {
   resolveExistingWorkspacePath,
@@ -43,6 +46,7 @@ import { invalidateWorkspaceDerivedData } from "../files/workspaceDerivedDataSes
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
   isCreateMarkdownFileInput,
+  isImportImageFileInput,
   isImportMarkdownFilesInput,
   isLinkUpdateImpactInput,
   isMoveMarkdownFileInput,
@@ -145,6 +149,32 @@ export function registerMarkdownFileHandlers(): void {
         return fail(
           "FILE_IMPORT_FAILED",
           "ファイルを追加できませんでした。",
+          ipcErrorDetails(error)
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(
+    importImageFileChannel,
+    async (_event, input: ImportImageFileInput) => {
+      try {
+        if (!isImportImageFileInput(input)) {
+          return fail("IMAGE_IMPORT_INVALID_INPUT", "追加する画像ファイルを指定してください。");
+        }
+
+        const context = await getActiveWorkspaceContext();
+        if (!context.ok) return context;
+
+        return importImageFile(
+          context.value.activeWorkspace.path,
+          input.sourcePath,
+          input.destinationFolder
+        );
+      } catch (error) {
+        return fail(
+          "IMAGE_IMPORT_FAILED",
+          "画像ファイルを追加できませんでした。",
           ipcErrorDetails(error)
         );
       }

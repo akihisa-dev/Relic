@@ -66,8 +66,9 @@ describe("Editor live preview", () => {
       "$x^2$",
       "[^note]",
       "[link](https://example.com)",
+      "![diagram](assets/diagram.png)",
       "[[Page]]"
-    ].join("\n"), 0, false);
+    ].join("\n"), 0, false, "/tmp/Notes");
 
     expect(widgetClasses).toEqual(expect.arrayContaining([
       "cm-live-bold",
@@ -78,8 +79,38 @@ describe("Editor live preview", () => {
       "cm-live-underline",
       "cm-live-math-inline",
       "cm-live-footnote-ref",
+      "cm-live-image",
       "cm-live-link"
     ]));
+  });
+
+  it("ライブプレビューでワークスペース内のMarkdown画像を画像Widget表示する", async () => {
+    const widgets = await collectInlineLivePreviewWidgets(
+      "![diagram](assets/diagram.png)",
+      0,
+      false,
+      "/tmp/Notes"
+    );
+    const widgetClasses = await collectInlineLivePreviewWidgetClasses(
+      "![diagram](assets/diagram.png)",
+      0,
+      false,
+      "/tmp/Notes"
+    );
+
+    expect(widgets).toContain("ImageWidget");
+    expect(widgetClasses).toContain("cm-live-image");
+  });
+
+  it("ライブプレビューでカーソルが画像記法に触れたらMarkdownソースを表示する", async () => {
+    const widgets = await collectInlineLivePreviewWidgets(
+      "![diagram](assets/diagram.png)",
+      3,
+      true,
+      "/tmp/Notes"
+    );
+
+    expect(widgets).not.toContain("ImageWidget");
   });
 
   it("ライブプレビューで数式と脚注定義をWidget表示する", async () => {

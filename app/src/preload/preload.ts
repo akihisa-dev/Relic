@@ -12,6 +12,7 @@ import {
   createLinkedMarkdownFileChannel,
   createMarkdownFileChannel,
   duplicateMarkdownFileChannel,
+  importImageFileChannel,
   importMarkdownFilesChannel,
   getBacklinksChannel,
   getAppInfoChannel,
@@ -79,6 +80,8 @@ import {
   type Backlink,
   type ChronicleCalendarSettings,
   type GetBacklinksInput,
+  type ImportImageFileInput,
+  type ImportImageFileResult,
   type ImportMarkdownFilesInput,
   type ChartSettings,
   type LinkUpdateImpact,
@@ -131,6 +134,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(createFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
   importMarkdownFiles: (input: ImportMarkdownFilesInput) =>
     ipcRenderer.invoke(importMarkdownFilesChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  importImageFile: (input: ImportImageFileInput) =>
+    ipcRenderer.invoke(importImageFileChannel, input) as Promise<RelicResult<ImportImageFileResult>>,
   createLinkedMarkdownFile: (input: CreateLinkedMarkdownFileInput) =>
     ipcRenderer.invoke(createLinkedMarkdownFileChannel, input) as Promise<
       RelicResult<CreateLinkedMarkdownFileResult>

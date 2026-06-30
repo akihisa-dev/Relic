@@ -1,6 +1,7 @@
 export const getAppInfoChannel = "app:getInfo";
 export const createFolderChannel = "workspace:createFolder";
 export const importMarkdownFilesChannel = "workspace:importMarkdownFiles";
+export const importImageFileChannel = "workspace:importImageFile";
 export const createLinkedMarkdownFileChannel = "workspace:createLinkedMarkdownFile";
 export const createMarkdownFileChannel = "workspace:createMarkdownFile";
 export const duplicateMarkdownFileChannel = "workspace:duplicateMarkdownFile";

@@ -6,6 +6,7 @@ import type { MutableRefObject, ReactElement } from "react";
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import { buildEditorReconfigureEffects, buildExtensions, destroyEditorView } from "../editorExtensions";
 import { setEditorEditable } from "../editorEditable";
+import { droppedImageSourcePaths, importDroppedImagesAsMarkdown } from "../editorImageDrop";
 import {
   frontmatterDialogRequestEvent,
   type FrontmatterDialogRequest
@@ -34,6 +35,7 @@ interface EditorProps {
   typewriterMode?: boolean;
   userDefinedFields?: UserDefinedField[];
   viewRef?: MutableRefObject<EditorView | null>;
+  workspacePath?: string | null;
 }
 
 const defaultAllFilePaths: string[] = [];
@@ -54,7 +56,8 @@ export function Editor({
   frontmatterAddButtonHost = null,
   typewriterMode = false,
   userDefinedFields = defaultUserDefinedFields,
-  viewRef
+  viewRef,
+  workspacePath
 }: EditorProps): ReactElement {
   const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -142,8 +145,29 @@ export function Editor({
 
       setEditorEditable(view, true);
     };
+    const handleDragOver = (event: DragEvent): void => {
+      if (!filePath || !window.relic) return;
+      const sourcePaths = droppedImageSourcePaths(event, window.relic.getDroppedFilePath);
+      if (sourcePaths.length === 0) return;
+
+      event.preventDefault();
+      event.dataTransfer!.dropEffect = "copy";
+    };
+    const handleDrop = (event: DragEvent): void => {
+      const view = internalViewRef.current;
+      if (!view || !filePath || !window.relic) return;
+
+      const sourcePaths = droppedImageSourcePaths(event, window.relic.getDroppedFilePath);
+      if (sourcePaths.length === 0) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      void importDroppedImagesAsMarkdown(view, event, filePath, sourcePaths);
+    };
 
     container.addEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
+    container.addEventListener("dragover", handleDragOver);
+    container.addEventListener("drop", handleDrop);
     container.addEventListener("pointerdown", restoreEditableForEditorClick, true);
     container.addEventListener("mousedown", restoreEditableForEditorClick, true);
     container.addEventListener("pointerdown", handleRightButtonDown, true);
@@ -154,6 +178,8 @@ export function Editor({
 
     return () => {
       container.removeEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
+      container.removeEventListener("dragover", handleDragOver);
+      container.removeEventListener("drop", handleDrop);
       container.removeEventListener("pointerdown", restoreEditableForEditorClick, true);
       container.removeEventListener("mousedown", restoreEditableForEditorClick, true);
       container.removeEventListener("pointerdown", handleRightButtonDown, true);
@@ -162,7 +188,7 @@ export function Editor({
       container.removeEventListener("auxclick", handleRightButtonDown, true);
       container.removeEventListener("contextmenu", handleContextMenu, true);
     };
-  }, [openContextMenu, openFrontmatterDialog]);
+  }, [filePath, openContextMenu, openFrontmatterDialog]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -180,7 +206,8 @@ export function Editor({
       openContextMenu,
       rememberSelection,
       onOpenLinkRef,
-      onOpenWikiLinkRef
+      onOpenWikiLinkRef,
+      workspacePath
     );
     const state = EditorState.create({ doc: content, extensions });
     const view = new EditorView({ state, parent: container });
@@ -237,14 +264,15 @@ export function Editor({
         sourceMode,
         t,
         typewriterMode,
-        userDefinedFields: userDefinedFieldsRef.current
+        userDefinedFields: userDefinedFieldsRef.current,
+        workspacePath
       })
     });
     view.scrollDOM.scrollLeft = currentScrollLeft;
     view.scrollDOM.scrollTop = currentScrollTop;
     if (hadFocus) view.focus();
     if (viewRef) viewRef.current = view;
-  }, [allFilePaths, frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef, openContextMenu]);
+  }, [allFilePaths, frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef, openContextMenu, workspacePath]);
 
   return (
     <>

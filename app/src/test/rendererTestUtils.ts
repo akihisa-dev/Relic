@@ -72,6 +72,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     getWorkspaceChronicleCalendars: vi.fn().mockResolvedValue({ ok: true, value: [{ name: "メイン暦" }] }),
     getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    importImageFile: vi.fn(),
     mergeFiles: vi.fn().mockResolvedValue({ ok: true, value: "merged.md" }),
     moveFolder: vi.fn(),
     moveItemToTrash: vi.fn(),

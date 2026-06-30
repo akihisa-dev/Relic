@@ -1,6 +1,7 @@
 import type {
   CreateFolderInput,
   CreateMarkdownFileInput,
+  ImportImageFileInput,
   ImportMarkdownFilesInput,
   LinkUpdateImpactInput,
   MoveFolderInput,
@@ -45,6 +46,19 @@ export function isImportMarkdownFilesInput(input: unknown): input is ImportMarkd
       sourcePath.length > 0 &&
       !sourcePath.includes("\0")
     ))
+  );
+}
+
+export function isImportImageFileInput(input: unknown): input is ImportImageFileInput {
+  if (typeof input !== "object" || input === null) return false;
+
+  const candidate = input as { destinationFolder?: unknown; sourcePath?: unknown };
+  return (
+    isLimitedWorkspaceRelativeInputPathOrRoot(candidate.destinationFolder) &&
+    typeof candidate.sourcePath === "string" &&
+    candidate.sourcePath.trim() === candidate.sourcePath &&
+    candidate.sourcePath.length > 0 &&
+    !candidate.sourcePath.includes("\0")
   );
 }
 

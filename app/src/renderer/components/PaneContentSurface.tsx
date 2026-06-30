@@ -160,6 +160,7 @@ export function PaneContentSurface({
             typewriterMode={typewriterMode}
             userDefinedFields={userDefinedFields}
             viewRef={viewRef}
+            workspacePath={workspacePath}
             onEditorAction={onEditorAction}
           />
         </div>

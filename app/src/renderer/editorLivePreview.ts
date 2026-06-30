@@ -20,6 +20,7 @@ import {
   CodeBlockFooterWidget,
   CodeBlockHeaderWidget,
   FootnoteDefinitionMarkerWidget,
+  ImageWidget,
   HorizontalRuleWidget,
   InlineFormatWidget,
   ListMarkerWidget,
@@ -28,6 +29,7 @@ import {
 import { diagramLanguageFor } from "./diagramLanguage";
 import { createTranslator, type Translator } from "./i18nModel";
 import { parseBacktickOpeningFence } from "./markdownCodeFence";
+import { resolveWorkspaceImageSrc } from "./previewMarkdown";
 
 export { findClickableLinkAtPosition, type ClickableLinkAtPosition } from "./editorLivePreviewModel";
 
@@ -346,7 +348,8 @@ export function createLivePreviewCodeBlockField(
 export function buildLivePreviewDecorations(
   view: EditorView,
   onOpenClickableLink?: (link: ClickableLinkAtPosition) => void,
-  t: Translator = createTranslator("system")
+  t: Translator = createTranslator("system"),
+  workspacePath?: string | null
 ): DecorationSet {
   const { state } = view;
   const doc = state.doc;
@@ -410,6 +413,20 @@ export function buildLivePreviewDecorations(
         return;
       }
 
+      if (match.className === "cm-live-image") {
+        const src = resolveWorkspaceImageSrc(match.href, workspacePath);
+        if (src) {
+          addWidget(match.from, match.to, new ImageWidget(src, match.content ?? ""));
+        } else {
+          addWidget(
+            match.from,
+            match.to,
+            new InlineFormatWidget("span", match.content ?? "", "cm-live-image-placeholder")
+          );
+        }
+        return;
+      }
+
       const link = match.className === "cm-live-link"
         ? findClickableLinkAtPosition(state.doc, match.from)
         : null;
@@ -431,7 +448,7 @@ export function buildLivePreviewDecorations(
     }
 
     addSourceReveal(match.from, match.to);
-    if (match.className === "cm-live-math-inline" || match.className === "cm-live-footnote-ref") return;
+    if (match.className === "cm-live-math-inline" || match.className === "cm-live-footnote-ref" || match.className === "cm-live-image") return;
 
     addMark(match.contentFrom, match.contentTo, match.className);
     for (const hideRange of match.hideRanges) addReplace(hideRange.from, hideRange.to);
