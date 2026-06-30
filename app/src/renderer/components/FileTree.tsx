@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent, MouseEvent, ReactElement } from "react";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import {
   childMotionPathsForAppearingFolder,
   buildVisibleFileTreeRows,
+  FILE_TREE_OUTBOUND_FILE_DRAG_EVENT,
   shouldUseSelectedFileTreeItems,
   type FileTreeExpansionAction,
   type FileTreeExpansionRequest,
@@ -76,6 +77,7 @@ export interface FileTreeItemProps extends Omit<FileTreeProps, "isRoot" | "motio
 const defaultSelectedItems: FileTreeMoveItem[] = [];
 const defaultSelectedPaths = new Set<string>();
 const largeFileTreeRowThreshold = 1000;
+const outboundFileDragIgnoreMs = 2000;
 
 function droppedFilePathsFromEvent(event: DragEvent<HTMLElement>): string[] {
   if (!window.relic) return [];
@@ -343,6 +345,7 @@ export function FileTree({
 }: FileTreeProps & { animation?: "expand" }): ReactElement {
   const t = useT();
   const [isRootFileDragOver, setIsRootFileDragOver] = useState(false);
+  const ignoreRootFileDragOverUntilRef = useRef(0);
   const activeAppearingPaths = useFileTreeMotion(nodes, motionPaths);
   const visibleRows = useMemo(
     () => buildVisibleFileTreeRows(nodes, { pinnedPaths }),
@@ -374,9 +377,32 @@ export function FileTree({
 
   const canImportDroppedFiles = (event: DragEvent<HTMLElement>): boolean => (
     isRoot &&
+    Date.now() > ignoreRootFileDragOverUntilRef.current &&
     Boolean(actions.onImportMarkdownFiles) &&
     Array.from(event.dataTransfer.types ?? []).includes("Files")
   );
+
+  useEffect(() => {
+    const ignoreOutboundFileDrag = (): void => {
+      ignoreRootFileDragOverUntilRef.current = Date.now() + outboundFileDragIgnoreMs;
+      setIsRootFileDragOver(false);
+    };
+    const clearRootDragOver = (): void => {
+      ignoreRootFileDragOverUntilRef.current = 0;
+      setIsRootFileDragOver(false);
+    };
+
+    window.addEventListener(FILE_TREE_OUTBOUND_FILE_DRAG_EVENT, ignoreOutboundFileDrag);
+    window.addEventListener("blur", clearRootDragOver);
+    window.addEventListener("dragend", clearRootDragOver);
+    window.addEventListener("drop", clearRootDragOver);
+    return () => {
+      window.removeEventListener(FILE_TREE_OUTBOUND_FILE_DRAG_EVENT, ignoreOutboundFileDrag);
+      window.removeEventListener("blur", clearRootDragOver);
+      window.removeEventListener("dragend", clearRootDragOver);
+      window.removeEventListener("drop", clearRootDragOver);
+    };
+  }, []);
 
   const handleRootDragLeave = (): void => {
     setIsRootFileDragOver(false);

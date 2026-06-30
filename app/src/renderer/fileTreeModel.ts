@@ -15,6 +15,7 @@ export type FileTreeMoveItem = {
 };
 
 export const FILE_TREE_DRAG_MIME = "application/x-relic-file-tree-items";
+export const FILE_TREE_OUTBOUND_FILE_DRAG_EVENT = "relic:file-tree-outbound-file-drag";
 
 interface FileTreeDragPayload {
   items: FileTreeMoveItem[];

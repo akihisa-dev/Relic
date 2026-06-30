@@ -2,6 +2,7 @@ import { cleanup, createEvent, fireEvent, render, screen } from "@testing-librar
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
+import { FILE_TREE_OUTBOUND_FILE_DRAG_EVENT } from "../fileTreeModel";
 import { I18nProvider } from "../i18n";
 import { FileTree, FileTreeItem, type FileTreeProps } from "./FileTree";
 
@@ -350,5 +351,19 @@ describe("FileTree", () => {
     fireEvent.drop(fileTree as HTMLUListElement, { dataTransfer });
 
     expect(onImportMarkdownFiles).toHaveBeenCalledWith(["/tmp/Root Import.md"], "");
+  });
+
+  it("does not keep the root import highlight during outbound attachment drags", () => {
+    const onImportMarkdownFiles = vi.fn();
+    const file = new File(["# Root"], "Root Import.md", { type: "text/markdown" });
+    renderFileTree({ isRoot: true, onImportMarkdownFiles });
+    const dataTransfer = makeDataTransfer([file]);
+    const fileTree = document.querySelector(".file-tree");
+    expect(fileTree).toBeInstanceOf(HTMLUListElement);
+
+    window.dispatchEvent(new Event(FILE_TREE_OUTBOUND_FILE_DRAG_EVENT));
+    fireEvent.dragOver(fileTree as HTMLUListElement, { dataTransfer });
+
+    expect(fileTree).not.toHaveClass("file-tree--external-drag-over");
   });
 });
