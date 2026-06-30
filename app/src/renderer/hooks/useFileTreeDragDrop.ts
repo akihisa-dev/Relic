@@ -94,12 +94,15 @@ export function useFileTreeDragDrop({
     }
 
     const items = dragItemsForNode();
-    event.dataTransfer.effectAllowed = "copyMove";
-    event.dataTransfer.setData(FILE_TREE_DRAG_MIME, serializeFileTreeDragPayload(items));
     const filePaths = attachableFileTreePaths(items);
     if (filePaths.length > 0 && typeof window.relic?.startWorkspaceFileDrag === "function") {
+      event.preventDefault();
       window.relic.startWorkspaceFileDrag({ paths: filePaths });
+      return;
     }
+
+    event.dataTransfer.effectAllowed = "copyMove";
+    event.dataTransfer.setData(FILE_TREE_DRAG_MIME, serializeFileTreeDragPayload(items));
     setIsDragging(true);
   };
 
