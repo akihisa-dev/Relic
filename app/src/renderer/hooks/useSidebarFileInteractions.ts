@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 
+import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import type { MarkdownFileContent } from "../../shared/ipc";
 import type { HeadingScrollTarget } from "../editorDerivedState";
 import type { Translator } from "../i18nModel";
-import { useEditorStore, type PaneId } from "../store/editorStore";
+import { useEditorStore, type ImageTab, type PaneId } from "../store/editorStore";
 import type { SidebarCreateFlight } from "./useRailFlights";
 
 interface UseSidebarFileInteractionsInput {
@@ -13,6 +14,7 @@ interface UseSidebarFileInteractionsInput {
   handleOpenFile: (path: string) => void;
   onFileOpenMotion: () => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
+  openImageInPane: (pane: PaneId, image: { name: string; path: string }) => void;
   setLeftPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
   setRightPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
   setTabActive: (pane: PaneId, tabId: string) => void;
@@ -31,6 +33,7 @@ export function useSidebarFileInteractions({
   handleOpenFile,
   onFileOpenMotion,
   openFileInPane,
+  openImageInPane,
   setLeftPaneScrollHeading,
   setRightPaneScrollHeading,
   setTabActive,
@@ -70,6 +73,15 @@ export function useSidebarFileInteractions({
     setScrollTarget({ lineNumber, type: "line" });
   }, [setLeftPaneScrollHeading, setRightPaneScrollHeading]);
 
+  const openImagePath = useCallback((pane: PaneId, path: string, existingTab?: ImageTab | null): void => {
+    if (existingTab) {
+      openImageInPane(pane, { name: existingTab.name, path: existingTab.path });
+      return;
+    }
+
+    openImageInPane(pane, { name: path.split("/").at(-1) ?? path, path });
+  }, [openImageInPane]);
+
   const handleSidebarOpenFile = useCallback((path: string, event?: MouseEvent<HTMLButtonElement>, options?: OpenFileOptions): void => {
     if (!event) {
       markOpeningFile(path);
@@ -91,11 +103,11 @@ export function useSidebarFileInteractions({
 
     const openTabIdInPane = paneState.tabIds.find((tabId) => {
       const tab = editorState.tabs[tabId];
-      return tab?.kind === "file" && tab.path === path;
+      return (tab?.kind === "file" || tab?.kind === "image") && tab.path === path;
     });
     const openTabInPane = openTabIdInPane ? editorState.tabs[openTabIdInPane] : null;
 
-    if (openTabIdInPane && openTabInPane?.kind === "file") {
+    if (openTabIdInPane && (openTabInPane?.kind === "file" || openTabInPane?.kind === "image")) {
       markOpeningFile(path);
       setTabActive(targetPane, openTabIdInPane);
       scrollToLine(targetPane, options?.lineNumber);
@@ -103,12 +115,24 @@ export function useSidebarFileInteractions({
       return;
     }
 
-    const existingTab = Object.values(editorState.tabs).find((tab) => tab.kind === "file" && tab.path === path);
+    const existingTab = Object.values(editorState.tabs).find((tab) => (tab.kind === "file" || tab.kind === "image") && tab.path === path);
     markOpeningFile(path);
 
     if (existingTab?.kind === "file") {
       openFileInPane(targetPane, { content: existingTab.content, name: existingTab.name, path: existingTab.path });
       scrollToLine(targetPane, options?.lineNumber);
+      onFileOpenMotion();
+      return;
+    }
+
+    if (existingTab?.kind === "image") {
+      openImagePath(targetPane, path, existingTab);
+      onFileOpenMotion();
+      return;
+    }
+
+    if (isSupportedMarkdownImagePath(path)) {
+      openImagePath(targetPane, path);
       onFileOpenMotion();
       return;
     }
@@ -130,7 +154,7 @@ export function useSidebarFileInteractions({
         setWorkspaceError(result.error.message);
       }
     });
-  }, [handleOpenFile, markOpeningFile, onFileOpenMotion, openFileInPane, scrollToLine, setTabActive, setWorkspaceError]);
+  }, [handleOpenFile, markOpeningFile, onFileOpenMotion, openFileInPane, openImagePath, scrollToLine, setTabActive, setWorkspaceError]);
 
   const handleCreateFileFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
     void event;

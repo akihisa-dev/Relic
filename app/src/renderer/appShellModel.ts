@@ -28,7 +28,7 @@ export function registeredWorkspacesForState(
 
 export function openFilePathsForTabs(tabs: Record<string, Tab>): Set<string> {
   return Object.values(tabs).reduce<Set<string>>((paths, tab) => {
-    if (tab.kind === "file") paths.add(tab.path);
+    if (tab.kind === "file" || tab.kind === "image") paths.add(tab.path);
     return paths;
   }, new Set());
 }

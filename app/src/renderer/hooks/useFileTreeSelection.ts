@@ -4,6 +4,7 @@ import type { MouseEvent } from "react";
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 
 type SelectableTreeItem = {
+  kind?: "image" | "markdown";
   path: string;
   type: WorkspaceTreeNode["type"];
 };
@@ -89,7 +90,7 @@ export function useFileTreeSelection({
 function collectSelectableItems(nodes: WorkspaceTreeNode[]): SelectableTreeItem[] {
   const items: SelectableTreeItem[] = [];
   const walk = (node: WorkspaceTreeNode): void => {
-    items.push({ path: node.path, type: node.type });
+    items.push({ kind: node.type === "file" ? node.kind : undefined, path: node.path, type: node.type });
     if (node.type === "folder") node.children.forEach(walk);
   };
 

@@ -44,6 +44,9 @@ export function FileTreeContextMenu({
 
   if (!contextMenu) return null;
 
+  const isMarkdownFile = node.type === "file" && node.kind !== "image";
+  const isImageFile = node.type === "file" && node.kind === "image";
+
   const copyPath = (): void => {
     onClose();
     void navigator.clipboard?.writeText(node.path);
@@ -185,7 +188,7 @@ export function FileTreeContextMenu({
           <button className="tab-context-menu-item" onClick={copyPath} role="menuitem" type="button">
             {t("files.copyPath")}
           </button>
-          {node.type === "file" ? (
+          {isMarkdownFile ? (
             <button className="tab-context-menu-item" onClick={copyMarkdownLink} role="menuitem" type="button">
               {t("files.copyMarkdownLink")}
             </button>
@@ -206,12 +209,12 @@ export function FileTreeContextMenu({
           <div className="tab-context-menu-separator" />
         </>
       )}
-      {useSelectedItems ? null : (
+      {useSelectedItems || isImageFile ? null : (
         <button className="tab-context-menu-item" onClick={onStartRename} role="menuitem" type="button">
           {t("files.rename")}
         </button>
       )}
-      {node.type === "file" && !useSelectedItems ? (
+      {isMarkdownFile && !useSelectedItems ? (
         <button
           className="tab-context-menu-item"
           onClick={() => {
@@ -224,10 +227,14 @@ export function FileTreeContextMenu({
           {t("files.duplicate")}
         </button>
       ) : null}
-      <button className="tab-context-menu-item" onClick={moveNode} role="menuitem" type="button">
-        {useSelectedItems ? t("files.moveSelected") : t("files.move")}
-      </button>
-      <div className="tab-context-menu-separator" />
+      {isImageFile && !useSelectedItems ? null : (
+        <>
+          <button className="tab-context-menu-item" onClick={moveNode} role="menuitem" type="button">
+            {useSelectedItems ? t("files.moveSelected") : t("files.move")}
+          </button>
+          <div className="tab-context-menu-separator" />
+        </>
+      )}
       <button
         className="tab-context-menu-item tab-context-menu-item--icon danger"
         onClick={() => {

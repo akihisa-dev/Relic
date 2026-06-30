@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
-import type { FileTab } from "../store/editorStore";
+import type { FileTab, Tab } from "../store/editorStore";
 import * as paneViewModel from "../paneViewModel";
 import * as largeMarkdown from "../largeMarkdown";
 import { PaneContentSurface } from "./PaneContentSurface";
@@ -14,7 +14,7 @@ vi.mock("./Editor", () => ({
   Editor: () => <div>Editor</div>
 }));
 
-const buildSurfaceElement = (activeTab: FileTab, sourceMode = false): ReactElement => (
+const buildSurfaceElement = (activeTab: Tab, sourceMode = false): ReactElement => (
   <I18nProvider language="en">
     <PaneContentSurface
       activeTab={activeTab}
@@ -39,7 +39,7 @@ const buildSurfaceElement = (activeTab: FileTab, sourceMode = false): ReactEleme
   </I18nProvider>
 );
 
-const renderSurface = (activeTab: FileTab, sourceMode = false): ReturnType<typeof render> => {
+const renderSurface = (activeTab: Tab, sourceMode = false): ReturnType<typeof render> => {
   return render(buildSurfaceElement(activeTab, sourceMode));
 };
 
@@ -49,6 +49,21 @@ afterEach(() => {
 });
 
 describe("PaneContentSurface", () => {
+  it("画像タブはワークスペース内画像を実画像として表示する", () => {
+    renderSurface({
+      id: "image-tab",
+      kind: "image",
+      name: "map.jpg",
+      path: "assets/map.jpg"
+    });
+
+    expect(screen.getByRole("img", { name: "map.jpg" })).toHaveAttribute(
+      "src",
+      "file:///workspace/assets/map.jpg"
+    );
+    expect(screen.queryByText(/characters/)).not.toBeInTheDocument();
+  });
+
   it("reuses text count result while file content stays unchanged", () => {
     const textCountSpy = vi.spyOn(paneViewModel, "textCount");
     const fileTab: FileTab = {

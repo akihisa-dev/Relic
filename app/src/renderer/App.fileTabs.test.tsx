@@ -121,6 +121,32 @@ describe("App file tabs", () => {
     expect(await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).toBeInTheDocument();
   });
 
+  it("ファイルツリーの対応画像をクリックすると画像タブで表示する", async () => {
+    const readMarkdownFile = vi.fn();
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          fileTree: [{ kind: "image", name: "人物.jpg", path: "assets/人物.jpg", type: "file" }]
+        }
+      }),
+      readMarkdownFile
+    });
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /人物.jpg/ }));
+
+    expect(readMarkdownFile).not.toHaveBeenCalled();
+    expect(await screen.findByText("人物.jpg", { selector: ".pane-tab-name" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "人物.jpg" })).toHaveAttribute(
+      "src",
+      "file:///tmp/Notes/assets/%E4%BA%BA%E7%89%A9.jpg"
+    );
+  });
+
   it("大きいMarkdownを開くと性能優先のソース表示をtoastで通知する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({

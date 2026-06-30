@@ -10,6 +10,7 @@ export interface FileTreeExpansionRequest {
 }
 
 export type FileTreeMoveItem = {
+  kind?: "image" | "markdown";
   path: string;
   type: WorkspaceTreeNode["type"];
 };
@@ -136,7 +137,7 @@ export function fileTreeOperationItems(
   selectedItems: FileTreeMoveItem[],
   useSelectedItems: boolean
 ): FileTreeMoveItem[] {
-  return useSelectedItems ? selectedItems : [{ path: node.path, type: node.type }];
+  return useSelectedItems ? selectedItems : [{ kind: node.type === "file" ? node.kind : undefined, path: node.path, type: node.type }];
 }
 
 export function attachableFileTreePaths(items: FileTreeMoveItem[]): string[] {
@@ -171,6 +172,7 @@ export function movableItemsForDestination(
   return items.filter((item) => {
     if (item.path === destinationFolder) return false;
     if (parentFolderOf(item.path) === destinationFolder) return false;
+    if (item.type === "file" && item.kind === "image") return false;
     if (item.type === "folder" && destinationFolder.startsWith(`${item.path}/`)) return false;
     return true;
   });
@@ -200,7 +202,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isFileTreeMoveItem(value: unknown): value is FileTreeMoveItem {
   return isRecord(value)
     && typeof value.path === "string"
-    && (value.type === "file" || value.type === "folder");
+    && (value.type === "file" || value.type === "folder")
+    && (value.kind === undefined || value.kind === "image" || value.kind === "markdown");
 }
 
 export function expansionRequestAppliesTo(path: string, request?: FileTreeExpansionRequest): boolean {

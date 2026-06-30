@@ -67,6 +67,23 @@ describe("editorStore", () => {
     expect(state.leftPane.tabIds).toHaveLength(1);
   });
 
+  it("同じパスの画像を再度開くと画像タブが重複しない", () => {
+    const { openImageInPane } = useEditorStore.getState();
+
+    openImageInPane("left", { name: "map.jpg", path: "assets/map.jpg" });
+    openImageInPane("left", { name: "map.jpg", path: "assets/map.jpg" });
+
+    const state = useEditorStore.getState();
+    const tabId = state.leftPane.activeTabId!;
+
+    expect(state.leftPane.tabIds).toHaveLength(1);
+    expect(state.tabs[tabId]).toMatchObject({
+      kind: "image",
+      name: "map.jpg",
+      path: "assets/map.jpg"
+    });
+  });
+
   it("新しいファイルタブは現在のアクティブタブの右側に追加される", () => {
     const { openFileInPane, setTabActive } = useEditorStore.getState();
 

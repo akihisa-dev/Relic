@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 
+import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import { resolveMarkdownLinkPath, resolveWikiLinkPathWithAliases } from "../../shared/links";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 
@@ -11,6 +12,7 @@ type WorkspaceFileOpenInput = Pick<
   | "focusedPane"
   | "leftPane"
   | "openFileInPane"
+  | "openImageInPane"
   | "rightPane"
   | "setLeftPaneScrollHeading"
   | "setRightPaneScrollHeading"
@@ -26,6 +28,7 @@ export function useWorkspaceFileOpenActions({
   focusedPane,
   leftPane,
   openFileInPane,
+  openImageInPane,
   rightPane,
   setLeftPaneScrollHeading,
   setRightPaneScrollHeading,
@@ -41,8 +44,13 @@ export function useWorkspaceFileOpenActions({
       const activeTabId = paneState.activeTabId;
       const activeTab = activeTabId ? tabs[activeTabId] : null;
 
-      if (activeTabId && activeTab?.kind === "file" && activeTab.path === path) {
+      if (activeTabId && (activeTab?.kind === "file" || activeTab?.kind === "image") && activeTab.path === path) {
         closeTab(focusedPane, activeTabId);
+        return;
+      }
+
+      if (isSupportedMarkdownImagePath(path)) {
+        openImageInPane(focusedPane, { name: path.split("/").at(-1) ?? path, path });
         return;
       }
 
@@ -54,7 +62,7 @@ export function useWorkspaceFileOpenActions({
         }
       });
     },
-    [closeTab, focusedPane, leftPane, openFileInPane, rightPane, setWorkspaceError, tabs]
+    [closeTab, focusedPane, leftPane, openFileInPane, openImageInPane, rightPane, setWorkspaceError, tabs]
   );
 
   const handleOpenWikiLink = useCallback(

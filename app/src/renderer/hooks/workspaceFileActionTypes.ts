@@ -12,6 +12,7 @@ export interface WorkspaceFileActionsContext {
   focusedPane: PaneId;
   leftPane: PaneState;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
+  openImageInPane: (pane: PaneId, image: { name: string; path: string }) => void;
   rightPane: PaneState;
   setLeftPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
   setRightPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
