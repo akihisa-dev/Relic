@@ -30,6 +30,7 @@ export interface ChronicleChartGridProps {
   axisHeight: number;
   dragPreview: DragPreview | null;
   guideTicks: ChartGuideTick[];
+  laneLayoutResetKey: string | null;
   nameColumnWidth: number;
   onChartPointerDown: (event: PointerEvent<HTMLDivElement>) => void;
   onChartScroll: (event: UIEvent<HTMLDivElement>) => void;
@@ -60,6 +61,7 @@ export function ChronicleChartGrid({
   axisHeight,
   dragPreview,
   guideTicks,
+  laneLayoutResetKey,
   nameColumnWidth,
   onChartPointerDown,
   onChartScroll,
@@ -122,6 +124,7 @@ export function ChronicleChartGrid({
               axisStart={axisStart}
               dragPreview={dragPreview}
               guideTicks={visibleGuideTicks}
+              laneLayoutResetKey={laneLayoutResetKey}
               onOpenFile={onOpenFile}
               onStartEntryEdit={onStartEntryEdit}
               rows={rows}

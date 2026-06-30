@@ -1117,6 +1117,18 @@
   z-index: 1;
 }
 
+.chronicle-fill-lane-drag {
+  cursor: ns-resize;
+  fill: color-mix(in srgb, var(--text) 26%, transparent);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.chronicle-fill:hover .chronicle-fill-lane-drag,
+.chronicle-fill--dragging .chronicle-fill-lane-drag {
+  opacity: 1;
+}
+
 .chronicle-fill-resize {
   bottom: 4px;
   cursor: ew-resize;
