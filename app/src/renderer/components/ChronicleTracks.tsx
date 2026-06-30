@@ -2,16 +2,22 @@ import { useMemo, useState, type CSSProperties, type PointerEvent, type ReactEle
 
 import type { ChartEntry, ChartEntryEditKind, ChartSource } from "../../shared/ipc";
 import {
+  assignChronicleLaneIndexes,
+  chronicleLaneEntryKey,
   entryKey,
   formatRange,
   isPreviewForEntry,
   labelWidthForText,
+  moveChronicleEntryLane,
   previewEntryForDrag,
   type ChartGuideTick,
   type ChartRow,
+  type ChronicleLaneEntry,
+  type ChronicleLaneIndexes,
   type DragPreview,
   type TimelineVisibleRange
 } from "../chronicleTimeline";
+import { startWindowPointerDrag } from "../hooks/windowPointerDrag";
 import { IconFiles } from "./RailNavigationIcons";
 import { ChartGuideLines } from "./chronicleChartParts";
 
@@ -19,13 +25,6 @@ const CHRONICLE_MIN_SEGMENT_HEIGHT = 38;
 const CHRONICLE_LABEL_HEIGHT = 18;
 const CHRONICLE_LABEL_PADDING_X = 7;
 const CHRONICLE_MIN_LABEL_WIDTH = 16;
-
-interface OrderedChronicleEntry {
-  displayEntry: ChartEntry;
-  entry: ChartEntry;
-  laneIndex: number;
-  order: number;
-}
 
 interface ChronicleEntryShape {
   displayEntry: ChartEntry;
@@ -40,10 +39,17 @@ interface ChronicleEntryShape {
   labelX: number;
   labelY: number;
   labelWidth: number;
+  laneIndex: number;
   path: string;
   width: number;
   x: number;
   y: number;
+}
+
+interface ChronicleLaneState {
+  draggingKey: string | null;
+  laneIndexes: ChronicleLaneIndexes;
+  resetKey: string | null;
 }
 
 export function ChronicleTracks({
@@ -53,6 +59,7 @@ export function ChronicleTracks({
   guideTicks,
   onStartEntryEdit,
   onOpenFile,
+  laneLayoutResetKey,
   rows,
   scrollLeft,
   trackViewportHeight,
@@ -70,6 +77,7 @@ export function ChronicleTracks({
     kind: ChartEntryEditKind
   ) => void;
   onOpenFile: (path: string) => void;
+  laneLayoutResetKey: string | null;
   rows: ChartRow[];
   scrollLeft: number;
   trackViewportHeight: number;
@@ -79,11 +87,27 @@ export function ChronicleTracks({
 }): ReactElement {
   const [hoveredChronicleKey, setHoveredChronicleKey] = useState<string | null>(null);
   const [selectedChronicleKey, setSelectedChronicleKey] = useState<string | null>(null);
+  const [laneState, setLaneState] = useState<ChronicleLaneState>(() => ({
+    draggingKey: null,
+    laneIndexes: {},
+    resetKey: laneLayoutResetKey
+  }));
+  if (laneState.resetKey !== laneLayoutResetKey) {
+    setLaneState({ draggingKey: null, laneIndexes: {}, resetKey: laneLayoutResetKey });
+  }
+  const manualLaneIndexes = laneState.resetKey === laneLayoutResetKey ? laneState.laneIndexes : {};
+  const draggingLaneKey = laneState.resetKey === laneLayoutResetKey ? laneState.draggingKey : null;
+  const chronicleLaneEntries = useMemo(
+    () => activeSource === "chronicle"
+      ? buildChronicleLaneEntries(rows, dragPreview)
+      : [],
+    [activeSource, dragPreview, rows]
+  );
   const chronicleLaneIndexes = useMemo(
     () => activeSource === "chronicle"
-      ? buildChronicleLaneIndexes(rows, dragPreview)
+      ? assignChronicleLaneIndexes(chronicleLaneEntries, manualLaneIndexes)
       : {},
-    [activeSource, dragPreview, rows]
+    [activeSource, chronicleLaneEntries, manualLaneIndexes]
   );
   const chronicleLaneCount = activeSource === "chronicle"
     ? Math.max(1, Object.values(chronicleLaneIndexes).reduce((max, laneIndex) => Math.max(max, laneIndex + 1), 1))
@@ -104,6 +128,68 @@ export function ChronicleTracks({
       : [],
     [activeSource, axisStart, chronicleLaneHeight, chronicleLaneIndexes, dragPreview, rows, scrollLeft, unitWidth]
   );
+  const startChronicleLaneDrag = (
+    event: PointerEvent<Element>,
+    entry: ChartEntry,
+    laneIndex: number
+  ): void => {
+    if (event.button > 0) return;
+
+    event.stopPropagation();
+
+    const key = chronicleLaneEntryKey(entry);
+    const startClientY = event.clientY;
+    const startLaneIndexes = { ...chronicleLaneIndexes };
+    const originalLaneIndexes = manualLaneIndexes;
+    const target = event.currentTarget;
+
+    const move = (moveEvent: globalThis.PointerEvent): void => {
+      const laneDelta = Math.round((moveEvent.clientY - startClientY) / chronicleLaneHeight);
+      const targetLaneIndex = Math.max(0, laneIndex + laneDelta);
+      const nextLaneIndexes = moveChronicleEntryLane(
+        chronicleLaneEntries,
+        startLaneIndexes,
+        key,
+        targetLaneIndex
+      );
+
+      setLaneState({
+        draggingKey: key,
+        laneIndexes: nextLaneIndexes,
+        resetKey: laneLayoutResetKey
+      });
+    };
+
+    const stop = (stopEvent: globalThis.PointerEvent): void => {
+      move(stopEvent);
+      setLaneState((current) => ({
+        draggingKey: null,
+        laneIndexes: current.resetKey === laneLayoutResetKey ? current.laneIndexes : {},
+        resetKey: laneLayoutResetKey
+      }));
+    };
+
+    const cancel = (): void => {
+      setLaneState({
+        draggingKey: null,
+        laneIndexes: originalLaneIndexes,
+        resetKey: laneLayoutResetKey
+      });
+    };
+
+    setLaneState({
+      draggingKey: key,
+      laneIndexes: startLaneIndexes,
+      resetKey: laneLayoutResetKey
+    });
+    startWindowPointerDrag({
+      event,
+      onCancel: cancel,
+      onMove: move,
+      onUp: stop,
+      pointerCaptureTarget: target
+    });
+  };
   const hoveredChronicleShape = activeSource === "chronicle"
     ? chronicleShapes.find((shape) => shape.key === hoveredChronicleKey) ?? null
     : null;
@@ -157,6 +243,7 @@ export function ChronicleTracks({
           {visibleChronicleShapes.map((shape) => (
             <ChronicleEntrySvgShape
               dragPreview={dragPreview}
+              draggingLaneKey={draggingLaneKey}
               onHoverEntry={(key) => setHoveredChronicleKey(key)}
               onLeaveEntry={(key) => {
                 setHoveredChronicleKey((current) => current === key ? null : current);
@@ -164,6 +251,7 @@ export function ChronicleTracks({
               onSelectEntry={(key) => setSelectedChronicleKey(key)}
               key={shape.key}
               onStartEntryEdit={onStartEntryEdit}
+              onStartLaneDrag={startChronicleLaneDrag}
               shape={shape}
             />
           ))}
@@ -186,10 +274,29 @@ export function ChronicleTracks({
   );
 }
 
+function buildChronicleLaneEntries(rows: ChartRow[], dragPreview: DragPreview | null): ChronicleLaneEntry[] {
+  let order = 0;
+
+  return rows.flatMap((row) =>
+    row.entries.map((entry) => {
+      const currentOrder = order;
+      order += 1;
+      const shouldFreezeLane = dragPreview?.source === "chronicle";
+
+      return {
+        displayEntry: shouldFreezeLane ? entry : previewEntryForDrag(entry, dragPreview),
+        entry,
+        key: chronicleLaneEntryKey(entry),
+        order: currentOrder
+      };
+    })
+  );
+}
+
 function buildChronicleEntryShapes(
   rows: ChartRow[],
   dragPreview: DragPreview | null,
-  laneIndexes: Record<number, number>,
+  laneIndexes: ChronicleLaneIndexes,
   {
     axisStart,
     laneHeight,
@@ -215,7 +322,7 @@ function buildChronicleEntryShapes(
     })
   );
   return entries.map((item) => {
-    const laneIndex = laneIndexes[item.order] ?? 0;
+    const laneIndex = laneIndexes[entryKey(item.entry)] ?? 0;
     const startValue = item.displayEntry.startValue;
     const endValue = item.displayEntry.endValue;
     const valueLeft = Math.max(0, (startValue - axisStart) * unitWidth);
@@ -255,6 +362,7 @@ function buildChronicleEntryShapes(
       labelWidth: labelBackgroundWidth,
       labelX,
       labelY,
+      laneIndex,
       path: roundedRectPath(x, y, width, height, 3),
       width,
       x,
@@ -326,71 +434,26 @@ function roundedRectPath(x: number, y: number, width: number, height: number, ra
   ].join(" ");
 }
 
-function buildChronicleLaneIndexes(rows: ChartRow[], dragPreview: DragPreview | null): Record<number, number> {
-  let order = 0;
-  const entries = rows.flatMap((row) =>
-    row.entries.map((entry) => {
-      const currentOrder = order;
-      order += 1;
-      const shouldFreezeLane = dragPreview?.source === "chronicle";
-      return {
-        displayEntry: shouldFreezeLane ? entry : previewEntryForDrag(entry, dragPreview),
-        entry,
-        order: currentOrder
-      };
-    })
-  );
-
-  return assignChronicleLaneIndexes(entries);
-}
-
-function assignChronicleLaneIndexes(
-  entries: Array<Omit<OrderedChronicleEntry, "laneIndex">>
-): Record<number, number> {
-  const laneEndValues: number[] = [];
-  const preferredLaneByFile = new Map<string, number>();
-  const laneIndexes: Record<number, number> = {};
-
-  for (const item of entries.toSorted((a, b) =>
-    a.displayEntry.startValue - b.displayEntry.startValue ||
-    a.displayEntry.endValue - b.displayEntry.endValue ||
-    a.order - b.order
-  )) {
-    const fileKey = item.entry.path || item.entry.fileName;
-    const preferredLane = preferredLaneByFile.get(fileKey);
-    const laneIndex = preferredLane !== undefined && (laneEndValues[preferredLane] ?? -Infinity) < item.displayEntry.startValue
-      ? preferredLane
-      : findAvailableLaneIndex(laneEndValues, item.displayEntry.startValue);
-    const nextLaneIndex = laneIndex === -1 ? laneEndValues.length : laneIndex;
-
-    laneEndValues[nextLaneIndex] = item.displayEntry.endValue;
-    preferredLaneByFile.set(fileKey, nextLaneIndex);
-    laneIndexes[item.order] = nextLaneIndex;
-  }
-
-  return laneIndexes;
-}
-
-function findAvailableLaneIndex(laneEndValues: number[], startValue: number): number {
-  for (let index = 0; index < laneEndValues.length; index += 1) {
-    if (laneEndValues[index] < startValue) return index;
-  }
-
-  return -1;
-}
-
 function ChronicleEntrySvgShape({
   dragPreview,
+  draggingLaneKey,
   onHoverEntry,
   onLeaveEntry,
   onSelectEntry,
+  onStartLaneDrag,
   onStartEntryEdit,
   shape
 }: {
   dragPreview: DragPreview | null;
+  draggingLaneKey: string | null;
   onHoverEntry: (key: string) => void;
   onLeaveEntry: (key: string) => void;
   onSelectEntry: (key: string) => void;
+  onStartLaneDrag: (
+    event: PointerEvent<Element>,
+    entry: ChartEntry,
+    laneIndex: number
+  ) => void;
   onStartEntryEdit: (
     event: PointerEvent<Element>,
     entry: ChartEntry,
@@ -401,11 +464,13 @@ function ChronicleEntrySvgShape({
   const { entry } = shape;
   const rangeLabel = formatRange(shape.displayEntry);
   const isDragging = isPreviewForEntry(entry, dragPreview, "chronicle");
+  const isLaneDragging = draggingLaneKey === shape.key;
+  const laneHandleWidth = Math.min(36, Math.max(18, shape.width - 18));
 
   return (
     <g
       aria-label={`${entry.fileName} ${rangeLabel}`}
-      className={`chronicle-fill chronicle-fill--chronicle${isDragging ? " chronicle-fill--dragging" : ""}`}
+      className={`chronicle-fill chronicle-fill--chronicle${isDragging || isLaneDragging ? " chronicle-fill--dragging" : ""}`}
       onPointerDown={(event) => {
         onSelectEntry(shape.key);
         onStartEntryEdit(event, entry, "move");
@@ -423,6 +488,17 @@ function ChronicleEntrySvgShape({
       <path
         className="chronicle-fill-hit"
         d={shape.path}
+      />
+      <rect
+        aria-hidden="true"
+        className="chronicle-fill-lane-drag"
+        height={6}
+        onPointerDown={(event) => onStartLaneDrag(event, entry, shape.laneIndex)}
+        rx={3}
+        ry={3}
+        width={laneHandleWidth}
+        x={shape.x + Math.max(9, (shape.width - laneHandleWidth) / 2)}
+        y={shape.y + 3}
       />
       {shape.fileNameLabelWidth > 0 ? (
         <>
