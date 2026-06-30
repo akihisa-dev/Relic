@@ -224,26 +224,25 @@ interface PdfTabSurfaceProps {
 }
 
 function PdfTabSurface({ name, path }: PdfTabSurfaceProps): ReactElement {
-  const [pdfSrc, setPdfSrc] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [pdfState, setPdfState] = useState<{ error: string | null; path: string; src: string | null } | null>(null);
+  const pdfSrc = pdfState?.path === path ? pdfState.src : null;
+  const loadError = pdfState?.path === path ? pdfState.error : null;
 
   useEffect(() => {
     let active = true;
-    setPdfSrc(null);
-    setLoadError(null);
 
     void window.relic?.readPdfFile({ path }).then((result) => {
       if (!active) return;
 
       if (result.ok) {
-        setPdfSrc(result.value.dataUrl);
+        setPdfState({ error: null, path, src: result.value.dataUrl });
         return;
       }
 
-      setLoadError(result.error.message);
+      setPdfState({ error: result.error.message, path, src: null });
     }).catch(() => {
       if (!active) return;
-      setLoadError("PDFファイルを表示できませんでした。");
+      setPdfState({ error: "PDFファイルを表示できませんでした。", path, src: null });
     });
 
     return () => {
@@ -262,6 +261,7 @@ function PdfTabSurface({ name, path }: PdfTabSurfaceProps): ReactElement {
         {pdfSrc ? (
           <iframe
             className="pdf-tab-frame"
+            sandbox="allow-scripts"
             src={pdfSrc}
             title={name}
           />
@@ -281,26 +281,25 @@ interface ImageTabSurfaceProps {
 }
 
 function ImageTabSurface({ name, path }: ImageTabSurfaceProps): ReactElement {
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [imageState, setImageState] = useState<{ error: string | null; path: string; src: string | null } | null>(null);
+  const imageSrc = imageState?.path === path ? imageState.src : null;
+  const loadError = imageState?.path === path ? imageState.error : null;
 
   useEffect(() => {
     let active = true;
-    setImageSrc(null);
-    setLoadError(null);
 
     void window.relic?.readImageFile({ path }).then((result) => {
       if (!active) return;
 
       if (result.ok) {
-        setImageSrc(result.value.dataUrl);
+        setImageState({ error: null, path, src: result.value.dataUrl });
         return;
       }
 
-      setLoadError(result.error.message);
+      setImageState({ error: result.error.message, path, src: null });
     }).catch(() => {
       if (!active) return;
-      setLoadError("画像ファイルを表示できませんでした。");
+      setImageState({ error: "画像ファイルを表示できませんでした。", path, src: null });
     });
 
     return () => {

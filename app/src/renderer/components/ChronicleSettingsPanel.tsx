@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { ReactElement } from "react";
 
 import type { ChronicleCalendarSettings } from "../../shared/ipc";
@@ -19,12 +19,19 @@ export function ChronicleSettingsPanel({
   onSave
 }: ChronicleSettingsPanelProps): ReactElement {
   const t = useT();
-  const [drafts, setDrafts] = useState<ChronicleCalendarDraft[]>(() => draftsForCalendars(calendars));
+  const calendarDraftKey = draftKeyForCalendars(calendars);
+  const [draftState, setDraftState] = useState(() => ({
+    key: calendarDraftKey,
+    drafts: draftsForCalendars(calendars)
+  }));
+  if (draftState.key !== calendarDraftKey) {
+    setDraftState({
+      key: calendarDraftKey,
+      drafts: draftsForCalendars(calendars)
+    });
+  }
+  const drafts = draftState.key === calendarDraftKey ? draftState.drafts : draftsForCalendars(calendars);
   const duplicateNames = duplicateCalendarNames(drafts);
-
-  useEffect(() => {
-    setDrafts(draftsForCalendars(calendars));
-  }, [calendars]);
 
   const commit = (nextDrafts: ChronicleCalendarDraft[]): void => {
     const parsed = parseDrafts(nextDrafts);
@@ -32,10 +39,11 @@ export function ChronicleSettingsPanel({
   };
 
   const updateDraft = (index: number, patch: Partial<ChronicleCalendarDraft>): void => {
-    setDrafts((current) => {
-      const next = current.map((draft, draftIndex) => draftIndex === index ? { ...draft, ...patch } : draft);
+    setDraftState((current) => {
+      const currentDrafts = current.key === calendarDraftKey ? current.drafts : draftsForCalendars(calendars);
+      const next = currentDrafts.map((draft, draftIndex) => draftIndex === index ? { ...draft, ...patch } : draft);
       commit(next);
-      return next;
+      return { key: calendarDraftKey, drafts: next };
     });
   };
 
@@ -44,13 +52,13 @@ export function ChronicleSettingsPanel({
       ...drafts,
       { name: `${t("chronicleSettings.subDefaultName")} ${drafts.length}`, startYear: "1" }
     ];
-    setDrafts(next);
+    setDraftState({ key: calendarDraftKey, drafts: next });
     commit(next);
   };
 
   const removeSubCalendar = (index: number): void => {
     const next = drafts.filter((_draft, draftIndex) => draftIndex !== index);
-    setDrafts(next);
+    setDraftState({ key: calendarDraftKey, drafts: next });
     commit(next);
   };
 
@@ -143,6 +151,10 @@ function draftsForCalendars(calendars: ChronicleCalendarSettings[]): ChronicleCa
     startYear: calendar.startYear === undefined ? "" : String(calendar.startYear)
   }));
   return drafts.length > 0 ? drafts : [{ name: "メイン暦", startYear: "" }];
+}
+
+function draftKeyForCalendars(calendars: ChronicleCalendarSettings[]): string {
+  return JSON.stringify(calendars.map((calendar) => [calendar.name, calendar.startYear ?? null]));
 }
 
 function parseDrafts(drafts: ChronicleCalendarDraft[]): ChronicleCalendarSettings[] | null {

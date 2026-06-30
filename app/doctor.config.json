@@ -1,4 +1,5 @@
 {
+  "$schema": "https://react.doctor/schema/config.json",
   "ignore": {
     "rules": [
       "react-doctor/advanced-event-handler-refs",
@@ -26,5 +27,13 @@
       "react-doctor/prefer-useReducer",
       "react-doctor/rerender-state-only-in-handlers"
     ]
+  },
+  "rules": {
+    "deslop/unused-export": "off",
+    "deslop/unused-file": "off",
+    "react-doctor/async-parallel": "off",
+    "react-doctor/js-set-map-lookups": "off",
+    "react-doctor/no-multi-comp": "off",
+    "react-doctor/prefer-dynamic-import": "off"
   }
 }

@@ -226,9 +226,13 @@ function findMarkdownLinkMatches(text: string): MarkdownLinkMatch[] {
 }
 
 function findMarkdownImageMatches(text: string): MarkdownImageMatch[] {
-  return findMarkdownLinkMatches(text)
-    .filter((match) => match.from > 0 && text[match.from - 1] === "!")
-    .map((match) => ({ ...match, alt: text.slice(match.textFrom, match.textTo) }));
+  return findMarkdownLinkMatches(text).reduce<MarkdownImageMatch[]>((matches, match) => {
+    if (match.from > 0 && text[match.from - 1] === "!") {
+      matches.push({ ...match, alt: text.slice(match.textFrom, match.textTo) });
+    }
+
+    return matches;
+  }, []);
 }
 
 export function collectInlineMatches(lineFrom: number, text: string): InlineMatch[] {

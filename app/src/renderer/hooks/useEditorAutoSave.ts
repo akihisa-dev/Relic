@@ -201,7 +201,6 @@ export function useEditorAutoSave({
         if (queue?.pending) queue.pending = null;
         if (queue) {
           wakeWaiters(queue);
-          notifyQueueChanged();
         }
         continue;
       }
@@ -260,13 +259,13 @@ export function useEditorAutoSave({
     const entries = Object.values(tabs).flatMap((tab): Array<[string, EditorSaveStatus]> => {
       if (tab.kind !== "file") return [];
       if (tab.externalConflict) return [[tab.id, "externalConflict" satisfies EditorSaveStatus]];
+      if (tab.content === tab.savedContent) return [[tab.id, "saved" satisfies EditorSaveStatus]];
 
       const queue = queues.get(tab.path);
       if (queue?.saving) return [[tab.id, "saving" satisfies EditorSaveStatus]];
       if (queue?.lastError) return [[tab.id, "error" satisfies EditorSaveStatus]];
-      if (tab.content !== tab.savedContent) return [[tab.id, "dirty" satisfies EditorSaveStatus]];
 
-      return [[tab.id, "saved" satisfies EditorSaveStatus]];
+      return [[tab.id, "dirty" satisfies EditorSaveStatus]];
     });
 
     return Object.fromEntries(entries);

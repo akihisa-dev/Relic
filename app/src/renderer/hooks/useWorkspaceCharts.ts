@@ -53,10 +53,7 @@ export function useWorkspaceCharts({
   }, [setWorkspaceError, workspaceState?.activeWorkspace?.id]);
 
   useEffect(() => {
-    if (!hasOpenChart) {
-      setCharts((current) => current.length === 0 ? current : []);
-      return;
-    }
+    if (!hasOpenChart) return;
 
     void reloadCharts();
   }, [hasOpenChart, reloadCharts]);
@@ -95,7 +92,7 @@ export function useWorkspaceCharts({
   }, [setWorkspaceError, tabs, updateTabContent]);
 
   return {
-    charts: workspaceState?.activeWorkspace ? charts : [],
+    charts: workspaceState?.activeWorkspace && hasOpenChart ? charts : [],
     handleUpdateChartEntry,
     reloadCharts
   };
