@@ -27,6 +27,15 @@ import {
 } from "../test/rendererTestUtils";
 import { useEditorStore } from "./store/editorStore";
 
+function makeExternalFileDataTransfer(files: File[]) {
+  return {
+    dropEffect: "none",
+    files,
+    getData: vi.fn().mockReturnValue(""),
+    types: ["Files"]
+  };
+}
+
 describe("App file actions", () => {
   beforeAll(installMatchMediaMock);
 
@@ -228,6 +237,44 @@ describe("App file actions", () => {
     await waitFor(() => {
       expect(moveFolder).toHaveBeenCalledWith({ destinationFolder: "archive", path: "drafts" });
     });
+  });
+
+  it("PNGをフォルダ行へドロップしたらMarkdown追加ではなく画像として取り込む", async () => {
+    const importImageFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { path: "archive/diagram.png" }
+    });
+    const importMarkdownFiles = vi.fn();
+    window.relic = makeRelicApi({
+      getDroppedFilePath: vi.fn((file: File) => `/tmp/${file.name}`),
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ children: [], name: "archive", path: "archive", type: "folder" }]
+        }
+      }),
+      importImageFile,
+      importMarkdownFiles
+    });
+
+    await renderApp();
+
+    const archiveRow = await screen.findByRole("button", { name: /archive/ });
+    const dataTransfer = makeExternalFileDataTransfer([
+      new File([""], "diagram.png", { type: "image/png" })
+    ]);
+
+    fireEvent.drop(archiveRow, { dataTransfer });
+
+    await waitFor(() => {
+      expect(importImageFile).toHaveBeenCalledWith({
+        destinationFolder: "archive",
+        sourcePath: "/tmp/diagram.png"
+      });
+    });
+    expect(importMarkdownFiles).not.toHaveBeenCalled();
+    expect(screen.queryByText("Markdownファイルだけを追加できます。")).not.toBeInTheDocument();
   });
 
   it("未保存の開きタブはファイル移動前に即時保存する", async () => {
