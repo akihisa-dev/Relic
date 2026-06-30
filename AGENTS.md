@@ -164,8 +164,9 @@ Conventional Commits 1.0.0 の構造に従う。
 | `chore` | 上記に当てはまらない保守作業を行う |
 | `revert` | 直前または過去の変更を取り消す |
 
-`feat` はSemVerのMINOR、`fix` はPATCHに対応する。
-破壊的変更はtypeに関係なくMAJORに対応する。
+AIが自分の判断で上げられるバージョンはPATCHだけとする。
+MAJORとMINORは、ユーザーが明示的に指示した場合だけ上げる。
+`feat` や `fix` などの `type` から、AIがMAJOR、MINOR、PATCHを自動決定してはならない。
 
 例:
 
