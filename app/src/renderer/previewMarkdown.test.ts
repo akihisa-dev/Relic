@@ -7,6 +7,7 @@ import {
   extractEmbedTargets,
   normalizeEmbedTarget,
   renderMarkdown,
+  resolveWorkspaceImageSrc,
   toggleNthCheckbox
 } from "./previewMarkdown";
 import { enhancePreviewTableColorSwatches } from "./colorSwatches";
@@ -127,6 +128,51 @@ describe("previewMarkdown", () => {
     expect(html).toContain("protocol-relative");
     expect(html).not.toContain("file:");
     expect(html).not.toContain("//example.com");
+  });
+
+  it("ワークスペース内の相対パス画像だけ実画像として表示する", () => {
+    const html = renderMarkdown("![図](attachments/diagram.png)", "/tmp/relic workspace", new Map(), true, t);
+    const document = new DOMParser().parseFromString(html, "text/html");
+    const image = document.querySelector("img.preview-image");
+
+    expect(image).not.toBeNull();
+    expect(image?.getAttribute("alt")).toBe("図");
+    expect(image?.getAttribute("src")).toBe("file:///tmp/relic%20workspace/attachments/diagram.png");
+  });
+
+  it("外部URL画像とワークスペース外参照はプレースホルダーとして表示する", () => {
+    const html = renderMarkdown(
+      [
+        "![外部](https://example.com/image.png)",
+        "![外](../secret.png)"
+      ].join("\n"),
+      "/tmp/relic",
+      new Map(),
+      true,
+      t
+    );
+    const document = new DOMParser().parseFromString(html, "text/html");
+
+    expect(document.querySelector("img")).toBeNull();
+    expect(document.querySelectorAll(".preview-image-placeholder")).toHaveLength(2);
+    expect(html).not.toContain("https://example.com/image.png");
+    expect(html).not.toContain("../secret.png");
+  });
+
+  it("生HTMLの画像は実画像として残さない", () => {
+    const html = renderMarkdown('<img class="preview-image" src="file:///etc/passwd" alt="raw">', "/tmp/relic", new Map(), true, t);
+
+    expect(html).not.toContain("<img");
+    expect(html).toContain("raw");
+    expect(html).not.toContain("file:///etc/passwd");
+  });
+
+  it("画像パスをワークスペース内file URLへ解決する", () => {
+    expect(resolveWorkspaceImageSrc("images/a b.png", "/tmp/relic workspace")).toBe("file:///tmp/relic%20workspace/images/a%20b.png");
+    expect(resolveWorkspaceImageSrc("images/a.txt", "/tmp/relic")).toBeNull();
+    expect(resolveWorkspaceImageSrc("../secret.png", "/tmp/relic")).toBeNull();
+    expect(resolveWorkspaceImageSrc("https://example.com/a.png", "/tmp/relic")).toBeNull();
+    expect(resolveWorkspaceImageSrc("/tmp/a.png", "/tmp/relic")).toBeNull();
   });
 
   it("mermaidコードブロックをDiagram表示用HTMLとして残す", () => {

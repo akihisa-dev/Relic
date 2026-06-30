@@ -143,6 +143,13 @@ mark {
   padding: 1px 5px;
 }
 
+.preview-image {
+  display: block;
+  height: auto;
+  margin: 1em 0;
+  max-width: 100%;
+}
+
 .preview-file-embed {
   margin: 1em 0;
   padding: 10px 12px;

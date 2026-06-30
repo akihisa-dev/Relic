@@ -5,7 +5,6 @@ import type { EditorSettings } from "../../shared/ipc";
 import { appFontFamilyMap } from "../appFont";
 import { enhancePreviewTableColorSwatches } from "../colorSwatches";
 import { usePreviewEmbeds } from "../hooks/usePreviewEmbeds";
-import { sanitizePreviewHtml } from "../htmlSanitizer";
 import { useT } from "../i18n";
 import { renderDiagramElements } from "../diagramPreview";
 import { renderMarkdown, slugifyHeading, toggleNthCheckbox } from "../previewMarkdown";
@@ -57,7 +56,7 @@ export function Preview({
     const container = containerRef.current;
     if (!container) return;
 
-    container.innerHTML = sanitizePreviewHtml(html);
+    container.innerHTML = html;
     enhancePreviewTableColorSwatches(container);
     return renderDiagramElements(container, t);
   }, [html, settings.theme, t]);
