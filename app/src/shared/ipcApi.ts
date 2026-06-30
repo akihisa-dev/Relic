@@ -54,6 +54,7 @@ import type {
   SearchAndReplaceInput,
   SearchAndReplacePreviewResult,
   SearchWorkspaceInput,
+  StartWorkspaceFileDragInput,
   SwitchWorkspaceInput,
   WorkspaceChangedEvent,
   WorkspaceSearchResultSet,
@@ -116,6 +117,7 @@ export interface RelicApi {
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   renameFolder: (input: RenameFolderInput) => Promise<RelicResult<WorkspaceState>>;
   revealWorkspaceItem: (input: RevealWorkspaceItemInput) => Promise<RelicResult<void>>;
+  startWorkspaceFileDrag: (input: StartWorkspaceFileDragInput) => void;
   applySearchAndReplace: (input: SearchAndReplaceInput) => Promise<RelicResult<ApplySearchAndReplaceResult>>;
   replaceInFile: (input: ReplaceInFileInput) => Promise<RelicResult<ReplaceInFileResult>>;
   saveDiagramSvg: (input: SaveDiagramSvgInput) => Promise<RelicResult<OutputSavedResult>>;

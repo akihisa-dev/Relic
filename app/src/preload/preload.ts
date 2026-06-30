@@ -37,6 +37,7 @@ import {
   renameMarkdownFileChannel,
   replaceInFileChannel,
   revealWorkspaceItemChannel,
+  startWorkspaceFileDragChannel,
   saveWorkspaceChartsChannel,
   saveWorkspaceChronicleCalendarsChannel,
   updateChartEntryChannel,
@@ -102,6 +103,7 @@ import {
   type SearchAndReplaceInput,
   type SearchAndReplacePreviewResult,
   type SearchWorkspaceInput,
+  type StartWorkspaceFileDragInput,
   type SwitchWorkspaceInput,
   type WorkspaceChangedEvent,
   type WindowCloseRequestEvent,
@@ -183,6 +185,9 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(renameFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
   revealWorkspaceItem: (input: RevealWorkspaceItemInput) =>
     ipcRenderer.invoke(revealWorkspaceItemChannel, input) as Promise<RelicResult<void>>,
+  startWorkspaceFileDrag: (input: StartWorkspaceFileDragInput) => {
+    ipcRenderer.send(startWorkspaceFileDragChannel, input);
+  },
   replaceInFile: (input: ReplaceInFileInput) =>
     ipcRenderer.invoke(replaceInFileChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
   saveDiagramSvg: (input: SaveDiagramSvgInput) =>

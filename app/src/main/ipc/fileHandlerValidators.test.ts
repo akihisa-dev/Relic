@@ -24,6 +24,7 @@ import {
   isReplaceInFileInput,
   isSearchAndReplaceInput,
   isSearchWorkspaceInput,
+  isStartWorkspaceFileDragInput,
   isWriteMarkdownFileInput,
   normalizeSearchWorkspaceInput
 } from "./fileHandlerValidators";
@@ -38,6 +39,11 @@ describe("fileHandlerValidators", () => {
         validator: isImportMarkdownFilesInput
       },
       { accepts: { path: "Folder/Note.md" }, rejects: { path: "/tmp/outside.md" }, validator: isPathInput },
+      {
+        accepts: { paths: ["Folder/Note.md", "Root.md"] },
+        rejects: { paths: ["/tmp/outside.md"] },
+        validator: isStartWorkspaceFileDragInput
+      },
       {
         accepts: { kind: "file", newPath: "Archive/Note.md", oldPath: "Note.md" },
         rejects: { kind: "file", newPath: "Archive/Note.md", oldPath: "../Note.md" },

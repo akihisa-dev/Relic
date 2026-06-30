@@ -81,6 +81,10 @@ export interface RevealWorkspaceItemInput {
   workspaceId?: string;
 }
 
+export interface StartWorkspaceFileDragInput {
+  paths: string[];
+}
+
 export interface MoveMarkdownFileInput {
   destinationFolder: string;
   path: string;
