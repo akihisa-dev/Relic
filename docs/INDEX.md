@@ -430,8 +430,6 @@
       - `chronicleTimelineAxis.ts`
       - `chronicleTimelineConstants.ts`
       - `chronicleTimelineDrag.ts`
-      - `chronicleTimelineLanes.test.ts`
-      - `chronicleTimelineLanes.ts`
       - `chronicleTimelineNavigation.ts`
       - `chronicleTimelineRows.test.ts`
       - `chronicleTimelineRows.ts`
