@@ -19,6 +19,16 @@ const maxMathCacheEntries = 80;
 const previewRenderCache = new Map<string, string>();
 const highlightCache = new Map<string, string>();
 const mathCache = new Map<string, string>();
+const supportedPreviewImageExtensions = new Set([
+  ".avif",
+  ".bmp",
+  ".gif",
+  ".jpeg",
+  ".jpg",
+  ".png",
+  ".svg",
+  ".webp"
+]);
 
 export type EmbedState =
   | { status: "loading" }
@@ -188,7 +198,67 @@ export function normalizeEmbedTarget(target: string): string | null {
   return ensureMarkdownExtension(normalized);
 }
 
-function buildRenderer(): Renderer {
+export function resolveWorkspaceImageSrc(href: string | null | undefined, workspacePath: string | null | undefined): string | null {
+  const trimmedHref = href?.trim() ?? "";
+  const trimmedWorkspacePath = workspacePath?.trim() ?? "";
+
+  if (trimmedHref === "" || trimmedWorkspacePath === "") return null;
+
+  const normalizedHref = trimmedHref.replace(/\\/g, "/");
+
+  if (
+    normalizedHref.startsWith("/") ||
+    normalizedHref.startsWith("//") ||
+    normalizedHref.includes("\0") ||
+    normalizedHref.includes("?") ||
+    normalizedHref.includes("#") ||
+    /^[a-z][a-z0-9+.-]*:/i.test(normalizedHref)
+  ) {
+    return null;
+  }
+
+  const segments = normalizedHref.split("/").filter((segment) => segment !== "" && segment !== ".");
+
+  if (segments.length === 0 || segments.some((segment) => segment === "..")) {
+    return null;
+  }
+
+  const fileName = segments.at(-1) ?? "";
+  const extension = fileName.match(/\.[^.]+$/)?.[0].toLowerCase();
+
+  if (!extension || !supportedPreviewImageExtensions.has(extension)) {
+    return null;
+  }
+
+  const workspaceUrl = localPathToFileUrl(trimmedWorkspacePath);
+  if (!workspaceUrl) return null;
+
+  return `${workspaceUrl.replace(/\/?$/, "/")}${segments.map(encodeURIComponent).join("/")}`;
+}
+
+function localPathToFileUrl(path: string): string | null {
+  const normalized = path.replace(/\\/g, "/").replace(/\/+$/, "");
+
+  if (/^[a-zA-Z]:\//.test(normalized)) {
+    const [drive = "", ...rest] = normalized.split("/");
+    return `file:///${drive}/${rest.map(encodeURIComponent).join("/")}`;
+  }
+
+  if (normalized.startsWith("/")) {
+    return `file://${normalized.split("/").map(encodeURIComponent).join("/")}`;
+  }
+
+  return null;
+}
+
+function renderImagePlaceholder(href: string | null | undefined, title: string | null | undefined, text: string | null | undefined): string {
+  const alt = escapeHtml(text ?? "");
+  const titleAttribute = title ? ` title="${escapeHtmlAttribute(title)}"` : "";
+
+  return `<span class="preview-image-placeholder"${titleAttribute}>${alt || escapeHtml(href ?? "")}</span>`;
+}
+
+function buildRenderer(workspacePath: string | null | undefined, allowedImageSrcs: Set<string>): Renderer {
   const renderer = new marked.Renderer();
 
   renderer.code = ({ lang, text }) => {
@@ -214,10 +284,16 @@ function buildRenderer(): Renderer {
   };
 
   renderer.image = ({ href, title, text }) => {
-    const alt = escapeHtml(text ?? "");
-    const titleAttribute = title ? ` title="${escapeHtml(title)}"` : "";
+    const src = resolveWorkspaceImageSrc(href, workspacePath);
 
-    return `<span class="preview-image-placeholder"${titleAttribute}>${alt || escapeHtml(href)}</span>`;
+    if (!src) return renderImagePlaceholder(href, title, text);
+
+    allowedImageSrcs.add(src);
+
+    const altAttribute = ` alt="${escapeHtmlAttribute(text ?? "")}"`;
+    const titleAttribute = title ? ` title="${escapeHtmlAttribute(title)}"` : "";
+
+    return `<img class="preview-image" src="${escapeHtmlAttribute(src)}"${altAttribute}${titleAttribute}>`;
   };
 
   renderer.link = ({ href, title, text }) => {
@@ -270,7 +346,8 @@ export function renderMarkdown(
   if (cached) return cached;
 
   registerMarkedExtensions();
-  const renderer = buildRenderer();
+  const allowedImageSrcs = new Set<string>();
+  const renderer = buildRenderer(workspacePath, allowedImageSrcs);
   const withEmbedPlaceholders = renderEmbeds
     ? content.replace(/!\[\[([^\]\n]+)\]\]/g, (match, rawTarget: string) => {
         const target = normalizeEmbedTarget(rawTarget);
@@ -291,7 +368,7 @@ export function renderMarkdown(
     /<input checked="" disabled="" type="checkbox">/g,
     '<input checked type="checkbox" class="preview-checkbox">'
   );
-  const sanitized = sanitizePreviewHtml(withCheckboxes);
+  const sanitized = sanitizePreviewHtml(withCheckboxes, allowedImageSrcs);
 
   rememberCacheEntry(previewRenderCache, cacheKey, sanitized, maxPreviewCacheEntries);
   return sanitized;

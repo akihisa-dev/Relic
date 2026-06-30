@@ -89,7 +89,7 @@ describe("Preview", () => {
     expect(document.querySelector(".hashtag")).toBeNull();
   });
 
-  it("Markdown画像を画像として表示しない", () => {
+  it("ワークスペース内の相対パスMarkdown画像を画像として表示する", () => {
     render(
       <Preview
         content="![図](attachments/diagram.png)"
@@ -98,8 +98,9 @@ describe("Preview", () => {
       />
     );
 
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
-    expect(screen.getByText("図")).toBeInTheDocument();
+    const image = screen.getByRole("img", { name: "図" });
+
+    expect(image).toHaveAttribute("src", "file:///tmp/relic%20workspace/attachments/diagram.png");
   });
 
   it("Obsidian形式の画像埋め込みをファイル埋め込みとして扱わない", () => {
