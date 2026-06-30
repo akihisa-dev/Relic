@@ -19,20 +19,6 @@ const CHRONICLE_MIN_SEGMENT_HEIGHT = 38;
 const CHRONICLE_LABEL_HEIGHT = 18;
 const CHRONICLE_LABEL_PADDING_X = 7;
 const CHRONICLE_MIN_LABEL_WIDTH = 16;
-const CHRONICLE_COLOR_PALETTE = [
-  { hue: 202, lightness: 43 },
-  { hue: 168, lightness: 39 },
-  { hue: 126, lightness: 39 },
-  { hue: 82, lightness: 38 },
-  { hue: 42, lightness: 42 },
-  { hue: 18, lightness: 45 },
-  { hue: 354, lightness: 46 },
-  { hue: 322, lightness: 45 },
-  { hue: 286, lightness: 45 },
-  { hue: 252, lightness: 46 },
-  { hue: 226, lightness: 45 },
-  { hue: 190, lightness: 40 }
-] as const;
 
 interface OrderedChronicleEntry {
   displayEntry: ChartEntry;
@@ -414,7 +400,6 @@ function ChronicleEntrySvgShape({
 }): ReactElement {
   const { entry } = shape;
   const rangeLabel = formatRange(shape.displayEntry);
-  const colorStyle = chronicleColorStyleForEntry(entry);
   const isDragging = isPreviewForEntry(entry, dragPreview, "chronicle");
 
   return (
@@ -428,7 +413,6 @@ function ChronicleEntrySvgShape({
       onPointerEnter={() => onHoverEntry(shape.key)}
       onPointerLeave={() => onLeaveEntry(shape.key)}
       role="button"
-      style={colorStyle}
       tabIndex={0}
     >
       <title>{`${entry.fileName} ${rangeLabel}`}</title>
@@ -594,22 +578,4 @@ function ChronicleEntryCard({
       </div>
     </div>
   );
-}
-
-function chronicleColorStyleForEntry(entry: ChartEntry): CSSProperties {
-  const color = CHRONICLE_COLOR_PALETTE[stableColorIndex(entry.path || entry.fileName, CHRONICLE_COLOR_PALETTE.length)];
-
-  return {
-    "--chronicle-fill": `hsla(${color.hue}, 58%, ${color.lightness}%, 0.38)`,
-    "--chronicle-fill-active": `hsla(${color.hue}, 58%, ${Math.max(32, color.lightness - 4)}%, 0.62)`,
-    "--chronicle-fill-hover": `hsla(${color.hue}, 58%, ${Math.max(34, color.lightness - 2)}%, 0.5)`
-  } as CSSProperties;
-}
-
-function stableColorIndex(value: string, modulo: number): number {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
-  return hash % modulo;
 }

@@ -50,7 +50,7 @@
 }
 
 .links-list-kind--link {
-  background: rgba(18, 100, 163, 0.1);
+  background: var(--accent-softer);
   color: var(--link);
 }
 
@@ -80,7 +80,7 @@
 }
 
 .links-list-target:hover {
-  background: rgba(18, 100, 163, 0.08);
+  background: var(--accent-softer);
   color: var(--link);
 }
 

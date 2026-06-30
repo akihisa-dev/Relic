@@ -252,18 +252,18 @@
 }
 
 .chronicle-chart {
-  --chronicle-actual-fill: rgba(224, 108, 0, 0.48);
-  --chronicle-actual-fill-active: rgba(224, 108, 0, 0.64);
-  --chronicle-actual-fill-hover: rgba(224, 108, 0, 0.56);
-  --chronicle-fill: rgba(0, 124, 175, 0.28);
-  --chronicle-fill-active: rgba(0, 124, 175, 0.44);
-  --chronicle-fill-hover: rgba(0, 124, 175, 0.36);
+  --chronicle-actual-fill: color-mix(in srgb, var(--text) 30%, transparent);
+  --chronicle-actual-fill-active: color-mix(in srgb, var(--text) 46%, transparent);
+  --chronicle-actual-fill-hover: color-mix(in srgb, var(--text) 38%, transparent);
+  --chronicle-fill: color-mix(in srgb, var(--text) 26%, transparent);
+  --chronicle-fill-active: color-mix(in srgb, var(--text) 42%, transparent);
+  --chronicle-fill-hover: color-mix(in srgb, var(--text) 34%, transparent);
   --chronicle-grid-line-major: rgba(28, 28, 28, 0.15);
   --chronicle-grid-line-minor: rgba(28, 28, 28, 0.055);
   --chronicle-grid-line-row: rgba(28, 28, 28, 0.06);
-  --chronicle-planned-fill: rgba(0, 124, 175, 0.36);
-  --chronicle-planned-fill-active: rgba(0, 124, 175, 0.52);
-  --chronicle-planned-fill-hover: rgba(0, 124, 175, 0.44);
+  --chronicle-planned-fill: color-mix(in srgb, var(--text-2) 42%, transparent);
+  --chronicle-planned-fill-active: color-mix(in srgb, var(--text-2) 58%, transparent);
+  --chronicle-planned-fill-hover: color-mix(in srgb, var(--text-2) 50%, transparent);
   border: 1px solid var(--border);
   border-radius: 7px;
   cursor: grab;
@@ -277,34 +277,34 @@
 }
 
 [data-theme="dark"] .chronicle-chart {
-  --chronicle-actual-fill: rgba(224, 108, 0, 0.68);
-  --chronicle-actual-fill-active: rgba(224, 108, 0, 0.82);
-  --chronicle-actual-fill-hover: rgba(224, 108, 0, 0.76);
-  --chronicle-fill: rgba(0, 124, 175, 0.52);
-  --chronicle-fill-active: rgba(0, 124, 175, 0.68);
-  --chronicle-fill-hover: rgba(0, 124, 175, 0.6);
+  --chronicle-actual-fill: color-mix(in srgb, var(--text) 44%, transparent);
+  --chronicle-actual-fill-active: color-mix(in srgb, var(--text) 62%, transparent);
+  --chronicle-actual-fill-hover: color-mix(in srgb, var(--text) 54%, transparent);
+  --chronicle-fill: color-mix(in srgb, var(--text) 34%, transparent);
+  --chronicle-fill-active: color-mix(in srgb, var(--text) 52%, transparent);
+  --chronicle-fill-hover: color-mix(in srgb, var(--text) 44%, transparent);
   --chronicle-grid-line-major: rgba(255, 255, 255, 0.2);
   --chronicle-grid-line-minor: rgba(255, 255, 255, 0.09);
   --chronicle-grid-line-row: rgba(255, 255, 255, 0.12);
-  --chronicle-planned-fill: rgba(0, 124, 175, 0.62);
-  --chronicle-planned-fill-active: rgba(0, 124, 175, 0.78);
-  --chronicle-planned-fill-hover: rgba(0, 124, 175, 0.7);
+  --chronicle-planned-fill: color-mix(in srgb, var(--text-2) 56%, transparent);
+  --chronicle-planned-fill-active: color-mix(in srgb, var(--text-2) 72%, transparent);
+  --chronicle-planned-fill-hover: color-mix(in srgb, var(--text-2) 64%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .chronicle-chart {
-    --chronicle-actual-fill: rgba(224, 108, 0, 0.68);
-    --chronicle-actual-fill-active: rgba(224, 108, 0, 0.82);
-    --chronicle-actual-fill-hover: rgba(224, 108, 0, 0.76);
-    --chronicle-fill: rgba(0, 124, 175, 0.52);
-    --chronicle-fill-active: rgba(0, 124, 175, 0.68);
-    --chronicle-fill-hover: rgba(0, 124, 175, 0.6);
+    --chronicle-actual-fill: color-mix(in srgb, var(--text) 44%, transparent);
+    --chronicle-actual-fill-active: color-mix(in srgb, var(--text) 62%, transparent);
+    --chronicle-actual-fill-hover: color-mix(in srgb, var(--text) 54%, transparent);
+    --chronicle-fill: color-mix(in srgb, var(--text) 34%, transparent);
+    --chronicle-fill-active: color-mix(in srgb, var(--text) 52%, transparent);
+    --chronicle-fill-hover: color-mix(in srgb, var(--text) 44%, transparent);
     --chronicle-grid-line-major: rgba(255, 255, 255, 0.2);
     --chronicle-grid-line-minor: rgba(255, 255, 255, 0.09);
     --chronicle-grid-line-row: rgba(255, 255, 255, 0.12);
-    --chronicle-planned-fill: rgba(0, 124, 175, 0.62);
-    --chronicle-planned-fill-active: rgba(0, 124, 175, 0.78);
-    --chronicle-planned-fill-hover: rgba(0, 124, 175, 0.7);
+    --chronicle-planned-fill: color-mix(in srgb, var(--text-2) 56%, transparent);
+    --chronicle-planned-fill-active: color-mix(in srgb, var(--text-2) 72%, transparent);
+    --chronicle-planned-fill-hover: color-mix(in srgb, var(--text-2) 64%, transparent);
   }
 }
 
@@ -570,11 +570,11 @@
 }
 
 .chronicle-date-summary--planned {
-  color: rgb(0, 98, 140);
+  color: var(--text-2);
 }
 
 .chronicle-date-summary--actual {
-  color: rgb(174, 78, 0);
+  color: var(--text);
 }
 
 .chronicle-date-kind {
@@ -586,11 +586,11 @@
 }
 
 .chronicle-date-kind--planned {
-  color: rgb(0, 98, 140);
+  color: var(--text-2);
 }
 
 .chronicle-date-kind--actual {
-  color: rgb(174, 78, 0);
+  color: var(--text);
 }
 
 .chronicle-file-name--empty {
@@ -673,7 +673,7 @@
 }
 
 .chronicle-today-line {
-  background: rgba(186, 26, 26, 0.72);
+  background: color-mix(in srgb, var(--text) 64%, transparent);
   bottom: 0;
   position: absolute;
   top: 0;
@@ -838,8 +838,8 @@
 
 .chronicle-minimap {
   align-items: center;
-  background: rgba(0, 124, 175, 0.035);
-  border: 1px solid rgba(28, 28, 28, 0.08);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   border-radius: 999px;
   box-sizing: border-box;
   cursor: pointer;
@@ -850,7 +850,7 @@
 }
 
 .chronicle-minimap-item {
-  background: rgba(0, 124, 175, 0.56);
+  background: color-mix(in srgb, var(--text-2) 56%, transparent);
   border-radius: 999px;
   height: 4px;
   position: absolute;
@@ -1099,11 +1099,11 @@
 }
 
 .chronicle-fill-status {
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(174, 78, 0, 0.24);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-2) 24%, transparent);
   border-radius: 4px;
   box-sizing: border-box;
-  color: rgb(96, 42, 0);
+  color: var(--text);
   display: block;
   font-size: 11px;
   font-weight: 700;
@@ -1128,7 +1128,7 @@
 }
 
 .chronicle-fill-resize::after {
-  background: rgba(0, 98, 140, 0.42);
+  background: color-mix(in srgb, var(--text) 42%, transparent);
   border-radius: 999px;
   bottom: 4px;
   content: "";
@@ -1140,7 +1140,7 @@
 }
 
 .chronicle-fill--actual .chronicle-fill-resize::after {
-  background: rgba(174, 78, 0, 0.48);
+  background: color-mix(in srgb, var(--text) 48%, transparent);
 }
 
 .chronicle-fill:hover .chronicle-fill-resize::after,

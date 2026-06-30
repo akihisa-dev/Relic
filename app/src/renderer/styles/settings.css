@@ -164,7 +164,7 @@
 }
 
 .setting-row input[type="checkbox"]:checked {
-  background: rgb(153, 197, 151);
+  background: var(--accent);
 }
 
 .setting-row input[type="checkbox"]:checked::after {
