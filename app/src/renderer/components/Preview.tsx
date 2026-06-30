@@ -7,6 +7,7 @@ import { enhancePreviewTableColorSwatches } from "../colorSwatches";
 import { usePreviewEmbeds } from "../hooks/usePreviewEmbeds";
 import { useT } from "../i18n";
 import { renderDiagramElements } from "../diagramPreview";
+import { sanitizePreviewHtml } from "../htmlSanitizer";
 import { renderMarkdown, slugifyHeading, toggleNthCheckbox } from "../previewMarkdown";
 import { previewUpdateDelayMs } from "../previewUpdateScheduling";
 
@@ -56,7 +57,7 @@ export function Preview({
     const container = containerRef.current;
     if (!container) return;
 
-    container.innerHTML = html;
+    container.innerHTML = sanitizePreviewHtml(html, previewImageSrcs(html));
     enhancePreviewTableColorSwatches(container);
     return renderDiagramElements(container, t);
   }, [html, settings.theme, t]);
@@ -161,4 +162,17 @@ export function Preview({
       style={style}
     />
   );
+}
+
+function previewImageSrcs(html: string): Set<string> {
+  const srcs = new Set<string>();
+  const template = document.createElement("template");
+  template.innerHTML = html;
+
+  for (const image of Array.from(template.content.querySelectorAll("img.preview-image"))) {
+    const src = image.getAttribute("src");
+    if (src) srcs.add(src);
+  }
+
+  return srcs;
 }

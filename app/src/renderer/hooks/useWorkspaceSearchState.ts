@@ -69,6 +69,9 @@ export function useWorkspaceSearchState({
   const searchKey = hasActiveWorkspace && searchQuery.trim() !== ""
     ? `${workspaceState?.activeWorkspace?.id ?? ""}:${searchMode}:${effectiveSearchFrontmatterField}:${searchQuery}`
     : null;
+  const activeDebouncedSearch = hasActiveWorkspace && searchQuery.trim() !== ""
+    ? debouncedSearch
+    : emptyDebouncedSearchSnapshot;
   const frontmatterCandidates = useMemo(() => {
     const result: Record<string, string[]> = hasActiveWorkspace ? { ...workspaceFrontmatterCandidates } : {};
 
@@ -104,7 +107,7 @@ export function useWorkspaceSearchState({
 
   useEffect(() => {
     if (!hasActiveWorkspace || searchQuery.trim() === "") {
-      setDebouncedSearch(emptyDebouncedSearchSnapshot);
+      lastRequestedSearchKey.current = null;
       return;
     }
 
@@ -125,27 +128,27 @@ export function useWorkspaceSearchState({
   }, [effectiveSearchFrontmatterField, hasActiveWorkspace, searchKey, searchMode, searchQuery]);
 
   useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic || debouncedSearch.key === null) {
+    if (!workspaceState?.activeWorkspace || !window.relic || activeDebouncedSearch.key === null) {
       return;
     }
-    if (lastRequestedSearchKey.current === debouncedSearch.key) {
+    if (lastRequestedSearchKey.current === activeDebouncedSearch.key) {
       return;
     }
 
     let canceled = false;
     const input: SearchWorkspaceInput =
-      debouncedSearch.mode === "frontmatter"
+      activeDebouncedSearch.mode === "frontmatter"
         ? {
-          frontmatterField: debouncedSearch.frontmatterField,
-          mode: debouncedSearch.mode,
-          query: debouncedSearch.query
+          frontmatterField: activeDebouncedSearch.frontmatterField,
+          mode: activeDebouncedSearch.mode,
+          query: activeDebouncedSearch.query
         }
         : {
-          mode: debouncedSearch.mode,
-          query: debouncedSearch.query
+          mode: activeDebouncedSearch.mode,
+          query: activeDebouncedSearch.query
         };
 
-    lastRequestedSearchKey.current = debouncedSearch.key;
+    lastRequestedSearchKey.current = activeDebouncedSearch.key;
 
     void window.relic
       .searchWorkspace(input)
@@ -155,7 +158,7 @@ export function useWorkspaceSearchState({
         if (result.ok) {
           setSearchSnapshot({
             error: null,
-            key: debouncedSearch.key,
+            key: activeDebouncedSearch.key,
             limitNotice: result.value.truncated || result.value.skippedLargeFiles > 0 || result.value.skippedLongLines > 0
               ? {
                 skippedLargeFiles: result.value.skippedLargeFiles,
@@ -168,7 +171,7 @@ export function useWorkspaceSearchState({
         } else {
           setSearchSnapshot({
             error: result.error.message,
-            key: debouncedSearch.key,
+            key: activeDebouncedSearch.key,
             limitNotice: null,
             results: []
           });
@@ -179,7 +182,7 @@ export function useWorkspaceSearchState({
       canceled = true;
     };
   }, [
-    debouncedSearch,
+    activeDebouncedSearch,
     workspaceState?.activeWorkspace?.id,
     workspaceState?.fileTree
   ]);
