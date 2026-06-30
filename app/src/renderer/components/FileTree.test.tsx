@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, createEvent, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
@@ -262,13 +262,8 @@ describe("FileTree", () => {
     expect(onDeleteSelectedItems).toHaveBeenCalled();
   });
 
-  it("drags a file into a folder", () => {
+  it("drags a file into a folder when external attachment drag is unavailable", () => {
     const onMoveFile = vi.fn();
-    const startWorkspaceFileDrag = vi.fn();
-    Object.defineProperty(window, "relic", {
-      configurable: true,
-      value: { startWorkspaceFileDrag }
-    });
     renderFileTree({ onMoveFile });
     const dataTransfer = makeDataTransfer();
 
@@ -277,10 +272,9 @@ describe("FileTree", () => {
     fireEvent.drop(rowButton("Folder"), { dataTransfer });
 
     expect(onMoveFile).toHaveBeenCalledWith("Root.md", "Folder");
-    expect(startWorkspaceFileDrag).toHaveBeenCalledWith({ paths: ["Root.md"] });
   });
 
-  it("starts an attachment drag with selected files only", () => {
+  it("starts only an external attachment drag with selected files", () => {
     const startWorkspaceFileDrag = vi.fn();
     Object.defineProperty(window, "relic", {
       configurable: true,
@@ -295,10 +289,11 @@ describe("FileTree", () => {
       selectedPaths: new Set(["Root.md"])
     });
     const dataTransfer = makeDataTransfer();
+    const dragStartEvent = createEvent.dragStart(rowButton("Root"), { dataTransfer });
 
-    fireEvent.dragStart(rowButton("Root"), { dataTransfer });
+    fireEvent(rowButton("Root"), dragStartEvent);
 
-    expect(dataTransfer.effectAllowed).toBe("copyMove");
+    expect(dragStartEvent.defaultPrevented).toBe(true);
     expect(startWorkspaceFileDrag).toHaveBeenCalledWith({ paths: ["Root.md", "Folder/Child.md"] });
   });
 
