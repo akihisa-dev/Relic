@@ -66,7 +66,7 @@
   "files.createFileHere": "ここに新規ファイル",
   "files.createNote": "新規ファイル",
   "files.createNoteShort": "作成",
-  "files.noMarkdownFiles": "Markdownファイルはまだありません。",
+  "files.noFiles": "ファイルはまだありません。",
   "files.createNewWorkspace": "新規ワークスペース",
   "files.creatingWorkspace": "作成中…",
   "files.copyPath": "パスをコピー",

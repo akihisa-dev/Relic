@@ -123,6 +123,10 @@ describe("App file tabs", () => {
 
   it("ファイルツリーの対応画像をクリックすると画像タブで表示する", async () => {
     const readMarkdownFile = vi.fn();
+    const readImageFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { dataUrl: "data:image/jpeg;base64,aW1hZ2U=" }
+    });
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -132,6 +136,7 @@ describe("App file tabs", () => {
           fileTree: [{ kind: "image", name: "人物.jpg", path: "assets/人物.jpg", type: "file" }]
         }
       }),
+      readImageFile,
       readMarkdownFile
     });
 
@@ -141,10 +146,11 @@ describe("App file tabs", () => {
 
     expect(readMarkdownFile).not.toHaveBeenCalled();
     expect(await screen.findByText("人物.jpg", { selector: ".pane-tab-name" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "人物.jpg" })).toHaveAttribute(
+    expect(await screen.findByRole("img", { name: "人物.jpg" })).toHaveAttribute(
       "src",
-      "file:///tmp/Notes/assets/%E4%BA%BA%E7%89%A9.jpg"
+      "data:image/jpeg;base64,aW1hZ2U="
     );
+    expect(readImageFile).toHaveBeenCalledWith({ path: "assets/人物.jpg" });
   });
 
   it("大きいMarkdownを開くと性能優先のソース表示をtoastで通知する", async () => {

@@ -66,7 +66,7 @@
   "files.createFileHere": "New file here",
   "files.createNote": "New file",
   "files.createNoteShort": "Create",
-  "files.noMarkdownFiles": "No Markdown files.",
+  "files.noFiles": "No files.",
   "files.createNewWorkspace": "New Workspace",
   "files.creatingWorkspace": "Creating...",
   "files.copyPath": "Copy path",

@@ -14,6 +14,7 @@ import {
   duplicateMarkdownFileChannel,
   importImageFileChannel,
   importMarkdownFilesChannel,
+  readImageFileChannel,
   getBacklinksChannel,
   getAppInfoChannel,
   getEditorSettingsChannel,
@@ -83,6 +84,8 @@ import {
   type ImportImageFileInput,
   type ImportImageFileResult,
   type ImportMarkdownFilesInput,
+  type ReadImageFileInput,
+  type ReadImageFileResult,
   type ChartSettings,
   type LinkUpdateImpact,
   type LinkUpdateImpactInput,
@@ -136,6 +139,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(importMarkdownFilesChannel, input) as Promise<RelicResult<WorkspaceState>>,
   importImageFile: (input: ImportImageFileInput) =>
     ipcRenderer.invoke(importImageFileChannel, input) as Promise<RelicResult<ImportImageFileResult>>,
+  readImageFile: (input: ReadImageFileInput) =>
+    ipcRenderer.invoke(readImageFileChannel, input) as Promise<RelicResult<ReadImageFileResult>>,
   createLinkedMarkdownFile: (input: CreateLinkedMarkdownFileInput) =>
     ipcRenderer.invoke(createLinkedMarkdownFileChannel, input) as Promise<
       RelicResult<CreateLinkedMarkdownFileResult>

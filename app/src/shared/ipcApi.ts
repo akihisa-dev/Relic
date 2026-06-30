@@ -44,6 +44,8 @@ import type {
   MoveItemToTrashInput,
   MoveMarkdownFileInput,
   ReadMarkdownFileInput,
+  ReadImageFileInput,
+  ReadImageFileResult,
   RemoveWorkspaceInput,
   RenameFolderInput,
   RenameMarkdownFileInput,
@@ -88,6 +90,7 @@ export interface RelicApi {
   createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;
   importMarkdownFiles: (input: ImportMarkdownFilesInput) => Promise<RelicResult<WorkspaceState>>;
   importImageFile: (input: ImportImageFileInput) => Promise<RelicResult<ImportImageFileResult>>;
+  readImageFile: (input: ReadImageFileInput) => Promise<RelicResult<ReadImageFileResult>>;
   createLinkedMarkdownFile: (
     input: CreateLinkedMarkdownFileInput
   ) => Promise<RelicResult<CreateLinkedMarkdownFileResult>>;

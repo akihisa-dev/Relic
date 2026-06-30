@@ -7,6 +7,7 @@ import type {
   MoveFolderInput,
   MoveItemToTrashInput,
   MoveMarkdownFileInput,
+  ReadImageFileInput,
   RenameFolderInput,
   RenameMarkdownFileInput,
   ReplaceInFileInput,
@@ -16,6 +17,7 @@ import type {
   StartWorkspaceFileDragInput,
   WriteMarkdownFileInput
 } from "../../shared/ipc";
+import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import {
   maxExpectedFileSnapshots,
   maxImportMarkdownFiles,
@@ -60,6 +62,10 @@ export function isImportImageFileInput(input: unknown): input is ImportImageFile
     candidate.sourcePath.length > 0 &&
     !candidate.sourcePath.includes("\0")
   );
+}
+
+export function isReadImageFileInput(input: unknown): input is ReadImageFileInput {
+  return isPathInput(input) && isSupportedMarkdownImagePath(input.path);
 }
 
 export function isCreateFolderInput(input: unknown): input is CreateFolderInput {

@@ -41,6 +41,14 @@ export interface ImportImageFileResult {
   path: string;
 }
 
+export interface ReadImageFileInput {
+  path: string;
+}
+
+export interface ReadImageFileResult {
+  dataUrl: string;
+}
+
 export interface CreateLinkedMarkdownFileInput {
   path: string;
 }

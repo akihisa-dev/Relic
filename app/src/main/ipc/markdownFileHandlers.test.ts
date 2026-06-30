@@ -35,6 +35,7 @@ import {
   defaultEditorSettings,
   defaultFeatureToggles,
   defaultFrontmatterTemplates,
+  readImageFileChannel,
   revealWorkspaceItemChannel
 } from "../../shared/ipc";
 import { writeAppSettings } from "../settings/appSettings";
@@ -103,5 +104,43 @@ describe("markdownFileHandlers", () => {
       ok: false
     });
     expect(electronMock.showItemInFolder).not.toHaveBeenCalled();
+  });
+
+  it("画像読み込みではワークスペース内の対応画像を返す", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
+    temporaryPaths.push(userDataPath, workspacePath);
+
+    await mkdir(path.join(workspacePath, "assets"));
+    await writeFile(path.join(workspacePath, "assets", "image.png"), "png-data");
+
+    const workspace = createWorkspaceSummary(workspacePath);
+    const settings = addOrActivateWorkspace(
+      {
+        editorSettings: defaultEditorSettings,
+        featureToggles: defaultFeatureToggles,
+        frontmatterTemplates: defaultFrontmatterTemplates,
+        lastWorkspaceId: null,
+        userDefinedFields: [],
+        workspaces: []
+      },
+      workspace
+    );
+    await writeAppSettings(userDataPath, settings);
+
+    electronMock.getPath.mockReturnValue(userDataPath);
+    registerMarkdownFileHandlers();
+    const readHandler = electronMock.handle.mock.calls.find(
+      ([channel]) => channel === readImageFileChannel
+    )?.[1];
+
+    if (!readHandler) throw new Error("read image file handler was not registered");
+
+    const result = await readHandler(undefined, { path: "assets/image.png" });
+
+    expect(result).toEqual({
+      ok: true,
+      value: { dataUrl: `data:image/png;base64,${Buffer.from("png-data").toString("base64")}` }
+    });
   });
 });

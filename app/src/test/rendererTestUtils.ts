@@ -73,6 +73,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     importImageFile: vi.fn(),
+    readImageFile: vi.fn().mockResolvedValue({ ok: true, value: { dataUrl: "data:image/png;base64," } }),
     mergeFiles: vi.fn().mockResolvedValue({ ok: true, value: "merged.md" }),
     moveFolder: vi.fn(),
     moveItemToTrash: vi.fn(),

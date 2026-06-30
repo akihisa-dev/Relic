@@ -17,6 +17,8 @@ import {
   type LinkUpdateImpactInput,
   moveMarkdownFileChannel,
   type MoveMarkdownFileInput,
+  readImageFileChannel,
+  type ReadImageFileInput,
   renameMarkdownFileChannel,
   type RenameMarkdownFileInput,
   revealWorkspaceItemChannel,
@@ -34,7 +36,7 @@ import {
   moveMarkdownFile,
   renameMarkdownFile
 } from "../files/markdownFiles";
-import { importImageFile } from "../files/imageFiles";
+import { importImageFile, readImageFile } from "../files/imageFiles";
 import { readLinkUpdateImpact } from "../files/linkUpdater";
 import {
   resolveExistingWorkspacePath,
@@ -51,6 +53,7 @@ import {
   isLinkUpdateImpactInput,
   isMoveMarkdownFileInput,
   isPathInput,
+  isReadImageFileInput,
   isRenameMarkdownFileInput,
   isRevealWorkspaceItemInput,
   isStartWorkspaceFileDragInput
@@ -175,6 +178,28 @@ export function registerMarkdownFileHandlers(): void {
         return fail(
           "IMAGE_IMPORT_FAILED",
           "画像ファイルを追加できませんでした。",
+          ipcErrorDetails(error)
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(
+    readImageFileChannel,
+    async (_event, input: ReadImageFileInput) => {
+      try {
+        if (!isReadImageFileInput(input)) {
+          return fail("IMAGE_READ_INVALID_INPUT", "表示する画像ファイルを指定してください。");
+        }
+
+        const context = await getActiveWorkspaceContext();
+        if (!context.ok) return context;
+
+        return readImageFile(context.value.activeWorkspace.path, input.path);
+      } catch (error) {
+        return fail(
+          "IMAGE_READ_FAILED",
+          "画像ファイルを表示できませんでした。",
           ipcErrorDetails(error)
         );
       }
