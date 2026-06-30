@@ -740,15 +740,17 @@
   gap: 0;
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 2px 0 0;
 }
 
 .outline-item {
+  border-left: 1px solid transparent;
   border-radius: 0;
   color: var(--text-2);
   cursor: default;
-  font-size: 12px;
-  min-height: 24px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  min-height: 26px;
   overflow: hidden;
   padding: 0;
   text-overflow: ellipsis;
@@ -782,12 +784,32 @@
   width: 100%;
 }
 
-.outline-item--h1 .outline-item-button { padding-left: 12px; font-weight: 650; }
-.outline-item--h2 .outline-item-button { padding-left: 20px; }
-.outline-item--h3 .outline-item-button { padding-left: 28px; }
-.outline-item--h4 .outline-item-button { padding-left: 36px; }
-.outline-item--h5 .outline-item-button { padding-left: 44px; }
-.outline-item--h6 .outline-item-button { padding-left: 52px; }
+.outline-item--h1 {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.outline-item--h1 .outline-item-button {
+  font-weight: 650;
+  padding: 6px 12px;
+}
+
+.outline-item--h2,
+.outline-item--h3,
+.outline-item--h4,
+.outline-item--h5,
+.outline-item--h6 {
+  border-left-color: var(--border);
+  color: var(--text-2);
+  font-weight: 450;
+  margin-left: 16px;
+}
+
+.outline-item--h2 .outline-item-button { padding: 5px 12px 5px 12px; }
+.outline-item--h3 .outline-item-button { padding: 5px 12px 5px 24px; }
+.outline-item--h4 .outline-item-button { padding: 5px 12px 5px 36px; }
+.outline-item--h5 .outline-item-button { padding: 5px 12px 5px 48px; }
+.outline-item--h6 .outline-item-button { padding: 5px 12px 5px 60px; }
 
 /* ────────────────────────────────── */
 /* Status bar                         */
