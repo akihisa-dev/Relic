@@ -9,6 +9,7 @@ export interface SourceRevealRange {
 
 export interface InlineMatch {
   content?: string;
+  href?: string;
   from: number;
   to: number;
   contentFrom: number;
@@ -72,6 +73,10 @@ interface MarkdownLinkMatch {
   textFrom: number;
   textTo: number;
   href: string;
+}
+
+interface MarkdownImageMatch extends MarkdownLinkMatch {
+  alt: string;
 }
 
 interface InlineCodeMatch {
@@ -220,6 +225,12 @@ function findMarkdownLinkMatches(text: string): MarkdownLinkMatch[] {
   return matches;
 }
 
+function findMarkdownImageMatches(text: string): MarkdownImageMatch[] {
+  return findMarkdownLinkMatches(text)
+    .filter((match) => match.from > 0 && text[match.from - 1] === "!")
+    .map((match) => ({ ...match, alt: text.slice(match.textFrom, match.textTo) }));
+}
+
 export function collectInlineMatches(lineFrom: number, text: string): InlineMatch[] {
   const occupied: Array<{ from: number; to: number }> = [];
   const htmlTagRanges = findHtmlTagRanges(text).map((range) => ({
@@ -243,7 +254,25 @@ export function collectInlineMatches(lineFrom: number, text: string): InlineMatc
     };
   }));
 
+  matches.push(...findMarkdownImageMatches(text).map((match) => {
+    const from = lineFrom + match.from - 1;
+    const textFrom = lineFrom + match.textFrom;
+    const textTo = lineFrom + match.textTo;
+    const to = lineFrom + match.to;
+    return {
+      content: match.alt || match.href,
+      href: match.href,
+      from,
+      to,
+      contentFrom: textFrom,
+      contentTo: textTo,
+      className: "cm-live-image",
+      hideRanges: [{ from, to }]
+    };
+  }));
+
   matches.push(...findMarkdownLinkMatches(text).map((match) => {
+    if (match.from > 0 && text[match.from - 1] === "!") return null;
     const from = lineFrom + match.from;
     const textFrom = lineFrom + match.textFrom;
     const textTo = lineFrom + match.textTo;
@@ -256,7 +285,7 @@ export function collectInlineMatches(lineFrom: number, text: string): InlineMatc
       className: "cm-live-link",
       hideRanges: [{ from, to: from + 1 }, { from: textTo, to }]
     };
-  }));
+  }).filter((match): match is InlineMatch => match !== null));
 
   matches.push(...scanWikiLinks(text, { ignoreCode: false }).map((match) => {
     const from = lineFrom + match.from;

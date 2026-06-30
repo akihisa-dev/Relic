@@ -78,7 +78,7 @@ export async function collectLivePreviewWidgets(content: string, cursor: number,
   return widgets;
 }
 
-export async function collectInlineLivePreviewWidgets(content: string, cursor: number, hasFocus = true): Promise<string[]> {
+export async function collectInlineLivePreviewWidgets(content: string, cursor: number, hasFocus = true, workspacePath?: string | null): Promise<string[]> {
   const state = EditorState.create({
     doc: content,
     extensions: [markdown({ extensions: GFM })],
@@ -91,7 +91,7 @@ export async function collectInlineLivePreviewWidgets(content: string, cursor: n
     hasFocus,
     state,
     visibleRanges: [{ from: 0, to: state.doc.length }]
-  } as unknown as EditorView).between(0, state.doc.length, (_from, _to, value) => {
+  } as unknown as EditorView, undefined, createTranslator("ja"), workspacePath).between(0, state.doc.length, (_from, _to, value) => {
     const widget = (value as unknown as { spec?: { widget?: { constructor?: { name?: string } } } }).spec?.widget;
     if (widget?.constructor?.name) widgets.push(widget.constructor.name);
   });
@@ -99,7 +99,7 @@ export async function collectInlineLivePreviewWidgets(content: string, cursor: n
   return widgets;
 }
 
-export async function collectInlineLivePreviewWidgetClasses(content: string, cursor: number, hasFocus = true): Promise<string[]> {
+export async function collectInlineLivePreviewWidgetClasses(content: string, cursor: number, hasFocus = true, workspacePath?: string | null): Promise<string[]> {
   const state = EditorState.create({
     doc: content,
     extensions: [markdown({ extensions: GFM })],
@@ -112,7 +112,7 @@ export async function collectInlineLivePreviewWidgetClasses(content: string, cur
     hasFocus,
     state,
     visibleRanges: [{ from: 0, to: state.doc.length }]
-  } as unknown as EditorView).between(0, state.doc.length, (_from, _to, value) => {
+  } as unknown as EditorView, undefined, createTranslator("ja"), workspacePath).between(0, state.doc.length, (_from, _to, value) => {
     const widget = (value as unknown as { spec?: { widget?: { className?: string } } }).spec?.widget;
     if (widget?.className) classes.push(widget.className);
   });

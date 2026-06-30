@@ -93,6 +93,29 @@ export class InlineFormatWidget extends WidgetType {
   }
 }
 
+export class ImageWidget extends WidgetType {
+  readonly className = "cm-live-image";
+
+  constructor(
+    private readonly src: string,
+    private readonly alt: string
+  ) {
+    super();
+  }
+
+  override eq(other: ImageWidget): boolean {
+    return this.src === other.src && this.alt === other.alt;
+  }
+
+  override toDOM(): HTMLElement {
+    const image = document.createElement("img");
+    image.alt = this.alt;
+    image.className = this.className;
+    image.src = this.src;
+    return image;
+  }
+}
+
 function renderMathHtml(source: string, displayMode: boolean): string {
   try {
     return sanitizePreviewHtml(katex.renderToString(source, { displayMode, throwOnError: false }));

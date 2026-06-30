@@ -1,0 +1,73 @@
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+
+import { afterEach, describe, expect, it } from "vitest";
+
+import { importImageFile } from "./imageFiles";
+
+describe("importImageFile", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
+  it("外部画像を指定フォルダへコピーしてワークスペース相対パスを返す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-workspace-"));
+    const sourceFolder = await mkdtemp(path.join(os.tmpdir(), "relic-image-source-"));
+    temporaryPaths.push(workspacePath, sourceFolder);
+    await mkdir(path.join(workspacePath, "notes"));
+    await writeFile(path.join(sourceFolder, "diagram.png"), "png-data");
+
+    const result = await importImageFile(workspacePath, path.join(sourceFolder, "diagram.png"), "notes");
+
+    expect(result).toEqual({ ok: true, value: { path: "notes/diagram.png" } });
+    await expect(readFile(path.join(workspacePath, "notes", "diagram.png"), "utf8")).resolves.toBe("png-data");
+  });
+
+  it("追加先に同名画像がある場合はコピー名で保存する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-workspace-"));
+    const sourceFolder = await mkdtemp(path.join(os.tmpdir(), "relic-image-source-"));
+    temporaryPaths.push(workspacePath, sourceFolder);
+    await writeFile(path.join(workspacePath, "diagram.png"), "existing");
+    await writeFile(path.join(sourceFolder, "diagram.png"), "new");
+
+    const result = await importImageFile(workspacePath, path.join(sourceFolder, "diagram.png"), "");
+
+    expect(result).toEqual({ ok: true, value: { path: "diagram のコピー.png" } });
+    await expect(readFile(path.join(workspacePath, "diagram のコピー.png"), "utf8")).resolves.toBe("new");
+  });
+
+  it("ワークスペース内の既存画像はコピーせず相対パスだけ返す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-workspace-"));
+    temporaryPaths.push(workspacePath);
+    await mkdir(path.join(workspacePath, "assets"));
+    await writeFile(path.join(workspacePath, "assets", "diagram.png"), "png-data");
+
+    const result = await importImageFile(workspacePath, path.join(workspacePath, "assets", "diagram.png"), "");
+
+    expect(result).toEqual({ ok: true, value: { path: "assets/diagram.png" } });
+  });
+
+  it("未対応形式は取り込まない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-workspace-"));
+    const sourceFolder = await mkdtemp(path.join(os.tmpdir(), "relic-image-source-"));
+    temporaryPaths.push(workspacePath, sourceFolder);
+    await writeFile(path.join(sourceFolder, "note.txt"), "text");
+
+    const result = await importImageFile(workspacePath, path.join(sourceFolder, "note.txt"), "");
+
+    expect(result).toMatchObject({
+      error: { code: "IMAGE_IMPORT_TYPE_UNSUPPORTED" },
+      ok: false
+    });
+  });
+});
