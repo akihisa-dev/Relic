@@ -25,6 +25,7 @@ import {
   testWorkspaceState as withWorkspace
 } from "../test/rendererTestUtils";
 import {
+  graphWheelZoomPoint,
   graphNodePrimaryAction,
   isGraphNodePrimaryPointerButton,
   zoomGraphAtPoint
@@ -157,6 +158,11 @@ describe("App charts", () => {
     zoomGraphAtPoint(view, 100, 150, 900, 600, 2);
 
     expect(view).toStrictEqual({ panX: 350, panY: 150, scale: 2 });
+  });
+
+  it("グラフビューのホイール縮小は表示中央を基準にする", () => {
+    expect(graphWheelZoomPoint(2, 1, 100, 150, 900, 600)).toStrictEqual({ x: 450, y: 300 });
+    expect(graphWheelZoomPoint(1, 2, 100, 150, 900, 600)).toStrictEqual({ x: 100, y: 150 });
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
