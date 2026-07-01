@@ -60,11 +60,13 @@ describe("App charts", () => {
       ok: true,
       value: {
         links: [
-          { count: 1, source: "A.md", target: "B.md", type: "link" }
+          { count: 1, source: "A.md", target: "B.md", type: "link" },
+          { count: 1, source: "A.md", target: "#project", type: "tag" }
         ],
         nodes: [
           { backlinkCount: 0, exists: true, id: "A.md", label: "A", linkCount: 1, path: "A.md", type: "file" },
-          { backlinkCount: 1, exists: true, id: "B.md", label: "B", linkCount: 0, path: "B.md", type: "file" }
+          { backlinkCount: 1, exists: true, id: "B.md", label: "B", linkCount: 0, path: "B.md", type: "file" },
+          { backlinkCount: 1, exists: true, id: "#project", label: "#project", linkCount: 0, path: null, type: "tag" }
         ]
       }
     });
@@ -96,6 +98,11 @@ describe("App charts", () => {
     expect(filtersHeader).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(filtersHeader);
     expect(filtersHeader).toHaveAttribute("aria-expanded", "true");
+    const filterInput = screen.getByRole("searchbox", { name: "ノードをフィルタ" });
+    fireEvent.change(filterInput, { target: { value: "tag:project" } });
+    expect(screen.getByText("1 nodes")).toBeInTheDocument();
+    fireEvent.change(filterInput, { target: { value: "" } });
+    expect(screen.getByText("2 nodes")).toBeInTheDocument();
     const groupsHeader = screen.getByRole("button", { name: "Groups" });
     fireEvent.click(groupsHeader);
     fireEvent.click(screen.getByRole("button", { name: "New group" }));
