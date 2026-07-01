@@ -26,6 +26,7 @@ import {
 } from "../test/rendererTestUtils";
 import {
   applyGraphKeyboardNavigation,
+  applyGraphKeyboardZoom,
   applyGraphPanInertia,
   graphWheelZoomPoint,
   graphNodePrimaryAction,
@@ -171,15 +172,57 @@ describe("App charts", () => {
   it("グラフビューのキーボード移動は押下状態から継続移動する", () => {
     const view = { panX: 0, panY: 0, scale: 1 };
 
-    applyGraphKeyboardNavigation(view, { down: false, left: false, right: true, shift: false, up: true });
+    applyGraphKeyboardNavigation(view, {
+      down: false,
+      left: false,
+      right: true,
+      shift: false,
+      up: true,
+      zoomIn: false,
+      zoomOut: false
+    });
     expect(view.panX).toBeCloseTo(-1000 / 60);
     expect(view.panY).toBeCloseTo(1000 / 60);
     expect(view.scale).toBe(1);
 
-    applyGraphKeyboardNavigation(view, { down: false, left: true, right: false, shift: true, up: false });
+    applyGraphKeyboardNavigation(view, {
+      down: false,
+      left: true,
+      right: false,
+      shift: true,
+      up: false,
+      zoomIn: false,
+      zoomOut: false
+    });
     expect(view.panX).toBeCloseTo(2000 / 60);
     expect(view.panY).toBeCloseTo(1000 / 60);
     expect(view.scale).toBe(1);
+  });
+
+  it("グラフビューのズームキーは押下状態から継続ズームする", () => {
+    const view = { panX: 0, panY: 0, scale: 1 };
+
+    applyGraphKeyboardZoom(view, {
+      down: false,
+      left: false,
+      right: false,
+      shift: false,
+      up: false,
+      zoomIn: true,
+      zoomOut: false
+    }, 900, 600);
+    expect(view.scale).toBeCloseTo(1.03);
+
+    applyGraphKeyboardZoom(view, {
+      down: false,
+      left: false,
+      right: false,
+      shift: true,
+      up: false,
+      zoomIn: false,
+      zoomOut: true
+    }, 900, 600);
+    expect(view.scale).toBeCloseTo(1.03 / 1.1);
   });
 
   it("グラフビューの背景パンは離したあと慣性で減速する", () => {
