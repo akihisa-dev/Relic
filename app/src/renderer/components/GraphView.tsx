@@ -141,7 +141,7 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
 
   const filteredGraph = useMemo(() => {
     const graph = graphState.graph ?? { links: [], nodes: [] };
-    const search = options.search.trim().toLocaleLowerCase();
+    const tagsByNode = collectGraphNodeTags(graph.nodes, graph.links);
     const linkedIds = new Set<string>();
 
     for (const link of graph.links) {
@@ -156,9 +156,8 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
           if (!options.showAttachments && node.type === "attachment") return false;
           if (options.hideUnresolved && node.type === "unresolved") return false;
           if (!options.showOrphans && !linkedIds.has(node.id)) return false;
-          if (!search) return true;
 
-          return `${node.label}\n${node.path ?? ""}\n${node.id}`.toLocaleLowerCase().includes(search);
+          return graphNodeMatchesQuery(node, options.search, tagsByNode.get(node.id) ?? []);
         })
         .map((node) => node.id)
     );
@@ -178,7 +177,8 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
       nodes: graph.nodes.filter((node) =>
         nodeIds.has(node.id) &&
         (options.showOrphans || connectedIds.has(node.id))
-      )
+      ),
+      tagsByNode
     };
   }, [graphState.graph, options.hideUnresolved, options.search, options.showAttachments, options.showOrphans, options.showTags]);
 
@@ -228,13 +228,14 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
       viewRef.current,
       latestOptionsRef.current,
       colorGroupsRef.current,
+      filteredGraph.tagsByNode,
       pinnedNodeId ?? hoveredNodeId,
       cssWidth,
       cssHeight
     );
 
     frameRef.current = requestGraphFrame(draw);
-  }, [hoveredNodeId, pinnedNodeId]);
+  }, [filteredGraph.tagsByNode, hoveredNodeId, pinnedNodeId]);
 
   useEffect(() => {
     frameRef.current = requestGraphFrame(draw);
@@ -885,6 +886,7 @@ function drawGraph(
   view: { panX: number; panY: number; scale: number },
   options: GraphOptions,
   colorGroups: GraphColorGroup[],
+  tagsByNode: Map<string, string[]>,
   hoveredNodeId: string | null,
   width: number,
   height: number
@@ -921,7 +923,7 @@ function drawGraph(
   for (const node of nodes) {
     const active = !focused || node.id === focused.id || neighbors.has(node.id);
     const radius = nodeRadius(node, options);
-    const color = nodeColor(node, colorGroups, node.id === focused?.id);
+    const color = nodeColor(node, colorGroups, tagsByNode.get(node.id) ?? [], node.id === focused?.id);
     context.globalAlpha = active ? 1 : 0.22;
     context.fillStyle = color;
     context.beginPath();
@@ -972,11 +974,10 @@ function nodeRadius(node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount"
   return clamp(4.5 * weight * typeMultiplier * options.nodeSizeMultiplier, 3, 24);
 }
 
-function nodeColor(node: WorkspaceGraphNode, groups: GraphColorGroup[], focused: boolean): string {
+function nodeColor(node: WorkspaceGraphNode, groups: GraphColorGroup[], tags: string[], focused: boolean): string {
   if (focused) return cssVar("--color-primary", "#2f66b1");
 
-  const searchText = `${node.label}\n${node.path ?? ""}\n${node.id}`.toLocaleLowerCase();
-  const group = groups.find((candidate) => candidate.query.trim() && searchText.includes(candidate.query.trim().toLocaleLowerCase()));
+  const group = groups.find((candidate) => graphNodeMatchesQuery(node, candidate.query, tags));
   if (group) return group.color;
 
   if (node.type === "tag") return cssVar("--color-accent", "#3c8f6d");
@@ -984,6 +985,89 @@ function nodeColor(node: WorkspaceGraphNode, groups: GraphColorGroup[], focused:
   if (node.type === "unresolved") return cssVar("--color-text-muted", "#9a9a9a");
 
   return cssVar("--color-text-secondary", "#5f646d");
+}
+
+function collectGraphNodeTags(
+  nodes: WorkspaceGraphNode[],
+  links: WorkspaceGraphLink[]
+): Map<string, string[]> {
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const tagsByNode = new Map<string, Set<string>>();
+
+  for (const link of links) {
+    if (link.type !== "tag") continue;
+    const tagNode = nodeById.get(link.target);
+    if (!tagNode || tagNode.type !== "tag") continue;
+    const tag = tagNode.label.replace(/^#/, "");
+    const tags = tagsByNode.get(link.source) ?? new Set<string>();
+    tags.add(tag);
+    tagsByNode.set(link.source, tags);
+  }
+
+  return new Map([...tagsByNode.entries()].map(([nodeId, tags]) => [
+    nodeId,
+    [...tags].toSorted((a, b) => a.localeCompare(b, "ja"))
+  ]));
+}
+
+function graphNodeMatchesQuery(node: WorkspaceGraphNode, query: string, tags: string[]): boolean {
+  const tokens = tokenizeGraphQuery(query);
+  if (tokens.length === 0) return true;
+
+  return tokens.every((rawToken) => {
+    const negated = rawToken.startsWith("-");
+    const token = (negated ? rawToken.slice(1) : rawToken).trim().toLocaleLowerCase();
+    if (!token) return true;
+
+    const matches = graphNodeMatchesToken(node, token, tags);
+    return negated ? !matches : matches;
+  });
+}
+
+function graphNodeMatchesToken(node: WorkspaceGraphNode, token: string, tags: string[]): boolean {
+  const separatorIndex = token.indexOf(":");
+  if (separatorIndex > 0) {
+    const key = token.slice(0, separatorIndex);
+    const value = token.slice(separatorIndex + 1);
+    if (!value) return false;
+
+    if (key === "path") return (node.path ?? node.id).toLocaleLowerCase().includes(value);
+    if (key === "file" || key === "name") return node.label.toLocaleLowerCase().includes(value);
+    if (key === "tag") return graphNodeTagSearchText(node, tags).includes(value.replace(/^#/, ""));
+    if (key === "type" || key === "is") return node.type.toLocaleLowerCase() === value;
+  }
+
+  return graphNodeSearchText(node, tags).includes(token);
+}
+
+function graphNodeSearchText(node: WorkspaceGraphNode, tags: string[]): string {
+  return [
+    node.label,
+    node.path ?? "",
+    node.id,
+    node.type,
+    ...tags.map((tag) => `#${tag}`)
+  ].join("\n").toLocaleLowerCase();
+}
+
+function graphNodeTagSearchText(node: WorkspaceGraphNode, tags: string[]): string {
+  return [
+    node.type === "tag" ? node.label.replace(/^#/, "") : "",
+    ...tags
+  ].join("\n").toLocaleLowerCase();
+}
+
+function tokenizeGraphQuery(query: string): string[] {
+  const tokens: string[] = [];
+  const pattern = /"([^"]+)"|'([^']+)'|(\S+)/g;
+
+  for (const match of query.matchAll(pattern)) {
+    const value = match[1] ?? match[2] ?? match[3] ?? "";
+    const token = value.trim();
+    if (token) tokens.push(token);
+  }
+
+  return tokens;
 }
 
 function labelOpacity(scale: number, textFadeMultiplier: number): number {
