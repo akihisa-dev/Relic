@@ -28,6 +28,7 @@ import {
   applyGraphKeyboardNavigation,
   applyGraphKeyboardZoom,
   applyGraphPanInertia,
+  graphHoveredNodeContainsPoint,
   graphWheelZoomPoint,
   graphNodePrimaryAction,
   isGraphNodePrimaryPointerButton,
@@ -51,6 +52,22 @@ function kamakuraEntry() {
     startValue: 14208
   };
 }
+
+const graphTestOptions = {
+  centerStrength: 0.1,
+  hideUnresolved: false,
+  lineSizeMultiplier: 1,
+  linkDistance: 250,
+  linkStrength: 1,
+  nodeSizeMultiplier: 1,
+  repelStrength: 10,
+  search: "",
+  showArrows: false,
+  showAttachments: false,
+  showOrphans: true,
+  showTags: false,
+  textFadeMultiplier: 0
+};
 
 describe("App charts", () => {
   beforeAll(installMatchMediaMock);
@@ -234,6 +251,20 @@ describe("App charts", () => {
     applyGraphPanInertia(view, velocity);
     expect(view).toStrictEqual({ panX: 4, panY: -2, scale: 1 });
     expect(velocity).toStrictEqual({ x: 3.6, y: -1.8 });
+  });
+
+  it("グラフビューのホバー強調はノードがマウス下から外れたら解除対象になる", () => {
+    const node = {
+      backlinkCount: 0,
+      linkCount: 0,
+      type: "file" as const,
+      x: 0,
+      y: 0
+    };
+    const view = { panX: 0, panY: 0, scale: 1 };
+
+    expect(graphHoveredNodeContainsPoint(node, { x: 450, y: 300 }, view, graphTestOptions, 900, 600)).toBe(true);
+    expect(graphHoveredNodeContainsPoint(node, { x: 500, y: 300 }, view, graphTestOptions, 900, 600)).toBe(false);
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
