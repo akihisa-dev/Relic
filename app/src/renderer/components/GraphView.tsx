@@ -120,6 +120,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const linksRef = useRef<SimLink[]>([]);
   const viewRef = useRef<GraphViewTransform>(initialGraphViewTransform());
   const panVelocityRef = useRef({ x: 0, y: 0 });
+  const panSampleMsRef = useRef(0);
   const hoverPointRef = useRef<{ x: number; y: number } | null>(null);
   const keyboardRef = useRef<GraphKeyboardState>({
     down: false,
@@ -138,6 +139,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     pointerId: number;
     startX: number;
     startY: number;
+    time: number;
     type: "node" | "pan";
   } | null>(null);
   const latestOptionsRef = useRef(defaultGraphOptions);
@@ -345,6 +347,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     event.currentTarget.focus();
     panVelocityRef.current = { x: 0, y: 0 };
+    panSampleMsRef.current = 0;
 
     const node = nodeAtPoint(event.clientX, event.clientY);
     if (!node && event.button !== 0) return;
@@ -364,6 +367,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
+        time: performance.now(),
         type: "node"
       };
       return;
@@ -377,6 +381,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
+      time: performance.now(),
       type: "pan"
     };
   }, [nodeAtPoint]);
@@ -397,6 +402,9 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
 
     const dx = event.clientX - pointer.lastX;
     const dy = event.clientY - pointer.lastY;
+    const now = performance.now();
+    const elapsed = Math.max(1, now - pointer.time);
+    pointer.time = now;
     pointer.lastX = event.clientX;
     pointer.lastY = event.clientY;
     pointer.moved ||= graphPointerMovedBeyondClickThreshold(
@@ -414,6 +422,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
 
     viewRef.current.panX += dx;
     viewRef.current.panY += dy;
+    panSampleMsRef.current = nextGraphPanSampleMs(panSampleMsRef.current, elapsed);
     panVelocityRef.current = nextGraphPanVelocity(panVelocityRef.current, dx, dy);
   }, [nodeAtPoint]);
 
@@ -432,6 +441,10 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       }
     }
 
+    if (pointer.type === "pan") {
+      panVelocityRef.current = finishGraphPanVelocity(panVelocityRef.current, panSampleMsRef.current, performance.now() - pointer.time);
+      panSampleMsRef.current = 0;
+    }
     pointerRef.current = null;
   }, []);
 
@@ -539,6 +552,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const resetView = useCallback(() => {
     viewRef.current = initialGraphViewTransform();
     panVelocityRef.current = { x: 0, y: 0 };
+    panSampleMsRef.current = 0;
     keyboardRef.current = {
       down: false,
       left: false,
@@ -1406,6 +1420,23 @@ export function nextGraphPanVelocity(
   };
 }
 
+export function nextGraphPanSampleMs(current: number, elapsedMs: number): number {
+  return current * 0.8 + elapsedMs * 0.2;
+}
+
+export function finishGraphPanVelocity(
+  velocity: { x: number; y: number },
+  sampleMs: number,
+  releaseElapsedMs: number
+): { x: number; y: number } {
+  if (releaseElapsedMs > 100 || sampleMs <= 0) return { x: 0, y: 0 };
+
+  return {
+    x: velocity.x / sampleMs,
+    y: velocity.y / sampleMs
+  };
+}
+
 export function applyGraphPanInertia(
   view: { panX: number; panY: number; scale: number },
   velocity: { x: number; y: number }
@@ -1414,8 +1445,8 @@ export function applyGraphPanInertia(
   if (Math.abs(velocity.y) < 0.01) velocity.y = 0;
   if (velocity.x === 0 && velocity.y === 0) return;
 
-  view.panX += velocity.x;
-  view.panY += velocity.y;
+  view.panX += 1000 * velocity.x / 60;
+  view.panY += 1000 * velocity.y / 60;
   velocity.x *= 0.9;
   velocity.y *= 0.9;
 }

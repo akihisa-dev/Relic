@@ -36,7 +36,9 @@ import {
   graphWheelZoomPoint,
   graphNodePrimaryAction,
   isGraphNodePrimaryPointerButton,
+  finishGraphPanVelocity,
   nextGraphPanVelocity,
+  nextGraphPanSampleMs,
   zoomGraphAtPoint
 } from "./components/GraphView";
 import { useEditorStore } from "./store/editorStore";
@@ -261,12 +263,19 @@ describe("App charts", () => {
   it("グラフビューの背景パンは離したあと慣性で減速する", () => {
     const view = { panX: 0, panY: 0, scale: 1 };
     const velocity = nextGraphPanVelocity({ x: 0, y: 0 }, 20, -10);
+    const sampleMs = nextGraphPanSampleMs(0, 20);
 
     expect(velocity).toStrictEqual({ x: 4, y: -2 });
+    expect(sampleMs).toBe(4);
 
-    applyGraphPanInertia(view, velocity);
-    expect(view).toStrictEqual({ panX: 4, panY: -2, scale: 1 });
-    expect(velocity).toStrictEqual({ x: 3.6, y: -1.8 });
+    const releasedVelocity = finishGraphPanVelocity(velocity, sampleMs, 20);
+    expect(releasedVelocity).toStrictEqual({ x: 1, y: -0.5 });
+
+    applyGraphPanInertia(view, releasedVelocity);
+    expect(view).toStrictEqual({ panX: 1000 / 60, panY: -500 / 60, scale: 1 });
+    expect(releasedVelocity).toStrictEqual({ x: 0.9, y: -0.45 });
+
+    expect(finishGraphPanVelocity(velocity, sampleMs, 101)).toStrictEqual({ x: 0, y: 0 });
   });
 
   it("グラフビューのホバー強調はノードがマウス下から外れたら解除対象になる", () => {
