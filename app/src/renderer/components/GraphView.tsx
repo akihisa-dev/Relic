@@ -94,6 +94,7 @@ const graphColorGroupsStorageKey = "relic.graphView.colorGroups.v1";
 const graphSectionCollapsedStorageKey = "relic.graphView.sectionCollapsed.v1";
 const graphMinScale = 1 / 128;
 const graphMaxScale = 8;
+const graphNodeClickMovementThresholdSq = 25;
 const defaultGraphSectionCollapsed: GraphSectionCollapsedState = {
   display: true,
   filter: true,
@@ -135,6 +136,8 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     lastY: number;
     moved: boolean;
     pointerId: number;
+    startX: number;
+    startY: number;
     type: "node" | "pan";
   } | null>(null);
   const latestOptionsRef = useRef(defaultGraphOptions);
@@ -359,6 +362,8 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
         lastY: event.clientY,
         moved: false,
         pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
         type: "node"
       };
       return;
@@ -370,6 +375,8 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       lastY: event.clientY,
       moved: false,
       pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
       type: "pan"
     };
   }, [nodeAtPoint]);
@@ -392,7 +399,10 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     const dy = event.clientY - pointer.lastY;
     pointer.lastX = event.clientX;
     pointer.lastY = event.clientY;
-    pointer.moved ||= Math.abs(dx) + Math.abs(dy) > 2;
+    pointer.moved ||= graphPointerMovedBeyondClickThreshold(
+      event.clientX - pointer.startX,
+      event.clientY - pointer.startY
+    );
 
     if (pointer.dragNode) {
       pointer.dragNode.fx = (pointer.dragNode.fx ?? pointer.dragNode.x) + dx / viewRef.current.scale;
@@ -1260,6 +1270,10 @@ export function graphNodePrimaryAction(node: WorkspaceGraphNode): GraphNodePrima
 
 export function isGraphNodePrimaryPointerButton(button: number): boolean {
   return button === 0 || button === 1;
+}
+
+export function graphPointerMovedBeyondClickThreshold(dx: number, dy: number): boolean {
+  return dx * dx + dy * dy > graphNodeClickMovementThresholdSq;
 }
 
 function tokenizeGraphQuery(query: string): string[] {

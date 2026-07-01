@@ -32,6 +32,7 @@ import {
   graphHoveredNodeContainsPoint,
   graphLabelOpacity,
   graphNodeScale,
+  graphPointerMovedBeyondClickThreshold,
   graphWheelZoomPoint,
   graphNodePrimaryAction,
   isGraphNodePrimaryPointerButton,
@@ -174,6 +175,11 @@ describe("App charts", () => {
     expect(isGraphNodePrimaryPointerButton(0)).toBe(true);
     expect(isGraphNodePrimaryPointerButton(1)).toBe(true);
     expect(isGraphNodePrimaryPointerButton(2)).toBe(false);
+  });
+
+  it("グラフビューのノードクリックはObsidianと同じ5px超過でドラッグ扱いになる", () => {
+    expect(graphPointerMovedBeyondClickThreshold(3, 4)).toBe(false);
+    expect(graphPointerMovedBeyondClickThreshold(4, 4)).toBe(true);
   });
 
   it("グラフビューのズームはカーソル下の位置を保つ", () => {
