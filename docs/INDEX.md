@@ -168,6 +168,8 @@
         - `workspaceDerivedDataSession.ts`
         - `workspaceFileIndex.test.ts`
         - `workspaceFileIndex.ts`
+        - `workspaceGraph.test.ts`
+        - `workspaceGraph.ts`
       - `ipc/`
         - `activeWorkspace.test.ts`
         - `activeWorkspace.ts`
@@ -283,6 +285,7 @@
         - `FrontmatterFieldList.tsx`
         - `FrontmatterFixedFields.tsx`
         - `FrontmatterPanel.tsx`
+        - `GraphView.tsx`
         - `LayoutResizeBoundary.test.tsx`
         - `LayoutResizeBoundary.tsx`
         - `MarkdownActionIcons.tsx`
@@ -393,6 +396,7 @@
         - `base.css`
         - `chronicle.css`
         - `file-tree-search.css`
+        - `graph.css`
         - `preview-editor.css`
         - `right-panel.css`
         - `settings.css`
