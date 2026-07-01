@@ -39,6 +39,14 @@ interface SimLink extends WorkspaceGraphLink {
   targetNode: SimNode;
 }
 
+interface GraphKeyboardState {
+  down: boolean;
+  left: boolean;
+  right: boolean;
+  shift: boolean;
+  up: boolean;
+}
+
 type GraphNodePrimaryAction =
   | { path: string; type: "file" }
   | { tag: string; type: "tagSearch" };
@@ -88,6 +96,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const nodesRef = useRef<Map<string, SimNode>>(new Map());
   const linksRef = useRef<SimLink[]>([]);
   const viewRef = useRef({ panX: 0, panY: 0, scale: 1 });
+  const keyboardRef = useRef<GraphKeyboardState>({ down: false, left: false, right: false, shift: false, up: false });
   const pointerRef = useRef<{
     dragNode: SimNode | null;
     lastX: number;
@@ -229,6 +238,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
 
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     context.clearRect(0, 0, cssWidth, cssHeight);
+    applyGraphKeyboardNavigation(viewRef.current, keyboardRef.current);
     stepSimulation(nodesRef.current, linksRef.current, latestOptionsRef.current, cssWidth, cssHeight);
     drawGraph(
       context,
@@ -393,27 +403,28 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     const rect = canvas.getBoundingClientRect();
     const width = rect.width || graphCanvasSizeFallback.width;
     const height = rect.height || graphCanvasSizeFallback.height;
-    const move = event.shiftKey ? 72 : 24;
     const zoomStep = event.shiftKey ? 1.1 : 1.03;
+    const keyboard = keyboardRef.current;
+    keyboard.shift = event.shiftKey;
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
-      viewRef.current.panX += move;
+      keyboard.left = true;
       return;
     }
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      viewRef.current.panX -= move;
+      keyboard.right = true;
       return;
     }
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      viewRef.current.panY += move;
+      keyboard.up = true;
       return;
     }
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      viewRef.current.panY -= move;
+      keyboard.down = true;
       return;
     }
     if (event.key === "+" || event.key === "=") {
@@ -427,8 +438,34 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     }
   }, []);
 
+  const handleKeyUp = useCallback((event: ReactKeyboardEvent<HTMLCanvasElement>) => {
+    const keyboard = keyboardRef.current;
+    keyboard.shift = event.shiftKey;
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      keyboard.left = false;
+      return;
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      keyboard.right = false;
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      keyboard.up = false;
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      keyboard.down = false;
+    }
+  }, []);
+
   const resetView = useCallback(() => {
     viewRef.current = { panX: 0, panY: 0, scale: 1 };
+    keyboardRef.current = { down: false, left: false, right: false, shift: false, up: false };
     setOptions(defaultGraphOptions);
     setColorGroups([]);
     setPinnedNodeId(null);
@@ -441,6 +478,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
         className="graph-view-canvas"
         onContextMenu={handleContextMenu}
         onKeyDown={handleKeyDown}
+        onKeyUp={handleKeyUp}
         onPointerDown={handlePointerDown}
         onPointerLeave={() => setHoveredNodeId(null)}
         onPointerMove={handlePointerMove}
@@ -1191,6 +1229,23 @@ export function graphWheelZoomPoint(
   if (nextScale < currentScale) return { x: width / 2, y: height / 2 };
 
   return { x: pointerX, y: pointerY };
+}
+
+export function applyGraphKeyboardNavigation(
+  view: { panX: number; panY: number; scale: number },
+  keyboard: GraphKeyboardState
+): void {
+  const step = keyboard.shift ? 3 : 1;
+  let dx = 0;
+  let dy = 0;
+
+  if (keyboard.left) dx += step;
+  if (keyboard.right) dx -= step;
+  if (keyboard.up) dy += step;
+  if (keyboard.down) dy -= step;
+
+  view.panX += dx * 1000 / 60;
+  view.panY += dy * 1000 / 60;
 }
 
 function clampGraphScale(scale: number): number {

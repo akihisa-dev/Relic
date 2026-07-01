@@ -25,6 +25,7 @@ import {
   testWorkspaceState as withWorkspace
 } from "../test/rendererTestUtils";
 import {
+  applyGraphKeyboardNavigation,
   graphWheelZoomPoint,
   graphNodePrimaryAction,
   isGraphNodePrimaryPointerButton,
@@ -163,6 +164,20 @@ describe("App charts", () => {
   it("グラフビューのホイール縮小は表示中央を基準にする", () => {
     expect(graphWheelZoomPoint(2, 1, 100, 150, 900, 600)).toStrictEqual({ x: 450, y: 300 });
     expect(graphWheelZoomPoint(1, 2, 100, 150, 900, 600)).toStrictEqual({ x: 100, y: 150 });
+  });
+
+  it("グラフビューのキーボード移動は押下状態から継続移動する", () => {
+    const view = { panX: 0, panY: 0, scale: 1 };
+
+    applyGraphKeyboardNavigation(view, { down: false, left: false, right: true, shift: false, up: true });
+    expect(view.panX).toBeCloseTo(-1000 / 60);
+    expect(view.panY).toBeCloseTo(1000 / 60);
+    expect(view.scale).toBe(1);
+
+    applyGraphKeyboardNavigation(view, { down: false, left: true, right: false, shift: true, up: false });
+    expect(view.panX).toBeCloseTo(2000 / 60);
+    expect(view.panY).toBeCloseTo(1000 / 60);
+    expect(view.scale).toBe(1);
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
