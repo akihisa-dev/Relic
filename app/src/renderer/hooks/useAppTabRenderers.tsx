@@ -26,6 +26,7 @@ interface UseAppTabRenderersInput {
   featureToggles: FeatureToggles;
   charts: WorkspaceChart[];
   handleOpenFile: (path: string) => void;
+  handleOpenTagSearch: (tag: string) => void;
   handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
   handleSaveChronicleCalendars: (calendars: ChronicleCalendarSettings[]) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
@@ -42,6 +43,7 @@ export function useAppTabRenderers({
   featureToggles,
   charts,
   handleOpenFile,
+  handleOpenTagSearch,
   handleSaveFeatureToggles,
   handleSaveChronicleCalendars,
   handleSaveSettings,
@@ -55,7 +57,7 @@ export function useAppTabRenderers({
 } {
   const renderChartTab = useCallback((chartId: string): ReactNode => {
     if (chartId === "graph") {
-      return <GraphView onOpenFile={handleOpenFile} />;
+      return <GraphView onOpenFile={handleOpenFile} onOpenTagSearch={handleOpenTagSearch} />;
     }
 
     return (
@@ -67,7 +69,7 @@ export function useAppTabRenderers({
         onUpdateEntry={handleUpdateChartEntry}
       />
     );
-  }, [charts, chronicleCalendars, handleOpenFile, handleUpdateChartEntry]);
+  }, [charts, chronicleCalendars, handleOpenFile, handleOpenTagSearch, handleUpdateChartEntry]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {

@@ -547,6 +547,13 @@ export function App(): ReactElement {
     setSidebarView
   });
 
+  const handleOpenGraphTagSearch = useCallback((tag: string): void => {
+    setSearchMode("tag");
+    setSearchQuery(tag);
+    setSidebarView("files");
+    setFileSearchFocusRequest((current) => current + 1);
+  }, [setSearchMode, setSearchQuery, setSidebarView]);
+
   const { renderChartTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
     chronicleCalendars,
@@ -554,6 +561,7 @@ export function App(): ReactElement {
     featureToggles,
     charts,
     handleOpenFile,
+    handleOpenTagSearch: handleOpenGraphTagSearch,
     handleSaveChronicleCalendars,
     handleSaveFeatureToggles,
     handleSaveSettings,
