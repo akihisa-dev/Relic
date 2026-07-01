@@ -26,9 +26,11 @@ import {
 } from "../test/rendererTestUtils";
 import {
   applyGraphKeyboardNavigation,
+  applyGraphPanInertia,
   graphWheelZoomPoint,
   graphNodePrimaryAction,
   isGraphNodePrimaryPointerButton,
+  nextGraphPanVelocity,
   zoomGraphAtPoint
 } from "./components/GraphView";
 import { useEditorStore } from "./store/editorStore";
@@ -178,6 +180,17 @@ describe("App charts", () => {
     expect(view.panX).toBeCloseTo(2000 / 60);
     expect(view.panY).toBeCloseTo(1000 / 60);
     expect(view.scale).toBe(1);
+  });
+
+  it("グラフビューの背景パンは離したあと慣性で減速する", () => {
+    const view = { panX: 0, panY: 0, scale: 1 };
+    const velocity = nextGraphPanVelocity({ x: 0, y: 0 }, 20, -10);
+
+    expect(velocity).toStrictEqual({ x: 4, y: -2 });
+
+    applyGraphPanInertia(view, velocity);
+    expect(view).toStrictEqual({ panX: 4, panY: -2, scale: 1 });
+    expect(velocity).toStrictEqual({ x: 3.6, y: -1.8 });
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
