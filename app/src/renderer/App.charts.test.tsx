@@ -89,7 +89,11 @@ describe("App charts", () => {
       kind: "chart"
     });
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
-    expect(container.querySelector(".graph-view-canvas")).toBeInTheDocument();
+    const graphCanvas = container.querySelector(".graph-view-canvas") as HTMLCanvasElement;
+    expect(graphCanvas).toBeInTheDocument();
+    expect(graphCanvas).toHaveAttribute("tabindex", "0");
+    expect(fireEvent.keyDown(graphCanvas, { key: "ArrowRight" })).toBe(false);
+    expect(fireEvent.keyDown(graphCanvas, { key: "=", shiftKey: true })).toBe(false);
     expect(container.querySelector(".graph-controls")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "グラフ設定を閉じる" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "グラフ設定をリセット" })).toBeInTheDocument();
