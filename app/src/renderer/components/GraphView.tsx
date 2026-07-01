@@ -62,6 +62,11 @@ type GraphNodePrimaryAction =
   | { path: string; type: "file" }
   | { tag: string; type: "tagSearch" };
 
+type GraphLinkEndpointNode = Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount"> & {
+  x: number;
+  y: number;
+};
+
 interface GraphColorGroup {
   color: string;
   id: string;
@@ -1107,13 +1112,16 @@ function drawGraph(
 
   const linkScaleOpacity = graphLinkScaleOpacity(view.scale);
   for (const link of links) {
+    const endpoints = graphLinkEndpoints(link.sourceNode, link.targetNode, options, view.scale);
+    if (!endpoints.visible) continue;
+
     const active = !focused || link.source === focused.id || link.target === focused.id;
     context.globalAlpha = (active ? 0.65 : 0.12) * linkScaleOpacity;
     context.strokeStyle = active ? cssVar("--color-border-strong", "#9a9a9a") : cssVar("--color-border", "#dedede");
     context.lineWidth = Math.max(0.4 / view.scale, options.lineSizeMultiplier * Math.sqrt(link.count) / view.scale);
     context.beginPath();
-    context.moveTo(link.sourceNode.x, link.sourceNode.y);
-    context.lineTo(link.targetNode.x, link.targetNode.y);
+    context.moveTo(endpoints.sourceX, endpoints.sourceY);
+    context.lineTo(endpoints.targetX, endpoints.targetY);
     context.stroke();
 
     if (options.showArrows && linkScaleOpacity > 0.001) {
@@ -1152,6 +1160,46 @@ function drawGraph(
     }
   }
   context.restore();
+}
+
+export function graphLinkEndpoints(
+  source: GraphLinkEndpointNode,
+  target: GraphLinkEndpointNode,
+  options: GraphOptions,
+  scale: number
+): {
+  sourceX: number;
+  sourceY: number;
+  targetX: number;
+  targetY: number;
+  visible: boolean;
+} {
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  const length = Math.hypot(dx, dy);
+  const sourceRadius = graphNodeVisualRadius(source, options, scale);
+  const targetRadius = graphNodeVisualRadius(target, options, scale);
+
+  if (length <= sourceRadius + targetRadius) {
+    return {
+      sourceX: source.x,
+      sourceY: source.y,
+      targetX: target.x,
+      targetY: target.y,
+      visible: false
+    };
+  }
+
+  const unitX = dx / length;
+  const unitY = dy / length;
+
+  return {
+    sourceX: source.x + unitX * sourceRadius,
+    sourceY: source.y + unitY * sourceRadius,
+    targetX: target.x - unitX * targetRadius,
+    targetY: target.y - unitY * targetRadius,
+    visible: true
+  };
 }
 
 function drawArrow(context: CanvasRenderingContext2D, source: SimNode, target: SimNode, options: GraphOptions, scale = 1): void {
