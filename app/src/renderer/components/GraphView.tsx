@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
-import type { ChangeEvent, PointerEvent as ReactPointerEvent, ReactElement } from "react";
+import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactElement } from "react";
 
 import type { WorkspaceGraph, WorkspaceGraphLink, WorkspaceGraphNode } from "../../shared/ipc";
 
@@ -269,6 +269,7 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
   }, []);
 
   const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
+    event.currentTarget.focus();
     if (event.button !== 0) return;
 
     const node = nodeAtPoint(event.clientX, event.clientY);
@@ -343,6 +344,7 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
 
   const handleContextMenu = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     event.preventDefault();
+    event.currentTarget.focus();
     const node = nodeAtPoint(event.clientX, event.clientY);
     setPinnedNodeId(node?.id ?? null);
   }, [nodeAtPoint]);
@@ -350,19 +352,58 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
   const handleWheel = useCallback((event: React.WheelEvent<HTMLCanvasElement>) => {
     event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
-    const before = screenToWorld(
+    const delta = event.deltaMode === 1 ? event.deltaY * 40 : event.deltaY;
+    const nextScale = clamp(viewRef.current.scale * Math.pow(1.5, -delta / 120), 0.15, 5);
+
+    zoomGraphAtPoint(
+      viewRef.current,
       event.clientX - rect.left,
       event.clientY - rect.top,
       rect.width || graphCanvasSizeFallback.width,
       rect.height || graphCanvasSizeFallback.height,
-      viewRef.current
+      nextScale
     );
-    const delta = event.deltaMode === 1 ? event.deltaY * 40 : event.deltaY;
-    const nextScale = clamp(viewRef.current.scale * Math.pow(1.5, -delta / 120), 0.15, 5);
+  }, []);
 
-    viewRef.current.scale = nextScale;
-    viewRef.current.panX = event.clientX - rect.left - before.x * nextScale;
-    viewRef.current.panY = event.clientY - rect.top - before.y * nextScale;
+  const handleKeyDown = useCallback((event: ReactKeyboardEvent<HTMLCanvasElement>) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+
+    const canvas = event.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width || graphCanvasSizeFallback.width;
+    const height = rect.height || graphCanvasSizeFallback.height;
+    const move = event.shiftKey ? 72 : 24;
+    const zoomStep = event.shiftKey ? 1.1 : 1.03;
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      viewRef.current.panX += move;
+      return;
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      viewRef.current.panX -= move;
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      viewRef.current.panY += move;
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      viewRef.current.panY -= move;
+      return;
+    }
+    if (event.key === "+" || event.key === "=") {
+      event.preventDefault();
+      zoomGraphAtPoint(viewRef.current, width / 2, height / 2, width, height, viewRef.current.scale * zoomStep);
+      return;
+    }
+    if (event.key === "-" || event.key === "_") {
+      event.preventDefault();
+      zoomGraphAtPoint(viewRef.current, width / 2, height / 2, width, height, viewRef.current.scale / zoomStep);
+    }
   }, []);
 
   const resetView = useCallback(() => {
@@ -378,12 +419,14 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
         aria-label="グラフビュー"
         className="graph-view-canvas"
         onContextMenu={handleContextMenu}
+        onKeyDown={handleKeyDown}
         onPointerDown={handlePointerDown}
         onPointerLeave={() => setHoveredNodeId(null)}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onWheel={handleWheel}
         ref={canvasRef}
+        tabIndex={0}
       />
       {graphState.loading ? <div className="graph-view-status">読み込んでいます...</div> : null}
       {graphState.error ? (
@@ -1085,6 +1128,20 @@ function screenToWorld(
     x: (x - view.panX - width / 2) / view.scale,
     y: (y - view.panY - height / 2) / view.scale
   };
+}
+
+function zoomGraphAtPoint(
+  view: { panX: number; panY: number; scale: number },
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  nextScale: number
+): void {
+  const before = screenToWorld(x, y, width, height, view);
+  view.scale = clamp(nextScale, 0.15, 5);
+  view.panX = x - before.x * view.scale;
+  view.panY = y - before.y * view.scale;
 }
 
 function distance(ax: number, ay: number, bx: number, by: number): number {
