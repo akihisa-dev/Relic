@@ -96,6 +96,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const nodesRef = useRef<Map<string, SimNode>>(new Map());
   const linksRef = useRef<SimLink[]>([]);
   const viewRef = useRef({ panX: 0, panY: 0, scale: 1 });
+  const panVelocityRef = useRef({ x: 0, y: 0 });
   const keyboardRef = useRef<GraphKeyboardState>({ down: false, left: false, right: false, shift: false, up: false });
   const pointerRef = useRef<{
     dragNode: SimNode | null;
@@ -238,6 +239,9 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
 
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     context.clearRect(0, 0, cssWidth, cssHeight);
+    if (pointerRef.current?.type !== "pan") {
+      applyGraphPanInertia(viewRef.current, panVelocityRef.current);
+    }
     applyGraphKeyboardNavigation(viewRef.current, keyboardRef.current);
     stepSimulation(nodesRef.current, linksRef.current, latestOptionsRef.current, cssWidth, cssHeight);
     drawGraph(
@@ -289,6 +293,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
 
   const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     event.currentTarget.focus();
+    panVelocityRef.current = { x: 0, y: 0 };
 
     const node = nodeAtPoint(event.clientX, event.clientY);
     if (!node && event.button !== 0) return;
@@ -345,6 +350,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
 
     viewRef.current.panX += dx;
     viewRef.current.panY += dy;
+    panVelocityRef.current = nextGraphPanVelocity(panVelocityRef.current, dx, dy);
   }, [nodeAtPoint]);
 
   const handlePointerUp = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
@@ -465,6 +471,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
 
   const resetView = useCallback(() => {
     viewRef.current = { panX: 0, panY: 0, scale: 1 };
+    panVelocityRef.current = { x: 0, y: 0 };
     keyboardRef.current = { down: false, left: false, right: false, shift: false, up: false };
     setOptions(defaultGraphOptions);
     setColorGroups([]);
@@ -1246,6 +1253,31 @@ export function applyGraphKeyboardNavigation(
 
   view.panX += dx * 1000 / 60;
   view.panY += dy * 1000 / 60;
+}
+
+export function nextGraphPanVelocity(
+  current: { x: number; y: number },
+  dx: number,
+  dy: number
+): { x: number; y: number } {
+  return {
+    x: current.x * 0.8 + dx * 0.2,
+    y: current.y * 0.8 + dy * 0.2
+  };
+}
+
+export function applyGraphPanInertia(
+  view: { panX: number; panY: number; scale: number },
+  velocity: { x: number; y: number }
+): void {
+  if (Math.abs(velocity.x) < 0.01) velocity.x = 0;
+  if (Math.abs(velocity.y) < 0.01) velocity.y = 0;
+  if (velocity.x === 0 && velocity.y === 0) return;
+
+  view.panX += velocity.x;
+  view.panY += velocity.y;
+  velocity.x *= 0.9;
+  velocity.y *= 0.9;
 }
 
 function clampGraphScale(scale: number): number {
