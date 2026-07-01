@@ -30,6 +30,8 @@ import {
   applyGraphPanInertia,
   applyGraphZoomTransition,
   graphHoveredNodeContainsPoint,
+  graphLabelOpacity,
+  graphNodeScale,
   graphWheelZoomPoint,
   graphNodePrimaryAction,
   isGraphNodePrimaryPointerButton,
@@ -273,6 +275,16 @@ describe("App charts", () => {
 
     expect(graphHoveredNodeContainsPoint(node, { x: 450, y: 300 }, view, graphTestOptions, 900, 600)).toBe(true);
     expect(graphHoveredNodeContainsPoint(node, { x: 500, y: 300 }, view, graphTestOptions, 900, 600)).toBe(false);
+  });
+
+  it("グラフビューのノードと文字はObsidianと同じズーム係数で描画する", () => {
+    expect(graphNodeScale(1)).toBe(1);
+    expect(graphNodeScale(4)).toBe(0.5);
+    expect(graphNodeScale(0.25)).toBe(2);
+
+    expect(graphLabelOpacity(0.5, 0)).toBe(0);
+    expect(graphLabelOpacity(1, 0)).toBe(1);
+    expect(graphLabelOpacity(2, 1)).toBe(1);
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
