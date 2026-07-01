@@ -68,12 +68,13 @@
 
 .graph-controls.is-close > .graph-control-section,
 .graph-controls.is-close > .graph-control-count,
-.graph-controls.is-close > .graph-controls-button.mod-reset {
+.graph-controls.is-close > .graph-controls-button.mod-reset,
+.graph-controls.is-close > .graph-controls-button.mod-close {
   display: none;
 }
 
 .graph-controls-button {
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
   width: 26px;
@@ -87,15 +88,27 @@
   cursor: pointer;
 }
 
+.graph-controls-button svg {
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
 .graph-controls-button:hover {
   background: var(--color-surface-alt);
   color: var(--color-text);
 }
 
 .graph-controls-button.mod-close,
-.graph-controls-button.mod-reset {
+.graph-controls-button.mod-reset,
+.graph-controls-button.mod-animate {
   position: absolute;
   top: 6px;
+}
+
+.graph-controls:not(.is-close) .graph-controls-button.mod-close,
+.graph-controls:not(.is-close) .graph-controls-button.mod-reset {
+  display: inline-flex;
 }
 
 .graph-controls-button.mod-close {
@@ -106,8 +119,18 @@
   inset-inline-end: 38px;
 }
 
+.graph-controls-button.mod-animate {
+  inset-inline-end: 68px;
+}
+
 .graph-controls.is-close .graph-controls-button.mod-open {
   display: inline-flex;
+}
+
+.graph-controls.is-close .graph-controls-button.mod-animate {
+  position: static;
+  display: inline-flex;
+  margin-top: 6px;
 }
 
 .graph-control-section {
@@ -183,15 +206,20 @@
 }
 
 .graph-color-group {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 24px 24px;
+  display: flex;
   align-items: center;
   gap: 5px;
+  min-height: 30px;
+}
+
+.graph-color-group input[type="text"] {
+  flex: 1 1 auto;
 }
 
 .graph-color-group input[type="color"] {
-  width: 24px;
-  height: 24px;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
   padding: 0;
   border: 1px solid var(--color-border);
   border-radius: 4px;
@@ -199,6 +227,10 @@
 }
 
 .graph-color-group button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
   width: 24px;
   height: 24px;
   border: 0;
