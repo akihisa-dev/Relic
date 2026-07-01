@@ -31,6 +31,7 @@ import {
   applyGraphZoomTransition,
   graphHoveredNodeContainsPoint,
   graphLabelOpacity,
+  graphLinkEndpoints,
   graphLinkScaleOpacity,
   graphNodeBaseRadius,
   graphNodeScale,
@@ -316,6 +317,34 @@ describe("App charts", () => {
     expect(graphLinkScaleOpacity(0.3)).toBe(0);
     expect(graphLinkScaleOpacity(0.55)).toBeCloseTo(0.5);
     expect(graphLinkScaleOpacity(0.8)).toBe(1);
+  });
+
+  it("グラフビューのリンク線はObsidianと同じくノード外周で止める", () => {
+    expect(graphLinkEndpoints(
+      { backlinkCount: 0, linkCount: 0, x: 0, y: 0 },
+      { backlinkCount: 0, linkCount: 0, x: 100, y: 0 },
+      graphTestOptions,
+      1
+    )).toStrictEqual({
+      sourceX: 8,
+      sourceY: 0,
+      targetX: 92,
+      targetY: 0,
+      visible: true
+    });
+
+    expect(graphLinkEndpoints(
+      { backlinkCount: 0, linkCount: 0, x: 0, y: 0 },
+      { backlinkCount: 0, linkCount: 0, x: 10, y: 0 },
+      graphTestOptions,
+      1
+    )).toStrictEqual({
+      sourceX: 0,
+      sourceY: 0,
+      targetX: 10,
+      targetY: 0,
+      visible: false
+    });
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
