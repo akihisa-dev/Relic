@@ -73,6 +73,8 @@ const graphOptionsStorageKey = "relic.graphView.options.v1";
 const graphControlsStorageKey = "relic.graphView.controlsOpen.v1";
 const graphColorGroupsStorageKey = "relic.graphView.colorGroups.v1";
 const graphSectionCollapsedStorageKey = "relic.graphView.sectionCollapsed.v1";
+const graphMinScale = 1 / 128;
+const graphMaxScale = 8;
 const defaultGraphSectionCollapsed: GraphSectionCollapsedState = {
   display: true,
   filter: true,
@@ -364,12 +366,20 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
     const delta = event.deltaMode === 1 ? event.deltaY * 40 : event.deltaY;
-    const nextScale = clamp(viewRef.current.scale * Math.pow(1.5, -delta / 120), 0.15, 5);
+    const nextScale = clampGraphScale(viewRef.current.scale * Math.pow(1.5, -delta / 120));
+    const zoomPoint = graphWheelZoomPoint(
+      viewRef.current.scale,
+      nextScale,
+      event.clientX - rect.left,
+      event.clientY - rect.top,
+      rect.width || graphCanvasSizeFallback.width,
+      rect.height || graphCanvasSizeFallback.height
+    );
 
     zoomGraphAtPoint(
       viewRef.current,
-      event.clientX - rect.left,
-      event.clientY - rect.top,
+      zoomPoint.x,
+      zoomPoint.y,
       rect.width || graphCanvasSizeFallback.width,
       rect.height || graphCanvasSizeFallback.height,
       nextScale
@@ -1165,9 +1175,26 @@ export function zoomGraphAtPoint(
   nextScale: number
 ): void {
   const before = screenToWorld(x, y, width, height, view);
-  view.scale = clamp(nextScale, 0.15, 5);
+  view.scale = clampGraphScale(nextScale);
   view.panX = x - width / 2 - before.x * view.scale;
   view.panY = y - height / 2 - before.y * view.scale;
+}
+
+export function graphWheelZoomPoint(
+  currentScale: number,
+  nextScale: number,
+  pointerX: number,
+  pointerY: number,
+  width: number,
+  height: number
+): { x: number; y: number } {
+  if (nextScale < currentScale) return { x: width / 2, y: height / 2 };
+
+  return { x: pointerX, y: pointerY };
+}
+
+function clampGraphScale(scale: number): number {
+  return clamp(scale, graphMinScale, graphMaxScale);
 }
 
 function distance(ax: number, ay: number, bx: number, by: number): number {
