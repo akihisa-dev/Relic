@@ -20,11 +20,13 @@ Relicのデザイン系文書の正本。画面構成、画面遷移、デザイ
 
 Relicの色、素材、質感の基礎思想は [LIQUID_CHARCOAL.md](LIQUID_CHARCOAL.md) を正とし、この文書ではその思想をRelicの画面構成、色、UI部品へ適用する。
 
-Relicでは、白は情報を書くための紙面、黒は操作状態と文字の基準、灰色は面の階層と境界として扱う。
+Liquid Charcoalは、Canvas、Liquid、Charcoalの関係によって、Relicの作業画面を読み書きに集中できる状態へ整えるデザイン原則である。
 
-質感は写実的な素材再現ではなく、液体のように滑らかな階調と、木炭のように沈んだ黒の対比として扱う。
+Canvasは情報を置くための基盤であり、Liquidは透明・半透明の層であり、Charcoalは画面に構造、焦点、メリハリを与える炭色の基準である。
 
-装飾的な要素を最小限に抑えながら、黒い文字、細い境界線、十分な余白、控えめな選択状態によって情報階層を視覚化する。
+色や質感は主役ではなく、Markdown本文、ファイル構造、タブ、アウトライン、プロパティを見分けるための支えとして扱う。
+
+Liquid Charcoalは特定の文化、様式、装飾表現を参照しない。墨色という語は色の参考語であり、書道、墨絵、和風表現を意味しない。
 
 デザインの目的は「美しく見せること」ではなく、「情報構造を理解しやすくすること」にある。
 
@@ -46,15 +48,19 @@ Relicでは、白は情報を書くための紙面、黒は操作状態と文字
 
 サイズ、ウェイト、余白によって情報の優先順位を示す。
 
-大きな見出しは黒い文字で示し、大文字化や装飾線で強調しすぎない。
+文字そのものを装飾せず、本文、見出し、補助情報の差はサイズ、ウェイト、濃度、配置で示す。
 
 ---
 
-### Quiet Monochrome
+### Canvas, Liquid, Charcoal
 
-色は白、黒、灰色を中心にする。
+Canvasを情報を書くための基盤として扱う。
 
-状態表示や主要操作にも青などの有彩色を使わず、黒い線、黒い面、淡いグレーの背景で示す。
+Liquidを透明・半透明のレイヤーとして扱い、面同士の距離、重なり、選択状態、補助的なまとまりを示す。
+
+Charcoalを本文、見出し、アクティブ状態、主要操作、現在位置の基準として扱う。
+
+炭色は画面全体を塗る色ではなく、構造とメリハリを与える色として使う。
 
 ---
 
@@ -62,9 +68,23 @@ Relicでは、白は情報を書くための紙面、黒は操作状態と文字
 
 境界線は1pxを基本にし、パネル、タブ、表、サイドバーの関係を静かに分ける。
 
-影による浮遊感は避け、必要な場合も薄い影に留める。
+境界は情報より強く見えてはならない。境界だけで判別しづらい場合は、Surfaceの明度差やLiquidの透明度差を併用する。
 
-画面全体は、明るい白い面と薄い線で構成する。
+影、グロー、強い質感、装飾的な背景は避ける。
+
+---
+
+### Theme Equality
+
+Light ThemeとDark Themeを同等に扱う。
+
+Light Themeは白いCanvasを基準にし、Charcoalで構造を与える。
+
+Dark Themeは暗いCanvasを基準にし、明るい前景と低濃度のLiquidで構造を与える。
+
+Dark ThemeはLight Themeの単純な反転ではない。
+
+どちらのテーマでも、情報の可読性、現在位置、操作対象、選択状態を明確に示す。
 
 ---
 
@@ -74,16 +94,18 @@ Relicでは、白は情報を書くための紙面、黒は操作状態と文字
 
 #### Primary
 
-- Rectangle
-- Line
-- Grid
-- Section Block
+- Canvas
+- Surface
+- Liquid Layer
+- Hairline Border
+- Thin Active Indicator
 
 #### Secondary
 
-- Subtle Rounded Rectangle
-- Thin Active Indicator
+- Rounded Rectangle
 - Divider Line
+- Section Block
+- Grid
 
 装飾要素は情報の邪魔にならない範囲で使用する。
 
@@ -95,7 +117,7 @@ Relicでは、白は情報を書くための紙面、黒は操作状態と文字
 
 ```css
 border-width: 1px;
-border-color: var(--border-primary);
+border-color: var(--color-border);
 ```
 
 影による階層表現は最小限に抑える。
@@ -105,134 +127,119 @@ border-color: var(--border-primary);
 ### Corners
 
 ```css
-corner-radius: 4px;
+border-radius: 6px;
 ```
 
-角丸は検索欄、ボタン、選択行、カードなど小さな操作対象にだけ控えめに使用する。
+角丸は画面全体の連続性と静けさを保つために使う。
 
-アプリの大きなカラム、タブ境界、左右パネルの境界は直線を基本とする。
+過度に丸い形状や、強くキャラクター化された形状は避ける。
+
+検索欄、ボタン、選択行、カード、モーダル、オーバーレイなどの操作対象は、コンポーネントとプラットフォームに応じて控えめな角丸を使う。
 
 ---
 
 ## Color Palette
 
-### Core Colors
+Liquid Charcoalでは、トークン名は実務上の役割で定義する。
 
-#### Primary Ink
+素材名は、色を選ぶための判断基準として扱う。
 
-主要アクセントカラー。Liquid Charcoalでは、文字、アクティブ線、主要ボタンに使う黒として扱う。
+`--color-accent` はLiquid Charcoalの基礎トークンとして扱わない。
 
-```css
---color-primary: #111111;
-```
+アクセントは有彩色ではなく、Charcoalの濃度、境界、余白、状態差によって作る。
 
-用途:
+### Light Theme
 
-- Active indicators
-- Primary buttons
-- Links
-- Icons
-- High-emphasis labels
-
----
-
-#### Secondary Charcoal
-
-補助アクセントカラー。黒より弱いテキスト、補助アイコン、ホバー状態に使うチャコールグレーとして扱う。
-
-```css
---color-accent: #5F6368;
-```
-
-用途:
-
-- Hover States
-- Sub Labels
-- Boundary Emphasis
-
----
-
-### Neutral Palette
-
-#### Background
+| Token | Value | Meaning |
+|------|-------|---------|
+| `--color-primary` | `#1C1C1A` | Primary Charcoal / 主要操作・アクティブ状態 |
+| `--color-bg` | `#FFFFFF` | Canvas White / 作業面の基盤 |
+| `--color-liquid` | `rgba(255, 255, 255, 0.72)` | Clear Liquid / 半透明レイヤー |
+| `--color-liquid-charcoal` | `rgba(28, 28, 26, 0.06)` | Charcoal Liquid / 炭色が溶けた低濃度レイヤー |
+| `--color-surface` | `#FAFAF8` | Quiet Surface / パネルの淡い面 |
+| `--color-surface-alt` | `#F2F2EE` | Selected Surface / 選択やカードの薄い面 |
+| `--color-border` | `#DADAD4` | Hairline Border / 通常の細い境界 |
+| `--color-border-strong` | `#BDBDB4` | Strong Hairline / 少し強い境界 |
+| `--color-text` | `#1C1C1A` | Primary Text / 本文と見出し |
+| `--color-text-secondary` | `#5F5F59` | Secondary Text / 補助情報 |
+| `--color-text-muted` | `#74746D` | Muted Text / 弱い補助情報 |
 
 ```css
+--color-primary: #1C1C1A;
 --color-bg: #FFFFFF;
+--color-liquid: rgba(255, 255, 255, 0.72);
+--color-liquid-charcoal: rgba(28, 28, 26, 0.06);
+--color-surface: #FAFAF8;
+--color-surface-alt: #F2F2EE;
+--color-border: #DADAD4;
+--color-border-strong: #BDBDB4;
+--color-text: #1C1C1A;
+--color-text-secondary: #5F5F59;
+--color-text-muted: #74746D;
 ```
-
-エディタ背景、ページ全体の背景色。情報を書くための白い紙面として扱う。
 
 ---
 
-#### Surface
+### Dark Theme
+
+| Token | Value | Meaning |
+|------|-------|---------|
+| `--color-primary` | `#F2F2EE` | Primary Foreground / 主要操作・アクティブ状態 |
+| `--color-bg` | `#121210` | Dark Canvas / 作業面の基盤 |
+| `--color-liquid` | `rgba(18, 18, 16, 0.72)` | Dark Liquid / 半透明レイヤー |
+| `--color-liquid-charcoal` | `rgba(242, 242, 238, 0.08)` | Light Liquid / 暗い面に重なる低濃度レイヤー |
+| `--color-surface` | `#1A1A17` | Quiet Surface / パネルの面 |
+| `--color-surface-alt` | `#24241F` | Selected Surface / 選択やカードの面 |
+| `--color-border` | `#363630` | Hairline Border / 通常の細い境界 |
+| `--color-border-strong` | `#56564E` | Strong Hairline / 少し強い境界 |
+| `--color-text` | `#F2F2EE` | Primary Text / 本文と見出し |
+| `--color-text-secondary` | `#B9B9B0` | Secondary Text / 補助情報 |
+| `--color-text-muted` | `#8A8A82` | Muted Text / 弱い補助情報 |
 
 ```css
---color-surface: #FAFAFA;
+--color-primary: #F2F2EE;
+--color-bg: #121210;
+--color-liquid: rgba(18, 18, 16, 0.72);
+--color-liquid-charcoal: rgba(242, 242, 238, 0.08);
+--color-surface: #1A1A17;
+--color-surface-alt: #24241F;
+--color-border: #363630;
+--color-border-strong: #56564E;
+--color-text: #F2F2EE;
+--color-text-secondary: #B9B9B0;
+--color-text-muted: #8A8A82;
 ```
-
-サイドバー、ツールバー、パネル背景。白い紙面より一段低い淡い面として扱う。
 
 ---
 
-#### Surface Alt
+### Functional Colors
 
-```css
---color-surface-alt: #F3F3F2;
-```
+有彩色は、状態を伝える必要がある場合に限って使う。
 
-選択中の項目背景、カード背景。状態を示すための淡いグレーとして扱う。
+機能色はLiquid Charcoalの印象を作るための色ではなく、エラー、警告、成功、情報を誤認させないための補助である。
 
----
+| 用途 | Light Theme | Dark Theme | 使い方 |
+|------|-------------|------------|--------|
+| Danger | `#B42318` | `#FFB4A9` | エラー、削除、破壊的操作 |
+| Warning | `#8A5A00` | `#E7C16C` | 警告、注意、未解決状態 |
+| Success | `#2E6B3F` | `#88D49D` | 成功、完了、正常状態 |
+| Info | `#2F5E8C` | `#A8C7FA` | 補足情報、通知、案内 |
 
-#### Border
-
-```css
---color-border: #DEDEDE;
-```
-
-区切り線。パネル、タブ、表、フォームを分ける細い線として扱う。
+機能色は必要な要素に限定して使い、通常のナビゲーション、装飾、ブランド表現には使わない。
 
 ---
 
-#### Border Strong
+### Color Usage
 
-```css
---color-border-strong: #B8B8B8;
-```
+Canvasは作業面の基盤である。Light Themeでは白を基準にし、Dark Themeでは暗いCanvasを基準にする。
 
-重要な境界。通常境界より少し強いが、黒い主線とは区別する。
+Liquidは透明・半透明の層である。情報のまとまり、重なり、選択状態、操作対象を示すために使う。
 
----
+Charcoalは本文、見出し、リンク、アクティブ線、主要ボタン、現在位置に使う。
 
-### Typography Colors
+Charcoalは少なく使うことで意味を持つ。面の塗りつぶしには限定的に使う。
 
-#### Primary Text
-
-```css
---color-text: #111111;
-```
-
-本文、見出し、主要ラベルに使う黒として扱う。
-
----
-
-#### Secondary Text
-
-```css
---color-text-secondary: #5F6368;
-```
-
-補助情報、非アクティブなタブ、二次ラベルに使う。
-
----
-
-#### Muted Text
-
-```css
---color-text-muted: #9A9A9A;
-```
-
-さらに弱い説明文、プレースホルダー、補助メタ情報に使う。
+Grayは非アクティブなタブ、選択背景、補助情報、境界線に使う。役割は情報の階層を支えることであり、装飾的な塗り分けではない。
 
 ---
 
@@ -280,14 +287,82 @@ font-weight: 400;
 
 ---
 
+## Surface and Layers
+
+Liquid Charcoalでは、画面を単一の平面として扱わない。
+
+Canvasの上にSurfaceとLiquidが重なり、必要な場所にCharcoalが現れる。
+
+Surfaceは情報を整理するための面であり、装飾用のカードではない。
+
+Liquidレイヤーは透明または半透明で構成する。
+
+Surface同士の区別は、濃い塗り分けではなく、明度差、透明度差、境界線によって示す。
+
+透明性によって文字や操作対象の判別が弱くなる場合は、可読性を優先する。
+
+---
+
+## Motion
+
+Liquid Charcoalの動きは、操作を補助するために存在する。
+
+動きは情報を強調するためではなく、状態の変化を自然に伝えるために使う。
+
+Liquidは炭色を含む流体として、わずかな粘性を持つ。そのため、動きは急激に跳ねたり、強く反発したりしない。
+
+過度な弾性、大きな移動、長いアニメーションは避ける。
+
+動きは滑らかで、静かで、短くあるべきである。
+
+---
+
+## Texture and Light
+
+光は演出ではなく、素材を認識するために存在する。
+
+Liquidは自然な透過と弱い反射を持つ。
+
+Charcoalは光を強く跳ね返さず、沈んだ見え方を持つ。
+
+ハイライト、反射、影は、要素の分離や状態の理解を助ける範囲に留める。
+
+質感は色そのものを変えず、軽い階調、透明度、明度差として扱う。
+
+推奨する質感:
+
+- Clean
+- Matte
+- Smooth
+- Quiet
+- Monochrome
+- Transparent
+- Lightly layered
+- Slightly viscous
+
+避ける質感:
+
+- Glossy
+- Metallic
+- Plastic
+- Glassy
+- Neon
+- Wet-looking
+- Noisy
+- Dirty
+- Strongly textured
+
+---
+
 ## Layout
 
-### Three Panel Structure
+### Application Structure
 
 ```text
-Explorer
-Editor
-Outline
+Rail
+Primary Sidebar
+Tabbed Main Area
+Right Panel
 ```
 
 情報構造を常時可視化する。
@@ -316,12 +391,14 @@ max-width: 820px;
 
 ### Active Item
 
-選択状態は淡い背景色と左側の黒いインジケーターで表現する。
+選択状態は淡いSurfaceまたはLiquidレイヤーと、Charcoalのインジケーターで表現する。
 
 ```css
 width: 3px;
 background: var(--color-primary);
 ```
+
+現在位置、操作対象、選択状態は十分に分かる濃度で示す。
 
 ---
 
@@ -350,7 +427,8 @@ Overview
 
 - 明確な境界線
 - 過剰な影を使用しない
-- アクティブ状態は黒い細線、黒い文字、白い面で表現
+- アクティブ状態はCharcoalの細線、Primary Text、Selected Surfaceで表現
+- 非アクティブ状態はSecondary TextとHairline Borderで表現
 
 ---
 
@@ -368,15 +446,17 @@ Primary:
 
 ```css
 background: var(--color-primary);
-color: white;
+color: var(--color-bg);
 ```
 
 Secondary:
 
 ```css
-background: transparent;
+background: var(--color-liquid);
 border: 1px solid var(--color-border);
 ```
+
+破壊的操作、警告、成功、情報などを示す場合だけFunctional Colorsを使う。
 
 ---
 
@@ -389,13 +469,16 @@ border: 1px solid var(--color-border);
 許可される要素:
 
 - 細い境界線
-- 淡いグレー面
-- 黒いアクティブインジケーター
-- 控えめなグラデーション
+- Canvasより一段低いSurface
+- 透明または半透明のLiquidレイヤー
+- Charcoalのアクティブインジケーター
+- 読みやすさを損なわない軽い階調
 
 装飾が情報を上回ってはならない。
 
-強いノイズ、汚れ加工、グロー、ガラス反射、金属光沢、ネオン化、有彩色の強いアクセントは使用しない。
+強いノイズ、汚れ加工、グロー、ガラス反射、金属光沢、ネオン化、有彩色の強いアクセント、装飾のためのグラデーション、角丸や影による過度なカード化は使用しない。
+
+和風化、書道、墨絵、筆致の表現、紙の繊維や凹凸の再現、液体を過剰に演出するアニメーションも使用しない。
 
 ---
 
@@ -412,6 +495,8 @@ border: 1px solid var(--color-border);
 - Observational
 - Clean
 - Monochrome
+- Transparent
+- Lightly layered
 
 避けるべき印象:
 
@@ -428,6 +513,34 @@ border: 1px solid var(--color-border);
 - Neon
 - Wet
 - Colorful
+- Noisy
+- Strongly textured
+
+この空気感は、派手な演出ではなく、情報の配置、余白、細い境界、透明・半透明の層、炭色のコントラストによって作る。
+
+---
+
+## Application Scope
+
+Liquid Charcoalは、Relicの現在の画面構造を変えずに適用するデザイン原則として扱う。
+
+適用対象:
+
+- アプリUI
+- ドキュメント
+- カード
+- 表
+- 入力欄
+- タブ
+- サイドバー
+- アウトライン
+- プロパティ
+- モーダル
+- オーバーレイ
+
+どの制作物でも、素材感は主役ではなく、情報と構造を支える背景として扱う。
+
+要素や機能は現状のまま保ち、視覚表現だけを調整する。
 
 ---
 

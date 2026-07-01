@@ -6,17 +6,36 @@
   <title>Relic Design Document</title>
   <style>
     :root {
-      --color-primary: #111111;
-      --color-accent: #5f6368;
+      --color-primary: #1c1c1a;
       --color-bg: #ffffff;
-      --color-surface: #fafafa;
-      --color-surface-alt: #f3f3f2;
-      --color-border: #dedede;
-      --color-border-strong: #b8b8b8;
-      --color-text: #111111;
-      --color-text-secondary: #5f6368;
-      --color-code-bg: #f8f8f6;
+      --color-liquid: rgba(255, 255, 255, 0.72);
+      --color-liquid-charcoal: rgba(28, 28, 26, 0.06);
+      --color-surface: #fafaf8;
+      --color-surface-alt: #f2f2ee;
+      --color-border: #dadad4;
+      --color-border-strong: #bdbdb4;
+      --color-text: #1c1c1a;
+      --color-text-secondary: #5f5f59;
+      --color-text-muted: #74746d;
+      --color-code-bg: rgba(28, 28, 26, 0.045);
       --content-width: 920px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-primary: #f2f2ee;
+        --color-bg: #121210;
+        --color-liquid: rgba(18, 18, 16, 0.72);
+        --color-liquid-charcoal: rgba(242, 242, 238, 0.08);
+        --color-surface: #1a1a17;
+        --color-surface-alt: #24241f;
+        --color-border: #363630;
+        --color-border-strong: #56564e;
+        --color-text: #f2f2ee;
+        --color-text-secondary: #b9b9b0;
+        --color-text-muted: #8a8a82;
+        --color-code-bg: rgba(242, 242, 238, 0.07);
+      }
     }
 
     * {
@@ -37,10 +56,6 @@
       min-width: 320px;
     }
 
-    body::before {
-      content: none;
-    }
-
     .page {
       margin: 0 auto;
       max-width: var(--content-width);
@@ -48,8 +63,9 @@
     }
 
     .document {
-      background: #ffffff;
+      background: var(--color-liquid);
       border: 1px solid var(--color-border);
+      border-radius: 8px;
       padding: 44px;
     }
 
@@ -125,6 +141,7 @@
 
     code {
       background: var(--color-surface-alt);
+      border-radius: 4px;
       color: var(--color-primary);
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 0.92em;
@@ -134,6 +151,7 @@
     pre {
       background: var(--color-code-bg);
       border: 1px solid var(--color-border);
+      border-radius: 6px;
       margin: 16px 0 0;
       overflow: auto;
       padding: 16px;
@@ -168,343 +186,18 @@
       color: var(--color-primary);
       font-size: 12px;
       font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    td {
+      background: var(--color-liquid-charcoal);
     }
 
     blockquote {
-      border-left: 4px solid var(--color-primary);
+      border-left: 3px solid var(--color-primary);
       color: var(--color-text-secondary);
       margin: 18px 0 0;
       padding-left: 16px;
-    }
-
-    .visual-sample {
-      background: rgba(242, 241, 238, 0.88);
-      border: 1px solid var(--color-border);
-      margin: 18px 0 0;
-      padding: 18px;
-    }
-
-    .sample-title {
-      color: var(--color-primary);
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      margin: 0 0 12px;
-      text-transform: uppercase;
-    }
-
-    .sample-grid {
-      display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    }
-
-    .swatch {
-      border: 1px solid var(--color-border);
-      min-height: 96px;
-      padding: 12px;
-    }
-
-    .swatch strong,
-    .swatch span {
-      display: block;
-    }
-
-    .swatch strong {
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .swatch span {
-      font-size: 12px;
-      margin-top: 4px;
-    }
-
-    .token-preview {
-      border: 1px solid var(--color-border);
-      display: grid;
-      gap: 6px;
-      margin: 12px 0 0;
-      min-height: 86px;
-      padding: 12px;
-    }
-
-    .token-preview strong,
-    .token-preview span {
-      display: block;
-    }
-
-    .token-preview strong {
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .token-preview span {
-      font-size: 12px;
-    }
-
-    .usage-preview {
-      border: 1px solid var(--color-border);
-      display: grid;
-      gap: 12px;
-      margin: 14px 0 0;
-      padding: 14px;
-    }
-
-    .usage-preview-title {
-      color: var(--color-primary);
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .usage-grid {
-      display: grid;
-      gap: 10px;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    }
-
-    .usage-item {
-      background: rgba(255, 255, 255, 0.42);
-      border: 1px solid var(--color-border);
-      min-height: 72px;
-      padding: 12px;
-    }
-
-    .usage-heading {
-      color: var(--color-primary);
-      font-size: 18px;
-      font-weight: 700;
-      line-height: 1.25;
-    }
-
-    .usage-link {
-      color: var(--color-primary);
-      display: inline-block;
-      font-weight: 700;
-      margin-top: 4px;
-      text-decoration: underline;
-      text-underline-offset: 3px;
-    }
-
-    .usage-icon {
-      align-items: center;
-      background: var(--color-primary);
-      color: white;
-      display: inline-flex;
-      font-size: 12px;
-      font-weight: 700;
-      height: 32px;
-      justify-content: center;
-      width: 32px;
-    }
-
-    .usage-accent {
-      border-left: 4px solid var(--color-primary);
-      padding-left: 10px;
-    }
-
-    .usage-hover {
-      background: rgba(95, 99, 104, 0.18);
-      border-color: var(--color-accent);
-    }
-
-    .usage-sub-label {
-      color: var(--color-accent);
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .usage-boundary {
-      border-top: 3px solid var(--color-accent);
-      padding-top: 12px;
-    }
-
-    .shape-preview {
-      align-items: center;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border-strong);
-      display: flex;
-      font-size: 12px;
-      font-weight: 700;
-      justify-content: center;
-      min-height: 84px;
-      padding: 12px;
-      text-align: center;
-    }
-
-    .shape-line {
-      min-height: 84px;
-      position: relative;
-    }
-
-    .shape-line::before {
-      background: var(--color-primary);
-      content: "";
-      height: 1px;
-      left: 16px;
-      position: absolute;
-      right: 16px;
-      top: 50%;
-    }
-
-    .shape-grid-preview {
-      background:
-        linear-gradient(90deg, rgba(95, 99, 104, 0.16) 1px, transparent 1px),
-        linear-gradient(rgba(95, 99, 104, 0.16) 1px, transparent 1px),
-        var(--color-surface);
-      background-size: 18px 18px;
-    }
-
-    .shape-square {
-      background: var(--color-primary);
-      border: 0;
-      color: white;
-    }
-
-    .shape-orthogonal {
-      background: transparent;
-      border: 2px solid var(--color-primary);
-      color: var(--color-primary);
-    }
-
-    .border-demo {
-      border: 1px solid var(--color-border-strong);
-      padding: 18px;
-    }
-
-    .corner-demo-grid {
-      align-items: end;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .corner-demo {
-      background: var(--color-surface-alt);
-      border: 1px solid var(--color-border-strong);
-      height: 76px;
-      padding: 10px;
-      width: 120px;
-    }
-
-    .type-demo h3 {
-      color: var(--color-primary);
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: 0;
-      margin: 0;
-    }
-
-    .type-demo .section-label {
-      color: var(--color-primary);
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      margin-top: 14px;
-      text-transform: uppercase;
-    }
-
-    .type-demo p {
-      font-size: 14px;
-      font-weight: 400;
-      line-height: 1.7;
-      margin-top: 10px;
-    }
-
-    .component-sample {
-      display: grid;
-      gap: 18px;
-    }
-
-    .tab-sample {
-      border-bottom: 1px solid var(--color-border-strong);
-      display: flex;
-      gap: 0;
-    }
-
-    .tab-sample div {
-      border: 1px solid var(--color-border);
-      border-bottom: 0;
-      padding: 8px 14px;
-    }
-
-    .tab-sample .active {
-      border-top: 3px solid var(--color-primary);
-      color: var(--color-primary);
-      font-weight: 700;
-    }
-
-    .button-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .button-demo {
-      border: 1px solid var(--color-border);
-      font: inherit;
-      padding: 8px 14px;
-    }
-
-    .button-demo.primary {
-      background: var(--color-primary);
-      color: white;
-    }
-
-    .button-demo.secondary {
-      background: transparent;
-      color: var(--color-text);
-    }
-
-    .decorative-sample {
-      display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    }
-
-    .diagonal-sample,
-    .grid-sample,
-    .orthogonal-guide-sample {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      height: 92px;
-      position: relative;
-    }
-
-    .diagonal-sample::before {
-      background: var(--color-primary);
-      content: "";
-      height: 1px;
-      left: 14px;
-      position: absolute;
-      right: 14px;
-      top: 50%;
-      transform: rotate(-18deg);
-    }
-
-    .grid-sample {
-      background:
-        linear-gradient(90deg, rgba(95, 99, 104, 0.18) 1px, transparent 1px),
-        linear-gradient(rgba(95, 99, 104, 0.18) 1px, transparent 1px),
-        var(--color-surface);
-      background-size: 20px 20px;
-    }
-
-    .orthogonal-guide-sample::before {
-      border: 2px solid var(--color-primary);
-      content: "";
-      height: 54px;
-      left: 50%;
-      position: absolute;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 54px;
     }
 
     @media (max-width: 720px) {
@@ -513,6 +206,7 @@
       }
 
       .document {
+        border-radius: 6px;
         padding: 24px;
       }
 
@@ -524,6 +218,7 @@
         font-size: 19px;
       }
     }
+
   </style>
 </head>
 <body>
@@ -544,9 +239,10 @@
 <h2>Overview</h2>
 <p>このデザインシステムは、情報の構造化・可読性・集中体験を重視したナレッジワーク向けインターフェースである。</p>
 <p>Relicの色、素材、質感の基礎思想は <a href="LIQUID_CHARCOAL.md">LIQUID_CHARCOAL.md</a> を正とし、この文書ではその思想をRelicの画面構成、色、UI部品へ適用する。</p>
-<p>Relicでは、白は情報を書くための紙面、黒は操作状態と文字の基準、灰色は面の階層と境界として扱う。</p>
-<p>質感は写実的な素材再現ではなく、液体のように滑らかな階調と、木炭のように沈んだ黒の対比として扱う。</p>
-<p>装飾的な要素を最小限に抑えながら、黒い文字、細い境界線、十分な余白、控えめな選択状態によって情報階層を視覚化する。</p>
+<p>Liquid Charcoalは、Canvas、Liquid、Charcoalの関係によって、Relicの作業画面を読み書きに集中できる状態へ整えるデザイン原則である。</p>
+<p>Canvasは情報を置くための基盤であり、Liquidは透明・半透明の層であり、Charcoalは画面に構造、焦点、メリハリを与える炭色の基準である。</p>
+<p>色や質感は主役ではなく、Markdown本文、ファイル構造、タブ、アウトライン、プロパティを見分けるための支えとして扱う。</p>
+<p>Liquid Charcoalは特定の文化、様式、装飾表現を参照しない。墨色という語は色の参考語であり、書道、墨絵、和風表現を意味しない。</p>
 <p>デザインの目的は「美しく見せること」ではなく、「情報構造を理解しやすくすること」にある。</p>
 <hr>
 <h2>Design Principles</h2>
@@ -557,114 +253,265 @@
 <h3>Clear Typography</h3>
 <p>タイポグラフィはUIの主要な表現手段である。</p>
 <p>サイズ、ウェイト、余白によって情報の優先順位を示す。</p>
-<p>大きな見出しは黒い文字で示し、大文字化や装飾線で強調しすぎない。</p>
+<p>文字そのものを装飾せず、本文、見出し、補助情報の差はサイズ、ウェイト、濃度、配置で示す。</p>
 <hr>
-<h3>Quiet Monochrome</h3>
-<p>色は白、黒、灰色を中心にする。</p>
-<p>状態表示や主要操作にも青などの有彩色を使わず、黒い線、黒い面、淡いグレーの背景で示す。</p>
+<h3>Canvas, Liquid, Charcoal</h3>
+<p>Canvasを情報を書くための基盤として扱う。</p>
+<p>Liquidを透明・半透明のレイヤーとして扱い、面同士の距離、重なり、選択状態、補助的なまとまりを示す。</p>
+<p>Charcoalを本文、見出し、アクティブ状態、主要操作、現在位置の基準として扱う。</p>
+<p>炭色は画面全体を塗る色ではなく、構造とメリハリを与える色として使う。</p>
 <hr>
 <h3>Thin Boundaries</h3>
 <p>境界線は1pxを基本にし、パネル、タブ、表、サイドバーの関係を静かに分ける。</p>
-<p>影による浮遊感は避け、必要な場合も薄い影に留める。</p>
-<p>画面全体は、明るい白い面と薄い線で構成する。</p>
+<p>境界は情報より強く見えてはならない。境界だけで判別しづらい場合は、Surfaceの明度差やLiquidの透明度差を併用する。</p>
+<p>影、グロー、強い質感、装飾的な背景は避ける。</p>
+<hr>
+<h3>Theme Equality</h3>
+<p>Light ThemeとDark Themeを同等に扱う。</p>
+<p>Light Themeは白いCanvasを基準にし、Charcoalで構造を与える。</p>
+<p>Dark Themeは暗いCanvasを基準にし、明るい前景と低濃度のLiquidで構造を与える。</p>
+<p>Dark ThemeはLight Themeの単純な反転ではない。</p>
+<p>どちらのテーマでも、情報の可読性、現在位置、操作対象、選択状態を明確に示す。</p>
 <hr>
 <h2>Visual Language</h2>
 <h3>Shapes</h3>
 <h4>Primary</h4>
 <ul>
-<li>Rectangle</li>
-<li>Line</li>
-<li>Grid</li>
-<li>Section Block</li>
+<li>Canvas</li>
+<li>Surface</li>
+<li>Liquid Layer</li>
+<li>Hairline Border</li>
+<li>Thin Active Indicator</li>
 </ul>
 <h4>Secondary</h4>
 <ul>
-<li>Subtle Rounded Rectangle</li>
-<li>Thin Active Indicator</li>
+<li>Rounded Rectangle</li>
 <li>Divider Line</li>
+<li>Section Block</li>
+<li>Grid</li>
 </ul>
 <p>装飾要素は情報の邪魔にならない範囲で使用する。</p>
 <hr>
 <h4>Border System</h4>
 <p>境界線は重要な情報構造の一部として扱う。</p>
 <pre><code class="language-css">border-width: 1px;
-border-color: var(--border-primary);
+border-color: var(--color-border);
 </code></pre>
 <p>影による階層表現は最小限に抑える。</p>
 <hr>
 <h3>Corners</h3>
-<pre><code class="language-css">corner-radius: 4px;
+<pre><code class="language-css">border-radius: 6px;
 </code></pre>
-<p>角丸は検索欄、ボタン、選択行、カードなど小さな操作対象にだけ控えめに使用する。</p>
-<p>アプリの大きなカラム、タブ境界、左右パネルの境界は直線を基本とする。</p>
+<p>角丸は画面全体の連続性と静けさを保つために使う。</p>
+<p>過度に丸い形状や、強くキャラクター化された形状は避ける。</p>
+<p>検索欄、ボタン、選択行、カード、モーダル、オーバーレイなどの操作対象は、コンポーネントとプラットフォームに応じて控えめな角丸を使う。</p>
 <hr>
 <h2>Color Palette</h2>
-<h3>Core Colors</h3>
-<h4>Primary Ink</h4>
-<p>主要アクセントカラー。Liquid Charcoalでは、文字、アクティブ線、主要ボタンに使う黒として扱う。</p>
-<pre><code class="language-css">--color-primary: #111111;
+<p>Liquid Charcoalでは、トークン名は実務上の役割で定義する。</p>
+<p>素材名は、色を選ぶための判断基準として扱う。</p>
+<p><code>--color-accent</code> はLiquid Charcoalの基礎トークンとして扱わない。</p>
+<p>アクセントは有彩色ではなく、Charcoalの濃度、境界、余白、状態差によって作る。</p>
+<h3>Light Theme</h3>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--color-primary</code></td>
+<td><code>#1C1C1A</code></td>
+<td>Primary Charcoal / 主要操作・アクティブ状態</td>
+</tr>
+<tr>
+<td><code>--color-bg</code></td>
+<td><code>#FFFFFF</code></td>
+<td>Canvas White / 作業面の基盤</td>
+</tr>
+<tr>
+<td><code>--color-liquid</code></td>
+<td><code>rgba(255, 255, 255, 0.72)</code></td>
+<td>Clear Liquid / 半透明レイヤー</td>
+</tr>
+<tr>
+<td><code>--color-liquid-charcoal</code></td>
+<td><code>rgba(28, 28, 26, 0.06)</code></td>
+<td>Charcoal Liquid / 炭色が溶けた低濃度レイヤー</td>
+</tr>
+<tr>
+<td><code>--color-surface</code></td>
+<td><code>#FAFAF8</code></td>
+<td>Quiet Surface / パネルの淡い面</td>
+</tr>
+<tr>
+<td><code>--color-surface-alt</code></td>
+<td><code>#F2F2EE</code></td>
+<td>Selected Surface / 選択やカードの薄い面</td>
+</tr>
+<tr>
+<td><code>--color-border</code></td>
+<td><code>#DADAD4</code></td>
+<td>Hairline Border / 通常の細い境界</td>
+</tr>
+<tr>
+<td><code>--color-border-strong</code></td>
+<td><code>#BDBDB4</code></td>
+<td>Strong Hairline / 少し強い境界</td>
+</tr>
+<tr>
+<td><code>--color-text</code></td>
+<td><code>#1C1C1A</code></td>
+<td>Primary Text / 本文と見出し</td>
+</tr>
+<tr>
+<td><code>--color-text-secondary</code></td>
+<td><code>#5F5F59</code></td>
+<td>Secondary Text / 補助情報</td>
+</tr>
+<tr>
+<td><code>--color-text-muted</code></td>
+<td><code>#74746D</code></td>
+<td>Muted Text / 弱い補助情報</td>
+</tr>
+</tbody></table>
+<pre><code class="language-css">--color-primary: #1C1C1A;
+--color-bg: #FFFFFF;
+--color-liquid: rgba(255, 255, 255, 0.72);
+--color-liquid-charcoal: rgba(28, 28, 26, 0.06);
+--color-surface: #FAFAF8;
+--color-surface-alt: #F2F2EE;
+--color-border: #DADAD4;
+--color-border-strong: #BDBDB4;
+--color-text: #1C1C1A;
+--color-text-secondary: #5F5F59;
+--color-text-muted: #74746D;
 </code></pre>
-<p>用途:</p>
-<ul>
-<li>Active indicators</li>
-<li>Primary buttons</li>
-<li>Links</li>
-<li>Icons</li>
-<li>High-emphasis labels</li>
-</ul>
 <hr>
-<h4>Secondary Charcoal</h4>
-<p>補助アクセントカラー。黒より弱いテキスト、補助アイコン、ホバー状態に使うチャコールグレーとして扱う。</p>
-<pre><code class="language-css">--color-accent: #5F6368;
+<h3>Dark Theme</h3>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--color-primary</code></td>
+<td><code>#F2F2EE</code></td>
+<td>Primary Foreground / 主要操作・アクティブ状態</td>
+</tr>
+<tr>
+<td><code>--color-bg</code></td>
+<td><code>#121210</code></td>
+<td>Dark Canvas / 作業面の基盤</td>
+</tr>
+<tr>
+<td><code>--color-liquid</code></td>
+<td><code>rgba(18, 18, 16, 0.72)</code></td>
+<td>Dark Liquid / 半透明レイヤー</td>
+</tr>
+<tr>
+<td><code>--color-liquid-charcoal</code></td>
+<td><code>rgba(242, 242, 238, 0.08)</code></td>
+<td>Light Liquid / 暗い面に重なる低濃度レイヤー</td>
+</tr>
+<tr>
+<td><code>--color-surface</code></td>
+<td><code>#1A1A17</code></td>
+<td>Quiet Surface / パネルの面</td>
+</tr>
+<tr>
+<td><code>--color-surface-alt</code></td>
+<td><code>#24241F</code></td>
+<td>Selected Surface / 選択やカードの面</td>
+</tr>
+<tr>
+<td><code>--color-border</code></td>
+<td><code>#363630</code></td>
+<td>Hairline Border / 通常の細い境界</td>
+</tr>
+<tr>
+<td><code>--color-border-strong</code></td>
+<td><code>#56564E</code></td>
+<td>Strong Hairline / 少し強い境界</td>
+</tr>
+<tr>
+<td><code>--color-text</code></td>
+<td><code>#F2F2EE</code></td>
+<td>Primary Text / 本文と見出し</td>
+</tr>
+<tr>
+<td><code>--color-text-secondary</code></td>
+<td><code>#B9B9B0</code></td>
+<td>Secondary Text / 補助情報</td>
+</tr>
+<tr>
+<td><code>--color-text-muted</code></td>
+<td><code>#8A8A82</code></td>
+<td>Muted Text / 弱い補助情報</td>
+</tr>
+</tbody></table>
+<pre><code class="language-css">--color-primary: #F2F2EE;
+--color-bg: #121210;
+--color-liquid: rgba(18, 18, 16, 0.72);
+--color-liquid-charcoal: rgba(242, 242, 238, 0.08);
+--color-surface: #1A1A17;
+--color-surface-alt: #24241F;
+--color-border: #363630;
+--color-border-strong: #56564E;
+--color-text: #F2F2EE;
+--color-text-secondary: #B9B9B0;
+--color-text-muted: #8A8A82;
 </code></pre>
-<p>用途:</p>
-<ul>
-<li>Hover States</li>
-<li>Sub Labels</li>
-<li>Boundary Emphasis</li>
-</ul>
 <hr>
-<h3>Neutral Palette</h3>
-<h4>Background</h4>
-<pre><code class="language-css">--color-bg: #FFFFFF;
-</code></pre>
-<p>エディタ背景、ページ全体の背景色。情報を書くための白い紙面として扱う。</p>
+<h3>Functional Colors</h3>
+<p>有彩色は、状態を伝える必要がある場合に限って使う。</p>
+<p>機能色はLiquid Charcoalの印象を作るための色ではなく、エラー、警告、成功、情報を誤認させないための補助である。</p>
+<table>
+<thead>
+<tr>
+<th>用途</th>
+<th>Light Theme</th>
+<th>Dark Theme</th>
+<th>使い方</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Danger</td>
+<td><code>#B42318</code></td>
+<td><code>#FFB4A9</code></td>
+<td>エラー、削除、破壊的操作</td>
+</tr>
+<tr>
+<td>Warning</td>
+<td><code>#8A5A00</code></td>
+<td><code>#E7C16C</code></td>
+<td>警告、注意、未解決状態</td>
+</tr>
+<tr>
+<td>Success</td>
+<td><code>#2E6B3F</code></td>
+<td><code>#88D49D</code></td>
+<td>成功、完了、正常状態</td>
+</tr>
+<tr>
+<td>Info</td>
+<td><code>#2F5E8C</code></td>
+<td><code>#A8C7FA</code></td>
+<td>補足情報、通知、案内</td>
+</tr>
+</tbody></table>
+<p>機能色は必要な要素に限定して使い、通常のナビゲーション、装飾、ブランド表現には使わない。</p>
 <hr>
-<h4>Surface</h4>
-<pre><code class="language-css">--color-surface: #FAFAFA;
-</code></pre>
-<p>サイドバー、ツールバー、パネル背景。白い紙面より一段低い淡い面として扱う。</p>
-<hr>
-<h4>Surface Alt</h4>
-<pre><code class="language-css">--color-surface-alt: #F3F3F2;
-</code></pre>
-<p>選択中の項目背景、カード背景。状態を示すための淡いグレーとして扱う。</p>
-<hr>
-<h4>Border</h4>
-<pre><code class="language-css">--color-border: #DEDEDE;
-</code></pre>
-<p>区切り線。パネル、タブ、表、フォームを分ける細い線として扱う。</p>
-<hr>
-<h4>Border Strong</h4>
-<pre><code class="language-css">--color-border-strong: #B8B8B8;
-</code></pre>
-<p>重要な境界。通常境界より少し強いが、黒い主線とは区別する。</p>
-<hr>
-<h3>Typography Colors</h3>
-<h4>Primary Text</h4>
-<pre><code class="language-css">--color-text: #111111;
-</code></pre>
-<p>本文、見出し、主要ラベルに使う黒として扱う。</p>
-<hr>
-<h4>Secondary Text</h4>
-<pre><code class="language-css">--color-text-secondary: #5F6368;
-</code></pre>
-<p>補助情報、非アクティブなタブ、二次ラベルに使う。</p>
-<hr>
-<h4>Muted Text</h4>
-<pre><code class="language-css">--color-text-muted: #9A9A9A;
-</code></pre>
-<p>さらに弱い説明文、プレースホルダー、補助メタ情報に使う。</p>
+<h3>Color Usage</h3>
+<p>Canvasは作業面の基盤である。Light Themeでは白を基準にし、Dark Themeでは暗いCanvasを基準にする。</p>
+<p>Liquidは透明・半透明の層である。情報のまとまり、重なり、選択状態、操作対象を示すために使う。</p>
+<p>Charcoalは本文、見出し、リンク、アクティブ線、主要ボタン、現在位置に使う。</p>
+<p>Charcoalは少なく使うことで意味を持つ。面の塗りつぶしには限定的に使う。</p>
+<p>Grayは非アクティブなタブ、選択背景、補助情報、境界線に使う。役割は情報の階層を支えることであり、装飾的な塗り分けではない。</p>
 <hr>
 <h2>Typography</h2>
 <p>書体はInter、Noto Sans JP、OSのシステムフォントの順に使用する。</p>
@@ -691,11 +538,57 @@ line-height: 1.7;
 font-weight: 400;
 </code></pre>
 <hr>
+<h2>Surface and Layers</h2>
+<p>Liquid Charcoalでは、画面を単一の平面として扱わない。</p>
+<p>Canvasの上にSurfaceとLiquidが重なり、必要な場所にCharcoalが現れる。</p>
+<p>Surfaceは情報を整理するための面であり、装飾用のカードではない。</p>
+<p>Liquidレイヤーは透明または半透明で構成する。</p>
+<p>Surface同士の区別は、濃い塗り分けではなく、明度差、透明度差、境界線によって示す。</p>
+<p>透明性によって文字や操作対象の判別が弱くなる場合は、可読性を優先する。</p>
+<hr>
+<h2>Motion</h2>
+<p>Liquid Charcoalの動きは、操作を補助するために存在する。</p>
+<p>動きは情報を強調するためではなく、状態の変化を自然に伝えるために使う。</p>
+<p>Liquidは炭色を含む流体として、わずかな粘性を持つ。そのため、動きは急激に跳ねたり、強く反発したりしない。</p>
+<p>過度な弾性、大きな移動、長いアニメーションは避ける。</p>
+<p>動きは滑らかで、静かで、短くあるべきである。</p>
+<hr>
+<h2>Texture and Light</h2>
+<p>光は演出ではなく、素材を認識するために存在する。</p>
+<p>Liquidは自然な透過と弱い反射を持つ。</p>
+<p>Charcoalは光を強く跳ね返さず、沈んだ見え方を持つ。</p>
+<p>ハイライト、反射、影は、要素の分離や状態の理解を助ける範囲に留める。</p>
+<p>質感は色そのものを変えず、軽い階調、透明度、明度差として扱う。</p>
+<p>推奨する質感:</p>
+<ul>
+<li>Clean</li>
+<li>Matte</li>
+<li>Smooth</li>
+<li>Quiet</li>
+<li>Monochrome</li>
+<li>Transparent</li>
+<li>Lightly layered</li>
+<li>Slightly viscous</li>
+</ul>
+<p>避ける質感:</p>
+<ul>
+<li>Glossy</li>
+<li>Metallic</li>
+<li>Plastic</li>
+<li>Glassy</li>
+<li>Neon</li>
+<li>Wet-looking</li>
+<li>Noisy</li>
+<li>Dirty</li>
+<li>Strongly textured</li>
+</ul>
+<hr>
 <h2>Layout</h2>
-<h3>Three Panel Structure</h3>
-<pre><code class="language-text">Explorer
-Editor
-Outline
+<h3>Application Structure</h3>
+<pre><code class="language-text">Rail
+Primary Sidebar
+Tabbed Main Area
+Right Panel
 </code></pre>
 <p>情報構造を常時可視化する。</p>
 <hr>
@@ -710,10 +603,11 @@ Outline
 <hr>
 <h2>Navigation</h2>
 <h3>Active Item</h3>
-<p>選択状態は淡い背景色と左側の黒いインジケーターで表現する。</p>
+<p>選択状態は淡いSurfaceまたはLiquidレイヤーと、Charcoalのインジケーターで表現する。</p>
 <pre><code class="language-css">width: 3px;
 background: var(--color-primary);
 </code></pre>
+<p>現在位置、操作対象、選択状態は十分に分かる濃度で示す。</p>
 <hr>
 <h3>Outline Navigation</h3>
 <p>アウトラインは番号を付けず、控えめな目次として表示する。</p>
@@ -731,7 +625,8 @@ background: var(--color-primary);
 <ul>
 <li>明確な境界線</li>
 <li>過剰な影を使用しない</li>
-<li>アクティブ状態は黒い細線、黒い文字、白い面で表現</li>
+<li>アクティブ状態はCharcoalの細線、Primary Text、Selected Surfaceで表現</li>
+<li>非アクティブ状態はSecondary TextとHairline Borderで表現</li>
 </ul>
 <hr>
 <h3>Tables</h3>
@@ -744,12 +639,13 @@ background: var(--color-primary);
 <h3>Buttons</h3>
 <p>Primary:</p>
 <pre><code class="language-css">background: var(--color-primary);
-color: white;
+color: var(--color-bg);
 </code></pre>
 <p>Secondary:</p>
-<pre><code class="language-css">background: transparent;
+<pre><code class="language-css">background: var(--color-liquid);
 border: 1px solid var(--color-border);
 </code></pre>
+<p>破壊的操作、警告、成功、情報などを示す場合だけFunctional Colorsを使う。</p>
 <hr>
 <h2>Decorative Elements</h2>
 <p>装飾要素は機能的なレイアウトを補助する目的でのみ使用する。</p>
@@ -757,12 +653,14 @@ border: 1px solid var(--color-border);
 <p>許可される要素:</p>
 <ul>
 <li>細い境界線</li>
-<li>淡いグレー面</li>
-<li>黒いアクティブインジケーター</li>
-<li>控えめなグラデーション</li>
+<li>Canvasより一段低いSurface</li>
+<li>透明または半透明のLiquidレイヤー</li>
+<li>Charcoalのアクティブインジケーター</li>
+<li>読みやすさを損なわない軽い階調</li>
 </ul>
 <p>装飾が情報を上回ってはならない。</p>
-<p>強いノイズ、汚れ加工、グロー、ガラス反射、金属光沢、ネオン化、有彩色の強いアクセントは使用しない。</p>
+<p>強いノイズ、汚れ加工、グロー、ガラス反射、金属光沢、ネオン化、有彩色の強いアクセント、装飾のためのグラデーション、角丸や影による過度なカード化は使用しない。</p>
+<p>和風化、書道、墨絵、筆致の表現、紙の繊維や凹凸の再現、液体を過剰に演出するアニメーションも使用しない。</p>
 <hr>
 <h2>Desired Impression</h2>
 <p>このデザインシステムが目指す印象:</p>
@@ -776,6 +674,8 @@ border: 1px solid var(--color-border);
 <li>Observational</li>
 <li>Clean</li>
 <li>Monochrome</li>
+<li>Transparent</li>
+<li>Lightly layered</li>
 </ul>
 <p>避けるべき印象:</p>
 <ul>
@@ -792,7 +692,29 @@ border: 1px solid var(--color-border);
 <li>Neon</li>
 <li>Wet</li>
 <li>Colorful</li>
+<li>Noisy</li>
+<li>Strongly textured</li>
 </ul>
+<p>この空気感は、派手な演出ではなく、情報の配置、余白、細い境界、透明・半透明の層、炭色のコントラストによって作る。</p>
+<hr>
+<h2>Application Scope</h2>
+<p>Liquid Charcoalは、Relicの現在の画面構造を変えずに適用するデザイン原則として扱う。</p>
+<p>適用対象:</p>
+<ul>
+<li>アプリUI</li>
+<li>ドキュメント</li>
+<li>カード</li>
+<li>表</li>
+<li>入力欄</li>
+<li>タブ</li>
+<li>サイドバー</li>
+<li>アウトライン</li>
+<li>プロパティ</li>
+<li>モーダル</li>
+<li>オーバーレイ</li>
+</ul>
+<p>どの制作物でも、素材感は主役ではなく、情報と構造を支える背景として扱う。</p>
+<p>要素や機能は現状のまま保ち、視覚表現だけを調整する。</p>
 <hr>
 <h1>Screen Structure</h1>
 <p>デスクトップ版の画面一覧と各画面の構成。</p>
@@ -851,6 +773,10 @@ border: 1px solid var(--color-border);
 <td>メインエリアにフロントマター設定のパネルタブを開く</td>
 </tr>
 <tr>
+<td>グラフビュー</td>
+<td>メインエリアにグラフビューチャートタブを開く</td>
+</tr>
+<tr>
 <td>暦設定</td>
 <td>メインエリアに暦設定のパネルタブを開く</td>
 </tr>
@@ -865,9 +791,9 @@ border: 1px solid var(--color-border);
 </tbody></table>
 <ul>
 <li>各ボタンにはツールチップを表示する</li>
-<li>ファイル、設定は常に表示する</li>
+<li>ファイル、グラフビュー、設定は常に表示する</li>
 <li>ファイル加工、フロントマター、暦設定、年表は、対応する機能トグルがオフの場合は入口を表示しない</li>
-<li>初期状態では、ファイル、設定を表示する</li>
+<li>初期状態では、ファイル、グラフビュー、設定を表示する</li>
 <li>初期状態では、ファイル加工、フロントマター、暦設定、年表を表示しない</li>
 <li>登録済みワークスペースがある場合は、レール下部からワークスペースを切り替えられる</li>
 </ul>
@@ -915,7 +841,7 @@ border: 1px solid var(--color-border);
 </tr>
 <tr>
 <td>チャートタブ</td>
-<td><code>chronicle</code> と暦設定をもとに年表を表示する</td>
+<td><code>graph</code> でワークスペースのMarkdown、タグ、添付画像のリンクグラフ、<code>chronicle</code> と暦設定で年表を表示する</td>
 </tr>
 </tbody></table>
 <h3>ファイルタイトル行</h3>
@@ -1019,13 +945,14 @@ border: 1px solid var(--color-border);
   ├─ ファイル        → ファイルサイドバーを開閉
   ├─ ファイル加工    → パネルタブを開く（機能トグルON時のみ）
   ├─ フロントマター  → パネルタブを開く（機能トグルON時のみ）
+  ├─ グラフビュー    → グラフビューチャートタブを開く
   ├─ 暦設定          → パネルタブを開く（機能トグルON時のみ）
   ├─ 年表            → 年表チャートタブを開く（機能トグルON時のみ）
   └─ 設定            → パネルタブを開く
 </code></pre>
 <p>既に同じパネルタブまたはチャートタブが開いている場合は、新規作成せずそのタブをアクティブにする。
-ファイル、設定は常に表示する。ファイル加工、フロントマター、暦設定、年表は、対応する機能トグルがオフの場合は左レールに表示しない。
-初期状態では、ファイル、設定を表示し、ファイル加工、フロントマター、暦設定、年表は表示しない。</p>
+ファイル、グラフビュー、設定は常に表示する。ファイル加工、フロントマター、暦設定、年表は、対応する機能トグルがオフの場合は左レールに表示しない。
+初期状態では、ファイル、グラフビュー、設定を表示し、ファイル加工、フロントマター、暦設定、年表は表示しない。</p>
 <hr>
 <h2>プライマリサイドバー</h2>
 <p>プライマリサイドバーは、ファイルモードではワークスペースとMarkdownファイルの操作を扱う。</p>
