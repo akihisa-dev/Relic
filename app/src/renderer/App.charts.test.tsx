@@ -96,6 +96,28 @@ describe("App charts", () => {
     expect(filtersHeader).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(filtersHeader);
     expect(filtersHeader).toHaveAttribute("aria-expanded", "true");
+    const groupsHeader = screen.getByRole("button", { name: "Groups" });
+    fireEvent.click(groupsHeader);
+    fireEvent.click(screen.getByRole("button", { name: "New group" }));
+    fireEvent.click(screen.getByRole("button", { name: "New group" }));
+
+    const groupQueries = screen.getAllByLabelText("グループ検索") as HTMLInputElement[];
+    fireEvent.change(groupQueries[0]!, { target: { value: "first" } });
+    fireEvent.change(groupQueries[1]!, { target: { value: "second" } });
+
+    const dragHandles = screen.getAllByRole("button", { name: "グループを並べ替え" });
+    const dataTransfer = {
+      effectAllowed: "move",
+      setData: vi.fn()
+    };
+    fireEvent.dragStart(dragHandles[0]!, { dataTransfer });
+    fireEvent.dragOver(dragHandles[1]!.closest(".graph-color-group")!);
+    fireEvent.dragEnd(dragHandles[0]!);
+
+    expect((screen.getAllByLabelText("グループ検索") as HTMLInputElement[]).map((input) => input.value)).toEqual([
+      "second",
+      "first"
+    ]);
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {

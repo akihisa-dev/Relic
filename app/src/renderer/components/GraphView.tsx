@@ -100,6 +100,7 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
   }>({ error: null, graph: null, loading: true });
   const [options, setOptions] = useState(loadGraphOptions);
   const [colorGroups, setColorGroups] = useState<GraphColorGroup[]>(loadGraphColorGroups);
+  const [draggingColorGroupId, setDraggingColorGroupId] = useState<string | null>(null);
   const [sectionCollapsed, setSectionCollapsed] = useState(loadGraphSectionCollapsed);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
@@ -388,6 +389,11 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
           current.map((group) => group.id === groupId ? { ...group, ...patch } : group)
         )}
         onColorGroupDelete={(groupId) => setColorGroups((current) => current.filter((group) => group.id !== groupId))}
+        onColorGroupDragEnd={() => setDraggingColorGroupId(null)}
+        onColorGroupDragStart={(groupId) => setDraggingColorGroupId(groupId)}
+        onColorGroupMove={(targetGroupId) => setColorGroups((current) =>
+          draggingColorGroupId ? moveGraphColorGroup(current, draggingColorGroupId, targetGroupId) : current
+        )}
         onAnimate={() => animateGraph(nodesRef.current, viewRef)}
         onOptionsChange={(patch) => setOptions((current) => ({ ...current, ...patch }))}
         onReset={resetView}
@@ -397,6 +403,7 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
         }))}
         onToggleControls={() => setControlsOpen((current) => !current)}
         options={options}
+        draggingColorGroupId={draggingColorGroupId}
         sectionCollapsed={sectionCollapsed}
       />
     </div>
@@ -406,11 +413,15 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
 function GraphControls({
   colorGroups,
   controlsOpen,
+  draggingColorGroupId,
   nodeCount,
   onAddColorGroup,
   onAnimate,
   onColorGroupChange,
   onColorGroupDelete,
+  onColorGroupDragEnd,
+  onColorGroupDragStart,
+  onColorGroupMove,
   onOptionsChange,
   onReset,
   onSectionCollapsedChange,
@@ -420,11 +431,15 @@ function GraphControls({
 }: {
   colorGroups: GraphColorGroup[];
   controlsOpen: boolean;
+  draggingColorGroupId: string | null;
   nodeCount: number;
   onAddColorGroup: () => void;
   onAnimate: () => void;
   onColorGroupChange: (groupId: string, patch: Partial<GraphColorGroup>) => void;
   onColorGroupDelete: (groupId: string) => void;
+  onColorGroupDragEnd: () => void;
+  onColorGroupDragStart: (groupId: string) => void;
+  onColorGroupMove: (targetGroupId: string) => void;
   onOptionsChange: (patch: Partial<GraphOptions>) => void;
   onReset: () => void;
   onSectionCollapsedChange: (sectionId: GraphControlSectionId, collapsed: boolean) => void;
@@ -496,7 +511,29 @@ function GraphControls({
       >
         <div className="graph-color-groups-container">
           {colorGroups.map((group) => (
-            <div className="graph-color-group" key={group.id}>
+            <div
+              className={`graph-color-group${draggingColorGroupId === group.id ? " is-dragging" : ""}`}
+              key={group.id}
+              onDragOver={(event) => {
+                event.preventDefault();
+                onColorGroupMove(group.id);
+              }}
+            >
+              <button
+                aria-label="グループを並べ替え"
+                className="graph-color-group-drag"
+                draggable
+                onDragEnd={onColorGroupDragEnd}
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("text/plain", group.id);
+                  onColorGroupDragStart(group.id);
+                }}
+                title="ドラッグして並べ替え"
+                type="button"
+              >
+                <GraphControlIcon name="grip" />
+              </button>
               <input
                 aria-label="グループ検索"
                 onChange={(event) => onColorGroupChange(group.id, { query: event.target.value })}
@@ -546,7 +583,20 @@ function GraphControls({
   );
 }
 
-function GraphControlIcon({ name }: { name: "close" | "reset" | "settings" | "trash" | "triangle" | "wand" }): ReactElement {
+function GraphControlIcon({ name }: { name: "close" | "grip" | "reset" | "settings" | "trash" | "triangle" | "wand" }): ReactElement {
+  if (name === "grip") {
+    return (
+      <svg aria-hidden="true" fill="currentColor" height="14" viewBox="0 0 24 24" width="14">
+        <circle cx="9" cy="5" r="1.5" />
+        <circle cx="15" cy="5" r="1.5" />
+        <circle cx="9" cy="12" r="1.5" />
+        <circle cx="15" cy="12" r="1.5" />
+        <circle cx="9" cy="19" r="1.5" />
+        <circle cx="15" cy="19" r="1.5" />
+      </svg>
+    );
+  }
+
   if (name === "triangle") {
     return (
       <svg aria-hidden="true" fill="currentColor" height="12" viewBox="0 0 24 24" width="12">
@@ -728,6 +778,25 @@ function animateGraph(
     node.vy = Math.sin(angle) * 3.2;
     index += 1;
   }
+}
+
+function moveGraphColorGroup(
+  groups: GraphColorGroup[],
+  draggingGroupId: string,
+  targetGroupId: string
+): GraphColorGroup[] {
+  if (draggingGroupId === targetGroupId) return groups;
+
+  const from = groups.findIndex((group) => group.id === draggingGroupId);
+  const to = groups.findIndex((group) => group.id === targetGroupId);
+  if (from < 0 || to < 0) return groups;
+
+  const next = [...groups];
+  const [moved] = next.splice(from, 1);
+  if (!moved) return groups;
+  next.splice(to, 0, moved);
+
+  return next;
 }
 
 function stepSimulation(
