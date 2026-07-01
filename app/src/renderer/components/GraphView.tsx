@@ -6,6 +6,7 @@ import type { WorkspaceGraph, WorkspaceGraphLink, WorkspaceGraphNode } from "../
 
 interface GraphViewProps {
   onOpenFile: (path: string) => void;
+  onOpenTagSearch: (tag: string) => void;
 }
 
 interface GraphOptions {
@@ -37,6 +38,10 @@ interface SimLink extends WorkspaceGraphLink {
   sourceNode: SimNode;
   targetNode: SimNode;
 }
+
+type GraphNodePrimaryAction =
+  | { path: string; type: "file" }
+  | { tag: string; type: "tagSearch" };
 
 interface GraphColorGroup {
   color: string;
@@ -75,7 +80,7 @@ const defaultGraphSectionCollapsed: GraphSectionCollapsedState = {
   groups: true
 };
 
-export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
+export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<number | null>(null);
   const nodesRef = useRef<Map<string, SimNode>>(new Map());
@@ -92,6 +97,7 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
   const latestOptionsRef = useRef(defaultGraphOptions);
   const colorGroupsRef = useRef<GraphColorGroup[]>([]);
   const openFileRef = useRef(onOpenFile);
+  const openTagSearchRef = useRef(onOpenTagSearch);
   const [controlsOpen, setControlsOpen] = useState(loadGraphControlsOpen);
   const [graphState, setGraphState] = useState<{
     error: string | null;
@@ -106,6 +112,7 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
   const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
 
   openFileRef.current = onOpenFile;
+  openTagSearchRef.current = onOpenTagSearch;
   latestOptionsRef.current = options;
   colorGroupsRef.current = colorGroups;
 
@@ -334,8 +341,10 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
     if (pointer.dragNode) {
       pointer.dragNode.fx = null;
       pointer.dragNode.fy = null;
-      if (!pointer.moved && pointer.dragNode.path) {
-        openFileRef.current(pointer.dragNode.path);
+      if (!pointer.moved) {
+        const action = graphNodePrimaryAction(pointer.dragNode);
+        if (action?.type === "file") openFileRef.current(action.path);
+        if (action?.type === "tagSearch") openTagSearchRef.current(action.tag);
       }
     }
 
@@ -1098,6 +1107,17 @@ function graphNodeTagSearchText(node: WorkspaceGraphNode, tags: string[]): strin
     node.type === "tag" ? node.label.replace(/^#/, "") : "",
     ...tags
   ].join("\n").toLocaleLowerCase();
+}
+
+function tagSearchQueryFromNode(node: WorkspaceGraphNode): string {
+  return node.label.replace(/^#/, "") || node.id.replace(/^#/, "");
+}
+
+export function graphNodePrimaryAction(node: WorkspaceGraphNode): GraphNodePrimaryAction | null {
+  if (node.path) return { path: node.path, type: "file" };
+  if (node.type === "tag") return { tag: tagSearchQueryFromNode(node), type: "tagSearch" };
+
+  return null;
 }
 
 function tokenizeGraphQuery(query: string): string[] {

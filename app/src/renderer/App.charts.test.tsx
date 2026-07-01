@@ -24,6 +24,7 @@ import {
   resetRendererStores,
   testWorkspaceState as withWorkspace
 } from "../test/rendererTestUtils";
+import { graphNodePrimaryAction } from "./components/GraphView";
 import { useEditorStore } from "./store/editorStore";
 import { useUiStore } from "./store/uiStore";
 
@@ -129,6 +130,18 @@ describe("App charts", () => {
       "second",
       "first"
     ]);
+  });
+
+  it("グラフビューのタグノードクリックはタグ検索アクションになる", () => {
+    expect(graphNodePrimaryAction({
+      backlinkCount: 0,
+      exists: true,
+      id: "#project",
+      label: "#project",
+      linkCount: 0,
+      path: null,
+      type: "tag"
+    })).toStrictEqual({ tag: "project", type: "tagSearch" });
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
