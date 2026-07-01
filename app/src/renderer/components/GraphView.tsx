@@ -331,7 +331,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     const nodes = [...nodesRef.current.values()].toReversed();
 
     for (const node of nodes) {
-      if (distance(point.x, point.y, node.x, node.y) <= nodeRadius(node, latestOptionsRef.current) + 4) {
+      if (distance(point.x, point.y, node.x, node.y) <= graphNodeVisualRadius(node, latestOptionsRef.current, viewRef.current.scale) + 4 / viewRef.current.scale) {
         return node;
       }
     }
@@ -1085,21 +1085,21 @@ function drawGraph(
     const active = !focused || link.source === focused.id || link.target === focused.id;
     context.globalAlpha = active ? 0.65 : 0.12;
     context.strokeStyle = active ? cssVar("--color-border-strong", "#9a9a9a") : cssVar("--color-border", "#dedede");
-    context.lineWidth = Math.max(0.4, options.lineSizeMultiplier * Math.sqrt(link.count));
+    context.lineWidth = Math.max(0.4 / view.scale, options.lineSizeMultiplier * Math.sqrt(link.count) / view.scale);
     context.beginPath();
     context.moveTo(link.sourceNode.x, link.sourceNode.y);
     context.lineTo(link.targetNode.x, link.targetNode.y);
     context.stroke();
 
     if (options.showArrows) {
-      drawArrow(context, link.sourceNode, link.targetNode, options);
+      drawArrow(context, link.sourceNode, link.targetNode, options, view.scale);
     }
   }
 
   context.globalAlpha = 1;
   for (const node of nodes) {
     const active = !focused || node.id === focused.id || neighbors.has(node.id);
-    const radius = nodeRadius(node, options);
+    const radius = graphNodeVisualRadius(node, options, view.scale);
     const color = nodeColor(node, colorGroups, tagsByNode.get(node.id) ?? [], node.id === focused?.id);
     context.globalAlpha = active ? 1 : 0.22;
     context.fillStyle = color;
@@ -1111,15 +1111,16 @@ function drawGraph(
       context.strokeStyle = cssVar("--color-primary", "#2f66b1");
       context.lineWidth = 2 / view.scale;
       context.beginPath();
-      context.arc(node.x, node.y, radius + 5 / view.scale, 0, Math.PI * 2);
+      context.arc(node.x, node.y, radius + Math.max(2, 5 / view.scale), 0, Math.PI * 2);
       context.stroke();
     }
 
-    const labelAlpha = labelOpacity(view.scale, options.textFadeMultiplier);
+    const labelAlpha = graphLabelOpacity(view.scale, options.textFadeMultiplier);
     if (labelAlpha > 0.02) {
       context.globalAlpha = (active ? 1 : 0.2) * labelAlpha;
       context.fillStyle = cssVar("--color-text", "#1e1e1e");
-      context.font = `${Math.max(10, 13 / view.scale)}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+      const labelScale = node.id === focused?.id && view.scale < 1 ? 1 / view.scale : graphNodeScale(view.scale);
+      context.font = `${Math.max(10 / view.scale, 13 * labelScale)}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
       context.textAlign = "center";
       context.textBaseline = "top";
       context.fillText(node.label, node.x, node.y + radius + 4 / view.scale, 240 / view.scale);
@@ -1128,12 +1129,12 @@ function drawGraph(
   context.restore();
 }
 
-function drawArrow(context: CanvasRenderingContext2D, source: SimNode, target: SimNode, options: GraphOptions): void {
+function drawArrow(context: CanvasRenderingContext2D, source: SimNode, target: SimNode, options: GraphOptions, scale = 1): void {
   const angle = Math.atan2(target.y - source.y, target.x - source.x);
-  const radius = nodeRadius(target, options) + 3;
+  const radius = graphNodeVisualRadius(target, options, scale) + 3 / scale;
   const x = target.x - Math.cos(angle) * radius;
   const y = target.y - Math.sin(angle) * radius;
-  const size = 6;
+  const size = 6 / scale;
 
   context.beginPath();
   context.moveTo(x, y);
@@ -1149,6 +1150,18 @@ function nodeRadius(node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount"
   const typeMultiplier = node.type === "tag" ? 0.85 : node.type === "attachment" ? 0.78 : node.type === "unresolved" ? 0.72 : 1;
 
   return clamp(4.5 * weight * typeMultiplier * options.nodeSizeMultiplier, 3, 24);
+}
+
+export function graphNodeScale(scale: number): number {
+  return Math.sqrt(1 / Math.max(graphMinScale, scale));
+}
+
+function graphNodeVisualRadius(
+  node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount" | "type">,
+  options: GraphOptions,
+  scale: number
+): number {
+  return nodeRadius(node, options) * graphNodeScale(scale);
 }
 
 function nodeColor(node: WorkspaceGraphNode, groups: GraphColorGroup[], tags: string[], focused: boolean): string {
@@ -1262,8 +1275,8 @@ function tokenizeGraphQuery(query: string): string[] {
   return tokens;
 }
 
-function labelOpacity(scale: number, textFadeMultiplier: number): number {
-  return clamp((scale - 0.18 + textFadeMultiplier * 0.08) / 0.55, 0, 1);
+export function graphLabelOpacity(scale: number, textFadeMultiplier: number): number {
+  return clamp(Math.log(scale) / Math.log(2) + 1 - textFadeMultiplier, 0, 1);
 }
 
 function screenToWorld(
@@ -1404,7 +1417,7 @@ export function graphHoveredNodeContainsPoint(
   if (!point) return false;
 
   const world = screenToWorld(point.x, point.y, width, height, view);
-  return distance(world.x, world.y, node.x, node.y) <= nodeRadius(node, options) + 4;
+  return distance(world.x, world.y, node.x, node.y) <= graphNodeVisualRadius(node, options, view.scale) + 4 / view.scale;
 }
 
 function clampGraphScale(scale: number): number {
