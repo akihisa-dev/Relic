@@ -6,9 +6,11 @@
   <title>Relic Design Document</title>
   <style>
     :root {
+      color-scheme: light;
       --color-primary: #1c1c1a;
       --color-bg: #ffffff;
       --color-liquid: rgba(255, 255, 255, 0.72);
+      --color-liquid-strong: rgba(255, 255, 255, 0.9);
       --color-liquid-charcoal: rgba(28, 28, 26, 0.06);
       --color-surface: #fafaf8;
       --color-surface-alt: #f2f2ee;
@@ -18,14 +20,50 @@
       --color-text-secondary: #5f5f59;
       --color-text-muted: #74746d;
       --color-code-bg: rgba(28, 28, 26, 0.045);
-      --content-width: 920px;
+      --color-danger: #b42318;
+      --color-warning: #8a5a00;
+      --color-success: #2e6b3f;
+      --color-info: #2f5e8c;
+      --rail-width: 56px;
+      --sidebar-width: 248px;
+      --inspector-width: 292px;
+      --content-width: 840px;
+      --radius-sm: 5px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --motion-fast: 140ms;
+      --motion-normal: 220ms;
+      --ease-liquid: cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --color-primary: #f2f2ee;
+      --color-bg: #121210;
+      --color-liquid: rgba(18, 18, 16, 0.72);
+      --color-liquid-strong: rgba(18, 18, 16, 0.9);
+      --color-liquid-charcoal: rgba(242, 242, 238, 0.08);
+      --color-surface: #1a1a17;
+      --color-surface-alt: #24241f;
+      --color-border: #363630;
+      --color-border-strong: #56564e;
+      --color-text: #f2f2ee;
+      --color-text-secondary: #b9b9b0;
+      --color-text-muted: #8a8a82;
+      --color-code-bg: rgba(242, 242, 238, 0.07);
+      --color-danger: #ffb4a9;
+      --color-warning: #e7c16c;
+      --color-success: #88d49d;
+      --color-info: #a8c7fa;
     }
 
     @media (prefers-color-scheme: dark) {
-      :root {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
         --color-primary: #f2f2ee;
         --color-bg: #121210;
         --color-liquid: rgba(18, 18, 16, 0.72);
+        --color-liquid-strong: rgba(18, 18, 16, 0.9);
         --color-liquid-charcoal: rgba(242, 242, 238, 0.08);
         --color-surface: #1a1a17;
         --color-surface-alt: #24241f;
@@ -35,6 +73,10 @@
         --color-text-secondary: #b9b9b0;
         --color-text-muted: #8a8a82;
         --color-code-bg: rgba(242, 242, 238, 0.07);
+        --color-danger: #ffb4a9;
+        --color-warning: #e7c16c;
+        --color-success: #88d49d;
+        --color-info: #a8c7fa;
       }
     }
 
@@ -52,94 +94,444 @@
     }
 
     body {
+      background:
+        linear-gradient(90deg, var(--color-liquid-charcoal) 1px, transparent 1px),
+        linear-gradient(var(--color-liquid-charcoal) 1px, transparent 1px),
+        var(--color-bg);
+      background-size: 42px 42px;
       margin: 0;
       min-width: 320px;
     }
 
-    .page {
-      margin: 0 auto;
+    body::before {
+      background: var(--color-liquid);
+      content: "";
+      inset: 0;
+      pointer-events: none;
+      position: fixed;
+      z-index: -1;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      background: var(--color-liquid);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-text);
+      cursor: pointer;
+      min-height: 32px;
+      transition:
+        background-color var(--motion-fast) var(--ease-liquid),
+        border-color var(--motion-fast) var(--ease-liquid),
+        color var(--motion-fast) var(--ease-liquid),
+        transform var(--motion-fast) var(--ease-liquid);
+    }
+
+    button:hover {
+      background: var(--color-surface-alt);
+      border-color: var(--color-border-strong);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: var(--rail-width) var(--sidebar-width) minmax(0, 1fr) var(--inspector-width);
+      min-height: 100vh;
+    }
+
+    .rail {
+      align-items: center;
+      background: var(--color-liquid);
+      border-right: 1px solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px 10px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .rail-mark {
+      align-items: center;
+      background: var(--color-primary);
+      border-radius: var(--radius-md);
+      color: var(--color-bg);
+      display: grid;
+      font-size: 16px;
+      font-weight: 700;
+      height: 34px;
+      justify-items: center;
+      line-height: 1;
+      width: 34px;
+    }
+
+    .rail-button {
+      align-items: center;
+      display: grid;
+      height: 34px;
+      justify-items: center;
+      padding: 0;
+      width: 34px;
+    }
+
+    .rail-spacer {
+      flex: 1;
+    }
+
+    .sidebar,
+    .inspector {
+      background: var(--color-liquid);
+      border-color: var(--color-border);
+      border-style: solid;
+      height: 100vh;
+      overflow: auto;
+      padding: 22px 18px;
+      position: sticky;
+      top: 0;
+    }
+
+    .sidebar {
+      border-width: 0 1px 0 0;
+    }
+
+    .inspector {
+      border-width: 0 0 0 1px;
+    }
+
+    .sidebar-title,
+    .inspector-title,
+    .panel-label {
+      color: var(--color-text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0;
+      margin: 0;
+    }
+
+    .document-name {
+      color: var(--color-primary);
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin: 8px 0 4px;
+    }
+
+    .document-path,
+    .panel-note {
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .toc {
+      display: grid;
+      gap: 2px;
+      margin-top: 22px;
+    }
+
+    .toc a {
+      border-left: 3px solid transparent;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      color: var(--color-text-secondary);
+      display: block;
+      font-size: 12px;
+      line-height: 1.35;
+      padding: 7px 8px 7px 10px;
+      text-decoration: none;
+      transition:
+        background-color var(--motion-fast) var(--ease-liquid),
+        border-color var(--motion-fast) var(--ease-liquid),
+        color var(--motion-fast) var(--ease-liquid);
+    }
+
+    .toc a:hover,
+    .toc a.is-active {
+      background: var(--color-liquid-charcoal);
+      border-left-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .main-pane {
+      min-width: 0;
+      padding: 26px clamp(20px, 4vw, 52px) 80px;
+    }
+
+    .titlebar {
+      align-items: center;
+      background: var(--color-liquid);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      display: flex;
+      gap: 14px;
+      justify-content: space-between;
+      margin: 0 auto 22px;
       max-width: var(--content-width);
-      padding: 56px 28px 96px;
+      padding: 10px 12px 10px 16px;
+      position: sticky;
+      top: 16px;
+      z-index: 3;
+    }
+
+    .titlebar-main {
+      min-width: 0;
+    }
+
+    .titlebar-title {
+      color: var(--color-primary);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin: 0;
+    }
+
+    .titlebar-subtitle {
+      color: var(--color-text-muted);
+      font-size: 11px;
+      margin: 2px 0 0;
+    }
+
+    .titlebar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .mode-button {
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      padding: 0 10px;
+    }
+
+    .mode-button.is-active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: var(--color-bg);
+    }
+
+    .hero {
+      background: var(--color-liquid-strong);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      margin: 0 auto 18px;
+      max-width: var(--content-width);
+      overflow: hidden;
+      padding: clamp(26px, 4vw, 42px);
+      position: relative;
+    }
+
+    .hero::after {
+      background:
+        repeating-linear-gradient(90deg, transparent 0 28px, var(--color-liquid-charcoal) 28px 29px);
+      content: "";
+      inset: auto 0 0;
+      height: 92px;
+      opacity: 0.9;
+      pointer-events: none;
+      position: absolute;
+    }
+
+    .hero-grid {
+      display: grid;
+      gap: 26px;
+      grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.65fr);
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero h1 {
+      border: 0;
+      font-size: clamp(34px, 5vw, 60px);
+      line-height: 0.98;
+      margin: 0;
+      max-width: 680px;
+      padding: 0;
+    }
+
+    .hero p {
+      color: var(--color-text-secondary);
+      font-size: 15px;
+      line-height: 1.85;
+      margin: 18px 0 0;
+      max-width: 640px;
+    }
+
+    .principle-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .principle-chip {
+      background: var(--color-liquid-charcoal);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+    }
+
+    .principle-chip strong,
+    .principle-chip span {
+      display: block;
+    }
+
+    .principle-chip strong {
+      color: var(--color-primary);
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .principle-chip span {
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 3px;
+    }
+
+    .preview-panel {
+      background: var(--color-liquid);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      margin: 0 auto 18px;
+      max-width: var(--content-width);
+      padding: 18px;
+    }
+
+    .token-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 12px;
+    }
+
+    .token {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      min-height: 92px;
+      overflow: hidden;
+    }
+
+    .token-swatch {
+      height: 40px;
+    }
+
+    .token-body {
+      padding: 9px 10px 10px;
+    }
+
+    .token-name,
+    .token-value {
+      display: block;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .token-name {
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+
+    .token-value {
+      color: var(--color-text-muted);
+      margin-top: 3px;
     }
 
     .document {
-      background: var(--color-liquid);
+      background: var(--color-liquid-strong);
       border: 1px solid var(--color-border);
-      border-radius: 8px;
-      padding: 44px;
+      border-radius: var(--radius-lg);
+      margin: 0 auto;
+      max-width: var(--content-width);
+      padding: clamp(28px, 5vw, 56px);
     }
 
-    h1,
-    h2,
-    h3,
-    h4 {
+    .document.is-compact {
+      --content-width: 760px;
+    }
+
+    .document > h1:first-child {
+      display: none;
+    }
+
+    .document h1,
+    .document h2,
+    .document h3,
+    .document h4 {
       color: var(--color-primary);
       font-weight: 700;
       letter-spacing: 0;
       line-height: 1.25;
       margin: 0;
+      scroll-margin-top: 96px;
     }
 
-    h1 {
+    .document h1 {
       border-bottom: 1px solid var(--color-border-strong);
       font-size: 28px;
       margin-bottom: 24px;
       padding-bottom: 16px;
     }
 
-    h1:not(:first-child) {
+    .document h1:not(:first-child) {
       margin-top: 56px;
     }
 
-    h2 {
-      border-top: 1px solid var(--color-border-strong);
+    .document h2 {
+      border-top: 1px solid var(--color-border);
       font-size: 22px;
       margin-top: 42px;
       padding-top: 26px;
     }
 
-    h3 {
+    .document h3 {
       font-size: 17px;
       margin-top: 30px;
     }
 
-    h4 {
+    .document h4 {
       color: var(--color-text);
       font-size: 14px;
       margin-top: 22px;
     }
 
-    p {
+    .document p {
       margin: 14px 0 0;
     }
 
-    a {
+    .document a {
       color: var(--color-primary);
       text-decoration: underline;
       text-underline-offset: 3px;
     }
 
-    ul,
-    ol {
+    .document ul,
+    .document ol {
       margin: 12px 0 0;
       padding-left: 1.35rem;
     }
 
-    li + li {
+    .document li + li {
       margin-top: 4px;
     }
 
-    strong {
+    .document strong {
       font-weight: 700;
     }
 
-    hr {
+    .document hr {
       border: 0;
       border-top: 1px solid var(--color-border);
       margin: 32px 0;
     }
 
-    code {
+    .document code {
       background: var(--color-surface-alt);
       border-radius: 4px;
       color: var(--color-primary);
@@ -148,16 +540,16 @@
       padding: 0.12em 0.34em;
     }
 
-    pre {
+    .document pre {
       background: var(--color-code-bg);
       border: 1px solid var(--color-border);
-      border-radius: 6px;
+      border-radius: var(--radius-md);
       margin: 16px 0 0;
       overflow: auto;
       padding: 16px;
     }
 
-    pre code {
+    .document pre code {
       background: transparent;
       color: var(--color-text);
       display: block;
@@ -167,21 +559,34 @@
       white-space: pre;
     }
 
-    table {
-      border-collapse: collapse;
+    .document table {
+      border-collapse: separate;
+      border-spacing: 0;
       margin-top: 16px;
+      overflow: hidden;
       width: 100%;
     }
 
-    th,
-    td {
-      border: 1px solid var(--color-border);
+    .document th,
+    .document td {
+      border-color: var(--color-border);
+      border-style: solid;
+      border-width: 0 1px 1px 0;
       padding: 10px 12px;
       text-align: left;
       vertical-align: top;
     }
 
-    th {
+    .document th:first-child,
+    .document td:first-child {
+      border-left-width: 1px;
+    }
+
+    .document tr:first-child th {
+      border-top-width: 1px;
+    }
+
+    .document th {
       background: var(--color-surface-alt);
       color: var(--color-primary);
       font-size: 12px;
@@ -189,40 +594,286 @@
       letter-spacing: 0;
     }
 
-    td {
+    .document td {
       background: var(--color-liquid-charcoal);
     }
 
-    blockquote {
+    .document blockquote {
       border-left: 3px solid var(--color-primary);
       color: var(--color-text-secondary);
       margin: 18px 0 0;
       padding-left: 16px;
     }
 
-    @media (max-width: 720px) {
-      .page {
-        padding: 24px 14px 56px;
-      }
+    .inspector-panel {
+      border-bottom: 1px solid var(--color-border);
+      padding: 0 0 18px;
+    }
 
-      .document {
-        border-radius: 6px;
-        padding: 24px;
-      }
+    .inspector-panel + .inspector-panel {
+      padding-top: 18px;
+    }
 
-      h1 {
-        font-size: 24px;
-      }
+    .meter {
+      background: var(--color-liquid-charcoal);
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      height: 7px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
 
-      h2 {
-        font-size: 19px;
+    .meter-fill {
+      background: var(--color-primary);
+      height: 100%;
+      transform-origin: left center;
+      width: 0%;
+    }
+
+    .state-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .state-row {
+      align-items: center;
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 10px 1fr;
+    }
+
+    .state-dot {
+      border-radius: 999px;
+      height: 8px;
+      width: 8px;
+    }
+
+    .state-row span:last-child {
+      color: var(--color-text-secondary);
+      font-size: 12px;
+    }
+
+    .danger {
+      background: var(--color-danger);
+    }
+
+    .warning {
+      background: var(--color-warning);
+    }
+
+    .success {
+      background: var(--color-success);
+    }
+
+    .info {
+      background: var(--color-info);
+    }
+
+    .layer-sample {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 10px;
+    }
+
+    .layer-row {
+      background: var(--color-liquid-charcoal);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-text-secondary);
+      font-size: 12px;
+      padding: 8px 9px;
+    }
+
+    .layer-row.is-active {
+      border-left: 3px solid var(--color-primary);
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+
+    :root[data-density="compact"] .document {
+      max-width: 760px;
+    }
+
+    :root[data-density="compact"] .document p,
+    :root[data-density="compact"] .document li {
+      line-height: 1.55;
+    }
+
+    :root[data-density="compact"] .document h2 {
+      margin-top: 34px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 1ms !important;
       }
     }
 
+    @media (max-width: 1180px) {
+      .app-shell {
+        grid-template-columns: var(--rail-width) minmax(0, 1fr);
+      }
+
+      .sidebar,
+      .inspector {
+        display: none;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .app-shell {
+        display: block;
+      }
+
+      .rail {
+        border-bottom: 1px solid var(--color-border);
+        border-right: 0;
+        flex-direction: row;
+        height: auto;
+        justify-content: flex-start;
+        position: sticky;
+        z-index: 4;
+      }
+
+      .rail-spacer {
+        flex: 1;
+      }
+
+      .main-pane {
+        padding: 16px 14px 56px;
+      }
+
+      .titlebar {
+        align-items: flex-start;
+        border-radius: var(--radius-md);
+        flex-direction: column;
+        position: static;
+      }
+
+      .titlebar-actions {
+        justify-content: flex-start;
+      }
+
+      .hero,
+      .document,
+      .preview-panel {
+        border-radius: var(--radius-md);
+      }
+
+      .hero-grid,
+      .token-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .document {
+        padding: 24px;
+      }
+
+      .document h1 {
+        font-size: 24px;
+      }
+
+      .document h2 {
+        font-size: 19px;
+      }
+    }
   </style>
 </head>
 <body>
-  <main class="page">
+  <div class="app-shell">
+    <nav class="rail" aria-label="デザイン文書ツール">
+      <div class="rail-mark" aria-label="Relic">R</div>
+      <button class="rail-button" type="button" data-scroll-target="visual-design-system" title="Visual Design System">V</button>
+      <button class="rail-button" type="button" data-scroll-target="screen-structure" title="Screen Structure">S</button>
+      <button class="rail-button" type="button" data-scroll-target="navigation-flow" title="Navigation Flow">N</button>
+      <div class="rail-spacer"></div>
+      <button class="rail-button" type="button" data-theme-toggle title="テーマ切替">◐</button>
+    </nav>
+
+    <aside class="sidebar" aria-label="文書ナビゲーション">
+      <p class="sidebar-title">DOCUMENT</p>
+      <p class="document-name">Relic Design</p>
+      <p class="document-path">docs/design/DESIGN.html</p>
+      <nav class="toc" data-toc aria-label="見出し一覧"></nav>
+    </aside>
+
+    <main class="main-pane">
+      <header class="titlebar" aria-label="表示操作">
+        <div class="titlebar-main">
+          <p class="titlebar-title">Liquid Charcoal Applied Document</p>
+          <p class="titlebar-subtitle">Canvas、Liquid、Charcoalを実際の画面層として扱うデザイン正本</p>
+        </div>
+        <div class="titlebar-actions">
+          <button class="mode-button" type="button" data-theme-toggle>テーマ切替</button>
+          <button class="mode-button" type="button" data-density-toggle>密度切替</button>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-grid">
+          <div>
+            <h1 id="hero-title">Liquid Charcoalを読むための作業画面</h1>
+            <p>このHTMLは、Markdown本文を表示するだけでなく、Relic本体へ適用するCanvas、Liquid、Charcoal、細い境界、静かな状態差、短い動きを同じ画面上で確認できるようにしたデザイン文書である。</p>
+          </div>
+          <div class="principle-stack" aria-label="Liquid Charcoalの三層">
+            <div class="principle-chip">
+              <strong>Canvas</strong>
+              <span>情報を置くための基盤。余白と読みやすさを担う。</span>
+            </div>
+            <div class="principle-chip">
+              <strong>Liquid</strong>
+              <span>透明・半透明の層。まとまり、重なり、状態を示す。</span>
+            </div>
+            <div class="principle-chip">
+              <strong>Charcoal</strong>
+              <span>本文、見出し、現在位置、主要操作へ重心を与える。</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="preview-panel" aria-labelledby="tokens-title">
+        <p class="panel-label" id="tokens-title">LIVE TOKENS</p>
+        <p class="panel-note">テーマ切替時に、同じ役割のトークンがLight Theme / Dark Themeで置き換わる。</p>
+        <div class="token-grid" aria-label="Liquid Charcoal tokens">
+          <div class="token">
+            <div class="token-swatch" style="background: var(--color-primary)"></div>
+            <div class="token-body">
+              <span class="token-name">Primary</span>
+              <span class="token-value">主要操作・現在位置</span>
+            </div>
+          </div>
+          <div class="token">
+            <div class="token-swatch" style="background: var(--color-bg); border-bottom: 1px solid var(--color-border)"></div>
+            <div class="token-body">
+              <span class="token-name">Canvas</span>
+              <span class="token-value">作業面の基盤</span>
+            </div>
+          </div>
+          <div class="token">
+            <div class="token-swatch" style="background: var(--color-liquid-charcoal)"></div>
+            <div class="token-body">
+              <span class="token-name">Liquid Charcoal</span>
+              <span class="token-value">低濃度レイヤー</span>
+            </div>
+          </div>
+          <div class="token">
+            <div class="token-swatch" style="background: var(--color-surface-alt)"></div>
+            <div class="token-body">
+              <span class="token-name">Selected Surface</span>
+              <span class="token-value">選択・カード面</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
     <article class="document">
 <h1>DESIGN.md</h1>
 <p>Relicのデザイン系文書の正本。画面構成、画面遷移、デザインシステムをこの文書に集約する。</p>
@@ -1023,7 +1674,135 @@ border: 1px solid var(--color-border);
 <p>保存場所は毎回ユーザーが選択する。
 既存フォルダを開く操作や新規ワークスペース作成操作でダイアログをキャンセルした場合は、登録済みワークスペースやアクティブワークスペースを変更しない。
 ただし、これらの操作ではダイアログ表示前に開きタブの保存確認を行うため、確認を通過した後にキャンセルした場合も、開きタブは閉じた状態になる。</p>
-    </article>
-  </main>
+      </article>
+    </main>
+
+    <aside class="inspector" aria-label="Liquid Charcoal状態パネル">
+      <section class="inspector-panel">
+        <p class="inspector-title">READING POSITION</p>
+        <p class="panel-note" data-current-section>Visual Design System</p>
+        <div class="meter" aria-hidden="true">
+          <div class="meter-fill" data-progress></div>
+        </div>
+      </section>
+
+      <section class="inspector-panel">
+        <p class="inspector-title">FUNCTIONAL COLORS</p>
+        <p class="panel-note">有彩色は状態を誤認させないためだけに使う。</p>
+        <div class="state-list">
+          <div class="state-row"><span class="state-dot danger"></span><span>Danger / 破壊的操作</span></div>
+          <div class="state-row"><span class="state-dot warning"></span><span>Warning / 注意</span></div>
+          <div class="state-row"><span class="state-dot success"></span><span>Success / 完了</span></div>
+          <div class="state-row"><span class="state-dot info"></span><span>Info / 補足</span></div>
+        </div>
+      </section>
+
+      <section class="inspector-panel">
+        <p class="inspector-title">LAYER SAMPLE</p>
+        <p class="panel-note">面の差は濃い塗りではなく、透明度、境界、状態差で表す。</p>
+        <div class="layer-sample">
+          <div class="layer-row">Canvas</div>
+          <div class="layer-row">Liquid Surface</div>
+          <div class="layer-row is-active">Charcoal Focus</div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const headings = [...document.querySelectorAll(".document h1, .document h2")].filter((heading) => heading.textContent.trim() !== "DESIGN.md");
+      const toc = document.querySelector("[data-toc]");
+      const progress = document.querySelector("[data-progress]");
+      const currentSection = document.querySelector("[data-current-section]");
+
+      const slugCounts = new Map();
+      const slugify = (text) => {
+        const base = text.toLowerCase().trim().replace(/[^\p{Letter}\p{Number}]+/gu, "-").replace(/^-|-$/g, "") || "section";
+        const count = slugCounts.get(base) || 0;
+        slugCounts.set(base, count + 1);
+        return count ? `${base}-${count + 1}` : base;
+      };
+
+      headings.forEach((heading) => {
+        if (!heading.id) heading.id = slugify(heading.textContent);
+        if (!toc) return;
+        const link = document.createElement("a");
+        link.href = `#${heading.id}`;
+        link.textContent = heading.textContent;
+        link.dataset.target = heading.id;
+        if (heading.tagName === "H2") link.style.paddingLeft = "22px";
+        toc.appendChild(link);
+      });
+
+      const storage = (() => {
+        try {
+          return window.localStorage;
+        } catch {
+          return null;
+        }
+      })();
+
+      const setTheme = (theme) => {
+        if (theme === "system") {
+          root.removeAttribute("data-theme");
+          storage?.removeItem("relic-design-theme");
+          return;
+        }
+        root.dataset.theme = theme;
+        storage?.setItem("relic-design-theme", theme);
+      };
+
+      const savedTheme = storage?.getItem("relic-design-theme");
+      if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
+
+      document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const nextTheme = root.dataset.theme === "dark" ? "light" : "dark";
+          setTheme(nextTheme);
+        });
+      });
+
+      document.querySelector("[data-density-toggle]")?.addEventListener("click", (event) => {
+        const compact = root.dataset.density !== "compact";
+        root.dataset.density = compact ? "compact" : "comfortable";
+        event.currentTarget.classList.toggle("is-active", compact);
+      });
+
+      document.querySelectorAll("[data-scroll-target]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.getElementById(button.dataset.scrollTarget)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
+
+      const links = [...document.querySelectorAll(".toc a")];
+      const updateProgress = () => {
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+        const amount = scrollable > 0 ? Math.min(100, Math.max(0, (window.scrollY / scrollable) * 100)) : 0;
+        if (progress) progress.style.width = `${amount}%`;
+      };
+
+      const setActiveHeading = (id) => {
+        links.forEach((link) => link.classList.toggle("is-active", link.dataset.target === id));
+        const heading = document.getElementById(id);
+        if (currentSection && heading) currentSection.textContent = heading.textContent;
+      };
+
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries) => {
+          const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+          if (visible) setActiveHeading(visible.target.id);
+        }, { rootMargin: "-18% 0px -68% 0px", threshold: [0, 0.35, 0.7] });
+
+        headings.forEach((heading) => observer.observe(heading));
+      } else if (headings[0]) {
+        setActiveHeading(headings[0].id);
+      }
+
+      updateProgress();
+      window.addEventListener("scroll", updateProgress, { passive: true });
+    })();
+  </script>
 </body>
 </html>
