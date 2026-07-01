@@ -138,21 +138,57 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.graph-control-section.is-collapsed {
+  padding-bottom: 10px;
+}
+
 .graph-control-section:last-of-type {
   border-bottom: 0;
 }
 
 .graph-control-section-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
   padding-inline-end: 56px;
+  border: 0;
+  background: transparent;
   color: var(--color-text);
+  font: inherit;
   font-size: 12px;
   font-weight: 650;
+  text-align: start;
+  cursor: pointer;
+}
+
+.graph-control-section-header:hover {
+  color: var(--color-primary);
+}
+
+.graph-control-section-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-inline-start: -2px;
+  margin-inline-end: 4px;
+  color: var(--color-text-muted);
+  transition: transform 140ms ease;
+}
+
+.graph-control-section:not(.is-collapsed) .graph-control-section-icon {
+  transform: rotate(90deg);
 }
 
 .graph-control-section-children {
   display: grid;
   gap: 8px;
   padding-top: 9px;
+}
+
+.graph-control-section-children[hidden] {
+  display: none;
 }
 
 .graph-search-input,
