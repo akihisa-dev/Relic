@@ -277,9 +277,11 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
 
   const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     event.currentTarget.focus();
-    if (event.button !== 0) return;
 
     const node = nodeAtPoint(event.clientX, event.clientY);
+    if (!node && event.button !== 0) return;
+    if (node && !isGraphNodePrimaryPointerButton(event.button)) return;
+
     const canvas = event.currentTarget;
     canvas.setPointerCapture(event.pointerId);
 
@@ -1120,6 +1122,10 @@ export function graphNodePrimaryAction(node: WorkspaceGraphNode): GraphNodePrima
   return null;
 }
 
+export function isGraphNodePrimaryPointerButton(button: number): boolean {
+  return button === 0 || button === 1;
+}
+
 function tokenizeGraphQuery(query: string): string[] {
   const tokens: string[] = [];
   const pattern = /"([^"]+)"|'([^']+)'|(\S+)/g;
@@ -1150,7 +1156,7 @@ function screenToWorld(
   };
 }
 
-function zoomGraphAtPoint(
+export function zoomGraphAtPoint(
   view: { panX: number; panY: number; scale: number },
   x: number,
   y: number,
@@ -1160,8 +1166,8 @@ function zoomGraphAtPoint(
 ): void {
   const before = screenToWorld(x, y, width, height, view);
   view.scale = clamp(nextScale, 0.15, 5);
-  view.panX = x - before.x * view.scale;
-  view.panY = y - before.y * view.scale;
+  view.panX = x - width / 2 - before.x * view.scale;
+  view.panY = y - height / 2 - before.y * view.scale;
 }
 
 function distance(ax: number, ay: number, bx: number, by: number): number {
