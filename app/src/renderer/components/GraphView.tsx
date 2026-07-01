@@ -1169,11 +1169,10 @@ function drawArrow(context: CanvasRenderingContext2D, source: SimNode, target: S
   context.fill();
 }
 
-function nodeRadius(node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount" | "type">, options: GraphOptions): number {
-  const weight = 1 + Math.sqrt(node.backlinkCount + node.linkCount) * 0.55;
-  const typeMultiplier = node.type === "tag" ? 0.85 : node.type === "attachment" ? 0.78 : node.type === "unresolved" ? 0.72 : 1;
+export function graphNodeBaseRadius(node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">, options: GraphOptions): number {
+  const weight = node.backlinkCount + node.linkCount;
 
-  return clamp(4.5 * weight * typeMultiplier * options.nodeSizeMultiplier, 3, 24);
+  return options.nodeSizeMultiplier * Math.max(8, Math.min(3 * Math.sqrt(weight + 1), 30));
 }
 
 export function graphNodeScale(scale: number): number {
@@ -1181,11 +1180,11 @@ export function graphNodeScale(scale: number): number {
 }
 
 function graphNodeVisualRadius(
-  node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount" | "type">,
+  node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">,
   options: GraphOptions,
   scale: number
 ): number {
-  return nodeRadius(node, options) * graphNodeScale(scale);
+  return graphNodeBaseRadius(node, options) * graphNodeScale(scale);
 }
 
 function nodeColor(node: WorkspaceGraphNode, groups: GraphColorGroup[], tags: string[], focused: boolean): string {
