@@ -18,6 +18,7 @@ interface GraphOptions {
   repelStrength: number;
   search: string;
   showArrows: boolean;
+  showAttachments: boolean;
   showOrphans: boolean;
   showTags: boolean;
   textFadeMultiplier: number;
@@ -53,12 +54,16 @@ const defaultGraphOptions: GraphOptions = {
   repelStrength: 10,
   search: "",
   showArrows: false,
+  showAttachments: false,
   showOrphans: true,
   showTags: false,
   textFadeMultiplier: 0
 };
 
 const graphCanvasSizeFallback = { height: 600, width: 900 };
+const graphOptionsStorageKey = "relic.graphView.options.v1";
+const graphControlsStorageKey = "relic.graphView.controlsOpen.v1";
+const graphColorGroupsStorageKey = "relic.graphView.colorGroups.v1";
 
 export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -77,14 +82,14 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
   const latestOptionsRef = useRef(defaultGraphOptions);
   const colorGroupsRef = useRef<GraphColorGroup[]>([]);
   const openFileRef = useRef(onOpenFile);
-  const [controlsOpen, setControlsOpen] = useState(true);
+  const [controlsOpen, setControlsOpen] = useState(loadGraphControlsOpen);
   const [graphState, setGraphState] = useState<{
     error: string | null;
     graph: WorkspaceGraph | null;
     loading: boolean;
   }>({ error: null, graph: null, loading: true });
-  const [options, setOptions] = useState(defaultGraphOptions);
-  const [colorGroups, setColorGroups] = useState<GraphColorGroup[]>([]);
+  const [options, setOptions] = useState(loadGraphOptions);
+  const [colorGroups, setColorGroups] = useState<GraphColorGroup[]>(loadGraphColorGroups);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   openFileRef.current = onOpenFile;
@@ -135,6 +140,7 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
       graph.nodes
         .filter((node) => {
           if (!options.showTags && node.type === "tag") return false;
+          if (!options.showAttachments && node.type === "attachment") return false;
           if (options.hideUnresolved && node.type === "unresolved") return false;
           if (!options.showOrphans && !linkedIds.has(node.id)) return false;
           if (!search) return true;
@@ -161,7 +167,19 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
         (options.showOrphans || connectedIds.has(node.id))
       )
     };
-  }, [graphState.graph, options.hideUnresolved, options.search, options.showOrphans, options.showTags]);
+  }, [graphState.graph, options.hideUnresolved, options.search, options.showAttachments, options.showOrphans, options.showTags]);
+
+  useEffect(() => {
+    saveJson(graphOptionsStorageKey, options);
+  }, [options]);
+
+  useEffect(() => {
+    saveJson(graphColorGroupsStorageKey, colorGroups);
+  }, [colorGroups]);
+
+  useEffect(() => {
+    saveJson(graphControlsStorageKey, controlsOpen);
+  }, [controlsOpen]);
 
   useEffect(() => {
     syncSimulation(filteredGraph, nodesRef.current, linksRef);
@@ -417,7 +435,11 @@ function GraphControls({
           value={options.search}
         />
         <GraphToggle label="Tags" onChange={(showTags) => onOptionsChange({ showTags })} value={options.showTags} />
-        <GraphToggle label="Attachments" onChange={() => undefined} value={false} />
+        <GraphToggle
+          label="Attachments"
+          onChange={(showAttachments) => onOptionsChange({ showAttachments })}
+          value={options.showAttachments}
+        />
         <GraphToggle
           label="Existing files only"
           onChange={(hideUnresolved) => onOptionsChange({ hideUnresolved })}
@@ -581,7 +603,8 @@ function stepSimulation(
       const dx = b.x - a.x || 0.01;
       const dy = b.y - a.y || 0.01;
       const distanceSq = Math.max(64, dx * dx + dy * dy);
-      const force = Math.min(2.4, options.repelStrength * 80 / distanceSq);
+      const repel = Math.pow(options.repelStrength, 3);
+      const force = Math.min(2.4, repel * 0.08 / distanceSq);
       const length = Math.sqrt(distanceSq);
       const fx = dx / length * force;
       const fy = dy / length * force;
@@ -699,7 +722,7 @@ function drawArrow(context: CanvasRenderingContext2D, source: SimNode, target: S
 
 function nodeRadius(node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount" | "type">, options: GraphOptions): number {
   const weight = 1 + Math.sqrt(node.backlinkCount + node.linkCount) * 0.55;
-  const typeMultiplier = node.type === "tag" ? 0.85 : node.type === "unresolved" ? 0.72 : 1;
+  const typeMultiplier = node.type === "tag" ? 0.85 : node.type === "attachment" ? 0.78 : node.type === "unresolved" ? 0.72 : 1;
 
   return clamp(4.5 * weight * typeMultiplier * options.nodeSizeMultiplier, 3, 24);
 }
@@ -712,6 +735,7 @@ function nodeColor(node: WorkspaceGraphNode, groups: GraphColorGroup[], focused:
   if (group) return group.color;
 
   if (node.type === "tag") return cssVar("--color-accent", "#3c8f6d");
+  if (node.type === "attachment") return cssVar("--color-primary-muted", "#6f8fc8");
   if (node.type === "unresolved") return cssVar("--color-text-muted", "#9a9a9a");
 
   return cssVar("--color-text-secondary", "#5f646d");
@@ -752,6 +776,82 @@ function nextGroupColor(index: number): string {
   const colors = ["#2f66b1", "#3c8f6d", "#b06a2c", "#8d66d9", "#b74b65", "#6c7786"];
 
   return colors[index % colors.length];
+}
+
+function loadGraphOptions(): GraphOptions {
+  const stored = loadJson<Partial<GraphOptions>>(graphOptionsStorageKey);
+
+  return sanitizeGraphOptions(stored);
+}
+
+function sanitizeGraphOptions(value: Partial<GraphOptions> | null): GraphOptions {
+  if (!value || typeof value !== "object") return defaultGraphOptions;
+
+  return {
+    centerStrength: safeNumber(value.centerStrength, defaultGraphOptions.centerStrength, 0, 1),
+    hideUnresolved: typeof value.hideUnresolved === "boolean" ? value.hideUnresolved : defaultGraphOptions.hideUnresolved,
+    lineSizeMultiplier: safeNumber(value.lineSizeMultiplier, defaultGraphOptions.lineSizeMultiplier, 0.1, 5),
+    linkDistance: safeNumber(value.linkDistance, defaultGraphOptions.linkDistance, 30, 500),
+    linkStrength: safeNumber(value.linkStrength, defaultGraphOptions.linkStrength, 0, 1),
+    nodeSizeMultiplier: safeNumber(value.nodeSizeMultiplier, defaultGraphOptions.nodeSizeMultiplier, 0.1, 5),
+    repelStrength: safeNumber(value.repelStrength, defaultGraphOptions.repelStrength, 0, 20),
+    search: typeof value.search === "string" ? value.search.slice(0, 200) : defaultGraphOptions.search,
+    showArrows: typeof value.showArrows === "boolean" ? value.showArrows : defaultGraphOptions.showArrows,
+    showAttachments: typeof value.showAttachments === "boolean" ? value.showAttachments : defaultGraphOptions.showAttachments,
+    showOrphans: typeof value.showOrphans === "boolean" ? value.showOrphans : defaultGraphOptions.showOrphans,
+    showTags: typeof value.showTags === "boolean" ? value.showTags : defaultGraphOptions.showTags,
+    textFadeMultiplier: safeNumber(value.textFadeMultiplier, defaultGraphOptions.textFadeMultiplier, -3, 3)
+  };
+}
+
+function loadGraphControlsOpen(): boolean {
+  const stored = loadJson<boolean>(graphControlsStorageKey);
+
+  return typeof stored === "boolean" ? stored : true;
+}
+
+function loadGraphColorGroups(): GraphColorGroup[] {
+  const stored = loadJson<unknown>(graphColorGroupsStorageKey);
+  if (!Array.isArray(stored)) return [];
+
+  return stored.flatMap((item, index) => {
+    if (!item || typeof item !== "object") return [];
+    const group = item as Partial<GraphColorGroup>;
+    if (typeof group.query !== "string" || typeof group.color !== "string") return [];
+
+    return [{
+      color: /^#[0-9a-f]{6}$/i.test(group.color) ? group.color : nextGroupColor(index),
+      id: typeof group.id === "string" ? group.id : `group-${index}`,
+      query: group.query.slice(0, 200)
+    }];
+  }).slice(0, 12);
+}
+
+function safeNumber(value: unknown, fallback: number, min: number, max: number): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? clamp(value, min, max)
+    : fallback;
+}
+
+function loadJson<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const value = window.localStorage.getItem(key);
+    return value ? JSON.parse(value) as T : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveJson(key: string, value: unknown): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // 設定保存に失敗してもグラフ表示自体は継続する。
+  }
 }
 
 function requestGraphFrame(callback: FrameRequestCallback): number {

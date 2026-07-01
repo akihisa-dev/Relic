@@ -206,7 +206,7 @@ export interface WorkspaceTagSummary {
   tag: string;
 }
 
-export type WorkspaceGraphNodeType = "file" | "tag" | "unresolved";
+export type WorkspaceGraphNodeType = "attachment" | "file" | "tag" | "unresolved";
 
 export interface WorkspaceGraphNode {
   backlinkCount: number;
