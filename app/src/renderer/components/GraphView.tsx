@@ -1105,9 +1105,10 @@ function drawGraph(
     }
   }
 
+  const linkScaleOpacity = graphLinkScaleOpacity(view.scale);
   for (const link of links) {
     const active = !focused || link.source === focused.id || link.target === focused.id;
-    context.globalAlpha = active ? 0.65 : 0.12;
+    context.globalAlpha = (active ? 0.65 : 0.12) * linkScaleOpacity;
     context.strokeStyle = active ? cssVar("--color-border-strong", "#9a9a9a") : cssVar("--color-border", "#dedede");
     context.lineWidth = Math.max(0.4 / view.scale, options.lineSizeMultiplier * Math.sqrt(link.count) / view.scale);
     context.beginPath();
@@ -1115,7 +1116,7 @@ function drawGraph(
     context.lineTo(link.targetNode.x, link.targetNode.y);
     context.stroke();
 
-    if (options.showArrows) {
+    if (options.showArrows && linkScaleOpacity > 0.001) {
       drawArrow(context, link.sourceNode, link.targetNode, options, view.scale);
     }
   }
@@ -1177,6 +1178,10 @@ export function graphNodeBaseRadius(node: Pick<WorkspaceGraphNode, "backlinkCoun
 
 export function graphNodeScale(scale: number): number {
   return Math.sqrt(1 / Math.max(graphMinScale, scale));
+}
+
+export function graphLinkScaleOpacity(scale: number): number {
+  return clamp(2 * (scale - 0.3), 0, 1);
 }
 
 function graphNodeVisualRadius(
