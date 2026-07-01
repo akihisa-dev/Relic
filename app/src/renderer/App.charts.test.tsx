@@ -89,6 +89,9 @@ describe("App charts", () => {
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
     expect(container.querySelector(".graph-view-canvas")).toBeInTheDocument();
     expect(container.querySelector(".graph-controls")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "グラフ設定を閉じる" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "グラフ設定をリセット" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "グラフのタイムラプスを再生" })).toBeInTheDocument();
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
