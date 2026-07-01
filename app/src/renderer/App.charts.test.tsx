@@ -24,7 +24,11 @@ import {
   resetRendererStores,
   testWorkspaceState as withWorkspace
 } from "../test/rendererTestUtils";
-import { graphNodePrimaryAction } from "./components/GraphView";
+import {
+  graphNodePrimaryAction,
+  isGraphNodePrimaryPointerButton,
+  zoomGraphAtPoint
+} from "./components/GraphView";
 import { useEditorStore } from "./store/editorStore";
 import { useUiStore } from "./store/uiStore";
 
@@ -142,6 +146,17 @@ describe("App charts", () => {
       path: null,
       type: "tag"
     })).toStrictEqual({ tag: "project", type: "tagSearch" });
+    expect(isGraphNodePrimaryPointerButton(0)).toBe(true);
+    expect(isGraphNodePrimaryPointerButton(1)).toBe(true);
+    expect(isGraphNodePrimaryPointerButton(2)).toBe(false);
+  });
+
+  it("グラフビューのズームはカーソル下の位置を保つ", () => {
+    const view = { panX: 0, panY: 0, scale: 1 };
+
+    zoomGraphAtPoint(view, 100, 150, 900, 600, 2);
+
+    expect(view).toStrictEqual({ panX: 350, panY: 150, scale: 2 });
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
