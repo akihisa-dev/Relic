@@ -99,6 +99,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const linksRef = useRef<SimLink[]>([]);
   const viewRef = useRef({ panX: 0, panY: 0, scale: 1 });
   const panVelocityRef = useRef({ x: 0, y: 0 });
+  const hoverPointRef = useRef<{ x: number; y: number } | null>(null);
   const keyboardRef = useRef<GraphKeyboardState>({
     down: false,
     left: false,
@@ -255,6 +256,21 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     applyGraphKeyboardNavigation(viewRef.current, keyboardRef.current);
     applyGraphKeyboardZoom(viewRef.current, keyboardRef.current, cssWidth, cssHeight);
     stepSimulation(nodesRef.current, linksRef.current, latestOptionsRef.current, cssWidth, cssHeight);
+    const hoveredNode = hoveredNodeId ? nodesRef.current.get(hoveredNodeId) ?? null : null;
+    if (
+      !pinnedNodeId &&
+      hoveredNode &&
+      !graphHoveredNodeContainsPoint(
+        hoveredNode,
+        hoverPointRef.current,
+        viewRef.current,
+        latestOptionsRef.current,
+        cssWidth,
+        cssHeight
+      )
+    ) {
+      setHoveredNodeId(null);
+    }
     drawGraph(
       context,
       [...nodesRef.current.values()],
@@ -338,6 +354,12 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   }, [nodeAtPoint]);
 
   const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    hoverPointRef.current = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    };
+
     const pointer = pointerRef.current;
     if (!pointer) {
       const node = nodeAtPoint(event.clientX, event.clientY);
@@ -511,7 +533,10 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
         onPointerDown={handlePointerDown}
-        onPointerLeave={() => setHoveredNodeId(null)}
+        onPointerLeave={() => {
+          hoverPointRef.current = null;
+          setHoveredNodeId(null);
+        }}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onWheel={handleWheel}
@@ -1318,6 +1343,20 @@ export function applyGraphPanInertia(
   view.panY += velocity.y;
   velocity.x *= 0.9;
   velocity.y *= 0.9;
+}
+
+export function graphHoveredNodeContainsPoint(
+  node: Pick<SimNode, "backlinkCount" | "linkCount" | "type" | "x" | "y">,
+  point: { x: number; y: number } | null,
+  view: { panX: number; panY: number; scale: number },
+  options: GraphOptions,
+  width: number,
+  height: number
+): boolean {
+  if (!point) return false;
+
+  const world = screenToWorld(point.x, point.y, width, height, view);
+  return distance(world.x, world.y, node.x, node.y) <= nodeRadius(node, options) + 4;
 }
 
 function clampGraphScale(scale: number): number {
