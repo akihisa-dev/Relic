@@ -28,6 +28,7 @@ import {
   applyGraphKeyboardNavigation,
   applyGraphKeyboardZoom,
   applyGraphPanInertia,
+  applyGraphZoomTransition,
   graphHoveredNodeContainsPoint,
   graphWheelZoomPoint,
   graphNodePrimaryAction,
@@ -217,7 +218,7 @@ describe("App charts", () => {
   });
 
   it("グラフビューのズームキーは押下状態から継続ズームする", () => {
-    const view = { panX: 0, panY: 0, scale: 1 };
+    const view = { panX: 0, panY: 0, scale: 1, targetScale: 1, zoomCenterX: 0, zoomCenterY: 0 };
 
     applyGraphKeyboardZoom(view, {
       down: false,
@@ -228,7 +229,13 @@ describe("App charts", () => {
       zoomIn: true,
       zoomOut: false
     }, 900, 600);
-    expect(view.scale).toBeCloseTo(1.03);
+    expect(view.scale).toBe(1);
+    expect(view.targetScale).toBeCloseTo(1.03);
+    expect(view.zoomCenterX).toBe(450);
+    expect(view.zoomCenterY).toBe(300);
+
+    applyGraphZoomTransition(view, 900, 600);
+    expect(view.scale).toBeCloseTo(1.0045);
 
     applyGraphKeyboardZoom(view, {
       down: false,
@@ -239,7 +246,8 @@ describe("App charts", () => {
       zoomIn: false,
       zoomOut: true
     }, 900, 600);
-    expect(view.scale).toBeCloseTo(1.03 / 1.1);
+    expect(view.targetScale).toBeCloseTo(1.03 / 1.1);
+    expect(view.scale).toBeCloseTo(1.0045);
   });
 
   it("グラフビューの背景パンは離したあと慣性で減速する", () => {

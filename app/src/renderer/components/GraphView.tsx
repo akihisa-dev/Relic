@@ -49,6 +49,15 @@ interface GraphKeyboardState {
   zoomOut: boolean;
 }
 
+interface GraphViewTransform {
+  panX: number;
+  panY: number;
+  scale: number;
+  targetScale: number;
+  zoomCenterX: number;
+  zoomCenterY: number;
+}
+
 type GraphNodePrimaryAction =
   | { path: string; type: "file" }
   | { tag: string; type: "tagSearch" };
@@ -92,12 +101,23 @@ const defaultGraphSectionCollapsed: GraphSectionCollapsedState = {
   groups: true
 };
 
+function initialGraphViewTransform(): GraphViewTransform {
+  return {
+    panX: 0,
+    panY: 0,
+    scale: 1,
+    targetScale: 1,
+    zoomCenterX: 0,
+    zoomCenterY: 0
+  };
+}
+
 export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<number | null>(null);
   const nodesRef = useRef<Map<string, SimNode>>(new Map());
   const linksRef = useRef<SimLink[]>([]);
-  const viewRef = useRef({ panX: 0, panY: 0, scale: 1 });
+  const viewRef = useRef<GraphViewTransform>(initialGraphViewTransform());
   const panVelocityRef = useRef({ x: 0, y: 0 });
   const hoverPointRef = useRef<{ x: number; y: number } | null>(null);
   const keyboardRef = useRef<GraphKeyboardState>({
@@ -255,6 +275,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     }
     applyGraphKeyboardNavigation(viewRef.current, keyboardRef.current);
     applyGraphKeyboardZoom(viewRef.current, keyboardRef.current, cssWidth, cssHeight);
+    applyGraphZoomTransition(viewRef.current, cssWidth, cssHeight);
     stepSimulation(nodesRef.current, linksRef.current, latestOptionsRef.current, cssWidth, cssHeight);
     const hoveredNode = hoveredNodeId ? nodesRef.current.get(hoveredNodeId) ?? null : null;
     if (
@@ -415,7 +436,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
     const delta = event.deltaMode === 1 ? event.deltaY * 40 : event.deltaY;
-    const nextScale = clampGraphScale(viewRef.current.scale * Math.pow(1.5, -delta / 120));
+    const nextScale = clampGraphScale(viewRef.current.targetScale * Math.pow(1.5, -delta / 120));
     const zoomPoint = graphWheelZoomPoint(
       viewRef.current.scale,
       nextScale,
@@ -425,12 +446,10 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       rect.height || graphCanvasSizeFallback.height
     );
 
-    zoomGraphAtPoint(
+    requestGraphZoom(
       viewRef.current,
       zoomPoint.x,
       zoomPoint.y,
-      rect.width || graphCanvasSizeFallback.width,
-      rect.height || graphCanvasSizeFallback.height,
       nextScale
     );
   }, []);
@@ -508,7 +527,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   }, []);
 
   const resetView = useCallback(() => {
-    viewRef.current = { panX: 0, panY: 0, scale: 1 };
+    viewRef.current = initialGraphViewTransform();
     panVelocityRef.current = { x: 0, y: 0 };
     keyboardRef.current = {
       down: false,
@@ -932,9 +951,9 @@ function syncSimulation(
 
 function animateGraph(
   nodes: Map<string, SimNode>,
-  viewRef: React.MutableRefObject<{ panX: number; panY: number; scale: number }>
+  viewRef: React.MutableRefObject<GraphViewTransform>
 ): void {
-  viewRef.current = { panX: 0, panY: 0, scale: 1 };
+  viewRef.current = initialGraphViewTransform();
   let index = 0;
 
   for (const node of nodes.values()) {
@@ -1305,7 +1324,7 @@ export function applyGraphKeyboardNavigation(
 }
 
 export function applyGraphKeyboardZoom(
-  view: { panX: number; panY: number; scale: number },
+  view: GraphViewTransform,
   keyboard: GraphKeyboardState,
   width: number,
   height: number
@@ -1313,11 +1332,40 @@ export function applyGraphKeyboardZoom(
   if (!keyboard.zoomIn && !keyboard.zoomOut) return;
 
   const step = keyboard.shift ? 1.1 : 1.03;
-  let nextScale = view.scale;
+  let nextScale = view.targetScale;
   if (keyboard.zoomIn) nextScale *= step;
   if (keyboard.zoomOut) nextScale /= step;
 
-  zoomGraphAtPoint(view, width / 2, height / 2, width, height, nextScale);
+  requestGraphZoom(view, width / 2, height / 2, nextScale);
+}
+
+export function requestGraphZoom(
+  view: GraphViewTransform,
+  x: number,
+  y: number,
+  nextScale: number
+): void {
+  view.targetScale = clampGraphScale(nextScale);
+  view.zoomCenterX = x;
+  view.zoomCenterY = y;
+}
+
+export function applyGraphZoomTransition(
+  view: GraphViewTransform,
+  width: number,
+  height: number
+): void {
+  view.targetScale = clampGraphScale(view.targetScale);
+
+  const currentScale = view.scale;
+  const ratio = currentScale > view.targetScale ? currentScale / view.targetScale : view.targetScale / currentScale;
+  if (ratio - 1 < 0.01) return;
+
+  const zoomCenterX = view.zoomCenterX === 0 && view.zoomCenterY === 0 ? width / 2 : view.zoomCenterX;
+  const zoomCenterY = view.zoomCenterX === 0 && view.zoomCenterY === 0 ? height / 2 : view.zoomCenterY;
+  const nextScale = currentScale * 0.85 + view.targetScale * 0.15;
+
+  zoomGraphAtPoint(view, zoomCenterX, zoomCenterY, width, height, nextScale);
 }
 
 export function nextGraphPanVelocity(
