@@ -31,6 +31,7 @@ import {
   applyGraphZoomTransition,
   graphHoveredNodeContainsPoint,
   graphLabelOpacity,
+  graphLinkScaleOpacity,
   graphNodeBaseRadius,
   graphNodeScale,
   graphPointerMovedBeyondClickThreshold,
@@ -311,6 +312,10 @@ describe("App charts", () => {
     expect(graphLabelOpacity(0.5, 0)).toBe(0);
     expect(graphLabelOpacity(1, 0)).toBe(1);
     expect(graphLabelOpacity(2, 1)).toBe(1);
+
+    expect(graphLinkScaleOpacity(0.3)).toBe(0);
+    expect(graphLinkScaleOpacity(0.55)).toBeCloseTo(0.5);
+    expect(graphLinkScaleOpacity(0.8)).toBe(1);
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
