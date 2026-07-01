@@ -44,6 +44,9 @@ interface GraphColorGroup {
   query: string;
 }
 
+type GraphControlSectionId = "display" | "filter" | "forces" | "groups";
+type GraphSectionCollapsedState = Record<GraphControlSectionId, boolean>;
+
 const defaultGraphOptions: GraphOptions = {
   centerStrength: 0.1,
   hideUnresolved: false,
@@ -64,6 +67,13 @@ const graphCanvasSizeFallback = { height: 600, width: 900 };
 const graphOptionsStorageKey = "relic.graphView.options.v1";
 const graphControlsStorageKey = "relic.graphView.controlsOpen.v1";
 const graphColorGroupsStorageKey = "relic.graphView.colorGroups.v1";
+const graphSectionCollapsedStorageKey = "relic.graphView.sectionCollapsed.v1";
+const defaultGraphSectionCollapsed: GraphSectionCollapsedState = {
+  display: true,
+  filter: true,
+  forces: true,
+  groups: true
+};
 
 export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -90,6 +100,7 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
   }>({ error: null, graph: null, loading: true });
   const [options, setOptions] = useState(loadGraphOptions);
   const [colorGroups, setColorGroups] = useState<GraphColorGroup[]>(loadGraphColorGroups);
+  const [sectionCollapsed, setSectionCollapsed] = useState(loadGraphSectionCollapsed);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   openFileRef.current = onOpenFile;
@@ -180,6 +191,10 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
   useEffect(() => {
     saveJson(graphControlsStorageKey, controlsOpen);
   }, [controlsOpen]);
+
+  useEffect(() => {
+    saveJson(graphSectionCollapsedStorageKey, sectionCollapsed);
+  }, [sectionCollapsed]);
 
   useEffect(() => {
     syncSimulation(filteredGraph, nodesRef.current, linksRef);
@@ -376,8 +391,13 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
         onAnimate={() => animateGraph(nodesRef.current, viewRef)}
         onOptionsChange={(patch) => setOptions((current) => ({ ...current, ...patch }))}
         onReset={resetView}
+        onSectionCollapsedChange={(sectionId, collapsed) => setSectionCollapsed((current) => ({
+          ...current,
+          [sectionId]: collapsed
+        }))}
         onToggleControls={() => setControlsOpen((current) => !current)}
         options={options}
+        sectionCollapsed={sectionCollapsed}
       />
     </div>
   );
@@ -393,8 +413,10 @@ function GraphControls({
   onColorGroupDelete,
   onOptionsChange,
   onReset,
+  onSectionCollapsedChange,
   onToggleControls,
-  options
+  options,
+  sectionCollapsed
 }: {
   colorGroups: GraphColorGroup[];
   controlsOpen: boolean;
@@ -405,8 +427,10 @@ function GraphControls({
   onColorGroupDelete: (groupId: string) => void;
   onOptionsChange: (patch: Partial<GraphOptions>) => void;
   onReset: () => void;
+  onSectionCollapsedChange: (sectionId: GraphControlSectionId, collapsed: boolean) => void;
   onToggleControls: () => void;
   options: GraphOptions;
+  sectionCollapsed: GraphSectionCollapsedState;
 }): ReactElement {
   return (
     <aside className={`graph-controls${controlsOpen ? "" : " is-close"}`} data-ignore-swipe="true">
@@ -437,7 +461,12 @@ function GraphControls({
       >
         <GraphControlIcon name="reset" />
       </button>
-      <GraphControlSection title="Filters">
+      <GraphControlSection
+        collapsed={sectionCollapsed.filter}
+        id="filter"
+        onCollapsedChange={onSectionCollapsedChange}
+        title="Filters"
+      >
         <input
           aria-label="ノードをフィルタ"
           className="graph-search-input"
@@ -459,7 +488,12 @@ function GraphControls({
         />
         <GraphToggle label="Orphans" onChange={(showOrphans) => onOptionsChange({ showOrphans })} value={options.showOrphans} />
       </GraphControlSection>
-      <GraphControlSection title="Groups">
+      <GraphControlSection
+        collapsed={sectionCollapsed.groups}
+        id="groups"
+        onCollapsedChange={onSectionCollapsedChange}
+        title="Groups"
+      >
         <div className="graph-color-groups-container">
           {colorGroups.map((group) => (
             <div className="graph-color-group" key={group.id}>
@@ -484,14 +518,24 @@ function GraphControls({
         </div>
         <button className="graph-cta-button" onClick={onAddColorGroup} type="button">New group</button>
       </GraphControlSection>
-      <GraphControlSection title="Display">
+      <GraphControlSection
+        collapsed={sectionCollapsed.display}
+        id="display"
+        onCollapsedChange={onSectionCollapsedChange}
+        title="Display"
+      >
         <GraphToggle label="Arrows" onChange={(showArrows) => onOptionsChange({ showArrows })} value={options.showArrows} />
         <GraphSlider label="Text fade threshold" max={3} min={-3} onChange={(textFadeMultiplier) => onOptionsChange({ textFadeMultiplier })} step={0.1} value={options.textFadeMultiplier} />
         <GraphSlider label="Node size" max={5} min={0.1} onChange={(nodeSizeMultiplier) => onOptionsChange({ nodeSizeMultiplier })} step={0.1} value={options.nodeSizeMultiplier} />
         <GraphSlider label="Link thickness" max={5} min={0.1} onChange={(lineSizeMultiplier) => onOptionsChange({ lineSizeMultiplier })} step={0.1} value={options.lineSizeMultiplier} />
         <button className="graph-cta-button" onClick={onAnimate} type="button">Animate timelapse</button>
       </GraphControlSection>
-      <GraphControlSection title="Forces">
+      <GraphControlSection
+        collapsed={sectionCollapsed.forces}
+        id="forces"
+        onCollapsedChange={onSectionCollapsedChange}
+        title="Forces"
+      >
         <GraphSlider label="Center force" max={1} min={0} onChange={(centerStrength) => onOptionsChange({ centerStrength })} step={0.01} value={options.centerStrength} />
         <GraphSlider label="Repel force" max={20} min={0} onChange={(repelStrength) => onOptionsChange({ repelStrength })} step={0.1} value={options.repelStrength} />
         <GraphSlider label="Link force" max={1} min={0} onChange={(linkStrength) => onOptionsChange({ linkStrength })} step={0.01} value={options.linkStrength} />
@@ -502,7 +546,15 @@ function GraphControls({
   );
 }
 
-function GraphControlIcon({ name }: { name: "close" | "reset" | "settings" | "trash" | "wand" }): ReactElement {
+function GraphControlIcon({ name }: { name: "close" | "reset" | "settings" | "trash" | "triangle" | "wand" }): ReactElement {
+  if (name === "triangle") {
+    return (
+      <svg aria-hidden="true" fill="currentColor" height="12" viewBox="0 0 24 24" width="12">
+        <path d="M9 6l6 6-6 6z" />
+      </svg>
+    );
+  }
+
   if (name === "close") {
     return (
       <svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="16">
@@ -558,11 +610,33 @@ function GraphControlIcon({ name }: { name: "close" | "reset" | "settings" | "tr
   );
 }
 
-function GraphControlSection({ children, title }: { children: React.ReactNode; title: string }): ReactElement {
+function GraphControlSection({
+  children,
+  collapsed,
+  id,
+  onCollapsedChange,
+  title
+}: {
+  children: React.ReactNode;
+  collapsed: boolean;
+  id: GraphControlSectionId;
+  onCollapsedChange: (sectionId: GraphControlSectionId, collapsed: boolean) => void;
+  title: string;
+}): ReactElement {
   return (
-    <section className="graph-control-section">
-      <div className="graph-control-section-header">{title}</div>
-      <div className="graph-control-section-children">{children}</div>
+    <section className={`graph-control-section mod-${id}${collapsed ? " is-collapsed" : ""}`}>
+      <button
+        aria-expanded={!collapsed}
+        className="graph-control-section-header"
+        onClick={() => onCollapsedChange(id, !collapsed)}
+        type="button"
+      >
+        <span className="graph-control-section-icon">
+          <GraphControlIcon name="triangle" />
+        </span>
+        <span>{title}</span>
+      </button>
+      <div className="graph-control-section-children" hidden={collapsed}>{children}</div>
     </section>
   );
 }
@@ -928,6 +1002,18 @@ function loadGraphColorGroups(): GraphColorGroup[] {
       query: group.query.slice(0, 200)
     }];
   }).slice(0, 12);
+}
+
+function loadGraphSectionCollapsed(): GraphSectionCollapsedState {
+  const stored = loadJson<Partial<GraphSectionCollapsedState>>(graphSectionCollapsedStorageKey);
+  if (!stored || typeof stored !== "object") return defaultGraphSectionCollapsed;
+
+  return {
+    display: typeof stored.display === "boolean" ? stored.display : defaultGraphSectionCollapsed.display,
+    filter: typeof stored.filter === "boolean" ? stored.filter : defaultGraphSectionCollapsed.filter,
+    forces: typeof stored.forces === "boolean" ? stored.forces : defaultGraphSectionCollapsed.forces,
+    groups: typeof stored.groups === "boolean" ? stored.groups : defaultGraphSectionCollapsed.groups
+  };
 }
 
 function safeNumber(value: unknown, fallback: number, min: number, max: number): number {

@@ -92,6 +92,10 @@ describe("App charts", () => {
     expect(screen.getByRole("button", { name: "グラフ設定を閉じる" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "グラフ設定をリセット" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "グラフのタイムラプスを再生" })).toBeInTheDocument();
+    const filtersHeader = screen.getByRole("button", { name: "Filters" });
+    expect(filtersHeader).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(filtersHeader);
+    expect(filtersHeader).toHaveAttribute("aria-expanded", "true");
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
