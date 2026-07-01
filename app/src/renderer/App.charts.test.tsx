@@ -31,6 +31,7 @@ import {
   applyGraphZoomTransition,
   graphHoveredNodeContainsPoint,
   graphLabelOpacity,
+  graphNodeBaseRadius,
   graphNodeScale,
   graphPointerMovedBeyondClickThreshold,
   graphWheelZoomPoint,
@@ -293,6 +294,16 @@ describe("App charts", () => {
   });
 
   it("グラフビューのノードと文字はObsidianと同じズーム係数で描画する", () => {
+    const node = {
+      backlinkCount: 8,
+      linkCount: 8
+    };
+
+    expect(graphNodeBaseRadius({ backlinkCount: 0, linkCount: 0 }, graphTestOptions)).toBe(8);
+    expect(graphNodeBaseRadius(node, graphTestOptions)).toBeCloseTo(3 * Math.sqrt(17));
+    expect(graphNodeBaseRadius({ backlinkCount: 200, linkCount: 200 }, graphTestOptions)).toBe(30);
+    expect(graphNodeBaseRadius(node, { ...graphTestOptions, nodeSizeMultiplier: 2 })).toBeCloseTo(6 * Math.sqrt(17));
+
     expect(graphNodeScale(1)).toBe(1);
     expect(graphNodeScale(4)).toBe(0.5);
     expect(graphNodeScale(0.25)).toBe(2);
