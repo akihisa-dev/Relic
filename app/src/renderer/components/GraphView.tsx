@@ -45,6 +45,8 @@ interface GraphKeyboardState {
   right: boolean;
   shift: boolean;
   up: boolean;
+  zoomIn: boolean;
+  zoomOut: boolean;
 }
 
 type GraphNodePrimaryAction =
@@ -97,7 +99,15 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const linksRef = useRef<SimLink[]>([]);
   const viewRef = useRef({ panX: 0, panY: 0, scale: 1 });
   const panVelocityRef = useRef({ x: 0, y: 0 });
-  const keyboardRef = useRef<GraphKeyboardState>({ down: false, left: false, right: false, shift: false, up: false });
+  const keyboardRef = useRef<GraphKeyboardState>({
+    down: false,
+    left: false,
+    right: false,
+    shift: false,
+    up: false,
+    zoomIn: false,
+    zoomOut: false
+  });
   const pointerRef = useRef<{
     dragNode: SimNode | null;
     lastX: number;
@@ -243,6 +253,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       applyGraphPanInertia(viewRef.current, panVelocityRef.current);
     }
     applyGraphKeyboardNavigation(viewRef.current, keyboardRef.current);
+    applyGraphKeyboardZoom(viewRef.current, keyboardRef.current, cssWidth, cssHeight);
     stepSimulation(nodesRef.current, linksRef.current, latestOptionsRef.current, cssWidth, cssHeight);
     drawGraph(
       context,
@@ -405,11 +416,6 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const handleKeyDown = useCallback((event: ReactKeyboardEvent<HTMLCanvasElement>) => {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
 
-    const canvas = event.currentTarget;
-    const rect = canvas.getBoundingClientRect();
-    const width = rect.width || graphCanvasSizeFallback.width;
-    const height = rect.height || graphCanvasSizeFallback.height;
-    const zoomStep = event.shiftKey ? 1.1 : 1.03;
     const keyboard = keyboardRef.current;
     keyboard.shift = event.shiftKey;
 
@@ -435,12 +441,12 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     }
     if (event.key === "+" || event.key === "=") {
       event.preventDefault();
-      zoomGraphAtPoint(viewRef.current, width / 2, height / 2, width, height, viewRef.current.scale * zoomStep);
+      keyboard.zoomIn = true;
       return;
     }
     if (event.key === "-" || event.key === "_") {
       event.preventDefault();
-      zoomGraphAtPoint(viewRef.current, width / 2, height / 2, width, height, viewRef.current.scale / zoomStep);
+      keyboard.zoomOut = true;
     }
   }, []);
 
@@ -466,13 +472,31 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     if (event.key === "ArrowDown") {
       event.preventDefault();
       keyboard.down = false;
+      return;
+    }
+    if (event.key === "+" || event.key === "=") {
+      event.preventDefault();
+      keyboard.zoomIn = false;
+      return;
+    }
+    if (event.key === "-" || event.key === "_") {
+      event.preventDefault();
+      keyboard.zoomOut = false;
     }
   }, []);
 
   const resetView = useCallback(() => {
     viewRef.current = { panX: 0, panY: 0, scale: 1 };
     panVelocityRef.current = { x: 0, y: 0 };
-    keyboardRef.current = { down: false, left: false, right: false, shift: false, up: false };
+    keyboardRef.current = {
+      down: false,
+      left: false,
+      right: false,
+      shift: false,
+      up: false,
+      zoomIn: false,
+      zoomOut: false
+    };
     setOptions(defaultGraphOptions);
     setColorGroups([]);
     setPinnedNodeId(null);
@@ -1253,6 +1277,22 @@ export function applyGraphKeyboardNavigation(
 
   view.panX += dx * 1000 / 60;
   view.panY += dy * 1000 / 60;
+}
+
+export function applyGraphKeyboardZoom(
+  view: { panX: number; panY: number; scale: number },
+  keyboard: GraphKeyboardState,
+  width: number,
+  height: number
+): void {
+  if (!keyboard.zoomIn && !keyboard.zoomOut) return;
+
+  const step = keyboard.shift ? 1.1 : 1.03;
+  let nextScale = view.scale;
+  if (keyboard.zoomIn) nextScale *= step;
+  if (keyboard.zoomOut) nextScale /= step;
+
+  zoomGraphAtPoint(view, width / 2, height / 2, width, height, nextScale);
 }
 
 export function nextGraphPanVelocity(
