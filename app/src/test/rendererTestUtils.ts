@@ -70,6 +70,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     getWorkspaceAliases: vi.fn().mockResolvedValue({ ok: true, value: {} }),
     getWorkspaceCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceChronicleCalendars: vi.fn().mockResolvedValue({ ok: true, value: [{ name: "メイン暦" }] }),
+    getWorkspaceGraph: vi.fn().mockResolvedValue({ ok: true, value: { links: [], nodes: [] } }),
     getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     importImageFile: vi.fn(),

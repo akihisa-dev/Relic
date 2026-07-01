@@ -14,6 +14,7 @@ import type {
 import { ChartView } from "../components/ChartPanel";
 import { ChronicleSettingsPanel } from "../components/ChronicleSettingsPanel";
 import { FrontmatterPanel } from "../components/FrontmatterPanel";
+import { GraphView } from "../components/GraphView";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { ToolsPanel } from "../components/ToolsPanel";
 import type { PanelTabKind } from "../store/editorStore";
@@ -52,15 +53,21 @@ export function useAppTabRenderers({
   renderChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
 } {
-  const renderChartTab = useCallback((chartId: string): ReactNode => (
-    <ChartView
-      chart={chartId === "charts" ? null : charts.find((chart) => chart.id === chartId) ?? null}
-      charts={chartId === "charts" ? charts : undefined}
-      chronicleCalendars={chronicleCalendars}
-      onOpenFile={handleOpenFile}
-      onUpdateEntry={handleUpdateChartEntry}
-    />
-  ), [charts, chronicleCalendars, handleOpenFile, handleUpdateChartEntry]);
+  const renderChartTab = useCallback((chartId: string): ReactNode => {
+    if (chartId === "graph") {
+      return <GraphView onOpenFile={handleOpenFile} />;
+    }
+
+    return (
+      <ChartView
+        chart={chartId === "charts" ? null : charts.find((chart) => chart.id === chartId) ?? null}
+        charts={chartId === "charts" ? charts : undefined}
+        chronicleCalendars={chronicleCalendars}
+        onOpenFile={handleOpenFile}
+        onUpdateEntry={handleUpdateChartEntry}
+      />
+    );
+  }, [charts, chronicleCalendars, handleOpenFile, handleUpdateChartEntry]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {

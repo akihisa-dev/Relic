@@ -206,6 +206,30 @@ export interface WorkspaceTagSummary {
   tag: string;
 }
 
+export type WorkspaceGraphNodeType = "file" | "tag" | "unresolved";
+
+export interface WorkspaceGraphNode {
+  backlinkCount: number;
+  exists: boolean;
+  id: string;
+  label: string;
+  linkCount: number;
+  path: string | null;
+  type: WorkspaceGraphNodeType;
+}
+
+export interface WorkspaceGraphLink {
+  count: number;
+  source: string;
+  target: string;
+  type: "link" | "tag";
+}
+
+export interface WorkspaceGraph {
+  links: WorkspaceGraphLink[];
+  nodes: WorkspaceGraphNode[];
+}
+
 export interface WorkspaceSearchResult {
   fileName: string;
   lineNumber: number | null;

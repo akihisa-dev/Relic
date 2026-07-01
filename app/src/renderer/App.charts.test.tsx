@@ -55,6 +55,42 @@ describe("App charts", () => {
     resetRendererStores();
   });
 
+  it("レールのグラフビューボタンからワークスペースグラフを表示できる", async () => {
+    const getWorkspaceGraph = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        links: [
+          { count: 1, source: "A.md", target: "B.md", type: "link" }
+        ],
+        nodes: [
+          { backlinkCount: 0, exists: true, id: "A.md", label: "A", linkCount: 1, path: "A.md", type: "file" },
+          { backlinkCount: 1, exists: true, id: "B.md", label: "B", linkCount: 0, path: "B.md", type: "file" }
+        ]
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceGraph,
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+    fireEvent.click(screen.getByRole("button", { name: "グラフビュー" }));
+
+    await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledTimes(1));
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+    expect(activeTabId).toBe("chart-graph");
+    expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
+      chartId: "graph",
+      kind: "chart"
+    });
+    expect(useUiStore.getState().isSidebarOpen).toBe(false);
+    expect(container.querySelector(".graph-view-canvas")).toBeInTheDocument();
+    expect(container.querySelector(".graph-controls")).toBeInTheDocument();
+  });
+
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
     const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
     const getWorkspaceCharts = vi.fn().mockResolvedValue({

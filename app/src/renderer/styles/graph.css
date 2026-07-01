@@ -1,0 +1,236 @@
+.graph-view-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.graph-view-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+
+.graph-view-canvas:active {
+  cursor: grabbing;
+}
+
+.graph-view-status {
+  position: absolute;
+  inset-inline-start: 16px;
+  bottom: 16px;
+  max-width: min(360px, calc(100% - 32px));
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  box-shadow: var(--shadow-popover, 0 12px 34px rgba(15, 23, 42, 0.14));
+}
+
+.graph-view-status--error {
+  color: var(--color-danger, #b42318);
+}
+
+.graph-controls {
+  position: absolute;
+  z-index: 2;
+  inset-inline-end: 12px;
+  top: 12px;
+  width: 240px;
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-popover, 0 12px 34px rgba(15, 23, 42, 0.14));
+  color: var(--color-text);
+  scrollbar-width: none;
+}
+
+.graph-controls::-webkit-scrollbar {
+  display: none;
+}
+
+.graph-controls.is-close {
+  width: auto;
+  min-width: 0;
+  padding: 6px;
+  border-color: transparent;
+  background: var(--color-bg);
+  box-shadow: none;
+}
+
+.graph-controls.is-close > .graph-control-section,
+.graph-controls.is-close > .graph-control-count,
+.graph-controls.is-close > .graph-controls-button.mod-reset {
+  display: none;
+}
+
+.graph-controls-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.graph-controls-button:hover {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.graph-controls-button.mod-close,
+.graph-controls-button.mod-reset {
+  position: absolute;
+  top: 6px;
+}
+
+.graph-controls-button.mod-close {
+  inset-inline-end: 8px;
+}
+
+.graph-controls-button.mod-reset {
+  inset-inline-end: 38px;
+}
+
+.graph-controls.is-close .graph-controls-button.mod-open {
+  display: inline-flex;
+}
+
+.graph-control-section {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.graph-control-section:last-of-type {
+  border-bottom: 0;
+}
+
+.graph-control-section-header {
+  padding-inline-end: 56px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.graph-control-section-children {
+  display: grid;
+  gap: 8px;
+  padding-top: 9px;
+}
+
+.graph-search-input,
+.graph-color-group input[type="text"] {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  padding: 0 8px;
+}
+
+.graph-search-input:focus,
+.graph-color-group input[type="text"]:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.graph-setting-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 24px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.graph-setting-item--slider {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.graph-setting-item input[type="range"] {
+  width: 100%;
+  accent-color: var(--color-primary);
+}
+
+.graph-setting-item input[type="checkbox"] {
+  accent-color: var(--color-primary);
+}
+
+.graph-color-groups-container {
+  display: grid;
+  gap: 6px;
+}
+
+.graph-color-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px 24px;
+  align-items: center;
+  gap: 5px;
+}
+
+.graph-color-group input[type="color"] {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: transparent;
+}
+
+.graph-color-group button {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.graph-color-group button:hover {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.graph-cta-button {
+  width: 100%;
+  height: 28px;
+  border: 1px solid var(--color-primary);
+  border-radius: 4px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.graph-cta-button:hover {
+  background: var(--color-primary-dark);
+}
+
+.graph-control-count {
+  padding: 8px 12px 12px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}

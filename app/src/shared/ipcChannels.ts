@@ -12,6 +12,7 @@ export const getWorkspaceTagsChannel = "workspace:getTags";
 export const getWorkspaceAliasesChannel = "workspace:getAliases";
 export const getWorkspaceChartsChannel = "workspace:getCharts";
 export const getWorkspaceChronicleCalendarsChannel = "workspace:getChronicleCalendars";
+export const getWorkspaceGraphChannel = "workspace:getGraph";
 export const saveWorkspaceChronicleCalendarsChannel = "workspace:saveChronicleCalendars";
 export const saveWorkspaceChartsChannel = "workspace:saveCharts";
 export const updateChartEntryChannel = "workspace:updateChartEntry";
