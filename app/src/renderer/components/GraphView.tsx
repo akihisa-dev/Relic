@@ -103,6 +103,7 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
   const [draggingColorGroupId, setDraggingColorGroupId] = useState<string | null>(null);
   const [sectionCollapsed, setSectionCollapsed] = useState(loadGraphSectionCollapsed);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
 
   openFileRef.current = onOpenFile;
   latestOptionsRef.current = options;
@@ -227,13 +228,13 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
       viewRef.current,
       latestOptionsRef.current,
       colorGroupsRef.current,
-      hoveredNodeId,
+      pinnedNodeId ?? hoveredNodeId,
       cssWidth,
       cssHeight
     );
 
     frameRef.current = requestGraphFrame(draw);
-  }, [hoveredNodeId]);
+  }, [hoveredNodeId, pinnedNodeId]);
 
   useEffect(() => {
     frameRef.current = requestGraphFrame(draw);
@@ -267,6 +268,8 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
   }, []);
 
   const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (event.button !== 0) return;
+
     const node = nodeAtPoint(event.clientX, event.clientY);
     const canvas = event.currentTarget;
     canvas.setPointerCapture(event.pointerId);
@@ -337,6 +340,12 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
     pointerRef.current = null;
   }, []);
 
+  const handleContextMenu = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+    event.preventDefault();
+    const node = nodeAtPoint(event.clientX, event.clientY);
+    setPinnedNodeId(node?.id ?? null);
+  }, [nodeAtPoint]);
+
   const handleWheel = useCallback((event: React.WheelEvent<HTMLCanvasElement>) => {
     event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
@@ -359,6 +368,7 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
     viewRef.current = { panX: 0, panY: 0, scale: 1 };
     setOptions(defaultGraphOptions);
     setColorGroups([]);
+    setPinnedNodeId(null);
   }, []);
 
   return (
@@ -366,6 +376,7 @@ export function GraphView({ onOpenFile }: GraphViewProps): ReactElement {
       <canvas
         aria-label="グラフビュー"
         className="graph-view-canvas"
+        onContextMenu={handleContextMenu}
         onPointerDown={handlePointerDown}
         onPointerLeave={() => setHoveredNodeId(null)}
         onPointerMove={handlePointerMove}
