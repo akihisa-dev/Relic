@@ -6,6 +6,7 @@ import {
   getWorkspaceAliasesChannel,
   getWorkspaceChartsChannel,
   getWorkspaceChronicleCalendarsChannel,
+  getWorkspaceGraphChannel,
   getWorkspaceTagsChannel,
   saveWorkspaceChronicleCalendarsChannel,
   saveWorkspaceChartsChannel,
@@ -15,6 +16,7 @@ import { fail } from "../../shared/result";
 import { readWorkspaceAliases } from "../files/aliases";
 import { readWorkspaceCharts, updateWorkspaceChartEntry } from "../files/charts";
 import { readFrontmatterValueCandidates } from "../files/frontmatterCandidates";
+import { readWorkspaceGraph } from "../files/workspaceGraph";
 import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordinator";
 import { readWorkspaceTags } from "../files/tags";
 import {
@@ -105,6 +107,31 @@ export function registerWorkspaceDataHandlers(): void {
       return fail(
         "WORKSPACE_ALIASES_FAILED",
         "別名を読み込めませんでした。",
+        ipcErrorDetails(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getWorkspaceGraphChannel, async () => {
+    try {
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
+      const cachePath = getWorkspaceFileIndexCachePath(context.value.userDataPath, context.value.activeWorkspace.id);
+      const snapshot = await getWorkspaceDerivedDataSnapshot({
+        cachePath,
+        workspaceId: context.value.activeWorkspace.id,
+        workspacePath: context.value.activeWorkspace.path
+      });
+
+      return readWorkspaceGraph(context.value.activeWorkspace.path, {
+        cachePath,
+        fileIndex: snapshot.fileIndex,
+        parseCache: snapshot.parseCache
+      });
+    } catch (error) {
+      return fail(
+        "WORKSPACE_GRAPH_FAILED",
+        "グラフを読み込めませんでした。",
         ipcErrorDetails(error)
       );
     }
