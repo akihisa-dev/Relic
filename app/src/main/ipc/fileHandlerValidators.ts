@@ -1,6 +1,7 @@
 import type {
   CreateFolderInput,
   CreateMarkdownFileInput,
+  ApplyUnlinkedReferenceInput,
   ImportImageFileInput,
   ImportMarkdownFilesInput,
   LinkUpdateImpactInput,
@@ -112,6 +113,32 @@ export function isPathInput(input: unknown): input is { path: string } {
     input !== null &&
     "path" in input &&
     isLimitedWorkspaceRelativeInputPath((input as { path?: unknown }).path)
+  );
+}
+
+export function isApplyUnlinkedReferenceInput(input: unknown): input is ApplyUnlinkedReferenceInput {
+  if (typeof input !== "object" || input === null) return false;
+
+  const candidate = input as {
+    from?: unknown;
+    matchText?: unknown;
+    sourcePath?: unknown;
+    targetPath?: unknown;
+    to?: unknown;
+  };
+
+  return (
+    isLimitedWorkspaceRelativeInputPath(candidate.sourcePath) &&
+    isLimitedWorkspaceRelativeInputPath(candidate.targetPath) &&
+    Number.isSafeInteger(candidate.from) &&
+    Number.isSafeInteger(candidate.to) &&
+    typeof candidate.from === "number" &&
+    typeof candidate.to === "number" &&
+    candidate.from >= 0 &&
+    candidate.to >= candidate.from &&
+    typeof candidate.matchText === "string" &&
+    candidate.matchText.length > 0 &&
+    candidate.matchText.length <= maxSearchQueryLength
   );
 }
 

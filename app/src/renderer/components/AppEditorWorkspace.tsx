@@ -1,7 +1,7 @@
 import type { EditorView } from "@codemirror/view";
 import type { Dispatch, MouseEvent as ReactMouseEvent, MutableRefObject, ReactElement, ReactNode, SetStateAction } from "react";
 
-import type { Backlink, EditorSettings, UserDefinedField } from "../../shared/ipc";
+import type { Backlink, EditorSettings, UnlinkedReference, UnlinkedReferencesResult, UserDefinedField } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
 import type { HeadingScrollTarget, OutlineHeading } from "../editorDerivedState";
@@ -14,12 +14,14 @@ import { PaneView, type PaneViewProps } from "./PaneView";
 interface AppEditorWorkspaceProps {
   allFilePaths: string[];
   activeFileTab: FileTab | null;
+  applyingReferenceKey: string | null;
   backlinks: Backlink[];
   editorActionPulse: number;
   editorSettings: EditorSettings;
   focusedPane: PaneId;
   frontmatterCandidates: Record<string, string[]>;
   isLoadingBacklinks: boolean;
+  isLoadingUnlinkedReferences: boolean;
   isRightPanelOpen: boolean;
   isRightPanelResizing: boolean;
   isLeftSourceMode: boolean;
@@ -42,6 +44,7 @@ interface AppEditorWorkspaceProps {
   onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
   onOpenLink: (href: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
+  onApplyUnlinkedReference: (reference: UnlinkedReference) => Promise<void>;
   onOutlineHeadingClick: (heading: OutlineHeading) => void;
   onDuplicateTabFile?: (tabId: string) => void;
   onRenameFile: (path: string, name: string) => void;
@@ -61,6 +64,7 @@ interface AppEditorWorkspaceProps {
   outlineHeadings: OutlineHeading[];
   outgoingLinks: ResolvedWikiLink[];
   outgoingLinksLimited: boolean;
+  unlinkedReferences: UnlinkedReferencesResult;
   renderChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
@@ -123,12 +127,14 @@ function paneViewProps(
 export function AppEditorWorkspace({
   allFilePaths,
   activeFileTab,
+  applyingReferenceKey,
   backlinks,
   editorActionPulse,
   editorSettings,
   focusedPane,
   frontmatterCandidates,
   isLoadingBacklinks,
+  isLoadingUnlinkedReferences,
   isRightPanelOpen,
   isRightPanelResizing,
   isLeftSourceMode,
@@ -151,6 +157,7 @@ export function AppEditorWorkspace({
   onOpenInOtherPane,
   onOpenLink,
   onOpenWikiLink,
+  onApplyUnlinkedReference,
   onOutlineHeadingClick,
   onDuplicateTabFile,
   onRenameFile,
@@ -179,6 +186,7 @@ export function AppEditorWorkspace({
   setLinkContextMenu,
   showRightPanelFrontmatterControl,
   showRightPanelRecoveryControl,
+  unlinkedReferences,
   userDefinedFields,
   workspacePath
 }: AppEditorWorkspaceProps): ReactElement {
@@ -264,14 +272,17 @@ export function AppEditorWorkspace({
         ) : null}
         <AppRightPanel
           activeFileTab={activeFileTab}
+          applyingReferenceKey={applyingReferenceKey}
           backlinks={backlinks}
           editorSettings={editorSettings}
           frontmatterCandidates={frontmatterCandidates}
           isLoadingBacklinks={isLoadingBacklinks}
+          isLoadingUnlinkedReferences={isLoadingUnlinkedReferences}
           isOpen={isRightPanelOpen}
           isResizing={isRightPanelResizing}
           onOpenFile={onOpenFile}
           onOpenWikiLink={onOpenWikiLink}
+          onApplyUnlinkedReference={onApplyUnlinkedReference}
           onOutlineHeadingClick={onOutlineHeadingClick}
           onResizeStart={onRightPanelResizeStart}
           onUpdateTabContent={onUpdateTabContent}
@@ -280,6 +291,7 @@ export function AppEditorWorkspace({
           outgoingLinksLimited={outgoingLinksLimited}
           rightPanelView={rightPanelView}
           setLinkContextMenu={setLinkContextMenu}
+          unlinkedReferences={unlinkedReferences}
           userDefinedFields={userDefinedFields}
           width={rightPanelWidth}
         />

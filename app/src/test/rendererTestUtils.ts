@@ -49,6 +49,7 @@ export function resetRendererStores(): void {
 export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
   return {
     apiContractVersion: relicApiContractVersion,
+    applyUnlinkedReference: vi.fn().mockResolvedValue({ ok: true, value: { content: "", sourcePath: "" } }),
     applySearchAndReplace: vi.fn(),
     copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } }),
     createFolder: vi.fn(),
@@ -61,6 +62,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     generateTitleList: vi.fn(),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
     getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    getUnlinkedReferences: vi.fn().mockResolvedValue({ ok: true, value: { references: [], skippedUnreadableFileCount: 0, truncated: false } }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultEditorSettings, language: "ja" } }),
     getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
     getFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),

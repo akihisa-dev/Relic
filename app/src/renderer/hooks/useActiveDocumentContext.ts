@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import type { Backlink, WorkspaceTreeNode } from "../../shared/ipc";
+import type { Backlink, UnlinkedReference, UnlinkedReferencesResult, WorkspaceTreeNode } from "../../shared/ipc";
 import { createWikiLinkResolver, type AliasIndex, type ResolvedWikiLink } from "../../shared/links";
 import {
   extractOutlineHeadings,
@@ -10,6 +10,7 @@ import {
 import { isLargeMarkdownContent } from "../largeMarkdown";
 import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 import { useBacklinksState } from "./useBacklinksState";
+import { useUnlinkedReferencesState } from "./useUnlinkedReferencesState";
 
 const maxOutgoingLinks = 1000;
 
@@ -23,6 +24,7 @@ interface UseActiveDocumentContextInput {
   rightPane: PaneState;
   setWorkspaceError: (message: string | null) => void;
   tabs: Record<string, Tab>;
+  updateTabContent: (tabId: string, content: string) => void;
 }
 
 export function useActiveDocumentContext({
@@ -34,14 +36,19 @@ export function useActiveDocumentContext({
   leftPane,
   rightPane,
   setWorkspaceError,
-  tabs
+  tabs,
+  updateTabContent
 }: UseActiveDocumentContextInput): {
   activeFileTabInFocusedPane: FileTab | null;
+  applyingReferenceKey: string | null;
   backlinks: Backlink[];
   isLoadingBacklinks: boolean;
+  isLoadingUnlinkedReferences: boolean;
+  onApplyUnlinkedReference: (reference: UnlinkedReference) => Promise<void>;
   outlineHeadings: OutlineHeading[];
   outgoingLinks: ResolvedWikiLink[];
   outgoingLinksLimited: boolean;
+  unlinkedReferences: UnlinkedReferencesResult;
 } {
   const activeFileTabInFocusedPane = getActiveFileTabInPane(
     focusedPane,
@@ -82,13 +89,30 @@ export function useActiveDocumentContext({
     fileTree,
     setWorkspaceError
   });
+  const {
+    applyingReferenceKey,
+    isLoadingUnlinkedReferences,
+    onApplyUnlinkedReference,
+    unlinkedReferences
+  } = useUnlinkedReferencesState({
+    activeFilePath: activeFileTabInFocusedPane && !isLargeMarkdown && isLinksPanelActive ? activeFileTabInFocusedPane.path : null,
+    enabled: isLinksPanelActive,
+    fileTree,
+    setWorkspaceError,
+    tabs,
+    updateTabContent
+  });
 
   return {
     activeFileTabInFocusedPane,
+    applyingReferenceKey,
     backlinks,
     isLoadingBacklinks,
+    isLoadingUnlinkedReferences,
+    onApplyUnlinkedReference,
     outlineHeadings,
     outgoingLinks,
-    outgoingLinksLimited
+    outgoingLinksLimited,
+    unlinkedReferences
   };
 }

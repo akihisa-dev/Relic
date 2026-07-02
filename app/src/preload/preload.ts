@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, webUtils } from "electron";
 
 import {
   applySearchAndReplaceChannel,
+  applyUnlinkedReferenceChannel,
   copyEditorTextToClipboardChannel,
   createNewWorkspaceChannel,
   copyDiagramSvgChannel,
@@ -17,6 +18,7 @@ import {
   readImageFileChannel,
   readPdfFileChannel,
   getBacklinksChannel,
+  getUnlinkedReferencesChannel,
   getAppInfoChannel,
   getEditorSettingsChannel,
   getFrontmatterValueCandidatesChannel,
@@ -76,6 +78,8 @@ import {
   switchWorkspaceChannel,
   writeMarkdownFileChannel,
   type AppInfo,
+  type ApplyUnlinkedReferenceInput,
+  type ApplyUnlinkedReferenceResult,
   type CreateFolderInput,
   type CreateLinkedMarkdownFileInput,
   type CreateLinkedMarkdownFileResult,
@@ -85,6 +89,7 @@ import {
   type Backlink,
   type ChronicleCalendarSettings,
   type GetBacklinksInput,
+  type GetUnlinkedReferencesInput,
   type ImportImageFileInput,
   type ImportImageFileResult,
   type ImportMarkdownFilesInput,
@@ -124,6 +129,7 @@ import {
   type WorkspaceChangedEvent,
   type WindowCloseRequestEvent,
   type WindowCloseResponseInput,
+  type UnlinkedReferencesResult,
   type WorkspaceState,
   type WorkspaceChart,
   type WorkspaceGraph,
@@ -167,6 +173,10 @@ const relicApi: RelicApi = {
     >,
   getBacklinks: (input: GetBacklinksInput) =>
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
+  getUnlinkedReferences: (input: GetUnlinkedReferencesInput) =>
+    ipcRenderer.invoke(getUnlinkedReferencesChannel, input) as Promise<RelicResult<UnlinkedReferencesResult>>,
+  applyUnlinkedReference: (input: ApplyUnlinkedReferenceInput) =>
+    ipcRenderer.invoke(applyUnlinkedReferenceChannel, input) as Promise<RelicResult<ApplyUnlinkedReferenceResult>>,
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
   getEditorSettings: () =>
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,

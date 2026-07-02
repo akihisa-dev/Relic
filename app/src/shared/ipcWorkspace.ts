@@ -98,6 +98,23 @@ export interface GetBacklinksInput {
   path: string;
 }
 
+export interface GetUnlinkedReferencesInput {
+  path: string;
+}
+
+export interface ApplyUnlinkedReferenceInput {
+  from: number;
+  matchText: string;
+  sourcePath: string;
+  targetPath: string;
+  to: number;
+}
+
+export interface ApplyUnlinkedReferenceResult {
+  content: string;
+  sourcePath: string;
+}
+
 export type SearchMode = "fullText" | "fileName" | "tag" | "frontmatter";
 
 export interface SearchWorkspaceInput {
@@ -223,6 +240,24 @@ export interface Backlink {
   count: number;
   sourceName: string;
   sourcePath: string;
+}
+
+export interface UnlinkedReference {
+  from: number;
+  lineNumber: number;
+  lineText: string;
+  linkText: string;
+  matchText: string;
+  sourceName: string;
+  sourcePath: string;
+  targetPath: string;
+  to: number;
+}
+
+export interface UnlinkedReferencesResult {
+  references: UnlinkedReference[];
+  skippedUnreadableFileCount: number;
+  truncated: boolean;
 }
 
 export interface WorkspaceTagSummary {

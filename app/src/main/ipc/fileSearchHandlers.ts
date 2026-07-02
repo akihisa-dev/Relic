@@ -1,9 +1,13 @@
 import { ipcMain } from "electron";
 
 import {
+  applyUnlinkedReferenceChannel,
+  type ApplyUnlinkedReferenceInput,
   applySearchAndReplaceChannel,
   getBacklinksChannel,
   type GetBacklinksInput,
+  getUnlinkedReferencesChannel,
+  type GetUnlinkedReferencesInput,
   readMarkdownFileChannel,
   type ReadMarkdownFileInput,
   replaceInFileChannel,
@@ -19,6 +23,7 @@ import { readMarkdownFile } from "../files/markdownFiles";
 import { applySearchAndReplace, replaceInFile, searchAndReplace } from "../files/replace";
 import { searchWorkspace, workspaceSearchMaxFileBytes } from "../files/search";
 import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordinator";
+import { applyUnlinkedReference, readUnlinkedReferences } from "../files/unlinkedReferences";
 import {
   getWorkspaceDerivedDataSnapshot,
   invalidateWorkspaceDerivedData
@@ -27,6 +32,7 @@ import { getWorkspaceFileIndexCachePath } from "../files/workspaceFileIndex";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import {
   isPathInput,
+  isApplyUnlinkedReferenceInput,
   isReplaceInFileInput,
   isSearchAndReplaceInput,
   normalizeSearchWorkspaceInput
@@ -144,6 +150,68 @@ export function registerFileSearchHandlers(): void {
       return fail(
         "BACKLINKS_READ_FAILED",
         "バックリンクを読み込めませんでした。",
+        ipcErrorDetails(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getUnlinkedReferencesChannel, async (_event, input: GetUnlinkedReferencesInput) => {
+    try {
+      if (!isPathInput(input)) {
+        return fail("UNLINKED_REFERENCES_INVALID_INPUT", "未リンク参照を確認するファイルを指定してください。");
+      }
+
+      return withActiveWorkspaceContext(
+        { code: "UNLINKED_REFERENCES_READ_FAILED", message: "未リンク参照を読み込めませんでした。" },
+        async (context) => {
+          const cachePath = getWorkspaceFileIndexCachePath(
+            context.userDataPath,
+            context.activeWorkspace.id
+          );
+          const snapshot = await getWorkspaceDerivedDataSnapshot({
+            cachePath,
+            workspaceId: context.activeWorkspace.id,
+            workspacePath: context.activeWorkspace.path
+          });
+
+          return readUnlinkedReferences(context.activeWorkspace.path, input.path, {
+            cachePath,
+            fileIndex: snapshot.fileIndex,
+            parseCache: snapshot.parseCache
+          });
+        }
+      );
+    } catch (error) {
+      return fail(
+        "UNLINKED_REFERENCES_READ_FAILED",
+        "未リンク参照を読み込めませんでした。",
+        ipcErrorDetails(error)
+      );
+    }
+  });
+
+  ipcMain.handle(applyUnlinkedReferenceChannel, async (_event, input: ApplyUnlinkedReferenceInput) => {
+    try {
+      if (!isApplyUnlinkedReferenceInput(input)) {
+        return fail("UNLINKED_REFERENCE_INVALID_INPUT", "リンク化する未リンク参照を指定してください。");
+      }
+
+      return withActiveWorkspaceContext(
+        { code: "UNLINKED_REFERENCE_APPLY_FAILED", message: "未リンク参照をリンク化できませんでした。" },
+        async (context) => {
+          const result = await applyUnlinkedReference(context.activeWorkspace.path, input);
+          if (result.ok) {
+            invalidateWorkspaceDerivedData(context.activeWorkspace.id);
+            workspaceSearchRequestCoordinator.invalidate(context.activeWorkspace.id);
+          }
+
+          return result;
+        }
+      );
+    } catch (error) {
+      return fail(
+        "UNLINKED_REFERENCE_APPLY_FAILED",
+        "未リンク参照をリンク化できませんでした。",
         ipcErrorDetails(error)
       );
     }

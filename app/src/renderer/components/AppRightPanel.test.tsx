@@ -29,14 +29,17 @@ afterEach(() => {
 describe("AppRightPanel", () => {
   const defaultProps = {
     activeFileTab: null,
+    applyingReferenceKey: null,
     backlinks: [],
     editorSettings: defaultEditorSettings,
     frontmatterCandidates: {},
     isLoadingBacklinks: false,
+    isLoadingUnlinkedReferences: false,
     isOpen: true,
     isResizing: false,
     onOpenFile: vi.fn(),
     onOpenWikiLink: vi.fn(),
+    onApplyUnlinkedReference: vi.fn(),
     onOutlineHeadingClick: vi.fn(),
     onResizeStart: vi.fn(),
     onUpdateTabContent: vi.fn(),
@@ -44,6 +47,7 @@ describe("AppRightPanel", () => {
     outgoingLinks: [],
     outgoingLinksLimited: false,
     setLinkContextMenu: vi.fn(),
+    unlinkedReferences: { references: [], skippedUnreadableFileCount: 0, truncated: false },
     userDefinedFields: [],
     width: 260
   };
@@ -103,6 +107,42 @@ describe("AppRightPanel", () => {
     );
 
     expect(screen.getByText("Only some links are shown because there are many links.")).toBeInTheDocument();
+  });
+
+  it("shows unlinked references and applies a selected reference", () => {
+    const onApplyUnlinkedReference = vi.fn().mockResolvedValue(undefined);
+    const reference = {
+      from: 8,
+      lineNumber: 2,
+      lineText: "Read Target before editing.",
+      linkText: "[[Target]]",
+      matchText: "Target",
+      sourceName: "Source",
+      sourcePath: "Source.md",
+      targetPath: "Target.md",
+      to: 14
+    };
+
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          {...defaultProps}
+          onApplyUnlinkedReference={onApplyUnlinkedReference}
+          rightPanelView="links"
+          unlinkedReferences={{
+            references: [reference],
+            skippedUnreadableFileCount: 0,
+            truncated: false
+          }}
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText("Unlinked references")).toBeInTheDocument();
+    expect(screen.getByText("Read Target before editing.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Link" }));
+
+    expect(onApplyUnlinkedReference).toHaveBeenCalledWith(reference);
   });
 
   it("updates only the frontmatter block from the frontmatter panel", () => {
