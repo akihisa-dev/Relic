@@ -15,7 +15,7 @@ export function redactSensitiveText(value: string): string {
     .replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----/g, "[private key redacted]")
     .replace(/[A-Z0-9_]*API_KEY\s*=\s*[^\s"']+/gi, (match) => `${match.split("=")[0].trim()}=[redacted]`)
     .replace(/(^|[^A-Za-z0-9_])api[_-]?key["']?\s*[:=]\s*["']?[^"',\s}]+/gi, "$1apiKey=[redacted]")
-    .replace(/(^|[\s"'(=])\/(?:Users|home|private|tmp|var|Volumes|mnt)\/[^\n"')\]}]+/g, "$1[path redacted]")
+    .replace(/(^|[\s"'(=])\/(?!\/)(?:[^\n"')\]}]+\/)+[^\n"')\]}]+/g, "$1[path redacted]")
     .replace(/(^|[\s"'(=])[A-Za-z]:[\\/][^\n"')\]}]+/g, "$1[path redacted]")
     .replace(/(^|[\s"'(=])\\\\[^\\\n"')\]}]+\\[^\n"')\]}]+/g, "$1[path redacted]");
 }
