@@ -327,6 +327,34 @@ describe("searchAndReplace", () => {
     expect(result.value.skippedUnreadableFiles).toEqual([]);
   });
 
+  it("置換プレビューの本文読み込みを並列数制限付きで行う", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    for (let index = 0; index < 12; index += 1) {
+      await writeFile(path.join(ws, `note-${index}.md`), "hello", "utf8");
+    }
+
+    let activeReads = 0;
+    let maxActiveReads = 0;
+    const result = await searchAndReplace(ws, "hello", "hi", false, {
+      async readFile(filePath, encoding) {
+        activeReads += 1;
+        maxActiveReads = Math.max(maxActiveReads, activeReads);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        try {
+          return await readFile(filePath, encoding);
+        } finally {
+          activeReads -= 1;
+        }
+      }
+    });
+
+    expect(result.ok).toBe(true);
+    expect(maxActiveReads).toBeLessThanOrEqual(8);
+  });
+
   it("通常文字列の置換プレビューでも置換後テキストの$記法を文字どおり表示する", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
     temporaryPaths.push(ws);
