@@ -59,6 +59,18 @@ describe("redactSensitiveText", () => {
     expect(redactSensitiveText("failed /mnt/c/Users/alice/project/secret.md")).toBe(
       "failed [path redacted]"
     );
+    expect(redactSensitiveText("failed /media/alice/drive/notes.md")).toBe(
+      "failed [path redacted]"
+    );
+    expect(redactSensitiveText("failed /srv/relic/secret.md")).toBe(
+      "failed [path redacted]"
+    );
+    expect(redactSensitiveText("failed /workspace/project/file.md")).toBe(
+      "failed [path redacted]"
+    );
+    expect(redactSensitiveText("fetch https://example.com/docs/file.md")).toBe(
+      "fetch https://example.com/docs/file.md"
+    );
   });
 
   it("redacts connection strings and private key headers", () => {
