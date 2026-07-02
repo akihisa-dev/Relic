@@ -83,6 +83,7 @@ export function createEditorWorkspaceProps(input: AppLayoutEditorWorkspaceInput)
     showRightPanelFrontmatterControl: input.showRightPanelFrontmatterControl,
     showRightPanelLinksControl: input.showRightPanelLinksControl,
     showRightPanelOutlineControl: input.showRightPanelOutlineControl,
+    showRightPanelRecoveryControl: input.showRightPanelRecoveryControl,
     userDefinedFields: input.userDefinedFields,
     workspacePath: input.workspaceState?.activeWorkspace?.path
   };

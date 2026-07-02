@@ -88,6 +88,7 @@ export interface AppLayoutEditorWorkspaceInput {
   showRightPanelLinksControl: EditorWorkspaceProps["showRightPanelLinksControl"];
   showRightPanelOutlineControl: EditorWorkspaceProps["showRightPanelOutlineControl"];
   showRightPanelFrontmatterControl: EditorWorkspaceProps["showRightPanelFrontmatterControl"];
+  showRightPanelRecoveryControl: EditorWorkspaceProps["showRightPanelRecoveryControl"];
   startRightPanelResize: EditorWorkspaceProps["onRightPanelResizeStart"];
   toggleSplitWithMotion: EditorWorkspaceProps["onSplitToggle"];
   toggleTabPinned: EditorWorkspaceProps["onTogglePinTab"];

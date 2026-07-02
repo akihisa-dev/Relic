@@ -3,14 +3,25 @@ import { app, clipboard, ipcMain } from "electron";
 import {
   copyEditorTextToClipboardChannel,
   getEditorSettingsChannel,
+  listFileRecoverySnapshotsChannel,
+  readFileRecoverySnapshotChannel,
   saveEditorSettingsChannel,
   type CopyEditorTextToClipboardInput,
   type EditorSettings,
+  type FileRecoveryEntry,
+  type FileRecoveryInput,
+  type FileRecoverySnapshot,
+  type ReadFileRecoverySnapshotInput,
   writeMarkdownFileChannel,
   type WriteMarkdownFileInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { writeMarkdownFileContent } from "../files/markdownFiles";
+import {
+  createFileRecoverySnapshot,
+  listFileRecoverySnapshots,
+  readFileRecoverySnapshot
+} from "../files/fileRecovery";
 import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordinator";
 import { invalidateWorkspaceDerivedData } from "../files/workspaceDerivedDataSession";
 import { readAppSettings, updateAppSettings } from "../settings/appSettings";
@@ -19,7 +30,11 @@ import {
   isCopyEditorTextToClipboardInput,
   isEditorSettingsInput
 } from "./editorHandlerValidators";
-import { isWriteMarkdownFileInput } from "./fileHandlerValidators";
+import {
+  isPathInput,
+  isReadFileRecoverySnapshotInput,
+  isWriteMarkdownFileInput
+} from "./fileHandlerValidators";
 
 export function registerEditorHandlers(): void {
   ipcMain.handle(
@@ -37,7 +52,14 @@ export function registerEditorHandlers(): void {
               context.activeWorkspace.path,
               input.path,
               input.content,
-              input.expectedContent
+              input.expectedContent,
+              {},
+              async (previousContent) => createFileRecoverySnapshot(
+                app.getPath("userData"),
+                context.activeWorkspace.id,
+                input.path,
+                previousContent
+              )
             );
             if (result.ok) {
               invalidateWorkspaceDerivedData(context.activeWorkspace.id);
@@ -52,6 +74,51 @@ export function registerEditorHandlers(): void {
           "ファイルを保存できませんでした。",
           ipcErrorDetails(error)
         );
+      }
+    }
+  );
+
+  ipcMain.handle(
+    listFileRecoverySnapshotsChannel,
+    async (_event, input: FileRecoveryInput): Promise<RelicResult<FileRecoveryEntry[]>> => {
+      try {
+        if (!isPathInput(input)) {
+          return fail("FILE_RECOVERY_INVALID_INPUT", "復元版を確認するファイルを指定してください。");
+        }
+
+        return withActiveWorkspaceContext(
+          { code: "FILE_RECOVERY_LIST_FAILED", message: "復元版を読み込めませんでした。" },
+          async (context) => listFileRecoverySnapshots(
+            app.getPath("userData"),
+            context.activeWorkspace.id,
+            input.path
+          )
+        );
+      } catch (error) {
+        return fail("FILE_RECOVERY_LIST_FAILED", "復元版を読み込めませんでした。", ipcErrorDetails(error));
+      }
+    }
+  );
+
+  ipcMain.handle(
+    readFileRecoverySnapshotChannel,
+    async (_event, input: ReadFileRecoverySnapshotInput): Promise<RelicResult<FileRecoverySnapshot>> => {
+      try {
+        if (!isReadFileRecoverySnapshotInput(input)) {
+          return fail("FILE_RECOVERY_INVALID_INPUT", "復元版の指定が正しくありません。");
+        }
+
+        return withActiveWorkspaceContext(
+          { code: "FILE_RECOVERY_READ_FAILED", message: "復元版を読み込めませんでした。" },
+          async (context) => readFileRecoverySnapshot(
+            app.getPath("userData"),
+            context.activeWorkspace.id,
+            input.path,
+            input.snapshotId
+          )
+        );
+      } catch (error) {
+        return fail("FILE_RECOVERY_READ_FAILED", "復元版を読み込めませんでした。", ipcErrorDetails(error));
       }
     }
   );

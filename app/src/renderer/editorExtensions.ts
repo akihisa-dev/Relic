@@ -25,7 +25,8 @@ function createLivePreviewPlugin(
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>,
   onOpenWikiLinkRef: RefObject<((target: string, heading?: string) => void) | undefined>,
   t: Translator,
-  workspacePath?: string | null
+  workspacePath?: string | null,
+  sourcePath?: string
 ) {
   return EditorView.decorations.of((view) => buildLivePreviewDecorations(view, (link) => {
     if (link.type === "markdown" && link.href) {
@@ -36,7 +37,7 @@ function createLivePreviewPlugin(
     if (link.type === "wiki" && link.target) {
       onOpenWikiLinkRef.current?.(link.target, link.heading ?? undefined);
     }
-  }, t, workspacePath));
+  }, t, workspacePath, sourcePath));
 }
 const typewriterExtension = ViewPlugin.fromClass(
   class {
@@ -90,6 +91,7 @@ interface EditorExtensionConfig {
   onOpenWikiLinkRef: RefObject<((target: string, heading?: string) => void) | undefined>;
   onSelectionChange: (state: EditorState) => void;
   settings: EditorSettings;
+  sourcePath?: string;
   sourceMode: boolean;
   t: Translator;
   typewriterMode: boolean;
@@ -486,7 +488,7 @@ function buildLivePreviewExtensions(config: EditorExtensionConfig): Extension {
     diagramEditRangeField,
     createLivePreviewTableField(config.t),
     createLivePreviewCodeBlockField(config.t),
-    createLivePreviewPlugin(config.onOpenLinkRef, config.onOpenWikiLinkRef, config.t, config.workspacePath)
+    createLivePreviewPlugin(config.onOpenLinkRef, config.onOpenWikiLinkRef, config.t, config.workspacePath, config.sourcePath)
   ];
 }
 
@@ -516,7 +518,8 @@ export function buildExtensions(
   onSelectionChange: (state: EditorState) => void,
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>,
   onOpenWikiLinkRef: RefObject<((target: string, heading?: string) => void) | undefined>,
-  workspacePath?: string | null
+  workspacePath?: string | null,
+  sourcePath?: string
 ) {
   const config: EditorExtensionConfig = {
     allFilePaths,
@@ -527,6 +530,7 @@ export function buildExtensions(
     onOpenWikiLinkRef,
     onSelectionChange,
     settings,
+    sourcePath,
     sourceMode,
     t,
     typewriterMode,

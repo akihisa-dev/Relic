@@ -210,7 +210,8 @@ export function Editor({
       rememberSelection,
       onOpenLinkRef,
       onOpenWikiLinkRef,
-      workspacePath
+      workspacePath,
+      filePath
     );
     const state = EditorState.create({ doc: content, extensions });
     const view = new EditorView({ state, parent: container });
@@ -264,6 +265,7 @@ export function Editor({
         onOpenWikiLinkRef,
         onSelectionChange: rememberSelection,
         settings,
+        sourcePath: filePath,
         sourceMode,
         t,
         typewriterMode,

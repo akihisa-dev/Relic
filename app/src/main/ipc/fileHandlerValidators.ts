@@ -8,6 +8,7 @@ import type {
   MoveItemToTrashInput,
   MoveMarkdownFileInput,
   ReadImageFileInput,
+  ReadFileRecoverySnapshotInput,
   ReadPdfFileInput,
   RenameFolderInput,
   RenameMarkdownFileInput,
@@ -111,6 +112,15 @@ export function isPathInput(input: unknown): input is { path: string } {
     input !== null &&
     "path" in input &&
     isLimitedWorkspaceRelativeInputPath((input as { path?: unknown }).path)
+  );
+}
+
+export function isReadFileRecoverySnapshotInput(input: unknown): input is ReadFileRecoverySnapshotInput {
+  const candidate = input as { snapshotId?: unknown };
+  return (
+    isPathInput(input) &&
+    typeof candidate.snapshotId === "string" &&
+    /^[0-9T-Za-z-]+-[a-f0-9]{12}\.json$/.test(candidate.snapshotId)
   );
 }
 

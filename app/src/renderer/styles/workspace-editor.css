@@ -697,6 +697,55 @@
   background: var(--hover-strong);
 }
 
+.page-preview-popover {
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(18px) saturate(132%);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--floating-panel-shadow);
+  color: var(--text);
+  display: grid;
+  gap: 8px;
+  max-height: 280px;
+  overflow: hidden;
+  padding: 10px;
+  pointer-events: none;
+  position: fixed;
+  width: 360px;
+  z-index: 45;
+}
+
+.page-preview-title {
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
+  padding-bottom: 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page-preview-body {
+  font-size: 13px;
+  line-height: 1.55;
+  max-height: 220px;
+  overflow: hidden;
+}
+
+.page-preview-body > :first-child {
+  margin-top: 0;
+}
+
+.page-preview-body > :last-child {
+  margin-bottom: 0;
+}
+
+.page-preview-note {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
 .tab-context-menu-item.danger {
   color: var(--error);
 }

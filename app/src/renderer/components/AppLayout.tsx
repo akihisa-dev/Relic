@@ -55,6 +55,7 @@ export function AppLayout({
             showRightPanelFrontmatterControl={editorWorkspaceProps.showRightPanelFrontmatterControl}
             showRightPanelLinksControl={editorWorkspaceProps.showRightPanelLinksControl}
             showRightPanelOutlineControl={editorWorkspaceProps.showRightPanelOutlineControl}
+            showRightPanelRecoveryControl={editorWorkspaceProps.showRightPanelRecoveryControl}
           />
         </AppTitleBar>
         <div className="workspace">

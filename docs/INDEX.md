@@ -128,6 +128,8 @@
         - `chronicleModel.ts`
         - `concurrency.test.ts`
         - `concurrency.ts`
+        - `fileRecovery.test.ts`
+        - `fileRecovery.ts`
         - `fileSystem.test.ts`
         - `fileSystem.ts`
         - `fileTree.test.ts`
@@ -292,6 +294,7 @@
         - `LayoutResizeBoundary.test.tsx`
         - `LayoutResizeBoundary.tsx`
         - `MarkdownActionIcons.tsx`
+        - `PagePreviewPopover.tsx`
         - `PaneContentSurface.test.tsx`
         - `PaneContentSurface.tsx`
         - `PaneTabBar.tsx`
@@ -308,6 +311,7 @@
         - `RailWorkspaceSwitcher.tsx`
         - `RightPanelFrontmatterForm.test.tsx`
         - `RightPanelFrontmatterForm.tsx`
+        - `RightPanelRecoveryList.tsx`
         - `SettingsPanel.test.tsx`
         - `SettingsPanel.tsx`
         - `SettingsSegmentedControl.tsx`

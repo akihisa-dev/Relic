@@ -43,19 +43,26 @@ export class InlineFormatWidget extends WidgetType {
     private readonly tagName: "span" | "strong" | "em" | "code" | "a" | "u" | "sup",
     private readonly text: string,
     private readonly className: string,
-    private readonly onClick?: () => void
+    private readonly onClick?: () => void,
+    private readonly dataAttributes: Record<string, string> = {}
   ) {
     super();
   }
 
   override eq(other: InlineFormatWidget): boolean {
-    return this.tagName === other.tagName && this.text === other.text && this.className === other.className;
+    return this.tagName === other.tagName &&
+      this.text === other.text &&
+      this.className === other.className &&
+      JSON.stringify(this.dataAttributes) === JSON.stringify(other.dataAttributes);
   }
 
   override toDOM(): HTMLElement {
     const element = document.createElement(this.tagName);
     element.className = this.className;
     element.textContent = this.text;
+    for (const [key, value] of Object.entries(this.dataAttributes)) {
+      element.dataset[key] = value;
+    }
     if (this.onClick) {
       let opened = false;
       const openLink = (event: Event) => {

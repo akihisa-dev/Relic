@@ -349,7 +349,8 @@ export function buildLivePreviewDecorations(
   view: EditorView,
   onOpenClickableLink?: (link: ClickableLinkAtPosition) => void,
   t: Translator = createTranslator("system"),
-  workspacePath?: string | null
+  workspacePath?: string | null,
+  sourcePath?: string
 ): DecorationSet {
   const { state } = view;
   const doc = state.doc;
@@ -433,6 +434,12 @@ export function buildLivePreviewDecorations(
       const handleClick = link
         ? () => onOpenClickableLink?.(link)
         : undefined;
+      const previewAttributes: Record<string, string> = {};
+      if (link?.type === "wiki" && link.target && sourcePath) {
+        previewAttributes.previewHeading = link.heading ?? "";
+        previewAttributes.previewSourcePath = sourcePath;
+        previewAttributes.previewTarget = link.target;
+      }
 
       addWidget(
         match.from,
@@ -441,7 +448,8 @@ export function buildLivePreviewDecorations(
           tagNameForInlineMatch(match.className),
           text.slice(match.contentFrom - lineFrom, match.contentTo - lineFrom),
           match.className,
-          handleClick
+          handleClick,
+          previewAttributes
         )
       );
       return;

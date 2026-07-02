@@ -18,6 +18,7 @@ import {
   isMoveItemToTrashInput,
   isMoveMarkdownFileInput,
   isPathInput,
+  isReadFileRecoverySnapshotInput,
   isReadImageFileInput,
   isReadPdfFileInput,
   isRevealWorkspaceItemInput,
@@ -74,6 +75,11 @@ describe("fileHandlerValidators", () => {
       { accepts: { destinationFolder: "", path: "Notes" }, rejects: { destinationFolder: "Archive", path: " Notes " }, validator: isMoveFolderInput },
       { accepts: { path: "assets/image.webp" }, rejects: { path: "assets/file.txt" }, validator: isReadImageFileInput },
       { accepts: { path: "assets/reference.pdf" }, rejects: { path: "assets/file.txt" }, validator: isReadPdfFileInput },
+      {
+        accepts: { path: "Note.md", snapshotId: "2026-07-02T10-00-00-000Z-abcdef123456.json" },
+        rejects: { path: "Note.md", snapshotId: "../secret.json" },
+        validator: isReadFileRecoverySnapshotInput
+      },
       { accepts: { path: "Note.md", type: "file" }, rejects: { path: "../Note.md", type: "file" }, validator: isMoveItemToTrashInput }
     ];
 
@@ -120,6 +126,21 @@ describe("fileHandlerValidators", () => {
     expect(isPathInput({ path: "Notes\\Idea.md" })).toBe(false);
     expect(isPathInput({ path: " Notes/Idea.md " })).toBe(false);
     expect(isPathInput({ path: `${"a".repeat(maxWorkspaceRelativePathLength - 2)}.md` })).toBe(false);
+  });
+
+  it("validates file recovery snapshot input", () => {
+    expect(isReadFileRecoverySnapshotInput({
+      path: "docs/spec.md",
+      snapshotId: "2026-07-02T10-00-00-000Z-abcdef123456.json"
+    })).toBe(true);
+    expect(isReadFileRecoverySnapshotInput({
+      path: "../spec.md",
+      snapshotId: "2026-07-02T10-00-00-000Z-abcdef123456.json"
+    })).toBe(false);
+    expect(isReadFileRecoverySnapshotInput({
+      path: "docs/spec.md",
+      snapshotId: "../secret.json"
+    })).toBe(false);
   });
 
   it("validates reveal workspace item input with workspace id and root path", () => {
