@@ -67,6 +67,11 @@ jobs:
       - name: Enable pnpm
         run: corepack enable
 
+      - name: Show runtime versions
+        run: |
+          node --version
+          pnpm --version
+
       - name: Install dependencies
         working-directory: app
         run: pnpm install --frozen-lockfile
@@ -129,6 +134,11 @@ jobs:
       - name: Enable pnpm
         run: corepack enable
 
+      - name: Show runtime versions
+        run: |
+          node --version
+          pnpm --version
+
       - name: Install dependencies
         working-directory: app
         run: pnpm install --frozen-lockfile
@@ -185,6 +195,11 @@ jobs:
 
       - name: Enable pnpm
         run: corepack enable
+
+      - name: Show runtime versions
+        run: |
+          node --version
+          pnpm --version
 
       - name: Install dependencies
         working-directory: app

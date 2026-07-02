@@ -47,6 +47,13 @@ git -C .. diff --check
 Draft Release workflowでは、配布ZIPとchecksumに加えて、`THIRD_PARTY_NOTICES.md` と `sbom/relic-dependencies.cdx.json` をRelease Assetsへ添付する。
 リリース前には、Relic本体のライセンスが `LICENSE`、外部依存関係の一覧が `THIRD_PARTY_NOTICES.md`、機械可読の依存一覧がSBOMで確認できることを確認する。
 
+## 依存関係更新の継続確認
+
+`.github/dependabot.yml` では、`app/` のnpm依存関係とリポジトリ全体のGitHub Actionsを週次で確認する。
+
+Dependabotによる更新Pull Requestでは、`pnpm.overrides` の固定がまだ必要かを確認する。
+固定を外せる状態になった場合は、対象依存関係の更新と同じPull Requestまたは別Issueで解除する。
+
 ---
 
 ## 注意

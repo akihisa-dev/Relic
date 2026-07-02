@@ -82,6 +82,7 @@
     - `ci.yml`
     - `draft-release.yml`
     - `secret-guard.yml`
+  - `dependabot.yml`
   - `pull_request_template.md`
 - `app/`
   - `assets/`
