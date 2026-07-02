@@ -84,6 +84,7 @@
     - `secret-guard.yml`
   - `dependabot.yml`
   - `pull_request_template.md`
+  - `RELEASE_CHECKLIST.md`
 - `app/`
   - `assets/`
     - `icon.iconset/`
