@@ -7,6 +7,7 @@ import { formatWikiLink } from "../../shared/links";
 interface CollectUnlinkedReferencesOptions {
   existingMarkdownPaths: string[];
   sourcePath: string;
+  targetBasenameCount?: number;
   targetPath: string;
 }
 
@@ -25,26 +26,46 @@ export function collectUnlinkedReferencesInMarkdown(
     ...collectMarkdownLinkRanges(content)
   ].sort((a, b) => a.from - b.from);
   const references: UnlinkedReference[] = [];
-  const linkText = linkTextForSource(options.sourcePath, options.targetPath, options.existingMarkdownPaths);
-  let from = content.indexOf(matchText);
+  const linkText = linkTextForSource(
+    options.sourcePath,
+    options.targetPath,
+    options.existingMarkdownPaths,
+    options.targetBasenameCount
+  );
+  const lines = content.match(/[^\n]*(?:\n|$)/g) ?? [];
+  let offset = 0;
+  let excludedRangeIndex = 0;
 
-  while (from >= 0) {
-    const to = from + matchText.length;
-    if (!isRangeInRanges(from, to, excludedRanges)) {
-      references.push({
-        from,
-        lineNumber: lineNumberAt(content, from),
-        lineText: lineTextAt(content, from),
-        linkText,
-        matchText,
-        sourceName: stripMarkdownExtension(path.posix.basename(options.sourcePath)),
-        sourcePath: options.sourcePath,
-        targetPath: options.targetPath,
-        to
-      });
+  for (const [lineIndex, rawLine] of lines.entries()) {
+    const line = rawLine.endsWith("\n") ? rawLine.slice(0, -1) : rawLine;
+    let lineMatchIndex = line.indexOf(matchText);
+
+    while (lineMatchIndex >= 0) {
+      const from = offset + lineMatchIndex;
+      const to = from + matchText.length;
+
+      while (excludedRangeIndex < excludedRanges.length && excludedRanges[excludedRangeIndex]!.to <= from) {
+        excludedRangeIndex += 1;
+      }
+
+      if (!isRangeInRangesAtIndex(from, to, excludedRanges, excludedRangeIndex)) {
+        references.push({
+          from,
+          lineNumber: lineIndex + 1,
+          lineText: line.trim() === "" ? "(空行)" : line.trim(),
+          linkText,
+          matchText,
+          sourceName: stripMarkdownExtension(path.posix.basename(options.sourcePath)),
+          sourcePath: options.sourcePath,
+          targetPath: options.targetPath,
+          to
+        });
+      }
+
+      lineMatchIndex = line.indexOf(matchText, lineMatchIndex + matchText.length);
     }
 
-    from = content.indexOf(matchText, to);
+    offset += rawLine.length;
   }
 
   return references;
@@ -78,17 +99,24 @@ export function applyUnlinkedReferenceToMarkdown(
 function linkTextForSource(
   sourcePath: string,
   targetPath: string,
-  existingMarkdownPaths: string[]
+  existingMarkdownPaths: string[],
+  targetBasenameCount?: number
 ): string {
   const targetName = stripMarkdownExtension(path.posix.basename(targetPath));
   const targetPathWithoutExtension = stripMarkdownExtension(targetPath);
+  const basenameLinkResolvesToTarget = canBasenameLinkResolveToTarget(
+    sourcePath,
+    targetPath,
+    existingMarkdownPaths,
+    targetBasenameCount
+  );
 
   return formatWikiLink("link", {
     alias: targetPathWithoutExtension === targetName ||
-      canBasenameLinkResolveToTarget(sourcePath, targetPath, existingMarkdownPaths)
+      basenameLinkResolvesToTarget
       ? null
       : targetName,
-    targetBase: canBasenameLinkResolveToTarget(sourcePath, targetPath, existingMarkdownPaths)
+    targetBase: basenameLinkResolvesToTarget
       ? targetName
       : targetPathWithoutExtension
   });
@@ -97,7 +125,8 @@ function linkTextForSource(
 function canBasenameLinkResolveToTarget(
   sourcePath: string,
   targetPath: string,
-  existingMarkdownPaths: string[]
+  existingMarkdownPaths: string[],
+  targetBasenameCount?: number
 ): boolean {
   const targetBasename = path.posix.basename(targetPath);
   const sourceDirectory = sourcePath.includes("/")
@@ -107,7 +136,7 @@ function canBasenameLinkResolveToTarget(
 
   if (sameFolderTarget === targetPath) return true;
 
-  return existingMarkdownPaths.filter((candidate) => path.posix.basename(candidate) === targetBasename).length === 1;
+  return (targetBasenameCount ?? existingMarkdownPaths.filter((candidate) => path.posix.basename(candidate) === targetBasename).length) === 1;
 }
 
 function collectWikiLinkRanges(content: string): Array<{ from: number; to: number }> {
@@ -193,23 +222,15 @@ function isRangeInRanges(
   return ranges.some((range) => from < range.to && to > range.from);
 }
 
-function lineNumberAt(content: string, offset: number): number {
-  let lineNumber = 1;
+function isRangeInRangesAtIndex(
+  from: number,
+  to: number,
+  ranges: Array<{ from: number; to: number }>,
+  rangeIndex: number
+): boolean {
+  const range = ranges[rangeIndex];
 
-  for (let index = 0; index < offset; index += 1) {
-    if (content[index] === "\n") lineNumber += 1;
-  }
-
-  return lineNumber;
-}
-
-function lineTextAt(content: string, offset: number): string {
-  const lineStart = content.lastIndexOf("\n", Math.max(0, offset - 1)) + 1;
-  const nextLineBreak = content.indexOf("\n", offset);
-  const lineEnd = nextLineBreak >= 0 ? nextLineBreak : content.length;
-  const line = content.slice(lineStart, lineEnd).trim();
-
-  return line === "" ? "(空行)" : line;
+  return range !== undefined && from < range.to && to > range.from;
 }
 
 function isSafeWikiLinkPart(value: string): boolean {
