@@ -137,7 +137,10 @@ export async function readImageFile(
       return fail("IMAGE_READ_TYPE_UNSUPPORTED", "対応している画像ファイルだけを表示できます。");
     }
 
-    const imageBuffer = await ops.readFile(resolvedPath.value);
+    const safeReadPath = await verifyExistingWorkspacePath(workspacePath, resolvedPath.value);
+    if (!safeReadPath.ok) return safeReadPath;
+
+    const imageBuffer = await ops.readFile(safeReadPath.value);
     return ok({ dataUrl: `data:${mimeType};base64,${imageBuffer.toString("base64")}` });
   } catch (error) {
     return fail(

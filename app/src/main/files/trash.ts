@@ -3,7 +3,7 @@ import { stat } from "node:fs/promises";
 import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { errorDetails } from "./fileSystem";
-import { resolveExistingWorkspacePath } from "./paths";
+import { resolveExistingWorkspacePath, verifyExistingWorkspacePath } from "./paths";
 
 export type TrashItem = (absolutePath: string) => Promise<void>;
 
@@ -34,7 +34,10 @@ export async function moveWorkspaceItemToTrash(
       return fail("TRASH_NOT_FOLDER", "フォルダだけをゴミ箱に移動できます。");
     }
 
-    await trashItem(absolutePath.value);
+    const safeTrashPath = await verifyExistingWorkspacePath(workspacePath, absolutePath.value);
+    if (!safeTrashPath.ok) return safeTrashPath;
+
+    await trashItem(safeTrashPath.value);
 
     return ok({
       path: relativePath

@@ -3,7 +3,7 @@ import { readFile, stat } from "node:fs/promises";
 import { isSupportedPdfPath } from "../../shared/pdfFiles";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { errorDetails } from "./fileSystem";
-import { resolveExistingWorkspacePath } from "./paths";
+import { resolveExistingWorkspacePath, verifyExistingWorkspacePath } from "./paths";
 
 export interface ReadPdfFile {
   dataUrl: string;
@@ -39,7 +39,10 @@ export async function readPdfFile(
       return fail("PDF_READ_INVALID_FILE", "表示できるPDFファイルを指定してください。");
     }
 
-    const pdfBuffer = await ops.readFile(resolvedPath.value);
+    const safeReadPath = await verifyExistingWorkspacePath(workspacePath, resolvedPath.value);
+    if (!safeReadPath.ok) return safeReadPath;
+
+    const pdfBuffer = await ops.readFile(safeReadPath.value);
     return ok({ dataUrl: `data:application/pdf;base64,${pdfBuffer.toString("base64")}` });
   } catch (error) {
     return fail(

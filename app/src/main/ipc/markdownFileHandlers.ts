@@ -251,7 +251,14 @@ export function registerMarkdownFileHandlers(): void {
 
           const fileStat = await stat(absolutePath.value);
           if (!fileStat.isFile()) return;
-          filePaths.push(absolutePath.value);
+
+          const safeDragPath = await verifyExistingWorkspacePath(
+            context.value.activeWorkspace.path,
+            absolutePath.value
+          );
+          if (!safeDragPath.ok) return;
+
+          filePaths.push(safeDragPath.value);
         }
 
         if (filePaths.length === 0) return;

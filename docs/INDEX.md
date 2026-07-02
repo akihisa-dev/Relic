@@ -149,6 +149,7 @@
         - `names.ts`
         - `paths.test.ts`
         - `paths.ts`
+        - `pdfFiles.test.ts`
         - `pdfFiles.ts`
         - `regexSafety.ts`
         - `renameOperations.ts`

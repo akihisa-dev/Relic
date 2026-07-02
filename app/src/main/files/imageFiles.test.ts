@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, symlink, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -105,6 +105,32 @@ describe("readImageFile", () => {
     temporaryPaths.push(workspacePath);
 
     const result = await readImageFile(workspacePath, "../outside.png");
+
+    expect(result).toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+  });
+
+  it("読み取り直前にワークスペース外へ差し替えられた画像は読まない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-workspace-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-outside-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+    const imagePath = path.join(workspacePath, "diagram.png");
+    const outsideImagePath = path.join(outsidePath, "outside.png");
+    await writeFile(imagePath, "png-data");
+    await writeFile(outsideImagePath, "outside");
+
+    const swapToOutsideAfterStat = (async (targetPath) => {
+        const fileStat = await stat(targetPath);
+        await unlink(targetPath);
+        await symlink(outsideImagePath, targetPath);
+        return fileStat;
+      }) as typeof stat;
+
+    const result = await readImageFile(workspacePath, "diagram.png", {
+      stat: swapToOutsideAfterStat
+    });
 
     expect(result).toMatchObject({
       error: { code: "WORKSPACE_PATH_OUTSIDE" },
