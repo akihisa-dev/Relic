@@ -1,10 +1,11 @@
 import type { Dispatch, MouseEvent as ReactMouseEvent, ReactElement, SetStateAction } from "react";
 
-import type { Backlink, EditorSettings, UserDefinedField } from "../../shared/ipc";
+import type { Backlink, EditorSettings, UnlinkedReference, UnlinkedReferencesResult, UserDefinedField } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
 import { markdownLinkForPath } from "../appLinks";
 import type { OutlineHeading } from "../editorDerivedState";
+import { unlinkedReferenceKey } from "../hooks/useUnlinkedReferencesState";
 import { useT } from "../i18n";
 import type { FileTab } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
@@ -14,14 +15,17 @@ import { RightPanelRecoveryList } from "./RightPanelRecoveryList";
 
 interface AppRightPanelProps {
   activeFileTab: FileTab | null;
+  applyingReferenceKey: string | null;
   backlinks: Backlink[];
   editorSettings: EditorSettings;
   frontmatterCandidates: Record<string, string[]>;
   isLoadingBacklinks: boolean;
+  isLoadingUnlinkedReferences: boolean;
   isOpen: boolean;
   isResizing: boolean;
   onOpenFile: (path: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
+  onApplyUnlinkedReference: (reference: UnlinkedReference) => Promise<void>;
   onOutlineHeadingClick: (heading: OutlineHeading) => void;
   onResizeStart: (event: ReactMouseEvent) => void;
   onUpdateTabContent: (tabId: string, content: string) => void;
@@ -30,20 +34,24 @@ interface AppRightPanelProps {
   outgoingLinksLimited: boolean;
   rightPanelView: RightPanelView;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
+  unlinkedReferences: UnlinkedReferencesResult;
   userDefinedFields: UserDefinedField[];
   width: number;
 }
 
 export function AppRightPanel({
   activeFileTab,
+  applyingReferenceKey,
   backlinks,
   editorSettings,
   frontmatterCandidates,
   isLoadingBacklinks,
+  isLoadingUnlinkedReferences,
   isOpen,
   isResizing,
   onOpenFile,
   onOpenWikiLink,
+  onApplyUnlinkedReference,
   onOutlineHeadingClick,
   onResizeStart,
   onUpdateTabContent,
@@ -52,6 +60,7 @@ export function AppRightPanel({
   outgoingLinksLimited,
   rightPanelView,
   setLinkContextMenu,
+  unlinkedReferences,
   userDefinedFields,
   width
 }: AppRightPanelProps): ReactElement {
@@ -107,7 +116,7 @@ export function AppRightPanel({
           activeFileTab={activeFileTab}
           onRecoverContent={onUpdateTabContent}
         />
-      ) : outgoingLinks.length > 0 || backlinks.length > 0 || isLoadingBacklinks ? (
+      ) : outgoingLinks.length > 0 || backlinks.length > 0 || unlinkedReferences.references.length > 0 || isLoadingBacklinks || isLoadingUnlinkedReferences ? (
         <div className="links-panel-stack">
           <div className="links-panel-section">
             <div className="links-panel-subheading">{t("links.outgoing")}</div>
@@ -194,6 +203,59 @@ export function AppRightPanel({
               </ul>
             ) : (
               <div className="empty-note">{t("empty.noBacklinks")}</div>
+            )}
+          </div>
+          <div className="links-panel-section">
+            <div className="links-panel-subheading">{t("links.unlinkedReferences")}</div>
+            {isLoadingUnlinkedReferences ? (
+              <div className="list-loading-note">{t("common.loading")}</div>
+            ) : unlinkedReferences.references.length > 0 ? (
+              <>
+                {unlinkedReferences.truncated ? (
+                  <div className="list-loading-note">{t("links.unlinkedReferencesLimited")}</div>
+                ) : null}
+                {unlinkedReferences.skippedUnreadableFileCount > 0 ? (
+                  <div className="list-loading-note">
+                    {t("links.unlinkedReferencesSkipped", { count: unlinkedReferences.skippedUnreadableFileCount })}
+                  </div>
+                ) : null}
+                <ul className="links-list links-list--unlinked">
+                  {unlinkedReferences.references.map((reference) => {
+                    const key = unlinkedReferenceKey(reference);
+                    const isApplying = applyingReferenceKey === key;
+
+                    return (
+                      <li className="links-list-item links-list-item--unlinked" key={key}>
+                        <span className="links-list-kind links-list-kind--unlinked">
+                          {t("links.unlinked")}
+                        </span>
+                        <button
+                          className="links-list-target"
+                          onClick={() => onOpenFile(reference.sourcePath)}
+                          title={reference.sourcePath}
+                          type="button"
+                        >
+                          {reference.sourceName}
+                        </button>
+                        <span className="links-list-detail">{reference.lineNumber}</span>
+                        <button
+                          className="links-list-action"
+                          disabled={isApplying}
+                          onClick={() => void onApplyUnlinkedReference(reference)}
+                          type="button"
+                        >
+                          {isApplying ? t("common.loading") : t("links.applyUnlinkedReference")}
+                        </button>
+                        <div className="links-list-preview" title={reference.lineText}>
+                          {reference.lineText}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            ) : (
+              <div className="empty-note">{t("empty.noUnlinkedReferences")}</div>
             )}
           </div>
         </div>

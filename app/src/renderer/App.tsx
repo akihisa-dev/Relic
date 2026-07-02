@@ -478,11 +478,15 @@ export function App(): ReactElement {
 
   const {
     activeFileTabInFocusedPane,
+    applyingReferenceKey,
     backlinks,
     isLoadingBacklinks,
+    isLoadingUnlinkedReferences,
+    onApplyUnlinkedReference,
     outlineHeadings,
     outgoingLinks,
-    outgoingLinksLimited
+    outgoingLinksLimited,
+    unlinkedReferences
   } = useActiveDocumentContext({
     aliasesByPath,
     existingMarkdownPaths,
@@ -492,7 +496,8 @@ export function App(): ReactElement {
     leftPane,
     rightPane,
     setWorkspaceError,
-    tabs
+    tabs,
+    updateTabContent
   });
 
   const { handleSavePreviewAsPdf } = useAppPreviewOutputActions({
@@ -579,6 +584,7 @@ export function App(): ReactElement {
       activeFileTab: activeFileTabInFocusedPane,
       allFilePaths: existingMarkdownPaths,
       appInlineHandlers,
+      applyingReferenceKey,
       backlinks,
       closeAllTabsInPaneWithMotion,
       closeOtherTabsWithMotion,
@@ -601,6 +607,7 @@ export function App(): ReactElement {
       handleSavePreviewAsPdf,
       isEffectiveRightPanelOpen,
       isLoadingBacklinks,
+      isLoadingUnlinkedReferences,
       isRightPanelResizing,
       isLeftSourceMode,
       isRightSourceMode,
@@ -612,6 +619,7 @@ export function App(): ReactElement {
       leftPaneScrollHeading,
       moveTab,
       openFileInOtherPane,
+      onApplyUnlinkedReference,
       outlineHeadings,
       outgoingLinks,
       outgoingLinksLimited,
@@ -637,6 +645,7 @@ export function App(): ReactElement {
       toggleSplitWithMotion,
       toggleTabPinned,
       updateTabContent,
+      unlinkedReferences,
       userDefinedFields,
       workspaceState
     },

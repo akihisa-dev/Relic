@@ -35,6 +35,7 @@ export interface AppLayoutEditorWorkspaceInput {
     EditorWorkspaceProps,
     "onEditorAction" | "onOutlineHeadingClick" | "onScrollTargetHandled"
   >;
+  applyingReferenceKey: EditorWorkspaceProps["applyingReferenceKey"];
   backlinks: EditorWorkspaceProps["backlinks"];
   closeAllTabsInPaneWithMotion: EditorWorkspaceProps["onCloseAllTabsInPane"];
   closeOtherTabsWithMotion: EditorWorkspaceProps["onCloseOtherTabs"];
@@ -57,6 +58,7 @@ export interface AppLayoutEditorWorkspaceInput {
   handleSavePreviewAsPdf: EditorWorkspaceProps["onSavePreviewAsPdf"];
   isEffectiveRightPanelOpen: EditorWorkspaceProps["isRightPanelOpen"];
   isLoadingBacklinks: EditorWorkspaceProps["isLoadingBacklinks"];
+  isLoadingUnlinkedReferences: EditorWorkspaceProps["isLoadingUnlinkedReferences"];
   isRightPanelResizing: EditorWorkspaceProps["isRightPanelResizing"];
   isLeftSourceMode: EditorWorkspaceProps["isLeftSourceMode"];
   isRightSourceMode: EditorWorkspaceProps["isRightSourceMode"];
@@ -67,6 +69,7 @@ export interface AppLayoutEditorWorkspaceInput {
   leftEditorViewRef: EditorWorkspaceProps["leftEditorViewRef"];
   leftPaneScrollHeading: EditorWorkspaceProps["leftPaneScrollHeading"];
   moveTab: EditorWorkspaceProps["onTabMove"];
+  onApplyUnlinkedReference: EditorWorkspaceProps["onApplyUnlinkedReference"];
   openFileInOtherPane: EditorWorkspaceProps["onOpenInOtherPane"];
   outlineHeadings: EditorWorkspaceProps["outlineHeadings"];
   outgoingLinks: EditorWorkspaceProps["outgoingLinks"];
@@ -93,6 +96,7 @@ export interface AppLayoutEditorWorkspaceInput {
   toggleSplitWithMotion: EditorWorkspaceProps["onSplitToggle"];
   toggleTabPinned: EditorWorkspaceProps["onTogglePinTab"];
   updateTabContent: EditorWorkspaceProps["onUpdateTabContent"];
+  unlinkedReferences: EditorWorkspaceProps["unlinkedReferences"];
   userDefinedFields: EditorWorkspaceProps["userDefinedFields"];
   workspaceState: FilesSidebarProps["workspaceState"];
 }

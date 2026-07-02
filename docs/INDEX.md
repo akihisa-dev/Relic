@@ -168,6 +168,10 @@
         - `tags.ts`
         - `trash.test.ts`
         - `trash.ts`
+        - `unlinkedReferences.test.ts`
+        - `unlinkedReferences.ts`
+        - `unlinkedReferencesModel.test.ts`
+        - `unlinkedReferencesModel.ts`
         - `workspaceDerivedData.ts`
         - `workspaceDerivedDataSession.test.ts`
         - `workspaceDerivedDataSession.ts`
@@ -371,6 +375,7 @@
         - `useStableTimelineBounds.ts`
         - `useToolbarActions.ts`
         - `useToolsPanelState.ts`
+        - `useUnlinkedReferencesState.ts`
         - `useWindowCloseRequest.test.ts`
         - `useWindowCloseRequest.ts`
         - `useWorkspaceAliases.ts`

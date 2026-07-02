@@ -27,6 +27,8 @@ import type {
 } from "./ipcTools";
 import type {
   AppInfo,
+  ApplyUnlinkedReferenceInput,
+  ApplyUnlinkedReferenceResult,
   Backlink,
   CreateFolderInput,
   CreateLinkedMarkdownFileInput,
@@ -37,6 +39,7 @@ import type {
   FileRecoveryInput,
   FileRecoverySnapshot,
   GetBacklinksInput,
+  GetUnlinkedReferencesInput,
   ImportImageFileInput,
   ImportImageFileResult,
   ImportMarkdownFilesInput,
@@ -69,6 +72,7 @@ import type {
   WorkspaceChangedEvent,
   WorkspaceSearchResultSet,
   WorkspaceGraph,
+  UnlinkedReferencesResult,
   WorkspaceState,
   WorkspaceTagSummary,
   WriteMarkdownFileInput
@@ -108,6 +112,8 @@ export interface RelicApi {
     input: DuplicateMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   getBacklinks: (input: GetBacklinksInput) => Promise<RelicResult<Backlink[]>>;
+  getUnlinkedReferences: (input: GetUnlinkedReferencesInput) => Promise<RelicResult<UnlinkedReferencesResult>>;
+  applyUnlinkedReference: (input: ApplyUnlinkedReferenceInput) => Promise<RelicResult<ApplyUnlinkedReferenceResult>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getWorkspaceAliases: () => Promise<RelicResult<AliasIndex>>;
