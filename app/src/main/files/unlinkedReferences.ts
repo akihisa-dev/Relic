@@ -1,4 +1,6 @@
+import path from "node:path";
 import { readFile } from "node:fs/promises";
+import { setImmediate } from "node:timers/promises";
 
 import type {
   ApplyUnlinkedReferenceInput,
@@ -54,20 +56,25 @@ export async function readUnlinkedReferences(
     const parseCache = options.parseCache ?? createWorkspaceDerivedDataCache();
     const fileIndex = await readWorkspaceDerivedFileIndex(workspacePath, options);
     const existingMarkdownPaths = fileIndex.entries.map((entry) => entry.path);
+    const targetBasename = path.posix.basename(targetRelativePath);
+    const targetBasenameCount = existingMarkdownPaths.filter((entryPath) => path.posix.basename(entryPath) === targetBasename).length;
     if (!existingMarkdownPaths.includes(targetRelativePath)) {
       return ok({ references: [], skippedUnreadableFileCount: 0, truncated: false });
     }
 
     const references: UnlinkedReference[] = [];
     let truncated = false;
+    let processedRecordCount = 0;
 
     for (const record of readableWorkspaceMarkdownRecords(fileIndex)) {
       if (record.path === targetRelativePath) continue;
+      processedRecordCount += 1;
 
       const content = markdownContentForRecord(record, parseCache);
       const referencesInFile = collectUnlinkedReferencesInMarkdown(content, {
         existingMarkdownPaths,
         sourcePath: record.path,
+        targetBasenameCount,
         targetPath: targetRelativePath
       });
 
@@ -80,6 +87,7 @@ export async function readUnlinkedReferences(
       }
 
       if (truncated) break;
+      if (processedRecordCount % 25 === 0) await setImmediate();
     }
 
     return ok({
@@ -122,9 +130,12 @@ export async function applyUnlinkedReference(
     const content = await operations.readFile(sourcePath.value, "utf8");
     const fileIndex = await readWorkspaceDerivedFileIndex(workspacePath);
     const existingMarkdownPaths = fileIndex.entries.map((entry) => entry.path);
+    const targetBasename = path.posix.basename(input.targetPath);
+    const targetBasenameCount = existingMarkdownPaths.filter((entryPath) => path.posix.basename(entryPath) === targetBasename).length;
     const linkText = collectUnlinkedReferencesInMarkdown(content, {
       existingMarkdownPaths,
       sourcePath: input.sourcePath,
+      targetBasenameCount,
       targetPath: input.targetPath
     }).find((reference) => (
       reference.from === input.from &&
