@@ -121,9 +121,12 @@ function initialGraphViewTransform(): GraphViewTransform {
 export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<number | null>(null);
-  const nodesRef = useRef<Map<string, SimNode>>(new Map());
-  const linksRef = useRef<SimLink[]>([]);
-  const viewRef = useRef<GraphViewTransform>(initialGraphViewTransform());
+  const initialNodes = useMemo(() => new Map<string, SimNode>(), []);
+  const initialLinks = useMemo<SimLink[]>(() => [], []);
+  const initialView = useMemo(() => initialGraphViewTransform(), []);
+  const nodesRef = useRef<Map<string, SimNode>>(initialNodes);
+  const linksRef = useRef<SimLink[]>(initialLinks);
+  const viewRef = useRef<GraphViewTransform>(initialView);
   const panVelocityRef = useRef({ x: 0, y: 0 });
   const panSampleMsRef = useRef(0);
   const hoverPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -156,7 +159,9 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     error: string | null;
     graph: WorkspaceGraph | null;
     loading: boolean;
-  }>({ error: null, graph: null, loading: true });
+  }>(() => window.relic
+    ? { error: null, graph: null, loading: true }
+    : { error: "グラフを読み込めませんでした。", graph: null, loading: false });
   const [options, setOptions] = useState(loadGraphOptions);
   const [colorGroups, setColorGroups] = useState<GraphColorGroup[]>(loadGraphColorGroups);
   const [draggingColorGroupId, setDraggingColorGroupId] = useState<string | null>(null);
@@ -171,10 +176,8 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
 
   useEffect(() => {
     let active = true;
-    setGraphState((current) => ({ ...current, error: null, loading: true }));
 
     if (!window.relic) {
-      setGraphState({ error: "グラフを読み込めませんでした。", graph: null, loading: false });
       return () => {
         active = false;
       };
@@ -209,18 +212,16 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       linkedIds.add(link.target);
     }
 
-    const nodeIds = new Set(
-      graph.nodes
-        .filter((node) => {
-          if (!options.showTags && node.type === "tag") return false;
-          if (!options.showAttachments && node.type === "attachment") return false;
-          if (options.hideUnresolved && node.type === "unresolved") return false;
-          if (!options.showOrphans && !linkedIds.has(node.id)) return false;
+    const nodeIds = new Set<string>();
+    for (const node of graph.nodes) {
+      if (!options.showTags && node.type === "tag") continue;
+      if (!options.showAttachments && node.type === "attachment") continue;
+      if (options.hideUnresolved && node.type === "unresolved") continue;
+      if (!options.showOrphans && !linkedIds.has(node.id)) continue;
+      if (!graphNodeMatchesQuery(node, options.search, tagsByNode.get(node.id) ?? [])) continue;
 
-          return graphNodeMatchesQuery(node, options.search, tagsByNode.get(node.id) ?? []);
-        })
-        .map((node) => node.id)
-    );
+      nodeIds.add(node.id);
+    }
     const links = graph.links.filter((link) =>
       nodeIds.has(link.source) &&
       nodeIds.has(link.target) &&
