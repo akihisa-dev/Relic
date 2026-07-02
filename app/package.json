@@ -61,7 +61,7 @@
     "@terrastruct/d2": "^0.1.33",
     "dompurify": "^3.4.11",
     "highlight.js": "^11.11.1",
-    "js-yaml": "^4.3.0",
+    "js-yaml": "^5.2.1",
     "katex": "^0.17.0",
     "marked": "^18.0.3",
     "marked-footnote": "^1.4.0",
