@@ -182,7 +182,7 @@ describe("App charts", () => {
     expect(isGraphNodePrimaryPointerButton(2)).toBe(false);
   });
 
-  it("グラフビューのノードクリックはObsidianと同じ5px超過でドラッグ扱いになる", () => {
+  it("グラフビューのノードクリックは5px超過でドラッグ扱いになる", () => {
     expect(graphPointerMovedBeyondClickThreshold(3, 4)).toBe(false);
     expect(graphPointerMovedBeyondClickThreshold(4, 4)).toBe(true);
   });
@@ -295,7 +295,7 @@ describe("App charts", () => {
     expect(graphHoveredNodeContainsPoint(node, { x: 500, y: 300 }, view, graphTestOptions, 900, 600)).toBe(false);
   });
 
-  it("グラフビューのノードと文字はObsidianと同じズーム係数で描画する", () => {
+  it("グラフビューのノードと文字はズーム係数で描画する", () => {
     const node = {
       backlinkCount: 8,
       linkCount: 8
@@ -319,7 +319,7 @@ describe("App charts", () => {
     expect(graphLinkScaleOpacity(0.8)).toBe(1);
   });
 
-  it("グラフビューのリンク線はObsidianと同じくノード外周で止める", () => {
+  it("グラフビューのリンク線はノード外周で止める", () => {
     expect(graphLinkEndpoints(
       { backlinkCount: 0, linkCount: 0, x: 0, y: 0 },
       { backlinkCount: 0, linkCount: 0, x: 100, y: 0 },

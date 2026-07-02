@@ -50,7 +50,7 @@ describe("readWorkspaceGraph", () => {
     expect(result.value.nodes.find((node) => node.id === "B.md")).toMatchObject({ backlinkCount: 1 });
   });
 
-  it("本文タグと添付画像をObsidianのグラフ対象として扱う", async () => {
+  it("本文タグと添付画像をグラフ対象として扱う", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-graph-"));
     temporaryPaths.push(workspacePath);
     await mkdir(path.join(workspacePath, "assets"));
