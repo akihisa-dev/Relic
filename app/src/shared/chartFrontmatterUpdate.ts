@@ -123,7 +123,7 @@ function chartFrontmatterUpdates(
 }
 
 function setYamlField(yamlText: string, field: string, value: unknown): string {
-  const dumped = yaml.dump({ [field]: value }, { flowLevel: 2, lineWidth: -1, quotingType: "\"", forceQuotes: false });
+  const dumped = yaml.dump({ [field]: value }, { flowLevel: 2, lineWidth: -1, quoteStyle: "double", forceQuotes: false });
   const replacement = dumped.endsWith("\n") ? dumped : `${dumped}\n`;
   const range = findTopLevelFieldRange(yamlText, field);
 

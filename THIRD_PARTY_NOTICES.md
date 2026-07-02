@@ -17,7 +17,7 @@ Relic 本体は AGPL-3.0-or-later で公開されています。
 | `@terrastruct/d2` | `0.1.33` | MPL-2.0 | [link](https://github.com/terrastruct/d2) |
 | `dompurify` | `3.4.11` | (MPL-2.0 OR Apache-2.0) | [link](https://github.com/cure53/DOMPurify) |
 | `highlight.js` | `11.11.1` | BSD-3-Clause | [link](https://github.com/highlightjs/highlight.js) |
-| `js-yaml` | `4.3.0` | MIT | [link](https://github.com/nodeca/js-yaml) |
+| `js-yaml` | `5.2.1` | MIT | [link](https://github.com/nodeca/js-yaml) |
 | `katex` | `0.17.0` | MIT | [link](https://github.com/KaTeX/KaTeX) |
 | `marked` | `18.0.5` | MIT | [link](https://github.com/markedjs/marked) |
 | `marked-footnote` | `1.4.0` | MIT | [link](https://github.com/bent10/marked-extensions) |

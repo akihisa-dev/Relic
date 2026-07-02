@@ -77,9 +77,10 @@ export function findTopLevelYamlFieldEntries(lines: string[]): YamlFieldEntry[] 
   return entries;
 }
 
-function serializeFlowScalar(key: string, value: unknown): string {
+function serializeFlowScalar(key: string, value: unknown, preserveDateLikeString = false): string {
   void key;
   if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (preserveDateLikeString && typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
   if (typeof value === "string") return JSON.stringify(value);
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   if (value === null) return "null";
@@ -92,7 +93,7 @@ export function serializeData(data: Record<string, unknown>, userDefinedFields: 
       const field = fieldFor(key, userDefinedFields);
       if (value === "") return `${key}:`;
       if (key === "chronicle") {
-        return yaml.dump({ [key]: value }, { flowLevel: 2, lineWidth: -1, quotingType: "\"", forceQuotes: false }).trimEnd();
+        return yaml.dump({ [key]: value }, { flowLevel: 2, lineWidth: -1, quoteStyle: "double", forceQuotes: false }).trimEnd();
       }
       if (Array.isArray(value) && shouldSerializeArrayAsFlowSequence(key, field)) {
         return `${key}: [${value.map((item) => serializeFlowScalar(key, item)).join(", ")}]`;
@@ -122,7 +123,8 @@ function serializeEntryPreservingQuote(
       (entry.end === entry.start + 1 && isYamlFlowSequence(lines[entry.start]))
     )
   ) {
-    return `${entry.key}: [${value.map((item) => serializeFlowScalar(entry.key, item)).join(", ")}]`;
+    const preserveDateLikeString = isYamlFlowSequence(lines[entry.start]);
+    return `${entry.key}: [${value.map((item) => serializeFlowScalar(entry.key, item, preserveDateLikeString)).join(", ")}]`;
   }
 
   if (entry.end !== entry.start + 1 || typeof value !== "string" || value.includes("\n")) {

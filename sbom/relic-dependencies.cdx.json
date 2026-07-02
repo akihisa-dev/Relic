@@ -6,7 +6,7 @@
     "component": {
       "type": "application",
       "name": "relic",
-      "version": "0.4.64",
+      "version": "0.4.65",
       "licenses": [
         {
           "license": {
@@ -191,8 +191,8 @@
     {
       "type": "library",
       "name": "js-yaml",
-      "version": "4.3.0",
-      "purl": "pkg:npm/js-yaml@4.3.0",
+      "version": "5.2.1",
+      "purl": "pkg:npm/js-yaml@5.2.1",
       "licenses": [
         {
           "license": {
