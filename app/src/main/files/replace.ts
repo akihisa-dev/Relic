@@ -12,6 +12,7 @@ import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
+import { mapWithConcurrency } from "./concurrency";
 import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveExistingWorkspacePath, verifyExistingWorkspacePath } from "./paths";
@@ -38,6 +39,7 @@ interface SearchAndReplaceTargetsResult {
 }
 
 export const searchAndReplacePreviewMaxResults = 500;
+const maxConcurrentReplaceReads = 8;
 
 const defaultSearchAndReplaceOperations: Required<SearchAndReplaceWriteOperations> = {
   readFile,
@@ -273,14 +275,16 @@ async function readReplaceTargets(
 ): Promise<RelicResult<SearchAndReplaceTargetsResult>> {
   const fileTree = await readWorkspaceFileTree(workspacePath);
   const files = await collectSafeMarkdownFiles(workspacePath, collectMarkdownPaths(fileTree));
-  const fileContents = await Promise.all(
-    files.map(async (file) => {
+  const fileContents = await mapWithConcurrency(
+    files,
+    maxConcurrentReplaceReads,
+    async (file) => {
       try {
         return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
       } catch {
         return { ...file, unreadable: true };
       }
-    })
+    }
   );
   const targets = fileContents.filter((fileContent): fileContent is SearchAndReplaceTarget => "content" in fileContent);
   const skippedUnreadableFiles = fileContents
@@ -305,11 +309,13 @@ async function collectSafeMarkdownFiles(
   workspacePath: string,
   relativePaths: string[]
 ): Promise<{ absolutePath: string; relativePath: string }[]> {
-  const files = await Promise.all(
-    relativePaths.map(async (relativePath) => {
+  const files = await mapWithConcurrency(
+    relativePaths,
+    maxConcurrentReplaceReads,
+    async (relativePath) => {
       const absolutePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
       return absolutePath.ok ? { absolutePath: absolutePath.value, relativePath } : null;
-    })
+    }
   );
 
   return files.filter((file): file is { absolutePath: string; relativePath: string } => file !== null);
