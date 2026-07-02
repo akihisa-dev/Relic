@@ -51,7 +51,7 @@ jobs:
 
   build-macos:
     name: Build macOS
-    needs: validate-release-tag
+    needs: verify-release-dependencies
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -113,7 +113,7 @@ jobs:
 
   build-windows:
     name: Build Windows
-    needs: validate-release-tag
+    needs: verify-release-dependencies
     runs-on: windows-2025-vs2026
     steps:
       - name: Checkout
@@ -167,6 +167,36 @@ jobs:
             app/release-assets/Relic-Windows.zip
             app/release-assets/Relic-Windows.zip.sha256
           if-no-files-found: error
+
+  verify-release-dependencies:
+    name: Verify release dependencies
+    needs: validate-release-tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Check SBOM and licenses
+        working-directory: app
+        run: pnpm licenses:check
+
+      - name: Audit production dependencies
+        working-directory: app
+        run: pnpm security:audit
 
   draft-release:
     name: Create draft release

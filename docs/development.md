@@ -593,20 +593,22 @@ workflowは次を自動で行う。
 
 1. `github.ref_name` と `app/package.json` の `version` から作るタグ名が一致するか確認する
 2. タグ名が `MAJOR.MINOR.PATCH` 形式であり、Gitタグから実行されていることを確認する
-3. macOS runnerで `app/` の依存関係をインストールする
-4. macOS runnerで `pnpm build:mac:safe` を実行する
-5. `app/out/darwin/` で生成された `Relic.app` を `Relic-macOS-arm64.zip` にまとめ、SHA-256 checksumを生成する
-6. Windows runnerで `app/` の依存関係をインストールする
-7. Windows runnerで `pnpm build:win:safe` を実行する
-8. `app/out/win32/` で生成されたWindows向けアプリを `Relic-Windows.zip` にまとめ、SHA-256 checksumを生成する
-9. `GITHUB_TOKEN` でGitHub Releaseを確認し、存在しない場合だけDraft Releaseを作成する
-10. GitHub Releaseが存在する場合はDraftかどうかを確認し、DraftならAssets添付へ進む
-11. GitHub Releaseが存在し、Draftではない場合は失敗として停止し、Assets添付を行わない
-12. Assetsアップロード直前に再度Draftかどうかを確認し、Draftではない場合は失敗として停止する
-13. `Relic-macOS-arm64.zip`、`Relic-Windows.zip`、各 `.sha256`、`THIRD_PARTY_NOTICES.md`、`relic-dependencies.cdx.json` が存在することを確認する
-14. `sha256sum -c` でZIPとchecksumの整合を確認する
-15. Draft Release上に同名Assetsがないことを確認する
-16. `Relic-macOS-arm64.zip`、`Relic-Windows.zip`、各 `.sha256`、`THIRD_PARTY_NOTICES.md`、`relic-dependencies.cdx.json` をAssetsに添付する
+3. Ubuntu runnerで `pnpm licenses:check` を実行し、Third Party NoticesとSBOMの生成物が最新であることを確認する
+4. Ubuntu runnerで `pnpm security:audit` を実行し、High以上のproduction dependency監査結果がある場合は失敗する
+5. macOS runnerで `app/` の依存関係をインストールする
+6. macOS runnerで `pnpm build:mac:safe` を実行する
+7. `app/out/darwin/` で生成された `Relic.app` を `Relic-macOS-arm64.zip` にまとめ、SHA-256 checksumを生成する
+8. Windows runnerで `app/` の依存関係をインストールする
+9. Windows runnerで `pnpm build:win:safe` を実行する
+10. `app/out/win32/` で生成されたWindows向けアプリを `Relic-Windows.zip` にまとめ、SHA-256 checksumを生成する
+11. `GITHUB_TOKEN` でGitHub Releaseを確認し、存在しない場合だけDraft Releaseを作成する
+12. GitHub Releaseが存在する場合はDraftかどうかを確認し、DraftならAssets添付へ進む
+13. GitHub Releaseが存在し、Draftではない場合は失敗として停止し、Assets添付を行わない
+14. Assetsアップロード直前に再度Draftかどうかを確認し、Draftではない場合は失敗として停止する
+15. `Relic-macOS-arm64.zip`、`Relic-Windows.zip`、各 `.sha256`、`THIRD_PARTY_NOTICES.md`、`relic-dependencies.cdx.json` が存在することを確認する
+16. `sha256sum -c` でZIPとchecksumの整合を確認する
+17. Draft Release上に同名Assetsがないことを確認する
+18. `Relic-macOS-arm64.zip`、`Relic-Windows.zip`、各 `.sha256`、`THIRD_PARTY_NOTICES.md`、`relic-dependencies.cdx.json` をAssetsに添付する
 
 workflow全体の権限は `contents: read` に抑え、Release作成を行う `draft-release` ジョブだけ `contents: write` を持つ。
 `draft-release` ジョブは `THIRD_PARTY_NOTICES.md` とSBOMをAssetsへ添付するためにcheckoutする。
