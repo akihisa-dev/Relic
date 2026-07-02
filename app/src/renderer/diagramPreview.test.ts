@@ -788,7 +788,7 @@ describe("diagramPreview", () => {
     expect(renderMock).not.toHaveBeenCalled();
   });
 
-  it("既存テーマに合わせてmermaidテーマを初期化する", async () => {
+  it("既存テーマに合わせてRelic用Mermaidテーマを初期化する", async () => {
     const { renderDiagramElement } = await loadDiagramPreviewModule();
     document.documentElement.setAttribute("data-theme", "dark");
     renderMock.mockResolvedValueOnce({ svg: "<svg><text>ok</text></svg>" });
@@ -799,7 +799,15 @@ describe("diagramPreview", () => {
       flowchart: { htmlLabels: false },
       htmlLabels: false,
       securityLevel: "strict",
-      theme: "dark"
+      theme: "base",
+      themeVariables: expect.objectContaining({
+        background: "#111111",
+        mainBkg: "#171717",
+        primaryBorderColor: "#4A4A4A",
+        primaryTextColor: "#F4F4F4",
+        lineColor: "#C2C2C2",
+        fontFamily: "Inter, Noto Sans JP, system-ui, sans-serif"
+      })
     }));
   });
 });
