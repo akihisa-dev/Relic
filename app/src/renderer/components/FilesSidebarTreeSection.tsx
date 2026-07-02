@@ -37,8 +37,8 @@ export function FilesSidebarTreeSection({
 
               return (
                 <FileTreeItem
-                  key={p}
                   {...fileTreeProps}
+                  key={p}
                   expansionRequest={expansionRequest}
                   isPinned
                   node={node}

@@ -113,16 +113,18 @@ export function RightPanelRecoveryList({
   );
 }
 
+const recoveryDateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  month: "2-digit",
+  year: "numeric"
+});
+
 function formatDateTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(undefined, {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-    year: "numeric"
-  }).format(date);
+  return recoveryDateTimeFormatter.format(date);
 }
 
 function formatBytes(size: number): string {

@@ -254,12 +254,15 @@ function scanWikiAttachmentLinks(
   sourcePath: string,
   attachmentPaths: Set<string>
 ): string[] {
-  return scanWikiLinks(markdown)
-    .filter((link) => link.kind === "embed" && isSupportedMarkdownImagePath(link.rawTargetBase))
-    .flatMap((link) => {
-      const resolvedPath = resolveAttachmentTargetPath(link.rawTargetBase, sourcePath, attachmentPaths);
-      return resolvedPath ? [resolvedPath] : [];
-    });
+  const links: string[] = [];
+
+  for (const link of scanWikiLinks(markdown)) {
+    if (link.kind !== "embed" || !isSupportedMarkdownImagePath(link.rawTargetBase)) continue;
+    const resolvedPath = resolveAttachmentTargetPath(link.rawTargetBase, sourcePath, attachmentPaths);
+    if (resolvedPath) links.push(resolvedPath);
+  }
+
+  return links;
 }
 
 function resolveAttachmentTargetPath(

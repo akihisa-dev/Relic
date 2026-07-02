@@ -105,9 +105,15 @@ function hashText(value: string): string {
 async function readRecoverySnapshotFileNames(snapshotDir: string): Promise<string[]> {
   try {
     const entries = await readdir(snapshotDir, { withFileTypes: true });
-    return entries
-      .filter((entry) => entry.isFile() && isRecoverySnapshotId(entry.name))
-      .map((entry) => entry.name);
+    const names: string[] = [];
+
+    for (const entry of entries) {
+      if (entry.isFile() && isRecoverySnapshotId(entry.name)) {
+        names.push(entry.name);
+      }
+    }
+
+    return names;
   } catch (error) {
     if (isNotFoundError(error)) return [];
     throw error;
