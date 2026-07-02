@@ -16,6 +16,7 @@ interface AppMainActionsProps {
   showRightPanelFrontmatterControl: boolean;
   showRightPanelLinksControl: boolean;
   showRightPanelOutlineControl: boolean;
+  showRightPanelRecoveryControl: boolean;
 }
 
 export function AppMainActions({
@@ -29,7 +30,8 @@ export function AppMainActions({
   showSourceControl = true,
   showRightPanelFrontmatterControl,
   showRightPanelLinksControl,
-  showRightPanelOutlineControl
+  showRightPanelOutlineControl,
+  showRightPanelRecoveryControl
 }: AppMainActionsProps): ReactElement {
   const t = useT();
   const splitShortcut = formatShortcut(["mod", "\\"]);
@@ -87,6 +89,18 @@ export function AppMainActions({
           type="button"
         >
           <FrontmatterIcon />
+        </button>
+      ) : null}
+      {showRightPanelRecoveryControl ? (
+        <button
+          aria-label={t("pane.recovery")}
+          className={`toolbar-btn${rightPanelView === "recovery" && isRightPanelOpen ? " active" : ""}`}
+          data-tooltip={t("pane.toggleRecovery")}
+          onClick={() => onRightPanelViewButton("recovery")}
+          title={t("pane.toggleRecovery")}
+          type="button"
+        >
+          <RecoveryIcon />
         </button>
       ) : null}
     </div>
@@ -161,6 +175,16 @@ function LinksIcon(): ReactElement {
   return (
     <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
       <path d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+    </svg>
+  );
+}
+
+function RecoveryIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
+      <path d="M3 12a9 9 0 1 0 3-6.708" />
+      <path d="M3 4.5v5h5" />
+      <path d="M12 7.5V12l3 2" />
     </svg>
   );
 }

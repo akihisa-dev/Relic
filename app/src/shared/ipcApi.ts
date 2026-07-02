@@ -33,6 +33,9 @@ import type {
   CreateLinkedMarkdownFileResult,
   CreateMarkdownFileInput,
   DuplicateMarkdownFileInput,
+  FileRecoveryEntry,
+  FileRecoveryInput,
+  FileRecoverySnapshot,
   GetBacklinksInput,
   ImportImageFileInput,
   ImportImageFileResult,
@@ -44,6 +47,7 @@ import type {
   MoveItemToTrashInput,
   MoveMarkdownFileInput,
   ReadMarkdownFileInput,
+  ReadFileRecoverySnapshotInput,
   ReadImageFileInput,
   ReadImageFileResult,
   ReadPdfFileInput,
@@ -121,6 +125,8 @@ export interface RelicApi {
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   openWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   readMarkdownFile: (input: ReadMarkdownFileInput) => Promise<RelicResult<MarkdownFileContent>>;
+  listFileRecoverySnapshots: (input: FileRecoveryInput) => Promise<RelicResult<FileRecoveryEntry[]>>;
+  readFileRecoverySnapshot: (input: ReadFileRecoverySnapshotInput) => Promise<RelicResult<FileRecoverySnapshot>>;
   removeWorkspace: (input: RemoveWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   renameWorkspace: (input: RenameWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   renameMarkdownFile: (

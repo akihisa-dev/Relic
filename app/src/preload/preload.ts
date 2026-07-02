@@ -25,6 +25,7 @@ import {
   getWorkspaceChronicleCalendarsChannel,
   getWorkspaceGraphChannel,
   getLinkUpdateImpactChannel,
+  listFileRecoverySnapshotsChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
   workspaceChangedChannel,
@@ -35,6 +36,7 @@ import {
   moveMarkdownFileChannel,
   openWorkspaceChannel,
   readMarkdownFileChannel,
+  readFileRecoverySnapshotChannel,
   removeWorkspaceChannel,
   renameWorkspaceChannel,
   renameFolderChannel,
@@ -93,6 +95,9 @@ import {
   type ChartSettings,
   type LinkUpdateImpact,
   type LinkUpdateImpactInput,
+  type FileRecoveryEntry,
+  type FileRecoveryInput,
+  type FileRecoverySnapshot,
   type UpdateChartEntryInput,
   type MarkdownFileContent,
   type MoveFolderInput,
@@ -101,6 +106,7 @@ import {
   type MoveMarkdownFileInput,
   type RelicApi,
   type ReadMarkdownFileInput,
+  type ReadFileRecoverySnapshotInput,
   type RemoveWorkspaceInput,
   type RenameWorkspaceInput,
   type RenameFolderInput,
@@ -192,6 +198,10 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(openWorkspaceChannel) as Promise<RelicResult<WorkspaceState>>,
   readMarkdownFile: (input: ReadMarkdownFileInput) =>
     ipcRenderer.invoke(readMarkdownFileChannel, input) as Promise<RelicResult<MarkdownFileContent>>,
+  listFileRecoverySnapshots: (input: FileRecoveryInput) =>
+    ipcRenderer.invoke(listFileRecoverySnapshotsChannel, input) as Promise<RelicResult<FileRecoveryEntry[]>>,
+  readFileRecoverySnapshot: (input: ReadFileRecoverySnapshotInput) =>
+    ipcRenderer.invoke(readFileRecoverySnapshotChannel, input) as Promise<RelicResult<FileRecoverySnapshot>>,
   removeWorkspace: (input: RemoveWorkspaceInput) =>
     ipcRenderer.invoke(removeWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   renameWorkspace: (input: RenameWorkspaceInput) =>

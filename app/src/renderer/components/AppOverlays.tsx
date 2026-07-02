@@ -7,6 +7,7 @@ import type { RailTabFlight, SidebarCreateFlight } from "../hooks/useRailFlights
 import { useT } from "../i18n";
 import type { Command } from "./CommandPalette";
 import { CommandPalette } from "./CommandPalette";
+import { PagePreviewPopover } from "./PagePreviewPopover";
 import { QuickSwitcher } from "./QuickSwitcher";
 
 export interface ToastMessage {
@@ -117,6 +118,11 @@ export function AppOverlays({
           onSelect={handleOpenFile}
         />
       ) : null}
+
+      <PagePreviewPopover
+        aliasesByPath={aliasesByPath}
+        existingMarkdownPaths={existingMarkdownPaths}
+      />
 
       {linkContextMenu ? (
         <div

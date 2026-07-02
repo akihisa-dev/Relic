@@ -179,12 +179,14 @@ export function App(): ReactElement {
   const isRightPanelOutlineAvailable = featureToggles.rightPanelOutline;
   const isRightPanelLinksAvailable = featureToggles.rightPanelLinks;
   const isRightPanelFrontmatterAvailable = featureToggles.frontmatter;
-  const isRightPanelAvailable = isRightPanelOutlineAvailable || isRightPanelLinksAvailable || isRightPanelFrontmatterAvailable;
+  const isRightPanelRecoveryAvailable = true;
+  const isRightPanelAvailable = isRightPanelOutlineAvailable || isRightPanelLinksAvailable || isRightPanelFrontmatterAvailable || isRightPanelRecoveryAvailable;
   const effectiveRightPanelView = resolveEnabledRightPanelView(
     rightPanelView,
     isRightPanelOutlineAvailable,
     isRightPanelLinksAvailable,
-    isRightPanelFrontmatterAvailable
+    isRightPanelFrontmatterAvailable,
+    isRightPanelRecoveryAvailable
   );
   const isEffectiveRightPanelOpen = isRightPanelAvailable && isRightPanelOpen;
   const isLinksPanelActive = isEffectiveRightPanelOpen &&
@@ -428,6 +430,7 @@ export function App(): ReactElement {
     if (view === "outline" && !isRightPanelOutlineAvailable) return;
     if (view === "links" && !isRightPanelLinksAvailable) return;
     if (view === "frontmatter" && !isRightPanelFrontmatterAvailable) return;
+    if (view === "recovery" && !isRightPanelRecoveryAvailable) return;
 
     if (isEffectiveRightPanelOpen && effectiveRightPanelView === view) {
       toggleRightPanel();
@@ -441,6 +444,7 @@ export function App(): ReactElement {
     isRightPanelFrontmatterAvailable,
     isRightPanelLinksAvailable,
     isRightPanelOutlineAvailable,
+    isRightPanelRecoveryAvailable,
     setRightPanelView,
     toggleRightPanel
   ]);
@@ -628,6 +632,7 @@ export function App(): ReactElement {
       showRightPanelLinksControl: isRightPanelLinksAvailable,
       showRightPanelOutlineControl: isRightPanelOutlineAvailable,
       showRightPanelFrontmatterControl: isRightPanelFrontmatterAvailable,
+      showRightPanelRecoveryControl: isRightPanelRecoveryAvailable,
       startRightPanelResize,
       toggleSplitWithMotion,
       toggleTabPinned,
@@ -750,13 +755,16 @@ function resolveEnabledRightPanelView(
   currentView: RightPanelView,
   isOutlineAvailable: boolean,
   isLinksAvailable: boolean,
-  isFrontmatterAvailable: boolean
+  isFrontmatterAvailable: boolean,
+  isRecoveryAvailable: boolean
 ): RightPanelView {
   if (currentView === "outline" && isOutlineAvailable) return "outline";
   if (currentView === "links" && isLinksAvailable) return "links";
   if (currentView === "frontmatter" && isFrontmatterAvailable) return "frontmatter";
+  if (currentView === "recovery" && isRecoveryAvailable) return "recovery";
   if (isOutlineAvailable) return "outline";
   if (isLinksAvailable) return "links";
   if (isFrontmatterAvailable) return "frontmatter";
+  if (isRecoveryAvailable) return "recovery";
   return "links";
 }

@@ -73,6 +73,7 @@ interface AppEditorWorkspaceProps {
   showRightPanelFrontmatterControl: boolean;
   showRightPanelLinksControl: boolean;
   showRightPanelOutlineControl: boolean;
+  showRightPanelRecoveryControl: boolean;
   userDefinedFields: UserDefinedField[];
   workspacePath?: string | null;
 }
@@ -177,10 +178,12 @@ export function AppEditorWorkspace({
   rightPanelWidth,
   setLinkContextMenu,
   showRightPanelFrontmatterControl,
+  showRightPanelRecoveryControl,
   userDefinedFields,
   workspacePath
 }: AppEditorWorkspaceProps): ReactElement {
   void showRightPanelFrontmatterControl;
+  void showRightPanelRecoveryControl;
 
   const commonPaneViewProps: CommonPaneViewProps = {
     allFilePaths,

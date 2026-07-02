@@ -10,6 +10,7 @@ import type { FileTab } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
 import { fixedMenuPosition } from "./railNavigationModel";
 import { RightPanelFrontmatterForm } from "./RightPanelFrontmatterForm";
+import { RightPanelRecoveryList } from "./RightPanelRecoveryList";
 
 interface AppRightPanelProps {
   activeFileTab: FileTab | null;
@@ -72,20 +73,24 @@ export function AppRightPanel({
       <div className={`sidebar-body right-panel-content right-panel-content--${rightPanelView}`}>
       {rightPanelView === "outline" ? (
         outlineHeadings.length > 0 ? (
-          <ul className="outline-list">
-            {outlineHeadings.map((heading) => (
-              <li className={`outline-item outline-item--h${heading.level}`} key={`${heading.from}-${heading.level}-${heading.text}`} title={heading.text}>
-                <button
-                  aria-label={heading.text}
-                  className="outline-item-button"
-                  onClick={() => onOutlineHeadingClick(heading)}
-                  type="button"
-                >
-                  <span className="outline-item-text">{heading.text}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div className="outline-panel-stack">
+            <div className="links-panel-subheading">{t("outline.headingCount", { count: outlineHeadings.length })}</div>
+            <ul className="outline-list">
+              {outlineHeadings.map((heading) => (
+                <li className={`outline-item outline-item--h${heading.level}`} key={`${heading.from}-${heading.level}-${heading.text}`} title={heading.text}>
+                  <button
+                    aria-label={heading.text}
+                    className="outline-item-button"
+                    onClick={() => onOutlineHeadingClick(heading)}
+                    type="button"
+                  >
+                    <span className="outline-item-level">H{heading.level}</span>
+                    <span className="outline-item-text">{heading.text}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : (
           <div className="empty-note">{t("empty.noHeadings")}</div>
         )
@@ -96,6 +101,11 @@ export function AppRightPanel({
           frontmatterCandidates={frontmatterCandidates}
           onUpdateTabContent={onUpdateTabContent}
           userDefinedFields={userDefinedFields}
+        />
+      ) : rightPanelView === "recovery" ? (
+        <RightPanelRecoveryList
+          activeFileTab={activeFileTab}
+          onRecoverContent={onUpdateTabContent}
         />
       ) : outgoingLinks.length > 0 || backlinks.length > 0 || isLoadingBacklinks ? (
         <div className="links-panel-stack">
@@ -198,5 +208,6 @@ export function AppRightPanel({
 function rightPanelTitle(view: RightPanelView, t: ReturnType<typeof useT>): string {
   if (view === "outline") return t("pane.outline");
   if (view === "frontmatter") return t("pane.frontmatter");
+  if (view === "recovery") return t("pane.recovery");
   return t("pane.links");
 }

@@ -70,6 +70,30 @@ export interface ReadMarkdownFileInput {
   path: string;
 }
 
+export interface FileRecoveryInput {
+  path: string;
+}
+
+export interface ReadFileRecoverySnapshotInput {
+  path: string;
+  snapshotId: string;
+}
+
+export interface FileRecoveryEntry {
+  createdAt: string;
+  id: string;
+  path: string;
+  size: number;
+}
+
+export interface FileRecoverySnapshot {
+  content: string;
+  createdAt: string;
+  path: string;
+  size: number;
+  workspaceId: string;
+}
+
 export interface GetBacklinksInput {
   path: string;
 }
