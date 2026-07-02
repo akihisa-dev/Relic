@@ -24,6 +24,10 @@ export function parseFrontmatter(content: string): ParsedFrontmatter {
   const yamlText = rest.slice(0, closeDelimiter.index);
   const body = rest.slice(closeDelimiter.index + closeDelimiter[0].length);
 
+  if (yamlText.trim() === "") {
+    return { data: {}, body };
+  }
+
   try {
     const parsed = yaml.load(yamlText);
 
@@ -48,7 +52,7 @@ export function writeFrontmatter(body: string, data: Record<string, unknown>): s
     return body;
   }
 
-  const yamlText = yaml.dump(data, { flowLevel: 1, lineWidth: -1, quotingType: '"', forceQuotes: false });
+  const yamlText = yaml.dump(data, { flowLevel: 1, lineWidth: -1, quoteStyle: "double", forceQuotes: false });
 
   return `${DELIMITER}\n${yamlText}${DELIMITER}\n${body}`;
 }
