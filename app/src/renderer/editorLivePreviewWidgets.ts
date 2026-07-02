@@ -146,6 +146,7 @@ export class MathWidget extends WidgetType {
   override toDOM(): HTMLElement {
     const element = document.createElement(this.displayMode ? "div" : "span");
     element.className = this.className;
+    // KaTeX returns math markup from a text source; the renderer does not accept raw HTML.
     element.innerHTML = renderMathHtml(this.source, this.displayMode);
     return element;
   }

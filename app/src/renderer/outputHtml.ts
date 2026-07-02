@@ -35,6 +35,7 @@ export async function buildPreviewOutputHtml({
 
   const root = document.createElement("div");
   root.className = "relic-output-body";
+  // Export HTML reuses preview rendering but sanitizes before building the detached DOM.
   root.innerHTML = sanitizePreviewHtml(renderMarkdown(content, workspacePath, new Map(), false, t));
   root.style.left = "-10000px";
   root.style.position = "fixed";
@@ -116,6 +117,7 @@ function normalizeOutputDiagramDom(root: ParentNode): void {
 
     const outputDiagram = document.createElement("div");
     outputDiagram.className = "relic-output-diagram";
+    // Diagram SVG is sanitized again before being embedded into exported HTML.
     outputDiagram.innerHTML = sanitizeSvgHtml(svg);
     diagram.replaceChildren(outputDiagram);
     diagram.removeAttribute("data-diagram-source");

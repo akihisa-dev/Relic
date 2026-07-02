@@ -43,6 +43,7 @@ export async function renderDiagramElement(
     container.replaceChildren();
     const diagram = document.createElement("div");
     diagram.className = `preview-diagram-svg preview-diagram-svg--${language}`;
+    // Diagram renderers return SVG text, so sanitize before inserting it into the DOM.
     diagram.innerHTML = sanitized;
     if (!diagram.querySelector("svg")) {
       throw new Error(`${diagramLabel(language)} renderer did not return SVG text.`);

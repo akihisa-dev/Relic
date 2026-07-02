@@ -57,6 +57,7 @@ export function Preview({
     const container = containerRef.current;
     if (!container) return;
 
+    // Markdown HTML is always sanitized immediately before it enters the preview DOM.
     container.innerHTML = sanitizePreviewHtml(html, previewImageSrcs(html));
     enhancePreviewTableColorSwatches(container);
     return renderDiagramElements(container, t);
@@ -167,6 +168,7 @@ export function Preview({
 function previewImageSrcs(html: string): Set<string> {
   const srcs = new Set<string>();
   const template = document.createElement("template");
+  // This detached template is used only to collect image src values before sanitization.
   template.innerHTML = html;
 
   for (const image of Array.from(template.content.querySelectorAll("img.preview-image"))) {
