@@ -304,13 +304,38 @@ function chronicleEntryInput({
   }
 
   const deleteButton = document.createElement("button");
-  deleteButton.className = "cm-frontmatter-pill-remove";
-  deleteButton.textContent = "×";
+  deleteButton.className = "cm-frontmatter-pill-remove cm-frontmatter-chronicle-delete";
   deleteButton.type = "button";
+  deleteButton.append(createFrontmatterTrashIcon());
   deleteButton.addEventListener("click", onDelete);
 
   row.append(calendarInput, startYearInput, startMonthInput, endYearInput, endMonthInput, deleteButton, error);
   return row;
+}
+
+function createFrontmatterTrashIcon(): SVGSVGElement {
+  const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  icon.setAttribute("aria-hidden", "true");
+  icon.setAttribute("fill", "none");
+  icon.setAttribute("height", "18");
+  icon.setAttribute("stroke", "currentColor");
+  icon.setAttribute("stroke-linecap", "round");
+  icon.setAttribute("stroke-linejoin", "round");
+  icon.setAttribute("stroke-width", "1.7");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("width", "18");
+  for (const pathData of [
+    "M10 11v6",
+    "M14 11v6",
+    "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6",
+    "M3 6h18",
+    "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+  ]) {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", pathData);
+    icon.append(path);
+  }
+  return icon;
 }
 
 function chronicleCalendarSelect(label: string, value: string, candidates: string[]): HTMLSelectElement {

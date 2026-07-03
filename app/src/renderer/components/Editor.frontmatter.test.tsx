@@ -98,7 +98,7 @@ describe("Editor frontmatter", () => {
     expect(container.textContent).toContain("version: v1.0");
   });
 
-  it("フロントマターは表示対象のYAML行だけを行番号ガターに残す", async () => {
+  it("フロントマターは1つのプロパティフォームとして表示しYAML各行をガターに残さない", async () => {
     const { container } = render(
       <Editor
         content={"---\nversion: v1.0\nupdated: 2026-03-24\naliases:\n  - test\n---\n# 本文"}
@@ -110,26 +110,23 @@ describe("Editor frontmatter", () => {
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
     const collapsedLineNumbers = Array.from(container.querySelectorAll(".cm-gutterElement")).map((line) => line.textContent);
 
-    expect(collapsedLineNumbers).toEqual(expect.arrayContaining(["1", "7"]));
+    expect(collapsedLineNumbers).toEqual(expect.arrayContaining(["7"]));
     expect(collapsedLineNumbers).not.toEqual(expect.arrayContaining(["2", "3", "4", "5", "6"]));
 
     await expandFrontmatter(container);
 
-    expect(Array.from(container.querySelectorAll(".cm-gutterElement")).map((line) => line.textContent)).toEqual(expect.arrayContaining([
+    expect(Array.from(container.querySelectorAll(".cm-gutterElement")).map((line) => line.textContent)).not.toEqual(expect.arrayContaining([
       "1",
       "2",
       "3",
       "4",
-      "7"
-    ]));
-    expect(Array.from(container.querySelectorAll(".cm-gutterElement")).map((line) => line.textContent)).not.toEqual(expect.arrayContaining([
       "5",
       "6"
     ]));
     expect(container.querySelector(".cm-frontmatter-line-number")).toBeNull();
   });
 
-  it("展開中のフロントマター終端行を空白の編集行として残さない", async () => {
+  it("展開中のフロントマター終端行は追加操作行として表示する", async () => {
     const { container } = render(
       <Editor
         content={"---\naliases:\n---\n# 本文"}
@@ -140,15 +137,11 @@ describe("Editor frontmatter", () => {
 
     await expandFrontmatter(container);
 
-    expect(container.querySelectorAll(".cm-frontmatter-properties")).toHaveLength(2);
+    expect(container.querySelectorAll(".cm-frontmatter-properties")).toHaveLength(1);
     expect(container.querySelector(".cm-frontmatter-properties--spacer")).toBeNull();
+    expect(container.querySelector(".cm-frontmatter-add-property")?.textContent).toContain("Add property");
     expect(Array.from(container.querySelectorAll(".cm-gutterElement")).map((line) => line.textContent)).toEqual(expect.arrayContaining([
-      "1",
-      "2",
       "4"
-    ]));
-    expect(Array.from(container.querySelectorAll(".cm-gutterElement")).map((line) => line.textContent)).not.toEqual(expect.arrayContaining([
-      "3"
     ]));
   });
 

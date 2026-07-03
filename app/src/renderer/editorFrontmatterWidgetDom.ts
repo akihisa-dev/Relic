@@ -8,9 +8,11 @@ import {
 } from "./editorFrontmatterModel";
 import {
   createFrontmatterValueInput,
+  isolateFrontmatterWidgetControl,
   type FrontmatterFieldUpdater
 } from "./editorFrontmatterWidgetInputs";
 import type { Translator } from "./i18nModel";
+import { requestFrontmatterDialog } from "./editorFrontmatterModel";
 
 export function createFrontmatterHeader({
   collapsed,
@@ -71,12 +73,17 @@ export function frontmatterRowForLine({
 
   const lines = block.yamlText.replace(/\r\n/g, "\n").split("\n");
   if (lines.at(-1) === "") lines.pop();
-  const entry = findTopLevelYamlFieldEntries(lines).find((item) => item.start === yamlLineIndex);
+  const entries = findTopLevelYamlFieldEntries(lines)
+    .filter((item) => Object.prototype.hasOwnProperty.call(block.data, item.key));
+  const entryIndex = entries.findIndex((item) => item.start === yamlLineIndex);
+  const entry = entries[entryIndex];
   if (!entry || !Object.prototype.hasOwnProperty.call(block.data, entry.key)) return null;
 
   return createFrontmatterRow({
     candidates,
     dateFormat,
+    isFirst: entryIndex === 0,
+    isLast: entryIndex === entries.length - 1,
     key: entry.key,
     t,
     updateField,
@@ -86,8 +93,74 @@ export function frontmatterRowForLine({
   });
 }
 
+export function frontmatterRowsForBlock({
+  block,
+  candidates,
+  t,
+  updateField,
+  userDefinedFields,
+  view,
+  dateFormat
+}: {
+  block: FrontmatterBlock;
+  candidates: Record<string, string[]>;
+  dateFormat: FrontmatterDateFormat;
+  t: Translator;
+  updateField: FrontmatterFieldUpdater;
+  userDefinedFields: UserDefinedField[];
+  view: EditorView;
+}): HTMLElement[] {
+  const lines = block.yamlText.replace(/\r\n/g, "\n").split("\n");
+  if (lines.at(-1) === "") lines.pop();
+  const entries = findTopLevelYamlFieldEntries(lines)
+    .filter((item) => Object.prototype.hasOwnProperty.call(block.data, item.key));
+
+  return entries.map((entry, entryIndex) => createFrontmatterRow({
+    candidates,
+    dateFormat,
+    isFirst: entryIndex === 0,
+    isLast: entryIndex === entries.length - 1,
+    key: entry.key,
+    t,
+    updateField,
+    userDefinedFields,
+    value: block.data[entry.key],
+    view
+  }));
+}
+
+export function createFrontmatterFooter({
+  t,
+  view
+}: {
+  t: Translator;
+  view: EditorView;
+}): HTMLElement {
+  const footer = document.createElement("div");
+  footer.className = "cm-frontmatter-footer";
+
+  const button = document.createElement("button");
+  button.className = "cm-frontmatter-add-property";
+  button.type = "button";
+  button.title = t("frontmatter.addProperty");
+  const icon = document.createElement("span");
+  icon.className = "cm-frontmatter-add-property-icon";
+  icon.ariaHidden = "true";
+  icon.textContent = "+";
+  const label = document.createElement("span");
+  label.textContent = t("frontmatter.addProperty");
+  button.append(icon, label);
+  isolateFrontmatterWidgetControl(button);
+  button.addEventListener("click", () => requestFrontmatterDialog(view, { type: "property" }));
+
+  footer.append(button);
+  return footer;
+}
+
 function createFrontmatterRow({
   candidates,
+  isFirst,
+  isLast,
   key,
   t,
   updateField,
@@ -98,6 +171,8 @@ function createFrontmatterRow({
 }: {
   candidates: Record<string, string[]>;
   dateFormat: FrontmatterDateFormat;
+  isFirst: boolean;
+  isLast: boolean;
   key: string;
   t: Translator;
   updateField: FrontmatterFieldUpdater;
@@ -107,10 +182,12 @@ function createFrontmatterRow({
 }): HTMLElement {
   const row = document.createElement("div");
   row.className = "cm-frontmatter-row";
+  if (isFirst) row.classList.add("cm-frontmatter-row--first");
+  if (isLast) row.classList.add("cm-frontmatter-row--last");
 
   const drag = document.createElement("span");
   drag.className = "cm-frontmatter-row-icon";
-  drag.textContent = "☰";
+  drag.ariaHidden = "true";
 
   const label = document.createElement("span");
   label.className = "cm-frontmatter-key";
@@ -131,9 +208,35 @@ function createFrontmatterRow({
   removeButton.className = "cm-frontmatter-remove";
   removeButton.title = t("frontmatter.removeProperty");
   removeButton.type = "button";
-  removeButton.textContent = "×";
+  removeButton.ariaLabel = `${key} ${t("frontmatter.removeProperty")}`;
+  removeButton.append(createTrashIcon());
   removeButton.addEventListener("click", () => updateField(view, key, undefined));
 
   row.append(drag, label, input, removeButton);
   return row;
+}
+
+export function createTrashIcon(): SVGSVGElement {
+  const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  icon.setAttribute("aria-hidden", "true");
+  icon.setAttribute("fill", "none");
+  icon.setAttribute("height", "18");
+  icon.setAttribute("stroke", "currentColor");
+  icon.setAttribute("stroke-linecap", "round");
+  icon.setAttribute("stroke-linejoin", "round");
+  icon.setAttribute("stroke-width", "1.7");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("width", "18");
+  for (const pathData of [
+    "M10 11v6",
+    "M14 11v6",
+    "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6",
+    "M3 6h18",
+    "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+  ]) {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", pathData);
+    icon.append(path);
+  }
+  return icon;
 }

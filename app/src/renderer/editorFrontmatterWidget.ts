@@ -5,13 +5,13 @@ import type { FrontmatterDateFormat, UserDefinedField } from "../shared/ipc";
 import { setEditorEditable } from "./editorEditable";
 import {
   findFrontmatterBlock,
-  findTopLevelYamlFieldEntries,
   serializeDataPreservingYaml,
   type FrontmatterBlock
 } from "./editorFrontmatterModel";
 import {
+  createFrontmatterFooter,
   createFrontmatterHeader,
-  frontmatterRowForLine
+  frontmatterRowsForBlock
 } from "./editorFrontmatterWidgetDom";
 import type { Translator } from "./i18nModel";
 
@@ -63,26 +63,11 @@ function frontmatterCollapsedValue(state: EditorState): boolean {
   return state.field(frontmatterCollapsedField, false)?.collapsed ?? true;
 }
 
-function visibleFrontmatterLineNumbers(block: FrontmatterBlock): Set<number> {
-  const lines = block.yamlText.replace(/\r\n/g, "\n").split("\n");
-  if (lines.at(-1) === "") lines.pop();
-
-  const lineNumbers = new Set<number>([block.startLine]);
-  for (const entry of findTopLevelYamlFieldEntries(lines)) {
-    if (Object.prototype.hasOwnProperty.call(block.data, entry.key)) {
-      lineNumbers.add(block.startLine + entry.start + 1);
-    }
-  }
-
-  return lineNumbers;
-}
-
 class FrontmatterPropertiesWidget extends WidgetType {
   constructor(
     private readonly block: FrontmatterBlock,
     private readonly userDefinedFields: UserDefinedField[],
     private readonly candidates: Record<string, string[]>,
-    private readonly lineNumber: number,
     private readonly collapsed: boolean,
     private readonly t: Translator,
     private readonly dateFormat: FrontmatterDateFormat
@@ -96,7 +81,6 @@ class FrontmatterPropertiesWidget extends WidgetType {
       JSON.stringify(this.block.data) === JSON.stringify(other.block.data) &&
       JSON.stringify(this.userDefinedFields) === JSON.stringify(other.userDefinedFields) &&
       JSON.stringify(this.candidates) === JSON.stringify(other.candidates) &&
-      this.lineNumber === other.lineNumber &&
       this.collapsed === other.collapsed &&
       this.dateFormat === other.dateFormat &&
       this.t === other.t;
@@ -104,7 +88,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
 
   override toDOM(view: EditorView): HTMLElement {
     const wrapper = document.createElement("section");
-    wrapper.className = "cm-frontmatter-properties";
+    wrapper.className = "cm-frontmatter-properties cm-frontmatter-properties--panel";
     wrapper.dataset.collapsed = String(this.collapsed);
     wrapper.contentEditable = "false";
     wrapper.addEventListener("focusin", () => setEditorEditable(view, false));
@@ -115,35 +99,26 @@ class FrontmatterPropertiesWidget extends WidgetType {
       }
     });
 
-    if (this.lineNumber !== this.block.startLine) {
-      if (this.collapsed) {
-        wrapper.classList.add("cm-frontmatter-properties--collapsed-line");
-        return wrapper;
-      }
-
-      const row = frontmatterRowForLine({
-        block: this.block,
-        candidates: this.candidates,
-        lineNumber: this.lineNumber,
-        t: this.t,
-        updateField: (editorView, key, value) => this.updateField(editorView, key, value),
-        userDefinedFields: this.userDefinedFields,
-        view,
-        dateFormat: this.dateFormat
-      });
-      if (row) {
-        wrapper.append(row);
-      } else {
-        wrapper.classList.add("cm-frontmatter-properties--spacer");
-      }
-      return wrapper;
-    }
-
     wrapper.append(createFrontmatterHeader({
       collapsed: this.collapsed,
       count: Object.keys(this.block.data).length,
       onToggle: () => view.dispatch({ effects: frontmatterCollapsedEffect.of(!this.collapsed) }),
       t: this.t
+    }));
+    if (this.collapsed) return wrapper;
+
+    wrapper.append(...frontmatterRowsForBlock({
+      block: this.block,
+      candidates: this.candidates,
+      dateFormat: this.dateFormat,
+      t: this.t,
+      updateField: (editorView, key, value) => this.updateField(editorView, key, value),
+      userDefinedFields: this.userDefinedFields,
+      view
+    }));
+    wrapper.append(createFrontmatterFooter({
+      t: this.t,
+      view
     }));
     return wrapper;
   }
@@ -188,43 +163,17 @@ function buildFrontmatterPropertiesDecorations(
   const block = findFrontmatterBlock(state);
   if (!block) return Decoration.none;
 
-  const collapsed = frontmatterCollapsedValue(state);
-  const visibleLineNumbers = collapsed ? new Set<number>([block.startLine]) : visibleFrontmatterLineNumbers(block);
-  const ranges: { from: number; to: number; deco: Decoration }[] = [];
-  for (let lineNumber = block.startLine; lineNumber <= block.endLine; lineNumber += 1) {
-    const line = state.doc.line(lineNumber);
-
-    if (!visibleLineNumbers.has(lineNumber)) {
-      if (!collapsed) {
-        const previousLine = state.doc.line(lineNumber - 1);
-        ranges.push({
-          from: previousLine.to,
-          to: line.to,
-          deco: Decoration.replace({})
-        });
-      }
-      continue;
-    }
-
-    const widget = new FrontmatterPropertiesWidget(block, userDefinedFields, candidates, lineNumber, collapsed, t, dateFormat);
-    ranges.push({
-      from: line.from,
-      to: line.to,
-      deco: line.from < line.to
-        ? Decoration.replace({ widget })
-        : Decoration.widget({ widget })
-    });
-  }
-
-  if (collapsed && block.endLine > block.startLine) {
-    ranges.push({
-      from: state.doc.line(block.startLine).to,
-      to: state.doc.line(block.endLine).to,
-      deco: Decoration.replace({})
-    });
-  }
-
-  return Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true);
+  const widget = new FrontmatterPropertiesWidget(
+    block,
+    userDefinedFields,
+    candidates,
+    frontmatterCollapsedValue(state),
+    t,
+    dateFormat
+  );
+  return Decoration.set([
+    Decoration.replace({ widget, block: true }).range(block.from, block.to)
+  ]);
 }
 
 export function createFrontmatterPropertiesField(
