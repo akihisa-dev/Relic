@@ -6,7 +6,6 @@ import { type FileTreeExpansionRequest } from "../fileTreeModel";
 import { isFilteringFiles as isFilteringFilesModel } from "../filesSidebarModel";
 import { useFileTreeSelection } from "../hooks/useFileTreeSelection";
 import { FilesSearchResults } from "./FilesSearchResults";
-import { FilesSidebarSearch } from "./FilesSidebarSearch";
 import { FilesSidebarTreeSection } from "./FilesSidebarTreeSection";
 import { FilesCreateActions, FilesWorkspaceActions, FilesWorkspaceEmpty } from "./FilesWorkspaceActions";
 
@@ -30,22 +29,17 @@ export interface FilesSidebarProps {
   onMoveItems: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
   onOpenFile: (path: string, event?: React.MouseEvent<HTMLButtonElement>, options?: { lineNumber?: number | null }) => void;
   onOpenInOtherPane?: (path: string) => void;
+  onOpenQuickSwitcher: () => void;
   onOpenWorkspace: () => void;
   onRevealItem?: (path: string) => void;
   onRenameItem: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onSelectedCountChange?: (count: number) => void;
-  onSearchFrontmatterFieldChange: (field: string) => void;
-  onSearchModeChange: (mode: SearchMode) => void;
-  onSearchQueryChange: (query: string) => void;
   onTogglePin: (path: string) => void;
   openingFilePath?: string | null;
   openFilePaths?: Set<string>;
   searchError: string | null;
-  searchFocusRequest: number;
-  searchFrontmatterCandidates: Record<string, string[]>;
   searchFrontmatterField: string;
-  searchFrontmatterFields: string[];
   searchLimitNotice: { skippedLongLines: number; skippedLargeFiles: number; truncated: boolean } | null;
   searchMode: SearchMode;
   searchQuery: string;
@@ -73,22 +67,17 @@ export function FilesSidebar({
   onMoveItems,
   onOpenFile,
   onOpenInOtherPane,
+  onOpenQuickSwitcher,
   onOpenWorkspace,
   onRevealItem,
   onRenameItem,
   onSelectFolder,
   onSelectedCountChange,
-  onSearchFrontmatterFieldChange,
-  onSearchModeChange,
-  onSearchQueryChange,
   onTogglePin,
   openingFilePath,
   openFilePaths,
   searchError,
-  searchFocusRequest,
-  searchFrontmatterCandidates,
   searchFrontmatterField,
-  searchFrontmatterFields,
   searchLimitNotice,
   searchMode,
   searchQuery,
@@ -117,18 +106,6 @@ export function FilesSidebar({
       {activeWorkspace ? (
         <>
           <div className="files-sidebar-fixed-controls">
-            <FilesSidebarSearch
-              onSearchFrontmatterFieldChange={onSearchFrontmatterFieldChange}
-              onSearchModeChange={onSearchModeChange}
-              onSearchQueryChange={onSearchQueryChange}
-              searchError={searchError}
-              searchFocusRequest={searchFocusRequest}
-              searchFrontmatterCandidates={searchFrontmatterCandidates}
-              searchFrontmatterField={searchFrontmatterField}
-              searchFrontmatterFields={searchFrontmatterFields}
-              searchMode={searchMode}
-              searchQuery={searchQuery}
-            />
             <FilesCreateActions
               isCreatingFile={isCreatingFile}
               isCreatingFolder={isCreatingFolder}
@@ -136,6 +113,7 @@ export function FilesSidebar({
               onCreateFile={onCreateFile}
               onCreateFolder={onCreateFolder}
               onExpandAllFolders={() => requestExpansion("expand")}
+              onOpenQuickSwitcher={onOpenQuickSwitcher}
             />
           </div>
           <div className="files-sidebar-scroll-area">

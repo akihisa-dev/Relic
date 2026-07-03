@@ -55,7 +55,7 @@ describe("App workspaces", () => {
     expect(css).toMatch(/\.workspace-actions \.workspace-action-button\s*\{[^}]*min-height:\s*28px;/s);
   });
 
-  it("ファイル検索と作成操作は一覧スクロールから外して固定する", () => {
+  it("ファイル作成操作は一覧スクロールから外して固定する", () => {
     const css = readFileSync("src/renderer/styles/file-tree-search.css", "utf8");
 
     expect(css).toMatch(/\.sidebar-body:has\(> \.files-sidebar-section\)\s*\{[^}]*overflow:\s*hidden;/s);
@@ -67,6 +67,19 @@ describe("App workspaces", () => {
     expect(css).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*z-index:\s*6;/s);
     expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*min-height:\s*0;/s);
     expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*overflow-y:\s*auto;/s);
+  });
+
+  it("検索ボタンからクイックスイッチャーを開く", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    expect(screen.queryByLabelText("ファイル検索")).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "検索" }));
+
+    expect(await screen.findByPlaceholderText("ファイル名を検索...")).toBeInTheDocument();
   });
 
   it("新規ファイルボタンから名前なしでファイルを作成する", async () => {

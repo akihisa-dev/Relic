@@ -16,6 +16,7 @@ interface FilesCreateActionsProps {
   onCreateFolder: (event?: ReactMouseEvent<HTMLButtonElement>) => void;
   onCollapseAllFolders: () => void;
   onExpandAllFolders: () => void;
+  onOpenQuickSwitcher: () => void;
 }
 
 export function FilesCreateActions({
@@ -24,16 +25,28 @@ export function FilesCreateActions({
   onCreateFile,
   onCreateFolder,
   onCollapseAllFolders,
-  onExpandAllFolders
+  onExpandAllFolders,
+  onOpenQuickSwitcher
 }: FilesCreateActionsProps): ReactElement {
   const t = useT();
   const createFileLabel = isCreatingFile ? t("common.running") : t("files.createNote");
   const createFolderLabel = isCreatingFolder ? t("common.running") : t("files.createFolder");
   const expandAllLabel = t("files.expandAllFolders");
   const collapseAllLabel = t("files.collapseAllFolders");
+  const searchLabel = t("nav.search");
 
   return (
     <div className="files-create-actions">
+      <button
+        aria-label={searchLabel}
+        className="files-create-icon-button"
+        data-tooltip={searchLabel}
+        onClick={onOpenQuickSwitcher}
+        title={searchLabel}
+        type="button"
+      >
+        <SearchIcon />
+      </button>
       <button
         aria-label={createFileLabel}
         className="files-create-icon-button"
@@ -77,6 +90,15 @@ export function FilesCreateActions({
         <CollapseAllFoldersIcon />
       </button>
     </div>
+  );
+}
+
+function SearchIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" className="lucide lucide-search-icon lucide-search" fill="none" height="24" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="24">
+      <path d="m21 21-4.34-4.34" />
+      <circle cx="11" cy="11" r="8" />
+    </svg>
   );
 }
 

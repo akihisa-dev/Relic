@@ -55,7 +55,6 @@ export function App(): ReactElement {
     showSidebarCreateFlight,
     sidebarCreateFlight
   } = useRailFlights();
-  const [fileSearchFocusRequest, setFileSearchFocusRequest] = useState(0);
   const [fileSelectionCount, setFileSelectionCount] = useState(0);
   const [isLeftSourceMode, setIsLeftSourceMode] = useState(false);
   const [isRightSourceMode, setIsRightSourceMode] = useState(false);
@@ -203,7 +202,6 @@ export function App(): ReactElement {
 
   const {
     frontmatterCandidates,
-    frontmatterSearchFields,
     isSearching,
     searchError,
     searchFrontmatterField,
@@ -211,7 +209,6 @@ export function App(): ReactElement {
     searchMode,
     searchQuery,
     searchResults,
-    setSearchFrontmatterField,
     setSearchMode,
     setSearchQuery
   } = useWorkspaceSearchState({
@@ -220,10 +217,10 @@ export function App(): ReactElement {
     workspaceState
   });
 
-  const requestFileSearchFocus = useCallback((): void => {
-    setSidebarView("files");
-    setFileSearchFocusRequest((current) => current + 1);
-  }, [setSidebarView]);
+  const handleOpenQuickSwitcher = useCallback((): void => {
+    setShowCommandPalette(false);
+    setShowQuickSwitcher(true);
+  }, []);
 
   const {
     existingMarkdownPaths,
@@ -402,7 +399,7 @@ export function App(): ReactElement {
     closeTab: closeTabWithMotion,
     focusedPane,
     leftPane,
-    requestFileSearchFocus,
+    requestFileSearchFocus: handleOpenQuickSwitcher,
     rightPane,
     setIsCreatingFile,
     setShowCommandPalette,
@@ -511,7 +508,7 @@ export function App(): ReactElement {
     activeFileName: activeFileTabInFocusedPane?.name ?? null,
     handleDeleteActiveFile,
     handleDuplicateActiveFile,
-    requestFileSearchFocus,
+    requestFileSearchFocus: handleOpenQuickSwitcher,
     setIsCreatingFile,
     setShowQuickSwitcher,
     setSidebarView,
@@ -560,7 +557,6 @@ export function App(): ReactElement {
     setSearchMode("tag");
     setSearchQuery(tag);
     setSidebarView("files");
-    setFileSearchFocusRequest((current) => current + 1);
   }, [setSearchMode, setSearchQuery, setSidebarView]);
 
   const { renderChartTab, renderPanelTab } = useAppTabRenderers({
@@ -652,10 +648,7 @@ export function App(): ReactElement {
     filesSidebar: {
       activeSidebarView,
       closeSidebar,
-      fileSearchFocusRequest,
       fileSelectionCount,
-      frontmatterCandidates,
-      frontmatterSearchFields,
       handleCreateFileFromSidebar,
       handleCreateFileInFolder,
       handleCreateFolderFromSidebar,
@@ -668,6 +661,7 @@ export function App(): ReactElement {
       handleMoveFile,
       handleMoveFolder,
       handleMoveTreeItems,
+      handleOpenQuickSwitcher,
       handleOpenWorkspace,
       handleRenameTreeItem,
       handleRevealWorkspaceItem,
@@ -692,9 +686,6 @@ export function App(): ReactElement {
       searchQuery,
       searchResults,
       setFileSelectionCount,
-      setSearchFrontmatterField,
-      setSearchMode,
-      setSearchQuery,
       sidebarViews,
       sidebarWidth,
       startSidebarResize,

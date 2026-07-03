@@ -257,7 +257,7 @@ describe("App navigation and shortcuts", () => {
     expect(view!.scrollDOM.scrollLeft).toBe(11);
   });
 
-  it("サイドバーが閉じていてもショートカットで対象ビューを開ける", async () => {
+  it("サイドバーが閉じていても新規ファイルショートカットで対象ビューを開ける", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
@@ -272,18 +272,6 @@ describe("App navigation and shortcuts", () => {
     await renderApp();
 
     await screen.findByRole("main");
-
-    fireEvent.keyDown(window, { key: "f", metaKey: true });
-
-    expect(useUiStore.getState().isSidebarOpen).toBe(true);
-    expect(useUiStore.getState().activeSidebarView).toBe("files");
-    await waitFor(() => {
-      expect(screen.getByLabelText("ファイル検索")).toHaveFocus();
-    });
-
-    fireEvent.keyDown(window, { key: "b", metaKey: true });
-
-    expect(useUiStore.getState().isSidebarOpen).toBe(false);
 
     fireEvent.keyDown(window, { key: "n", metaKey: true });
 
@@ -307,10 +295,7 @@ describe("App navigation and shortcuts", () => {
 
     fireEvent.keyDown(window, { key: "f", ctrlKey: true });
 
-    expect(useUiStore.getState().isSidebarOpen).toBe(true);
-    await waitFor(() => {
-      expect(screen.getByLabelText("ファイル検索")).toHaveFocus();
-    });
+    expect(await screen.findByPlaceholderText("ファイル名を検索...")).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "P", ctrlKey: true, shiftKey: true });
 

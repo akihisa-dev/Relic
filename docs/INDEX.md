@@ -433,7 +433,6 @@
       - `appShellModel.test.ts`
       - `appShellModel.ts`
       - `appTestHelpers.tsx`
-      - `chartApi.ts`
       - `chartData.ts`
       - `chartFrontmatter.ts`
       - `chartNormalize.ts`
@@ -562,7 +561,6 @@
       - `links.test.ts`
       - `links.ts`
       - `markdownExtension.ts`
-      - `mermaidText.ts`
       - `pdfFiles.ts`
       - `rendererCsp.ts`
       - `result.test.ts`

@@ -104,10 +104,7 @@ export interface AppLayoutEditorWorkspaceInput {
 export interface AppLayoutFilesSidebarInput {
   activeSidebarView: FilesSidebarProps["activeSidebarView"];
   closeSidebar: FilesSidebarProps["onCloseSidebar"];
-  fileSearchFocusRequest: FilesSidebarProps["searchFocusRequest"];
   fileSelectionCount: FilesSidebarProps["fileSelectionCount"];
-  frontmatterCandidates: FilesSidebarProps["searchFrontmatterCandidates"];
-  frontmatterSearchFields: FilesSidebarProps["searchFrontmatterFields"];
   handleCreateFileFromSidebar: FilesSidebarProps["onCreateFile"];
   handleCreateFileInFolder: FilesSidebarProps["onCreateFileInFolder"];
   handleCreateFolderFromSidebar: FilesSidebarProps["onCreateFolder"];
@@ -121,6 +118,7 @@ export interface AppLayoutFilesSidebarInput {
   handleMoveFolder: FilesSidebarProps["onMoveFolder"];
   handleMoveTreeItems: FilesSidebarProps["onMoveItems"];
   handleOpenWorkspace: FilesSidebarProps["onOpenWorkspace"];
+  handleOpenQuickSwitcher: FilesSidebarProps["onOpenQuickSwitcher"];
   handleRenameTreeItem: FilesSidebarProps["onRenameItem"];
   handleRevealWorkspaceItem: FilesSidebarProps["onRevealItem"];
   handleSelectFolder: FilesSidebarProps["onSelectFolder"];
@@ -144,9 +142,6 @@ export interface AppLayoutFilesSidebarInput {
   searchQuery: FilesSidebarProps["searchQuery"];
   searchResults: FilesSidebarProps["searchResults"];
   setFileSelectionCount: FilesSidebarProps["onSelectedCountChange"];
-  setSearchFrontmatterField: FilesSidebarProps["onSearchFrontmatterFieldChange"];
-  setSearchMode: FilesSidebarProps["onSearchModeChange"];
-  setSearchQuery: FilesSidebarProps["onSearchQueryChange"];
   sidebarViews: FilesSidebarProps["sidebarViews"];
   sidebarWidth: FilesSidebarProps["sidebarWidth"];
   startSidebarResize: FilesSidebarProps["startSidebarResize"];
