@@ -110,7 +110,7 @@ function createFrontmatterRow({
 
   const drag = document.createElement("span");
   drag.className = "cm-frontmatter-row-icon";
-  drag.textContent = "☰";
+  drag.ariaHidden = "true";
 
   const label = document.createElement("span");
   label.className = "cm-frontmatter-key";
@@ -131,7 +131,7 @@ function createFrontmatterRow({
   removeButton.className = "cm-frontmatter-remove";
   removeButton.title = t("frontmatter.removeProperty");
   removeButton.type = "button";
-  removeButton.textContent = "×";
+  removeButton.ariaLabel = `${key} ${t("frontmatter.removeProperty")}`;
   removeButton.addEventListener("click", () => updateField(view, key, undefined));
 
   row.append(drag, label, input, removeButton);
