@@ -43,6 +43,17 @@ describe("Editor preview", () => {
     expect(container.querySelector(".cm-line")).toHaveStyle({ whiteSpace: "pre-wrap" });
   });
 
+  it("フロントマターがあっても本文の最大幅設定を変えない", async () => {
+    const { container } = renderEditor({
+      content: "---\ntags: [draft]\n---\n# 本文",
+      settings: { ...settings, maxWidth: "550px" }
+    });
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+
+    expect(container.querySelector(".cm-content")).toHaveStyle({ maxWidth: "550px" });
+  });
+
   it("カーソルのある現在行を薄く示す", async () => {
     const { container, view } = await renderEditorWithView({
       content: "one\ntwo\nthree"
