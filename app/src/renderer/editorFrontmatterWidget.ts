@@ -91,11 +91,11 @@ class FrontmatterPropertiesWidget extends WidgetType {
     wrapper.className = "cm-frontmatter-properties cm-frontmatter-properties--panel";
     wrapper.dataset.collapsed = String(this.collapsed);
     wrapper.contentEditable = "false";
-    wrapper.addEventListener("focusin", () => setEditorEditable(view, false));
+    wrapper.addEventListener("focusin", () => scheduleEditorEditable(view, false));
     wrapper.addEventListener("focusout", (event) => {
       const nextTarget = (event as FocusEvent).relatedTarget;
       if (!(nextTarget instanceof Node) || !wrapper.contains(nextTarget)) {
-        setEditorEditable(view, true);
+        scheduleEditorEditable(view, true);
       }
     });
 
@@ -117,8 +117,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
       view
     }));
     wrapper.append(createFrontmatterFooter({
-      t: this.t,
-      view
+      t: this.t
     }));
     return wrapper;
   }
@@ -151,6 +150,16 @@ class FrontmatterPropertiesWidget extends WidgetType {
       }
     });
   }
+}
+
+function scheduleEditorEditable(view: EditorView, editable: boolean): void {
+  globalThis.setTimeout(() => {
+    try {
+      setEditorEditable(view, editable);
+    } catch {
+      // The view can be gone by the time the deferred focus handler runs.
+    }
+  }, 0);
 }
 
 function buildFrontmatterPropertiesDecorations(

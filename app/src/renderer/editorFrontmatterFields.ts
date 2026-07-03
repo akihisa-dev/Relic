@@ -7,7 +7,12 @@ export type FrontmatterDialogRequest =
   | { type: "array-value"; key: string }
   | { type: "property" };
 
+export interface FrontmatterPropertyMenuRequest {
+  anchor: HTMLElement;
+}
+
 export const frontmatterDialogRequestEvent = "relic-frontmatter-dialog-request";
+export const frontmatterPropertyMenuRequestEvent = "relic-frontmatter-property-menu-request";
 export const frontmatterFieldNamePattern = /^[^#\s:][^\r\n:]*$/;
 export const fixedFrontmatterFieldNames = reservedFrontmatterFieldNames;
 
@@ -133,5 +138,12 @@ export function requestFrontmatterDialog(view: EditorView, detail: FrontmatterDi
   view.dom.dispatchEvent(new CustomEvent<FrontmatterDialogRequest>(frontmatterDialogRequestEvent, {
     bubbles: true,
     detail
+  }));
+}
+
+export function requestFrontmatterPropertyMenu(anchor: HTMLElement): void {
+  anchor.dispatchEvent(new CustomEvent<FrontmatterPropertyMenuRequest>(frontmatterPropertyMenuRequestEvent, {
+    bubbles: true,
+    detail: { anchor }
   }));
 }

@@ -209,7 +209,7 @@ describe("Editor frontmatter", () => {
     });
   });
 
-  it("常設プラスボタンから既存フロントマターに固定プロパティを追加できる", async () => {
+  it("プロパティ内の追加ボタンから既存フロントマターに固定プロパティを追加できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
     const { container } = render(
@@ -221,9 +221,9 @@ describe("Editor frontmatter", () => {
       />
     );
 
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    await expandFrontmatter(container);
 
-    fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
+    fireEvent.click(container.querySelector(".cm-frontmatter-add-property") as HTMLButtonElement);
     const items = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"));
     expect(items.some((item) => item.textContent?.includes("status"))).toBe(false);
     expect(items.some((item) => item.textContent?.includes("plannedDate"))).toBe(false);

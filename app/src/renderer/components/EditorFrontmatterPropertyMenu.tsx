@@ -6,7 +6,9 @@ import { createPortal } from "react-dom";
 import {
   appendOrCreateFrontmatterField,
   canAppendOrCreateFrontmatterField,
-  findFrontmatterBlock
+  findFrontmatterBlock,
+  frontmatterPropertyMenuRequestEvent,
+  type FrontmatterPropertyMenuRequest
 } from "../editorFrontmatter";
 import {
   buildFrontmatterPropertyMenuState,
@@ -27,21 +29,29 @@ export function EditorFrontmatterPropertyMenu({
 }: EditorFrontmatterPropertyMenuProps): ReactElement {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuAnchorRef = useRef<HTMLElement | null>(null);
   const [menu, setMenu] = useState<FrontmatterPropertyMenuState | null>(null);
   const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
 
-  const toggleMenu = (): void => {
-    const view = viewRef.current;
-    if (!view) return;
+  const closeMenu = (): void => {
+    menuAnchorRef.current?.setAttribute("aria-expanded", "false");
+    menuAnchorRef.current = null;
+    setMenu(null);
+  };
 
-    if (menu) {
-      setMenu(null);
+  const toggleMenu = (anchor: HTMLElement | null = buttonRef.current): void => {
+    const view = viewRef.current;
+    if (!view || !anchor) return;
+
+    if (menu && menuAnchorRef.current === anchor) {
+      closeMenu();
       return;
     }
 
-    if (buttonRef.current) {
-      setMenuStyle(frontmatterPropertyMenuPlacement(buttonRef.current));
-    }
+    menuAnchorRef.current?.setAttribute("aria-expanded", "false");
+    menuAnchorRef.current = anchor;
+    anchor.setAttribute("aria-expanded", "true");
+    setMenuStyle(frontmatterPropertyMenuPlacement(anchor));
     setMenu(buildFrontmatterPropertyMenuState(
       canAppendOrCreateFrontmatterField(view),
       Object.keys(findFrontmatterBlock(view.state)?.data ?? {}),
@@ -54,26 +64,43 @@ export function EditorFrontmatterPropertyMenu({
     if (!view) return;
 
     appendOrCreateFrontmatterField(view, key);
-    setMenu(null);
+    closeMenu();
   };
+
+  useEffect(() => {
+    const handlePropertyMenuRequest = (event: Event): void => {
+      const detail = (event as CustomEvent<FrontmatterPropertyMenuRequest>).detail;
+      if (!detail?.anchor) return;
+      const view = viewRef.current;
+      if (!view || !view.dom.contains(detail.anchor)) return;
+      event.preventDefault();
+      toggleMenu(detail.anchor);
+    };
+
+    document.addEventListener(frontmatterPropertyMenuRequestEvent, handlePropertyMenuRequest);
+
+    return () => {
+      document.removeEventListener(frontmatterPropertyMenuRequestEvent, handlePropertyMenuRequest);
+    };
+  }, [menu, viewRef]);
 
   useEffect(() => {
     if (!menu) return;
 
     const updatePlacement = (): void => {
-      if (buttonRef.current) {
-        setMenuStyle(frontmatterPropertyMenuPlacement(buttonRef.current));
+      if (menuAnchorRef.current) {
+        setMenuStyle(frontmatterPropertyMenuPlacement(menuAnchorRef.current));
       }
     };
     const closeOnPointerDown = (event: PointerEvent): void => {
       const target = event.target;
       if (!(target instanceof Node)) return;
-      if (buttonRef.current?.contains(target)) return;
+      if (menuAnchorRef.current?.contains(target)) return;
       if (menuRef.current?.contains(target)) return;
-      setMenu(null);
+      closeMenu();
     };
     const closeOnEscape = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") setMenu(null);
+      if (event.key === "Escape") closeMenu();
     };
 
     document.addEventListener("pointerdown", closeOnPointerDown);
@@ -95,7 +122,7 @@ export function EditorFrontmatterPropertyMenu({
       aria-haspopup="menu"
       aria-label={t("frontmatter.addProperty")}
       className="editor-frontmatter-add-button"
-      onClick={toggleMenu}
+      onClick={() => toggleMenu()}
       ref={buttonRef}
       title={t("frontmatter.addProperty")}
       type="button"

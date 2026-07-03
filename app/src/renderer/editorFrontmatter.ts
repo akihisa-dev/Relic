@@ -14,6 +14,7 @@ export {
   fixedFrontmatterFieldNames,
   firstArrayValue,
   frontmatterDialogRequestEvent,
+  frontmatterPropertyMenuRequestEvent,
   frontmatterFieldNamePattern,
   inputTypeFor,
   isEditableScalar,
@@ -22,12 +23,14 @@ export {
   parseDateInput,
   parseScalarValue,
   requestFrontmatterDialog,
+  requestFrontmatterPropertyMenu,
   scalarInputValue,
   serializeData,
   serializeDataPreservingYaml,
   shouldSerializeArrayAsFlowSequence,
   type FrontmatterBlock,
   type FrontmatterDialogRequest,
+  type FrontmatterPropertyMenuRequest,
   type YamlFieldEntry
 } from "./editorFrontmatterModel";
 export {

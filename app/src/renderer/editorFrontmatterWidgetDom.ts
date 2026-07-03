@@ -12,7 +12,7 @@ import {
   type FrontmatterFieldUpdater
 } from "./editorFrontmatterWidgetInputs";
 import type { Translator } from "./i18nModel";
-import { requestFrontmatterDialog } from "./editorFrontmatterModel";
+import { requestFrontmatterPropertyMenu } from "./editorFrontmatterModel";
 
 export function createFrontmatterHeader({
   collapsed,
@@ -130,11 +130,9 @@ export function frontmatterRowsForBlock({
 }
 
 export function createFrontmatterFooter({
-  t,
-  view
+  t
 }: {
   t: Translator;
-  view: EditorView;
 }): HTMLElement {
   const footer = document.createElement("div");
   footer.className = "cm-frontmatter-footer";
@@ -151,7 +149,7 @@ export function createFrontmatterFooter({
   label.textContent = t("frontmatter.addProperty");
   button.append(icon, label);
   isolateFrontmatterWidgetControl(button);
-  button.addEventListener("click", () => requestFrontmatterDialog(view, { type: "property" }));
+  button.addEventListener("click", () => requestFrontmatterPropertyMenu(button));
 
   footer.append(button);
   return footer;
@@ -182,6 +180,7 @@ function createFrontmatterRow({
 }): HTMLElement {
   const row = document.createElement("div");
   row.className = "cm-frontmatter-row";
+  row.dataset.frontmatterKey = key;
   if (isFirst) row.classList.add("cm-frontmatter-row--first");
   if (isLast) row.classList.add("cm-frontmatter-row--last");
 
