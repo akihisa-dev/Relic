@@ -939,34 +939,13 @@
   align-items: flex-start;
   color: var(--text);
   display: flex;
-  font-size: 18px;
-  line-height: 1.3;
+  line-height: 1.4;
   max-width: 100%;
-  min-height: 0;
+  min-height: 30px;
   min-width: 0;
   transform-origin: top left;
   vertical-align: baseline;
   width: 100%;
-}
-
-.cm-frontmatter-properties,
-.cm-frontmatter-properties * {
-  box-sizing: border-box;
-}
-
-.cm-frontmatter-properties:has(.cm-frontmatter-header) {
-  align-items: center;
-  background: color-mix(in srgb, var(--surface-subtle) 84%, var(--bg));
-  border: 1px solid var(--border);
-  border-bottom: 0;
-  border-radius: 8px 8px 0 0;
-  margin: 8px 0 0;
-  min-height: 86px;
-  padding: 0 34px;
-}
-
-.cm-frontmatter-properties:has(.cm-frontmatter-row) {
-  margin: 0;
 }
 
 .cm-frontmatter-properties--spacer {
@@ -980,18 +959,16 @@
 
 .cm-frontmatter-header {
   align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
+  background: color-mix(in srgb, var(--surface-subtle) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 6px;
   color: var(--text);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  font-size: 1.28em;
-  font-weight: 750;
-  gap: 18px;
-  min-height: 48px;
-  padding: 0;
+  gap: 8px;
+  min-height: 30px;
+  padding: 2px 10px;
   transform-origin: left center;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
@@ -1001,8 +978,8 @@
 }
 
 .cm-frontmatter-header:hover {
-  background: transparent;
-  border-color: transparent;
+  background: var(--hover);
+  border-color: var(--border-medium);
   color: var(--text);
   transform: translateX(1px);
 }
@@ -1014,13 +991,11 @@
 .cm-frontmatter-toggle {
   color: var(--text-3);
   display: inline-flex;
-  font-size: 0.86em;
-  line-height: 1;
   transform: rotate(0deg);
   transition:
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-normal) var(--ease-enter);
-  width: 24px;
+  width: 14px;
 }
 
 .cm-frontmatter-properties[data-collapsed="true"] .cm-frontmatter-toggle {
@@ -1028,32 +1003,24 @@
 }
 
 .cm-frontmatter-count {
-  align-items: center;
-  background: var(--hover);
-  border-radius: 7px;
-  color: var(--text-2);
-  display: inline-flex;
-  font-size: 0.68em;
-  font-weight: 700;
-  justify-content: center;
-  min-height: 32px;
-  min-width: 42px;
-  padding: 0 10px;
+  color: var(--text-3);
+  font-size: 12px;
+  min-width: 1.4em;
+  text-align: right;
 }
 
 .cm-frontmatter-row {
   align-items: flex-start;
   animation: frontmatter-row-in var(--motion-normal) var(--ease-enter);
-  background: color-mix(in srgb, var(--bg) 94%, transparent);
-  border: 1px solid var(--border);
-  border-radius: 0;
-  border-top: 0;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
+  border-radius: 6px;
   display: grid;
-  gap: 0;
-  grid-template-columns: 92px minmax(220px, 380px) minmax(0, 1fr) 78px;
-  min-height: 150px;
+  gap: 8px 12px;
+  grid-template-columns: 20px minmax(96px, 160px) minmax(0, 1fr) 24px;
+  min-height: 34px;
   min-width: 0;
-  padding: 0;
+  padding: 5px 8px;
   transform-origin: left center;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
@@ -1063,9 +1030,9 @@
 }
 
 .cm-frontmatter-row:hover {
-  background: color-mix(in srgb, var(--surface-subtle) 42%, var(--bg));
+  background: color-mix(in srgb, var(--surface-subtle) 78%, var(--bg));
   border-color: var(--border);
-  transform: none;
+  transform: translateX(1px);
 }
 
 .cm-frontmatter-add-row {
@@ -1079,43 +1046,26 @@
 
 .cm-frontmatter-row-icon {
   color: var(--text-3);
-  align-self: center;
-  display: block;
-  font-size: 0;
-  height: 38px;
-  justify-self: center;
-  line-height: 1;
-  width: 18px;
+  font-size: 14px;
+  line-height: 24px;
+  text-align: center;
   transition:
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
 }
 
-.cm-frontmatter-row-icon::before {
-  background:
-    radial-gradient(circle, currentColor 2.5px, transparent 3px) 0 0 / 9px 9px;
-  content: "";
-  display: block;
-  height: 36px;
-  opacity: 0.72;
-  width: 18px;
-}
-
 .cm-frontmatter-row:hover .cm-frontmatter-row-icon {
-  color: var(--text-3);
-  transform: none;
+  color: var(--accent);
+  transform: scale(1.04);
 }
 
 .cm-frontmatter-key {
-  align-self: stretch;
-  border-right: 1px solid var(--border);
   color: var(--text-2);
-  font-size: 1.08em;
-  font-weight: 700;
-  line-height: 1.25;
+  font-size: 0.94em;
+  font-weight: 650;
+  line-height: 24px;
   min-width: 0;
   overflow: hidden;
-  padding: 54px 32px 0 0;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1124,14 +1074,14 @@
 .cm-frontmatter-pill-input {
   background: var(--bg);
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  border-radius: 8px;
+  border-radius: 5px;
   color: var(--text);
   font: inherit;
-  min-height: 50px;
+  min-height: 24px;
   min-width: 0;
   outline: none;
   line-height: 1.35;
-  padding: 8px 14px;
+  padding: 2px 7px;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     border-color var(--motion-fast) var(--ease-standard),
@@ -1158,7 +1108,6 @@
 .cm-frontmatter-input-wrap {
   display: block;
   min-width: 0;
-  padding: 32px 34px;
   width: 100%;
 }
 
@@ -1174,7 +1123,7 @@
 
 .cm-frontmatter-chronicle {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   max-width: 100%;
   min-width: 0;
   width: 100%;
@@ -1182,27 +1131,27 @@
 
 .cm-frontmatter-chronicle-entry {
   align-items: center;
-  display: grid;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  gap: 18px;
-  grid-template-columns: minmax(220px, 1.35fr) minmax(110px, 0.75fr) minmax(64px, 0.42fr) minmax(110px, 0.75fr) minmax(64px, 0.42fr) 54px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   min-width: 0;
-  padding: 20px 16px;
   width: 100%;
 }
 
 .cm-frontmatter-chronicle-entry .cm-frontmatter-input {
+  flex: 1 1 72px;
   min-width: 0;
 }
 
 .cm-frontmatter-chronicle-entry .cm-frontmatter-input:first-child {
-  min-width: 0;
+  flex-basis: 144px;
+  min-width: min(144px, 100%);
 }
 
 .cm-frontmatter-chronicle-entry .cm-frontmatter-input:nth-of-type(3),
 .cm-frontmatter-chronicle-entry .cm-frontmatter-input:nth-of-type(5) {
-  min-width: 0;
+  flex: 0 1 48px;
+  min-width: 42px;
 }
 
 .cm-frontmatter-chronicle > .cm-frontmatter-pill-add {
@@ -1265,46 +1214,20 @@
 
 .cm-frontmatter-remove {
   align-items: center;
-  align-self: center;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
   color: var(--text-3);
   cursor: pointer;
   display: inline-flex;
-  font-size: 0;
-  height: 52px;
+  height: 24px;
   justify-content: center;
   line-height: 1;
   padding: 0;
-  position: relative;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
-  width: 52px;
-}
-
-.cm-frontmatter-remove::before {
-  border: 2px solid currentColor;
-  border-radius: 3px;
-  box-sizing: border-box;
-  content: "";
-  display: block;
-  height: 23px;
-  position: relative;
-  width: 18px;
-}
-
-.cm-frontmatter-remove::after {
-  border-top: 2px solid currentColor;
-  box-shadow:
-    4px 3px 0 -2px currentColor,
-    8px 3px 0 -2px currentColor;
-  content: "";
-  height: 8px;
-  position: absolute;
-  transform: translateY(-14px);
   width: 24px;
 }
 
@@ -1348,9 +1271,8 @@
   align-items: flex-start;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 6px;
   min-width: 0;
-  padding: 42px 34px;
   width: 100%;
 }
 
@@ -1359,17 +1281,16 @@
   animation: frontmatter-pill-in var(--motion-normal) var(--ease-enter);
   background: var(--bg);
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--text);
   display: inline-flex;
-  flex: 0 1 auto;
-  font-size: 1em;
-  gap: 10px;
-  max-width: 260px;
-  min-height: 50px;
-  min-width: 190px;
+  font-size: 0.92em;
+  gap: 4px;
+  max-width: min(28ch, 100%);
+  min-height: 24px;
+  min-width: 0;
   line-height: 1.2;
-  padding: 4px 12px 4px 16px;
+  padding: 1px 3px 1px 7px;
   transform-origin: left center;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
@@ -1388,7 +1309,6 @@
   border: 0;
   color: inherit;
   font: inherit;
-  flex: 1 1 auto;
   min-width: 0;
   outline: none;
   padding: 0;
@@ -1396,31 +1316,29 @@
   transition:
     box-shadow var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
-  width: 100%;
+  width: min(18ch, 100%);
 }
 
 .cm-frontmatter-pill-remove {
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 6px;
+  border-radius: 999px;
   color: var(--text-3);
   cursor: pointer;
   display: inline-flex;
-  flex: 0 0 auto;
-  font-size: 1.32em;
-  height: 34px;
+  height: 18px;
   justify-content: center;
   padding: 0;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
-  width: 34px;
+  width: 18px;
 }
 
 .cm-frontmatter-pill-remove:hover {
-  background: var(--hover);
+  background: var(--surface);
   color: var(--text);
 }
 
@@ -1484,43 +1402,26 @@
 
 .cm-frontmatter-pill-add {
   align-items: center;
-  background: transparent;
-  border: 1px dashed var(--border-medium);
-  border-radius: 8px;
+  background: var(--hover);
+  border: 0;
+  border-radius: 5px;
+  color: var(--text-2);
   cursor: pointer;
   display: inline-flex;
-  color: var(--accent);
-  font-size: 1.45em;
-  height: 52px;
+  height: 20px;
   justify-content: center;
-  min-height: 52px;
+  min-height: 20px;
   padding: 0;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
-  width: 52px;
+  width: 20px;
 }
 
 @media (max-width: 760px) {
-  .cm-frontmatter-properties:has(.cm-frontmatter-header) {
-    min-height: 76px;
-    padding: 0 18px;
-  }
-
   .cm-frontmatter-row {
-    grid-template-columns: 56px minmax(110px, 170px) minmax(0, 1fr) 64px;
-    min-height: 120px;
-  }
-
-  .cm-frontmatter-chronicle-entry {
-    gap: 12px;
-    grid-template-columns: minmax(140px, 1fr) minmax(80px, 0.75fr) minmax(56px, 0.45fr) 54px;
-  }
-
-  .cm-frontmatter-chronicle-entry .cm-frontmatter-pill-remove {
-    grid-column: 4;
-    grid-row: 1;
+    grid-template-columns: 20px minmax(76px, 112px) minmax(0, 1fr) 24px;
   }
 
   .cm-frontmatter-input-error {
@@ -1530,14 +1431,8 @@
 
 @media (max-width: 520px) {
   .cm-frontmatter-row {
-    grid-template-columns: 42px minmax(0, 1fr) 58px;
+    grid-template-columns: 20px minmax(0, 1fr) 24px;
     min-width: 0;
-  }
-
-  .cm-frontmatter-key {
-    border-right: 0;
-    grid-column: 2 / 3;
-    padding: 18px 0 0;
   }
 
   .cm-frontmatter-row > .cm-frontmatter-input-wrap,
@@ -1545,24 +1440,13 @@
   .cm-frontmatter-row > .cm-frontmatter-yaml-input,
   .cm-frontmatter-row > .cm-frontmatter-boolean {
     grid-column: 2 / -1;
-    padding: 14px 12px 18px 0;
   }
 
   .cm-frontmatter-chronicle-entry .cm-frontmatter-input:first-child {
-    grid-column: 1 / -1;
-  }
-
-  .cm-frontmatter-chronicle-entry {
-    grid-template-columns: minmax(72px, 1fr) minmax(72px, 1fr) 54px;
-  }
-
-  .cm-frontmatter-chronicle-entry .cm-frontmatter-pill-remove {
-    grid-column: 3;
-    grid-row: 2;
+    flex-basis: 100%;
   }
 
   .cm-frontmatter-pill {
-    flex-basis: 100%;
     max-width: 100%;
   }
 }
