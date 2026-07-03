@@ -939,13 +939,26 @@
   align-items: flex-start;
   color: var(--text);
   display: flex;
-  line-height: 1.4;
+  font-size: 18px;
+  line-height: 1.35;
   max-width: 100%;
-  min-height: 30px;
+  min-height: 0;
   min-width: 0;
   transform-origin: top left;
   vertical-align: baseline;
   width: 100%;
+}
+
+.cm-frontmatter-properties:has(.cm-frontmatter-header) {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface-subtle) 78%, var(--bg));
+  margin: 4px 0 28px;
+  min-height: 120px;
+  padding: 0 14px;
+}
+
+.cm-frontmatter-properties:has(.cm-frontmatter-row) {
+  margin: 0 0 44px;
 }
 
 .cm-frontmatter-properties--spacer {
@@ -961,14 +974,16 @@
   align-items: center;
   background: color-mix(in srgb, var(--surface-subtle) 72%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  gap: 8px;
-  min-height: 30px;
-  padding: 2px 10px;
+  font-size: 1.28em;
+  font-weight: 750;
+  gap: 14px;
+  min-height: 48px;
+  padding: 6px 18px;
   transform-origin: left center;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
@@ -991,11 +1006,13 @@
 .cm-frontmatter-toggle {
   color: var(--text-3);
   display: inline-flex;
+  font-size: 0.86em;
+  line-height: 1;
   transform: rotate(0deg);
   transition:
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-normal) var(--ease-enter);
-  width: 14px;
+  width: 16px;
 }
 
 .cm-frontmatter-properties[data-collapsed="true"] .cm-frontmatter-toggle {
@@ -1004,7 +1021,8 @@
 
 .cm-frontmatter-count {
   color: var(--text-3);
-  font-size: 12px;
+  font-size: 0.74em;
+  font-weight: 550;
   min-width: 1.4em;
   text-align: right;
 }
@@ -1014,13 +1032,13 @@
   animation: frontmatter-row-in var(--motion-normal) var(--ease-enter);
   background: color-mix(in srgb, var(--bg) 86%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
-  border-radius: 6px;
+  border-radius: 8px;
   display: grid;
-  gap: 8px 12px;
-  grid-template-columns: 20px minmax(96px, 160px) minmax(0, 1fr) 24px;
-  min-height: 34px;
+  gap: 14px 24px;
+  grid-template-columns: 28px minmax(160px, 280px) minmax(0, 1fr) 34px;
+  min-height: 108px;
   min-width: 0;
-  padding: 5px 8px;
+  padding: 12px 26px 12px 22px;
   transform-origin: left center;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
@@ -1046,8 +1064,8 @@
 
 .cm-frontmatter-row-icon {
   color: var(--text-3);
-  font-size: 14px;
-  line-height: 24px;
+  font-size: 18px;
+  line-height: 50px;
   text-align: center;
   transition:
     color var(--motion-fast) var(--ease-standard),
@@ -1061,9 +1079,9 @@
 
 .cm-frontmatter-key {
   color: var(--text-2);
-  font-size: 0.94em;
-  font-weight: 650;
-  line-height: 24px;
+  font-size: 1.08em;
+  font-weight: 700;
+  line-height: 50px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1074,14 +1092,14 @@
 .cm-frontmatter-pill-input {
   background: var(--bg);
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  border-radius: 5px;
+  border-radius: 8px;
   color: var(--text);
   font: inherit;
-  min-height: 24px;
+  min-height: 50px;
   min-width: 0;
   outline: none;
   line-height: 1.35;
-  padding: 2px 7px;
+  padding: 8px 14px;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     border-color var(--motion-fast) var(--ease-standard),
@@ -1123,7 +1141,7 @@
 
 .cm-frontmatter-chronicle {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   max-width: 100%;
   min-width: 0;
   width: 100%;
@@ -1131,27 +1149,24 @@
 
 .cm-frontmatter-chronicle-entry {
   align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(160px, 1.45fr) repeat(4, minmax(70px, 0.75fr)) 30px;
   min-width: 0;
   width: 100%;
 }
 
 .cm-frontmatter-chronicle-entry .cm-frontmatter-input {
-  flex: 1 1 72px;
   min-width: 0;
 }
 
 .cm-frontmatter-chronicle-entry .cm-frontmatter-input:first-child {
-  flex-basis: 144px;
-  min-width: min(144px, 100%);
+  min-width: 0;
 }
 
 .cm-frontmatter-chronicle-entry .cm-frontmatter-input:nth-of-type(3),
 .cm-frontmatter-chronicle-entry .cm-frontmatter-input:nth-of-type(5) {
-  flex: 0 1 48px;
-  min-width: 42px;
+  min-width: 0;
 }
 
 .cm-frontmatter-chronicle > .cm-frontmatter-pill-add {
@@ -1216,11 +1231,12 @@
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 4px;
+  border-radius: 6px;
   color: var(--text-3);
   cursor: pointer;
   display: inline-flex;
-  height: 24px;
+  font-size: 1.28em;
+  height: 50px;
   justify-content: center;
   line-height: 1;
   padding: 0;
@@ -1228,7 +1244,7 @@
     background-color var(--motion-fast) var(--ease-standard),
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
-  width: 24px;
+  width: 34px;
 }
 
 .cm-frontmatter-remove:hover {
@@ -1271,7 +1287,7 @@
   align-items: flex-start;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 12px;
   min-width: 0;
   width: 100%;
 }
@@ -1281,16 +1297,17 @@
   animation: frontmatter-pill-in var(--motion-normal) var(--ease-enter);
   background: var(--bg);
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text);
   display: inline-flex;
-  font-size: 0.92em;
-  gap: 4px;
-  max-width: min(28ch, 100%);
-  min-height: 24px;
+  flex: 1 1 calc(50% - 12px);
+  font-size: 1em;
+  gap: 10px;
+  max-width: min(320px, calc(50% - 12px));
+  min-height: 50px;
   min-width: 0;
   line-height: 1.2;
-  padding: 1px 3px 1px 7px;
+  padding: 4px 12px 4px 16px;
   transform-origin: left center;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
@@ -1309,6 +1326,7 @@
   border: 0;
   color: inherit;
   font: inherit;
+  flex: 1 1 auto;
   min-width: 0;
   outline: none;
   padding: 0;
@@ -1316,29 +1334,31 @@
   transition:
     box-shadow var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
-  width: min(18ch, 100%);
+  width: 100%;
 }
 
 .cm-frontmatter-pill-remove {
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 999px;
+  border-radius: 6px;
   color: var(--text-3);
   cursor: pointer;
   display: inline-flex;
-  height: 18px;
+  flex: 0 0 auto;
+  font-size: 1.18em;
+  height: 34px;
   justify-content: center;
   padding: 0;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
-  width: 18px;
+  width: 34px;
 }
 
 .cm-frontmatter-pill-remove:hover {
-  background: var(--surface);
+  background: var(--hover);
   color: var(--text);
 }
 
@@ -1404,24 +1424,41 @@
   align-items: center;
   background: var(--hover);
   border: 0;
-  border-radius: 5px;
+  border-radius: 8px;
   color: var(--text-2);
   cursor: pointer;
   display: inline-flex;
-  height: 20px;
+  font-size: 1.05em;
+  height: 34px;
   justify-content: center;
-  min-height: 20px;
+  min-height: 34px;
   padding: 0;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
-  width: 20px;
+  width: 34px;
 }
 
 @media (max-width: 760px) {
+  .cm-frontmatter-properties:has(.cm-frontmatter-header) {
+    min-height: 88px;
+    padding: 0 10px;
+  }
+
   .cm-frontmatter-row {
-    grid-template-columns: 20px minmax(76px, 112px) minmax(0, 1fr) 24px;
+    gap: 12px 14px;
+    grid-template-columns: 24px minmax(108px, 160px) minmax(0, 1fr) 34px;
+    padding: 12px 14px;
+  }
+
+  .cm-frontmatter-chronicle-entry {
+    grid-template-columns: minmax(160px, 1fr) minmax(80px, 0.75fr) minmax(72px, 0.65fr) 30px;
+  }
+
+  .cm-frontmatter-chronicle-entry .cm-frontmatter-pill-remove {
+    grid-column: 4;
+    grid-row: 1;
   }
 
   .cm-frontmatter-input-error {
@@ -1431,7 +1468,7 @@
 
 @media (max-width: 520px) {
   .cm-frontmatter-row {
-    grid-template-columns: 20px minmax(0, 1fr) 24px;
+    grid-template-columns: 24px minmax(0, 1fr) 34px;
     min-width: 0;
   }
 
@@ -1443,11 +1480,20 @@
   }
 
   .cm-frontmatter-chronicle-entry .cm-frontmatter-input:first-child {
-    flex-basis: 100%;
+    grid-column: 1 / -1;
+  }
+
+  .cm-frontmatter-chronicle-entry {
+    grid-template-columns: minmax(72px, 1fr) minmax(72px, 1fr) 30px;
+  }
+
+  .cm-frontmatter-chronicle-entry .cm-frontmatter-pill-remove {
+    grid-column: 3;
+    grid-row: 2;
   }
 
   .cm-frontmatter-pill {
-    max-width: 100%;
+    flex-basis: 100%;
   }
 }
 
