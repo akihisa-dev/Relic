@@ -198,7 +198,7 @@ export async function readWorkspaceFileIndex(
   const sortedRecords = records.sort((a, b) => a.path.localeCompare(b.path, "ja"));
 
   if (options.cachePath) {
-    await writeCachedRecords(options.cachePath, sortedRecords, operations);
+    await writeCachedRecords(options.cachePath, sortedRecords, cacheByPath, operations);
   }
 
   finishPerformanceMeasure("readWorkspaceFileIndex", startedAt, {
@@ -313,17 +313,47 @@ async function readCachedRecords(
 async function writeCachedRecords(
   cachePath: string,
   records: WorkspaceFileIndexRecord[],
+  cachedRecordsByPath: Map<string, WorkspaceFileIndexRecord>,
   operations: WorkspaceFileIndexOperations
 ): Promise<void> {
   const persistedRecords = records.map((record) => ({
     ...record,
-    lines: record.readStatus === "ok" && record.searchable ? record.lines : []
+    lines: persistedLinesForRecord(record, cachedRecordsByPath.get(record.path))
   }));
   await operations.mkdir(path.dirname(cachePath), { recursive: true });
   await operations.writeCache(
     cachePath,
     `${JSON.stringify({ records: persistedRecords, version: workspaceFileIndexCacheVersion }, null, 2)}\n`
   );
+}
+
+function hasUnchangedSearchableRecordMetadata(
+  record: WorkspaceFileIndexRecord,
+  cached: WorkspaceFileIndexRecord | undefined
+): boolean {
+  return !!(
+    cached &&
+    cached.readStatus === "ok" &&
+    cached.path === record.path &&
+    cached.size === record.size &&
+    cached.mtimeMs === record.mtimeMs &&
+    cached.contentHash === record.contentHash &&
+    cached.searchable === record.searchable
+  );
+}
+
+function persistedLinesForRecord(
+  record: WorkspaceFileIndexRecord,
+  cached: WorkspaceFileIndexRecord | undefined
+): string[] {
+  if (record.readStatus !== "ok" || !record.searchable) return [];
+  if (record.lines.length > 0) return record.lines;
+
+  if (hasUnchangedSearchableRecordMetadata(record, cached)) {
+    return cached?.lines ?? [];
+  }
+
+  return record.lines;
 }
 
 function parseCachedIndex(raw: string): WorkspaceFileIndexRecord[] | null {

@@ -53,6 +53,7 @@ export class WorkspaceDerivedDataSession {
       fileIndex: request.fileIndex,
       filePaths: request.filePaths,
       fileTree: request.fileTree,
+      maxSearchFileBytes: request.maxSearchFileBytes,
       operations: request.operations,
       parseCache
     }).then((fileIndex) => ({

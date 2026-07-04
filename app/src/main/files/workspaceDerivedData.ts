@@ -76,7 +76,8 @@ export async function readWorkspaceDerivedFileIndex(
   options: WorkspaceDerivedDataOptions = {}
 ): Promise<WorkspaceFileIndex> {
   const startedAt = startPerformanceMeasure();
-  if (options.fileIndex && hasContentForDerivedData(options.fileIndex)) {
+  const maxSearchFileBytes = options.maxSearchFileBytes ?? Number.MAX_SAFE_INTEGER;
+  if (options.fileIndex && hasContentForDerivedData(options.fileIndex, maxSearchFileBytes)) {
     finishPerformanceMeasure("readWorkspaceDerivedFileIndex", startedAt, {
       reusedFileIndex: true,
       records: options.fileIndex.records.length
@@ -95,7 +96,7 @@ export async function readWorkspaceDerivedFileIndex(
     cachePath: options.cachePath,
     filePaths: options.filePaths ?? options.fileIndex?.entries.map((entry) => entry.path),
     fileTree: options.fileTree,
-    maxSearchFileBytes: options.maxSearchFileBytes ?? Number.MAX_SAFE_INTEGER,
+    maxSearchFileBytes,
     operations
   });
   finishPerformanceMeasure("readWorkspaceDerivedFileIndex", startedAt, {
@@ -182,12 +183,18 @@ export function chartEntriesForRecord(
   return entries;
 }
 
-function hasContentForDerivedData(fileIndex: WorkspaceFileIndex): boolean {
-  return fileIndex.records.every((record) =>
-    record.readStatus !== "ok" ||
-    !record.searchable ||
-    record.lines.length > 0
-  );
+function hasContentForDerivedData(fileIndex: WorkspaceFileIndex, maxSearchFileBytes: number): boolean {
+  return fileIndex.records.every((record) => {
+    if (record.readStatus !== "ok") {
+      return true;
+    }
+
+    if (record.size > maxSearchFileBytes) {
+      return !record.searchable;
+    }
+
+    return record.searchable && record.lines.length > 0;
+  });
 }
 
 function cacheKeyForRecord(record: WorkspaceFileIndexRecord): string {

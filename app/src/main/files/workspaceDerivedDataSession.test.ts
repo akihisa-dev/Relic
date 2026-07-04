@@ -120,6 +120,65 @@ describe("WorkspaceDerivedDataSession", () => {
     expect(readCount).toBe(2);
   });
 
+  it("派生データ取得時に maxSearchFileBytes を渡すと上限内の再読込判定が効く", async () => {
+    const workspacePath = await createWorkspace();
+    await writeFile(path.join(workspacePath, "large.md"), `# Large\n${"x".repeat(64)}`, "utf8");
+    const session = new WorkspaceDerivedDataSession(() => 1000);
+    let readCount = 0;
+
+    await session.getSnapshot({
+      filePaths: ["large.md"],
+      maxSearchFileBytes: 8,
+      operations: {
+        async readFile(filePath: string) {
+          readCount += 1;
+          return readFile(filePath, "utf8");
+        },
+        stat
+      },
+      workspaceId: "ws-1",
+      workspacePath
+    });
+
+    expect(readCount).toBe(0);
+  });
+
+  it("既存fileIndexが渡された場合でも、サイズ上限変更時は検索用本文整合性で再取得する", async () => {
+    const workspacePath = await createWorkspace();
+    await writeFile(path.join(workspacePath, "large.md"), `# Large\n${"x".repeat(64)}`, "utf8");
+    const session = new WorkspaceDerivedDataSession(() => 1000);
+
+    const fullSnapshot = await session.getSnapshot({
+      filePaths: ["large.md"],
+      maxSearchFileBytes: Number.MAX_SAFE_INTEGER,
+      operations: {
+        readFile: (filePath: string) => readFile(filePath, "utf8"),
+        stat
+      },
+      workspaceId: "ws-1",
+      workspacePath
+    });
+
+    let readCount = 0;
+    const limitedSnapshot = await session.getSnapshot({
+      filePaths: ["large.md"],
+      fileIndex: fullSnapshot.fileIndex,
+      maxSearchFileBytes: 8,
+      operations: {
+        async readFile() {
+          readCount += 1;
+          return "";
+        },
+        stat
+      },
+      workspaceId: "ws-1",
+      workspacePath
+    });
+
+    expect(limitedSnapshot.fileIndex.records.find((record) => record.path === "large.md")?.searchable).toBe(false);
+    expect(readCount).toBe(0);
+  });
+
   it("共有スナップショットでタグと別名の連続読み取りを再走査しない", async () => {
     const workspacePath = await createWorkspace();
     const session = new WorkspaceDerivedDataSession(() => 1000);

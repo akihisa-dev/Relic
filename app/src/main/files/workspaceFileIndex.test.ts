@@ -161,6 +161,71 @@ describe("readWorkspaceFileIndex", () => {
     expect(readCount).toBe(0);
   });
 
+  it("全文が不要な読み取り後でも、キャッシュの本文を消さず再利用できる", async () => {
+    const workspacePath = await createWorkspace();
+    const userDataPath = await createWorkspace("relic-index-user-data-");
+    const cachePath = getWorkspaceFileIndexCachePath(userDataPath, "workspace_1");
+    const notePath = path.join(workspacePath, "note.md");
+    await writeFile(notePath, "needle\n本文", "utf8");
+
+    await readWorkspaceFileIndex(workspacePath, { cachePath });
+
+    let readCount = 0;
+    const noSearchContent = await readWorkspaceFileIndex(workspacePath, {
+      cachePath,
+      includeSearchContent: false,
+      operations: {
+        async readFile(filePath) {
+          readCount += 1;
+          return readFile(filePath, "utf8");
+        },
+        stat: readStat
+      }
+    });
+
+    expect(noSearchContent.records.find((record) => record.path === "note.md")?.lines).toEqual([]);
+    expect(readCount).toBe(0);
+
+    const cacheRawAfterNoSearch = await readFile(cachePath, "utf8");
+    expect(JSON.parse(cacheRawAfterNoSearch).records[0].lines).toEqual(["needle", "本文"]);
+
+    readCount = 0;
+    const index = await readWorkspaceFileIndex(workspacePath, {
+      cachePath,
+      operations: {
+        async readFile(filePath) {
+          readCount += 1;
+          return readFile(filePath, "utf8");
+        },
+        stat: readStat
+      }
+    });
+
+    expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["needle", "本文"]);
+    expect(readCount).toBe(0);
+  });
+
+  it("本文なしキャッシュは全文読み取り時に本文行を再保存する", async () => {
+    const workspacePath = await createWorkspace();
+    const userDataPath = await createWorkspace("relic-index-user-data-");
+    const cachePath = getWorkspaceFileIndexCachePath(userDataPath, "workspace_1");
+    const notePath = path.join(workspacePath, "note.md");
+    await writeFile(notePath, "needle\n本文", "utf8");
+
+    await readWorkspaceFileIndex(workspacePath, { cachePath });
+    const cacheRaw = await readFile(cachePath, "utf8");
+    const cache = JSON.parse(cacheRaw);
+    cache.records[0].lines = [];
+    await writeFile(cachePath, `${JSON.stringify(cache, null, 2)}\n`, "utf8");
+
+    const index = await readWorkspaceFileIndex(workspacePath, { cachePath });
+
+    expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["needle", "本文"]);
+
+    const cacheRawAfterRead = await readFile(cachePath, "utf8");
+    expect(JSON.parse(cacheRawAfterRead).records[0].lines).toEqual(["needle", "本文"]);
+  });
+
   it("旧バージョンキャッシュは安全に再生成される", async () => {
     const workspacePath = await createWorkspace();
     const userDataPath = await createWorkspace("relic-index-user-data-");
