@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Dispatch, DragEvent, MouseEvent, ReactElement, RefObject, SetStateAction } from "react";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
@@ -31,7 +32,7 @@ interface FileTreeItemRowProps {
   useSelectedItems: boolean;
 }
 
-export function FileTreeItemRow({
+export const FileTreeItemRow = memo(function FileTreeItemRow({
   cancelRename,
   commitRename,
   inputRef,
@@ -144,7 +145,7 @@ export function FileTreeItemRow({
       ) : null}
     </div>
   );
-}
+});
 
 function PinFileIcon(): ReactElement {
   return (

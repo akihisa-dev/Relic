@@ -9,6 +9,7 @@ import {
 } from "../editorDerivedState";
 import { isLargeMarkdownContent } from "../largeMarkdown";
 import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
+import type { RightPanelView } from "../store/uiStore";
 import { useBacklinksState } from "./useBacklinksState";
 import { useUnlinkedReferencesState } from "./useUnlinkedReferencesState";
 
@@ -22,9 +23,20 @@ interface UseActiveDocumentContextInput {
   isLinksPanelActive: boolean;
   leftPane: PaneState;
   rightPane: PaneState;
+  isRightPanelOpen: boolean;
+  rightPanelView: RightPanelView;
   setWorkspaceError: (message: string | null) => void;
   tabs: Record<string, Tab>;
   updateTabContent: (tabId: string, content: string) => void;
+}
+
+export function shouldExtractOutlineHeadings(
+  isRightPanelOpen: boolean,
+  rightPanelView: RightPanelView,
+  isLargeMarkdown: boolean,
+  hasActiveFile: boolean
+): boolean {
+  return isRightPanelOpen && rightPanelView === "outline" && hasActiveFile && !isLargeMarkdown;
 }
 
 export function useActiveDocumentContext({
@@ -35,6 +47,8 @@ export function useActiveDocumentContext({
   isLinksPanelActive,
   leftPane,
   rightPane,
+  isRightPanelOpen,
+  rightPanelView,
   setWorkspaceError,
   tabs,
   updateTabContent
@@ -58,9 +72,17 @@ export function useActiveDocumentContext({
   const isLargeMarkdown = activeFileTabInFocusedPane
     ? isLargeMarkdownContent(activeFileTabInFocusedPane.content)
     : false;
-  const outlineHeadings = activeFileTabInFocusedPane && !isLargeMarkdown
-    ? extractOutlineHeadings(activeFileTabInFocusedPane.content)
-    : [];
+  const isOutlinePanelActive = shouldExtractOutlineHeadings(
+    isRightPanelOpen,
+    rightPanelView,
+    isLargeMarkdown,
+    Boolean(activeFileTabInFocusedPane)
+  );
+
+  let outlineHeadings: OutlineHeading[] = [];
+  if (isOutlinePanelActive && activeFileTabInFocusedPane) {
+    outlineHeadings = extractOutlineHeadings(activeFileTabInFocusedPane.content);
+  }
 
   const wikiLinkResolver = useMemo(
     () => createWikiLinkResolver(existingMarkdownPaths, aliasesByPath),

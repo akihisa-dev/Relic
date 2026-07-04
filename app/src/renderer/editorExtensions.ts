@@ -99,6 +99,75 @@ interface EditorExtensionConfig {
   workspacePath?: string | null;
 }
 
+interface WikiCompletionBuildStats {
+  cacheHits: number;
+  cacheMisses: number;
+  lastCandidateCount: number;
+  lastBuildDurationMs: number;
+  lastWorkspacePath: string | null;
+}
+
+interface WikiCompletionCacheEntry {
+  allFilePaths: string[];
+  aliasCandidates: string[];
+  index: WikiCompletionIndex;
+}
+
+const wikiCompletionIndexByWorkspace = new Map<string, WikiCompletionCacheEntry>();
+const wikiCompletionBuildStats: WikiCompletionBuildStats = {
+  cacheHits: 0,
+  cacheMisses: 0,
+  lastCandidateCount: 0,
+  lastBuildDurationMs: 0,
+  lastWorkspacePath: null
+};
+
+function workspaceKey(workspacePath?: string | null): string {
+  return workspacePath ?? "<no-workspace>";
+}
+
+function buildOrGetCachedWikiCompletionIndex(
+  workspacePath: string | null | undefined,
+  allFilePaths: string[],
+  aliasCandidates: string[]
+): WikiCompletionIndex {
+  const key = workspaceKey(workspacePath);
+  const current = wikiCompletionIndexByWorkspace.get(key);
+  if (current && current.allFilePaths === allFilePaths && current.aliasCandidates === aliasCandidates) {
+    wikiCompletionBuildStats.cacheHits += 1;
+    return current.index;
+  }
+
+  const start = performance.now();
+  const index = buildWikiCompletionIndex(buildWikiCompletionCandidates(allFilePaths, aliasCandidates));
+  const duration = performance.now() - start;
+
+  wikiCompletionBuildStats.cacheMisses += 1;
+  wikiCompletionBuildStats.lastCandidateCount = index.sortedCandidates.length;
+  wikiCompletionBuildStats.lastBuildDurationMs = duration;
+  wikiCompletionBuildStats.lastWorkspacePath = key;
+  wikiCompletionIndexByWorkspace.set(key, {
+    allFilePaths,
+    aliasCandidates,
+    index
+  });
+
+  return index;
+}
+
+export function __getWikiCompletionBuildStats(): WikiCompletionBuildStats {
+  return { ...wikiCompletionBuildStats };
+}
+
+export function __clearWikiCompletionCache(): void {
+  wikiCompletionIndexByWorkspace.clear();
+  wikiCompletionBuildStats.cacheHits = 0;
+  wikiCompletionBuildStats.cacheMisses = 0;
+  wikiCompletionBuildStats.lastCandidateCount = 0;
+  wikiCompletionBuildStats.lastBuildDurationMs = 0;
+  wikiCompletionBuildStats.lastWorkspacePath = null;
+}
+
 interface WikiCompletionCandidate {
   apply: string;
   label: string;
@@ -298,9 +367,11 @@ function buildWikiCompletionCandidates(allFilePaths: string[], aliasCandidates: 
 
 export function buildWikiLinkCompletionSource(
   allFilePaths: string[],
-  frontmatterCandidates: Record<string, string[]> = {}
+  frontmatterCandidates: Record<string, string[]> = {},
+  options?: { workspacePath?: string | null }
 ) {
-  const index = buildWikiCompletionIndex(buildWikiCompletionCandidates(allFilePaths, frontmatterCandidates.aliases ?? []));
+  const aliasCandidates = frontmatterCandidates.aliases ?? [];
+  let index: WikiCompletionIndex | null = null;
 
   return (context: CompletionContext): CompletionResult | null => {
     if (context.state && isPositionInFencedCodeBlock(context.state, context.pos)) return null;
@@ -308,6 +379,14 @@ export function buildWikiLinkCompletionSource(
     const before = context.matchBefore(/\[\[([^\]\n]*)$/);
 
     if (!before || (!context.explicit && before.text === "[[")) return null;
+
+    if (!index) {
+      index = buildOrGetCachedWikiCompletionIndex(
+        options?.workspacePath,
+        allFilePaths,
+        aliasCandidates
+      );
+    }
 
     const query = before.text.slice(2);
     const ranked = rankedWikiCompletionCandidates(index, query);
@@ -370,9 +449,12 @@ function buildTypewriterExtension(typewriterMode: boolean): Extension {
 
 function buildAutocompleteExtension(
   allFilePaths: string[],
-  frontmatterCandidates: Record<string, string[]>
+  frontmatterCandidates: Record<string, string[]>,
+  workspacePath?: string | null
 ): Extension {
-  return autocompletion({ override: [buildWikiLinkCompletionSource(allFilePaths, frontmatterCandidates)] });
+  return autocompletion({
+    override: [buildWikiLinkCompletionSource(allFilePaths, frontmatterCandidates, { workspacePath })]
+  });
 }
 
 function buildEventHandlersExtension(config: EditorExtensionConfig): Extension {
@@ -494,7 +576,7 @@ function buildLivePreviewExtensions(config: EditorExtensionConfig): Extension {
 
 export function buildEditorReconfigureEffects(config: EditorExtensionConfig): StateEffect<unknown>[] {
   return [
-    autocompleteCompartment.reconfigure(buildAutocompleteExtension(config.allFilePaths, config.frontmatterCandidates)),
+    autocompleteCompartment.reconfigure(buildAutocompleteExtension(config.allFilePaths, config.frontmatterCandidates, config.workspacePath)),
     contentAttributesCompartment.reconfigure(buildContentAttributesExtension(config.settings, config.t)),
     editorThemeCompartment.reconfigure(buildEditorThemeExtension(config.settings)),
     eventHandlersCompartment.reconfigure(buildEventHandlersExtension(config)),
@@ -546,7 +628,7 @@ export function buildExtensions(
     createHeadingFoldingExtension(t),
     EditorView.lineWrapping,
     highlightActiveLine(),
-    autocompleteCompartment.of(buildAutocompleteExtension(allFilePaths, frontmatterCandidates)),
+    autocompleteCompartment.of(buildAutocompleteExtension(allFilePaths, frontmatterCandidates, workspacePath)),
     markdownFormattingKeymapCompartment.of(buildMarkdownFormattingKeymapExtension(t)),
     contextSelectionHighlightField,
     frontmatterCollapsedField,

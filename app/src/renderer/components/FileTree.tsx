@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent, MouseEvent, ReactElement } from "react";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
@@ -44,6 +44,7 @@ export interface FileTreeProps {
   isRoot?: boolean;
   motionPaths?: Set<string>;
   nodes: WorkspaceTreeNode[];
+  suppressOpeningAnimation?: boolean;
   onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
   onDeleteSelectedItems?: () => void;
   onCreateFileInFolder?: (folderPath: string) => void;
@@ -72,6 +73,7 @@ export interface FileTreeItemProps extends Omit<FileTreeProps, "isRoot" | "motio
   isAppearing?: boolean;
   isPinned?: boolean;
   node: WorkspaceTreeNode;
+  suppressOpeningAnimation?: boolean;
 }
 
 const defaultSelectedItems: FileTreeMoveItem[] = [];
@@ -132,7 +134,7 @@ function fileTreeActionsFromProps({
   };
 }
 
-export function FileTreeItem({
+export const FileTreeItem = memo(function FileTreeItem({
   actions: providedActions,
   expansionRequest,
   isAppearing,
@@ -157,14 +159,37 @@ export function FileTreeItem({
   onSelectFolder,
   onSelectItem,
   onTogglePin,
+  suppressOpeningAnimation = false,
   pinnedPaths,
   selectedItems = defaultSelectedItems,
   selectedPaths = defaultSelectedPaths
 }: FileTreeItemProps): ReactElement {
-  const actions = fileTreeActionsFromProps({
-    actions: providedActions,
+  const actions = useMemo(() => (
+    fileTreeActionsFromProps({
+      actions: providedActions,
+      expansionRequest,
+      nodes: [],
+      onDeleteItem,
+      onDeleteSelectedItems,
+      onCreateFileInFolder,
+      onCreateFolderInFolder,
+      onDuplicateFile,
+      onImportMarkdownFiles,
+      onMoveFile,
+      onMoveFolder,
+      onMoveItems,
+      onOpenFile,
+      onOpenInOtherPane,
+      onRequestExpansion,
+      onRevealItem,
+      onRenameItem,
+      onSelectFolder,
+      onSelectItem,
+      onTogglePin
+    })
+  ), [
+    providedActions,
     expansionRequest,
-    nodes: [],
     onDeleteItem,
     onDeleteSelectedItems,
     onCreateFileInFolder,
@@ -182,7 +207,7 @@ export function FileTreeItem({
     onSelectFolder,
     onSelectItem,
     onTogglePin
-  });
+  ]);
   const {
     cancelRename,
     closeContextMenu,
@@ -201,7 +226,7 @@ export function FileTreeItem({
     startRename
   } = useFileTreeItemState({ expansionRequest, node, onRenameItem: actions.onRenameItem });
   const isSelected = selectedPaths.has(node.path);
-  const isOpening = node.type === "file" && openingFilePath === node.path;
+  const isOpening = !suppressOpeningAnimation && node.type === "file" && openingFilePath === node.path;
   const useSelectedItems = shouldUseSelectedFileTreeItems(isSelected, selectedItems);
   const {
     handleDragEnd,
@@ -302,7 +327,8 @@ export function FileTreeItem({
           actions={actions}
           onOpenFile={actions.onOpenFile}
           onSelectFolder={actions.onSelectFolder}
-          openingFilePath={openingFilePath}
+          openingFilePath={suppressOpeningAnimation ? null : openingFilePath}
+          suppressOpeningAnimation={suppressOpeningAnimation}
           openFilePaths={openFilePaths}
           pinnedPaths={pinnedPaths}
           selectedItems={selectedItems}
@@ -311,9 +337,9 @@ export function FileTreeItem({
       ) : null}
     </li>
   );
-}
+});
 
-export function FileTree({
+export const FileTree = memo(function FileTree({
   actions: providedActions,
   animation,
   expansionRequest,
@@ -341,7 +367,8 @@ export function FileTree({
   onTogglePin,
   pinnedPaths,
   selectedItems = defaultSelectedItems,
-  selectedPaths = defaultSelectedPaths
+  selectedPaths = defaultSelectedPaths,
+  suppressOpeningAnimation = false
 }: FileTreeProps & { animation?: "expand" }): ReactElement {
   const t = useT();
   const [isRootFileDragOver, setIsRootFileDragOver] = useState(false);
@@ -352,10 +379,34 @@ export function FileTree({
     [nodes, pinnedPaths]
   );
   const isLargeTree = isRoot && visibleRows.length >= largeFileTreeRowThreshold;
-  const actions = fileTreeActionsFromProps({
-    actions: providedActions,
+  const effectiveSuppressOpeningAnimation = suppressOpeningAnimation || isLargeTree;
+  const effectiveOpeningFilePath = effectiveSuppressOpeningAnimation ? null : openingFilePath;
+  const actions = useMemo(() => (
+    fileTreeActionsFromProps({
+      actions: providedActions,
+      expansionRequest,
+      nodes,
+      onDeleteItem,
+      onDeleteSelectedItems,
+      onCreateFileInFolder,
+      onCreateFolderInFolder,
+      onDuplicateFile,
+      onImportMarkdownFiles,
+      onMoveFile,
+      onMoveFolder,
+      onMoveItems,
+      onOpenFile,
+      onOpenInOtherPane,
+      onRequestExpansion,
+      onRevealItem,
+      onRenameItem,
+      onSelectFolder,
+      onSelectItem,
+      onTogglePin
+    })
+  ), [
+    providedActions,
     expansionRequest,
-    nodes,
     onDeleteItem,
     onDeleteSelectedItems,
     onCreateFileInFolder,
@@ -373,7 +424,7 @@ export function FileTree({
     onSelectFolder,
     onSelectItem,
     onTogglePin
-  });
+  ]);
 
   const canImportDroppedFiles = (event: DragEvent<HTMLElement>): boolean => (
     isRoot &&
@@ -447,7 +498,8 @@ export function FileTree({
           actions={actions}
           onOpenFile={actions.onOpenFile}
           onSelectFolder={actions.onSelectFolder}
-          openingFilePath={openingFilePath}
+          openingFilePath={effectiveOpeningFilePath}
+          suppressOpeningAnimation={effectiveSuppressOpeningAnimation}
           openFilePaths={openFilePaths}
           pinnedPaths={pinnedPaths}
           selectedItems={selectedItems}
@@ -456,4 +508,4 @@ export function FileTree({
       ))}
     </ul>
   );
-}
+});

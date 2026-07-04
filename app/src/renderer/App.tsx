@@ -496,6 +496,8 @@ export function App(): ReactElement {
     fileTree: workspaceState?.fileTree,
     focusedPane,
     isLinksPanelActive,
+    isRightPanelOpen: isEffectiveRightPanelOpen,
+    rightPanelView: effectiveRightPanelView,
     leftPane,
     rightPane,
     setWorkspaceError,

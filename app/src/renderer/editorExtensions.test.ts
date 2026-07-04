@@ -5,15 +5,16 @@ import { GFM } from "@lezer/markdown";
 import { describe, expect, it, vi } from "vitest";
 
 import { createTranslator } from "./i18nModel";
-import {
-  __codeBlockPreviewVisibleRangesEffectForTests,
-  createLivePreviewCodeBlockField
-} from "./editorLivePreview";
+import { __codeBlockPreviewVisibleRangesEffectForTests, createLivePreviewCodeBlockField } from "./editorLivePreview";
 import {
   __tablePreviewVisibleRangesEffectForTests,
   createLivePreviewTableField
 } from "./editorTables";
-import { buildWikiLinkCompletionSource } from "./editorExtensions";
+import {
+  __clearWikiCompletionCache,
+  __getWikiCompletionBuildStats,
+  buildWikiLinkCompletionSource
+} from "./editorExtensions";
 
 function complete(doc: string, allFilePaths: string[], aliases: string[] = [], position = doc.length) {
   const state = EditorState.create({ doc });
@@ -23,6 +24,54 @@ function complete(doc: string, allFilePaths: string[], aliases: string[] = [], p
 }
 
 describe("buildWikiLinkCompletionSource", () => {
+  it("候補生成は入力時初回だけ実行し、2回目はキャッシュを再利用する", () => {
+    __clearWikiCompletionCache();
+    const allFilePaths = [
+      "notes/運命.md",
+      "notes/導入.md",
+      "notes/概要.md"
+    ];
+    const aliases = ["エントリーポイント"];
+    const resultBefore = complete("[[導", allFilePaths, aliases);
+
+    expect(__getWikiCompletionBuildStats().cacheMisses).toBe(1);
+    expect(resultBefore).not.toBeNull();
+
+    const resultAfter = complete("[[導", allFilePaths, aliases);
+
+    expect(__getWikiCompletionBuildStats().cacheHits).toBe(1);
+    expect(__getWikiCompletionBuildStats().cacheMisses).toBe(1);
+    expect(resultAfter?.options.length).toEqual(resultBefore?.options.length);
+  });
+
+  it("ワークスペースキーと同一参照の候補配列なら別インスタンスでも索引を再利用する", () => {
+    __clearWikiCompletionCache();
+    const allFilePaths = ["notes/導入.md"];
+    const aliases = ["alias"];
+    const frontmatter = { aliases };
+    const source1 = buildWikiLinkCompletionSource(allFilePaths, frontmatter, { workspacePath: "/workspaces/demo" });
+    const source2 = buildWikiLinkCompletionSource(allFilePaths, frontmatter, { workspacePath: "/workspaces/demo" });
+
+    expect(source1(new CompletionContext(EditorState.create({ doc: "[[導" }), 3, true))).not.toBeNull();
+    expect(__getWikiCompletionBuildStats().cacheMisses).toBe(1);
+
+    expect(source2(new CompletionContext(EditorState.create({ doc: "[[導" }), 3, true))).not.toBeNull();
+    expect(__getWikiCompletionBuildStats().cacheHits).toBe(1);
+    expect(__getWikiCompletionBuildStats().cacheMisses).toBe(1);
+  });
+
+  it("候補が不要な位置では補完索引を構築しない", () => {
+    __clearWikiCompletionCache();
+    const allFilePaths = ["notes/導入.md"];
+
+    expect(complete("導入", allFilePaths)).toBeNull();
+    expect(__getWikiCompletionBuildStats().cacheMisses).toBe(0);
+
+    const source = buildWikiLinkCompletionSource(allFilePaths, {});
+    expect(source(new CompletionContext(EditorState.create({ doc: "[[" }), 2, false))).toBeNull();
+    expect(__getWikiCompletionBuildStats().cacheMisses).toBe(0);
+  });
+
   it("完全一致、前方一致、部分一致の順でWikiリンク候補を返す", () => {
     const result = complete("[[王", [
       "世界/王都.md",

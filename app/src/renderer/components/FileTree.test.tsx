@@ -70,6 +70,24 @@ function makeDataTransfer(files: File[] = []): DataTransfer {
   return dataTransfer as unknown as DataTransfer;
 }
 
+function makeLargeFileTree(rowCount = 1000): WorkspaceTreeNode[] {
+  const files = Array.from({ length: rowCount }, (_, index) => ({
+    name: `ノート${index + 1}`,
+    path: `notes/ノート${index + 1}.md`,
+    type: "file" as const
+  }));
+
+  return [
+    ...files,
+    {
+      children: [{ name: "nested", path: "LargeFolder/詳細.md", type: "file" }],
+      name: "LargeFolder",
+      path: "LargeFolder",
+      type: "folder"
+    }
+  ];
+}
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -110,6 +128,29 @@ describe("FileTree", () => {
     renderFileTree({ openFilePaths: new Set(["Root.md"]) });
 
     expect(rowButton("Root")).not.toHaveClass("open");
+  });
+
+  it("大規模rootツリーではopening演出を抑制し、子ツリーへopeningFilePathを伝播しない", () => {
+    const largeTreeNodes = makeLargeFileTree();
+
+    const { container } = render(
+      <I18nProvider language="en">
+        <FileTree
+          isRoot
+          nodes={largeTreeNodes}
+          onOpenFile={vi.fn()}
+          onSelectFolder={vi.fn()}
+          openingFilePath="LargeFolder/詳細.md"
+        />
+      </I18nProvider>
+    );
+
+    const rootTree = container.querySelector(".file-tree");
+    expect(rootTree).not.toBeNull();
+    expect(rootTree).toHaveAttribute("data-visible-row-count", "1002");
+    expect(rootTree).toHaveClass("file-tree--large");
+    expect(screen.getByText("ノート1000").closest("button")).not.toHaveClass("file-tree-row--opening");
+    expect(screen.getByText("nested").closest("button")).not.toHaveClass("file-tree-row--opening");
   });
 
   it("commits and cancels rename from the row", () => {

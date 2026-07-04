@@ -332,6 +332,7 @@
         - `ToolsPanelTitleSections.tsx`
         - `ToolStatus.tsx`
       - `hooks/`
+        - `useActiveDocumentContext.test.ts`
         - `useActiveDocumentContext.ts`
         - `useAppCloseGuards.ts`
         - `useAppInlineHandlers.ts`
