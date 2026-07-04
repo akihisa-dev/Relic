@@ -237,6 +237,7 @@ describe("SettingsPanel", () => {
     expect(screen.getByText("App Info")).toBeInTheDocument();
     expect(screen.getByText("Relic 1.2.3")).toBeInTheDocument();
     expect(screen.getByText("macOS")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Repository" })).toHaveAttribute("href", "https://github.com/akihisa-dev/Relic");
     expect(screen.queryByText("darwin")).not.toBeInTheDocument();
   });
 

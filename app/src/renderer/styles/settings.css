@@ -135,6 +135,12 @@
   text-underline-offset: 3px;
 }
 
+.settings-info a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .setting-row input[type="checkbox"] {
   appearance: none;
   background: rgb(199, 199, 199);

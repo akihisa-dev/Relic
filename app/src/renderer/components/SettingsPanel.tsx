@@ -9,6 +9,8 @@ import { useT } from "../i18n";
 import type { TranslationKey } from "../i18nModel";
 import { SettingsSegmentedControl } from "./SettingsSegmentedControl";
 
+const publicRepositoryUrl = "https://github.com/akihisa-dev/Relic";
+
 function getEditorFontLabelKeys(platform?: NodeJS.Platform): { gothic: TranslationKey; mincho: TranslationKey; mono: TranslationKey } {
   if (platform === "win32") {
     return {
@@ -216,6 +218,11 @@ export function SettingsPanel({
         <div className="settings-info">
           <div>Relic {appInfo?.version ?? "0.0.0"}</div>
           <div>{formatPlatformLabel(appInfo?.platform)}</div>
+          <div>
+            <a href={publicRepositoryUrl} rel="noreferrer" target="_blank">
+              {t("settings.repository")}
+            </a>
+          </div>
         </div>
       </section>
     </div>
