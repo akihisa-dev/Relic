@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 import type { WorkspaceState } from "../../shared/ipc";
+import { writeEditorClipboardText } from "../editorClipboard";
 import { fixedMenuPosition } from "./railNavigationModel";
 
 interface RailWorkspaceSwitcherProps {
@@ -222,7 +223,7 @@ export function RailWorkspaceSwitcher({
           <button
             className="tab-context-menu-item"
             onClick={() => {
-              void navigator.clipboard?.writeText(contextMenu.path);
+              void writeEditorClipboardText(contextMenu.path);
               setContextMenu(null);
             }}
             role="menuitem"

@@ -639,14 +639,10 @@ describe("App workspaces", () => {
   });
 
   it("左レールのワークスペース右クリックメニューからワークスペースのパスをコピーする", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText }
-    });
+    const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
 
     window.relic = makeRelicApi({
+      copyEditorTextToClipboard,
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
@@ -664,7 +660,9 @@ describe("App workspaces", () => {
     const menu = await screen.findByRole("menu");
     fireEvent.click(within(menu).getByRole("menuitem", { name: "ワークスペースのパスをコピー" }));
 
-    expect(writeText).toHaveBeenCalledWith("/tmp/Notes");
+    await waitFor(() => {
+      expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "/tmp/Notes" });
+    });
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 });
