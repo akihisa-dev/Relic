@@ -71,6 +71,7 @@
   "files.createNewWorkspace": "新規ワークスペース",
   "files.creatingWorkspace": "作成中…",
   "files.copyPath": "パスをコピー",
+  "files.copyWorkspacePath": "ワークスペースのパスをコピー",
   "files.copyMarkdownLink": "Markdownリンクをコピー",
   "files.duplicate": "複製",
   "files.collapseAllFolders": "すべてのフォルダを閉じる",

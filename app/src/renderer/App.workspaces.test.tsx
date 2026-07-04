@@ -637,4 +637,34 @@ describe("App workspaces", () => {
       expect(revealWorkspaceItem).toHaveBeenCalledWith({ path: "", workspaceId: "ws-1" });
     });
   });
+
+  it("左レールのワークスペース右クリックメニューからワークスペースのパスをコピーする", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          fileTree: [],
+          pinnedPaths: [],
+          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+        }
+      })
+    });
+
+    await renderApp();
+
+    fireEvent.contextMenu(await screen.findByRole("button", { name: "Notes" }));
+    const menu = await screen.findByRole("menu");
+    fireEvent.click(within(menu).getByRole("menuitem", { name: "ワークスペースのパスをコピー" }));
+
+    expect(writeText).toHaveBeenCalledWith("/tmp/Notes");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
 });

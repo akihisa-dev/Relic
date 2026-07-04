@@ -191,6 +191,7 @@ export function createRailProps(input: AppLayoutRailInput): RailProps {
     panelRailViews: input.panelRailViews,
     primaryRailViews: input.primaryRailViews,
     registeredWorkspaces: input.registeredWorkspaces,
+    copyWorkspacePathLabel: input.t("files.copyWorkspacePath"),
     removeWorkspaceLabel: (name) => input.t("files.removeWorkspace", { name }),
     renameLabel: input.t("files.rename"),
     revealWorkspaceLabel: input.t("files.revealInFinder"),

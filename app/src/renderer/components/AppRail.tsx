@@ -13,6 +13,7 @@ interface AppRailProps {
   activeWorkspaceId: string | null;
   activeChartIds: Set<string>;
   chartRailViews: Array<AppRailView<ReactElement>>;
+  copyWorkspacePathLabel: string;
   isSidebarOpen: boolean;
   isWorkspaceRenameActive: boolean;
   isWorkspaceRenameHoldingRail: boolean;
@@ -44,6 +45,7 @@ export function AppRail({
   activeWorkspaceId,
   activeChartIds,
   chartRailViews,
+  copyWorkspacePathLabel,
   isSidebarOpen,
   isWorkspaceRenameActive,
   isWorkspaceRenameHoldingRail,
@@ -127,6 +129,7 @@ export function AppRail({
           <RailWorkspaceSwitcher
             activeWorkspaceId={activeWorkspaceId}
             ariaLabel={workspacesLabel}
+            copyWorkspacePathLabel={copyWorkspacePathLabel}
             onRenameActiveChange={onRenameActiveChange}
             onRenameComplete={onRenameComplete}
             onRemoveWorkspace={onRemoveWorkspace}

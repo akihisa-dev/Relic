@@ -8,6 +8,7 @@ import { fixedMenuPosition } from "./railNavigationModel";
 interface RailWorkspaceSwitcherProps {
   activeWorkspaceId: string | null;
   ariaLabel: string;
+  copyWorkspacePathLabel: string;
   onRenameActiveChange?: (isActive: boolean) => void;
   onRenameComplete?: () => void;
   onRemoveWorkspace: (id: string) => void;
@@ -23,6 +24,7 @@ interface RailWorkspaceSwitcherProps {
 export function RailWorkspaceSwitcher({
   activeWorkspaceId,
   ariaLabel,
+  copyWorkspacePathLabel,
   onRenameActiveChange,
   onRenameComplete,
   onRemoveWorkspace,
@@ -34,7 +36,7 @@ export function RailWorkspaceSwitcher({
   removeLabel,
   workspaces
 }: RailWorkspaceSwitcherProps): ReactElement | null {
-  const [contextMenu, setContextMenu] = useState<{ workspaceId: string; name: string; x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ workspaceId: string; name: string; path: string; x: number; y: number } | null>(null);
   const [renamingWorkspace, setRenamingWorkspace] = useState<{ id: string; name: string; value: string } | null>(null);
   const isComposingRenameRef = useRef(false);
   const isCommittingRenameRef = useRef(false);
@@ -171,7 +173,7 @@ export function RailWorkspaceSwitcher({
                 onContextMenu={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  setContextMenu({ name: ws.name, workspaceId: ws.id, ...fixedMenuPosition(event.clientX, event.clientY, 96) });
+                  setContextMenu({ name: ws.name, path: ws.path, workspaceId: ws.id, ...fixedMenuPosition(event.clientX, event.clientY, 128) });
                 }}
                 onDoubleClick={(event) => {
                   event.preventDefault();
@@ -216,6 +218,17 @@ export function RailWorkspaceSwitcher({
             type="button"
           >
             {renameLabel}
+          </button>
+          <button
+            className="tab-context-menu-item"
+            onClick={() => {
+              void navigator.clipboard?.writeText(contextMenu.path);
+              setContextMenu(null);
+            }}
+            role="menuitem"
+            type="button"
+          >
+            {copyWorkspacePathLabel}
           </button>
           <button
             className="tab-context-menu-item"

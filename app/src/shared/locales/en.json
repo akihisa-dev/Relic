@@ -71,6 +71,7 @@
   "files.createNewWorkspace": "New Workspace",
   "files.creatingWorkspace": "Creating...",
   "files.copyPath": "Copy path",
+  "files.copyWorkspacePath": "Copy workspace path",
   "files.copyMarkdownLink": "Copy Markdown link",
   "files.duplicate": "Duplicate",
   "files.collapseAllFolders": "Collapse all folders",
