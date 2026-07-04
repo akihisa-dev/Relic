@@ -17,6 +17,7 @@ import {
   type WorkspaceDerivedDataOptions
 } from "./workspaceDerivedData";
 import { readWorkspaceFileIndex, type WorkspaceFileIndex } from "./workspaceFileIndex";
+import { finishPerformanceMeasure, startPerformanceMeasure } from "./performanceLog";
 
 export const workspaceSearchMaxResults = 500;
 export const workspaceSearchMaxFileBytes = 2 * 1024 * 1024;
@@ -46,20 +47,24 @@ export async function searchWorkspace(
   frontmatterField?: string,
   options: SearchWorkspaceOptions = {}
 ): Promise<RelicResult<WorkspaceSearchResultSet>> {
+  const startedAt = startPerformanceMeasure();
   const normalizedQuery = query.trim();
   const normalizedQueryLower = normalizedQuery.toLocaleLowerCase();
   const normalizedFrontmatterField = frontmatterField?.trim() ?? "";
 
   if (normalizedQuery === "") {
+    finishPerformanceMeasure("searchWorkspace", startedAt, { mode, resultCount: 0, skipped: true });
     return ok(emptySearchResultSet());
   }
 
   if (mode === "frontmatter" && normalizedFrontmatterField === "") {
+    finishPerformanceMeasure("searchWorkspace", startedAt, { mode, resultCount: 0, skipped: true });
     return ok(emptySearchResultSet());
   }
 
   try {
     if (options.shouldContinue && !options.shouldContinue()) {
+      finishPerformanceMeasure("searchWorkspace", startedAt, { cancelled: true, mode, resultCount: 0 });
       return ok(emptySearchResultSet());
     }
 
@@ -93,6 +98,7 @@ export async function searchWorkspace(
 
     for (const record of fileIndex.records) {
       if (options.shouldContinue && !options.shouldContinue()) {
+        finishPerformanceMeasure("searchWorkspace", startedAt, { cancelled: true, mode, resultCount: 0 });
         return ok(emptySearchResultSet());
       }
 
@@ -157,6 +163,7 @@ export async function searchWorkspace(
 
       for (const [index, line] of record.lines.entries()) {
         if (index % 50 === 0 && options.shouldContinue && !options.shouldContinue()) {
+          finishPerformanceMeasure("searchWorkspace", startedAt, { cancelled: true, mode, resultCount: 0 });
           return ok(emptySearchResultSet());
         }
 
@@ -179,8 +186,15 @@ export async function searchWorkspace(
       if (truncated) break;
     }
 
+    finishPerformanceMeasure("searchWorkspace", startedAt, {
+      mode,
+      resultCount: results.length,
+      skippedLargeFiles,
+      truncated
+    });
     return ok({ results, skippedLargeFiles, skippedLongLines: 0, truncated });
   } catch (error) {
+    finishPerformanceMeasure("searchWorkspace", startedAt, { failed: true, mode });
     return fail(
       "SEARCH_FAILED",
       "検索できませんでした。",

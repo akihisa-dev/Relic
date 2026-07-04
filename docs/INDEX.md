@@ -104,6 +104,7 @@
     - `dependency-metadata.mjs`
     - `docs-index.mjs`
     - `generate-icons.mjs`
+    - `generate-large-workspace.mjs`
     - `generate-sbom.mjs`
     - `generate-third-party-notices.mjs`
     - `renderer-size-report.mjs`
@@ -152,6 +153,7 @@
         - `paths.ts`
         - `pdfFiles.test.ts`
         - `pdfFiles.ts`
+        - `performanceLog.ts`
         - `regexSafety.ts`
         - `renameOperations.ts`
         - `replace.test.ts`

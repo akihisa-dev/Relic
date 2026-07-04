@@ -1,4 +1,5 @@
 import type {
+  Backlink,
   ChartEntry,
   ChronicleCalendarSettings,
   WorkspaceTreeNode
@@ -13,6 +14,7 @@ import {
   type WorkspaceFileIndexOperations,
   type WorkspaceFileIndexRecord
 } from "./workspaceFileIndex";
+import { finishPerformanceMeasure, startPerformanceMeasure } from "./performanceLog";
 
 export interface WorkspaceMarkdownReadOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
@@ -31,6 +33,7 @@ export interface WorkspaceDerivedDataOptions {
 
 export interface WorkspaceDerivedDataCache {
   aliases: Map<string, string[]>;
+  backlinksByTarget: Map<string, Backlink[]> | null;
   chartEntries: Map<string, Record<"chronicle", ChartEntry[]>>;
   content: Map<string, string>;
   frontmatter: Map<string, ParsedFrontmatter>;
@@ -40,6 +43,7 @@ export interface WorkspaceDerivedDataCache {
 export function createWorkspaceDerivedDataCache(): WorkspaceDerivedDataCache {
   return {
     aliases: new Map(),
+    backlinksByTarget: null,
     chartEntries: new Map(),
     content: new Map(),
     frontmatter: new Map(),
@@ -71,7 +75,12 @@ export async function readWorkspaceDerivedFileIndex(
   workspacePath: string,
   options: WorkspaceDerivedDataOptions = {}
 ): Promise<WorkspaceFileIndex> {
+  const startedAt = startPerformanceMeasure();
   if (options.fileIndex && hasContentForDerivedData(options.fileIndex)) {
+    finishPerformanceMeasure("readWorkspaceDerivedFileIndex", startedAt, {
+      reusedFileIndex: true,
+      records: options.fileIndex.records.length
+    });
     return options.fileIndex;
   }
 
@@ -82,13 +91,18 @@ export async function readWorkspaceDerivedFileIndex(
     }
     : undefined;
 
-  return readWorkspaceFileIndex(workspacePath, {
+  const fileIndex = await readWorkspaceFileIndex(workspacePath, {
     cachePath: options.cachePath,
     filePaths: options.filePaths ?? options.fileIndex?.entries.map((entry) => entry.path),
     fileTree: options.fileTree,
     maxSearchFileBytes: options.maxSearchFileBytes ?? Number.MAX_SAFE_INTEGER,
     operations
   });
+  finishPerformanceMeasure("readWorkspaceDerivedFileIndex", startedAt, {
+    records: fileIndex.records.length,
+    reusedFileIndex: false
+  });
+  return fileIndex;
 }
 
 export function readableWorkspaceMarkdownRecords(fileIndex: WorkspaceFileIndex): WorkspaceFileIndexRecord[] {

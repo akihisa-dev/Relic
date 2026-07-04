@@ -247,7 +247,17 @@ describe("searchWorkspace", () => {
           readStatus: "ok",
           searchable: true,
           size: 6
-        }]
+        }],
+        stats: {
+          cachedContentHitCount: 0,
+          cacheHitCount: 0,
+          cacheMissCount: 0,
+          readFileCount: 0,
+          readHeadCount: 0,
+          statCount: 0,
+          targetPathCount: 0,
+          unreadableCount: 0
+        }
       },
       shouldContinue: () => false
     });

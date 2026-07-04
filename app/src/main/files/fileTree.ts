@@ -8,6 +8,7 @@ import { hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markd
 import { isSupportedPdfPath } from "../../shared/pdfFiles";
 import { toWorkspaceRelativePath } from "./paths";
 import { mapWithConcurrency } from "./concurrency";
+import { finishPerformanceMeasure, startPerformanceMeasure } from "./performanceLog";
 
 interface FileTreeOperations {
   readdir(directoryPath: string, options: { withFileTypes: true }): Promise<Dirent[]>;
@@ -21,7 +22,11 @@ export async function readWorkspaceFileTree(
   workspacePath: string,
   operations: FileTreeOperations = defaultFileTreeOperations
 ): Promise<WorkspaceTreeNode[]> {
-  return readDirectory(workspacePath, "", operations);
+  const startedAt = startPerformanceMeasure();
+  const tree = await readDirectory(workspacePath, "", operations);
+  const stats = collectFileTreeStats(tree);
+  finishPerformanceMeasure("readWorkspaceFileTree", startedAt, stats);
+  return tree;
 }
 
 const maxConcurrentDirectoryReads = 8;
@@ -111,4 +116,26 @@ function compareTreeNodes(a: WorkspaceTreeNode, b: WorkspaceTreeNode): number {
 
 function isTreeNode(value: WorkspaceTreeNode | null): value is WorkspaceTreeNode {
   return value !== null;
+}
+
+function collectFileTreeStats(nodes: WorkspaceTreeNode[]): Record<string, number> {
+  let directories = 0;
+  let files = 0;
+  let markdownFiles = 0;
+
+  for (const node of nodes) {
+    if (node.type === "folder") {
+      directories += 1;
+      const childStats = collectFileTreeStats(node.children);
+      directories += childStats.directories;
+      files += childStats.files;
+      markdownFiles += childStats.markdownFiles;
+      continue;
+    }
+
+    files += 1;
+    if (hasMarkdownExtension(node.path)) markdownFiles += 1;
+  }
+
+  return { directories, files, markdownFiles };
 }

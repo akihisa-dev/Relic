@@ -26,6 +26,7 @@ import {
   type WorkspaceDerivedDataOptions,
   type WorkspaceMarkdownReadOperations
 } from "./workspaceDerivedData";
+import { finishPerformanceMeasure, startPerformanceMeasure } from "./performanceLog";
 
 export { extractChronicleRange } from "./chronicleData";
 
@@ -48,6 +49,7 @@ export async function readWorkspaceCharts(
   calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars,
   optionsOrOperations: WorkspaceDerivedDataOptions | WorkspaceMarkdownReadOperations = {}
 ): Promise<RelicResult<WorkspaceChart[]>> {
+  const startedAt = startPerformanceMeasure();
   try {
     const options = normalizeWorkspaceDerivedDataOptions(optionsOrOperations);
     const parseCache = options.parseCache ?? createWorkspaceDerivedDataCache();
@@ -63,11 +65,18 @@ export async function readWorkspaceCharts(
       chronicle: sortChronicleEntries(entriesBySource.chronicle)
     };
 
-    return ok(charts.map((chart) => ({
+    const workspaceCharts = charts.map((chart) => ({
       ...chart,
       entries: sortedEntriesBySource[chart.source]
-    })));
+    }));
+    finishPerformanceMeasure("readWorkspaceCharts", startedAt, {
+      charts: workspaceCharts.length,
+      chronicleEntries: sortedEntriesBySource.chronicle.length,
+      records: fileIndex.records.length
+    });
+    return ok(workspaceCharts);
   } catch (error) {
+    finishPerformanceMeasure("readWorkspaceCharts", startedAt, { failed: true });
     return fail(
       "CHRONICLE_READ_FAILED",
       "チャートを読み込めませんでした。",

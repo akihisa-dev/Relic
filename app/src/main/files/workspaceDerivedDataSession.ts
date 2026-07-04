@@ -23,7 +23,7 @@ interface WorkspaceDerivedDataSessionEntry {
   workspaceId: string;
 }
 
-const defaultSessionTtlMs = 2000;
+const defaultSessionTtlMs = 30000;
 const defaultMaxSessions = 4;
 
 export class WorkspaceDerivedDataSession {

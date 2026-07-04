@@ -71,20 +71,36 @@ describe("readWorkspaceFileIndex", () => {
     expect(index.entries.map((entry) => entry.path)).toEqual(["note.md"]);
   });
 
-  it("キャッシュは本文行を保存しない", async () => {
+  it("キャッシュは本文行を保存して未変更ファイルの全文再読込を避ける", async () => {
     const workspacePath = await createWorkspace();
     const userDataPath = await createWorkspace("relic-index-user-data-");
     const cachePath = getWorkspaceFileIndexCachePath(userDataPath, "workspace_1");
-    await writeFile(path.join(workspacePath, "note.md"), "needle", "utf8");
+    await writeFile(path.join(workspacePath, "note.md"), "needle\n本文", "utf8");
 
     await readWorkspaceFileIndex(workspacePath, { cachePath });
     const cacheRaw = await readFile(cachePath, "utf8");
     const cache = JSON.parse(cacheRaw);
 
-    expect(cache.records[0]).not.toHaveProperty("lines");
+    expect(cache.records[0].lines).toEqual(["needle", "本文"]);
+
+    let readCount = 0;
+    const index = await readWorkspaceFileIndex(workspacePath, {
+      cachePath,
+      operations: {
+        async readFile(filePath) {
+          readCount += 1;
+          return readFile(filePath, "utf8");
+        },
+        stat: readStat
+      }
+    });
+
+    expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["needle", "本文"]);
+    expect(index.stats.cachedContentHitCount).toBe(1);
+    expect(readCount).toBe(0);
   });
 
-  it("size/mtimeが一致しても本文変更を検知して再生成する", async () => {
+  it("size/mtimeが変わった本文変更を検知して再生成する", async () => {
     const workspacePath = await createWorkspace();
     const userDataPath = await createWorkspace("relic-index-user-data-");
     const cachePath = getWorkspaceFileIndexCachePath(userDataPath, "workspace_1");
@@ -93,8 +109,7 @@ describe("readWorkspaceFileIndex", () => {
 
     await readWorkspaceFileIndex(workspacePath, { cachePath });
 
-    const originalStat = await readStat(notePath);
-    await writeFile(notePath, "BBBBA", "utf8");
+    await writeFile(notePath, "BBBBA\nchanged", "utf8");
 
     let readCount = 0;
     const index = await readWorkspaceFileIndex(workspacePath, {
@@ -107,14 +122,12 @@ describe("readWorkspaceFileIndex", () => {
         readHead: async () => {
           return "";
         },
-        async stat() {
-          return originalStat;
-        }
+        stat: readStat
       }
     });
 
-    expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["BBBBA"]);
-    expect(readCount).toBe(2);
+    expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["BBBBA", "changed"]);
+    expect(readCount).toBe(1);
   });
 
   it("検索本文が不要な場合は未変更ファイルを本文再読込せずキャッシュから一覧を返す", async () => {
@@ -184,8 +197,8 @@ describe("readWorkspaceFileIndex", () => {
     const cache = JSON.parse(cacheRaw);
 
     expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["current"]);
-    expect(cache.version).toBe(4);
-    expect(cache.records[0]).not.toHaveProperty("lines");
+    expect(cache.version).toBe(5);
+    expect(cache.records[0].lines).toEqual(["current"]);
   });
 
   it("大きすぎるMarkdownは全文検索用本文を持たない", async () => {

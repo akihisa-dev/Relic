@@ -10,9 +10,11 @@ import { ensurePrivateSettingsDirectory, writePrivateSettingsTextFile } from "..
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveExistingWorkspacePath } from "./paths";
 import { mapWithConcurrency } from "./concurrency";
+import { finishPerformanceMeasure, startPerformanceMeasure } from "./performanceLog";
 
 export interface WorkspaceFileIndex {
   entries: WorkspaceFileIndexEntry[];
+  stats: WorkspaceFileIndexStats;
   records: WorkspaceFileIndexRecord[];
 }
 
@@ -28,6 +30,7 @@ interface PersistedWorkspaceFileIndex {
 }
 
 interface PersistedWorkspaceFileIndexRecord {
+  lines?: unknown;
   kind?: unknown;
   mtimeMs?: unknown;
   name?: unknown;
@@ -47,6 +50,17 @@ export interface WorkspaceFileIndexOptions {
   operations?: Partial<WorkspaceFileIndexOperations>;
 }
 
+export interface WorkspaceFileIndexStats {
+  cacheHitCount: number;
+  cachedContentHitCount: number;
+  cacheMissCount: number;
+  readFileCount: number;
+  readHeadCount: number;
+  statCount: number;
+  targetPathCount: number;
+  unreadableCount: number;
+}
+
 export interface WorkspaceFileIndexOperations {
   mkdir(directoryPath: string, options: { recursive: true }): Promise<unknown>;
   readCache(filePath: string): Promise<string>;
@@ -56,7 +70,7 @@ export interface WorkspaceFileIndexOperations {
   writeCache(filePath: string, content: string): Promise<void>;
 }
 
-const workspaceFileIndexCacheVersion = 4;
+const workspaceFileIndexCacheVersion = 5;
 const defaultMaxSearchFileBytes = 2 * 1024 * 1024;
 const mapMarkerHeadBytes = 256;
 const safeWorkspaceIndexIdPattern = /^[A-Za-z0-9_-]+$/;
@@ -83,7 +97,18 @@ export async function readWorkspaceFileIndex(
   workspacePath: string,
   options: WorkspaceFileIndexOptions = {}
 ): Promise<WorkspaceFileIndex> {
+  const startedAt = startPerformanceMeasure();
   const operations = { ...defaultOperations, ...options.operations };
+  const stats: WorkspaceFileIndexStats = {
+    cacheHitCount: 0,
+    cachedContentHitCount: 0,
+    cacheMissCount: 0,
+    readFileCount: 0,
+    readHeadCount: 0,
+    statCount: 0,
+    targetPathCount: 0,
+    unreadableCount: 0
+  };
   const includeSearchContent = options.includeSearchContent ?? true;
   const maxSearchFileBytes = options.maxSearchFileBytes ?? defaultMaxSearchFileBytes;
   const cachedRecords = options.cachePath
@@ -94,6 +119,7 @@ export async function readWorkspaceFileIndex(
     (options.fileTree !== undefined
       ? collectMarkdownPaths(options.fileTree)
       : collectMarkdownPaths(await readWorkspaceFileTree(workspacePath)));
+  stats.targetPathCount = paths.length;
 
   const records = await mapWithConcurrency(
     paths,
@@ -104,8 +130,10 @@ export async function readWorkspaceFileIndex(
 
       let fileStats: Stats;
       try {
+        stats.statCount += 1;
         fileStats = await operations.stat(absolutePath.value);
       } catch {
+        stats.unreadableCount += 1;
         return unreadableRecord(relativePath);
       }
 
@@ -117,30 +145,39 @@ export async function readWorkspaceFileIndex(
         cached.size === fileStats.size &&
         cached.mtimeMs === fileStats.mtimeMs
       ) {
+        stats.cacheHitCount += 1;
         if (!isWithinCurrentSearchLimit) {
           if (!cached.searchable) {
             try {
+              stats.readHeadCount += 1;
               const head = await operations.readHead(absolutePath.value, mapMarkerHeadBytes);
               if (cached.contentHash === fileHash(head)) {
                 return { ...cached, lines: [] };
               }
             } catch {
+              stats.unreadableCount += 1;
               return unreadableRecord(relativePath, fileStats);
             }
           }
 
-          return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent);
+          return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats);
         }
 
         if (!cached.searchable) {
-          return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent);
+          return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats);
         }
 
         if (!includeSearchContent) {
           return { ...cached, lines: [] };
         }
 
+        if (cached.lines.length > 0) {
+          stats.cachedContentHitCount += 1;
+          return cached;
+        }
+
         try {
+          stats.readFileCount += 1;
           const content = await operations.readFile(absolutePath.value);
           const contentHash = fileHash(content);
 
@@ -148,11 +185,13 @@ export async function readWorkspaceFileIndex(
             return recordFor(relativePath, fileStats, cached.kind, content.split("\n"), cached.searchable, cached.contentHash);
           }
         } catch {
+          stats.unreadableCount += 1;
           return unreadableRecord(relativePath, fileStats);
         }
       }
 
-      return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent);
+      stats.cacheMissCount += 1;
+      return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats);
     }
   );
 
@@ -162,8 +201,20 @@ export async function readWorkspaceFileIndex(
     await writeCachedRecords(options.cachePath, sortedRecords, operations);
   }
 
+  finishPerformanceMeasure("readWorkspaceFileIndex", startedAt, {
+    cacheHits: stats.cacheHitCount,
+    cachedContentHits: stats.cachedContentHitCount,
+    cacheMisses: stats.cacheMissCount,
+    markdownFiles: stats.targetPathCount,
+    readFiles: stats.readFileCount,
+    readHeads: stats.readHeadCount,
+    statCalls: stats.statCount,
+    unreadable: stats.unreadableCount
+  });
+
   return {
     entries: sortedRecords.map(({ lines: _lines, searchable: _searchable, contentHash: _contentHash, ...entry }) => entry),
+    stats,
     records: sortedRecords
   };
 }
@@ -174,10 +225,12 @@ async function readIndexRecord(
   fileStats: Stats,
   maxSearchFileBytes: number,
   operations: WorkspaceFileIndexOperations,
-  includeSearchContent: boolean
+  includeSearchContent: boolean,
+  stats: WorkspaceFileIndexStats
 ): Promise<WorkspaceFileIndexRecord> {
   if (fileStats.size > maxSearchFileBytes) {
     try {
+      stats.readHeadCount += 1;
       const head = await operations.readHead(absolutePath, mapMarkerHeadBytes);
       return recordFor(
         relativePath,
@@ -188,11 +241,13 @@ async function readIndexRecord(
         fileHash(head)
       );
     } catch {
+      stats.unreadableCount += 1;
       return unreadableRecord(relativePath, fileStats);
     }
   }
 
   try {
+    stats.readFileCount += 1;
     const content = await operations.readFile(absolutePath);
     return recordFor(
       relativePath,
@@ -203,6 +258,7 @@ async function readIndexRecord(
       fileHash(content)
     );
   } catch {
+    stats.unreadableCount += 1;
     return unreadableRecord(relativePath, fileStats);
   }
 }
@@ -259,7 +315,10 @@ async function writeCachedRecords(
   records: WorkspaceFileIndexRecord[],
   operations: WorkspaceFileIndexOperations
 ): Promise<void> {
-  const persistedRecords = records.map(({ lines: _lines, ...record }) => record);
+  const persistedRecords = records.map((record) => ({
+    ...record,
+    lines: record.readStatus === "ok" && record.searchable ? record.lines : []
+  }));
   await operations.mkdir(path.dirname(cachePath), { recursive: true });
   await operations.writeCache(
     cachePath,
@@ -291,10 +350,13 @@ function parseCachedRecord(raw: unknown): WorkspaceFileIndexRecord[] {
   if (!isFiniteNumber(record.size) || !isFiniteNumber(record.mtimeMs)) return [];
   if (typeof record.searchable !== "boolean") return [];
   if (record.readStatus === "ok" && (typeof record.contentHash !== "string" || record.contentHash === "")) return [];
+  const lines = Array.isArray(record.lines) && record.lines.every((line) => typeof line === "string")
+    ? record.lines
+    : [];
 
   return [{
     kind: "markdown",
-    lines: [],
+    lines,
     mtimeMs: record.mtimeMs,
     name: record.name,
     path: record.path,

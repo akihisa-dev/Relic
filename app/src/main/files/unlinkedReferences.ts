@@ -26,6 +26,7 @@ import {
   type WorkspaceDerivedDataOptions,
   type WorkspaceMarkdownReadOperations
 } from "./workspaceDerivedData";
+import { finishPerformanceMeasure, startPerformanceMeasure } from "./performanceLog";
 
 interface UnlinkedReferenceWriteOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
@@ -44,12 +45,17 @@ export async function readUnlinkedReferences(
   targetRelativePath: string,
   optionsOrOperations: WorkspaceDerivedDataOptions | WorkspaceMarkdownReadOperations = {}
 ): Promise<RelicResult<UnlinkedReferencesResult>> {
+  const startedAt = startPerformanceMeasure();
   if (!hasMarkdownExtension(targetRelativePath)) {
+    finishPerformanceMeasure("readUnlinkedReferences", startedAt, { failed: true, reason: "unsupported_type" });
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけ未リンク参照を確認できます。");
   }
 
   const targetPath = resolveWorkspaceRelativePath(workspacePath, targetRelativePath);
-  if (!targetPath.ok) return targetPath;
+  if (!targetPath.ok) {
+    finishPerformanceMeasure("readUnlinkedReferences", startedAt, { failed: true, reason: "invalid_path" });
+    return targetPath;
+  }
 
   try {
     const options = normalizeWorkspaceDerivedDataOptions(optionsOrOperations);
@@ -59,6 +65,11 @@ export async function readUnlinkedReferences(
     const targetBasename = path.posix.basename(targetRelativePath);
     const targetBasenameCount = existingMarkdownPaths.filter((entryPath) => path.posix.basename(entryPath) === targetBasename).length;
     if (!existingMarkdownPaths.includes(targetRelativePath)) {
+      finishPerformanceMeasure("readUnlinkedReferences", startedAt, {
+        records: fileIndex.records.length,
+        referenceCount: 0,
+        targetPath: targetRelativePath
+      });
       return ok({ references: [], skippedUnreadableFileCount: 0, truncated: false });
     }
 
@@ -90,16 +101,26 @@ export async function readUnlinkedReferences(
       if (processedRecordCount % 25 === 0) await setImmediate();
     }
 
+    const sortedReferences = references.sort((a, b) => (
+      a.sourceName.localeCompare(b.sourceName, "ja") ||
+      a.lineNumber - b.lineNumber ||
+      a.from - b.from
+    ));
+    const skippedUnreadableFileCount = fileIndex.entries.filter((entry) => entry.readStatus === "unreadable").length;
+    finishPerformanceMeasure("readUnlinkedReferences", startedAt, {
+      records: fileIndex.records.length,
+      referenceCount: sortedReferences.length,
+      skippedUnreadableFileCount,
+      targetPath: targetRelativePath,
+      truncated
+    });
     return ok({
-      references: references.sort((a, b) => (
-        a.sourceName.localeCompare(b.sourceName, "ja") ||
-        a.lineNumber - b.lineNumber ||
-        a.from - b.from
-      )),
-      skippedUnreadableFileCount: fileIndex.entries.filter((entry) => entry.readStatus === "unreadable").length,
+      references: sortedReferences,
+      skippedUnreadableFileCount,
       truncated
     });
   } catch (error) {
+    finishPerformanceMeasure("readUnlinkedReferences", startedAt, { failed: true, targetPath: targetRelativePath });
     return fail(
       "UNLINKED_REFERENCES_READ_FAILED",
       "未リンク参照を読み込めませんでした。",

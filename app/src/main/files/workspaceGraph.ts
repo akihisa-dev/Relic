@@ -22,6 +22,7 @@ import {
   type WorkspaceMarkdownReadOperations
 } from "./workspaceDerivedData";
 import { readWorkspaceFileTree } from "./fileTree";
+import { finishPerformanceMeasure, startPerformanceMeasure } from "./performanceLog";
 
 type LinkKind = WorkspaceGraphLink["type"];
 
@@ -29,6 +30,7 @@ export async function readWorkspaceGraph(
   workspacePath: string,
   optionsOrOperations: WorkspaceDerivedDataOptions | WorkspaceMarkdownReadOperations = {}
 ): Promise<RelicResult<WorkspaceGraph>> {
+  const startedAt = startPerformanceMeasure();
   try {
     const options = normalizeWorkspaceDerivedDataOptions(optionsOrOperations);
     const parseCache = options.parseCache ?? createWorkspaceDerivedDataCache();
@@ -114,7 +116,7 @@ export async function readWorkspaceGraph(
       linkCountByTarget.set(link.target, (linkCountByTarget.get(link.target) ?? 0) + link.count);
     }
 
-    return ok({
+    const graph = {
       links,
       nodes: [...nodeMap.values()]
         .map((node) => ({
@@ -123,8 +125,15 @@ export async function readWorkspaceGraph(
           linkCount: linkCountBySource.get(node.id) ?? 0
         }))
         .sort((a, b) => a.label.localeCompare(b.label, "ja"))
+    };
+    finishPerformanceMeasure("readWorkspaceGraph", startedAt, {
+      links: graph.links.length,
+      nodes: graph.nodes.length,
+      records: fileIndex.records.length
     });
+    return ok(graph);
   } catch (error) {
+    finishPerformanceMeasure("readWorkspaceGraph", startedAt, { failed: true });
     return fail(
       "WORKSPACE_GRAPH_FAILED",
       "グラフを読み込めませんでした。",
