@@ -940,20 +940,19 @@
 
 .cm-frontmatter-properties {
   animation: frontmatter-panel-in var(--motion-normal) var(--ease-enter);
-  --frontmatter-panel-width: min(980px, calc(100vw - 420px));
   color: var(--text);
   display: block;
   line-height: 1.35;
-  max-width: none;
+  max-width: 100%;
   min-height: 0;
   min-width: 0;
   transform-origin: top left;
   vertical-align: baseline;
-  width: max(100%, var(--frontmatter-panel-width));
+  width: 100%;
 }
 
 .cm-frontmatter-properties--panel {
-  margin-left: calc((100% - max(100%, var(--frontmatter-panel-width))) / 2);
+  margin-left: 0;
 }
 
 .cm-frontmatter-properties,

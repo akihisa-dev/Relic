@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { EditorView } from "@codemirror/view";
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import { createRef } from "react";
@@ -13,6 +15,15 @@ import {
 } from "./editorTestHelpers";
 
 describe("Editor frontmatter", () => {
+  it("プロパティフォームの横幅は本文カラム内に収める", () => {
+    const css = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
+
+    expect(css).toMatch(/\.cm-frontmatter-properties\s*\{[^}]*max-width:\s*100%;[^}]*width:\s*100%;/s);
+    expect(css).toMatch(/\.cm-frontmatter-properties--panel\s*\{[^}]*margin-left:\s*0;/s);
+    expect(css).not.toContain("--frontmatter-panel-width");
+    expect(css).not.toMatch(/\.cm-frontmatter-properties\s*\{[^}]*width:\s*max\(/s);
+  });
+
   it("先頭フロントマターは水平線にせずメタデータとして薄く表示する", async () => {
     const content = "---\nstatus: draft\n---\n# 本文";
     const classes = await collectLivePreviewClasses(content, content.length, false);
