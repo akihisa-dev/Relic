@@ -358,6 +358,7 @@
         - `useFileTreeDragDrop.ts`
         - `useFileTreeItemState.ts`
         - `useFileTreeMotion.ts`
+        - `useFileTreeSelection.test.ts`
         - `useFileTreeSelection.ts`
         - `useFrontmatterFieldsState.ts`
         - `usePaneHeadingScroll.ts`

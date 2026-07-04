@@ -76,7 +76,7 @@ export function useFileTreeSelection({
     }
 
     setSelectedPaths(new Set());
-    setSelectionAnchorPath(null);
+    setSelectionAnchorPath(node.path);
     return !isMultiSelectionMode;
   };
 
