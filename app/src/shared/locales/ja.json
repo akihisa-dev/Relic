@@ -339,7 +339,7 @@
   "settings.maxWidthStandard": "標準（660px）",
   "settings.maxWidthWide": "広め（800px）",
   "settings.maxWidthNone": "制限なし",
-  "settings.repository": "リポジトリ",
+  "settings.repository": "GitHub: {{url}}",
   "settings.sectionAppInfo": "アプリ情報",
   "settings.sectionAppearance": "表示",
   "settings.sectionEditor": "エディタ",

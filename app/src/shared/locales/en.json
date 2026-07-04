@@ -339,7 +339,7 @@
   "settings.maxWidthStandard": "Standard (660px)",
   "settings.maxWidthWide": "Wide (800px)",
   "settings.maxWidthNone": "No limit",
-  "settings.repository": "Repository",
+  "settings.repository": "GitHub: {{url}}",
   "settings.sectionAppInfo": "App Info",
   "settings.sectionAppearance": "Appearance",
   "settings.sectionEditor": "Editor",

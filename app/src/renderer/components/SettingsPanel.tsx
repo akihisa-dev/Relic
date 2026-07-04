@@ -220,7 +220,7 @@ export function SettingsPanel({
           <div>{formatPlatformLabel(appInfo?.platform)}</div>
           <div>
             <a href={publicRepositoryUrl} rel="noreferrer" target="_blank">
-              {t("settings.repository")}
+              {t("settings.repository", { url: publicRepositoryUrl })}
             </a>
           </div>
         </div>
