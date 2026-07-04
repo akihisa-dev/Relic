@@ -5,6 +5,8 @@ export interface ChronicleCalendarSettings {
   startYear?: number;
 }
 
+export type FrontmatterCategoryChoice = string;
+
 export const defaultChronicleCalendars: ChronicleCalendarSettings[] = [
   { name: "メイン暦" }
 ];
@@ -22,6 +24,7 @@ export interface ChartSettings {
 }
 
 export interface ChartEntry {
+  category?: string;
   chronicleCalendarName: string;
   chronicleCalendarStartYear?: number;
   chronicleEntryIndex: number;

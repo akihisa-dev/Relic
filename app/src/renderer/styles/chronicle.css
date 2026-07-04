@@ -9,6 +9,60 @@
   width: 100%;
 }
 
+.chronicle-view-switch {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px 8px;
+}
+
+.chronicle-view-switch-btn {
+  background: var(--material-limestone);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  padding: 6px 10px;
+}
+
+.chronicle-view-switch-btn[data-active="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.chronicle-bubble-view {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chronicle-bubble-scroll {
+  height: 100%;
+  overflow: auto;
+  position: relative;
+}
+
+.chronicle-bubble-canvas {
+  display: block;
+}
+
+.chronicle-bubble-tooltip {
+  background: var(--material-limestone);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-popover, 0 12px 34px rgba(15, 23, 42, 0.14));
+  color: var(--text);
+  display: grid;
+  gap: 4px;
+  max-width: 280px;
+  padding: 8px 10px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 3;
+}
+
 .chronicle-panel-header {
   align-items: center;
   display: flex;

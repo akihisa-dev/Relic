@@ -32,6 +32,7 @@ import { useWindowCloseRequest } from "./hooks/useWindowCloseRequest";
 import { useWorkspaceAliases } from "./hooks/useWorkspaceAliases";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
 import { useWorkspaceChronicleCalendars } from "./hooks/useWorkspaceChronicleCalendars";
+import { useWorkspaceFrontmatterCategoryChoices } from "./hooks/useWorkspaceFrontmatterCategoryChoices";
 import { useWorkspaceCharts } from "./hooks/useWorkspaceCharts";
 import { useWorkspaceExternalRefresh } from "./hooks/useWorkspaceExternalRefresh";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
@@ -242,10 +243,15 @@ export function App(): ReactElement {
     setWorkspaceError,
     workspaceState
   });
+  const { categoryChoices, handleSaveCategoryChoices } = useWorkspaceFrontmatterCategoryChoices({
+    setWorkspaceError,
+    workspaceState
+  });
   const frontmatterCandidatesWithChronicle = useMemo(() => ({
     ...frontmatterCandidates,
+    category: categoryChoices,
     chronicle: chronicleCalendars.map((calendar) => calendar.name)
-  }), [chronicleCalendars, frontmatterCandidates]);
+  }), [categoryChoices, chronicleCalendars, frontmatterCandidates]);
 
   const handleFileSaved = useCallback((path?: string): void => {
     if (hasOpenChart) void reloadCharts();
@@ -561,12 +567,14 @@ export function App(): ReactElement {
 
   const { renderChartTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
+    categoryChoices,
     chronicleCalendars,
     editorSettings,
     featureToggles,
     charts,
     handleOpenFile,
     handleOpenTagSearch: handleOpenGraphTagSearch,
+    handleSaveCategoryChoices,
     handleSaveChronicleCalendars,
     handleSaveFeatureToggles,
     handleSaveSettings,

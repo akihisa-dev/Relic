@@ -55,6 +55,11 @@ export const STANDARD_FIXED_FIELDS: FixedFieldDefinition[] = [
     name: "tags",
     descriptionKey: "settings.fixedFieldTagsDescription",
     examples: ["settings.fixedFieldTagsSingleExample", "settings.fixedFieldTagsMultipleExample"]
+  },
+  {
+    name: "category",
+    descriptionKey: "settings.fixedFieldCategoryDescription",
+    examples: ["settings.fixedFieldCategoryExample"]
   }
 ];
 

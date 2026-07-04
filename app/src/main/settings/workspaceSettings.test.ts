@@ -49,6 +49,7 @@ describe("workspaceSettings", () => {
       charts: [
         { filePaths: ["history/kamakura.md"], id: "chronicle", name: "歴史", source: "chronicle" }
       ],
+      frontmatterCategoryChoices: ["政治", "戦争"],
       pinnedPaths: ["notes/readme.md", "docs"],
       workspacePath: "/Users/test/notes"
     });
@@ -62,6 +63,7 @@ describe("workspaceSettings", () => {
     expect(settings.charts).toEqual([
       { filePaths: ["history/kamakura.md"], id: "chronicle", name: "chronicle", source: "chronicle" }
     ]);
+    expect(settings.frontmatterCategoryChoices).toEqual(["政治", "戦争"]);
     expect(settings.pinnedPaths).toEqual(["notes/readme.md", "docs"]);
     expect(settings.workspacePath).toBe("/Users/test/notes");
     if (process.platform !== "win32") {
@@ -69,6 +71,33 @@ describe("workspaceSettings", () => {
       expect((await stat(path.dirname(settingsPath))).mode & 0o777).toBe(0o700);
       expect((await stat(settingsPath)).mode & 0o777).toBe(0o600);
     }
+  });
+
+  it("読み込み時にcategory候補の空文字、重複、非文字列を除外する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-category");
+    await mkdir(path.dirname(settingsPath), { recursive: true });
+
+    await writeFile(settingsPath, JSON.stringify({
+      chronicleCalendars: defaultChronicleCalendars,
+      charts: defaultCharts,
+      frontmatterCategoryChoices: [
+        " 政治 ",
+        "戦争",
+        "政治",
+        "",
+        "  ",
+        123,
+        null
+      ],
+      pinnedPaths: [],
+      workspacePath: "/Users/test/notes"
+    }), "utf8");
+
+    const settings = await readWorkspaceSettings(userDataPath, "ws-category");
+
+    expect(settings.frontmatterCategoryChoices).toEqual(["政治", "戦争"]);
   });
 
   it("読み込み時にピン留めパスをワークスペース相対パスだけに正規化する", async () => {
@@ -189,6 +218,7 @@ describe("workspaceSettings", () => {
     await writeWorkspaceSettings(userDataPath, "ws-new", {
       chronicleCalendars: defaultChronicleCalendars,
       charts: defaultCharts,
+      frontmatterCategoryChoices: [],
       pinnedPaths: [],
       workspacePath: "/Users/test/new"
     });
@@ -264,12 +294,14 @@ describe("workspaceSettings", () => {
     await expect(readWorkspaceSettings(userDataPath, "../outside")).resolves.toEqual({
       chronicleCalendars: defaultChronicleCalendars,
       charts: defaultCharts,
+      frontmatterCategoryChoices: [],
       pinnedPaths: [],
       workspacePath: ""
     });
     await expect(writeWorkspaceSettings(userDataPath, "../outside", {
       chronicleCalendars: defaultChronicleCalendars,
       charts: defaultCharts,
+      frontmatterCategoryChoices: [],
       pinnedPaths: [],
       workspacePath: "/tmp/workspace"
     })).rejects.toThrow("Invalid workspace settings id.");
@@ -281,6 +313,7 @@ describe("workspaceSettings", () => {
     await writeWorkspaceSettings(userDataPath, "ws-race", {
       chronicleCalendars: defaultChronicleCalendars,
       charts: defaultCharts,
+      frontmatterCategoryChoices: [],
       pinnedPaths: [],
       workspacePath: ""
     });

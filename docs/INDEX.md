@@ -121,6 +121,7 @@
         - `backlinks.ts`
         - `charts.test.ts`
         - `charts.ts`
+        - `chronicleData.test.ts`
         - `chronicleData.ts`
         - `chronicleModel.test.ts`
         - `chronicleModel.ts`
@@ -254,6 +255,7 @@
         - `AppTitleBar.test.tsx`
         - `AppTitleBar.tsx`
         - `ChartPanel.tsx`
+        - `ChronicleBubbleCanvas.tsx`
         - `ChronicleChartGrid.tsx`
         - `chronicleChartParts.tsx`
         - `ChronicleSettingsPanel.test.tsx`
@@ -387,6 +389,7 @@
         - `useWorkspaceFileCreationActions.ts`
         - `useWorkspaceFileMutationActions.ts`
         - `useWorkspaceFileOpenActions.ts`
+        - `useWorkspaceFrontmatterCategoryChoices.ts`
         - `useWorkspaceRegistryActions.ts`
         - `useWorkspaceRenameRailHold.ts`
         - `useWorkspaceSearchState.ts`
@@ -439,6 +442,8 @@
       - `chartData.ts`
       - `chartFrontmatter.ts`
       - `chartNormalize.ts`
+      - `chronicleBubbleLayout.test.ts`
+      - `chronicleBubbleLayout.ts`
       - `chronicleTimeline.test.ts`
       - `chronicleTimeline.ts`
       - `chronicleTimelineAxis.test.ts`

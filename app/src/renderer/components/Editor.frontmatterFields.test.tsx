@@ -260,12 +260,12 @@ describe("Editor frontmatter fields", () => {
     const onChange = vi.fn();
     const { container } = render(
       <Editor
-        content={"---\ncategory: draft\nupdated: 2026-03-29\npublished: false\n---\n# 本文"}
-        frontmatterCandidates={{ category: ["review"] }}
+        content={"---\nstatus: draft\nupdated: 2026-03-29\npublished: false\n---\n# 本文"}
+        frontmatterCandidates={{ status: ["review"] }}
         onChange={onChange}
         settings={settings}
         userDefinedFields={[
-          { choices: ["draft", "published"], name: "category", type: "select" },
+          { choices: ["draft", "published"], name: "status", type: "select" },
           { name: "updated", type: "date" },
           { name: "published", type: "boolean" }
         ]}
@@ -274,13 +274,13 @@ describe("Editor frontmatter fields", () => {
     );
 
     await expandFrontmatter(container);
-    const categorySelect = Array.from(container.querySelectorAll("select.cm-frontmatter-input"))
+    const statusSelect = Array.from(container.querySelectorAll("select.cm-frontmatter-input"))
       .find((select) => (select as HTMLSelectElement).value === "draft") as HTMLSelectElement;
-    const statusOptions = Array.from(categorySelect.querySelectorAll("option"))
+    const statusOptions = Array.from(statusSelect.querySelectorAll("option"))
       .map((option) => (option as HTMLOptionElement).value);
     expect(statusOptions).toEqual(["draft", "published", "review"]);
-    fireEvent.change(categorySelect, { target: { value: "review" } });
-    expect(viewRef.current?.state.doc.toString()).toContain("category: [\"review\"]");
+    fireEvent.change(statusSelect, { target: { value: "review" } });
+    expect(viewRef.current?.state.doc.toString()).toContain("status: [\"review\"]");
 
     const dateInput = Array.from(container.querySelectorAll(".cm-frontmatter-input"))
       .find((input) => (input as HTMLInputElement).value === "2026-03-29") as HTMLInputElement;

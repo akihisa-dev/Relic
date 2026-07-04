@@ -5,6 +5,7 @@ import {
   defaultChronicleCalendars,
   type ChronicleCalendarSettings,
   type ChartSettings,
+  type FrontmatterCategoryChoice,
   type ChartSource
 } from "../../shared/ipc";
 import { normalizeWorkspaceRelativeInputPath } from "../files/paths";
@@ -13,6 +14,7 @@ import { writePrivateSettingsTextFile } from "./secureSettingsFile";
 export interface WorkspaceSettings {
   chronicleCalendars: ChronicleCalendarSettings[];
   charts: ChartSettings[];
+  frontmatterCategoryChoices: FrontmatterCategoryChoice[];
   pinnedPaths: string[];
   workspacePath: string;
 }
@@ -30,6 +32,7 @@ export const defaultCharts: ChartSettings[] = [
 const defaultWorkspaceSettings: WorkspaceSettings = {
   chronicleCalendars: defaultChronicleCalendars,
   charts: defaultCharts,
+  frontmatterCategoryChoices: [],
   pinnedPaths: [],
   workspacePath: ""
 };
@@ -105,6 +108,7 @@ async function readWorkspaceSettingsInternal(
     return {
       chronicleCalendars: parseChronicleCalendars(migrated.settings.chronicleCalendars),
       charts: parseCharts(migrated.settings.charts),
+      frontmatterCategoryChoices: parseFrontmatterCategoryChoices(migrated.settings.frontmatterCategoryChoices),
       pinnedPaths: parsePinnedPaths(migrated.settings.pinnedPaths),
       workspacePath: typeof migrated.settings.workspacePath === "string" ? migrated.settings.workspacePath : ""
     };
@@ -182,6 +186,19 @@ export function parsePinnedPaths(raw: unknown): string[] {
   });
 
   return Array.from(new Set(paths));
+}
+
+export function parseFrontmatterCategoryChoices(raw: unknown): FrontmatterCategoryChoice[] {
+  if (!Array.isArray(raw)) return [];
+
+  const choices = raw.flatMap((item): string[] => {
+    if (typeof item !== "string") return [];
+
+    const normalized = item.trim();
+    return normalized ? [normalized] : [];
+  });
+
+  return Array.from(new Set(choices));
 }
 
 function normalizePinnedPath(raw: string): string | null {

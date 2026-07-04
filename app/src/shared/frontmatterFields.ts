@@ -18,11 +18,13 @@ export const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
 
 export type FixedFrontmatterFieldName =
   | "aliases"
+  | "category"
   | "tags"
   | "chronicle";
 
 export const reservedFrontmatterFieldNames: FixedFrontmatterFieldName[] = [
   "aliases",
+  "category",
   "tags",
   "chronicle"
 ];

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   isFeatureTogglesInput,
+  isFrontmatterCategoryChoicesInput,
   isFrontmatterTemplatesInput,
   isChronicleCalendarsInput,
   isChartsInput,
@@ -17,6 +18,7 @@ describe("workspaceHandlerValidators", () => {
     expect(isUserDefinedFieldsInput([{ name: "date", type: "date" }])).toBe(true);
     expect(isUserDefinedFieldsInput([{ name: "rating", type: "number" }, { name: "rating", type: "text" }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "tags", type: "text" }])).toBe(false);
+    expect(isUserDefinedFieldsInput([{ name: "category", type: "text" }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "chronicle", type: "number" }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "chronicle0", type: "number" }])).toBe(true);
     expect(isUserDefinedFieldsInput([{ name: "plannedDate", type: "date" }])).toBe(true);
@@ -26,6 +28,14 @@ describe("workspaceHandlerValidators", () => {
     expect(isUserDefinedFieldsInput([{ name: "kind", type: "text", choices: ["a"] }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "kind", type: "select", choices: ["a", "a"] }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "kind", type: "select", choices: [" a "] }])).toBe(false);
+  });
+
+  it("validates workspace category choices", () => {
+    expect(isFrontmatterCategoryChoicesInput(["政治", "戦争"])).toBe(true);
+    expect(isFrontmatterCategoryChoicesInput([" 政治"])).toBe(false);
+    expect(isFrontmatterCategoryChoicesInput([""])).toBe(false);
+    expect(isFrontmatterCategoryChoicesInput(["政治", "政治"])).toBe(false);
+    expect(isFrontmatterCategoryChoicesInput(["政治", 1])).toBe(false);
   });
 
   it("validates the required chronicle chart source", () => {

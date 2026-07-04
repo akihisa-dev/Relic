@@ -1,6 +1,7 @@
 import type {
   ChronicleCalendarSettings,
   FeatureToggles,
+  FrontmatterCategoryChoice,
   FrontmatterTemplate,
   ChartSettings,
   ChartSource,
@@ -112,6 +113,19 @@ export function isChronicleCalendarsInput(input: unknown): input is ChronicleCal
     return !("startYear" in candidate) ||
       (Number.isInteger(candidate.startYear) && Number(candidate.startYear) >= 1);
   }) && input.length > 0;
+}
+
+export function isFrontmatterCategoryChoicesInput(input: unknown): input is FrontmatterCategoryChoice[] {
+  if (!Array.isArray(input)) return false;
+
+  const choices = new Set<string>();
+
+  return input.every((choice) => {
+    if (typeof choice !== "string") return false;
+    if (choice.trim() !== choice || choice === "" || choices.has(choice)) return false;
+    choices.add(choice);
+    return true;
+  });
 }
 
 export function isFrontmatterTemplatesInput(input: unknown): input is FrontmatterTemplate[] {

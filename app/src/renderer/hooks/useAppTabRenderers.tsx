@@ -6,6 +6,7 @@ import type {
   ChronicleCalendarSettings,
   EditorSettings,
   FeatureToggles,
+  FrontmatterCategoryChoice,
   UpdateChartEntryInput,
   UserDefinedField,
   WorkspaceChart,
@@ -22,6 +23,7 @@ import type { PanelTabKind } from "../store/editorStore";
 interface UseAppTabRenderersInput {
   appInfo: AppInfo | null;
   chronicleCalendars: ChronicleCalendarSettings[];
+  categoryChoices: FrontmatterCategoryChoice[];
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
   charts: WorkspaceChart[];
@@ -29,6 +31,7 @@ interface UseAppTabRenderersInput {
   handleOpenTagSearch: (tag: string) => void;
   handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
   handleSaveChronicleCalendars: (calendars: ChronicleCalendarSettings[]) => void;
+  handleSaveCategoryChoices: (choices: FrontmatterCategoryChoice[]) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
   handleSaveUserDefinedFields: (fields: UserDefinedField[]) => void;
   handleUpdateChartEntry: (input: UpdateChartEntryInput) => Promise<void> | void;
@@ -39,6 +42,7 @@ interface UseAppTabRenderersInput {
 export function useAppTabRenderers({
   appInfo,
   chronicleCalendars,
+  categoryChoices,
   editorSettings,
   featureToggles,
   charts,
@@ -46,6 +50,7 @@ export function useAppTabRenderers({
   handleOpenTagSearch,
   handleSaveFeatureToggles,
   handleSaveChronicleCalendars,
+  handleSaveCategoryChoices,
   handleSaveSettings,
   handleSaveUserDefinedFields,
   handleUpdateChartEntry,
@@ -79,6 +84,8 @@ export function useAppTabRenderers({
     if (panel === "frontmatter") {
       return (
         <FrontmatterPanel
+          categoryChoices={categoryChoices}
+          onCategoryChoicesSave={handleSaveCategoryChoices}
           onUserDefinedFieldsSave={handleSaveUserDefinedFields}
           userDefinedFields={userDefinedFields}
         />
@@ -105,12 +112,14 @@ export function useAppTabRenderers({
     );
   }, [
     appInfo,
+    categoryChoices,
     chronicleCalendars,
     editorSettings,
     featureToggles,
     handleOpenFile,
     handleSaveFeatureToggles,
     handleSaveChronicleCalendars,
+    handleSaveCategoryChoices,
     handleSaveSettings,
     handleSaveUserDefinedFields,
     userDefinedFields,

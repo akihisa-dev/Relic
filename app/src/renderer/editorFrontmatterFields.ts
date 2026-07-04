@@ -33,6 +33,7 @@ export function isEditableScalar(value: unknown): boolean {
 }
 
 export function fieldFor(key: string, userDefinedFields: UserDefinedField[]): UserDefinedField | undefined {
+  if (key === "category") return { name: key, type: "select" };
   if (key === "aliases" || key === "tags") return { name: key, type: "multi-select" };
   return userDefinedFields.find((field) => field.name === key);
 }

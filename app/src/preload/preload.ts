@@ -25,6 +25,7 @@ import {
   getWorkspaceAliasesChannel,
   getWorkspaceChartsChannel,
   getWorkspaceChronicleCalendarsChannel,
+  getWorkspaceFrontmatterCategoryChoicesChannel,
   getWorkspaceGraphChannel,
   getLinkUpdateImpactChannel,
   listFileRecoverySnapshotsChannel,
@@ -48,6 +49,7 @@ import {
   startWorkspaceFileDragChannel,
   saveWorkspaceChartsChannel,
   saveWorkspaceChronicleCalendarsChannel,
+  saveWorkspaceFrontmatterCategoryChoicesChannel,
   updateChartEntryChannel,
   saveEditorSettingsChannel,
   generateTitleListChannel,
@@ -88,6 +90,7 @@ import {
   type EditorSettings,
   type Backlink,
   type ChronicleCalendarSettings,
+  type FrontmatterCategoryChoice,
   type GetBacklinksInput,
   type GetUnlinkedReferencesInput,
   type ImportImageFileInput,
@@ -186,6 +189,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getWorkspaceChartsChannel) as Promise<RelicResult<WorkspaceChart[]>>,
   getWorkspaceChronicleCalendars: () =>
     ipcRenderer.invoke(getWorkspaceChronicleCalendarsChannel) as Promise<RelicResult<ChronicleCalendarSettings[]>>,
+  getWorkspaceFrontmatterCategoryChoices: () =>
+    ipcRenderer.invoke(getWorkspaceFrontmatterCategoryChoicesChannel) as Promise<RelicResult<FrontmatterCategoryChoice[]>>,
   getWorkspaceGraph: () =>
     ipcRenderer.invoke(getWorkspaceGraphChannel) as Promise<RelicResult<WorkspaceGraph>>,
   getFrontmatterValueCandidates: () =>
@@ -251,6 +256,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(copyEditorTextToClipboardChannel, input) as Promise<RelicResult<void>>,
   saveWorkspaceChronicleCalendars: (input: ChronicleCalendarSettings[]) =>
     ipcRenderer.invoke(saveWorkspaceChronicleCalendarsChannel, input) as Promise<RelicResult<ChronicleCalendarSettings[]>>,
+  saveWorkspaceFrontmatterCategoryChoices: (input: FrontmatterCategoryChoice[]) =>
+    ipcRenderer.invoke(saveWorkspaceFrontmatterCategoryChoicesChannel, input) as Promise<RelicResult<FrontmatterCategoryChoice[]>>,
   saveWorkspaceCharts: (input: ChartSettings[]) =>
     ipcRenderer.invoke(saveWorkspaceChartsChannel, input) as Promise<RelicResult<WorkspaceChart[]>>,
   updateChartEntry: (input: UpdateChartEntryInput) =>

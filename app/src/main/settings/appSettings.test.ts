@@ -271,9 +271,10 @@ describe("appSettings", () => {
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
       userDefinedFields: [
-        { choices: ["draft", " draft ", "", "done", "draft", 1], name: "category", type: "select" },
+        { choices: ["draft", " draft ", "", "done", "draft", 1], name: "status", type: "select" },
         { choices: ["unused"], name: "memo", type: "text" },
         { name: "tags", type: "text" },
+        { name: "category", type: "text" },
         { name: "plannedDate", type: "date" },
         { name: "invalid", type: "unknown" },
         { name: "category", type: "multi-select" }
@@ -282,7 +283,7 @@ describe("appSettings", () => {
 
     await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
       userDefinedFields: [
-        { choices: ["draft", "done"], name: "category", type: "select" },
+        { choices: ["draft", "done"], name: "status", type: "select" },
         { name: "memo", type: "text" },
         { name: "plannedDate", type: "date" }
       ]

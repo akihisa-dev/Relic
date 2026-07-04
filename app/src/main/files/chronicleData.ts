@@ -37,6 +37,7 @@ export function collectChartEntriesForFrontmatterData(
   const entriesBySource: Record<"chronicle", ChartEntry[]> = { chronicle: [] };
   const fileName = stripMarkdownExtension(path.basename(relativePath));
   const ranges = extractChronicleRangesFromData(data, calendars);
+  const category = extractFrontmatterCategory(data);
 
   for (const range of ranges) {
     const startPoint = {
@@ -50,6 +51,7 @@ export function collectChartEntriesForFrontmatterData(
     const startValue = pointToMonthAxis(startPoint.year, startPoint.month);
     const endValue = pointToMonthAxis(endPoint.year, endPoint.month);
     entriesBySource.chronicle.push({
+      ...(category ? { category } : {}),
       chronicleCalendarName: range.calendarName,
       chronicleCalendarStartYear: calendarMainStartYear(range.calendar),
       chronicleEntryIndex: range.entryIndex,
@@ -65,6 +67,14 @@ export function collectChartEntriesForFrontmatterData(
   }
 
   return entriesBySource;
+}
+
+export function extractFrontmatterCategory(data: Record<string, unknown>): string | null {
+  const value = data.category;
+  if (typeof value !== "string") return null;
+
+  const category = value.trim();
+  return category ? category : null;
 }
 
 export function sortChronicleEntries(entries: ChartEntry[]): ChartEntry[] {

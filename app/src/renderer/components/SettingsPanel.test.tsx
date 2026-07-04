@@ -11,15 +11,21 @@ import { FrontmatterPanel } from "./FrontmatterPanel";
 import { SettingsPanel } from "./SettingsPanel";
 
 function renderFrontmatterPanel({
+  categoryChoices = [],
+  onCategoryChoicesSave = vi.fn(),
   userDefinedFields = [],
   onUserDefinedFieldsSave = vi.fn()
 }: {
+  categoryChoices?: string[];
+  onCategoryChoicesSave?: (choices: string[]) => void;
   userDefinedFields?: UserDefinedField[];
   onUserDefinedFieldsSave?: (fields: UserDefinedField[]) => void;
 } = {}) {
   render(
     <I18nProvider language="en">
       <FrontmatterPanel
+        categoryChoices={categoryChoices}
+        onCategoryChoicesSave={onCategoryChoicesSave}
         onUserDefinedFieldsSave={onUserDefinedFieldsSave}
         userDefinedFields={userDefinedFields}
       />
@@ -55,7 +61,7 @@ describe("FrontmatterPanel", () => {
       "URL"
     ]);
     expect(screen.getByText("For short free-form values, such as notes, names, or labels.")).toBeInTheDocument();
-    expect(screen.getByText("category: [note]")).toBeInTheDocument();
+    expect(screen.getByText("status: [note]")).toBeInTheDocument();
   });
 
   it("フィールドを追加できる", () => {
@@ -108,7 +114,7 @@ describe("FrontmatterPanel", () => {
     expect(screen.getByText("source: [https://example.com]")).toBeInTheDocument();
   });
 
-  it("aliasesとtagsとchronicleを固定プロパティとして表示し、statusとplannedDateとactualDateはカスタムプロパティに追加できる", () => {
+  it("aliasesとcategoryとtagsとchronicleを固定プロパティとして表示し、statusとplannedDateとactualDateはカスタムプロパティに追加できる", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
     renderFrontmatterPanel({ onUserDefinedFieldsSave });
@@ -116,6 +122,7 @@ describe("FrontmatterPanel", () => {
     expect(screen.getByText("Fixed properties")).not.toBeNull();
     expect(screen.getByText("Custom properties")).not.toBeNull();
     expect(screen.getByText("aliases")).not.toBeNull();
+    expect(screen.getByText("category")).not.toBeNull();
     expect(screen.getByText("tags")).not.toBeNull();
     expect(screen.queryByText("status")).toBeNull();
     expect(screen.getByRole("button", { name: "chronicle 1 field" })).toHaveAttribute("aria-expanded", "false");
@@ -132,6 +139,8 @@ describe("FrontmatterPanel", () => {
     expect(screen.getByText("Tags that classify this file. Used for tag lists, tag search, and tag filtering. Write one or many values as the same one-line array.")).toBeInTheDocument();
     expect(screen.getByText("tags: [source]")).toBeInTheDocument();
     expect(screen.getByText("tags: [source, draft]")).toBeInTheDocument();
+    expect(screen.getByText("A single value used by the new timeline placement view to keep related file bubbles near each other.")).toBeInTheDocument();
+    expect(screen.getByText("category: War")).toBeInTheDocument();
     expect(screen.getAllByText("Places this file on the timeline with one or more calendar ranges. Each range stores a calendar name and start/end year-month points.").length).toBeGreaterThan(0);
     expect(screen.getAllByText("chronicle: [[Main calendar, [[1185, null], [1185, null]]]]").length).toBeGreaterThan(0);
     expect(screen.getAllByText("chronicle: [[Main calendar, [[1185, 5], [1333, 8]]]]").length).toBeGreaterThan(0);
@@ -142,6 +151,10 @@ describe("FrontmatterPanel", () => {
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
 
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "tags" } });
+
+    expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
+
+    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "category" } });
 
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
 
@@ -178,8 +191,11 @@ describe("FrontmatterPanel", () => {
       userDefinedFields: [{ choices: ["draft"], name: "phase", type: "select" }]
     });
 
-    fireEvent.change(screen.getByPlaceholderText("Enter a choice"), { target: { value: "review" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add choice" }));
+    const customChoiceInput = screen.getAllByPlaceholderText("Enter a choice").at(-1);
+    const customChoiceButton = screen.getAllByRole("button", { name: "Add choice" }).at(-1);
+    if (!customChoiceInput || !customChoiceButton) throw new Error("custom choice controls were not rendered");
+    fireEvent.change(customChoiceInput, { target: { value: "review" } });
+    fireEvent.click(customChoiceButton);
 
     expect(onUserDefinedFieldsSave).toHaveBeenCalledWith([
       { choices: ["draft", "review"], name: "phase", type: "select" }
@@ -190,6 +206,24 @@ describe("FrontmatterPanel", () => {
     expect(onUserDefinedFieldsSave).toHaveBeenLastCalledWith([
       { choices: ["review"], name: "phase", type: "select" }
     ]);
+  });
+
+  it("category候補を追加・削除できる", () => {
+    const onCategoryChoicesSave = vi.fn();
+
+    renderFrontmatterPanel({
+      categoryChoices: ["War"],
+      onCategoryChoicesSave
+    });
+
+    expect(screen.getByText("category choices")).toBeInTheDocument();
+    fireEvent.change(screen.getAllByPlaceholderText("Enter a choice")[0], { target: { value: "Politics" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Add choice" })[0]);
+
+    expect(onCategoryChoicesSave).toHaveBeenCalledWith(["War", "Politics"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove War" }));
+    expect(onCategoryChoicesSave).toHaveBeenCalledWith([]);
   });
 
   it("テンプレート管理を表示しない", () => {

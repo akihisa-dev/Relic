@@ -6,9 +6,11 @@ import {
   getWorkspaceAliasesChannel,
   getWorkspaceChartsChannel,
   getWorkspaceChronicleCalendarsChannel,
+  getWorkspaceFrontmatterCategoryChoicesChannel,
   getWorkspaceGraphChannel,
   getWorkspaceTagsChannel,
   saveWorkspaceChronicleCalendarsChannel,
+  saveWorkspaceFrontmatterCategoryChoicesChannel,
   saveWorkspaceChartsChannel,
   updateChartEntryChannel
 } from "../../shared/ipc";
@@ -33,6 +35,7 @@ import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
   isChronicleCalendarsInput,
   isChartsInput,
+  isFrontmatterCategoryChoicesInput,
   isUpdateChartEntryInput
 } from "./workspaceHandlerValidators";
 
@@ -250,6 +253,54 @@ export function registerWorkspaceDataHandlers(): void {
       return fail(
         "WORKSPACE_CHRONICLE_CALENDARS_SAVE_FAILED",
         "暦設定を保存できませんでした。",
+        ipcErrorDetails(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getWorkspaceFrontmatterCategoryChoicesChannel, async () => {
+    try {
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
+
+      const workspaceSettings = await readWorkspaceSettings(
+        context.value.userDataPath,
+        context.value.activeWorkspace.id
+      );
+      return { ok: true as const, value: workspaceSettings.frontmatterCategoryChoices };
+    } catch (error) {
+      return fail(
+        "WORKSPACE_FRONTMATTER_CATEGORY_CHOICES_FAILED",
+        "category候補を読み込めませんでした。",
+        ipcErrorDetails(error)
+      );
+    }
+  });
+
+  ipcMain.handle(saveWorkspaceFrontmatterCategoryChoicesChannel, async (_event, input: unknown) => {
+    try {
+      if (!isFrontmatterCategoryChoicesInput(input)) {
+        return fail("INVALID_FRONTMATTER_CATEGORY_CHOICES", "category候補が正しくありません。");
+      }
+
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
+
+      const savedChoices = input.map((choice) => choice.trim());
+      const workspaceSettings = await updateWorkspaceSettings(
+        context.value.userDataPath,
+        context.value.activeWorkspace.id,
+        (workspaceSettings) => ({
+          ...workspaceSettings,
+          frontmatterCategoryChoices: savedChoices
+        })
+      );
+
+      return { ok: true as const, value: workspaceSettings.frontmatterCategoryChoices };
+    } catch (error) {
+      return fail(
+        "WORKSPACE_FRONTMATTER_CATEGORY_CHOICES_SAVE_FAILED",
+        "category候補を保存できませんでした。",
         ipcErrorDetails(error)
       );
     }

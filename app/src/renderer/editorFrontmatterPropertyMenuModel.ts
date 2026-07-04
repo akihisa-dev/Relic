@@ -1,7 +1,7 @@
 import type { Translator } from "./i18nModel";
 import { fixedFrontmatterFieldNames } from "./editorFrontmatter";
 
-const basicFixedFieldNames = ["aliases", "tags"] as const;
+const basicFixedFieldNames = ["aliases", "category", "tags"] as const;
 const chronicleFixedFieldNames = ["chronicle"] as const;
 
 export interface FrontmatterPropertyMenuGroup {
@@ -64,6 +64,7 @@ function frontmatterPropertyGroup(
 
 function frontmatterPropertyLabel(key: string, t: Translator): string {
   if (key === "aliases") return t("frontmatter.propertyAliases");
+  if (key === "category") return "category";
   if (key === "tags") return t("frontmatter.propertyTags");
   if (key === "chronicle") return "chronicle";
   return key;

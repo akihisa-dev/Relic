@@ -81,6 +81,7 @@ describe("workspaceHandlers", () => {
     await workspaceSettings.writeWorkspaceSettings(userDataPath, workspace.id, {
       chronicleCalendars: defaultChronicleCalendars,
       charts: workspaceSettings.defaultCharts,
+      frontmatterCategoryChoices: [],
       pinnedPaths: ["読書メモ.md"],
       workspacePath
     });
@@ -354,6 +355,7 @@ describe("workspaceHandlers", () => {
     await workspaceSettings.writeWorkspaceSettings(userDataPath, workspace.id, {
       chronicleCalendars: defaultChronicleCalendars,
       charts: workspaceSettings.defaultCharts,
+      frontmatterCategoryChoices: [],
       pinnedPaths: ["memo.md"],
       workspacePath: oldWorkspacePath
     });
@@ -418,6 +420,7 @@ describe("workspaceHandlers", () => {
     await workspaceSettings.writeWorkspaceSettings(userDataPath, workspace.id, {
       chronicleCalendars: defaultChronicleCalendars,
       charts: workspaceSettings.defaultCharts,
+      frontmatterCategoryChoices: [],
       pinnedPaths: ["memo.md"],
       workspacePath: oldWorkspacePath
     });

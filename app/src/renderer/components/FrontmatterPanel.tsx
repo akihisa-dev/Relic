@@ -1,21 +1,35 @@
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 
-import type { UserDefinedField } from "../../shared/ipc";
+import type { FrontmatterCategoryChoice, UserDefinedField } from "../../shared/ipc";
+import { parseChoiceInput, uniqueChoices } from "../frontmatterSettingsModel";
 import { useFrontmatterFieldsState } from "../hooks/useFrontmatterFieldsState";
 import { useT } from "../i18n";
 import { FrontmatterFieldAddForm } from "./FrontmatterFieldAddForm";
 import { FrontmatterFieldList } from "./FrontmatterFieldList";
+import { FrontmatterChoiceEditor } from "./FrontmatterChoiceEditor";
 import { FrontmatterFixedFields } from "./FrontmatterFixedFields";
 
 export function FrontmatterPanel({
+  categoryChoices,
+  onCategoryChoicesSave,
   userDefinedFields,
   onUserDefinedFieldsSave
 }: {
+  categoryChoices: FrontmatterCategoryChoice[];
+  onCategoryChoicesSave: (choices: FrontmatterCategoryChoice[]) => void;
   userDefinedFields: UserDefinedField[];
   onUserDefinedFieldsSave: (fields: UserDefinedField[]) => void;
 }): ReactElement {
   const t = useT();
   const fieldsState = useFrontmatterFieldsState({ onUserDefinedFieldsSave, userDefinedFields });
+  const [categoryChoiceInput, setCategoryChoiceInput] = useState("");
+  const addCategoryChoices = (): void => {
+    const choices = parseChoiceInput(categoryChoiceInput);
+    if (choices.length === 0) return;
+
+    onCategoryChoicesSave(uniqueChoices([...categoryChoices, ...choices]));
+    setCategoryChoiceInput("");
+  };
 
   return (
     <div className="settings-page frontmatter-settings-section">
@@ -33,6 +47,18 @@ export function FrontmatterPanel({
 
       <section className="settings-group frontmatter-settings-group">
         <FrontmatterFixedFields />
+      </section>
+
+      <section className="settings-group frontmatter-settings-group">
+        <div className="frontmatter-field-group-label">{t("settings.categoryChoices")}</div>
+        <p className="frontmatter-field-description-text">{t("settings.categoryChoicesDescription")}</p>
+        <FrontmatterChoiceEditor
+          choices={categoryChoices}
+          input={categoryChoiceInput}
+          onAddChoices={addCategoryChoices}
+          onInputChange={setCategoryChoiceInput}
+          onRemoveChoice={(choice) => onCategoryChoicesSave(categoryChoices.filter((item) => item !== choice))}
+        />
       </section>
 
       <section className="settings-group frontmatter-settings-group">
