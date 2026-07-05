@@ -19,6 +19,8 @@ const CHRONICLE_MIN_SEGMENT_HEIGHT = 38;
 const CHRONICLE_LABEL_HEIGHT = 18;
 const CHRONICLE_LABEL_PADDING_X = 7;
 const CHRONICLE_MIN_LABEL_WIDTH = 16;
+const CHRONICLE_OUTSIDE_LABEL_GAP = 6;
+const CHRONICLE_VIEWPORT_LABEL_MARGIN = 8;
 
 interface OrderedChronicleEntry {
   displayEntry: ChartEntry;
@@ -37,6 +39,7 @@ interface ChronicleEntryShape {
   height: number;
   key: string;
   labelClipId: string;
+  labelPlacement: "inside" | "outside";
   labelX: number;
   labelY: number;
   labelWidth: number;
@@ -56,6 +59,7 @@ export function ChronicleTracks({
   rows,
   scrollLeft,
   trackViewportHeight,
+  timelineViewportWidth,
   timelineWidth,
   unitWidth,
   visibleRange
@@ -73,6 +77,7 @@ export function ChronicleTracks({
   rows: ChartRow[];
   scrollLeft: number;
   trackViewportHeight: number;
+  timelineViewportWidth: number;
   timelineWidth: number;
   unitWidth: number;
   visibleRange?: TimelineVisibleRange;
@@ -99,10 +104,11 @@ export function ChronicleTracks({
         axisStart,
         laneHeight: chronicleLaneHeight,
         scrollLeft,
+        timelineViewportWidth,
         unitWidth
       })
       : [],
-    [activeSource, axisStart, chronicleLaneHeight, chronicleLaneIndexes, dragPreview, rows, scrollLeft, unitWidth]
+    [activeSource, axisStart, chronicleLaneHeight, chronicleLaneIndexes, dragPreview, rows, scrollLeft, timelineViewportWidth, unitWidth]
   );
   const hoveredChronicleShape = activeSource === "chronicle"
     ? chronicleShapes.find((shape) => shape.key === hoveredChronicleKey) ?? null
@@ -194,11 +200,13 @@ function buildChronicleEntryShapes(
     axisStart,
     laneHeight,
     scrollLeft,
+    timelineViewportWidth,
     unitWidth
   }: {
     axisStart: number;
     laneHeight: number;
     scrollLeft: number;
+    timelineViewportWidth: number;
     unitWidth: number;
   }
 ): ChronicleEntryShape[] {
@@ -239,7 +247,16 @@ function buildChronicleEntryShapes(
     const fileNameLabelX = labelX;
     const fileNameLabelY = labelY - 20;
     const fileNameBackgroundWidth = labelFitsInBar(fileNameLabelWidth, width, labelLeft) ? fileNameLabelWidth : 0;
-    const labelBackgroundWidth = visibleLabelWidth(labelWidth, width - labelLeft);
+    const labelPlacement = labelFitsInBar(labelWidth, width, labelLeft) ? "inside" : "outside";
+    const placedRangeLabel = labelPlacement === "inside"
+      ? { labelX, labelWidth }
+      : outsideRangeLabelPlacement({
+        barWidth: width,
+        labelWidth,
+        scrollLeft,
+        timelineViewportWidth,
+        x
+      });
     const clipKey = clipIdKey(item.entry, item.order);
 
     return {
@@ -252,8 +269,9 @@ function buildChronicleEntryShapes(
       height,
       key: entryKey(item.entry),
       labelClipId: `chronicle-range-label-${clipKey}`,
-      labelWidth: labelBackgroundWidth,
-      labelX,
+      labelPlacement,
+      labelWidth: placedRangeLabel.labelWidth,
+      labelX: placedRangeLabel.labelX,
       labelY,
       path: roundedRectPath(x, y, width, height, 3),
       width,
@@ -300,10 +318,32 @@ function labelFitsInBar(labelWidth: number, barWidth: number, labelLeft: number)
   );
 }
 
-function visibleLabelWidth(labelWidth: number, availableWidth: number): number {
-  const width = Math.min(labelWidth, Math.max(0, availableWidth));
+function outsideRangeLabelPlacement({
+  barWidth,
+  labelWidth,
+  scrollLeft,
+  timelineViewportWidth,
+  x
+}: {
+  barWidth: number;
+  labelWidth: number;
+  scrollLeft: number;
+  timelineViewportWidth: number;
+  x: number;
+}): { labelX: number; labelWidth: number } {
+  const visibleLeft = scrollLeft + CHRONICLE_VIEWPORT_LABEL_MARGIN;
+  const visibleRight = scrollLeft + Math.max(CHRONICLE_VIEWPORT_LABEL_MARGIN, timelineViewportWidth - CHRONICLE_VIEWPORT_LABEL_MARGIN);
+  const maxLabelX = Math.max(visibleLeft, visibleRight - labelWidth);
+  const rightSideX = x + barWidth + CHRONICLE_OUTSIDE_LABEL_GAP;
+  const leftSideX = x - labelWidth - CHRONICLE_OUTSIDE_LABEL_GAP;
+  const preferredX = rightSideX + labelWidth <= visibleRight || leftSideX < visibleLeft
+    ? rightSideX
+    : leftSideX;
 
-  return width >= CHRONICLE_MIN_LABEL_WIDTH ? width : 0;
+  return {
+    labelWidth,
+    labelX: Math.max(visibleLeft, Math.min(maxLabelX, preferredX))
+  };
 }
 
 function clipIdKey(entry: ChartEntry, order: number): string {
@@ -456,16 +496,19 @@ function ChronicleEntrySvgShape({
       ) : null}
       {shape.labelWidth > 0 ? (
         <>
-          <clipPath id={shape.labelClipId}>
-            <rect
-              height={CHRONICLE_LABEL_HEIGHT}
-              width={shape.labelWidth}
-              x={shape.labelX}
-              y={shape.labelY - 14}
-            />
-          </clipPath>
+          {shape.labelPlacement === "inside" ? (
+            <clipPath id={shape.labelClipId}>
+              <rect
+                height={CHRONICLE_LABEL_HEIGHT}
+                width={shape.labelWidth}
+                x={shape.labelX}
+                y={shape.labelY - 14}
+              />
+            </clipPath>
+          ) : null}
           <rect
-            className="chronicle-fill-label-bg"
+            className={`chronicle-fill-label-bg${shape.labelPlacement === "outside" ? " chronicle-fill-label-bg--outside" : ""}`}
+            data-label-placement={shape.labelPlacement}
             height={CHRONICLE_LABEL_HEIGHT}
             rx={4}
             ry={4}
@@ -474,8 +517,9 @@ function ChronicleEntrySvgShape({
             y={shape.labelY - 14}
           />
           <text
-            className="chronicle-fill-label"
-            clipPath={`url(#${shape.labelClipId})`}
+            className={`chronicle-fill-label${shape.labelPlacement === "outside" ? " chronicle-fill-label--outside" : ""}`}
+            clipPath={shape.labelPlacement === "inside" ? `url(#${shape.labelClipId})` : undefined}
+            data-label-placement={shape.labelPlacement}
             dominantBaseline="middle"
             x={shape.labelX + CHRONICLE_LABEL_PADDING_X}
             y={shape.labelY - 5}

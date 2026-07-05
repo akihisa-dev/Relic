@@ -41,6 +41,7 @@ describe("ChronicleTracks", () => {
         ]}
         scrollLeft={0}
         timelineWidth={2000}
+        timelineViewportWidth={300}
         trackViewportHeight={200}
         unitWidth={10}
         visibleRange={{ visibleEnd: 10, visibleStart: 0 }}
@@ -49,5 +50,39 @@ describe("ChronicleTracks", () => {
 
     expect(screen.getByRole("button", { name: /Near/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Far/ })).not.toBeInTheDocument();
+  });
+
+  it("短いバーの期間ラベルを表示範囲内の外側ラベルとして描画する", () => {
+    const { container } = render(
+      <ChronicleTracks
+        activeSource="chronicle"
+        axisStart={0}
+        dragPreview={null}
+        guideTicks={[]}
+        onOpenFile={vi.fn()}
+        onStartEntryEdit={vi.fn()}
+        rows={[
+          { entries: [entry("Short", "short.md", 0, 9, 9)], fileName: "Short", key: "short", path: "short.md", statuses: [] }
+        ]}
+        scrollLeft={80}
+        timelineWidth={400}
+        timelineViewportWidth={120}
+        trackViewportHeight={80}
+        unitWidth={4}
+        visibleRange={{ visibleEnd: 20, visibleStart: 0 }}
+      />
+    );
+
+    const outsideLabel = container.querySelector(".chronicle-fill-label--outside") as SVGTextElement;
+    const outsideBackground = container.querySelector(".chronicle-fill-label-bg--outside") as SVGRectElement;
+
+    expect(container.querySelector(".chronicle-tracks")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-fill-shape")).toBeInTheDocument();
+    expect(outsideLabel).toBeInTheDocument();
+    expect(outsideLabel).toHaveTextContent("9");
+    expect(outsideLabel).toHaveAttribute("data-label-placement", "outside");
+    expect(outsideBackground).toHaveAttribute("data-label-placement", "outside");
+    expect(Number(outsideLabel.getAttribute("x"))).toBeGreaterThanOrEqual(80);
+    expect(Number(outsideLabel.getAttribute("x"))).toBeLessThanOrEqual(200);
   });
 });

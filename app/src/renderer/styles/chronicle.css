@@ -941,6 +941,12 @@
   stroke-width: 1px;
 }
 
+.chronicle-fill-label-bg--outside {
+  fill: color-mix(in srgb, var(--bg) 86%, transparent);
+  stroke: color-mix(in srgb, var(--text) 18%, transparent);
+  stroke-width: 1px;
+}
+
 .chronicle-tracks-svg .chronicle-fill-label {
   fill: var(--text);
   font-size: 11px;
@@ -958,6 +964,11 @@
 
 .chronicle-tracks-svg .chronicle-fill-file-label--hover {
   fill: var(--text);
+}
+
+.chronicle-tracks-svg .chronicle-fill-label--outside {
+  fill: var(--text);
+  font-weight: 700;
 }
 
 .chronicle-entry-card {

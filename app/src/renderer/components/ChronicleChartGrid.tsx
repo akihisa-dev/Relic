@@ -127,6 +127,7 @@ export function ChronicleChartGrid({
               rows={rows}
               scrollLeft={scrollLeft}
               trackViewportHeight={Math.max(1, chartViewportHeight - axisHeight)}
+              timelineViewportWidth={timelineViewportWidth}
               timelineWidth={timelineWidth}
               unitWidth={unitWidth}
               visibleRange={visibleRange}
