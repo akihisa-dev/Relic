@@ -4,6 +4,7 @@ import {
   copyEditorTextToClipboardChannel,
   getEditorSettingsChannel,
   listFileRecoverySnapshotsChannel,
+  readEditorTextFromClipboardChannel,
   readFileRecoverySnapshotChannel,
   saveEditorSettingsChannel,
   type CopyEditorTextToClipboardInput,
@@ -27,6 +28,7 @@ import { invalidateWorkspaceDerivedData } from "../files/workspaceDerivedDataSes
 import { readAppSettings, updateAppSettings } from "../settings/appSettings";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import {
+  editorClipboardMaxTextLength,
   isCopyEditorTextToClipboardInput,
   isEditorSettingsInput
 } from "./editorHandlerValidators";
@@ -181,6 +183,29 @@ export function registerEditorHandlers(): void {
         return fail(
           "EDITOR_CLIPBOARD_WRITE_FAILED",
           "クリップボードへコピーできませんでした。",
+          ipcErrorDetails(error)
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(
+    readEditorTextFromClipboardChannel,
+    async (): Promise<RelicResult<string>> => {
+      try {
+        const text = clipboard.readText();
+        if (text.length > editorClipboardMaxTextLength) {
+          return fail(
+            "EDITOR_CLIPBOARD_INVALID_INPUT",
+            "貼り付けるテキストが大きすぎます。"
+          );
+        }
+
+        return ok(text);
+      } catch (error) {
+        return fail(
+          "EDITOR_CLIPBOARD_READ_FAILED",
+          "クリップボードを読み取れませんでした。",
           ipcErrorDetails(error)
         );
       }

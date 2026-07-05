@@ -117,6 +117,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     updateChartEntry: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     copyEditorTextToClipboard: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+    readEditorTextFromClipboard: vi.fn().mockResolvedValue({ ok: true, value: "" }),
     writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     ...overrides
   } as typeof window.relic;

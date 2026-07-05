@@ -49,8 +49,8 @@ interface EditorContextMenuProps {
   onAfterMarkdownAction?: () => void;
   onBeforeMarkdownAction: () => EditorView | null;
   onClose: () => void;
-  onCopy: () => void;
-  onCut: () => void;
+  onCopy: () => Promise<void> | void;
+  onCut: () => Promise<void> | void;
   onPaste: () => Promise<void> | void;
   onSelectAll: () => void;
 }
@@ -137,16 +137,16 @@ export function EditorContextMenu({
         <IconMenuButton
           icon={<CopyIcon className="editor-context-menu-icon" size={16} />}
           label={t("editor.copy")}
-          onClick={() => {
-            onCopy();
+          onClick={async () => {
+            await Promise.resolve(onCopy()).catch(() => undefined);
             onClose();
           }}
         />
         <IconMenuButton
           icon={<CutIcon className="editor-context-menu-icon" size={16} />}
           label={t("editor.cut")}
-          onClick={() => {
-            onCut();
+          onClick={async () => {
+            await Promise.resolve(onCut()).catch(() => undefined);
             onClose();
           }}
         />

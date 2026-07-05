@@ -25,6 +25,7 @@ vi.mock("electron", () => ({
 import {
   copyEditorTextToClipboardChannel,
   copyDiagramSvgChannel,
+  readEditorTextFromClipboardChannel,
   readPdfFileChannel,
   saveDiagramSvgChannel,
   savePreviewAsPdfChannel,
@@ -58,6 +59,7 @@ describe("preload output API", () => {
     });
     await api.copyDiagramSvg({ language: "d2", svg: "<svg><path /></svg>" });
     await api.copyEditorTextToClipboard({ text: "selected text" });
+    await api.readEditorTextFromClipboard();
     await api.readPdfFile({ path: "assets/reference.pdf" });
     api.startWorkspaceFileDrag({ paths: ["Note.md"] });
     expect(api.getDroppedFilePath(new File([""], "Note.md"))).toBe("/tmp/Note.md");
@@ -79,6 +81,7 @@ describe("preload output API", () => {
     expect(electronMock.invoke).toHaveBeenCalledWith(copyEditorTextToClipboardChannel, {
       text: "selected text"
     });
+    expect(electronMock.invoke).toHaveBeenCalledWith(readEditorTextFromClipboardChannel);
     expect(electronMock.invoke).toHaveBeenCalledWith(readPdfFileChannel, {
       path: "assets/reference.pdf"
     });
@@ -86,7 +89,6 @@ describe("preload output API", () => {
       paths: ["Note.md"]
     });
     expect(electronMock.getPathForFile).toHaveBeenCalledWith(expect.any(File));
-    expect("readEditorClipboardForPaste" in api).toBe(false);
     expect("readClipboardText" in api).toBe(false);
     expect("writeClipboardText" in api).toBe(false);
   });

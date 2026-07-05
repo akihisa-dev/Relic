@@ -155,6 +155,7 @@ export interface RelicApi {
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
   copyEditorTextToClipboard: (input: CopyEditorTextToClipboardInput) => Promise<RelicResult<void>>;
+  readEditorTextFromClipboard: () => Promise<RelicResult<string>>;
   saveWorkspaceChronicleCalendars: (input: ChronicleCalendarSettings[]) => Promise<RelicResult<ChronicleCalendarSettings[]>>;
   saveWorkspaceFrontmatterCategoryChoices: (input: FrontmatterCategoryChoice[]) => Promise<RelicResult<FrontmatterCategoryChoice[]>>;
   saveWorkspaceCharts: (input: ChartSettings[]) => Promise<RelicResult<WorkspaceChart[]>>;

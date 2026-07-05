@@ -3,7 +3,7 @@ import type { EditorState } from "@codemirror/state";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent, MutableRefObject } from "react";
 
-import { writeEditorClipboardText } from "../editorClipboard";
+import { readEditorClipboardTextForPaste, writeEditorClipboardText } from "../editorClipboard";
 import { setContextSelectionHighlightEffect } from "../editorContextSelectionHighlight";
 import {
   editorContextMenuPosition,
@@ -119,17 +119,17 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     }
   }, [openContextMenu, viewRef]);
 
-  const copySelection = useCallback((): void => {
+  const copySelection = useCallback(async (): Promise<void> => {
     const view = viewRef.current;
     const selection = view?.state.selection.main;
     const selectionText = view && selection && !selection.empty
       ? view.state.sliceDoc(selection.from, selection.to)
       : contextMenu?.selectionText ?? "";
     if (!selectionText) return;
-    void writeEditorClipboardText(selectionText);
+    await writeEditorClipboardText(selectionText);
   }, [contextMenu?.selectionText, viewRef]);
 
-  const cutSelection = useCallback((): void => {
+  const cutSelection = useCallback(async (): Promise<void> => {
     const view = viewRef.current;
     if (!view) return;
     const selection = view.state.selection.main;
@@ -140,15 +140,14 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     const from = !selection.empty ? selection.from : contextMenu?.selectionFrom ?? selection.from;
     const to = !selection.empty ? selection.to : contextMenu?.selectionTo ?? selection.to;
 
-    void writeEditorClipboardText(selectionText).then(() => {
-      if (view.state.sliceDoc(from, to) !== selectionText) return;
+    await writeEditorClipboardText(selectionText);
+    if (view.state.sliceDoc(from, to) !== selectionText) return;
 
-      view.dispatch({
-        changes: { from, insert: "", to },
-        selection: { anchor: from }
-      });
-      view.focus();
-    }).catch(() => undefined);
+    view.dispatch({
+      changes: { from, insert: "", to },
+      selection: { anchor: from }
+    });
+    view.focus();
   }, [contextMenu, viewRef]);
 
   const pasteClipboard = useCallback(async (): Promise<void> => {
@@ -157,18 +156,16 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     const from = contextMenu?.selectionFrom ?? view.state.selection.main.from;
     const to = contextMenu?.selectionTo ?? view.state.selection.main.to;
 
-    if (navigator.clipboard?.readText) {
-      try {
-        const text = await navigator.clipboard.readText();
-        view.dispatch({
-          changes: { from, insert: text, to },
-          selection: { anchor: from + text.length }
-        });
-        view.focus();
-        return;
-      } catch {
-        // Fall through to the browser paste command for environments that deny Clipboard API reads.
-      }
+    try {
+      const text = await readEditorClipboardTextForPaste();
+      view.dispatch({
+        changes: { from, insert: text, to },
+        selection: { anchor: from + text.length }
+      });
+      view.focus();
+      return;
+    } catch {
+      // Fall through to the browser paste command for environments that deny Clipboard API reads.
     }
 
     view.dispatch({ selection: { anchor: from, head: to } });

@@ -48,6 +48,7 @@ export const applySearchAndReplaceChannel = "workspace:applySearchAndReplace";
 export const getEditorSettingsChannel = "editor:getSettings";
 export const saveEditorSettingsChannel = "editor:saveSettings";
 export const copyEditorTextToClipboardChannel = "editor:copyTextToClipboard";
+export const readEditorTextFromClipboardChannel = "editor:readTextFromClipboard";
 export const createNewWorkspaceChannel = "workspace:createNew";
 export const togglePinChannel = "workspace:togglePin";
 export const generateTitleListChannel = "tools:generateTitleList";

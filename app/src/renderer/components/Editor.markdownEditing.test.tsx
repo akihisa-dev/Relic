@@ -26,10 +26,12 @@ describe("Editor markdown editing", () => {
 
   it("本文の右クリックメニューからコピー・ペーストを実行して本文へ反映できる", async () => {
     const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    const readEditorTextFromClipboard = vi.fn().mockResolvedValue({ ok: true, value: "!" });
     const writeText = vi.fn().mockResolvedValue(undefined);
     const execCommand = vi.fn().mockReturnValue(true);
     window.relic = makeRelicApi({
-      copyEditorTextToClipboard
+      copyEditorTextToClipboard,
+      readEditorTextFromClipboard
     });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -66,7 +68,8 @@ describe("Editor markdown editing", () => {
       expect(view.state.doc.toString()).toBe("hello! world");
     });
     expect(execCommand).not.toHaveBeenCalled();
-    expect(navigator.clipboard.readText).toHaveBeenCalled();
+    expect(readEditorTextFromClipboard).toHaveBeenCalled();
+    expect(navigator.clipboard.readText).not.toHaveBeenCalled();
     expect(undo(view)).toBe(true);
     expect(view.state.doc.toString()).toBe("hello world");
   });
@@ -213,7 +216,9 @@ describe("Editor markdown editing", () => {
   it("右クリックメニューのペーストはClipboard APIで読めない場合だけ標準貼り付けへ委ねる", async () => {
     const readText = vi.fn().mockRejectedValue(new Error("clipboard read denied"));
     const execCommand = vi.fn().mockReturnValue(true);
-    window.relic = makeRelicApi();
+    window.relic = makeRelicApi({
+      readEditorTextFromClipboard: undefined
+    });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: {

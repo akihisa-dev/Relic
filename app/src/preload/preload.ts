@@ -4,6 +4,7 @@ import {
   applySearchAndReplaceChannel,
   applyUnlinkedReferenceChannel,
   copyEditorTextToClipboardChannel,
+  readEditorTextFromClipboardChannel,
   createNewWorkspaceChannel,
   copyDiagramSvgChannel,
   type CopyEditorTextToClipboardInput,
@@ -254,6 +255,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(writeMarkdownFileChannel, input) as Promise<RelicResult<void>>,
   copyEditorTextToClipboard: (input: CopyEditorTextToClipboardInput) =>
     ipcRenderer.invoke(copyEditorTextToClipboardChannel, input) as Promise<RelicResult<void>>,
+  readEditorTextFromClipboard: () =>
+    ipcRenderer.invoke(readEditorTextFromClipboardChannel) as Promise<RelicResult<string>>,
   saveWorkspaceChronicleCalendars: (input: ChronicleCalendarSettings[]) =>
     ipcRenderer.invoke(saveWorkspaceChronicleCalendarsChannel, input) as Promise<RelicResult<ChronicleCalendarSettings[]>>,
   saveWorkspaceFrontmatterCategoryChoices: (input: FrontmatterCategoryChoice[]) =>
