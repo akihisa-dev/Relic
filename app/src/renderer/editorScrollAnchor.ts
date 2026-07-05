@@ -16,12 +16,8 @@ export function captureEditorScrollAnchor(view: EditorView): EditorScrollAnchor 
 
 export function restoreEditorScrollAnchor(view: EditorView, anchor: EditorScrollAnchor, scrollLeft: number): void {
   const pos = Math.min(anchor.pos, view.state.doc.length);
+  const top = view.lineBlockAt(pos).top;
 
-  view.requestMeasure({
-    read: (measuredView) => measuredView.lineBlockAt(pos).top,
-    write: (top, measuredView) => {
-      measuredView.scrollDOM.scrollLeft = scrollLeft;
-      measuredView.scrollDOM.scrollTop = Math.max(0, top + anchor.offset);
-    }
-  });
+  view.scrollDOM.scrollLeft = scrollLeft;
+  view.scrollDOM.scrollTop = Math.max(0, top + anchor.offset);
 }

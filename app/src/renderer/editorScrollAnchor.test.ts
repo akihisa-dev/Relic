@@ -20,13 +20,6 @@ describe("editorScrollAnchor", () => {
   it("切替後の同じ文書位置へスクロールを戻す", () => {
     const view = {
       lineBlockAt: vi.fn().mockReturnValue({ top: 480 }),
-      requestMeasure: vi.fn((request: {
-        read: (view: unknown) => number;
-        write: (top: number, view: { scrollDOM: { scrollLeft: number; scrollTop: number } }) => void;
-      }) => {
-        const top = request.read(view);
-        request.write(top, view);
-      }),
       scrollDOM: { scrollLeft: 0, scrollTop: 0 },
       state: { doc: { length: 500 } }
     };
