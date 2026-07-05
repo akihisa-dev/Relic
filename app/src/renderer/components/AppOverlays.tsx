@@ -1,14 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { CSSProperties, Dispatch, ReactElement, SetStateAction } from "react";
 
 import type { AliasIndex } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
+import { writeEditorClipboardText } from "../editorClipboard";
 import type { RailTabFlight, SidebarCreateFlight } from "../hooks/useRailFlights";
 import { useT } from "../i18n";
+import { selectedUiTextForContextMenu, type UiSelectionContextMenuState } from "../uiSelectionContextMenu";
 import type { Command } from "./CommandPalette";
 import { CommandPalette } from "./CommandPalette";
 import { PagePreviewPopover } from "./PagePreviewPopover";
 import { QuickSwitcher } from "./QuickSwitcher";
+import { fixedMenuPosition } from "./railNavigationModel";
 
 export interface ToastMessage {
   text: string;
@@ -59,6 +62,7 @@ export function AppOverlays({
   toastMessage
 }: AppOverlaysProps): ReactElement {
   const t = useT();
+  const [selectionContextMenu, setSelectionContextMenu] = useState<UiSelectionContextMenuState | null>(null);
 
   useEffect(() => {
     if (!linkContextMenu) return;
@@ -75,6 +79,43 @@ export function AppOverlays({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [linkContextMenu, setLinkContextMenu]);
+
+  useEffect(() => {
+    const handleContextMenu = (event: MouseEvent): void => {
+      const text = selectedUiTextForContextMenu(event, window.getSelection());
+      if (!text) {
+        setSelectionContextMenu(null);
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      setLinkContextMenu(null);
+      setSelectionContextMenu({
+        text,
+        ...fixedMenuPosition(event.clientX, event.clientY, 48)
+      });
+    };
+    const close = (): void => setSelectionContextMenu(null);
+    const handlePointerDown = (event: PointerEvent): void => {
+      const target = event.target;
+      if (target instanceof Element && target.closest(".ui-selection-context-menu")) return;
+      close();
+    };
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") close();
+    };
+
+    window.addEventListener("contextmenu", handleContextMenu, true);
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("contextmenu", handleContextMenu, true);
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [setLinkContextMenu]);
 
   return (
     <>
@@ -192,6 +233,28 @@ export function AppOverlays({
             type="button"
           >
             {t("files.revealInFinder")}
+          </button>
+        </div>
+      ) : null}
+
+      {selectionContextMenu ? (
+        <div
+          className="tab-context-menu ui-selection-context-menu"
+          onClick={(event) => event.stopPropagation()}
+          role="menu"
+          style={{ left: selectionContextMenu.x, position: "fixed", top: selectionContextMenu.y, zIndex: 40 }}
+          tabIndex={-1}
+        >
+          <button
+            className="tab-context-menu-item"
+            onClick={() => {
+              void writeEditorClipboardText(selectionContextMenu.text);
+              setSelectionContextMenu(null);
+            }}
+            role="menuitem"
+            type="button"
+          >
+            {t("editor.copy")}
           </button>
         </div>
       ) : null}

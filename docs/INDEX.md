@@ -247,6 +247,7 @@
         - `AppFilesSidebar.tsx`
         - `AppLayout.tsx`
         - `AppMainActions.tsx`
+        - `AppOverlays.test.tsx`
         - `AppOverlays.tsx`
         - `AppRail.tsx`
         - `AppRightPanel.test.tsx`
@@ -541,6 +542,7 @@
       - `toolbarModel.ts`
       - `toolsPanelModel.test.ts`
       - `toolsPanelModel.ts`
+      - `uiSelectionContextMenu.ts`
       - `vite-env.d.ts`
       - `workspacePaths.test.ts`
       - `workspacePaths.ts`
