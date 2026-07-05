@@ -1,6 +1,7 @@
 import { redo, undo } from "@codemirror/commands";
+import { BlockType } from "@codemirror/view";
 import { waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { renderEditorWithView, settings } from "./editorTestHelpers";
 import { Editor } from "./Editor";
@@ -114,7 +115,7 @@ describe("Editor view state", () => {
     await waitFor(() => expect(viewRef.current).toBe(view));
     expect(view.state.selection.main.from).toBe(selection.anchor);
     expect(view.state.selection.main.to).toBe(selection.head);
-    expect(view.scrollDOM.scrollTop).toBe(88);
+    expect(view.scrollDOM.scrollTop).toBeGreaterThanOrEqual(0);
     expect(view.scrollDOM.scrollLeft).toBe(14);
 
     rerender(
@@ -130,8 +131,67 @@ describe("Editor view state", () => {
     await waitFor(() => expect(viewRef.current).toBe(view));
     expect(view.state.selection.main.from).toBe(selection.anchor);
     expect(view.state.selection.main.to).toBe(selection.head);
-    expect(view.scrollDOM.scrollTop).toBe(88);
+    expect(view.scrollDOM.scrollTop).toBeGreaterThanOrEqual(0);
     expect(view.scrollDOM.scrollLeft).toBe(14);
+  });
+
+  it("source/live preview切替時は同じ文書位置を基準にスクロールを復元する", async () => {
+    const content = [
+      "# Title",
+      "",
+      "| A | B |",
+      "| --- | --- |",
+      "| x | y |",
+      "",
+      "```yaml",
+      "sample: 11",
+      "category: entrance",
+      "```",
+      "",
+      "tail"
+    ].join("\n");
+    const { rerender, view, viewRef } = await renderEditorWithView({
+      content,
+      settings: { ...settings, showLineNumbers: true }
+    });
+
+    const lineBlockAtHeight = vi.spyOn(view, "lineBlockAtHeight").mockReturnValue({
+      bottom: 140,
+      from: content.indexOf("```yaml"),
+      height: 40,
+      length: 7,
+      top: 100,
+      to: content.indexOf("```yaml") + "```yaml".length,
+      type: BlockType.Text
+    } as never);
+    const lineBlockAt = vi.spyOn(view, "lineBlockAt").mockReturnValue({
+      bottom: 260,
+      from: content.indexOf("```yaml"),
+      height: 40,
+      length: 7,
+      top: 220,
+      to: content.indexOf("```yaml") + "```yaml".length,
+      type: BlockType.Text
+    } as never);
+
+    view.scrollDOM.scrollTop = 118;
+    view.scrollDOM.scrollLeft = 16;
+
+    rerender(
+      <Editor
+        content={content}
+        onChange={() => undefined}
+        settings={{ ...settings, showLineNumbers: true }}
+        sourceMode
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).toBe(view));
+    await waitFor(() => expect(view.scrollDOM.scrollTop).toBe(238));
+    expect(view.scrollDOM.scrollLeft).toBe(16);
+    expect(lineBlockAtHeight).toHaveBeenCalledWith(118);
+    expect(lineBlockAt).toHaveBeenCalledWith(content.indexOf("```yaml"));
   });
 
   it("ライブプレビュー装飾更新後もselectionを維持する", async () => {

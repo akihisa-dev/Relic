@@ -7,6 +7,7 @@ import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import { buildEditorReconfigureEffects, buildExtensions, destroyEditorView } from "../editorExtensions";
 import { setEditorEditable } from "../editorEditable";
 import { droppedImageSourcePaths, importDroppedImagesAsMarkdown } from "../editorImageDrop";
+import { captureEditorScrollAnchor, restoreEditorScrollAnchor } from "../editorScrollAnchor";
 import {
   frontmatterDialogRequestEvent,
   type FrontmatterDialogRequest
@@ -67,6 +68,7 @@ export function Editor({
   const onOpenWikiLinkRef = useRef(onOpenWikiLink);
   const allFilePathsRef = useRef(allFilePaths);
   const frontmatterCandidatesRef = useRef(frontmatterCandidates);
+  const sourceModeRef = useRef(sourceMode);
   const userDefinedFieldsRef = useRef(userDefinedFields);
   const {
     closeContextMenu,
@@ -253,6 +255,8 @@ export function Editor({
 
     const currentScrollLeft = view.scrollDOM.scrollLeft;
     const currentScrollTop = view.scrollDOM.scrollTop;
+    const sourceModeChanged = sourceModeRef.current !== sourceMode;
+    const scrollAnchor = sourceModeChanged ? captureEditorScrollAnchor(view) : null;
     const hadFocus = view.hasFocus;
 
     view.dispatch({
@@ -273,8 +277,13 @@ export function Editor({
         workspacePath
       })
     });
-    view.scrollDOM.scrollLeft = currentScrollLeft;
-    view.scrollDOM.scrollTop = currentScrollTop;
+    sourceModeRef.current = sourceMode;
+    if (scrollAnchor) {
+      restoreEditorScrollAnchor(view, scrollAnchor, currentScrollLeft);
+    } else {
+      view.scrollDOM.scrollLeft = currentScrollLeft;
+      view.scrollDOM.scrollTop = currentScrollTop;
+    }
     if (hadFocus) view.focus();
     if (viewRef) viewRef.current = view;
   }, [allFilePaths, frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef, openContextMenu, workspacePath]);
