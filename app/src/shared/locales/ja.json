@@ -17,7 +17,7 @@
   "common.none": "-",
   "common.running": "処理中…",
   "chronicle.empty": "相対配置年表に表示できるファイルはまだありません。",
-  "chronicle.bubbleCanvasLabel": "chronicle相対配置ファイルバブル",
+  "chronicle.bubbleViewLabel": "chronicle相対配置ビュー",
   "chronicle.categoryUnset": "category未設定",
   "empty.noHeadings": "見出しがありません。",
   "empty.noLinks": "このノートから出ているリンクはありません。",

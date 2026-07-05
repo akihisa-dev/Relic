@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ChartEntry } from "../shared/ipc";
-import { buildChronicleBubbleLayout, hitTestChronicleBubble } from "./chronicleBubbleLayout";
+import { buildChronicleBubbleLayout } from "./chronicleBubbleLayout";
 
 describe("chronicleBubbleLayout", () => {
   it("期間が長いファイルバブルほど横幅を広くし、極端な期間でも上限に収める", () => {
@@ -28,12 +28,13 @@ describe("chronicleBubbleLayout", () => {
     expect(Math.abs(a.y - c.y)).toBeLessThanOrEqual(Math.abs(a.y - b.y));
   });
 
-  it("Canvas座標からクリック対象のファイルバブルを取得できる", () => {
+  it("クリック対象に使うファイルパスと位置をファイルバブルへ保持する", () => {
     const layout = buildChronicleBubbleLayout([entry("target.md", 0, 1, 1)]);
     const target = layout.shapes[0];
 
-    expect(hitTestChronicleBubble(layout.shapes, target.x + 4, target.y + 4)?.entry.path).toBe("target.md");
-    expect(hitTestChronicleBubble(layout.shapes, target.x - 1, target.y - 1)).toBeNull();
+    expect(target.entry.path).toBe("target.md");
+    expect(target.x).toBeGreaterThanOrEqual(0);
+    expect(target.y).toBeGreaterThanOrEqual(0);
   });
 });
 

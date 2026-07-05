@@ -17,7 +17,7 @@
   "common.none": "-",
   "common.running": "Working...",
   "chronicle.empty": "No files can be shown in the relative timeline yet.",
-  "chronicle.bubbleCanvasLabel": "chronicle relative file bubbles",
+  "chronicle.bubbleViewLabel": "chronicle relative layout",
   "chronicle.categoryUnset": "No category",
   "empty.noHeadings": "No headings.",
   "empty.noLinks": "This note has no outgoing links.",

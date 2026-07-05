@@ -349,6 +349,14 @@ describe("App charts", () => {
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
     const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        content: "---\nchronicle:\n  - [メイン暦, [[1186, null], [1334, null]]]\n---\n# 鎌倉時代",
+        name: "鎌倉時代",
+        path: "history/kamakura.md"
+      }
+    });
     const getWorkspaceCharts = vi.fn().mockResolvedValue({
       ok: true,
       value: [{
@@ -364,14 +372,7 @@ describe("App charts", () => {
       getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceCharts,
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
-        ok: true,
-        value: {
-          content: "---\nchronicle:\n  - [メイン暦, [[1186, null], [1334, null]]]\n---\n# 鎌倉時代",
-          name: "鎌倉時代",
-          path: "history/kamakura.md"
-        }
-      }),
+      readMarkdownFile,
       updateChartEntry
     });
 
@@ -390,7 +391,9 @@ describe("App charts", () => {
       kind: "chart"
     });
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
-    expect(await screen.findByLabelText("chronicle相対配置ファイルバブル")).toBeInTheDocument();
+    expect(await screen.findByLabelText("chronicle相対配置ビュー")).toBeInTheDocument();
+    const bubble = await screen.findByRole("button", { name: "鎌倉時代" });
+    expect(bubble).toHaveClass("chronicle-bubble-item");
     expect(screen.queryByRole("tablist", { name: "年表ビュー切り替え" })).not.toBeInTheDocument();
     expect(renderResult.container.querySelector(".chronicle-sidebar")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-name-column")).toBeNull();
@@ -413,6 +416,9 @@ describe("App charts", () => {
     expect(renderResult.container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-cell")).toHaveLength(0);
     expect(renderResult.container.querySelectorAll(".chronicle-guide-row-line")).toHaveLength(0);
     expect(updateChartEntry).not.toHaveBeenCalled();
+
+    fireEvent.click(bubble);
+    await waitFor(() => expect(readMarkdownFile).toHaveBeenCalledWith({ path: "history/kamakura.md" }));
   });
 
 });

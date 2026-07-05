@@ -79,26 +79,6 @@ export function buildChronicleBubbleLayout(
   return { height, shapes, width };
 }
 
-export function hitTestChronicleBubble(
-  shapes: ChronicleBubbleShape[],
-  x: number,
-  y: number
-): ChronicleBubbleShape | null {
-  for (let i = shapes.length - 1; i >= 0; i -= 1) {
-    const shape = shapes[i];
-    if (
-      x >= shape.x &&
-      x <= shape.x + shape.width &&
-      y >= shape.y &&
-      y <= shape.y + shape.height
-    ) {
-      return shape;
-    }
-  }
-
-  return null;
-}
-
 export function durationValue(entry: ChartEntry): number {
   return Math.max(1, entry.endValue - entry.startValue + 1);
 }
