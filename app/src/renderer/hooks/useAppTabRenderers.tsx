@@ -53,7 +53,6 @@ export function useAppTabRenderers({
   handleSaveCategoryChoices,
   handleSaveSettings,
   handleSaveUserDefinedFields,
-  handleUpdateChartEntry,
   userDefinedFields,
   workspaceState
 }: UseAppTabRenderersInput): {
@@ -69,12 +68,10 @@ export function useAppTabRenderers({
       <ChartView
         chart={chartId === "charts" ? null : charts.find((chart) => chart.id === chartId) ?? null}
         charts={chartId === "charts" ? charts : undefined}
-        chronicleCalendars={chronicleCalendars}
         onOpenFile={handleOpenFile}
-        onUpdateEntry={handleUpdateChartEntry}
       />
     );
-  }, [charts, chronicleCalendars, handleOpenFile, handleOpenTagSearch, handleUpdateChartEntry]);
+  }, [charts, handleOpenFile, handleOpenTagSearch]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {
