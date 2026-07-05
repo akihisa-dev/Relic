@@ -295,6 +295,7 @@
         - `FrontmatterFieldList.tsx`
         - `FrontmatterFixedFields.tsx`
         - `FrontmatterPanel.tsx`
+        - `GraphView.test.tsx`
         - `GraphView.tsx`
         - `LayoutResizeBoundary.test.tsx`
         - `LayoutResizeBoundary.tsx`

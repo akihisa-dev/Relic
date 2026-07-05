@@ -134,19 +134,19 @@ describe("App charts", () => {
     expect(screen.getByRole("button", { name: "グラフ設定を閉じる" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "グラフ設定をリセット" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "グラフのタイムラプスを再生" })).toBeInTheDocument();
-    const filtersHeader = screen.getByRole("button", { name: "Filters" });
+    const filtersHeader = screen.getByRole("button", { name: "フィルタ" });
     expect(filtersHeader).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(filtersHeader);
     expect(filtersHeader).toHaveAttribute("aria-expanded", "true");
     const filterInput = screen.getByRole("searchbox", { name: "ノードをフィルタ" });
     fireEvent.change(filterInput, { target: { value: "tag:project" } });
-    expect(screen.getByText("1 nodes")).toBeInTheDocument();
+    expect(screen.getByText("1件のノード")).toBeInTheDocument();
     fireEvent.change(filterInput, { target: { value: "" } });
-    expect(screen.getByText("2 nodes")).toBeInTheDocument();
-    const groupsHeader = screen.getByRole("button", { name: "Groups" });
+    expect(screen.getByText("2件のノード")).toBeInTheDocument();
+    const groupsHeader = screen.getByRole("button", { name: "グループ" });
     fireEvent.click(groupsHeader);
-    fireEvent.click(screen.getByRole("button", { name: "New group" }));
-    fireEvent.click(screen.getByRole("button", { name: "New group" }));
+    fireEvent.click(screen.getByRole("button", { name: "新規グループ" }));
+    fireEvent.click(screen.getByRole("button", { name: "新規グループ" }));
 
     const groupQueries = screen.getAllByLabelText("グループ検索") as HTMLInputElement[];
     fireEvent.change(groupQueries[0]!, { target: { value: "first" } });

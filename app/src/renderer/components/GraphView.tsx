@@ -3,6 +3,8 @@ import type React from "react";
 import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactElement } from "react";
 
 import type { WorkspaceGraph, WorkspaceGraphLink, WorkspaceGraphNode } from "../../shared/ipc";
+import { useT } from "../i18n";
+import type { Translator } from "../i18nModel";
 
 interface GraphViewProps {
   onOpenFile: (path: string) => void;
@@ -119,6 +121,7 @@ function initialGraphViewTransform(): GraphViewTransform {
 }
 
 export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): ReactElement {
+  const t = useT();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<number | null>(null);
   const initialNodes = useMemo(() => new Map<string, SimNode>(), []);
@@ -161,7 +164,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     loading: boolean;
   }>(() => window.relic
     ? { error: null, graph: null, loading: true }
-    : { error: "グラフを読み込めませんでした。", graph: null, loading: false });
+    : { error: t("graph.loadFailed"), graph: null, loading: false });
   const [options, setOptions] = useState(loadGraphOptions);
   const [colorGroups, setColorGroups] = useState<GraphColorGroup[]>(loadGraphColorGroups);
   const [draggingColorGroupId, setDraggingColorGroupId] = useState<string | null>(null);
@@ -194,13 +197,13 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       setGraphState({ error: result.error.message, graph: null, loading: false });
     }).catch(() => {
       if (!active) return;
-      setGraphState({ error: "グラフを読み込めませんでした。", graph: null, loading: false });
+      setGraphState({ error: t("graph.loadFailed"), graph: null, loading: false });
     });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [t]);
 
   const filteredGraph = useMemo(() => {
     const graph = graphState.graph ?? { links: [], nodes: [] };
@@ -576,7 +579,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   return (
     <div className="graph-view-shell">
       <canvas
-        aria-label="グラフビュー"
+        aria-label={t("graph.canvasLabel")}
         className="graph-view-canvas"
         onContextMenu={handleContextMenu}
         onKeyDown={handleKeyDown}
@@ -592,7 +595,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
         ref={canvasRef}
         tabIndex={0}
       />
-      {graphState.loading ? <div className="graph-view-status">読み込んでいます...</div> : null}
+      {graphState.loading ? <div className="graph-view-status">{t("graph.loading")}</div> : null}
       {graphState.error ? (
         <div className="graph-view-status graph-view-status--error">{graphState.error}</div>
       ) : null}
@@ -624,6 +627,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
         options={options}
         draggingColorGroupId={draggingColorGroupId}
         sectionCollapsed={sectionCollapsed}
+        t={t}
       />
     </div>
   );
@@ -646,7 +650,8 @@ function GraphControls({
   onSectionCollapsedChange,
   onToggleControls,
   options,
-  sectionCollapsed
+  sectionCollapsed,
+  t
 }: {
   colorGroups: GraphColorGroup[];
   controlsOpen: boolean;
@@ -665,32 +670,33 @@ function GraphControls({
   onToggleControls: () => void;
   options: GraphOptions;
   sectionCollapsed: GraphSectionCollapsedState;
+  t: Translator;
 }): ReactElement {
   return (
     <aside className={`graph-controls${controlsOpen ? "" : " is-close"}`} data-ignore-swipe="true">
       <button
-        aria-label={controlsOpen ? "グラフ設定を閉じる" : "グラフ設定を開く"}
+        aria-label={controlsOpen ? t("graph.closeSettings") : t("graph.openSettings")}
         className={`graph-controls-button ${controlsOpen ? "mod-close" : "mod-open"}`}
         onClick={onToggleControls}
-        title={controlsOpen ? "閉じる" : "開く"}
+        title={controlsOpen ? t("graph.close") : t("graph.open")}
         type="button"
       >
         {controlsOpen ? <GraphControlIcon name="close" /> : <GraphControlIcon name="settings" />}
       </button>
       <button
-        aria-label="グラフのタイムラプスを再生"
+        aria-label={t("graph.playTimelapseAria")}
         className="graph-controls-button mod-animate"
         onClick={onAnimate}
-        title="タイムラプスを再生"
+        title={t("graph.playTimelapse")}
         type="button"
       >
         <GraphControlIcon name="wand" />
       </button>
       <button
-        aria-label="グラフ設定をリセット"
+        aria-label={t("graph.resetSettings")}
         className="graph-controls-button mod-reset"
         onClick={onReset}
-        title="初期設定に戻す"
+        title={t("graph.resetToDefaults")}
         type="button"
       >
         <GraphControlIcon name="reset" />
@@ -699,34 +705,34 @@ function GraphControls({
         collapsed={sectionCollapsed.filter}
         id="filter"
         onCollapsedChange={onSectionCollapsedChange}
-        title="Filters"
+        title={t("graph.filters")}
       >
         <input
-          aria-label="ノードをフィルタ"
+          aria-label={t("graph.filterNodes")}
           className="graph-search-input"
           onChange={(event) => onOptionsChange({ search: event.target.value })}
-          placeholder="Search nodes..."
+          placeholder={t("graph.searchNodesPlaceholder")}
           type="search"
           value={options.search}
         />
-        <GraphToggle label="Tags" onChange={(showTags) => onOptionsChange({ showTags })} value={options.showTags} />
+        <GraphToggle label={t("graph.tags")} onChange={(showTags) => onOptionsChange({ showTags })} value={options.showTags} />
         <GraphToggle
-          label="Attachments"
+          label={t("graph.attachments")}
           onChange={(showAttachments) => onOptionsChange({ showAttachments })}
           value={options.showAttachments}
         />
         <GraphToggle
-          label="Existing files only"
+          label={t("graph.existingFilesOnly")}
           onChange={(hideUnresolved) => onOptionsChange({ hideUnresolved })}
           value={options.hideUnresolved}
         />
-        <GraphToggle label="Orphans" onChange={(showOrphans) => onOptionsChange({ showOrphans })} value={options.showOrphans} />
+        <GraphToggle label={t("graph.orphans")} onChange={(showOrphans) => onOptionsChange({ showOrphans })} value={options.showOrphans} />
       </GraphControlSection>
       <GraphControlSection
         collapsed={sectionCollapsed.groups}
         id="groups"
         onCollapsedChange={onSectionCollapsedChange}
-        title="Groups"
+        title={t("graph.groups")}
       >
         <div className="graph-color-groups-container">
           {colorGroups.map((group) => (
@@ -739,7 +745,7 @@ function GraphControls({
               }}
             >
               <button
-                aria-label="グループを並べ替え"
+                aria-label={t("graph.reorderGroup")}
                 className="graph-color-group-drag"
                 draggable
                 onDragEnd={onColorGroupDragEnd}
@@ -748,56 +754,56 @@ function GraphControls({
                   event.dataTransfer.setData("text/plain", group.id);
                   onColorGroupDragStart(group.id);
                 }}
-                title="ドラッグして並べ替え"
+                title={t("graph.dragToReorder")}
                 type="button"
               >
                 <GraphControlIcon name="grip" />
               </button>
               <input
-                aria-label="グループ検索"
+                aria-label={t("graph.groupQuery")}
                 onChange={(event) => onColorGroupChange(group.id, { query: event.target.value })}
-                placeholder="Enter query..."
+                placeholder={t("graph.groupQueryPlaceholder")}
                 type="text"
                 value={group.query}
               />
               <input
-                aria-label="グループ色"
+                aria-label={t("graph.groupColor")}
                 onChange={(event: ChangeEvent<HTMLInputElement>) => onColorGroupChange(group.id, { color: event.target.value })}
                 type="color"
                 value={group.color}
               />
-              <button aria-label="グループを削除" onClick={() => onColorGroupDelete(group.id)} type="button">
+              <button aria-label={t("graph.deleteGroup")} onClick={() => onColorGroupDelete(group.id)} type="button">
                 <GraphControlIcon name="trash" />
               </button>
             </div>
           ))}
         </div>
-        <button className="graph-cta-button" onClick={onAddColorGroup} type="button">New group</button>
+        <button className="graph-cta-button" onClick={onAddColorGroup} type="button">{t("graph.newGroup")}</button>
       </GraphControlSection>
       <GraphControlSection
         collapsed={sectionCollapsed.display}
         id="display"
         onCollapsedChange={onSectionCollapsedChange}
-        title="Display"
+        title={t("graph.display")}
       >
-        <GraphToggle label="Arrows" onChange={(showArrows) => onOptionsChange({ showArrows })} value={options.showArrows} />
-        <GraphSlider label="Text fade threshold" max={3} min={-3} onChange={(textFadeMultiplier) => onOptionsChange({ textFadeMultiplier })} step={0.1} value={options.textFadeMultiplier} />
-        <GraphSlider label="Node size" max={5} min={0.1} onChange={(nodeSizeMultiplier) => onOptionsChange({ nodeSizeMultiplier })} step={0.1} value={options.nodeSizeMultiplier} />
-        <GraphSlider label="Link thickness" max={5} min={0.1} onChange={(lineSizeMultiplier) => onOptionsChange({ lineSizeMultiplier })} step={0.1} value={options.lineSizeMultiplier} />
-        <button className="graph-cta-button" onClick={onAnimate} type="button">Animate timelapse</button>
+        <GraphToggle label={t("graph.arrows")} onChange={(showArrows) => onOptionsChange({ showArrows })} value={options.showArrows} />
+        <GraphSlider label={t("graph.textFadeThreshold")} max={3} min={-3} onChange={(textFadeMultiplier) => onOptionsChange({ textFadeMultiplier })} step={0.1} value={options.textFadeMultiplier} />
+        <GraphSlider label={t("graph.nodeSize")} max={5} min={0.1} onChange={(nodeSizeMultiplier) => onOptionsChange({ nodeSizeMultiplier })} step={0.1} value={options.nodeSizeMultiplier} />
+        <GraphSlider label={t("graph.linkThickness")} max={5} min={0.1} onChange={(lineSizeMultiplier) => onOptionsChange({ lineSizeMultiplier })} step={0.1} value={options.lineSizeMultiplier} />
+        <button className="graph-cta-button" onClick={onAnimate} type="button">{t("graph.animateTimelapse")}</button>
       </GraphControlSection>
       <GraphControlSection
         collapsed={sectionCollapsed.forces}
         id="forces"
         onCollapsedChange={onSectionCollapsedChange}
-        title="Forces"
+        title={t("graph.forces")}
       >
-        <GraphSlider label="Center force" max={1} min={0} onChange={(centerStrength) => onOptionsChange({ centerStrength })} step={0.01} value={options.centerStrength} />
-        <GraphSlider label="Repel force" max={20} min={0} onChange={(repelStrength) => onOptionsChange({ repelStrength })} step={0.1} value={options.repelStrength} />
-        <GraphSlider label="Link force" max={1} min={0} onChange={(linkStrength) => onOptionsChange({ linkStrength })} step={0.01} value={options.linkStrength} />
-        <GraphSlider label="Link distance" max={500} min={30} onChange={(linkDistance) => onOptionsChange({ linkDistance })} step={1} value={options.linkDistance} />
+        <GraphSlider label={t("graph.centerForce")} max={1} min={0} onChange={(centerStrength) => onOptionsChange({ centerStrength })} step={0.01} value={options.centerStrength} />
+        <GraphSlider label={t("graph.repelForce")} max={20} min={0} onChange={(repelStrength) => onOptionsChange({ repelStrength })} step={0.1} value={options.repelStrength} />
+        <GraphSlider label={t("graph.linkForce")} max={1} min={0} onChange={(linkStrength) => onOptionsChange({ linkStrength })} step={0.01} value={options.linkStrength} />
+        <GraphSlider label={t("graph.linkDistance")} max={500} min={30} onChange={(linkDistance) => onOptionsChange({ linkDistance })} step={1} value={options.linkDistance} />
       </GraphControlSection>
-      <div className="graph-control-count">{nodeCount} nodes</div>
+      <div className="graph-control-count">{t("graph.nodeCount", { count: nodeCount })}</div>
     </aside>
   );
 }
