@@ -160,6 +160,12 @@ describe("Editor live preview", () => {
     expect(container.textContent).toContain("コード");
     expect(container.textContent).toContain("yaml");
     expect(container.textContent).not.toContain("$$");
+    expect(Array.from(container.querySelectorAll(".cm-gutterElement")).map((line) => line.textContent)).toEqual(expect.arrayContaining([
+      "10",
+      "11",
+      "12",
+      "13"
+    ]));
   });
 
   it("カーソルが数式と脚注に触れたときはMarkdownソースを表示する", async () => {

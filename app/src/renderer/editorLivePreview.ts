@@ -167,10 +167,7 @@ function buildCodeBlockPreviewDecorations(
     ranges.push({
       from: openingLine.from,
       to: openingLine.to,
-      deco: Decoration.replace({
-        block: true,
-        widget: new CodeBlockHeaderWidget(block.language, blockSource(doc, block), openingLine.from, t)
-      })
+      deco: Decoration.replace({ widget: new CodeBlockHeaderWidget(block.language, blockSource(doc, block), openingLine.from, t) })
     });
 
     for (let lineNumber = openingLine.number + 1; lineNumber < closingLine.number; lineNumber += 1) {
@@ -192,10 +189,7 @@ function buildCodeBlockPreviewDecorations(
     ranges.push({
       from: closingLine.from,
       to: closingLine.to,
-      deco: Decoration.replace({
-        block: true,
-        widget: new CodeBlockFooterWidget(closingLine.from)
-      })
+      deco: Decoration.replace({ widget: new CodeBlockFooterWidget(closingLine.from) })
     });
   }
 
