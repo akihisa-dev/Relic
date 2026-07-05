@@ -130,6 +130,38 @@ describe("Editor live preview", () => {
     expect(widgetClasses).toContain("cm-live-footnote-def");
   });
 
+  it("ライブプレビューでブロック数式の後続本文を欠落させない", async () => {
+    const content = [
+      "## 装飾",
+      "本文",
+      "",
+      "$a^2 + b^2 = c^2$",
+      "",
+      "$$",
+      "score = \\frac{6}{3}",
+      "$$",
+      "",
+      "## コード",
+      "```yaml",
+      "sample: 11",
+      "```"
+    ].join("\n");
+    const { container } = render(
+      <Editor
+        content={content}
+        onChange={vi.fn()}
+        settings={{ ...settings, showLineNumbers: true }}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-math-block .katex")).not.toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).not.toBeNull());
+
+    expect(container.textContent).toContain("コード");
+    expect(container.textContent).toContain("yaml");
+    expect(container.textContent).not.toContain("$$");
+  });
+
   it("カーソルが数式と脚注に触れたときはMarkdownソースを表示する", async () => {
     const mathClasses = await collectInlineLivePreviewWidgetClasses("$x^2$", 2);
     const footnoteClasses = await collectInlineLivePreviewWidgetClasses("[^note]", 2);

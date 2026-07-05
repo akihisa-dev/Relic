@@ -563,7 +563,13 @@ export function buildLivePreviewDecorations(
             ? singleLineMatch[1].trim()
             : doc.sliceString(doc.line(lineNumber + 1).from, doc.line(closingLineNumber - 1).to).trim();
           addSourceReveal(line.from, blockTo);
-          addWidget(line.from, blockTo, new MathWidget(source, true));
+          if (!shouldRevealSource(line.from, blockTo)) {
+            addWidget(line.from, line.to, new MathWidget(source, true));
+            for (let hiddenLineNumber = lineNumber + 1; hiddenLineNumber <= closingLineNumber; hiddenLineNumber += 1) {
+              const hiddenLine = doc.line(hiddenLineNumber);
+              addReplace(hiddenLine.from, hiddenLine.to);
+            }
+          }
           lineNumber = closingLineNumber + 1;
           continue;
         }
