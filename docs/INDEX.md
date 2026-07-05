@@ -255,9 +255,12 @@
         - `AppTitleBar.test.tsx`
         - `AppTitleBar.tsx`
         - `ChartPanel.tsx`
-        - `ChronicleBubbleCanvas.tsx`
+        - `ChronicleChartGrid.tsx`
+        - `chronicleChartParts.tsx`
         - `ChronicleSettingsPanel.test.tsx`
         - `ChronicleSettingsPanel.tsx`
+        - `ChronicleTracks.test.tsx`
+        - `ChronicleTracks.tsx`
         - `CommandPalette.tsx`
         - `Editor.accessibility.test.tsx`
         - `Editor.frontmatter.test.tsx`
@@ -348,6 +351,10 @@
         - `useAutoSave.test.ts`
         - `useAutoSave.ts`
         - `useBacklinksState.ts`
+        - `useChronicleChartModel.ts`
+        - `useChronicleChartViewport.ts`
+        - `useChronicleEntryDrag.test.ts`
+        - `useChronicleEntryDrag.ts`
         - `useCommandPaletteCommands.ts`
         - `useEditorAutoSave.test.ts`
         - `useEditorAutoSave.ts`
@@ -368,6 +375,7 @@
         - `useSidebarFileInteractions.ts`
         - `useSidebarResize.ts`
         - `useSplitCloseMotion.ts`
+        - `useStableTimelineBounds.ts`
         - `useToolbarActions.ts`
         - `useToolsPanelState.ts`
         - `useUnlinkedReferencesState.ts`
@@ -435,8 +443,15 @@
       - `chartData.ts`
       - `chartFrontmatter.ts`
       - `chartNormalize.ts`
-      - `chronicleBubbleLayout.test.ts`
-      - `chronicleBubbleLayout.ts`
+      - `chronicleTimeline.test.ts`
+      - `chronicleTimeline.ts`
+      - `chronicleTimelineAxis.test.ts`
+      - `chronicleTimelineAxis.ts`
+      - `chronicleTimelineConstants.ts`
+      - `chronicleTimelineDrag.ts`
+      - `chronicleTimelineNavigation.ts`
+      - `chronicleTimelineRows.test.ts`
+      - `chronicleTimelineRows.ts`
       - `colorSwatches.ts`
       - `concurrency.ts`
       - `d2Renderer.ts`
