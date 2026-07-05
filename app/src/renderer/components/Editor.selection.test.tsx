@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { contextSelectionHighlightField } from "../editorContextSelectionHighlight";
@@ -48,38 +48,6 @@ describe("Editor selection commands", () => {
     expect(viewRef.current!.state.field(contextSelectionHighlightField).size).toBe(0);
     expect(onChange).toHaveBeenLastCalledWith("**hello** world");
     expect(viewRef.current!.state.doc.toString()).toBe("**hello** world");
-  });
-
-  it("ドラッグ開始後に移動した選択文字を右クリックメニューからコピーできる", async () => {
-    const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
-    window.relic = makeRelicApi({
-      copyEditorTextToClipboard
-    });
-
-    const { view } = await renderEditorWithView({
-      content: "hello world",
-      settings: { ...settings, language: "ja" }
-    });
-    const contentElement = view.dom.querySelector(".cm-content")!;
-
-    view.dispatch({ selection: { anchor: 0, head: 5 } });
-    fireEvent.dragStart(contentElement);
-    view.dispatch({
-      changes: [
-        { from: 0, insert: "", to: 5 },
-        { from: 11, insert: "hello" }
-      ],
-      selection: { anchor: 1 }
-    });
-    const posAtCoordsSpy = vi.spyOn(view, "posAtCoords").mockReturnValue(8);
-
-    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Copy" }));
-
-    await waitFor(() => {
-      expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "hello" });
-    });
-    posAtCoordsSpy.mockRestore();
   });
 
   it("本文の右クリック中に選択が動いても最初の選択範囲へMarkdown操作を適用する", async () => {

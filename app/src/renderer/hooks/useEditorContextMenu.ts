@@ -14,33 +14,9 @@ interface UseEditorContextMenuInput {
   viewRef: MutableRefObject<EditorView | null>;
 }
 
-interface RememberedSelection {
-  from: number;
-  text: string;
-  to: number;
-}
-
-function rangeForTextAtPosition(state: EditorState, text: string, position: number): RememberedSelection | null {
-  if (!text) return null;
-
-  const docText = state.doc.toString();
-  let index = docText.indexOf(text);
-
-  while (index !== -1) {
-    const to = index + text.length;
-    if (position >= index && position <= to) {
-      return { from: index, text, to };
-    }
-    index = docText.indexOf(text, index + 1);
-  }
-
-  return null;
-}
-
 export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
   const openedGestureRef = useRef<{ openedAt: number; x: number; y: number } | null>(null);
-  const draggedSelectionRef = useRef<RememberedSelection | null>(null);
-  const lastSelectionRef = useRef<RememberedSelection | null>(null);
+  const lastSelectionRef = useRef<{ from: number; text: string; to: number } | null>(null);
   const [contextMenu, setContextMenu] = useState<EditorContextMenuState | null>(null);
 
   const closeContextMenu = useCallback((): void => {
@@ -54,17 +30,6 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     if (selection.empty) return;
 
     lastSelectionRef.current = {
-      from: selection.from,
-      text: state.sliceDoc(selection.from, selection.to),
-      to: selection.to
-    };
-  }, []);
-
-  const rememberDraggedSelection = useCallback((state: EditorState): void => {
-    const selection = state.selection.main;
-    if (selection.empty) return;
-
-    draggedSelectionRef.current = {
       from: selection.from,
       text: state.sliceDoc(selection.from, selection.to),
       to: selection.to
@@ -108,14 +73,6 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
         selectionFrom = lastSelection.from;
         selectionTo = lastSelection.to;
         selectionText = lastSelection.text;
-      }
-      if (!selectionText && clickedPosition !== null && draggedSelectionRef.current) {
-        const draggedRange = rangeForTextAtPosition(view.state, draggedSelectionRef.current.text, clickedPosition);
-        if (draggedRange) {
-          selectionFrom = draggedRange.from;
-          selectionTo = draggedRange.to;
-          selectionText = draggedRange.text;
-        }
       }
     } else {
       selectionText = view.state.sliceDoc(selection.from, selection.to);
@@ -251,7 +208,6 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     contextMenu,
     copySelection,
     cutSelection,
-    rememberDraggedSelection,
     rememberSelection,
     openContextMenu,
     openReactContextMenu,

@@ -77,7 +77,6 @@ export function Editor({
     openReactContextMenu,
     pasteClipboard,
     prepareContextSelection,
-    rememberDraggedSelection,
     rememberSelection,
     selectAll
   } = useEditorContextMenu({ viewRef: internalViewRef });
@@ -168,14 +167,8 @@ export function Editor({
       event.stopPropagation();
       void importDroppedImagesAsMarkdown(view, event, filePath, sourcePaths);
     };
-    const handleDragStart = (): void => {
-      const view = internalViewRef.current;
-      if (!view) return;
-      rememberDraggedSelection(view.state);
-    };
 
     container.addEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
-    container.addEventListener("dragstart", handleDragStart, true);
     container.addEventListener("dragover", handleDragOver, true);
     container.addEventListener("drop", handleDrop, true);
     container.addEventListener("pointerdown", restoreEditableForEditorClick, true);
@@ -188,7 +181,6 @@ export function Editor({
 
     return () => {
       container.removeEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
-      container.removeEventListener("dragstart", handleDragStart, true);
       container.removeEventListener("dragover", handleDragOver, true);
       container.removeEventListener("drop", handleDrop, true);
       container.removeEventListener("pointerdown", restoreEditableForEditorClick, true);
@@ -199,7 +191,7 @@ export function Editor({
       container.removeEventListener("auxclick", handleRightButtonDown, true);
       container.removeEventListener("contextmenu", handleContextMenu, true);
     };
-  }, [filePath, openContextMenu, openFrontmatterDialog, rememberDraggedSelection]);
+  }, [filePath, openContextMenu, openFrontmatterDialog]);
 
   useEffect(() => {
     const container = containerRef.current;
