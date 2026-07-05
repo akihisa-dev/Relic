@@ -24,7 +24,7 @@ describe("Editor markdown editing", () => {
     expect(view.state.doc.toString()).toBe("hello world");
   });
 
-  it("本文の右クリックメニューからコピー・カット・ペーストを実行できる", async () => {
+  it("本文の右クリックメニューからコピー・ペーストを実行して本文へ反映できる", async () => {
     const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     const writeText = vi.fn().mockResolvedValue(undefined);
     const execCommand = vi.fn().mockReturnValue(true);
@@ -63,8 +63,12 @@ describe("Editor markdown editing", () => {
     fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Paste" }));
     await waitFor(() => {
-      expect(execCommand).toHaveBeenCalledWith("paste");
+      expect(view.state.doc.toString()).toBe("hello! world");
     });
+    expect(execCommand).not.toHaveBeenCalled();
+    expect(navigator.clipboard.readText).toHaveBeenCalled();
+    expect(undo(view)).toBe(true);
+    expect(view.state.doc.toString()).toBe("hello world");
   });
 
   it("カット時にクリップボードへ保存できない場合は本文を消さない", async () => {
@@ -206,8 +210,8 @@ describe("Editor markdown editing", () => {
     expect(view.state.doc.toString()).toBe(`前\n${pastedText}後`);
   });
 
-  it("右クリックメニューのペーストはrendererでクリップボード文字列を読まない", async () => {
-    const readText = vi.fn();
+  it("右クリックメニューのペーストはClipboard APIで読めない場合だけ標準貼り付けへ委ねる", async () => {
+    const readText = vi.fn().mockRejectedValue(new Error("clipboard read denied"));
     const execCommand = vi.fn().mockReturnValue(true);
     window.relic = makeRelicApi();
     Object.defineProperty(navigator, "clipboard", {
@@ -235,7 +239,7 @@ describe("Editor markdown editing", () => {
     await waitFor(() => {
       expect(execCommand).toHaveBeenCalledWith("paste");
     });
-    expect(readText).not.toHaveBeenCalled();
+    expect(readText).toHaveBeenCalled();
     expect(view.state.doc.toString()).toBe("前後");
   });
 

@@ -151,11 +151,25 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     }).catch(() => undefined);
   }, [contextMenu, viewRef]);
 
-  const pasteClipboard = useCallback((): void => {
+  const pasteClipboard = useCallback(async (): Promise<void> => {
     const view = viewRef.current;
     if (!view) return;
     const from = contextMenu?.selectionFrom ?? view.state.selection.main.from;
     const to = contextMenu?.selectionTo ?? view.state.selection.main.to;
+
+    if (navigator.clipboard?.readText) {
+      try {
+        const text = await navigator.clipboard.readText();
+        view.dispatch({
+          changes: { from, insert: text, to },
+          selection: { anchor: from + text.length }
+        });
+        view.focus();
+        return;
+      } catch {
+        // Fall through to the browser paste command for environments that deny Clipboard API reads.
+      }
+    }
 
     view.dispatch({ selection: { anchor: from, head: to } });
     view.focus();
