@@ -53,7 +53,7 @@ describe("Editor live preview", () => {
     const ranges = await collectLivePreviewReplacementRanges(content, content.length);
 
     expect(ranges).toEqual([
-      { from: 0, to: 8, widget: "InlineFormatWidget" }
+      { block: false, from: 0, to: 8, widget: "InlineFormatWidget" }
     ]);
   });
 
@@ -168,6 +168,23 @@ describe("Editor live preview", () => {
       "12",
       "13"
     ]));
+  });
+
+  it("ライブプレビューでブロック数式を閉じ行まで1つのblock Widgetに置換する", async () => {
+    const content = [
+      "$$",
+      "score = \\frac{6}{3}",
+      "$$",
+      "",
+      "## コード"
+    ].join("\n");
+    const ranges = await collectLivePreviewReplacementRanges(content, 0, false);
+    const mathRanges = ranges.filter((range) => range.widget === "MathWidget");
+    const blockTo = content.indexOf("\n\n## コード");
+
+    expect(mathRanges).toEqual([
+      { block: true, from: 0, to: blockTo, widget: "MathWidget" }
+    ]);
   });
 
   it("ライブプレビューの数式は本文行の折り返し指定を継承しない", () => {

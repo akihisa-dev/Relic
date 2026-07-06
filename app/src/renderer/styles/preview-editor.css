@@ -765,7 +765,7 @@
 .cm-live-math-block {
   box-sizing: border-box;
   display: block;
-  margin: 0.65em 0;
+  margin: 0;
   overflow-x: auto;
   padding: 0.45em 0.75em;
   text-align: center;

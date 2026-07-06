@@ -8,7 +8,7 @@ import { createElement, createRef, type ComponentProps } from "react";
 import { expect, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
-import { buildLivePreviewDecorations } from "../editorLivePreview";
+import { __buildLivePreviewBlockDecorationsForTests, buildLivePreviewDecorations } from "../editorLivePreview";
 import { buildTableDecorations } from "../editorTables";
 import { createTranslator } from "../i18nModel";
 import { Editor } from "./Editor";
@@ -87,6 +87,15 @@ export async function collectInlineLivePreviewWidgets(content: string, cursor: n
   await ensureSyntaxTree(state, state.doc.length, 100);
 
   const widgets: string[] = [];
+  __buildLivePreviewBlockDecorationsForTests(
+    state,
+    createTranslator("ja"),
+    [{ from: 0, to: state.doc.length }],
+    hasFocus
+  ).between(0, state.doc.length, (_from, _to, value) => {
+    const widget = (value as unknown as { spec?: { widget?: { constructor?: { name?: string } } } }).spec?.widget;
+    if (widget?.constructor?.name) widgets.push(widget.constructor.name);
+  });
   buildLivePreviewDecorations({
     hasFocus,
     state,
@@ -108,6 +117,15 @@ export async function collectInlineLivePreviewWidgetClasses(content: string, cur
   await ensureSyntaxTree(state, state.doc.length, 100);
 
   const classes: string[] = [];
+  __buildLivePreviewBlockDecorationsForTests(
+    state,
+    createTranslator("ja"),
+    [{ from: 0, to: state.doc.length }],
+    hasFocus
+  ).between(0, state.doc.length, (_from, _to, value) => {
+    const widget = (value as unknown as { spec?: { widget?: { className?: string } } }).spec?.widget;
+    if (widget?.className) classes.push(widget.className);
+  });
   buildLivePreviewDecorations({
     hasFocus,
     state,
@@ -121,6 +139,7 @@ export async function collectInlineLivePreviewWidgetClasses(content: string, cur
 }
 
 export async function collectLivePreviewReplacementRanges(content: string, cursor: number, hasFocus = true): Promise<Array<{
+  block: boolean;
   from: number;
   to: number;
   widget: string | null;
@@ -132,16 +151,45 @@ export async function collectLivePreviewReplacementRanges(content: string, curso
   });
   await ensureSyntaxTree(state, state.doc.length, 100);
 
-  const ranges: Array<{ from: number; to: number; widget: string | null }> = [];
+  const ranges: Array<{ block: boolean; from: number; to: number; widget: string | null }> = [];
+  __buildLivePreviewBlockDecorationsForTests(
+    state,
+    createTranslator("ja"),
+    [{ from: 0, to: state.doc.length }],
+    hasFocus
+  ).between(0, state.doc.length, (from, to, value) => {
+    const spec = (value as unknown as {
+      spec?: {
+        block?: boolean;
+        class?: string;
+        widget?: { constructor?: { name?: string } };
+      };
+    }).spec;
+    if (spec?.class) return;
+
+    ranges.push({
+      block: Boolean(spec?.block),
+      from,
+      to,
+      widget: spec?.widget?.constructor?.name ?? null
+    });
+  });
   buildLivePreviewDecorations({
     hasFocus,
     state,
     visibleRanges: [{ from: 0, to: state.doc.length }]
   } as unknown as EditorView).between(0, state.doc.length, (from, to, value) => {
-    const spec = (value as unknown as { spec?: { class?: string; widget?: { constructor?: { name?: string } } } }).spec;
+    const spec = (value as unknown as {
+      spec?: {
+        block?: boolean;
+        class?: string;
+        widget?: { constructor?: { name?: string } };
+      };
+    }).spec;
     if (spec?.class) return;
 
     ranges.push({
+      block: Boolean(spec?.block),
       from,
       to,
       widget: spec?.widget?.constructor?.name ?? null

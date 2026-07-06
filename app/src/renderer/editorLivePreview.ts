@@ -42,8 +42,13 @@ interface FencedCodeBlockRange extends SyntaxBlockRange {
   language: string | null;
 }
 
+interface BlockMathRange extends SyntaxBlockRange {
+  source: string;
+}
+
 interface CodeBlockPreviewState {
   decorations: DecorationSet;
+  editorHasFocus: boolean;
   revealedRanges: SyntaxBlockRange[];
   visibleRanges: SyntaxBlockRange[];
 }
@@ -54,6 +59,7 @@ export interface __CodeBlockDecorationTestHooks {
 }
 
 const codeBlockPreviewVisibleRangesEffect = StateEffect.define<SyntaxBlockRange[]>();
+const codeBlockPreviewFocusEffect = StateEffect.define<boolean>();
 
 /** @internal Test-only access to drive visible range rebuilds without a browser viewport. */
 export const __codeBlockPreviewVisibleRangesEffectForTests = codeBlockPreviewVisibleRangesEffect;
@@ -98,6 +104,11 @@ function tableRangesInVisibleRanges(state: EditorState, visibleRanges: readonly 
   return syntaxBlocksInVisibleRanges(state, visibleRanges, "Table");
 }
 
+function currentSyntaxBlock<T extends SyntaxBlockRange>(blocks: T[], index: number, lineFrom: number, lineTo: number): T | null {
+  const block = blocks[index] ?? null;
+  return block !== null && lineFrom >= block.from && lineTo <= block.to ? block : null;
+}
+
 function lineNumberAtBlockEnd(doc: Text, to: number): number {
   return doc.lineAt(Math.max(0, to - 1)).number;
 }
@@ -133,21 +144,87 @@ function visibleRangeKey(ranges: readonly SyntaxBlockRange[]): string {
   return ranges.map((range) => `${range.from}:${range.to}`).join("|");
 }
 
+function findClosingMathLine(doc: Text, startLineNumber: number): number | null {
+  for (let currentLine = startLineNumber + 1; currentLine <= doc.lines; currentLine += 1) {
+    if (doc.line(currentLine).text.trim() === "$$") return currentLine;
+  }
+
+  return null;
+}
+
+function blockMathSource(doc: Text, openingLineNumber: number, closingLineNumber: number, singleLineSource?: string): string {
+  if (singleLineSource !== undefined) return singleLineSource.trim();
+  if (closingLineNumber <= openingLineNumber + 1) return "";
+
+  return doc.sliceString(doc.line(openingLineNumber + 1).from, doc.line(closingLineNumber - 1).to).trim();
+}
+
+function blockMathRangesInVisibleRanges(state: EditorState, visibleRanges: readonly SyntaxBlockRange[]): BlockMathRange[] {
+  const ranges: BlockMathRange[] = [];
+  const doc = state.doc;
+  const codeBlocks = fencedCodeBlocksInVisibleRanges(state, visibleRanges);
+  let codeBlockIndex = 0;
+
+  for (const { from: visFrom, to: visTo } of visibleRanges) {
+    let lineNumber = doc.lineAt(visFrom).number;
+
+    while (lineNumber <= doc.lineAt(visTo).number) {
+      const line = doc.line(lineNumber);
+      while (codeBlockIndex < codeBlocks.length && codeBlocks[codeBlockIndex].to <= line.from) codeBlockIndex += 1;
+      const codeBlock = currentSyntaxBlock(codeBlocks, codeBlockIndex, line.from, line.to);
+
+      if (codeBlock) {
+        lineNumber = lineNumberAtBlockEnd(doc, codeBlock.to) + 1;
+        continue;
+      }
+
+      const singleLineMatch = /^\s*\$\$(.*?)\$\$\s*$/.exec(line.text);
+      const startsBlockMath = singleLineMatch !== null || /^\s*\$\$/.test(line.text);
+      if (!startsBlockMath) {
+        lineNumber += 1;
+        continue;
+      }
+
+      const closingLineNumber = singleLineMatch ? lineNumber : findClosingMathLine(doc, lineNumber);
+      if (!closingLineNumber) {
+        lineNumber += 1;
+        continue;
+      }
+
+      const closingLine = doc.line(closingLineNumber);
+      ranges.push({
+        from: line.from,
+        source: blockMathSource(doc, lineNumber, closingLineNumber, singleLineMatch?.[1]),
+        to: closingLine.to
+      });
+      lineNumber = closingLineNumber + 1;
+    }
+  }
+
+  return sortedUniqueRanges(ranges);
+}
+
 function buildCodeBlockPreviewDecorations(
   state: EditorState,
   t: Translator,
-  visibleRanges: SyntaxBlockRange[]
+  visibleRanges: SyntaxBlockRange[],
+  editorHasFocus = false
 ): CodeBlockPreviewState {
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const revealedRanges: SyntaxBlockRange[] = [];
   const doc = state.doc;
   const codeBlocks = fencedCodeBlocksInVisibleRanges(state, visibleRanges);
+  const mathBlocks = blockMathRangesInVisibleRanges(state, visibleRanges);
 
   function selectionTouches(from: number, to: number): boolean {
     return state.selection.ranges.some((range) => {
       if (range.empty) return range.from >= from && range.from <= to;
       return range.from <= to && range.to >= from;
     });
+  }
+
+  function focusedSelectionTouches(from: number, to: number): boolean {
+    return editorHasFocus && selectionTouches(from, to);
   }
 
   function selectionTouchesFence(block: SyntaxBlockRange): boolean {
@@ -193,11 +270,35 @@ function buildCodeBlockPreviewDecorations(
     });
   }
 
+  for (const block of mathBlocks) {
+    if (focusedSelectionTouches(block.from, block.to)) {
+      revealedRanges.push({ from: block.from, to: block.to });
+      continue;
+    }
+
+    ranges.push({
+      from: block.from,
+      to: block.to,
+      deco: Decoration.replace({ block: true, widget: new MathWidget(block.source, true) })
+    });
+  }
+
   return {
+    editorHasFocus,
     decorations: Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true),
     revealedRanges,
     visibleRanges
   };
+}
+
+/** @internal Test-only access to inspect StateField-backed block live preview decorations. */
+export function __buildLivePreviewBlockDecorationsForTests(
+  state: EditorState,
+  t: Translator = createTranslator("system"),
+  visibleRanges: SyntaxBlockRange[] = state.doc.length === 0 ? [] : [{ from: 0, to: state.doc.length }],
+  editorHasFocus = true
+): DecorationSet {
+  return buildCodeBlockPreviewDecorations(state, t, visibleRanges, editorHasFocus).decorations;
 }
 
 function changedTextIncludes(changes: ChangeSet, doc: Text, pattern: RegExp): boolean {
@@ -245,6 +346,14 @@ function visibleRangeEffect(transaction: Transaction): SyntaxBlockRange[] | null
   return null;
 }
 
+function focusEffect(transaction: Transaction): boolean | null {
+  for (const effect of transaction.effects) {
+    if (effect.is(codeBlockPreviewFocusEffect)) return effect.value;
+  }
+
+  return null;
+}
+
 function selectionTouchesRanges(state: EditorState, ranges: readonly SyntaxBlockRange[]): boolean {
   return state.selection.ranges.some((selection) => ranges.some((range) => {
     if (selection.empty) return selection.from >= range.from && selection.from <= range.to;
@@ -284,25 +393,32 @@ export function createLivePreviewCodeBlockField(
       const nextVisibleRanges = visibleRangeEffect(transaction);
       if (nextVisibleRanges) {
         testHooks?.onRebuild?.("visibleRanges");
-        return buildCodeBlockPreviewDecorations(transaction.state, t, nextVisibleRanges);
+        return buildCodeBlockPreviewDecorations(transaction.state, t, nextVisibleRanges, preview.editorHasFocus);
+      }
+
+      const nextEditorHasFocus = focusEffect(transaction);
+      if (nextEditorHasFocus !== null && nextEditorHasFocus !== preview.editorHasFocus) {
+        testHooks?.onRebuild?.("selection");
+        return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges, nextEditorHasFocus);
       }
 
       if (transaction.docChanged) {
         if (canMapCodeBlockDecorations(transaction, preview.decorations)) {
           return {
             decorations: preview.decorations.map(transaction.changes),
+            editorHasFocus: preview.editorHasFocus,
             revealedRanges: mapSyntaxBlockRanges(transaction.changes, preview.revealedRanges),
             visibleRanges: mapSyntaxBlockRanges(transaction.changes, preview.visibleRanges)
           };
         }
 
         testHooks?.onRebuild?.("docChanged");
-        return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges);
+        return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges, preview.editorHasFocus);
       }
 
       if (transaction.selection && shouldRebuildCodeBlockDecorationsForSelection(transaction.state, preview)) {
         testHooks?.onRebuild?.("selection");
-        return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges);
+        return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges, preview.editorHasFocus);
       }
 
       return preview;
@@ -336,7 +452,11 @@ export function createLivePreviewCodeBlockField(
     }
   );
 
-  return [field, viewportSync];
+  return [
+    field,
+    viewportSync,
+    EditorView.focusChangeEffect.of((_state, focusing) => codeBlockPreviewFocusEffect.of(focusing))
+  ];
 }
 
 export function buildLivePreviewDecorations(
@@ -353,10 +473,12 @@ export function buildLivePreviewDecorations(
 
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const codeBlocks = fencedCodeBlocksInVisibleRanges(state, view.visibleRanges);
+  const mathBlocks = blockMathRangesInVisibleRanges(state, view.visibleRanges);
   const tableBlocks = tableRangesInVisibleRanges(state, view.visibleRanges);
   const frontmatterLineRange = findFrontmatterLineRange(doc);
   const sourceRevealRanges: SourceRevealRange[] = [];
   let codeBlockIndex = 0;
+  let mathBlockIndex = 0;
   let tableBlockIndex = 0;
 
   function selectionTouches(from: number, to: number): boolean {
@@ -460,11 +582,6 @@ export function buildLivePreviewDecorations(
     for (const match of collectInlineMatches(lineFrom, text)) addInlineFormat(lineFrom, match, text);
   }
 
-  function currentSyntaxBlock<T extends SyntaxBlockRange>(blocks: T[], index: number, lineFrom: number, lineTo: number): T | null {
-    const block = blocks[index] ?? null;
-    return block !== null && lineFrom >= block.from && lineTo <= block.to ? block : null;
-  }
-
   function addDiagramBlock(block: FencedCodeBlockRange): void {
     const diagramLanguage = diagramLanguageFor(block.language);
     if (!diagramLanguage) return;
@@ -496,14 +613,6 @@ export function buildLivePreviewDecorations(
     }
   }
 
-  function findClosingMathLine(startLineNumber: number): number | null {
-    for (let currentLine = startLineNumber + 1; currentLine <= doc.lines; currentLine += 1) {
-      if (doc.line(currentLine).text.trim() === "$$") return currentLine;
-    }
-
-    return null;
-  }
-
   for (const { from: visFrom, to: visTo } of view.visibleRanges) {
     let lineNumber = doc.lineAt(visFrom).number;
 
@@ -511,8 +620,10 @@ export function buildLivePreviewDecorations(
       const line = doc.line(lineNumber);
       const text = line.text;
       while (codeBlockIndex < codeBlocks.length && codeBlocks[codeBlockIndex].to <= line.from) codeBlockIndex += 1;
+      while (mathBlockIndex < mathBlocks.length && mathBlocks[mathBlockIndex].to < line.from) mathBlockIndex += 1;
       while (tableBlockIndex < tableBlocks.length && tableBlocks[tableBlockIndex].to < line.from) tableBlockIndex += 1;
       const codeBlock = currentSyntaxBlock(codeBlocks, codeBlockIndex, line.from, line.to);
+      const mathBlock = currentSyntaxBlock(mathBlocks, mathBlockIndex, line.from, line.to);
       const tableBlock = currentSyntaxBlock(tableBlocks, tableBlockIndex, line.from, line.to);
 
       if (
@@ -528,6 +639,11 @@ export function buildLivePreviewDecorations(
       if (codeBlock) {
         addDiagramBlock(codeBlock);
         lineNumber = lineNumberAtBlockEnd(doc, codeBlock.to) + 1;
+        continue;
+      }
+
+      if (mathBlock) {
+        lineNumber = lineNumberAtBlockEnd(doc, mathBlock.to) + 1;
         continue;
       }
 
@@ -548,25 +664,7 @@ export function buildLivePreviewDecorations(
         addSourceReveal(line.from, line.to);
         addWidget(line.from, line.to, new HorizontalRuleWidget());
       } else if (/^\s*\$\$/.test(text)) {
-        const singleLineMatch = /^\s*\$\$(.*?)\$\$\s*$/.exec(text);
-        const closingLineNumber = singleLineMatch ? lineNumber : findClosingMathLine(lineNumber);
-
-        if (closingLineNumber) {
-          const blockTo = doc.line(closingLineNumber).to;
-          const source = singleLineMatch
-            ? singleLineMatch[1].trim()
-            : doc.sliceString(doc.line(lineNumber + 1).from, doc.line(closingLineNumber - 1).to).trim();
-          addSourceReveal(line.from, blockTo);
-          if (!shouldRevealSource(line.from, blockTo)) {
-            addWidget(line.from, line.to, new MathWidget(source, true));
-            for (let hiddenLineNumber = lineNumber + 1; hiddenLineNumber <= closingLineNumber; hiddenLineNumber += 1) {
-              const hiddenLine = doc.line(hiddenLineNumber);
-              addReplace(hiddenLine.from, hiddenLine.to);
-            }
-          }
-          lineNumber = closingLineNumber + 1;
-          continue;
-        }
+        // Closed block math is handled by the StateField-backed block preview.
       } else if (/^\s*>\s?/.test(text)) {
         const match = /^(\s*>\s?)(.*)$/.exec(text);
         if (match) {
