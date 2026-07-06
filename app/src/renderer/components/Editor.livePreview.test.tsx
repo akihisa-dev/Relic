@@ -187,9 +187,24 @@ describe("Editor live preview", () => {
   it("ライブプレビューの数式は本文行の折り返し指定を継承しない", () => {
     const css = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
 
-    expect(css).toMatch(/\.cm-live-math-inline,\s*\.cm-live-math-inline \*,\s*\.cm-live-math-block,\s*\.cm-live-math-block \*\s*\{[^}]*overflow-wrap:\s*normal;/s);
-    expect(css).toMatch(/\.cm-live-math-inline,\s*\.cm-live-math-inline \*,\s*\.cm-live-math-block,\s*\.cm-live-math-block \*\s*\{[^}]*white-space:\s*normal;/s);
-    expect(css).toMatch(/\.cm-live-math-inline,\s*\.cm-live-math-inline \*,\s*\.cm-live-math-block,\s*\.cm-live-math-block \*\s*\{[^}]*word-break:\s*normal;/s);
+    expect(css).toMatch(/\.cm-live-math-inline,\s*\.cm-live-math-block\s*\{[^}]*overflow-wrap:\s*normal;/s);
+    expect(css).toMatch(/\.cm-live-math-inline,\s*\.cm-live-math-block\s*\{[^}]*white-space:\s*normal;/s);
+    expect(css).toMatch(/\.cm-live-math-inline,\s*\.cm-live-math-block\s*\{[^}]*word-break:\s*normal;/s);
+    expect(css).toMatch(/\.cm-live-math-inline \.katex,\s*\.cm-live-math-inline \.katex \*,\s*\.cm-live-math-block \.katex,\s*\.cm-live-math-block \.katex \*\s*\{[^}]*white-space:\s*nowrap;/s);
+  });
+
+  it("ライブプレビューの数式はKaTeXの位置合わせ用styleを保持する", async () => {
+    const { container } = render(
+      <Editor
+        content={"本文 $\\frac{6}{3}$"}
+        onChange={() => undefined}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-math-inline .katex")).not.toBeNull());
+
+    expect(container.querySelector(".cm-live-math-inline [style]")).not.toBeNull();
   });
 
   it("カーソルが数式と脚注に触れたときはMarkdownソースを表示する", async () => {

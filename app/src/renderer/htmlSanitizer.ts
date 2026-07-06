@@ -52,6 +52,23 @@ export function sanitizePreviewHtml(html: string, allowedImageSrcs: ReadonlySet<
   });
 }
 
+export function sanitizeTrustedMathHtml(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ADD_ATTR: [
+      "aria-hidden",
+      "class",
+      "height",
+      "style",
+      "viewBox",
+      "width",
+      "xmlns"
+    ],
+    ALLOWED_URI_REGEXP: allowedSanitizedPreviewUriPattern,
+    FORBID_ATTR: forbiddenEventAttributes,
+    FORBID_TAGS: ["base", "embed", "form", "iframe", "meta", "object", "script", "webview"]
+  });
+}
+
 export function sanitizeSvgHtml(svg: string): string {
   return DOMPurify.sanitize(svg, {
     ALLOWED_URI_REGEXP: allowedPreviewUriPattern,

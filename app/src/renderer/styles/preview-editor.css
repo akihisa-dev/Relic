@@ -773,11 +773,18 @@
 }
 
 .cm-live-math-inline,
-.cm-live-math-inline *,
-.cm-live-math-block,
-.cm-live-math-block * {
+.cm-live-math-block {
   overflow-wrap: normal;
   white-space: normal;
+  word-break: normal;
+}
+
+.cm-live-math-inline .katex,
+.cm-live-math-inline .katex *,
+.cm-live-math-block .katex,
+.cm-live-math-block .katex * {
+  overflow-wrap: normal;
+  white-space: nowrap;
   word-break: normal;
 }
 

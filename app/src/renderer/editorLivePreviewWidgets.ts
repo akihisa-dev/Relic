@@ -2,7 +2,7 @@ import { WidgetType, type EditorView } from "@codemirror/view";
 import katex from "katex";
 
 import { writeEditorClipboardText } from "./editorClipboard";
-import { sanitizePreviewHtml } from "./htmlSanitizer";
+import { sanitizeTrustedMathHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
 
 function stopWidgetButtonEvent(event: Event): void {
@@ -125,7 +125,7 @@ export class ImageWidget extends WidgetType {
 
 function renderMathHtml(source: string, displayMode: boolean): string {
   try {
-    return sanitizePreviewHtml(katex.renderToString(source, { displayMode, throwOnError: false }));
+    return sanitizeTrustedMathHtml(katex.renderToString(source, { displayMode, throwOnError: false }));
   } catch {
     const escaped = source
       .replace(/&/g, "&amp;")
