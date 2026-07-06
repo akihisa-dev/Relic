@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { fireEvent, render, waitFor } from "@testing-library/react";
@@ -166,6 +168,14 @@ describe("Editor live preview", () => {
       "12",
       "13"
     ]));
+  });
+
+  it("ライブプレビューの数式は本文行の折り返し指定を継承しない", () => {
+    const css = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
+
+    expect(css).toMatch(/\.cm-live-math-inline,\s*\.cm-live-math-inline \*,\s*\.cm-live-math-block,\s*\.cm-live-math-block \*\s*\{[^}]*overflow-wrap:\s*normal;/s);
+    expect(css).toMatch(/\.cm-live-math-inline,\s*\.cm-live-math-inline \*,\s*\.cm-live-math-block,\s*\.cm-live-math-block \*\s*\{[^}]*white-space:\s*normal;/s);
+    expect(css).toMatch(/\.cm-live-math-inline,\s*\.cm-live-math-inline \*,\s*\.cm-live-math-block,\s*\.cm-live-math-block \*\s*\{[^}]*word-break:\s*normal;/s);
   });
 
   it("カーソルが数式と脚注に触れたときはMarkdownソースを表示する", async () => {

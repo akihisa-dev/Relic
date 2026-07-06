@@ -772,6 +772,15 @@
   width: 100%;
 }
 
+.cm-live-math-inline,
+.cm-live-math-inline *,
+.cm-live-math-block,
+.cm-live-math-block * {
+  overflow-wrap: normal;
+  white-space: normal;
+  word-break: normal;
+}
+
 .cm-live-footnote-ref {
   color: var(--link);
   font-size: 0.78em;
