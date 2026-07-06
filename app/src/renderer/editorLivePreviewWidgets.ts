@@ -221,8 +221,9 @@ export class HorizontalRuleWidget extends WidgetType {
   }
 }
 
-export class CodeBlockHeaderWidget extends WidgetType {
-  readonly className = "cm-live-code-block-header";
+export class CodeBlockWidget extends WidgetType {
+  readonly className = "cm-live-code-block-panel";
+
   constructor(
     private readonly language: string | null,
     private readonly source: string,
@@ -232,18 +233,21 @@ export class CodeBlockHeaderWidget extends WidgetType {
     super();
   }
 
-  override eq(other: CodeBlockHeaderWidget): boolean {
+  override eq(other: CodeBlockWidget): boolean {
     return this.language === other.language && this.source === other.source;
   }
 
   override toDOM(view: EditorView): HTMLElement {
-    const header = document.createElement("div");
-    header.className = this.className;
-    header.contentEditable = "false";
-    header.addEventListener("click", (event) => {
+    const panel = document.createElement("div");
+    panel.className = this.className;
+    panel.contentEditable = "false";
+    panel.addEventListener("click", (event) => {
       if (event.target instanceof HTMLElement && event.target.closest("button")) return;
       view.dispatch({ selection: { anchor: this.revealPosition }, scrollIntoView: true });
     });
+
+    const header = document.createElement("div");
+    header.className = "cm-live-code-block-header";
 
     const label = document.createElement("span");
     label.className = "cm-live-code-block-label";
@@ -264,33 +268,18 @@ export class CodeBlockHeaderWidget extends WidgetType {
     });
 
     header.append(label, button);
-    return header;
-  }
 
-  override ignoreEvent(event: Event): boolean {
-    return ["click", "mousedown", "pointerdown"].includes(event.type);
-  }
-}
+    const pre = document.createElement("pre");
+    pre.className = "cm-live-code-block-pre";
 
-export class CodeBlockFooterWidget extends WidgetType {
-  readonly className = "cm-live-code-block-footer";
+    const code = document.createElement("code");
+    code.className = "cm-live-code-block-source";
+    code.textContent = this.source;
 
-  constructor(private readonly revealPosition: number) {
-    super();
-  }
+    pre.append(code);
+    panel.append(header, pre);
 
-  override eq(other: CodeBlockFooterWidget): boolean {
-    return this.revealPosition === other.revealPosition;
-  }
-
-  override toDOM(view: EditorView): HTMLElement {
-    const footer = document.createElement("div");
-    footer.className = this.className;
-    footer.contentEditable = "false";
-    footer.addEventListener("click", () => {
-      view.dispatch({ selection: { anchor: this.revealPosition }, scrollIntoView: true });
-    });
-    return footer;
+    return panel;
   }
 
   override ignoreEvent(event: Event): boolean {

@@ -162,12 +162,9 @@ describe("Editor live preview", () => {
     expect(container.textContent).toContain("コード");
     expect(container.textContent).toContain("yaml");
     expect(container.textContent).not.toContain("$$");
-    expect(Array.from(container.querySelectorAll(".cm-gutterElement")).map((line) => line.textContent)).toEqual(expect.arrayContaining([
-      "10",
-      "11",
-      "12",
-      "13"
-    ]));
+    expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull();
+    expect(container.querySelector(".cm-live-code-block-source")?.textContent).toBe("sample: 11");
+    expect(Array.from(container.querySelectorAll(".cm-gutterElement")).map((line) => line.textContent)).toContain("10");
   });
 
   it("ライブプレビューでブロック数式を閉じ行まで1つのblock Widgetに置換する", async () => {
@@ -384,11 +381,12 @@ describe("Editor live preview", () => {
       "const value = 1;",
       "```"
     ].join("\n");
-    const widgets = await collectInlineLivePreviewWidgets(content, 0, false);
+    const contentWithTail = `${content}\n\n本文`;
+    const widgets = await collectInlineLivePreviewWidgets(contentWithTail, contentWithTail.length, false);
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
-        content={`${content}\n\n本文`}
+        content={contentWithTail}
         onChange={vi.fn()}
         settings={settings}
         viewRef={viewRef}
@@ -398,11 +396,13 @@ describe("Editor live preview", () => {
     await waitFor(() => expect(viewRef.current).not.toBeNull());
     viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
     expect(widgets).not.toContain("DiagramBlockWidget");
-    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).not.toBeNull());
-    expect(container.querySelector(".cm-live-code-block-footer")).not.toBeNull();
+    expect(widgets).toContain("CodeBlockWidget");
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull());
+    expect(container.querySelector(".cm-live-code-block-source")?.textContent).toBe("const value = 1;");
+    expect(container.textContent).not.toContain("```");
   });
 
-  it("通常コードブロックのヘッダーから本文だけをコピーできる", async () => {
+  it("通常コードブロックのパネルから本文だけをコピーできる", async () => {
     const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     window.relic = makeRelicApi({
       copyEditorTextToClipboard
@@ -420,7 +420,7 @@ describe("Editor live preview", () => {
 
     await waitFor(() => expect(viewRef.current).not.toBeNull());
     viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
-    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).not.toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull());
     expect(container.querySelector(".cm-live-code-block-label")?.textContent).toBe("ts");
 
     fireEvent.click(container.querySelector(".cm-live-code-block-copy") as HTMLButtonElement);
@@ -460,7 +460,25 @@ describe("Editor live preview", () => {
     await waitFor(() => expect(container.querySelector(".cm-live-code-block-copy")?.textContent).toBe("Copied"));
   });
 
-  it("通常コードブロックは本文を触ってもブロック表示を維持する", async () => {
+  it("通常コードブロックは閉じ行まで1つのblock Widgetに置換する", async () => {
+    const content = [
+      "```yaml",
+      "sample: 11",
+      "category: entrance",
+      "```",
+      "",
+      "本文"
+    ].join("\n");
+    const ranges = await collectLivePreviewReplacementRanges(content, content.length, false);
+    const codeRanges = ranges.filter((range) => range.widget === "CodeBlockWidget");
+    const blockTo = content.indexOf("\n\n本文");
+
+    expect(codeRanges).toEqual([
+      { block: true, from: 0, to: blockTo, widget: "CodeBlockWidget" }
+    ]);
+  });
+
+  it("通常コードブロックは本文位置に選択が移ったらソース表示に戻す", async () => {
     const viewRef = createRef<EditorView | null>();
     const content = ["```", "あああ", "```", "", "本文"].join("\n");
     const { container } = render(
@@ -474,17 +492,16 @@ describe("Editor live preview", () => {
 
     await waitFor(() => expect(viewRef.current).not.toBeNull());
     viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
-    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).not.toBeNull());
-    await waitFor(() => expect(container.querySelector(".cm-live-code-block-line")).not.toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-source")).not.toBeNull());
 
     viewRef.current?.dispatch({ selection: { anchor: content.indexOf("あああ") + 1 } });
 
-    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).not.toBeNull());
-    expect(container.querySelector(".cm-live-code-block-footer")).not.toBeNull();
-    expect(container.textContent).not.toContain("```");
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).toBeNull());
+    expect(container.textContent).toContain("```");
   });
 
-  it("通常コードブロックのヘッダーとフッターを触ったときだけソース表示に戻す", async () => {
+  it("通常コードブロックのパネルを触ったときソース表示に戻す", async () => {
     const viewRef = createRef<EditorView | null>();
     const content = ["```js", "const value = 1;", "```", "", "本文"].join("\n");
     const { container } = render(
@@ -498,25 +515,16 @@ describe("Editor live preview", () => {
 
     await waitFor(() => expect(viewRef.current).not.toBeNull());
     viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
-    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).not.toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull());
 
-    fireEvent.click(container.querySelector(".cm-live-code-block-header") as HTMLElement);
+    fireEvent.click(container.querySelector(".cm-live-code-block-panel") as HTMLElement);
 
-    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).toBeNull());
     expect(viewRef.current?.state.selection.main.head).toBe(0);
     expect(container.textContent).toContain("```js");
-
-    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
-    await waitFor(() => expect(container.querySelector(".cm-live-code-block-footer")).not.toBeNull());
-
-    fireEvent.click(container.querySelector(".cm-live-code-block-footer") as HTMLElement);
-
-    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).toBeNull());
-    expect(viewRef.current?.state.selection.main.head).toBe(content.lastIndexOf("```"));
-    expect(container.textContent).toContain("```");
   });
 
-  it("MermaidとD2の図ブロックには通常コードブロックのヘッダーを出さない", async () => {
+  it("MermaidとD2の図ブロックには通常コードブロックのパネルを出さない", async () => {
     const content = [
       "```mermaid",
       "graph TD; A-->B",

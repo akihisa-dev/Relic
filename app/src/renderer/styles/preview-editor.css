@@ -849,7 +849,6 @@
   border-radius: 6px;
   box-sizing: border-box;
   color: var(--text);
-  display: grid;
   font-family: Menlo, monospace;
   line-height: 1.45;
   margin: 2px 0;
@@ -857,63 +856,41 @@
   width: 100%;
 }
 
-.cm-live-code-block-line {
-  background: color-mix(in srgb, var(--text) 5%, var(--bg));
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  box-sizing: border-box;
-  color: var(--text);
-  font-family: Menlo, monospace;
-  line-height: 1.5;
-  padding: 0 12px;
-}
-
-.cm-live-code-block-header,
-.cm-live-code-block-footer {
+.cm-live-code-block-header {
+  align-items: center;
   background: color-mix(in srgb, var(--text) 8%, var(--bg));
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   box-sizing: border-box;
   color: var(--text-2);
   display: flex;
   font-family: var(--font-sans);
   font-size: 12px;
+  gap: 8px;
+  justify-content: space-between;
   line-height: 1.4;
   min-height: 28px;
+  padding: 3px 6px 3px 10px;
   width: 100%;
 }
 
-.cm-live-code-block-header {
-  align-items: center;
-  border-top: 1px solid var(--border);
-  border-top-left-radius: 6px;
-  border-top-right-radius: 6px;
-  border-bottom: 1px solid var(--border);
-  gap: 8px;
-  justify-content: space-between;
-  margin-top: 2px;
-  padding: 3px 6px 3px 10px;
-}
-
-.cm-live-code-block-body {
+.cm-live-code-block-pre {
   background: transparent;
   color: var(--text);
   font-family: Menlo, monospace;
   font-size: 0.92em;
   line-height: 1.5;
   margin: 0;
-  min-height: 1.5em;
   overflow-x: auto;
+  padding: 8px 12px;
   white-space: pre-wrap;
 }
 
-.cm-live-code-block-footer {
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  border-bottom-left-radius: 6px;
-  border-bottom-right-radius: 6px;
-  margin-bottom: 2px;
-  min-height: 8px;
+.cm-live-code-block-source {
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  white-space: inherit;
 }
 
 .cm-live-code-block-label {

@@ -17,8 +17,7 @@ import { diagramEditRangeField } from "./editorDiagramEditState";
 import { DiagramBlockWidget } from "./editorDiagramLivePreview";
 import {
   CheckboxWidget,
-  CodeBlockFooterWidget,
-  CodeBlockHeaderWidget,
+  CodeBlockWidget,
   FootnoteDefinitionMarkerWidget,
   ImageWidget,
   HorizontalRuleWidget,
@@ -122,16 +121,6 @@ function blockSource(doc: Text, block: SyntaxBlockRange): string {
   return doc.sliceString(doc.line(startLine + 1).from, doc.line(endLine - 1).to);
 }
 
-function blockFenceLines(doc: Text, block: SyntaxBlockRange): {
-  closingLine: ReturnType<Text["lineAt"]>;
-  openingLine: ReturnType<Text["lineAt"]>;
-} {
-  return {
-    openingLine: doc.lineAt(block.from),
-    closingLine: doc.line(lineNumberAtBlockEnd(doc, block.to))
-  };
-}
-
 function initialVisibleRanges(state: EditorState): SyntaxBlockRange[] {
   return state.doc.length === 0 ? [] : [{ from: 0, to: Math.min(state.doc.length, 1) }];
 }
@@ -227,46 +216,17 @@ function buildCodeBlockPreviewDecorations(
     return editorHasFocus && selectionTouches(from, to);
   }
 
-  function selectionTouchesFence(block: SyntaxBlockRange): boolean {
-    const { openingLine, closingLine } = blockFenceLines(doc, block);
-    return selectionTouches(openingLine.from, openingLine.to) || selectionTouches(closingLine.from, closingLine.to);
-  }
-
   for (const block of codeBlocks) {
     if (diagramLanguageFor(block.language)) continue;
-    if (selectionTouchesFence(block)) {
+    if (selectionTouches(block.from, block.to)) {
       revealedRanges.push({ from: block.from, to: block.to });
       continue;
     }
 
-    const { openingLine, closingLine } = blockFenceLines(doc, block);
-
     ranges.push({
-      from: openingLine.from,
-      to: openingLine.to,
-      deco: Decoration.replace({ widget: new CodeBlockHeaderWidget(block.language, blockSource(doc, block), openingLine.from, t) })
-    });
-
-    for (let lineNumber = openingLine.number + 1; lineNumber < closingLine.number; lineNumber += 1) {
-      const line = doc.line(lineNumber);
-      ranges.push({
-        from: line.from,
-        to: line.from,
-        deco: Decoration.line({ class: "cm-live-code-block-line" })
-      });
-      if (line.from < line.to) {
-        ranges.push({
-          from: line.from,
-          to: line.to,
-          deco: Decoration.mark({ class: "cm-live-code-block-body" })
-        });
-      }
-    }
-
-    ranges.push({
-      from: closingLine.from,
-      to: closingLine.to,
-      deco: Decoration.replace({ widget: new CodeBlockFooterWidget(closingLine.from) })
+      from: block.from,
+      to: block.to,
+      deco: Decoration.replace({ block: true, widget: new CodeBlockWidget(block.language, blockSource(doc, block), block.from, t) })
     });
   }
 
