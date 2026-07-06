@@ -15,6 +15,7 @@ Relic 本体は AGPL-3.0-or-later で公開されています。
 | `@codemirror/state` | `6.7.0` | MIT | [link](https://code.haverbeke.berlin/codemirror/state) |
 | `@codemirror/view` | `6.43.4` | MIT | [link](https://code.haverbeke.berlin/codemirror/view) |
 | `@terrastruct/d2` | `0.1.33` | MPL-2.0 | [link](https://github.com/terrastruct/d2) |
+| `d3-force` | `3.0.0` | ISC | [link](https://github.com/d3/d3-force) |
 | `dompurify` | `3.4.11` | (MPL-2.0 OR Apache-2.0) | [link](https://github.com/cure53/DOMPurify) |
 | `highlight.js` | `11.11.1` | BSD-3-Clause | [link](https://github.com/highlightjs/highlight.js) |
 | `js-yaml` | `5.2.1` | MIT | [link](https://github.com/nodeca/js-yaml) |

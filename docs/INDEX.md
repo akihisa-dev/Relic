@@ -332,6 +332,12 @@
         - `ToolsPanelSections.tsx`
         - `ToolsPanelTitleSections.tsx`
         - `ToolStatus.tsx`
+      - `graph/`
+        - `graphLayout.test.ts`
+        - `graphLayout.ts`
+        - `graphSimulationClient.ts`
+        - `graphSimulationWorker.ts`
+        - `graphTypes.ts`
       - `hooks/`
         - `useActiveDocumentContext.test.ts`
         - `useActiveDocumentContext.ts`
@@ -498,6 +504,8 @@
       - `editorLivePreviewModel.test.ts`
       - `editorLivePreviewModel.ts`
       - `editorLivePreviewWidgets.ts`
+      - `editorScrollAnchor.test.ts`
+      - `editorScrollAnchor.ts`
       - `editorTableModel.test.ts`
       - `editorTableModel.ts`
       - `editorTables.ts`

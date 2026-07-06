@@ -3,6 +3,29 @@ import type React from "react";
 import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactElement } from "react";
 
 import type { WorkspaceGraph, WorkspaceGraphLink, WorkspaceGraphNode } from "../../shared/ipc";
+import {
+  applyGraphSimulationPositions,
+  graphNodeBaseRadiusFromWeight,
+  graphNodeWeight,
+  graphSimulationLinks,
+  graphSimulationNodes,
+  resetGraphTimelapsePositions,
+  syncGraphLayout
+} from "../graph/graphLayout";
+import { createGraphSimulationClient, type GraphSimulationClient } from "../graph/graphSimulationClient";
+import {
+  defaultGraphOptions,
+  type GraphColorGroup,
+  type GraphControlSectionId,
+  type GraphKeyboardState,
+  type GraphLinkEndpointNode,
+  type GraphNodePrimaryAction,
+  type GraphOptions,
+  type GraphSectionCollapsedState,
+  type GraphSimLink,
+  type GraphSimNode,
+  type GraphViewTransform
+} from "../graph/graphTypes";
 import { useT } from "../i18n";
 import type { Translator } from "../i18nModel";
 
@@ -10,89 +33,6 @@ interface GraphViewProps {
   onOpenFile: (path: string) => void;
   onOpenTagSearch: (tag: string) => void;
 }
-
-interface GraphOptions {
-  centerStrength: number;
-  hideUnresolved: boolean;
-  lineSizeMultiplier: number;
-  linkDistance: number;
-  linkStrength: number;
-  nodeSizeMultiplier: number;
-  repelStrength: number;
-  search: string;
-  showArrows: boolean;
-  showAttachments: boolean;
-  showOrphans: boolean;
-  showTags: boolean;
-  textFadeMultiplier: number;
-}
-
-interface SimNode extends WorkspaceGraphNode {
-  fx: number | null;
-  fy: number | null;
-  vx: number;
-  vy: number;
-  x: number;
-  y: number;
-}
-
-interface SimLink extends WorkspaceGraphLink {
-  sourceNode: SimNode;
-  targetNode: SimNode;
-}
-
-interface GraphKeyboardState {
-  down: boolean;
-  left: boolean;
-  right: boolean;
-  shift: boolean;
-  up: boolean;
-  zoomIn: boolean;
-  zoomOut: boolean;
-}
-
-interface GraphViewTransform {
-  panX: number;
-  panY: number;
-  scale: number;
-  targetScale: number;
-  zoomCenterX: number;
-  zoomCenterY: number;
-}
-
-type GraphNodePrimaryAction =
-  | { path: string; type: "file" }
-  | { tag: string; type: "tagSearch" };
-
-type GraphLinkEndpointNode = Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount"> & {
-  x: number;
-  y: number;
-};
-
-interface GraphColorGroup {
-  color: string;
-  id: string;
-  query: string;
-}
-
-type GraphControlSectionId = "display" | "filter" | "forces" | "groups";
-type GraphSectionCollapsedState = Record<GraphControlSectionId, boolean>;
-
-const defaultGraphOptions: GraphOptions = {
-  centerStrength: 0.1,
-  hideUnresolved: false,
-  lineSizeMultiplier: 1,
-  linkDistance: 250,
-  linkStrength: 1,
-  nodeSizeMultiplier: 1,
-  repelStrength: 10,
-  search: "",
-  showArrows: false,
-  showAttachments: false,
-  showOrphans: true,
-  showTags: false,
-  textFadeMultiplier: 0
-};
 
 const graphCanvasSizeFallback = { height: 600, width: 900 };
 const graphOptionsStorageKey = "relic.graphView.options.v1";
@@ -124,12 +64,13 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<number | null>(null);
-  const initialNodes = useMemo(() => new Map<string, SimNode>(), []);
-  const initialLinks = useMemo<SimLink[]>(() => [], []);
+  const initialNodes = useMemo(() => new Map<string, GraphSimNode>(), []);
+  const initialLinks = useMemo<GraphSimLink[]>(() => [], []);
   const initialView = useMemo(() => initialGraphViewTransform(), []);
-  const nodesRef = useRef<Map<string, SimNode>>(initialNodes);
-  const linksRef = useRef<SimLink[]>(initialLinks);
+  const nodesRef = useRef<Map<string, GraphSimNode>>(initialNodes);
+  const linksRef = useRef<GraphSimLink[]>(initialLinks);
   const viewRef = useRef<GraphViewTransform>(initialView);
+  const simulationClientRef = useRef<GraphSimulationClient | null>(null);
   const panVelocityRef = useRef({ x: 0, y: 0 });
   const panSampleMsRef = useRef(0);
   const hoverPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -143,7 +84,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     zoomOut: false
   });
   const pointerRef = useRef<{
-    dragNode: SimNode | null;
+    dragNode: GraphSimNode | null;
     lastX: number;
     lastY: number;
     moved: boolean;
@@ -176,6 +117,18 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   openTagSearchRef.current = onOpenTagSearch;
   latestOptionsRef.current = options;
   colorGroupsRef.current = colorGroups;
+
+  useEffect(() => {
+    const client = createGraphSimulationClient((message) => {
+      applyGraphSimulationPositions(nodesRef.current, message);
+    });
+    simulationClientRef.current = client;
+
+    return () => {
+      client.dispose();
+      simulationClientRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -263,8 +216,24 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   }, [sectionCollapsed]);
 
   useEffect(() => {
-    syncSimulation(filteredGraph, nodesRef.current, linksRef);
+    const links = syncGraphLayout(filteredGraph, nodesRef.current);
+    linksRef.current = links;
+    simulationClientRef.current?.sync(
+      graphSimulationNodes(nodesRef.current.values()),
+      graphSimulationLinks(links),
+      latestOptionsRef.current
+    );
   }, [filteredGraph]);
+
+  useEffect(() => {
+    simulationClientRef.current?.updateOptions(options);
+  }, [
+    options.centerStrength,
+    options.linkDistance,
+    options.linkStrength,
+    options.nodeSizeMultiplier,
+    options.repelStrength
+  ]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -290,7 +259,6 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     applyGraphKeyboardNavigation(viewRef.current, keyboardRef.current);
     applyGraphKeyboardZoom(viewRef.current, keyboardRef.current, cssWidth, cssHeight);
     applyGraphZoomTransition(viewRef.current, cssWidth, cssHeight);
-    stepSimulation(nodesRef.current, linksRef.current, latestOptionsRef.current, cssWidth, cssHeight);
     const hoveredNode = hoveredNodeId ? nodesRef.current.get(hoveredNodeId) ?? null : null;
     if (
       !pinnedNodeId &&
@@ -330,7 +298,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     };
   }, [draw]);
 
-  const nodeAtPoint = useCallback((clientX: number, clientY: number): SimNode | null => {
+  const nodeAtPoint = useCallback((clientX: number, clientY: number): GraphSimNode | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
@@ -368,6 +336,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     if (node) {
       node.fx = node.x;
       node.fy = node.y;
+      simulationClientRef.current?.setNodeFixed(node.id, node.x, node.y);
       pointerRef.current = {
         dragNode: node,
         lastX: event.clientX,
@@ -426,6 +395,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       pointer.dragNode.fy = (pointer.dragNode.fy ?? pointer.dragNode.y) + dy / viewRef.current.scale;
       pointer.dragNode.x = pointer.dragNode.fx;
       pointer.dragNode.y = pointer.dragNode.fy;
+      simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, pointer.dragNode.x, pointer.dragNode.y);
       return;
     }
 
@@ -443,6 +413,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     if (pointer.dragNode) {
       pointer.dragNode.fx = null;
       pointer.dragNode.fy = null;
+      simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, null, null, 0.08);
       if (!pointer.moved) {
         const action = graphNodePrimaryAction(pointer.dragNode);
         if (action?.type === "file") openFileRef.current(action.path);
@@ -616,7 +587,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
         onColorGroupMove={(targetGroupId) => setColorGroups((current) =>
           draggingColorGroupId ? moveGraphColorGroup(current, draggingColorGroupId, targetGroupId) : current
         )}
-        onAnimate={() => animateGraph(nodesRef.current, viewRef)}
+        onAnimate={() => animateGraph(nodesRef.current, linksRef.current, viewRef, simulationClientRef.current, latestOptionsRef.current)}
         onOptionsChange={(patch) => setOptions((current) => ({ ...current, ...patch }))}
         onReset={resetView}
         onSectionCollapsedChange={(sectionId, collapsed) => setSectionCollapsed((current) => ({
@@ -948,61 +919,21 @@ function GraphSlider({
   );
 }
 
-function syncSimulation(
-  graph: WorkspaceGraph,
-  nodes: Map<string, SimNode>,
-  linksRef: React.MutableRefObject<SimLink[]>
-): void {
-  const nextIds = new Set(graph.nodes.map((node) => node.id));
-
-  for (const id of nodes.keys()) {
-    if (!nextIds.has(id)) nodes.delete(id);
-  }
-
-  graph.nodes.forEach((node, index) => {
-    if (nodes.has(node.id)) {
-      Object.assign(nodes.get(node.id)!, node);
-      return;
-    }
-
-    const angle = index * 2.399963229728653;
-    const radius = 80 + 9 * Math.sqrt(index);
-    nodes.set(node.id, {
-      ...node,
-      fx: null,
-      fy: null,
-      vx: 0,
-      vy: 0,
-      x: Math.cos(angle) * radius,
-      y: Math.sin(angle) * radius
-    });
-  });
-
-  linksRef.current = graph.links.flatMap((link) => {
-    const sourceNode = nodes.get(link.source);
-    const targetNode = nodes.get(link.target);
-    return sourceNode && targetNode ? [{ ...link, sourceNode, targetNode }] : [];
-  });
-}
-
 function animateGraph(
-  nodes: Map<string, SimNode>,
-  viewRef: React.MutableRefObject<GraphViewTransform>
+  nodes: Map<string, GraphSimNode>,
+  links: GraphSimLink[],
+  viewRef: React.MutableRefObject<GraphViewTransform>,
+  simulationClient: GraphSimulationClient | null,
+  options: GraphOptions
 ): void {
   viewRef.current = initialGraphViewTransform();
-  let index = 0;
-
-  for (const node of nodes.values()) {
-    const angle = index * 2.399963229728653;
-    const radius = 18 + Math.sqrt(index) * 4;
-    node.fx = null;
-    node.fy = null;
-    node.x = Math.cos(angle) * radius;
-    node.y = Math.sin(angle) * radius;
-    node.vx = Math.cos(angle) * 3.2;
-    node.vy = Math.sin(angle) * 3.2;
-    index += 1;
-  }
+  resetGraphTimelapsePositions(nodes.values());
+  simulationClient?.sync(
+    graphSimulationNodes(nodes.values()),
+    graphSimulationLinks(links),
+    options,
+    0.8
+  );
 }
 
 function moveGraphColorGroup(
@@ -1024,78 +955,10 @@ function moveGraphColorGroup(
   return next;
 }
 
-function stepSimulation(
-  nodes: Map<string, SimNode>,
-  links: SimLink[],
-  options: GraphOptions,
-  width: number,
-  height: number
-): void {
-  const nodeList = [...nodes.values()];
-  const centerX = width / 2;
-  const centerY = height / 2;
-
-  for (const node of nodeList) {
-    node.vx += (-node.x) * options.centerStrength * 0.002;
-    node.vy += (-node.y) * options.centerStrength * 0.002;
-  }
-
-  for (const link of links) {
-    const source = link.sourceNode;
-    const target = link.targetNode;
-    const dx = target.x - source.x;
-    const dy = target.y - source.y;
-    const length = Math.max(1, Math.hypot(dx, dy));
-    const strength = (length - options.linkDistance) / length * options.linkStrength * 0.002;
-    const fx = dx * strength;
-    const fy = dy * strength;
-    source.vx += fx;
-    source.vy += fy;
-    target.vx -= fx;
-    target.vy -= fy;
-  }
-
-  for (let i = 0; i < nodeList.length; i += 1) {
-    for (let j = i + 1; j < nodeList.length; j += 1) {
-      const a = nodeList[i];
-      const b = nodeList[j];
-      const dx = b.x - a.x || 0.01;
-      const dy = b.y - a.y || 0.01;
-      const distanceSq = Math.max(64, dx * dx + dy * dy);
-      const repel = Math.pow(options.repelStrength, 3);
-      const force = Math.min(2.4, repel * 0.08 / distanceSq);
-      const length = Math.sqrt(distanceSq);
-      const fx = dx / length * force;
-      const fy = dy / length * force;
-      a.vx -= fx;
-      a.vy -= fy;
-      b.vx += fx;
-      b.vy += fy;
-    }
-  }
-
-  for (const node of nodeList) {
-    if (node.fx !== null && node.fy !== null) {
-      node.x = node.fx;
-      node.y = node.fy;
-      node.vx = 0;
-      node.vy = 0;
-      continue;
-    }
-
-    node.vx *= 0.88;
-    node.vy *= 0.88;
-    node.x += node.vx;
-    node.y += node.vy;
-    node.x = clamp(node.x, -centerX * 4, centerX * 4);
-    node.y = clamp(node.y, -centerY * 4, centerY * 4);
-  }
-}
-
 function drawGraph(
   context: CanvasRenderingContext2D,
-  nodes: SimNode[],
-  links: SimLink[],
+  nodes: GraphSimNode[],
+  links: GraphSimLink[],
   view: { panX: number; panY: number; scale: number },
   options: GraphOptions,
   colorGroups: GraphColorGroup[],
@@ -1209,7 +1072,7 @@ export function graphLinkEndpoints(
   };
 }
 
-function drawArrow(context: CanvasRenderingContext2D, source: SimNode, target: SimNode, options: GraphOptions, scale = 1): void {
+function drawArrow(context: CanvasRenderingContext2D, source: GraphSimNode, target: GraphSimNode, options: GraphOptions, scale = 1): void {
   const angle = Math.atan2(target.y - source.y, target.x - source.x);
   const radius = graphNodeVisualRadius(target, options, scale) + 3 / scale;
   const x = target.x - Math.cos(angle) * radius;
@@ -1226,9 +1089,7 @@ function drawArrow(context: CanvasRenderingContext2D, source: SimNode, target: S
 }
 
 export function graphNodeBaseRadius(node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">, options: GraphOptions): number {
-  const weight = node.backlinkCount + node.linkCount;
-
-  return options.nodeSizeMultiplier * Math.max(8, Math.min(3 * Math.sqrt(weight + 1), 30));
+  return graphNodeBaseRadiusFromWeight(graphNodeWeight(node), options);
 }
 
 export function graphNodeScale(scale: number): number {
@@ -1511,7 +1372,7 @@ export function applyGraphPanInertia(
 }
 
 export function graphHoveredNodeContainsPoint(
-  node: Pick<SimNode, "backlinkCount" | "linkCount" | "type" | "x" | "y">,
+  node: Pick<GraphSimNode, "backlinkCount" | "linkCount" | "type" | "x" | "y">,
   point: { x: number; y: number } | null,
   view: { panX: number; panY: number; scale: number },
   options: GraphOptions,

@@ -20,6 +20,7 @@
 | 数式表示 | KaTeX | Markdown内の数式表示に使用 |
 | Mermaid図表示 | mermaid | `mermaid` コードブロックをSVG表示。遅延読み込みし、生成SVGをサニタイズする |
 | D2図表示 | @terrastruct/d2 | `d2` コードブロックをSVG表示。D2描画は直列キューで実行する |
+| グラフ力学レイアウト | d3-force | グラフビューの物理演算をWeb Worker上で実行 |
 | YAML処理 | js-yaml | フロントマターの読み書きに使用 |
 | クラウド同期フォルダ対応 | ネイティブファイルシステム経由 | iCloud Drive / OneDrive / Dropbox などを、OS上のローカルフォルダとして直接読み書き。各クラウドサービスのAPI連携は持たない |
 | UIフレームワーク | React 19 | レンダラーUIを構築 |
