@@ -42,12 +42,28 @@ const graphSectionCollapsedStorageKey = "relic.graphView.sectionCollapsed.v1";
 const graphMinScale = 1 / 128;
 const graphMaxScale = 8;
 const graphNodeClickMovementThresholdSq = 25;
+const graphHoverReleaseDelayMs = 140;
+const graphHighlightTransitionRate = 0.2;
+const graphHighlightMinimumStrength = 0.01;
+const graphDimmedLinkAlpha = 0.18;
+const graphDimmedNodeAlpha = 0.34;
+const graphDimmedLabelAlpha = 0.32;
 const defaultGraphSectionCollapsed: GraphSectionCollapsedState = {
   display: true,
   filter: true,
   forces: true,
   groups: true
 };
+
+export interface GraphHoverFocusState {
+  id: string | null;
+  releaseAt: number;
+}
+
+export interface GraphHighlightState {
+  id: string | null;
+  strength: number;
+}
 
 function initialGraphViewTransform(): GraphViewTransform {
   return {
@@ -74,6 +90,8 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const panVelocityRef = useRef({ x: 0, y: 0 });
   const panSampleMsRef = useRef(0);
   const hoverPointRef = useRef<{ x: number; y: number } | null>(null);
+  const hoverFocusRef = useRef<GraphHoverFocusState>({ id: null, releaseAt: 0 });
+  const highlightRef = useRef<GraphHighlightState>({ id: null, strength: 0 });
   const keyboardRef = useRef<GraphKeyboardState>({
     down: false,
     left: false,
@@ -110,7 +128,6 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const [colorGroups, setColorGroups] = useState<GraphColorGroup[]>(loadGraphColorGroups);
   const [draggingColorGroupId, setDraggingColorGroupId] = useState<string | null>(null);
   const [sectionCollapsed, setSectionCollapsed] = useState(loadGraphSectionCollapsed);
-  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
 
   openFileRef.current = onOpenFile;
@@ -259,36 +276,34 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     applyGraphKeyboardNavigation(viewRef.current, keyboardRef.current);
     applyGraphKeyboardZoom(viewRef.current, keyboardRef.current, cssWidth, cssHeight);
     applyGraphZoomTransition(viewRef.current, cssWidth, cssHeight);
-    const hoveredNode = hoveredNodeId ? nodesRef.current.get(hoveredNodeId) ?? null : null;
-    if (
-      !pinnedNodeId &&
-      hoveredNode &&
-      !graphHoveredNodeContainsPoint(
-        hoveredNode,
-        hoverPointRef.current,
-        viewRef.current,
-        latestOptionsRef.current,
-        cssWidth,
-        cssHeight
-      )
-    ) {
-      setHoveredNodeId(null);
-    }
+    const nodes = [...nodesRef.current.values()];
+    const hoverFocusId = pointerRef.current ? null : resolveGraphHoverFocusId(
+      nodes,
+      hoverPointRef.current,
+      viewRef.current,
+      latestOptionsRef.current,
+      cssWidth,
+      cssHeight,
+      hoverFocusRef.current,
+      performance.now()
+    );
+    const targetHighlightId = pinnedNodeId && nodesRef.current.has(pinnedNodeId) ? pinnedNodeId : hoverFocusId;
+    const highlight = stepGraphHighlightState(highlightRef.current, targetHighlightId);
     drawGraph(
       context,
-      [...nodesRef.current.values()],
+      nodes,
       linksRef.current,
       viewRef.current,
       latestOptionsRef.current,
       colorGroupsRef.current,
       filteredGraph.tagsByNode,
-      pinnedNodeId ?? hoveredNodeId,
+      highlight,
       cssWidth,
       cssHeight
     );
 
     frameRef.current = requestGraphFrame(draw);
-  }, [filteredGraph.tagsByNode, hoveredNodeId, pinnedNodeId]);
+  }, [filteredGraph.tagsByNode, pinnedNodeId]);
 
   useEffect(() => {
     frameRef.current = requestGraphFrame(draw);
@@ -310,15 +325,14 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       rect.height || graphCanvasSizeFallback.height,
       viewRef.current
     );
-    const nodes = [...nodesRef.current.values()].toReversed();
-
-    for (const node of nodes) {
-      if (distance(point.x, point.y, node.x, node.y) <= graphNodeVisualRadius(node, latestOptionsRef.current, viewRef.current.scale) + 4 / viewRef.current.scale) {
-        return node;
-      }
-    }
-
-    return null;
+    return graphNodeAtCanvasPoint(
+      nodesRef.current.values(),
+      point,
+      viewRef.current,
+      latestOptionsRef.current,
+      rect.width || graphCanvasSizeFallback.width,
+      rect.height || graphCanvasSizeFallback.height
+    );
   }, []);
 
   const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
@@ -373,8 +387,6 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
 
     const pointer = pointerRef.current;
     if (!pointer) {
-      const node = nodeAtPoint(event.clientX, event.clientY);
-      setHoveredNodeId(node?.id ?? null);
       return;
     }
 
@@ -533,6 +545,9 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     viewRef.current = initialGraphViewTransform();
     panVelocityRef.current = { x: 0, y: 0 };
     panSampleMsRef.current = 0;
+    hoverPointRef.current = null;
+    hoverFocusRef.current = { id: null, releaseAt: 0 };
+    highlightRef.current = { id: null, strength: 0 };
     keyboardRef.current = {
       down: false,
       left: false,
@@ -558,7 +573,6 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
         onPointerDown={handlePointerDown}
         onPointerLeave={() => {
           hoverPointRef.current = null;
-          setHoveredNodeId(null);
         }}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -963,7 +977,7 @@ function drawGraph(
   options: GraphOptions,
   colorGroups: GraphColorGroup[],
   tagsByNode: Map<string, string[]>,
-  hoveredNodeId: string | null,
+  highlight: GraphHighlightState,
   width: number,
   height: number
 ): void {
@@ -971,7 +985,8 @@ function drawGraph(
   context.translate(view.panX + width / 2, view.panY + height / 2);
   context.scale(view.scale, view.scale);
 
-  const focused = hoveredNodeId ? nodes.find((node) => node.id === hoveredNodeId) ?? null : null;
+  const highlightStrength = clamp(highlight.strength, 0, 1);
+  const focused = highlight.id && highlightStrength > 0 ? nodes.find((node) => node.id === highlight.id) ?? null : null;
   const neighbors = new Set<string>();
   if (focused) {
     for (const link of links) {
@@ -986,7 +1001,7 @@ function drawGraph(
     if (!endpoints.visible) continue;
 
     const active = !focused || link.source === focused.id || link.target === focused.id;
-    context.globalAlpha = (active ? 0.65 : 0.12) * linkScaleOpacity;
+    context.globalAlpha = graphHighlightAlpha(active, highlightStrength, 0.65, graphDimmedLinkAlpha) * linkScaleOpacity;
     context.strokeStyle = active ? cssVar("--color-border-strong", "#9a9a9a") : cssVar("--color-border", "#dedede");
     context.lineWidth = Math.max(0.4 / view.scale, options.lineSizeMultiplier * Math.sqrt(link.count) / view.scale);
     context.beginPath();
@@ -1003,14 +1018,20 @@ function drawGraph(
   for (const node of nodes) {
     const active = !focused || node.id === focused.id || neighbors.has(node.id);
     const radius = graphNodeVisualRadius(node, options, view.scale);
-    const color = nodeColor(node, colorGroups, tagsByNode.get(node.id) ?? [], node.id === focused?.id);
-    context.globalAlpha = active ? 1 : 0.22;
+    const color = nodeColor(node, colorGroups, tagsByNode.get(node.id) ?? []);
+    context.globalAlpha = graphHighlightAlpha(active, highlightStrength, 1, graphDimmedNodeAlpha);
     context.fillStyle = color;
     context.beginPath();
     context.arc(node.x, node.y, radius, 0, Math.PI * 2);
     context.fill();
 
-    if (node.id === focused?.id) {
+    if (node.id === focused?.id && highlightStrength > 0) {
+      context.globalAlpha = 0.36 * highlightStrength;
+      context.fillStyle = cssVar("--color-primary", "#2f66b1");
+      context.beginPath();
+      context.arc(node.x, node.y, radius, 0, Math.PI * 2);
+      context.fill();
+      context.globalAlpha = highlightStrength;
       context.strokeStyle = cssVar("--color-primary", "#2f66b1");
       context.lineWidth = 2 / view.scale;
       context.beginPath();
@@ -1020,7 +1041,7 @@ function drawGraph(
 
     const labelAlpha = graphLabelOpacity(view.scale, options.textFadeMultiplier);
     if (labelAlpha > 0.02) {
-      context.globalAlpha = (active ? 1 : 0.2) * labelAlpha;
+      context.globalAlpha = graphHighlightAlpha(active, highlightStrength, 1, graphDimmedLabelAlpha) * labelAlpha;
       context.fillStyle = cssVar("--color-text", "#1e1e1e");
       const labelScale = node.id === focused?.id && view.scale < 1 ? 1 / view.scale : graphNodeScale(view.scale);
       context.font = `${Math.max(10 / view.scale, 13 * labelScale)}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
@@ -1108,9 +1129,7 @@ function graphNodeVisualRadius(
   return graphNodeBaseRadius(node, options) * graphNodeScale(scale);
 }
 
-function nodeColor(node: WorkspaceGraphNode, groups: GraphColorGroup[], tags: string[], focused: boolean): string {
-  if (focused) return cssVar("--color-primary", "#2f66b1");
-
+function nodeColor(node: WorkspaceGraphNode, groups: GraphColorGroup[], tags: string[]): string {
   const group = groups.find((candidate) => graphNodeMatchesQuery(node, candidate.query, tags));
   if (group) return group.color;
 
@@ -1383,6 +1402,101 @@ export function graphHoveredNodeContainsPoint(
 
   const world = screenToWorld(point.x, point.y, width, height, view);
   return distance(world.x, world.y, node.x, node.y) <= graphNodeVisualRadius(node, options, view.scale) + 4 / view.scale;
+}
+
+export function graphNodeAtCanvasPoint<T extends Pick<GraphSimNode, "backlinkCount" | "linkCount" | "x" | "y">>(
+  nodes: Iterable<T>,
+  point: { x: number; y: number },
+  view: { panX: number; panY: number; scale: number },
+  options: GraphOptions,
+  width: number,
+  height: number
+): T | null {
+  const world = screenToWorld(point.x, point.y, width, height, view);
+  const nodeList = [...nodes].toReversed();
+
+  for (const node of nodeList) {
+    if (distance(world.x, world.y, node.x, node.y) <= graphNodeVisualRadius(node, options, view.scale) + 4 / view.scale) {
+      return node;
+    }
+  }
+
+  return null;
+}
+
+export function resolveGraphHoverFocusId(
+  nodes: GraphSimNode[],
+  point: { x: number; y: number } | null,
+  view: { panX: number; panY: number; scale: number },
+  options: GraphOptions,
+  width: number,
+  height: number,
+  state: GraphHoverFocusState,
+  now: number
+): string | null {
+  if (point) {
+    const world = screenToWorld(point.x, point.y, width, height, view);
+    for (let index = nodes.length - 1; index >= 0; index -= 1) {
+      const candidate = nodes[index];
+      if (
+        candidate &&
+        distance(world.x, world.y, candidate.x, candidate.y) <= graphNodeVisualRadius(candidate, options, view.scale) + 4 / view.scale
+      ) {
+        state.id = candidate.id;
+        state.releaseAt = 0;
+        return candidate.id;
+      }
+    }
+  }
+
+  if (!state.id || !nodes.some((node) => node.id === state.id)) {
+    state.id = null;
+    state.releaseAt = 0;
+    return null;
+  }
+
+  if (state.releaseAt === 0) {
+    state.releaseAt = now + graphHoverReleaseDelayMs;
+  }
+  if (now <= state.releaseAt) {
+    return state.id;
+  }
+
+  state.id = null;
+  state.releaseAt = 0;
+  return null;
+}
+
+export function stepGraphHighlightState(
+  state: GraphHighlightState,
+  targetId: string | null,
+  rate = graphHighlightTransitionRate
+): GraphHighlightState {
+  if (targetId && state.id !== targetId) {
+    state.id = targetId;
+  }
+
+  const targetStrength = targetId ? 1 : 0;
+  state.strength += (targetStrength - state.strength) * rate;
+
+  if (!targetId && state.strength < graphHighlightMinimumStrength) {
+    state.id = null;
+    state.strength = 0;
+  }
+
+  return {
+    id: state.id,
+    strength: state.strength
+  };
+}
+
+export function graphHighlightAlpha(
+  active: boolean,
+  strength: number,
+  normalAlpha: number,
+  dimmedAlpha: number
+): number {
+  return normalAlpha + ((active ? normalAlpha : dimmedAlpha) - normalAlpha) * clamp(strength, 0, 1);
 }
 
 function clampGraphScale(scale: number): number {

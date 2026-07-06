@@ -40,8 +40,11 @@ import {
   graphNodePrimaryAction,
   isGraphNodePrimaryPointerButton,
   finishGraphPanVelocity,
+  graphHighlightAlpha,
   nextGraphPanVelocity,
   nextGraphPanSampleMs,
+  resolveGraphHoverFocusId,
+  stepGraphHighlightState,
   zoomGraphAtPoint
 } from "./components/GraphView";
 import { useEditorStore } from "./store/editorStore";
@@ -293,6 +296,47 @@ describe("App charts", () => {
 
     expect(graphHoveredNodeContainsPoint(node, { x: 450, y: 300 }, view, graphTestOptions, 900, 600)).toBe(true);
     expect(graphHoveredNodeContainsPoint(node, { x: 500, y: 300 }, view, graphTestOptions, 900, 600)).toBe(false);
+  });
+
+  it("グラフビューのホバー強調は一瞬外れても短時間保持する", () => {
+    const node = {
+      backlinkCount: 0,
+      exists: true,
+      fx: null,
+      fy: null,
+      id: "A.md",
+      label: "A",
+      linkCount: 0,
+      path: "A.md",
+      type: "file" as const,
+      vx: 0,
+      vy: 0,
+      x: 0,
+      y: 0
+    };
+    const state = { id: null, releaseAt: 0 };
+    const view = { panX: 0, panY: 0, scale: 1 };
+
+    expect(resolveGraphHoverFocusId([node], { x: 450, y: 300 }, view, graphTestOptions, 900, 600, state, 0)).toBe("A.md");
+    expect(resolveGraphHoverFocusId([node], { x: 520, y: 300 }, view, graphTestOptions, 900, 600, state, 20)).toBe("A.md");
+    expect(state.releaseAt).toBe(160);
+    expect(resolveGraphHoverFocusId([node], { x: 520, y: 300 }, view, graphTestOptions, 900, 600, state, 200)).toBeNull();
+  });
+
+  it("グラフビューのハイライト透明度は段階的に収束する", () => {
+    const state = { id: null, strength: 0 };
+
+    expect(stepGraphHighlightState(state, "A.md")).toStrictEqual({ id: "A.md", strength: 0.2 });
+    expect(stepGraphHighlightState(state, "A.md").strength).toBeCloseTo(0.36);
+    expect(stepGraphHighlightState(state, null)).toStrictEqual({ id: "A.md", strength: 0.28800000000000003 });
+    expect(graphHighlightAlpha(false, 0, 1, 0.34)).toBe(1);
+    expect(graphHighlightAlpha(false, 0.5, 1, 0.34)).toBeCloseTo(0.67);
+    expect(graphHighlightAlpha(false, 1, 1, 0.34)).toBeCloseTo(0.34);
+
+    for (let index = 0; index < 20; index += 1) {
+      stepGraphHighlightState(state, null);
+    }
+    expect(state).toStrictEqual({ id: null, strength: 0 });
   });
 
   it("グラフビューのノードと文字はズーム係数で描画する", () => {
