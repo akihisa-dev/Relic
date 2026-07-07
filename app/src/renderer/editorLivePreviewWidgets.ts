@@ -18,6 +18,10 @@ function setTemporaryButtonText(button: HTMLButtonElement, text: string, fallbac
   }, 1600);
 }
 
+function isCodeBlockSourceEventTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && Boolean(target.closest(".cm-live-code-block-pre, .cm-live-code-block-source"));
+}
+
 export class ListMarkerWidget extends WidgetType {
   constructor(
     private readonly label: string,
@@ -243,6 +247,7 @@ export class CodeBlockWidget extends WidgetType {
     panel.contentEditable = "false";
     panel.addEventListener("click", (event) => {
       if (event.target instanceof HTMLElement && event.target.closest("button")) return;
+      if (isCodeBlockSourceEventTarget(event.target)) return;
       view.dispatch({ selection: { anchor: this.revealPosition }, scrollIntoView: true });
     });
 
