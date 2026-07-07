@@ -883,12 +883,14 @@
 .cm-live-code-block-pre {
   background: transparent;
   color: var(--text);
+  cursor: text;
   font-family: Menlo, monospace;
   font-size: 0.92em;
   line-height: 1.5;
   margin: 0;
   overflow-x: auto;
   padding: 8px 12px;
+  -webkit-user-select: text;
   user-select: text;
   white-space: pre-wrap;
 }
@@ -896,8 +898,11 @@
 .cm-live-code-block-source {
   background: transparent;
   color: inherit;
+  cursor: text;
   font: inherit;
+  outline: none;
   padding: 0;
+  -webkit-user-select: text;
   user-select: text;
   white-space: inherit;
 }

@@ -1,9 +1,13 @@
+import { StateEffect } from "@codemirror/state";
 import { WidgetType, type EditorView } from "@codemirror/view";
 import katex from "katex";
 
 import { writeEditorClipboardText } from "./editorClipboard";
 import { sanitizeTrustedMathHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
+
+export const codeBlockSourceInteractionEffect = StateEffect.define<{ from: number; to: number }>();
+export const clearCodeBlockSourceInteractionEffect = StateEffect.define<{ from: number; to: number }>();
 
 function stopWidgetButtonEvent(event: Event): void {
   event.preventDefault();
@@ -22,9 +26,61 @@ function isCodeBlockSourceEventTarget(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && Boolean(target.closest(".cm-live-code-block-pre, .cm-live-code-block-source"));
 }
 
-function stopCodeBlockSourceEventPropagation(event: Event): void {
-  if (!isCodeBlockSourceEventTarget(event.target)) return;
+function stopCodeBlockSourceEditEvent(event: Event): void {
+  event.preventDefault();
   event.stopPropagation();
+  event.stopImmediatePropagation();
+}
+
+function restoreCodeBlockTextSelection(panel: HTMLElement, code: HTMLElement): void {
+  queueMicrotask(() => {
+    panel.contentEditable = "true";
+    code.contentEditable = "true";
+  });
+}
+
+function caretRangeFromPoint(document: Document, clientX: number, clientY: number): Range | null {
+  const pointDocument = document as Document & {
+    caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+    caretRangeFromPoint?: (x: number, y: number) => Range | null;
+  };
+  const range = pointDocument.caretRangeFromPoint?.(clientX, clientY);
+  if (range) return range;
+
+  const position = pointDocument.caretPositionFromPoint?.(clientX, clientY);
+  if (!position) return null;
+
+  const nextRange = document.createRange();
+  nextRange.setStart(position.offsetNode, position.offset);
+  nextRange.collapse(true);
+  return nextRange;
+}
+
+function selectableCodeRangeFromPoint(code: HTMLElement, clientX: number, clientY: number): Range | null {
+  const range = caretRangeFromPoint(code.ownerDocument, clientX, clientY);
+  if (!range || !code.contains(range.startContainer)) return null;
+
+  return range;
+}
+
+function applyCodeSelectionRange(code: HTMLElement, anchor: Range, focus: Range): void {
+  const selection = code.ownerDocument.getSelection();
+  if (!selection) return;
+
+  const range = code.ownerDocument.createRange();
+  range.setStart(anchor.startContainer, anchor.startOffset);
+  range.setEnd(focus.startContainer, focus.startOffset);
+
+  if (range.collapsed && (
+    anchor.startContainer !== focus.startContainer ||
+    anchor.startOffset !== focus.startOffset
+  )) {
+    range.setStart(focus.startContainer, focus.startOffset);
+    range.setEnd(anchor.startContainer, anchor.startOffset);
+  }
+
+  selection.removeAllRanges();
+  selection.addRange(range);
 }
 
 export class ListMarkerWidget extends WidgetType {
@@ -237,29 +293,47 @@ export class CodeBlockWidget extends WidgetType {
     private readonly language: string | null,
     private readonly source: string,
     private readonly revealPosition: number,
+    private readonly revealTo: number,
     private readonly t: Translator
   ) {
     super();
   }
 
   override eq(other: CodeBlockWidget): boolean {
-    return this.language === other.language && this.source === other.source;
+    return this.language === other.language &&
+      this.source === other.source &&
+      this.revealPosition === other.revealPosition &&
+      this.revealTo === other.revealTo;
   }
 
   override toDOM(view: EditorView): HTMLElement {
+    const markSourceInteraction = (event: Event): void => {
+      if (!isCodeBlockSourceEventTarget(event.target)) return;
+      view.dispatch({ effects: codeBlockSourceInteractionEffect.of({ from: this.revealPosition, to: this.revealTo }) });
+      event.stopPropagation();
+    };
     const panel = document.createElement("div");
     panel.className = this.className;
-    panel.contentEditable = "false";
+    panel.contentEditable = "true";
+    panel.spellcheck = false;
     panel.addEventListener("click", (event) => {
       if (event.target instanceof HTMLElement && event.target.closest("button")) return;
       if (isCodeBlockSourceEventTarget(event.target)) return;
-      view.dispatch({ selection: { anchor: this.revealPosition }, scrollIntoView: true });
+      view.dispatch({
+        effects: clearCodeBlockSourceInteractionEffect.of({ from: this.revealPosition, to: this.revealTo }),
+        selection: { anchor: this.revealPosition },
+        scrollIntoView: true
+      });
     });
-    panel.addEventListener("pointerdown", stopCodeBlockSourceEventPropagation);
-    panel.addEventListener("mousedown", stopCodeBlockSourceEventPropagation);
+    panel.addEventListener("pointerdown", markSourceInteraction);
+    panel.addEventListener("mousedown", markSourceInteraction);
+    panel.addEventListener("beforeinput", stopCodeBlockSourceEditEvent);
+    panel.addEventListener("paste", stopCodeBlockSourceEditEvent);
+    panel.addEventListener("drop", stopCodeBlockSourceEditEvent);
 
     const header = document.createElement("div");
     header.className = "cm-live-code-block-header";
+    header.contentEditable = "false";
 
     const label = document.createElement("span");
     label.className = "cm-live-code-block-label";
@@ -286,10 +360,45 @@ export class CodeBlockWidget extends WidgetType {
 
     const code = document.createElement("code");
     code.className = "cm-live-code-block-source";
+    code.contentEditable = "true";
+    code.setAttribute("aria-readonly", "true");
+    code.setAttribute("role", "textbox");
+    code.spellcheck = false;
     code.textContent = this.source;
+    code.addEventListener("beforeinput", stopCodeBlockSourceEditEvent);
+    code.addEventListener("paste", stopCodeBlockSourceEditEvent);
+    code.addEventListener("drop", stopCodeBlockSourceEditEvent);
+    code.addEventListener("input", () => {
+      code.textContent = this.source;
+    });
+    code.addEventListener("mousedown", (event) => {
+      if (event.button !== 0) return;
+      const anchor = selectableCodeRangeFromPoint(code, event.clientX, event.clientY);
+      if (!anchor) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      view.dispatch({ effects: codeBlockSourceInteractionEffect.of({ from: this.revealPosition, to: this.revealTo }) });
+      applyCodeSelectionRange(code, anchor, anchor);
+
+      const updateSelection = (moveEvent: MouseEvent): void => {
+        const focus = selectableCodeRangeFromPoint(code, moveEvent.clientX, moveEvent.clientY);
+        if (!focus) return;
+        moveEvent.preventDefault();
+        applyCodeSelectionRange(code, anchor, focus);
+      };
+      const finishSelection = (): void => {
+        code.ownerDocument.removeEventListener("mousemove", updateSelection, true);
+        code.ownerDocument.removeEventListener("mouseup", finishSelection, true);
+      };
+
+      code.ownerDocument.addEventListener("mousemove", updateSelection, true);
+      code.ownerDocument.addEventListener("mouseup", finishSelection, true);
+    });
 
     pre.append(code);
     panel.append(header, pre);
+    restoreCodeBlockTextSelection(panel, code);
 
     return panel;
   }

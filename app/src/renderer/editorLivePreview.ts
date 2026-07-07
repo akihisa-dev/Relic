@@ -17,6 +17,8 @@ import { diagramEditRangeField } from "./editorDiagramEditState";
 import { DiagramBlockWidget } from "./editorDiagramLivePreview";
 import {
   CheckboxWidget,
+  clearCodeBlockSourceInteractionEffect,
+  codeBlockSourceInteractionEffect,
   CodeBlockWidget,
   FootnoteDefinitionMarkerWidget,
   ImageWidget,
@@ -49,6 +51,7 @@ interface CodeBlockPreviewState {
   decorations: DecorationSet;
   editorHasFocus: boolean;
   revealedRanges: SyntaxBlockRange[];
+  sourceInteractionRanges: SyntaxBlockRange[];
   visibleRanges: SyntaxBlockRange[];
 }
 
@@ -209,7 +212,8 @@ function buildCodeBlockPreviewDecorations(
   state: EditorState,
   t: Translator,
   visibleRanges: SyntaxBlockRange[],
-  editorHasFocus = false
+  editorHasFocus = false,
+  sourceInteractionRanges: SyntaxBlockRange[] = []
 ): CodeBlockPreviewState {
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const revealedRanges: SyntaxBlockRange[] = [];
@@ -228,10 +232,14 @@ function buildCodeBlockPreviewDecorations(
     return editorHasFocus && selectionTouches(from, to);
   }
 
+  function hasSourceInteraction(block: SyntaxBlockRange): boolean {
+    return sourceInteractionRanges.some((range) => range.from === block.from && range.to === block.to);
+  }
+
   for (const block of codeBlocks) {
     if (diagramLanguageFor(block.language)) continue;
     const fenceRanges = codeBlockFenceRanges(doc, block);
-    if (fenceRanges.some((range) => selectionTouches(range.from, range.to))) {
+    if (!hasSourceInteraction(block) && fenceRanges.some((range) => selectionTouches(range.from, range.to))) {
       revealedRanges.push(...fenceRanges);
       continue;
     }
@@ -239,7 +247,7 @@ function buildCodeBlockPreviewDecorations(
     ranges.push({
       from: block.from,
       to: block.to,
-      deco: Decoration.replace({ block: true, widget: new CodeBlockWidget(block.language, blockSource(doc, block), block.from, t) })
+      deco: Decoration.replace({ block: true, widget: new CodeBlockWidget(block.language, blockSource(doc, block), block.from, block.to, t) })
     });
   }
 
@@ -260,6 +268,7 @@ function buildCodeBlockPreviewDecorations(
     editorHasFocus,
     decorations: Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true),
     revealedRanges,
+    sourceInteractionRanges,
     visibleRanges
   };
 }
@@ -327,6 +336,34 @@ function focusEffect(transaction: Transaction): boolean | null {
   return null;
 }
 
+function sourceInteractionEffect(transaction: Transaction): SyntaxBlockRange | null {
+  for (const effect of transaction.effects) {
+    if (effect.is(codeBlockSourceInteractionEffect)) return effect.value;
+  }
+
+  return null;
+}
+
+function clearSourceInteractionEffect(transaction: Transaction): SyntaxBlockRange | null {
+  for (const effect of transaction.effects) {
+    if (effect.is(clearCodeBlockSourceInteractionEffect)) return effect.value;
+  }
+
+  return null;
+}
+
+function addSourceInteractionRange(ranges: SyntaxBlockRange[], nextRange: SyntaxBlockRange): SyntaxBlockRange[] {
+  return sortedUniqueRanges([...ranges, nextRange]);
+}
+
+function removeSourceInteractionRange(ranges: SyntaxBlockRange[], removedRange: SyntaxBlockRange): SyntaxBlockRange[] {
+  return ranges.filter((range) => range.from !== removedRange.from || range.to !== removedRange.to);
+}
+
+function activeSourceInteractionRanges(state: EditorState, ranges: SyntaxBlockRange[]): SyntaxBlockRange[] {
+  return ranges.filter((range) => selectionTouchesRanges(state, [range]));
+}
+
 function selectionTouchesRanges(state: EditorState, ranges: readonly SyntaxBlockRange[]): boolean {
   return state.selection.ranges.some((selection) => ranges.some((range) => {
     if (selection.empty) return selection.from >= range.from && selection.from <= range.to;
@@ -366,13 +403,33 @@ export function createLivePreviewCodeBlockField(
       const nextVisibleRanges = visibleRangeEffect(transaction);
       if (nextVisibleRanges) {
         testHooks?.onRebuild?.("visibleRanges");
-        return buildCodeBlockPreviewDecorations(transaction.state, t, nextVisibleRanges, preview.editorHasFocus);
+        return buildCodeBlockPreviewDecorations(transaction.state, t, nextVisibleRanges, preview.editorHasFocus, preview.sourceInteractionRanges);
       }
 
       const nextEditorHasFocus = focusEffect(transaction);
       if (nextEditorHasFocus !== null && nextEditorHasFocus !== preview.editorHasFocus) {
         testHooks?.onRebuild?.("selection");
-        return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges, nextEditorHasFocus);
+        return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges, nextEditorHasFocus, preview.sourceInteractionRanges);
+      }
+
+      const nextSourceInteraction = sourceInteractionEffect(transaction);
+      if (nextSourceInteraction) {
+        return {
+          ...preview,
+          sourceInteractionRanges: addSourceInteractionRange(preview.sourceInteractionRanges, nextSourceInteraction)
+        };
+      }
+
+      const clearedSourceInteraction = clearSourceInteractionEffect(transaction);
+      if (clearedSourceInteraction) {
+        testHooks?.onRebuild?.("selection");
+        return buildCodeBlockPreviewDecorations(
+          transaction.state,
+          t,
+          preview.visibleRanges,
+          preview.editorHasFocus,
+          removeSourceInteractionRange(preview.sourceInteractionRanges, clearedSourceInteraction)
+        );
       }
 
       if (transaction.docChanged) {
@@ -381,17 +438,24 @@ export function createLivePreviewCodeBlockField(
             decorations: preview.decorations.map(transaction.changes),
             editorHasFocus: preview.editorHasFocus,
             revealedRanges: mapSyntaxBlockRanges(transaction.changes, preview.revealedRanges),
+            sourceInteractionRanges: mapSyntaxBlockRanges(transaction.changes, preview.sourceInteractionRanges),
             visibleRanges: mapSyntaxBlockRanges(transaction.changes, preview.visibleRanges)
           };
         }
 
         testHooks?.onRebuild?.("docChanged");
-        return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges, preview.editorHasFocus);
+        return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges, preview.editorHasFocus, preview.sourceInteractionRanges);
       }
 
       if (transaction.selection && shouldRebuildCodeBlockDecorationsForSelection(transaction.state, preview)) {
         testHooks?.onRebuild?.("selection");
-        return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges, preview.editorHasFocus);
+        return buildCodeBlockPreviewDecorations(
+          transaction.state,
+          t,
+          preview.visibleRanges,
+          preview.editorHasFocus,
+          activeSourceInteractionRanges(transaction.state, preview.sourceInteractionRanges)
+        );
       }
 
       return preview;

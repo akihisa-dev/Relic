@@ -566,11 +566,60 @@ describe("Editor live preview", () => {
     expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull();
   });
 
+  it("通常コードブロックの本文操作中は内部選択がフェンスへ動いてもプレビュー表示を維持する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const content = ["```yaml", "sample: 11", "```", "", "本文"].join("\n");
+    const { container } = render(
+      <Editor
+        content={content}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-source")).not.toBeNull());
+
+    fireEvent.mouseDown(container.querySelector(".cm-live-code-block-source") as HTMLElement);
+    viewRef.current?.dispatch({ selection: { anchor: 0 } });
+
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull());
+    expect(container.querySelector(".cm-live-code-block-source")?.textContent).toBe("sample: 11");
+  });
+
   it("通常コードブロックの本文はCSS上で文字選択を許可する", () => {
     const css = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
 
+    expect(css).toMatch(/\.cm-live-code-block-pre\s*\{[^}]*cursor:\s*text;/s);
+    expect(css).toMatch(/\.cm-live-code-block-source\s*\{[^}]*cursor:\s*text;/s);
+    expect(css).toMatch(/\.cm-live-code-block-pre\s*\{[^}]*-webkit-user-select:\s*text;/s);
+    expect(css).toMatch(/\.cm-live-code-block-source\s*\{[^}]*-webkit-user-select:\s*text;/s);
     expect(css).toMatch(/\.cm-live-code-block-pre\s*\{[^}]*user-select:\s*text;/s);
     expect(css).toMatch(/\.cm-live-code-block-source\s*\{[^}]*user-select:\s*text;/s);
+  });
+
+  it("通常コードブロックは本文だけを選択可能な読み取り専用DOMにする", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const content = ["```yaml", "sample: 11", "```", "", "本文"].join("\n");
+    const { container } = render(
+      <Editor
+        content={content}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-source")).not.toBeNull());
+
+    expect((container.querySelector(".cm-live-code-block-panel") as HTMLElement).contentEditable).not.toBe("false");
+    expect((container.querySelector(".cm-live-code-block-header") as HTMLElement).contentEditable).toBe("false");
+    expect((container.querySelector(".cm-live-code-block-source") as HTMLElement).contentEditable).toBe("true");
+    expect(container.querySelector(".cm-live-code-block-source")?.getAttribute("aria-readonly")).toBe("true");
   });
 
   it("通常コードブロックはフェンス行に選択が移ったらソース表示に戻す", async () => {
