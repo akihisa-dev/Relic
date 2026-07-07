@@ -121,6 +121,18 @@ function blockSource(doc: Text, block: SyntaxBlockRange): string {
   return doc.sliceString(doc.line(startLine + 1).from, doc.line(endLine - 1).to);
 }
 
+function codeBlockFenceRanges(doc: Text, block: SyntaxBlockRange): SyntaxBlockRange[] {
+  const startLine = doc.lineAt(block.from);
+  const endLine = doc.line(lineNumberAtBlockEnd(doc, block.to));
+
+  if (startLine.number === endLine.number) return [{ from: block.from, to: block.to }];
+
+  return [
+    { from: block.from, to: startLine.to },
+    { from: endLine.from, to: block.to }
+  ];
+}
+
 function initialVisibleRanges(state: EditorState): SyntaxBlockRange[] {
   return state.doc.length === 0 ? [] : [{ from: 0, to: Math.min(state.doc.length, 1) }];
 }
@@ -218,8 +230,9 @@ function buildCodeBlockPreviewDecorations(
 
   for (const block of codeBlocks) {
     if (diagramLanguageFor(block.language)) continue;
-    if (selectionTouches(block.from, block.to)) {
-      revealedRanges.push({ from: block.from, to: block.to });
+    const fenceRanges = codeBlockFenceRanges(doc, block);
+    if (fenceRanges.some((range) => selectionTouches(range.from, range.to))) {
+      revealedRanges.push(...fenceRanges);
       continue;
     }
 

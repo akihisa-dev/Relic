@@ -493,7 +493,7 @@ describe("Editor live preview", () => {
     ]);
   });
 
-  it("通常コードブロックは本文位置に選択が移ったらソース表示に戻す", async () => {
+  it("通常コードブロックは本文位置に選択が移ってもプレビュー表示を維持する", async () => {
     const viewRef = createRef<EditorView | null>();
     const content = ["```", "あああ", "```", "", "本文"].join("\n");
     const { container } = render(
@@ -512,8 +512,31 @@ describe("Editor live preview", () => {
 
     viewRef.current?.dispatch({ selection: { anchor: content.indexOf("あああ") + 1 } });
 
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull());
+    expect(container.querySelector(".cm-live-code-block-source")?.textContent).toBe("あああ");
+    expect(container.textContent).not.toContain("```");
+  });
+
+  it("通常コードブロックはフェンス行に選択が移ったらソース表示に戻す", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const content = ["```ts", "const value = 1;", "```", "", "本文"].join("\n");
+    const { container } = render(
+      <Editor
+        content={content}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull());
+
+    viewRef.current?.dispatch({ selection: { anchor: content.indexOf("ts") } });
+
     await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).toBeNull());
-    expect(container.textContent).toContain("```");
+    expect(container.textContent).toContain("```ts");
   });
 
   it("通常コードブロックのパネルを触ったときソース表示に戻す", async () => {
