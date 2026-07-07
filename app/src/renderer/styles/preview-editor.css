@@ -889,6 +889,7 @@
   margin: 0;
   overflow-x: auto;
   padding: 8px 12px;
+  user-select: text;
   white-space: pre-wrap;
 }
 
@@ -897,6 +898,7 @@
   color: inherit;
   font: inherit;
   padding: 0;
+  user-select: text;
   white-space: inherit;
 }
 

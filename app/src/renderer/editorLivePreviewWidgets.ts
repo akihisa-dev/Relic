@@ -22,6 +22,11 @@ function isCodeBlockSourceEventTarget(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && Boolean(target.closest(".cm-live-code-block-pre, .cm-live-code-block-source"));
 }
 
+function stopCodeBlockSourceEventPropagation(event: Event): void {
+  if (!isCodeBlockSourceEventTarget(event.target)) return;
+  event.stopPropagation();
+}
+
 export class ListMarkerWidget extends WidgetType {
   constructor(
     private readonly label: string,
@@ -250,6 +255,8 @@ export class CodeBlockWidget extends WidgetType {
       if (isCodeBlockSourceEventTarget(event.target)) return;
       view.dispatch({ selection: { anchor: this.revealPosition }, scrollIntoView: true });
     });
+    panel.addEventListener("pointerdown", stopCodeBlockSourceEventPropagation);
+    panel.addEventListener("mousedown", stopCodeBlockSourceEventPropagation);
 
     const header = document.createElement("div");
     header.className = "cm-live-code-block-header";

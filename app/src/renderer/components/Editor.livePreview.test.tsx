@@ -542,6 +542,37 @@ describe("Editor live preview", () => {
     expect(container.textContent).not.toContain("```yaml");
   });
 
+  it("通常コードブロックの本文押下はエディタ側へ伝播せず文字選択に委ねる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const content = ["```yaml", "sample: 11", "```", "", "本文"].join("\n");
+    const { container } = render(
+      <Editor
+        content={content}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+    const editorMouseDown = vi.fn();
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-source")).not.toBeNull());
+
+    container.querySelector(".cm-editor")?.addEventListener("mousedown", editorMouseDown);
+    fireEvent.mouseDown(container.querySelector(".cm-live-code-block-source") as HTMLElement);
+
+    expect(editorMouseDown).not.toHaveBeenCalled();
+    expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull();
+  });
+
+  it("通常コードブロックの本文はCSS上で文字選択を許可する", () => {
+    const css = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
+
+    expect(css).toMatch(/\.cm-live-code-block-pre\s*\{[^}]*user-select:\s*text;/s);
+    expect(css).toMatch(/\.cm-live-code-block-source\s*\{[^}]*user-select:\s*text;/s);
+  });
+
   it("通常コードブロックはフェンス行に選択が移ったらソース表示に戻す", async () => {
     const viewRef = createRef<EditorView | null>();
     const content = ["```ts", "const value = 1;", "```", "", "本文"].join("\n");
