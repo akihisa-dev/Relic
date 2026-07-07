@@ -372,9 +372,10 @@ describe("App charts", () => {
     expect(graphLabelOpacity(1, 0)).toBe(1);
     expect(graphLabelOpacity(2, 1)).toBe(1);
 
-    expect(graphLinkScaleOpacity(0.3)).toBe(0);
-    expect(graphLinkScaleOpacity(0.55)).toBeCloseTo(0.5);
-    expect(graphLinkScaleOpacity(0.8)).toBe(1);
+    expect(graphLinkScaleOpacity(0.12)).toBe(0);
+    expect(graphLinkScaleOpacity(0.3)).toBeCloseTo(0.375);
+    expect(graphLinkScaleOpacity(0.55)).toBeCloseTo(0.8958);
+    expect(graphLinkScaleOpacity(0.6)).toBe(1);
   });
 
   it("グラフビューのリンク線はノード外周で止める", () => {
