@@ -1115,7 +1115,7 @@ export function graphNodeScale(scale: number): number {
 }
 
 export function graphLinkScaleOpacity(scale: number): number {
-  return clamp((scale - 0.12) / 0.48, 0, 1);
+  return clamp((scale - 0.04) / 0.36, 0, 1);
 }
 
 function graphNodeVisualRadius(
