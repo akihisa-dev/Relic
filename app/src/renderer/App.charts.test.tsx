@@ -33,6 +33,7 @@ import {
   graphLabelOpacity,
   graphLinkEndpoints,
   graphLinkScaleOpacity,
+  graphNodeAtCanvasPoint,
   graphNodeBaseRadius,
   graphNodeScale,
   graphPointerMovedBeyondClickThreshold,
@@ -296,6 +297,19 @@ describe("App charts", () => {
 
     expect(graphHoveredNodeContainsPoint(node, { x: 450, y: 300 }, view, graphTestOptions, 900, 600)).toBe(true);
     expect(graphHoveredNodeContainsPoint(node, { x: 500, y: 300 }, view, graphTestOptions, 900, 600)).toBe(false);
+  });
+
+  it("グラフビューのノード取得はキャンバス座標から判定する", () => {
+    const node = {
+      backlinkCount: 0,
+      linkCount: 0,
+      x: 0,
+      y: 0
+    };
+    const view = { panX: 0, panY: 0, scale: 1 };
+
+    expect(graphNodeAtCanvasPoint([node], { x: 450, y: 300 }, view, graphTestOptions, 900, 600)).toBe(node);
+    expect(graphNodeAtCanvasPoint([node], { x: 520, y: 300 }, view, graphTestOptions, 900, 600)).toBeNull();
   });
 
   it("グラフビューのホバー強調は一瞬外れても短時間保持する", () => {

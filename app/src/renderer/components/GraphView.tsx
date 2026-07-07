@@ -318,13 +318,10 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     if (!canvas) return null;
 
     const rect = canvas.getBoundingClientRect();
-    const point = screenToWorld(
-      clientX - rect.left,
-      clientY - rect.top,
-      rect.width || graphCanvasSizeFallback.width,
-      rect.height || graphCanvasSizeFallback.height,
-      viewRef.current
-    );
+    const point = {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
     return graphNodeAtCanvasPoint(
       nodesRef.current.values(),
       point,
