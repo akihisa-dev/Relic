@@ -25,6 +25,13 @@
   margin: 0;
 }
 
+.settings-page-description {
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+
 .settings-page-kicker {
   color: var(--text-3);
   font-size: 12px;
@@ -285,6 +292,112 @@
 .tools-settings-group .primary-button {
   justify-self: end;
   margin-top: 10px;
+}
+
+.tools-action-panel {
+  gap: 14px;
+}
+
+.tools-target-row {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 8px;
+  justify-content: space-between;
+  min-width: 0;
+  padding-bottom: 12px;
+}
+
+.tools-target-row strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.tools-action-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.tool-action-button {
+  align-items: stretch;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  min-height: 112px;
+  min-width: 0;
+  padding: 16px;
+  text-align: left;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
+}
+
+.tool-action-button:hover {
+  background: var(--hover);
+  border-color: var(--border-soft);
+}
+
+.tool-action-button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.tool-action-button:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+.tool-action-button:disabled {
+  cursor: default;
+  opacity: 0.72;
+  transform: none;
+}
+
+.tool-action-title {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.tool-action-description {
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.tool-action-running {
+  align-self: end;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.tools-result-panel {
+  align-items: center;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 38px;
+  min-width: 0;
+  padding-top: 12px;
+}
+
+.tools-result-label {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 650;
 }
 
 .frontmatter-settings-section {
@@ -884,6 +997,10 @@
 
   .settings-segmented-button {
     white-space: normal;
+  }
+
+  .tools-action-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .frontmatter-field-add {

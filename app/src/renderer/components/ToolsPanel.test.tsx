@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { makeRelicApi } from "../../test/rendererTestUtils";
@@ -11,16 +11,6 @@ function renderToolsPanel(language: "en" | "ja" = "en", workspacePath: string | 
       <ToolsPanel workspacePath={workspacePath} />
     </I18nProvider>
   );
-}
-
-function sectionBlock(heading: string): HTMLElement {
-  const headingElement = screen.getAllByText(heading).find((element) =>
-    element.classList.contains("links-panel-subheading")
-  );
-  expect(headingElement).toBeInstanceOf(HTMLElement);
-  const block = headingElement?.nextElementSibling;
-  expect(block).toBeInstanceOf(HTMLElement);
-  return block as HTMLElement;
 }
 
 describe("ToolsPanel", () => {
@@ -36,94 +26,84 @@ describe("ToolsPanel", () => {
     renderToolsPanel("en", null);
 
     expect(screen.getByText("Open a workspace first.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Create Title List/ })).not.toBeInTheDocument();
     expect(generateTitleList).not.toHaveBeenCalled();
   });
 
-  it("タイトル一覧と目次を生成できる", async () => {
+  it("入力欄を出さずにタイトル一覧と目次を既定値で生成できる", async () => {
     const generateTitleList = vi.fn().mockResolvedValue({ ok: true, value: "Title List.md" });
     const generateTableOfContents = vi.fn().mockResolvedValue({ ok: true, value: "Toc.md" });
     window.relic = makeRelicApi({ generateTableOfContents, generateTitleList });
 
     renderToolsPanel("en");
 
-    const titleList = sectionBlock("Title List");
-    fireEvent.change(within(titleList).getByLabelText("Folder"), { target: { value: "Drafts" } });
-    fireEvent.change(within(titleList).getByLabelText("Sort"), { target: { value: "mtime" } });
-    fireEvent.change(within(titleList).getByLabelText("Output folder"), { target: { value: "Indexes" } });
-    fireEvent.change(within(titleList).getByLabelText("File name"), { target: { value: "Titles" } });
-    fireEvent.click(within(titleList).getByRole("button", { name: "Create" }));
+    expect(screen.getByText("Entire workspace")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Create Title List/ }));
 
     await waitFor(() => {
       expect(generateTitleList).toHaveBeenCalledWith({
-        filterFolder: "Drafts",
-        outputFolder: "Indexes",
-        outputName: "Titles",
-        sortBy: "mtime"
+        filterFolder: undefined,
+        outputFolder: "",
+        outputName: "Title List",
+        sortBy: "name"
       });
     });
     expect(await screen.findByText("Done: Title List.md")).toBeInTheDocument();
 
-    const toc = sectionBlock("Table of Contents");
-    fireEvent.change(within(toc).getByLabelText("Folder"), { target: { value: "Docs" } });
-    fireEvent.click(within(toc).getByLabelText("Include subfolders"));
-    fireEvent.change(within(toc).getByLabelText("Output folder"), { target: { value: "Indexes" } });
-    fireEvent.change(within(toc).getByLabelText("File name"), { target: { value: "Contents" } });
-    fireEvent.click(within(toc).getByRole("button", { name: "Create" }));
+    fireEvent.click(screen.getByRole("button", { name: /Create Table of Contents/ }));
 
     await waitFor(() => {
       expect(generateTableOfContents).toHaveBeenCalledWith({
-        includeSubfolders: false,
-        outputFolder: "Indexes",
-        outputName: "Contents",
-        targetFolder: "Docs"
+        includeSubfolders: true,
+        outputFolder: "",
+        outputName: "Table of Contents",
+        targetFolder: ""
       });
     });
   });
 
-  it("タグ別索引を生成できる", async () => {
+  it("タグ別索引を既定値で生成できる", async () => {
     const generateTagIndex = vi.fn().mockResolvedValue({ ok: true, value: "Tags.md" });
     window.relic = makeRelicApi({ generateTagIndex });
 
     renderToolsPanel("ja");
 
-    const tagIndex = sectionBlock("タグ別索引生成");
-    fireEvent.change(within(tagIndex).getByLabelText("フォルダ"), { target: { value: "notes" } });
-    fireEvent.click(within(tagIndex).getByLabelText("サブフォルダを含める"));
-    fireEvent.click(within(tagIndex).getByLabelText("タグなしを含める"));
-    fireEvent.change(within(tagIndex).getByLabelText("並び順"), { target: { value: "mtime" } });
-    fireEvent.change(within(tagIndex).getByLabelText("出力フォルダ"), { target: { value: "indexes" } });
-    fireEvent.change(within(tagIndex).getByLabelText("ファイル名"), { target: { value: "Tags" } });
-    fireEvent.click(within(tagIndex).getByRole("button", { name: "作成" }));
+    fireEvent.click(screen.getByRole("button", { name: /タグ別索引を作成/ }));
 
     await waitFor(() => {
       expect(generateTagIndex).toHaveBeenCalledWith({
-        includeSubfolders: false,
-        includeUntagged: true,
-        outputFolder: "indexes",
-        outputName: "Tags",
-        sortBy: "mtime",
-        targetFolder: "notes"
+        includeSubfolders: true,
+        includeUntagged: false,
+        outputFolder: "",
+        outputName: "タグ別索引",
+        sortBy: "name",
+        targetFolder: ""
       });
     });
   });
 
-  it("フロントマター条件を指定してマージできる", async () => {
+  it("フォルダ内マージを既定値で生成できる", async () => {
     const mergeFiles = vi.fn().mockResolvedValue({ ok: true, value: "merged.md" });
     window.relic = makeRelicApi({ mergeFiles });
 
     renderToolsPanel("ja");
 
-    fireEvent.change(screen.getByLabelText("フィルター"), { target: { value: "frontmatter" } });
-    fireEvent.change(screen.getByLabelText("フロントマターフィールド"), { target: { value: "status" } });
-    fireEvent.change(screen.getByLabelText("フロントマター値"), { target: { value: "draft" } });
-    fireEvent.click(screen.getByRole("button", { name: "フォルダ内マージ" }));
+    fireEvent.click(screen.getByRole("button", { name: /フォルダ内マージを作成/ }));
 
     await waitFor(() => {
-      expect(mergeFiles).toHaveBeenCalledWith(expect.objectContaining({
-        filterType: "frontmatter",
-        filterValue: "draft",
-        frontmatterField: "status"
-      }));
+      expect(mergeFiles).toHaveBeenCalledWith({
+        filterType: "all",
+        filterValue: "",
+        frontmatterField: undefined,
+        insertFilenameHeading: true,
+        outputFolder: "",
+        outputName: "マージ結果",
+        sortBy: "name"
+      });
     });
   });
 
