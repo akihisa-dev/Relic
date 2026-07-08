@@ -8,7 +8,6 @@ import type {
   FeatureToggles,
   FrontmatterCategoryChoice,
   UpdateChartEntryInput,
-  UserDefinedField,
   WorkspaceChart,
   WorkspaceState
 } from "../../shared/ipc";
@@ -33,9 +32,7 @@ interface UseAppTabRenderersInput {
   handleSaveChronicleCalendars: (calendars: ChronicleCalendarSettings[]) => void;
   handleSaveCategoryChoices: (choices: FrontmatterCategoryChoice[]) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
-  handleSaveUserDefinedFields: (fields: UserDefinedField[]) => void;
   handleUpdateChartEntry: (input: UpdateChartEntryInput) => Promise<void> | void;
-  userDefinedFields: UserDefinedField[];
   workspaceState: WorkspaceState | null;
 }
 
@@ -52,9 +49,7 @@ export function useAppTabRenderers({
   handleSaveChronicleCalendars,
   handleSaveCategoryChoices,
   handleSaveSettings,
-  handleSaveUserDefinedFields,
   handleUpdateChartEntry,
-  userDefinedFields,
   workspaceState
 }: UseAppTabRenderersInput): {
   renderChartTab: (chartId: string) => ReactNode;
@@ -86,8 +81,6 @@ export function useAppTabRenderers({
         <FrontmatterPanel
           categoryChoices={categoryChoices}
           onCategoryChoicesSave={handleSaveCategoryChoices}
-          onUserDefinedFieldsSave={handleSaveUserDefinedFields}
-          userDefinedFields={userDefinedFields}
         />
       );
     }
@@ -121,8 +114,6 @@ export function useAppTabRenderers({
     handleSaveChronicleCalendars,
     handleSaveCategoryChoices,
     handleSaveSettings,
-    handleSaveUserDefinedFields,
-    userDefinedFields,
     workspaceState
   ]);
 

@@ -291,8 +291,6 @@
         - `FileTreeContextMenu.tsx`
         - `FileTreeItemRow.tsx`
         - `FrontmatterChoiceEditor.tsx`
-        - `FrontmatterFieldAddForm.tsx`
-        - `FrontmatterFieldList.tsx`
         - `FrontmatterFixedFields.tsx`
         - `FrontmatterPanel.tsx`
         - `GraphView.test.tsx`
@@ -370,7 +368,6 @@
         - `useFileTreeMotion.ts`
         - `useFileTreeSelection.test.ts`
         - `useFileTreeSelection.ts`
-        - `useFrontmatterFieldsState.ts`
         - `usePaneHeadingScroll.ts`
         - `usePaneTabInteractions.ts`
         - `usePaneTabMotion.ts`

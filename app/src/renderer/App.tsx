@@ -169,7 +169,6 @@ export function App(): ReactElement {
     featureToggles,
     handleSaveFeatureToggles,
     handleSaveSettings,
-    handleSaveUserDefinedFields,
     userDefinedFields
   } = useAppSettingsState({
     setEditorSettings,
@@ -576,9 +575,7 @@ export function App(): ReactElement {
     handleSaveChronicleCalendars,
     handleSaveFeatureToggles,
     handleSaveSettings,
-    handleSaveUserDefinedFields,
     handleUpdateChartEntry,
-    userDefinedFields,
     workspaceState
   });
   const appLayoutProps = createAppLayoutProps({

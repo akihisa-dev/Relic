@@ -1,27 +1,19 @@
 import { useState, type ReactElement } from "react";
 
-import type { FrontmatterCategoryChoice, UserDefinedField } from "../../shared/ipc";
-import { parseChoiceInput, uniqueChoices } from "../frontmatterSettingsModel";
-import { useFrontmatterFieldsState } from "../hooks/useFrontmatterFieldsState";
+import type { FrontmatterCategoryChoice } from "../../shared/ipc";
+import { FIXED_FIELDS, parseChoiceInput, uniqueChoices } from "../frontmatterSettingsModel";
 import { useT } from "../i18n";
-import { FrontmatterFieldAddForm } from "./FrontmatterFieldAddForm";
-import { FrontmatterFieldList } from "./FrontmatterFieldList";
 import { FrontmatterChoiceEditor } from "./FrontmatterChoiceEditor";
 import { FrontmatterFixedFields } from "./FrontmatterFixedFields";
 
 export function FrontmatterPanel({
   categoryChoices,
-  onCategoryChoicesSave,
-  userDefinedFields,
-  onUserDefinedFieldsSave
+  onCategoryChoicesSave
 }: {
   categoryChoices: FrontmatterCategoryChoice[];
   onCategoryChoicesSave: (choices: FrontmatterCategoryChoice[]) => void;
-  userDefinedFields: UserDefinedField[];
-  onUserDefinedFieldsSave: (fields: UserDefinedField[]) => void;
 }): ReactElement {
   const t = useT();
-  const fieldsState = useFrontmatterFieldsState({ onUserDefinedFieldsSave, userDefinedFields });
   const [categoryChoiceInput, setCategoryChoiceInput] = useState("");
   const [referenceExpanded, setReferenceExpanded] = useState(false);
   const addCategoryChoices = (): void => {
@@ -46,9 +38,20 @@ export function FrontmatterPanel({
           <strong>{t("settings.frontmatterSummaryCount", { count: categoryChoices.length })}</strong>
         </div>
         <div className="frontmatter-summary-item">
-          <span>{t("settings.freeFields")}</span>
-          <strong>{t("settings.frontmatterSummaryCount", { count: userDefinedFields.length })}</strong>
+          <span>{t("settings.fixedFields")}</span>
+          <strong>{t("settings.frontmatterSummaryCount", { count: FIXED_FIELDS.length })}</strong>
         </div>
+      </section>
+
+      <section className="settings-group frontmatter-settings-group">
+        <div className="frontmatter-section-heading">
+          <div>
+            <div className="frontmatter-field-group-label">{t("settings.fixedFields")}</div>
+            <h3>{t("settings.fixedPropertiesTitle")}</h3>
+          </div>
+        </div>
+        <p className="frontmatter-field-description-text">{t("settings.fixedPropertiesDescription")}</p>
+        <FrontmatterFixedFields />
       </section>
 
       <section className="settings-group frontmatter-settings-group">
@@ -65,44 +68,6 @@ export function FrontmatterPanel({
           onAddChoices={addCategoryChoices}
           onInputChange={setCategoryChoiceInput}
           onRemoveChoice={(choice) => onCategoryChoicesSave(categoryChoices.filter((item) => item !== choice))}
-        />
-      </section>
-
-      <section className="settings-group frontmatter-settings-group">
-        <div className="frontmatter-section-heading">
-          <div>
-            <div className="frontmatter-field-group-label">{t("settings.freeFields")}</div>
-            <h3>{t("settings.customPropertiesTitle")}</h3>
-          </div>
-        </div>
-
-        <FrontmatterFieldAddForm
-          canAddNewField={fieldsState.canAddNewField}
-          newChoiceInput={fieldsState.newChoiceInput}
-          newChoices={fieldsState.newChoices}
-          newFieldName={fieldsState.newFieldName}
-          newFieldType={fieldsState.newFieldType}
-          onAddNewChoices={fieldsState.addNewChoices}
-          onAddNewField={fieldsState.addNewField}
-          onNewChoiceInputChange={fieldsState.setNewChoiceInput}
-          onNewChoicesChange={fieldsState.setNewChoices}
-          onNewFieldNameChange={fieldsState.setNewFieldName}
-          onNewFieldTypeChange={fieldsState.setNewFieldTypeAndResetChoices}
-        />
-
-        <FrontmatterFieldList
-          addChoicesToField={fieldsState.addChoicesToField}
-          choiceInputs={fieldsState.choiceInputs}
-          commitFieldName={fieldsState.commitFieldName}
-          deleteField={fieldsState.deleteField}
-          expandedField={fieldsState.expandedField}
-          fieldNameDrafts={fieldsState.fieldNameDrafts}
-          fieldsDraft={fieldsState.fieldsDraft}
-          onChoiceInputChange={(fieldName, value) => fieldsState.setChoiceInputs((current) => ({ ...current, [fieldName]: value }))}
-          onExpandedFieldChange={fieldsState.setExpandedField}
-          onFieldNameDraftChange={fieldsState.setExistingFieldNameDraft}
-          onFieldNameDraftReset={fieldsState.resetExistingFieldNameDraft}
-          updateUserDefinedField={fieldsState.updateUserDefinedField}
         />
       </section>
 
@@ -123,7 +88,6 @@ export function FrontmatterPanel({
               <p>{t("settings.frontmatterFormatGuide")}</p>
               <code>{t("settings.frontmatterFormatExample")}</code>
             </div>
-            <FrontmatterFixedFields />
           </div>
         ) : null}
       </section>
