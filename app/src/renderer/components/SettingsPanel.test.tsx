@@ -64,6 +64,20 @@ describe("FrontmatterPanel", () => {
     expect(screen.getByText("status: [note]")).toBeInTheDocument();
   });
 
+  it("件数サマリーと主要な管理領域を先に表示する", () => {
+    renderFrontmatterPanel({
+      categoryChoices: ["War", "Politics"],
+      userDefinedFields: [{ name: "status", type: "text" }]
+    });
+
+    expect(screen.getByText("Manage property choices and input behavior.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Frontmatter settings counts")).toBeInTheDocument();
+    expect(screen.getByText("Manage category choices")).toBeInTheDocument();
+    expect(screen.getByText("Add custom properties")).toBeInTheDocument();
+    expect(screen.getAllByText("2").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1").length).toBeGreaterThan(0);
+  });
+
   it("フィールドを追加できる", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
@@ -114,17 +128,24 @@ describe("FrontmatterPanel", () => {
     expect(screen.getByText("source: [https://example.com]")).toBeInTheDocument();
   });
 
-  it("aliasesとcategoryとtagsとchronicleを固定プロパティとして表示し、statusとplannedDateとactualDateはカスタムプロパティに追加できる", () => {
+  it("固定プロパティと書き方は必要な時だけ開いて確認でき、予約名はカスタムプロパティに追加しない", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
     renderFrontmatterPanel({ onUserDefinedFieldsSave });
 
+    expect(screen.getAllByText("Custom properties").length).toBeGreaterThan(0);
+    expect(screen.queryByText("aliases")).toBeNull();
+    expect(screen.queryByText("category")).toBeNull();
+    expect(screen.queryByText("tags")).toBeNull();
+    expect(screen.queryByText("status")).toBeNull();
+    expect(screen.queryByText("At the very top of the Markdown file, make a settings block that starts with --- and ends with ---. Write each property inside that block on its own line.")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Fixed properties and writing Reference" }));
+
     expect(screen.getByText("Fixed properties")).not.toBeNull();
-    expect(screen.getByText("Custom properties")).not.toBeNull();
     expect(screen.getByText("aliases")).not.toBeNull();
     expect(screen.getByText("category")).not.toBeNull();
     expect(screen.getByText("tags")).not.toBeNull();
-    expect(screen.queryByText("status")).toBeNull();
     expect(screen.getByRole("button", { name: "chronicle 1 field" })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByText("chronicle")).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "chronicle 1 field" }));
@@ -216,7 +237,7 @@ describe("FrontmatterPanel", () => {
       onCategoryChoicesSave
     });
 
-    expect(screen.getByText("category choices")).toBeInTheDocument();
+    expect(screen.getAllByText("category choices").length).toBeGreaterThan(0);
     fireEvent.change(screen.getAllByPlaceholderText("Enter a choice")[0], { target: { value: "Politics" } });
     fireEvent.click(screen.getAllByRole("button", { name: "Add choice" })[0]);
 

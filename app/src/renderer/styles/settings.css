@@ -410,6 +410,99 @@
   align-content: start;
 }
 
+.frontmatter-settings-summary {
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.frontmatter-summary-item {
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 12px;
+}
+
+.frontmatter-summary-item span {
+  color: var(--text-2);
+  font-size: 12px;
+  min-width: 0;
+}
+
+.frontmatter-summary-item strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.frontmatter-section-heading {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.frontmatter-section-heading h3 {
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.25;
+  margin: 4px 0 0;
+}
+
+.frontmatter-reference-group {
+  gap: 0;
+}
+
+.frontmatter-reference-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  font-size: 14px;
+  font-weight: 650;
+  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 42px;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.frontmatter-reference-toggle::before {
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid var(--text-3);
+  border-top: 4px solid transparent;
+  content: "";
+  height: 0;
+  transition: transform var(--motion-normal) var(--ease-enter);
+  width: 0;
+}
+
+.frontmatter-reference-toggle[data-expanded="true"]::before {
+  transform: rotate(90deg);
+}
+
+.frontmatter-reference-toggle:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+.frontmatter-reference-content {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
 .setting-row--action {
   align-items: flex-start;
   flex-direction: column;
@@ -1000,6 +1093,10 @@
   }
 
   .tools-action-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .frontmatter-settings-summary {
     grid-template-columns: minmax(0, 1fr);
   }
 
