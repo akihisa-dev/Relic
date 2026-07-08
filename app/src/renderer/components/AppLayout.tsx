@@ -52,7 +52,6 @@ export function AppLayout({
             onSplitToggle={editorWorkspaceProps.onSplitToggle}
             rightPanelView={editorWorkspaceProps.rightPanelView}
             showSourceControl={false}
-            showRightPanelFrontmatterControl={editorWorkspaceProps.showRightPanelFrontmatterControl}
             showRightPanelLinksControl={editorWorkspaceProps.showRightPanelLinksControl}
             showRightPanelOutlineControl={editorWorkspaceProps.showRightPanelOutlineControl}
             showRightPanelRecoveryControl={editorWorkspaceProps.showRightPanelRecoveryControl}

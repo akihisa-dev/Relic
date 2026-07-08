@@ -74,7 +74,6 @@ interface AppEditorWorkspaceProps {
   rightPanelView: RightPanelView;
   rightPanelWidth: number;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
-  showRightPanelFrontmatterControl: boolean;
   showRightPanelLinksControl: boolean;
   showRightPanelOutlineControl: boolean;
   showRightPanelRecoveryControl: boolean;
@@ -184,13 +183,11 @@ export function AppEditorWorkspace({
   rightPanelView,
   rightPanelWidth,
   setLinkContextMenu,
-  showRightPanelFrontmatterControl,
   showRightPanelRecoveryControl,
   unlinkedReferences,
   userDefinedFields,
   workspacePath
 }: AppEditorWorkspaceProps): ReactElement {
-  void showRightPanelFrontmatterControl;
   void showRightPanelRecoveryControl;
 
   const commonPaneViewProps: CommonPaneViewProps = {
@@ -274,8 +271,6 @@ export function AppEditorWorkspace({
           activeFileTab={activeFileTab}
           applyingReferenceKey={applyingReferenceKey}
           backlinks={backlinks}
-          editorSettings={editorSettings}
-          frontmatterCandidates={frontmatterCandidates}
           isLoadingBacklinks={isLoadingBacklinks}
           isLoadingUnlinkedReferences={isLoadingUnlinkedReferences}
           isOpen={isRightPanelOpen}
@@ -292,7 +287,6 @@ export function AppEditorWorkspace({
           rightPanelView={rightPanelView}
           setLinkContextMenu={setLinkContextMenu}
           unlinkedReferences={unlinkedReferences}
-          userDefinedFields={userDefinedFields}
           width={rightPanelWidth}
         />
       </div>

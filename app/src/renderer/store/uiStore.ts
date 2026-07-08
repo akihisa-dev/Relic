@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type SidebarView = "files" | "settings" | "tools" | "frontmatter" | "chronicle";
-export type RightPanelView = "outline" | "links" | "frontmatter" | "recovery";
+export type RightPanelView = "outline" | "links" | "recovery";
 
 interface UiState {
   activeSidebarView: SidebarView;

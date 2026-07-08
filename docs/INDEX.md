@@ -315,8 +315,6 @@
         - `railNavigationModel.ts`
         - `railNavigationViews.tsx`
         - `RailWorkspaceSwitcher.tsx`
-        - `RightPanelFrontmatterForm.test.tsx`
-        - `RightPanelFrontmatterForm.tsx`
         - `RightPanelRecoveryList.tsx`
         - `SettingsPanel.test.tsx`
         - `SettingsPanel.tsx`
@@ -543,7 +541,6 @@
       - `previewMarkdown.ts`
       - `previewUpdateScheduling.test.ts`
       - `previewUpdateScheduling.ts`
-      - `rightPanelFrontmatterModel.ts`
       - `styles.css`
       - `toolbarCommands.ts`
       - `toolbarModel.test.ts`

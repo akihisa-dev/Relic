@@ -1,10 +1,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { defaultEditorSettings } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
 import { I18nProvider } from "../i18n";
-import type { FileTab } from "../store/editorStore";
 import { AppRightPanel } from "./AppRightPanel";
 
 const outgoingLink: ResolvedWikiLink = {
@@ -31,8 +29,6 @@ describe("AppRightPanel", () => {
     activeFileTab: null,
     applyingReferenceKey: null,
     backlinks: [],
-    editorSettings: defaultEditorSettings,
-    frontmatterCandidates: {},
     isLoadingBacklinks: false,
     isLoadingUnlinkedReferences: false,
     isOpen: true,
@@ -48,7 +44,6 @@ describe("AppRightPanel", () => {
     outgoingLinksLimited: false,
     setLinkContextMenu: vi.fn(),
     unlinkedReferences: { references: [], skippedUnreadableFileCount: 0, truncated: false },
-    userDefinedFields: [],
     width: 260
   };
 
@@ -143,119 +138,5 @@ describe("AppRightPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Link" }));
 
     expect(onApplyUnlinkedReference).toHaveBeenCalledWith(reference);
-  });
-
-  it("updates only the frontmatter block from the frontmatter panel", () => {
-    const onUpdateTabContent = vi.fn();
-    const activeFileTab: FileTab = {
-      content: "---\ntags: [draft]\n---\n# Body\nKeep this.",
-      id: "tab-1",
-      kind: "file",
-      name: "Note",
-      path: "Note.md",
-      savedContent: "---\ntags: [draft]\n---\n# Body\nKeep this."
-    };
-
-    render(
-      <I18nProvider language="en">
-        <AppRightPanel
-          {...defaultProps}
-          activeFileTab={activeFileTab}
-          onUpdateTabContent={onUpdateTabContent}
-          rightPanelView="frontmatter"
-        />
-      </I18nProvider>
-    );
-
-    const tagInput = screen.getByDisplayValue("draft");
-    fireEvent.change(tagInput, { target: { value: "review" } });
-    fireEvent.blur(tagInput);
-
-    expect(onUpdateTabContent).toHaveBeenCalledWith(
-      "tab-1",
-      "---\ntags: [\"review\"]\n---\n# Body\nKeep this."
-    );
-  });
-
-  it("treats unregistered frontmatter properties as text fields in the frontmatter panel", () => {
-    const onUpdateTabContent = vi.fn();
-    const activeFileTab: FileTab = {
-      content: "---\nunknown: [first, second]\n---\n# Body\nKeep this.",
-      id: "tab-1",
-      kind: "file",
-      name: "Note",
-      path: "Note.md",
-      savedContent: "---\nunknown: [first, second]\n---\n# Body\nKeep this."
-    };
-
-    render(
-      <I18nProvider language="en">
-        <AppRightPanel
-          {...defaultProps}
-          activeFileTab={activeFileTab}
-          onUpdateTabContent={onUpdateTabContent}
-          rightPanelView="frontmatter"
-        />
-      </I18nProvider>
-    );
-
-    expect(screen.queryByTitle("Add value")).not.toBeInTheDocument();
-    const input = screen.getByDisplayValue("first");
-    expect(input.getAttribute("list")).toBeNull();
-    fireEvent.change(input, { target: { value: "updated" } });
-    fireEvent.blur(input);
-
-    expect(onUpdateTabContent).toHaveBeenCalledWith(
-      "tab-1",
-      "---\nunknown: [\"updated\"]\n---\n# Body\nKeep this."
-    );
-  });
-
-  it("does not show form inputs for invalid frontmatter", () => {
-    const activeFileTab: FileTab = {
-      content: "---\ntags: [broken\n# Body",
-      id: "tab-1",
-      kind: "file",
-      name: "Broken",
-      path: "Broken.md",
-      savedContent: "---\ntags: [broken\n# Body"
-    };
-
-    render(
-      <I18nProvider language="en">
-        <AppRightPanel
-          {...defaultProps}
-          activeFileTab={activeFileTab}
-          rightPanelView="frontmatter"
-        />
-      </I18nProvider>
-    );
-
-    expect(screen.getByText("Frontmatter cannot be read, so form editing is unavailable.")).toBeInTheDocument();
-    expect(screen.queryByDisplayValue("broken")).not.toBeInTheDocument();
-  });
-
-  it("uses date inputs for registered date properties in the frontmatter panel", () => {
-    const activeFileTab: FileTab = {
-      content: "---\ndeadline: 2026-06-08\n---\n# Body",
-      id: "tab-1",
-      kind: "file",
-      name: "Note",
-      path: "Note.md",
-      savedContent: "---\ndeadline: 2026-06-08\n---\n# Body"
-    };
-
-    render(
-      <I18nProvider language="en">
-        <AppRightPanel
-          {...defaultProps}
-          activeFileTab={activeFileTab}
-          rightPanelView="frontmatter"
-          userDefinedFields={[{ name: "deadline", type: "date" }]}
-        />
-      </I18nProvider>
-    );
-
-    expect((screen.getByDisplayValue("2026-06-08") as HTMLInputElement).type).toBe("date");
   });
 });

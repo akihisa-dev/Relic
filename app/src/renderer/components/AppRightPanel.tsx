@@ -1,6 +1,6 @@
 import type { Dispatch, MouseEvent as ReactMouseEvent, ReactElement, SetStateAction } from "react";
 
-import type { Backlink, EditorSettings, UnlinkedReference, UnlinkedReferencesResult, UserDefinedField } from "../../shared/ipc";
+import type { Backlink, UnlinkedReference, UnlinkedReferencesResult } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
 import { markdownLinkForPath } from "../appLinks";
@@ -10,15 +10,12 @@ import { useT } from "../i18n";
 import type { FileTab } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
 import { fixedMenuPosition } from "./railNavigationModel";
-import { RightPanelFrontmatterForm } from "./RightPanelFrontmatterForm";
 import { RightPanelRecoveryList } from "./RightPanelRecoveryList";
 
 interface AppRightPanelProps {
   activeFileTab: FileTab | null;
   applyingReferenceKey: string | null;
   backlinks: Backlink[];
-  editorSettings: EditorSettings;
-  frontmatterCandidates: Record<string, string[]>;
   isLoadingBacklinks: boolean;
   isLoadingUnlinkedReferences: boolean;
   isOpen: boolean;
@@ -35,7 +32,6 @@ interface AppRightPanelProps {
   rightPanelView: RightPanelView;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
   unlinkedReferences: UnlinkedReferencesResult;
-  userDefinedFields: UserDefinedField[];
   width: number;
 }
 
@@ -43,8 +39,6 @@ export function AppRightPanel({
   activeFileTab,
   applyingReferenceKey,
   backlinks,
-  editorSettings,
-  frontmatterCandidates,
   isLoadingBacklinks,
   isLoadingUnlinkedReferences,
   isOpen,
@@ -61,7 +55,6 @@ export function AppRightPanel({
   rightPanelView,
   setLinkContextMenu,
   unlinkedReferences,
-  userDefinedFields,
   width
 }: AppRightPanelProps): ReactElement {
   const t = useT();
@@ -103,14 +96,6 @@ export function AppRightPanel({
         ) : (
           <div className="empty-note">{t("empty.noHeadings")}</div>
         )
-      ) : rightPanelView === "frontmatter" ? (
-        <RightPanelFrontmatterForm
-          activeFileTab={activeFileTab}
-          editorSettings={editorSettings}
-          frontmatterCandidates={frontmatterCandidates}
-          onUpdateTabContent={onUpdateTabContent}
-          userDefinedFields={userDefinedFields}
-        />
       ) : rightPanelView === "recovery" ? (
         <RightPanelRecoveryList
           activeFileTab={activeFileTab}
@@ -269,7 +254,6 @@ export function AppRightPanel({
 
 function rightPanelTitle(view: RightPanelView, t: ReturnType<typeof useT>): string {
   if (view === "outline") return t("pane.outline");
-  if (view === "frontmatter") return t("pane.frontmatter");
   if (view === "recovery") return t("pane.recovery");
   return t("pane.links");
 }

@@ -84,7 +84,6 @@ export function createEditorWorkspaceProps(input: AppLayoutEditorWorkspaceInput)
     setLinkContextMenu: input.setLinkContextMenu,
     onUpdateTabContent: input.updateTabContent,
     unlinkedReferences: input.unlinkedReferences,
-    showRightPanelFrontmatterControl: input.showRightPanelFrontmatterControl,
     showRightPanelLinksControl: input.showRightPanelLinksControl,
     showRightPanelOutlineControl: input.showRightPanelOutlineControl,
     showRightPanelRecoveryControl: input.showRightPanelRecoveryControl,
