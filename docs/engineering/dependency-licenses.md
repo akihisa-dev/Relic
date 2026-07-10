@@ -25,6 +25,15 @@ Relicの配布物に含まれ得る外部ライブラリの確認方法を定義
 
 ---
 
+## 依存関係の更新方針
+
+- npm / pnpm依存関係とGitHub Actionsの更新確認に、自動更新Pull RequestやDependabotを使わない
+- `.github/dependabot.yml` は作成せず、必要なタイミングでローカルから更新候補を確認する
+- 更新候補は影響の小さいものから適用し、検証に通ったものだけを採用する
+- 更新で検証が壊れた場合は、その作業で導入した依存変更だけを戻し、既存の差分には触れない
+- `pnpm.overrides` の対象がまだ必要か確認し、不要になった固定は依存更新と同じ作業または別作業で外す
+- ビルド基盤やElectronなど配布成果物に影響する依存を更新した場合は、対象OSの安全ビルドまたはパッケージ確認を行う
+
 ## 更新手順
 
 依存関係を追加・削除・更新した場合は、`app/` で次を実行する。
@@ -39,6 +48,7 @@ git -C .. diff --check
 
 `pnpm licenses:generate` は `THIRD_PARTY_NOTICES.md` と `sbom/relic-dependencies.cdx.json` を更新する。
 `pnpm licenses:check` は生成結果がGit管理中のファイルと一致しているか確認する。
+更新候補とproduction dependenciesの既知リスクを確認する場合は、`app/` で `pnpm outdated` と `pnpm audit --prod` を実行する。
 
 ---
 
@@ -49,10 +59,8 @@ Draft Release workflowでは、配布ZIPとchecksumに加えて、`THIRD_PARTY_N
 
 ## 依存関係更新の継続確認
 
-`.github/dependabot.yml` では、`app/` のnpm依存関係とリポジトリ全体のGitHub Actionsを週次で確認する。
-
-Dependabotによる更新Pull Requestでは、`pnpm.overrides` の固定がまだ必要かを確認する。
-固定を外せる状態になった場合は、対象依存関係の更新と同じPull Requestまたは別Issueで解除する。
+依存関係は、リリース前、依存更新作業、大きな実装後など、必要な区切りでローカルから確認する。
+Gitタグを作成するリリース作業では、タグ作成前に `pnpm outdated` と `pnpm audit --prod` を実行する。
 
 ---
 

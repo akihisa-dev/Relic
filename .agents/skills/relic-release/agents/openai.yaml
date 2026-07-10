@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Release"
+  short_description: "Relicの版・成果物・タグを確認して安全にリリースする"
+  default_prompt: "Use $relic-release to prepare and perform only the explicitly requested Relic release actions."

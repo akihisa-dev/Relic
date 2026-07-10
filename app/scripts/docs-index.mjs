@@ -1,40 +1,54 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const scriptPath = fileURLToPath(import.meta.url);
+const scriptDir = path.dirname(scriptPath);
 const repoRoot = path.resolve(scriptDir, "../..");
-const indexPath = path.join(repoRoot, "docs", "INDEX.md");
-const treeHeading = "## 全ファイル・フォルダ構成";
-const treeIntro = "以下はGitで管理しているファイルとフォルダの一覧です。";
+const indexRepoPath = "docs/INDEX.md";
+const indexPath = path.join(repoRoot, indexRepoPath);
 
-const mode = process.argv[2];
+export const catalogStartMarker = "<!-- docs-catalog:start -->";
+export const catalogEndMarker = "<!-- docs-catalog:end -->";
 
-if (mode !== "--check" && mode !== "--write") {
-  console.error("Usage: node scripts/docs-index.mjs --check|--write");
-  process.exit(2);
-}
+const requiredRootDocuments = new Set([
+  ".github/RELEASE_CHECKLIST.md",
+  "AGENTS.md",
+  "CODE_OF_CONDUCT.md",
+  "CONTRIBUTING.md",
+  "LICENSE",
+  "README.md",
+  "SECURITY.md",
+  "docs/INDEX.md",
+  "docs/development.md",
+]);
 
-function readTrackedFiles() {
-  const output = execFileSync(
-    "git",
-    ["-C", repoRoot, "-c", "core.quotePath=false", "ls-files"],
-    { encoding: "utf8" },
-  );
-
-  return output
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .sort(compareNames);
-}
-
-function compareNames(a, b) {
+export function compareNames(a, b) {
   return a.localeCompare(b, "en");
 }
 
-function buildTree(files) {
+export function parseTrackedFiles(output) {
+  return output.split("\0").filter(Boolean).sort(compareNames);
+}
+
+export function readTrackedFiles(root = repoRoot) {
+  const output = execFileSync("git", ["-C", root, "ls-files", "-z"], {
+    encoding: "utf8",
+  });
+  return parseTrackedFiles(output);
+}
+
+export function isRequiredDocument(file) {
+  return requiredRootDocuments.has(file)
+    || /^docs\/(project|features|design|engineering)\/.+\.md$/u.test(file);
+}
+
+export function requiredDocuments(trackedFiles) {
+  return trackedFiles.filter(isRequiredDocument).sort(compareNames);
+}
+
+export function buildTree(files) {
   const root = new Map();
 
   for (const file of files) {
@@ -57,9 +71,8 @@ function buildTree(files) {
   return root;
 }
 
-function renderTree(files) {
-  const root = buildTree(files);
-  return renderChildren(root, 0).join("\n");
+export function renderTree(files) {
+  return renderChildren(buildTree(files), 0).join("\n");
 }
 
 function renderChildren(children, depth) {
@@ -70,102 +83,182 @@ function renderChildren(children, depth) {
   const indent = "  ".repeat(depth);
 
   for (const [name, node] of directories) {
-    lines.push(`${indent}- \`${name}/\``);
+    lines.push(`${indent}- ${markdownCode(`${name}/`)}`);
     lines.push(...renderChildren(node.children, depth + 1));
   }
 
   for (const [name] of files) {
-    lines.push(`${indent}- \`${name}\``);
+    lines.push(`${indent}- ${markdownCode(name)}`);
   }
 
   return lines;
 }
 
-function buildExpectedIndex(currentContent, files) {
-  const start = currentContent.indexOf(treeHeading);
-  if (start === -1) {
-    throw new Error(`${indexPath} に "${treeHeading}" が見つかりません。`);
-  }
-
-  const prefix = currentContent.slice(0, start);
-  return `${prefix}${treeHeading}\n\n${treeIntro}\n\n${renderTree(files)}\n`;
+function markdownCode(value) {
+  const visibleValue = value.replaceAll("\r", "\\r").replaceAll("\n", "\\n");
+  const longestRun = Math.max(0, ...[...visibleValue.matchAll(/`+/gu)].map((match) => match[0].length));
+  const delimiter = "`".repeat(longestRun + 1);
+  return `${delimiter}${visibleValue}${delimiter}`;
 }
 
-function readIndexedFiles(content) {
-  const start = content.indexOf(treeHeading);
-  if (start === -1) {
-    return [];
+export function extractMarkdownLinks(content) {
+  const links = [];
+  const pattern = /!?\[[^\]]*\]\(([^)]+)\)/gu;
+
+  for (const match of content.matchAll(pattern)) {
+    let target = match[1].trim();
+    if (target.startsWith("<") && target.endsWith(">")) {
+      target = target.slice(1, -1);
+    } else {
+      target = target.split(/\s+/u, 1)[0];
+    }
+    links.push(target);
   }
 
-  const stack = [];
-  const files = [];
-  const lines = content.slice(start).split("\n");
+  return links;
+}
 
-  for (const line of lines) {
-    const match = line.match(/^(\s*)- `([^`]+)`/);
-    if (!match) {
+function markerRange(content) {
+  const starts = [...content.matchAll(new RegExp(catalogStartMarker, "gu"))];
+  const ends = [...content.matchAll(new RegExp(catalogEndMarker, "gu"))];
+
+  if (starts.length !== 1 || ends.length !== 1) {
+    return {
+      errors: [`正本文書カタログの開始・終了マーカーは1組必要です（start=${starts.length}, end=${ends.length}）。`],
+      content: "",
+    };
+  }
+
+  const start = starts[0].index + catalogStartMarker.length;
+  const end = ends[0].index;
+  if (start >= end) {
+    return {
+      errors: ["正本文書カタログの終了マーカーが開始マーカーより前にあります。"],
+      content: "",
+    };
+  }
+
+  return { errors: [], content: content.slice(start, end) };
+}
+
+function localRepositoryPath(target, sourceRepoPath = indexRepoPath) {
+  if (!target || target.startsWith("#") || /^[a-z][a-z\d+.-]*:/iu.test(target)) {
+    return null;
+  }
+
+  let decodedTarget;
+  try {
+    decodedTarget = decodeURIComponent(target.split("#", 1)[0]);
+  } catch {
+    return { error: `リンク先をURLデコードできません: ${target}` };
+  }
+
+  if (decodedTarget.startsWith("/")) {
+    return { error: `リポジトリ外を指す絶対リンクは使えません: ${target}` };
+  }
+
+  const resolved = path.posix.normalize(
+    path.posix.join(path.posix.dirname(sourceRepoPath), decodedTarget),
+  );
+  if (resolved === ".." || resolved.startsWith("../")) {
+    return { error: `リポジトリ外を指すリンクは使えません: ${target}` };
+  }
+
+  return { path: resolved };
+}
+
+export function validateIndexContent(content, trackedFiles, options = {}) {
+  const tracked = new Set(trackedFiles);
+  const pathExists = options.pathExists
+    ?? ((repoPath) => existsSync(path.join(repoRoot, repoPath)));
+  const errors = [];
+
+  for (const target of extractMarkdownLinks(content)) {
+    const resolved = localRepositoryPath(target);
+    if (resolved === null) {
       continue;
     }
-
-    const indent = match[1].length;
-    const name = match[2];
-    const level = Math.floor(indent / 2);
-    stack.length = level;
-    stack[level] = name;
-
-    if (!name.endsWith("/")) {
-      files.push(stack.slice(0, level + 1).join(""));
+    if (resolved.error) {
+      errors.push(resolved.error);
+      continue;
+    }
+    if (!pathExists(resolved.path)) {
+      errors.push(`リンク先が存在しません: ${target} -> ${resolved.path}`);
+    } else if (!tracked.has(resolved.path)) {
+      errors.push(`リンク先がGitで追跡されていません: ${target} -> ${resolved.path}`);
     }
   }
 
-  return files.sort(compareNames);
-}
-
-function diffFiles(expected, actual) {
-  return {
-    missing: expected.filter((file) => !actual.includes(file)),
-    extra: actual.filter((file) => !expected.includes(file)),
-  };
-}
-
-const trackedFiles = readTrackedFiles();
-const currentContent = readFileSync(indexPath, "utf8");
-const expectedContent = buildExpectedIndex(currentContent, trackedFiles);
-
-if (mode === "--write") {
-  if (currentContent === expectedContent) {
-    console.log("docs/INDEX.md is already up to date.");
-  } else {
-    writeFileSync(indexPath, expectedContent);
-    console.log("docs/INDEX.md updated.");
+  const catalog = markerRange(content);
+  errors.push(...catalog.errors);
+  if (catalog.errors.length > 0) {
+    return errors;
   }
-  process.exit(0);
-}
 
-if (currentContent === expectedContent) {
-  console.log("docs/INDEX.md is up to date.");
-  process.exit(0);
-}
-
-const indexedFiles = readIndexedFiles(currentContent);
-const { missing, extra } = diffFiles(trackedFiles, indexedFiles);
-
-console.error("docs/INDEX.md is out of sync with git ls-files.");
-console.error("Run: cd app && pnpm docs:index:update");
-console.error(`tracked=${trackedFiles.length} indexed=${indexedFiles.length}`);
-
-if (missing.length > 0) {
-  console.error("\nMissing from docs/INDEX.md:");
-  for (const file of missing) {
-    console.error(`- ${file}`);
+  const catalogPaths = [];
+  for (const target of extractMarkdownLinks(catalog.content)) {
+    const resolved = localRepositoryPath(target);
+    if (resolved?.path) {
+      catalogPaths.push(resolved.path);
+    }
   }
-}
 
-if (extra.length > 0) {
-  console.error("\nExtra in docs/INDEX.md:");
-  for (const file of extra) {
-    console.error(`- ${file}`);
+  const counts = new Map();
+  for (const repoPath of catalogPaths) {
+    counts.set(repoPath, (counts.get(repoPath) ?? 0) + 1);
   }
+
+  for (const [repoPath, count] of counts) {
+    if (count > 1) {
+      errors.push(`正本文書カタログに重複があります: ${repoPath} (${count}件)`);
+    }
+  }
+
+  const expected = requiredDocuments(trackedFiles);
+  const catalogSet = new Set(catalogPaths);
+  for (const repoPath of expected) {
+    if (!catalogSet.has(repoPath)) {
+      errors.push(`正本文書カタログに掲載されていません: ${repoPath}`);
+    }
+  }
+
+  const expectedSet = new Set(expected);
+  for (const repoPath of catalogSet) {
+    if (!expectedSet.has(repoPath)) {
+      errors.push(`正本文書カタログの対象外です: ${repoPath}`);
+    }
+  }
+
+  return errors;
 }
 
-process.exit(1);
+export function main(args = process.argv.slice(2)) {
+  const mode = args[0];
+  if (mode !== "--check" && mode !== "--tree") {
+    console.error("Usage: node scripts/docs-index.mjs --check|--tree");
+    return 2;
+  }
+
+  const trackedFiles = readTrackedFiles();
+  if (mode === "--tree") {
+    console.log(renderTree(trackedFiles));
+    return 0;
+  }
+
+  const content = readFileSync(indexPath, "utf8");
+  const errors = validateIndexContent(content, trackedFiles);
+  if (errors.length > 0) {
+    console.error("docs/INDEX.md の検証に失敗しました。");
+    for (const error of errors) {
+      console.error(`- ${error}`);
+    }
+    return 1;
+  }
+
+  console.log(`docs/INDEX.md is valid (${requiredDocuments(trackedFiles).length} canonical documents).`);
+  return 0;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === scriptPath) {
+  process.exitCode = main();
+}

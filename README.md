@@ -149,7 +149,7 @@ cd app
 pnpm verify
 ```
 
-Run verification plus documentation index and whitespace checks for code and documentation diffs:
+Run verification plus documentation catalog and whitespace checks for code and documentation diffs:
 
 ```sh
 cd app
@@ -163,6 +163,12 @@ pnpm typecheck
 pnpm test
 pnpm docs:index:check
 git -C .. diff --check
+```
+
+Print the current Git-tracked file tree without changing documentation:
+
+```sh
+pnpm docs:tree
 ```
 
 OS-specific test aliases:
@@ -228,7 +234,7 @@ For distribution, provide the `out/Relic-win32-x64/` folder as-is or zip it.
 
 ## Documentation
 
-- Repository index and file structure: [docs/INDEX.md](docs/INDEX.md)
+- Documentation index and task-based routing: [docs/INDEX.md](docs/INDEX.md)
 - Project overview: [docs/project/overview.md](docs/project/overview.md)
 - Glossary: [docs/project/terms.md](docs/project/terms.md)
 - Feature specifications: [docs/features](docs/features)
@@ -406,7 +412,7 @@ cd app
 pnpm verify
 ```
 
-文書索引とコード・文書の差分確認までまとめて行う場合:
+文書カタログとコード・文書の差分確認までまとめて行う場合:
 
 ```sh
 cd app
@@ -420,6 +426,12 @@ pnpm typecheck
 pnpm test
 pnpm docs:index:check
 git -C .. diff --check
+```
+
+文書を変更せず、Gitで管理している現在のファイルツリーを表示する場合:
+
+```sh
+pnpm docs:tree
 ```
 
 OS別のテストエイリアス:
@@ -485,7 +497,7 @@ pnpm build:win:safe
 
 ## ドキュメント
 
-- リポジトリ索引・ファイル構成: [docs/INDEX.md](docs/INDEX.md)
+- 文書索引・作業別の参照先: [docs/INDEX.md](docs/INDEX.md)
 - プロジェクト概要: [docs/project/overview.md](docs/project/overview.md)
 - 用語集: [docs/project/terms.md](docs/project/terms.md)
 - 機能仕様: [docs/features](docs/features)

@@ -10,8 +10,8 @@
 
 | カテゴリ | 技術 | 備考 |
 |---------|------|------|
-| 言語 | TypeScript 5.9 | 型安全な開発のため |
-| デスクトップフレームワーク | Electron 42 | macOS / Windows 向けデスクトップアプリを Web 技術で構築 |
+| 言語 | TypeScript 6 | 型安全な開発のため |
+| デスクトップフレームワーク | Electron 43 | macOS / Windows 向けデスクトップアプリを Web 技術で構築 |
 | エディタエンジン | CodeMirror 6 | 詳細は [editor-engine.md](editor-engine.md) |
 | Markdownパーサー | marked | プレビューHTML生成に使用 |
 | Markdown脚注拡張 | marked-footnote | 脚注記法をmarkedへ追加 |
@@ -28,7 +28,7 @@
 | 設定保存 | Electron userData 配下のJSON + 自前設定サービス | アプリ設定とワークスペース設定を分けて保存 |
 | パッケージマネージャ | pnpm 10.10 | `app/` 配下でスクリプトを実行 |
 | ビルド・配布ツール | Electron Forge 7 + Vite plugin | main / preload / renderer をVite設定で分割してビルド |
-| Vite | Vite 6 | rendererはReact plugin、Markdown preview系とCodeMirror系をmanual chunk化 |
+| Vite | Vite 8 | rendererはReact plugin、Markdown preview系とCodeMirror系をmanual chunk化 |
 | テストフレームワーク | Vitest 4 | `vitest run`。設定は `app/vitest.config.ts` |
 | React UIテスト | React Testing Library + jest-dom + jsdom | ユーザー操作に近い形でReactコンポーネントをテスト |
 

@@ -1,6 +1,19 @@
 # Release Checklist
 
-RelicのDraft ReleaseをPublishする前に、人が確認する項目です。
+RelicのGitタグ作成前と、Draft ReleaseをPublishする前に確認する項目です。
+
+## タグ作成前
+
+- [ ] `app/package.json` の `version` が配布する `MAJOR.MINOR.PATCH` になっている
+- [ ] 必要なバージョン更新がコミット済みである
+- [ ] 作業中の差分が残っていない
+- [ ] リリース対象コミットがGitHubの `main` にpush済みである
+- [ ] `app/` で `pnpm outdated` と `pnpm audit --prod` を実行し、依存状態を確認した
+- [ ] `app/` で `pnpm verify` が成功した
+- [ ] リポジトリルートで `git diff --check` が成功した
+- [ ] 作成するGitタグが `app/package.json` の `version` と一致している
+
+GitタグをGitHubへpushすると、`.github/workflows/draft-release.yml` が配布物を作成してDraft Releaseへ添付する。
 
 ## 成果物
 
@@ -11,6 +24,7 @@ RelicのDraft ReleaseをPublishする前に、人が確認する項目です。
 - [ ] `Relic-Windows.zip.sha256` が添付されている
 - [ ] `THIRD_PARTY_NOTICES.md` が添付されている
 - [ ] `relic-dependencies.cdx.json` が添付されている
+- [ ] workflowが `release-assets` に集めた確認済みファイルだけが添付され、途中生成物や未確認の成果物が混ざっていない
 
 ## 公開前確認
 
@@ -20,6 +34,11 @@ RelicのDraft ReleaseをPublishする前に、人が確認する項目です。
 - [ ] Windows配布物がZIP配布であることが分かる
 - [ ] 未署名・未公証ビルドであることが分かる
 - [ ] checksumで配布ZIPの整合を確認できることが分かる
+
+## ローカルで事前確認する場合
+
+GitHub Actions実行前にmacOS向け成果物まで確認する場合は、`app/` で `pnpm verify` と `pnpm build:mac:safe` を実行する。
+Windows向けの最終確認は、Windows環境で起動確認できた成果物を対象にする。
 
 ## 未署名・未公証の注意
 

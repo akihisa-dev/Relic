@@ -5,7 +5,7 @@
 ## Verification
 
 - [ ] `cd app && pnpm verify`
-- [ ] `cd app && pnpm docs:index:check`
+- [ ] Documentation catalog is valid: `cd app && pnpm docs:index:check`
 - [ ] `git diff --check`
 - [ ] GitHub CI passed
 

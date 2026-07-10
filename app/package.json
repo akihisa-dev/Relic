@@ -1,6 +1,6 @@
 {
   "name": "relic",
-  "version": "0.4.127",
+  "version": "0.4.128",
   "description": "Relic is a local app that extends Markdown files with editing, search, browsing, visualization, and export while keeping the information as Markdown.",
   "license": "AGPL-3.0-or-later",
   "main": ".vite/build/main.js",
@@ -14,7 +14,7 @@
     "verify": "pnpm typecheck && pnpm test",
     "verify:full": "pnpm verify && pnpm docs:index:check && git -C .. diff --check",
     "docs:index:check": "node scripts/docs-index.mjs --check",
-    "docs:index:update": "node scripts/docs-index.mjs --write",
+    "docs:tree": "node scripts/docs-index.mjs --tree",
     "package": "electron-forge package",
     "package:mac": "node scripts/run-forge-build.mjs package darwin",
     "package:win": "node scripts/run-forge-build.mjs package win32 x64",
