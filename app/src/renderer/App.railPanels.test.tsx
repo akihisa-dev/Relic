@@ -104,9 +104,9 @@ describe("App rail panels", () => {
   it("レールのフロントマターボタンから専用設定を開ける", async () => {
     window.relic = makeRelicApi({
       getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
-      getUserDefinedFields: vi.fn().mockResolvedValue({
+      getWorkspaceFrontmatterCategoryChoices: vi.fn().mockResolvedValue({
         ok: true,
-        value: [{ name: "category", type: "select", choices: ["draft", "done"] }]
+        value: ["draft", "done"]
       }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
@@ -130,7 +130,7 @@ describe("App rail panels", () => {
     expect(document.querySelector('.pane-tab[data-tab-id="panel-frontmatter"] .pane-tab-icon svg')).toBeInTheDocument();
     expect(frontmatterButton).toHaveClass("active");
     expect(screen.getByText("フロントマター設定")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("category")).toBeInTheDocument();
+    expect(await screen.findByText("draft")).toBeInTheDocument();
 
     fireEvent.click(frontmatterButton);
 

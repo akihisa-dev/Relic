@@ -148,6 +148,14 @@ function visibleRangeKey(ranges: readonly SyntaxBlockRange[]): string {
   return ranges.map((range) => `${range.from}:${range.to}`).join("|");
 }
 
+function normalizeVisibleRanges(doc: Text, ranges: readonly SyntaxBlockRange[]): SyntaxBlockRange[] {
+  return ranges.map((range) => {
+    const from = Math.min(Math.max(0, range.from), doc.length);
+    const to = Math.min(Math.max(from, range.to), doc.length);
+    return { from, to };
+  });
+}
+
 function findClosingMathLine(doc: Text, startLineNumber: number): number | null {
   for (let currentLine = startLineNumber + 1; currentLine <= doc.lines; currentLine += 1) {
     if (doc.line(currentLine).text.trim() === "$$") return currentLine;
@@ -218,8 +226,9 @@ function buildCodeBlockPreviewDecorations(
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const revealedRanges: SyntaxBlockRange[] = [];
   const doc = state.doc;
-  const codeBlocks = fencedCodeBlocksInVisibleRanges(state, visibleRanges);
-  const mathBlocks = blockMathRangesInVisibleRanges(state, visibleRanges);
+  const normalizedVisibleRanges = normalizeVisibleRanges(doc, visibleRanges);
+  const codeBlocks = fencedCodeBlocksInVisibleRanges(state, normalizedVisibleRanges);
+  const mathBlocks = blockMathRangesInVisibleRanges(state, normalizedVisibleRanges);
 
   function selectionTouches(from: number, to: number): boolean {
     return state.selection.ranges.some((range) => {
@@ -269,7 +278,7 @@ function buildCodeBlockPreviewDecorations(
     decorations: Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true),
     revealedRanges,
     sourceInteractionRanges,
-    visibleRanges
+    visibleRanges: normalizedVisibleRanges
   };
 }
 

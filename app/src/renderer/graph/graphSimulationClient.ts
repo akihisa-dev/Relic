@@ -98,9 +98,14 @@ function createWorkerGraphSimulationClient(
 
   return {
     dispose: () => {
+      if (disposed) return;
+
       disposed = true;
-      worker.postMessage({ type: "dispose" } satisfies GraphSimulationRequest);
-      worker.terminate();
+      try {
+        worker.postMessage({ type: "dispose" } satisfies GraphSimulationRequest);
+      } finally {
+        worker.terminate();
+      }
     },
     restart: (alpha) => post({ alpha, type: "restart" }),
     setNodeFixed: (id, x, y, alpha) => post({ alpha, id, type: "fixedNode", x, y }),

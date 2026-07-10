@@ -7,7 +7,10 @@ import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { makeRelicApi } from "../../test/rendererTestUtils";
-import { findClickableLinkAtPosition } from "../editorLivePreview";
+import {
+  __buildLivePreviewBlockDecorationsForTests,
+  findClickableLinkAtPosition
+} from "../editorLivePreview";
 import { Editor } from "./Editor";
 import {
   collectInlineLivePreviewWidgetClasses,
@@ -18,6 +21,16 @@ import {
 } from "./editorTestHelpers";
 
 describe("Editor live preview", () => {
+  it("文書更新前の可視範囲が末尾を越えていてもブロック装飾を再構築できる", () => {
+    const state = EditorState.create({ doc: "---\nstatus: draft\n---\n本文" });
+
+    expect(() => __buildLivePreviewBlockDecorationsForTests(
+      state,
+      undefined,
+      [{ from: state.doc.length + 10, to: state.doc.length + 20 }]
+    )).not.toThrow();
+  });
+
   it("ライブプレビューでカーソル外のMarkdown記法を装飾する", async () => {
     const content = "==mark==\n\nx";
     const classes = await collectInlineLivePreviewWidgetClasses(content, content.length);

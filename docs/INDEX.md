@@ -331,6 +331,7 @@
       - `graph/`
         - `graphLayout.test.ts`
         - `graphLayout.ts`
+        - `graphSimulationClient.test.ts`
         - `graphSimulationClient.ts`
         - `graphSimulationWorker.ts`
         - `graphTypes.ts`

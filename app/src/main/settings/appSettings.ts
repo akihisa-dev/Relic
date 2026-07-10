@@ -44,11 +44,20 @@ type MigrationResult<T> = {
   settings: T;
 };
 type SerializedUpdate = Promise<unknown>;
-let appSettingsUpdateQueue: SerializedUpdate = Promise.resolve();
+const appSettingsUpdateQueues = new Map<string, SerializedUpdate>();
 
-function queueAppSettingsUpdate<T>(task: () => Promise<T>): Promise<T> {
-  const next = appSettingsUpdateQueue.catch(() => undefined).then(task);
-  appSettingsUpdateQueue = next.finally(() => undefined);
+function queueAppSettingsUpdate<T>(settingsPath: string, task: () => Promise<T>): Promise<T> {
+  const currentQueue = appSettingsUpdateQueues.get(settingsPath) ?? Promise.resolve();
+  const next = currentQueue.catch(() => undefined).then(task);
+  const settled = next.finally(() => undefined);
+
+  appSettingsUpdateQueues.set(settingsPath, settled);
+  void settled.finally(() => {
+    if (appSettingsUpdateQueues.get(settingsPath) === settled) {
+      appSettingsUpdateQueues.delete(settingsPath);
+    }
+  }).catch(() => undefined);
+
   return next;
 }
 
@@ -123,7 +132,7 @@ export async function updateAppSettings(
   userDataPath: string,
   update: (current: AppSettings) => Promise<AppSettings> | AppSettings
 ): Promise<AppSettings> {
-  return queueAppSettingsUpdate(async () => {
+  return queueAppSettingsUpdate(getAppSettingsPath(userDataPath), async () => {
     const current = await readAppSettingsInternal(userDataPath, { persistMigration: false });
     const next = await update(current);
     await writeAppSettings(userDataPath, next);
@@ -344,7 +353,7 @@ function migrateAppSettings(raw: Record<string, unknown>, settingsPath: string):
 async function persistMigratedAppSettings(
   settingsPath: string,
 ): Promise<void> {
-  return queueAppSettingsUpdate(async () => {
+  return queueAppSettingsUpdate(settingsPath, async () => {
     const rawSettings = await readFile(settingsPath, "utf8");
     const parsedJson = parseSettingsJson(rawSettings);
 

@@ -47,16 +47,16 @@ type SerializedUpdate = Promise<unknown>;
 const workspaceSettingsUpdateQueues = new Map<string, SerializedUpdate>();
 
 function queueWorkspaceSettingsUpdate<T>(
-  workspaceId: string,
+  settingsPath: string,
   task: () => Promise<T>
 ): Promise<T> {
-  const currentQueue = workspaceSettingsUpdateQueues.get(workspaceId) ?? Promise.resolve();
+  const currentQueue = workspaceSettingsUpdateQueues.get(settingsPath) ?? Promise.resolve();
   const next = currentQueue.catch(() => undefined).then(task);
   const settled = next.finally(() => undefined);
-  workspaceSettingsUpdateQueues.set(workspaceId, settled);
-  settled.finally(() => {
-    if (workspaceSettingsUpdateQueues.get(workspaceId) === settled) {
-      workspaceSettingsUpdateQueues.delete(workspaceId);
+  workspaceSettingsUpdateQueues.set(settingsPath, settled);
+  void settled.finally(() => {
+    if (workspaceSettingsUpdateQueues.get(settingsPath) === settled) {
+      workspaceSettingsUpdateQueues.delete(settingsPath);
     }
   }).catch(() => undefined);
   return next;
@@ -99,7 +99,7 @@ async function readWorkspaceSettingsInternal(
     const migrated = migrateWorkspaceSettings(parsed, settingsPath);
     if (migrated.didMigrate && options.persistMigration) {
       try {
-        await persistMigratedWorkspaceSettings(workspaceId, settingsPath);
+        await persistMigratedWorkspaceSettings(settingsPath);
       } catch {
         // 書き戻し失敗時も読み込み結果は捨てず、続行する
       }
@@ -259,7 +259,7 @@ export async function updateWorkspaceSettings(
   workspaceId: string,
   update: (current: WorkspaceSettings) => Promise<WorkspaceSettings> | WorkspaceSettings
 ): Promise<WorkspaceSettings> {
-  return queueWorkspaceSettingsUpdate(workspaceId, async () => {
+  return queueWorkspaceSettingsUpdate(getWorkspaceSettingsPath(userDataPath, workspaceId), async () => {
     const current = await readWorkspaceSettingsInternal(userDataPath, workspaceId, { persistMigration: false });
     const next = await update(current);
     await writeWorkspaceSettings(userDataPath, workspaceId, next);
@@ -316,11 +316,8 @@ function migrateWorkspaceSettings(
   throw createUnsupportedWorkspaceSettingsVersionError(settingsPath, schemaVersion);
 }
 
-async function persistMigratedWorkspaceSettings(
-  workspaceId: string,
-  settingsPath: string
-): Promise<void> {
-  return queueWorkspaceSettingsUpdate(workspaceId, async () => {
+async function persistMigratedWorkspaceSettings(settingsPath: string): Promise<void> {
+  return queueWorkspaceSettingsUpdate(settingsPath, async () => {
     const raw = await readFile(settingsPath, "utf8");
     const parsedJson = parseSettingsJson(raw);
 

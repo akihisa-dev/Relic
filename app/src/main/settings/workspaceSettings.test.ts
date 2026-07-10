@@ -337,6 +337,52 @@ describe("workspaceSettings", () => {
     expect(loaded.workspacePath).toBe("/Users/test/notes");
   });
 
+  it("同じIDでも別の設定ファイルの更新は完了待ちに巻き込まれない", async () => {
+    const firstUserDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-first-"));
+    const secondUserDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-second-"));
+    temporaryPaths.push(firstUserDataPath, secondUserDataPath);
+    let releaseFirstUpdate: (() => void) | undefined;
+    const firstUpdateCanFinish = new Promise<void>((resolve) => {
+      releaseFirstUpdate = resolve;
+    });
+    let notifyFirstUpdateStarted: (() => void) | undefined;
+    const firstUpdateStarted = new Promise<void>((resolve) => {
+      notifyFirstUpdateStarted = resolve;
+    });
+    let notifySecondUpdateStarted: (() => void) | undefined;
+    const secondUpdateStarted = new Promise<void>((resolve) => {
+      notifySecondUpdateStarted = resolve;
+    });
+
+    const firstUpdate = updateWorkspaceSettings(firstUserDataPath, "ws-shared", async (settings) => {
+      notifyFirstUpdateStarted?.();
+      await firstUpdateCanFinish;
+      return settings;
+    });
+    await Promise.race([
+      firstUpdateStarted,
+      delay(1000).then(() => {
+        throw new Error("最初の設定ファイルの更新が開始されませんでした。");
+      })
+    ]);
+
+    const secondUpdate = updateWorkspaceSettings(secondUserDataPath, "ws-shared", (settings) => {
+      notifySecondUpdateStarted?.();
+      return settings;
+    });
+    try {
+      await Promise.race([
+        secondUpdateStarted,
+        delay(1000).then(() => {
+          throw new Error("別の設定ファイルの更新が開始されませんでした。");
+        })
+      ]);
+    } finally {
+      releaseFirstUpdate?.();
+      await Promise.all([firstUpdate, secondUpdate]);
+    }
+  });
+
   it("移行読み込みと同時更新で更新値が上書きされない", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
     temporaryPaths.push(userDataPath);
