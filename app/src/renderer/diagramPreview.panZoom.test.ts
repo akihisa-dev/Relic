@@ -294,7 +294,7 @@ describe("diagramPreview pan/zoom", () => {
   });
 
   it("本文内viewportはdiagram系クラスでスクロールバーではなくパン操作を前提にする", async () => {
-    const css = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
+    const css = readFileSync("src/renderer/styles/preview-diagram.css", "utf8");
 
     expect(css).toMatch(/\.preview-diagram-panzoom-viewport\s*{[^}]*overflow:\s*hidden;/s);
     expect(css).toMatch(/\.preview-diagram-panzoom-viewport\s*{[^}]*cursor:\s*default;/s);

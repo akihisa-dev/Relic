@@ -1,0 +1,79 @@
+.pane-status {
+  align-items: center;
+  border-top: 0;
+  box-shadow: 0 -1px 0 color-mix(in srgb, var(--border) 52%, transparent);
+  color: var(--text-3);
+  display: flex;
+  font-size: 11px;
+  gap: 12px;
+  padding: 0 16px;
+}
+
+.empty-pane {
+  align-items: center;
+  background: transparent;
+  color: var(--text-3);
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  gap: 16px;
+  justify-content: center;
+  padding: 24px;
+}
+
+.empty-pane-copy {
+  text-align: center;
+}
+
+.empty-pane-kicker {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  margin: 0 0 8px;
+}
+
+.empty-pane-message {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.empty-pane-form {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty-pane-create-button {
+  background: #e8e8e8;
+  border: 1px solid #e8e8e8;
+  border-radius: 0.5em;
+  box-shadow: 6px 6px 12px #c5c5c5, -6px -6px 12px #ffffff;
+  color: #090909;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: normal;
+  min-height: 0;
+  padding: 0.7em 1.7em;
+  transform: none;
+  transition: all 0.3s;
+  width: auto;
+  white-space: nowrap;
+}
+
+.empty-pane-create-button:hover {
+  background: #e8e8e8;
+  color: #090909;
+}
+
+.empty-pane-create-button:active {
+  box-shadow: inset 4px 4px 12px #c5c5c5, inset -4px -4px 12px #ffffff;
+  color: #666666;
+  transform: none;
+}

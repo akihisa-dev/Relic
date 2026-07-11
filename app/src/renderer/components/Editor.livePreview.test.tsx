@@ -198,7 +198,7 @@ describe("Editor live preview", () => {
   });
 
   it("ライブプレビューの数式は本文行の折り返し指定を継承しない", () => {
-    const css = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
+    const css = readFileSync("src/renderer/styles/editor-live-preview.css", "utf8");
 
     expect(css).toMatch(/\.cm-live-math-inline,\s*\.cm-live-math-block\s*\{[^}]*overflow-wrap:\s*normal;/s);
     expect(css).toMatch(/\.cm-live-math-inline,\s*\.cm-live-math-block\s*\{[^}]*white-space:\s*normal;/s);
@@ -603,7 +603,7 @@ describe("Editor live preview", () => {
   });
 
   it("通常コードブロックの本文はCSS上で文字選択を許可する", () => {
-    const css = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
+    const css = readFileSync("src/renderer/styles/editor-live-preview.css", "utf8");
 
     expect(css).toMatch(/\.cm-live-code-block-pre\s*\{[^}]*cursor:\s*text;/s);
     expect(css).toMatch(/\.cm-live-code-block-source\s*\{[^}]*cursor:\s*text;/s);

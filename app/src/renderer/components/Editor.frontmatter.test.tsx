@@ -16,7 +16,7 @@ import {
 
 describe("Editor frontmatter", () => {
   it("プロパティフォームの横幅は本文カラム内に収める", () => {
-    const css = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
+    const css = readFileSync("src/renderer/styles/editor-frontmatter.css", "utf8");
 
     expect(css).toMatch(/\.cm-frontmatter-properties\s*\{[^}]*max-width:\s*100%;[^}]*width:\s*100%;/s);
     expect(css).toMatch(/\.cm-frontmatter-properties--panel\s*\{[^}]*margin-left:\s*0;/s);

@@ -1,0 +1,424 @@
+.cm-live-table {
+  --live-table-add-button-border-color: #e0e0e0;
+  --live-table-border-color: #e0e0e0;
+  --live-table-control-size: 16px;
+  --live-table-drag-handle-size: 16px;
+  --live-table-handle-active-color: #ffffff;
+  --live-table-handle-color: #ababab;
+  --live-table-selection: color-mix(in srgb, var(--text) 8%, transparent);
+  --live-table-selection-blend-mode: darken;
+  --live-table-selection-border-color: var(--text);
+  --live-table-selection-border-radius: 4px;
+  --live-table-selection-border-width: 2px;
+  margin: 18px 0;
+  overflow: visible;
+  padding: 0;
+  position: relative;
+}
+
+.cm-live-table::before {
+  background: var(--live-table-selection);
+  border-radius: var(--live-table-selection-border-radius);
+  box-shadow: inset 0 0 0 var(--live-table-selection-border-width) var(--live-table-selection-border-color);
+  content: "";
+  display: none;
+  mix-blend-mode: var(--live-table-selection-blend-mode);
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
+.cm-live-table::after {
+  background: var(--accent);
+  content: "";
+  display: none;
+  pointer-events: none;
+  position: absolute;
+  z-index: 3;
+}
+
+.cm-live-table[data-drag-axis="column"]::after {
+  display: block;
+  height: 100%;
+  left: var(--table-drop-col);
+  top: 0;
+  transform: translateX(-50%);
+  width: 3px;
+}
+
+.cm-live-table[data-drag-axis="row"]::after {
+  display: block;
+  height: 3px;
+  left: 0;
+  top: var(--table-drop-row);
+  transform: translateY(-50%);
+  width: 100%;
+}
+
+.cm-live-table[data-active-axis="column"]::before {
+  display: block;
+  height: calc(100% + 2px);
+  left: calc(var(--table-active-col-start) - 1px);
+  top: -1px;
+  width: calc(var(--table-active-col-width) + 2px);
+}
+
+.cm-live-table[data-active-axis="row"]::before {
+  display: block;
+  height: calc(var(--table-active-row-height) + 2px);
+  left: -1px;
+  top: calc(var(--table-active-row-start) - 1px);
+  width: calc(100% + 2px);
+}
+
+.cm-live-table table {
+  background: transparent;
+  border: 1px solid var(--live-table-border-color);
+  border-collapse: separate;
+  border-radius: 0;
+  border-spacing: 0;
+  box-shadow: none;
+  color: var(--text);
+  font-size: inherit;
+  line-height: 1.3;
+  overflow: hidden;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.cm-live-table th,
+.cm-live-table td {
+  border: 0;
+  border-bottom: 1px solid var(--live-table-border-color);
+  border-right: 1px solid var(--live-table-border-color);
+  box-sizing: border-box;
+  min-width: 6ch;
+  padding: 0;
+  position: relative;
+  text-align: left;
+  vertical-align: top;
+}
+
+.cm-live-table th:last-child,
+.cm-live-table td:last-child {
+  border-right: 0;
+}
+
+.cm-live-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.cm-live-table th {
+  background: transparent;
+  border-bottom-color: var(--live-table-border-color);
+  font-weight: inherit;
+}
+
+.cm-live-table-cell-input {
+  background: transparent;
+  border: 0;
+  box-sizing: border-box;
+  color: inherit;
+  display: block;
+  font: inherit;
+  line-height: 1.3;
+  min-height: calc(1.3em + 8px);
+  min-width: 0;
+  outline: none;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  padding: 4px 8px;
+  resize: none;
+  white-space: pre-wrap;
+  width: 100%;
+  word-break: break-word;
+}
+
+.cm-live-table-color-cell .cm-live-table-cell-input {
+  padding-left: 28px;
+}
+
+.cm-live-table-color-swatch {
+  left: 8px;
+  pointer-events: none;
+  position: absolute;
+  top: calc(0.65em + 4px);
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.cm-live-table-cell-input:focus {
+  background: transparent;
+}
+
+.cm-live-table-continuation {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  display: block;
+  font: inherit;
+  line-height: 1.6;
+  margin-top: 8px;
+  min-height: 1.6em;
+  outline: none;
+  overflow: hidden;
+  padding: 0;
+  resize: none;
+  width: 100%;
+}
+
+.cm-live-table-active {
+  background: var(--live-table-selection);
+}
+
+.cm-live-table[data-active-axis="cell"] .cm-live-table-active {
+  background: var(--live-table-selection);
+  border-radius: var(--live-table-selection-border-radius);
+  box-shadow: inset 0 0 0 var(--live-table-selection-border-width) var(--live-table-selection-border-color);
+}
+
+.cm-live-table[data-active-axis="column"] .cm-live-table-active,
+.cm-live-table[data-active-axis="row"] .cm-live-table-active {
+  background: transparent;
+  box-shadow: none;
+}
+
+.cm-live-table-selected {
+  background: var(--live-table-selection);
+  box-shadow: inset 0 0 0 var(--live-table-selection-border-width) var(--live-table-selection-border-color);
+}
+
+.cm-live-table-handle,
+.cm-live-table-add,
+.cm-live-table-delete {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--text-3);
+  display: flex;
+  font: inherit;
+  font-size: 12px;
+  justify-content: center;
+  line-height: 1;
+  min-height: 0;
+  opacity: 0;
+  padding: 0;
+  pointer-events: auto;
+  position: absolute;
+  transition: opacity 0s 0.1s;
+  z-index: 2;
+}
+
+.cm-live-table-handle {
+  cursor: grab;
+  user-select: none;
+}
+
+.cm-live-table-handle:active {
+  cursor: grabbing;
+  background: var(--live-table-selection-border-color);
+  box-shadow: 0 0 0 var(--live-table-selection-border-width) var(--live-table-selection-border-color);
+  color: var(--live-table-handle-active-color);
+}
+
+.cm-live-table[data-can-grab-column="true"] .cm-live-table-handle--column,
+.cm-live-table[data-can-grab-row="true"] .cm-live-table-handle--row,
+.cm-live-table[data-drag-axis="column"] .cm-live-table-handle--column,
+.cm-live-table[data-drag-axis="row"] .cm-live-table-handle--row {
+  opacity: 1;
+}
+
+.cm-live-table[data-can-add-column-after="true"] .cm-live-table-add--column-after,
+.cm-live-table[data-can-add-row-after="true"] .cm-live-table-add--row-after {
+  opacity: 1;
+}
+
+.cm-live-table[data-can-delete-column="true"] .cm-live-table-delete--column,
+.cm-live-table[data-can-delete-row="true"] .cm-live-table-delete--row {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cm-live-table-handle--column {
+  border-start-end-radius: var(--live-table-selection-border-radius);
+  border-start-start-radius: var(--live-table-selection-border-radius);
+  height: calc(var(--live-table-drag-handle-size) - var(--live-table-selection-border-width));
+  left: var(--table-active-col-start);
+  top: calc(-1 * (var(--live-table-drag-handle-size) - var(--live-table-selection-border-width)));
+  width: var(--table-active-col-width);
+}
+
+.cm-live-table-handle--row {
+  border-end-start-radius: var(--live-table-selection-border-radius);
+  border-start-start-radius: var(--live-table-selection-border-radius);
+  height: var(--table-active-row-height);
+  left: calc(-1 * (var(--live-table-drag-handle-size) - var(--live-table-selection-border-width)));
+  top: var(--table-active-row-start);
+  width: calc(var(--live-table-drag-handle-size) - var(--live-table-selection-border-width));
+}
+
+.cm-live-table-add {
+  background: transparent;
+  border: 1px solid var(--live-table-add-button-border-color);
+  color: var(--live-table-handle-color);
+  cursor: pointer;
+  height: var(--live-table-control-size);
+  width: var(--live-table-control-size);
+}
+
+.cm-live-table-add svg {
+  display: block;
+  height: 16px;
+  pointer-events: none;
+  stroke-width: 2;
+  width: 16px;
+}
+
+.cm-live-table-delete {
+  color: color-mix(in srgb, var(--text) 86%, var(--text-3));
+  font-size: 12px;
+  height: 18px;
+  width: 18px;
+}
+
+.cm-live-table-handle::before {
+  background:
+    radial-gradient(circle, currentColor 1.5px, transparent 1.7px) 3px 2px / 4px 4px no-repeat,
+    radial-gradient(circle, currentColor 1.5px, transparent 1.7px) 8px 2px / 4px 4px no-repeat,
+    radial-gradient(circle, currentColor 1.5px, transparent 1.7px) 13px 2px / 4px 4px no-repeat,
+    radial-gradient(circle, currentColor 1.5px, transparent 1.7px) 3px 8px / 4px 4px no-repeat,
+    radial-gradient(circle, currentColor 1.5px, transparent 1.7px) 8px 8px / 4px 4px no-repeat,
+    radial-gradient(circle, currentColor 1.5px, transparent 1.7px) 13px 8px / 4px 4px no-repeat;
+  content: "";
+  display: block;
+  height: 14px;
+  width: 17px;
+}
+
+.cm-live-table-handle--row::before {
+  transform: none;
+}
+
+.cm-live-table-add::before {
+  content: none;
+}
+
+.cm-live-table-add--column-before,
+.cm-live-table-add--row-before,
+.cm-live-table-delete {
+  display: none;
+}
+
+.cm-live-table-add--column-after {
+  top: 0;
+}
+
+.cm-live-table-add--column-after {
+  border-radius: 0;
+  border-left: 0;
+  cursor: e-resize;
+  height: 100%;
+  left: 100%;
+  width: var(--live-table-control-size);
+}
+
+.cm-live-table-add--row-after {
+  border-radius: 0;
+  border-top: 0;
+  cursor: s-resize;
+  height: var(--live-table-control-size);
+  left: 0;
+  top: 100%;
+  width: 100%;
+}
+
+.cm-live-table-delete--column {
+  left: var(--table-active-col-center);
+  top: -38px;
+  transform: translateX(-50%);
+}
+
+.cm-live-table-delete--row {
+  left: -42px;
+  top: var(--table-active-row-center);
+  transform: translateY(-50%);
+}
+
+.cm-live-table .cm-live-table-handle--column:not(:disabled):active,
+.cm-live-table .cm-live-table-add--column-after:not(:disabled):active,
+.cm-live-table .cm-live-table-delete--column:not(:disabled):active {
+  transform: none;
+}
+
+.cm-live-table .cm-live-table-handle--row:not(:disabled):active,
+.cm-live-table .cm-live-table-add--row-after:not(:disabled):active,
+.cm-live-table .cm-live-table-delete--row:not(:disabled):active {
+  transform: none;
+}
+
+.cm-live-table-handle:hover,
+.cm-live-table-handle:focus-visible {
+  background: transparent;
+  color: var(--live-table-handle-color);
+  opacity: 1;
+  outline: none;
+}
+
+.cm-live-table-add:hover,
+.cm-live-table-add:focus-visible {
+  background: transparent;
+  color: var(--live-table-handle-color);
+  opacity: 1;
+  outline: none;
+}
+
+.cm-live-table-delete:hover,
+.cm-live-table-delete:focus-visible {
+  background: transparent;
+  outline: none;
+}
+
+.cm-live-table-menu {
+  background: var(--popup-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 16px);
+  min-width: 190px;
+  overflow: auto;
+  padding: 6px;
+  position: fixed;
+  z-index: 10;
+}
+
+.cm-live-table-menu button {
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.3;
+  min-height: 0;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.cm-live-table-menu button:hover,
+.cm-live-table-menu button:focus-visible {
+  background: var(--hover);
+  color: var(--accent);
+  outline: none;
+}
+
+.cm-live-table-menu button:disabled {
+  color: var(--text-3);
+  opacity: 0.45;
+}
+
+.cm-live-table-menu-separator {
+  border-top: 1px solid var(--border);
+  margin: 5px 0;
+}
