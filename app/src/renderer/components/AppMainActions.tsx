@@ -14,6 +14,7 @@ interface AppMainActionsProps {
   rightPanelView: RightPanelView;
   showSourceControl?: boolean;
   showRightPanelLinksControl: boolean;
+  showRightPanelChronicleControl: boolean;
   showRightPanelOutlineControl: boolean;
   showRightPanelRecoveryControl: boolean;
 }
@@ -28,6 +29,7 @@ export function AppMainActions({
   rightPanelView,
   showSourceControl = true,
   showRightPanelLinksControl,
+  showRightPanelChronicleControl,
   showRightPanelOutlineControl,
   showRightPanelRecoveryControl
 }: AppMainActionsProps): ReactElement {
@@ -75,6 +77,18 @@ export function AppMainActions({
           type="button"
         >
           <LinksIcon />
+        </button>
+      ) : null}
+      {showRightPanelChronicleControl ? (
+        <button
+          aria-label={t("nav.chronicle")}
+          className={`toolbar-btn${rightPanelView === "chronicle" && isRightPanelOpen ? " active" : ""}`}
+          data-tooltip={t("nav.chronicle")}
+          onClick={() => onRightPanelViewButton("chronicle")}
+          title={t("nav.chronicle")}
+          type="button"
+        >
+          <ChronicleIcon />
         </button>
       ) : null}
       {showRightPanelRecoveryControl ? (
@@ -158,6 +172,17 @@ function RecoveryIcon(): ReactElement {
       <path d="M3 12a9 9 0 1 0 3-6.708" />
       <path d="M3 4.5v5h5" />
       <path d="M12 7.5V12l3 2" />
+    </svg>
+  );
+}
+
+function ChronicleIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
+      <path d="M6 3v18M6 6h10M6 12h7M6 18h11" />
+      <circle cx="6" cy="6" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="6" cy="18" r="1.5" fill="currentColor" stroke="none" />
     </svg>
   );
 }

@@ -39,7 +39,7 @@ export function createFrontmatterValueInput({
   value: unknown;
   view: EditorView;
 }): HTMLElement {
-  if (isChronicleField(key)) return chronicleInput(view, Array.isArray(value) ? value : [], updateField, t, candidates[key] ?? []);
+  if (isChronicleField(key)) return chronicleInput(view, Array.isArray(value) ? value : [], updateField, t);
   if (field?.type === "boolean") return booleanInput(view, key, firstArrayValue(value), updateField, true);
   if (isSingleValueField(field)) {
     return scalarInput(view, key, firstArrayValue(value), field, candidates, updateField, dateFormat, true);
@@ -195,8 +195,7 @@ function chronicleInput(
   view: EditorView,
   value: unknown[],
   updateField: FrontmatterFieldUpdater,
-  t: Translator,
-  calendarCandidates: string[]
+  t: Translator
 ): HTMLElement {
   const wrap = document.createElement("div");
   wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-chronicle cm-frontmatter-chronicle-list";
@@ -208,7 +207,6 @@ function chronicleInput(
 
   entries.forEach((entry, index) => {
     wrap.append(chronicleEntryInput({
-      calendarCandidates,
       entry,
       index,
       onDelete: () => commit(entries.filter((_item, entryIndex) => entryIndex !== index)),
@@ -255,14 +253,12 @@ interface ChronicleFormEntry {
 }
 
 function chronicleEntryInput({
-  calendarCandidates,
   entry,
   index,
   onDelete,
   onUpdate,
   t
 }: {
-  calendarCandidates: string[];
   entry: ChronicleFormEntry;
   index: number;
   onDelete: () => void;
@@ -274,14 +270,13 @@ function chronicleEntryInput({
   const error = document.createElement("span");
   error.className = "cm-frontmatter-input-error";
 
-  const calendarInput = chronicleCalendarSelect(`chronicle-${index}-calendar`, entry.calendarName, calendarCandidates);
   const startYearInput = chronicleTextInput(`chronicle-${index}-start-year`, entry.startYear, t("frontmatter.rangeStart"));
   const startMonthInput = chronicleTextInput(`chronicle-${index}-start-month`, entry.startMonth, "月");
   const endYearInput = chronicleTextInput(`chronicle-${index}-end-year`, entry.endYear, t("frontmatter.rangeEnd"));
   const endMonthInput = chronicleTextInput(`chronicle-${index}-end-month`, entry.endMonth, "月");
 
   const readEntry = (): ChronicleFormEntry => ({
-    calendarName: calendarInput.value.trim(),
+    calendarName: entry.calendarName,
     endMonth: endMonthInput.value.trim(),
     endYear: endYearInput.value.trim(),
     startMonth: startMonthInput.value.trim(),
@@ -292,15 +287,15 @@ function chronicleEntryInput({
     const next = readEntry();
     const validation = validateChronicleEntry(next);
     error.textContent = validation;
-    for (const input of [calendarInput, startYearInput, startMonthInput, endYearInput, endMonthInput]) {
+    for (const input of [startYearInput, startMonthInput, endYearInput, endMonthInput]) {
       if (validation) input.setAttribute("aria-invalid", "true");
       else input.removeAttribute("aria-invalid");
     }
     if (!validation) onUpdate(next);
   };
 
-  for (const input of [calendarInput, startYearInput, startMonthInput, endYearInput, endMonthInput]) {
-    input.addEventListener("change", commit);
+  for (const input of [startYearInput, startMonthInput, endYearInput, endMonthInput]) {
+    input.addEventListener("input", commit);
   }
 
   const deleteButton = document.createElement("button");
@@ -309,7 +304,7 @@ function chronicleEntryInput({
   deleteButton.append(createFrontmatterTrashIcon());
   deleteButton.addEventListener("click", onDelete);
 
-  row.append(calendarInput, startYearInput, startMonthInput, endYearInput, endMonthInput, deleteButton, error);
+  row.append(startYearInput, startMonthInput, endYearInput, endMonthInput, deleteButton, error);
   return row;
 }
 
@@ -336,36 +331,6 @@ function createFrontmatterTrashIcon(): SVGSVGElement {
     icon.append(path);
   }
   return icon;
-}
-
-function chronicleCalendarSelect(label: string, value: string, candidates: string[]): HTMLSelectElement {
-  const select = document.createElement("select");
-  select.ariaLabel = label;
-  select.className = "cm-frontmatter-input cm-frontmatter-select";
-  const options = chronicleCalendarOptions(value, candidates);
-
-  for (const optionValue of options) {
-    const option = document.createElement("option");
-    option.value = optionValue;
-    option.textContent = optionValue;
-    select.append(option);
-  }
-
-  select.value = value.trim() || options[0] || "";
-  return select;
-}
-
-function chronicleCalendarOptions(value: string, candidates: string[]): string[] {
-  const currentValue = value.trim();
-  const options = candidates.reduce<string[]>((items, candidate) => {
-    const option = candidate.trim();
-    if (option && !items.includes(option)) items.push(option);
-    return items;
-  }, []);
-
-  if (currentValue && !options.includes(currentValue)) return [currentValue, ...options];
-  if (options.length > 0) return options;
-  return [currentValue || "メイン暦"];
 }
 
 function chronicleTextInput(label: string, value: string, placeholder: string): HTMLInputElement {

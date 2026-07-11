@@ -1,7 +1,7 @@
 import type { EditorView } from "@codemirror/view";
 import type { Dispatch, MouseEvent as ReactMouseEvent, MutableRefObject, ReactElement, ReactNode, SetStateAction } from "react";
 
-import type { Backlink, EditorSettings, UnlinkedReference, UnlinkedReferencesResult, UserDefinedField } from "../../shared/ipc";
+import type { Backlink, ChartEntry, EditorSettings, UnlinkedReference, UnlinkedReferencesResult, UserDefinedField } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
 import type { HeadingScrollTarget, OutlineHeading } from "../editorDerivedState";
@@ -17,6 +17,7 @@ interface AppEditorWorkspaceProps {
   activeFileTab: FileTab | null;
   applyingReferenceKey: string | null;
   backlinks: Backlink[];
+  chronicleEntries: ChartEntry[];
   editorActionPulse: number;
   editorSettings: EditorSettings;
   focusedPane: PaneId;
@@ -76,6 +77,7 @@ interface AppEditorWorkspaceProps {
   rightPanelWidth: number;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
   showRightPanelLinksControl: boolean;
+  showRightPanelChronicleControl: boolean;
   showRightPanelOutlineControl: boolean;
   showRightPanelRecoveryControl: boolean;
   userDefinedFields: UserDefinedField[];
@@ -129,6 +131,7 @@ export function AppEditorWorkspace({
   activeFileTab,
   applyingReferenceKey,
   backlinks,
+  chronicleEntries,
   editorActionPulse,
   editorSettings,
   focusedPane,
@@ -273,6 +276,7 @@ export function AppEditorWorkspace({
           activeFileTab={activeFileTab}
           applyingReferenceKey={applyingReferenceKey}
           backlinks={backlinks}
+          chronicleEntries={chronicleEntries}
           isLoadingBacklinks={isLoadingBacklinks}
           isLoadingUnlinkedReferences={isLoadingUnlinkedReferences}
           isOpen={isRightPanelOpen}

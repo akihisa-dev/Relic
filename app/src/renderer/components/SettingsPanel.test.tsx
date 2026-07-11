@@ -219,10 +219,6 @@ describe("SettingsPanel", () => {
 
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ tools: false }));
 
-    fireEvent.click(screen.getByLabelText("Timeline"));
-
-    expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ chronicle: false }));
-
     fireEvent.click(screen.getByLabelText("Right panel: Links"));
 
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ rightPanelLinks: false }));

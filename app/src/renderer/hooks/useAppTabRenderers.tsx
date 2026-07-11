@@ -3,16 +3,11 @@ import type { ReactNode } from "react";
 
 import type {
   AppInfo,
-  ChronicleCalendarSettings,
   EditorSettings,
   FeatureToggles,
   FrontmatterCategoryChoice,
-  UpdateChartEntryInput,
-  WorkspaceChart,
   WorkspaceState
 } from "../../shared/ipc";
-import { ChartView } from "../components/ChartPanel";
-import { ChronicleSettingsPanel } from "../components/ChronicleSettingsPanel";
 import { FrontmatterPanel } from "../components/FrontmatterPanel";
 import { GraphView } from "../components/GraphView";
 import { SettingsPanel } from "../components/SettingsPanel";
@@ -21,35 +16,27 @@ import type { PanelTabKind } from "../store/editorStore";
 
 interface UseAppTabRenderersInput {
   appInfo: AppInfo | null;
-  chronicleCalendars: ChronicleCalendarSettings[];
   categoryChoices: FrontmatterCategoryChoice[];
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
-  charts: WorkspaceChart[];
   handleOpenFile: (path: string) => void;
   handleOpenTagSearch: (tag: string) => void;
   handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
-  handleSaveChronicleCalendars: (calendars: ChronicleCalendarSettings[]) => void;
   handleSaveCategoryChoices: (choices: FrontmatterCategoryChoice[]) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
-  handleUpdateChartEntry: (input: UpdateChartEntryInput) => Promise<void> | void;
   workspaceState: WorkspaceState | null;
 }
 
 export function useAppTabRenderers({
   appInfo,
-  chronicleCalendars,
   categoryChoices,
   editorSettings,
   featureToggles,
-  charts,
   handleOpenFile,
   handleOpenTagSearch,
   handleSaveFeatureToggles,
-  handleSaveChronicleCalendars,
   handleSaveCategoryChoices,
   handleSaveSettings,
-  handleUpdateChartEntry,
   workspaceState
 }: UseAppTabRenderersInput): {
   renderChartTab: (chartId: string) => ReactNode;
@@ -60,16 +47,8 @@ export function useAppTabRenderers({
       return <GraphView onOpenFile={handleOpenFile} onOpenTagSearch={handleOpenTagSearch} />;
     }
 
-    return (
-      <ChartView
-        chart={chartId === "charts" ? null : charts.find((chart) => chart.id === chartId) ?? null}
-        charts={chartId === "charts" ? charts : undefined}
-        chronicleCalendars={chronicleCalendars}
-        onOpenFile={handleOpenFile}
-        onUpdateEntry={handleUpdateChartEntry}
-      />
-    );
-  }, [charts, chronicleCalendars, handleOpenFile, handleOpenTagSearch, handleUpdateChartEntry]);
+    return null;
+  }, [handleOpenFile, handleOpenTagSearch]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {
@@ -81,15 +60,6 @@ export function useAppTabRenderers({
         <FrontmatterPanel
           categoryChoices={categoryChoices}
           onCategoryChoicesSave={handleSaveCategoryChoices}
-        />
-      );
-    }
-
-    if (panel === "chronicleSettings") {
-      return (
-        <ChronicleSettingsPanel
-          calendars={chronicleCalendars}
-          onSave={handleSaveChronicleCalendars}
         />
       );
     }
@@ -106,12 +76,10 @@ export function useAppTabRenderers({
   }, [
     appInfo,
     categoryChoices,
-    chronicleCalendars,
     editorSettings,
     featureToggles,
     handleOpenFile,
     handleSaveFeatureToggles,
-    handleSaveChronicleCalendars,
     handleSaveCategoryChoices,
     handleSaveSettings,
     workspaceState

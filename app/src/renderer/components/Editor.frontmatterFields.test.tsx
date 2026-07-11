@@ -8,7 +8,7 @@ import { Editor } from "./Editor";
 import { expandFrontmatter, settings } from "./editorTestHelpers";
 
 describe("Editor frontmatter fields", () => {
-  it("chronicleプロパティは暦名と開始終了年月を編集する", async () => {
+  it("chronicleプロパティは開始終了年月を編集する", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <I18nProvider language="ja">
@@ -25,14 +25,12 @@ describe("Editor frontmatter fields", () => {
     await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
     const controls = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as Array<HTMLInputElement | HTMLSelectElement>;
-    const calendarSelect = controls[0] as HTMLSelectElement;
-    expect(calendarSelect.tagName).toBe("SELECT");
-    expect(Array.from(calendarSelect.options).map((option) => option.value)).toEqual(["メイン暦", "帝国暦"]);
-    expect(container.querySelector("datalist option[value='帝国暦']")).toBeNull();
-    expect((controls[1] as HTMLInputElement).placeholder).toBe("開始");
-    expect((controls[2] as HTMLInputElement).placeholder).toBe("月");
-    fireEvent.change(controls[2], { target: { value: "5" } });
-    fireEvent.change(controls[4], { target: { value: "5" } });
+    expect(container.querySelector(".cm-frontmatter-chronicle select")).toBeNull();
+    expect((controls[0] as HTMLInputElement).placeholder).toBe("開始");
+    expect((controls[1] as HTMLInputElement).placeholder).toBe("月");
+    fireEvent.input(controls[1], { target: { value: "5" } });
+    const updatedControls = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
+    fireEvent.input(updatedControls[3], { target: { value: "5" } });
 
     expect(viewRef.current?.state.doc.toString()).toContain([
       "chronicle:",
@@ -40,10 +38,10 @@ describe("Editor frontmatter fields", () => {
     ].join("\n"));
   });
 
-  it("chronicleプロパティは暦設定の候補更新をライブプレビューへ反映する", async () => {
+  it("chronicleプロパティは暦候補を表示しない", async () => {
     const viewRef = createRef<EditorView | null>();
     const content = "---\nchronicle:\n  - [メイン暦, [[1185, null], [1185, null]]]\n---\n# 本文";
-    const { container, rerender } = render(
+    const { container } = render(
       <I18nProvider language="ja">
         <Editor
           content={content}
@@ -57,25 +55,7 @@ describe("Editor frontmatter fields", () => {
 
     await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
-    const initialSelect = container.querySelector(".cm-frontmatter-chronicle select.cm-frontmatter-input") as HTMLSelectElement;
-    expect(Array.from(initialSelect.options).map((option) => option.value)).toEqual(["メイン暦"]);
-
-    rerender(
-      <I18nProvider language="ja">
-        <Editor
-          content={content}
-          frontmatterCandidates={{ chronicle: ["メイン暦", "帝国暦"] }}
-          onChange={vi.fn()}
-          settings={settings}
-          viewRef={viewRef}
-        />
-      </I18nProvider>
-    );
-
-    await waitFor(() => {
-      const updatedSelect = container.querySelector(".cm-frontmatter-chronicle select.cm-frontmatter-input") as HTMLSelectElement;
-      expect(Array.from(updatedSelect.options).map((option) => option.value)).toEqual(["メイン暦", "帝国暦"]);
-    });
+    expect(container.querySelector(".cm-frontmatter-chronicle select")).toBeNull();
   });
 
   it("chronicleプロパティは不正な月や逆順を書き戻さない", async () => {
@@ -94,7 +74,7 @@ describe("Editor frontmatter fields", () => {
     await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
     const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle input.cm-frontmatter-input")) as HTMLInputElement[];
-    fireEvent.change(inputs[2], { target: { value: "1000" } });
+    fireEvent.input(inputs[2], { target: { value: "1000" } });
 
     expect(viewRef.current?.state.doc.toString()).toContain("[メイン暦, [[1185, null], [1185, null]]]");
     expect(container.querySelector(".cm-frontmatter-input-error")?.textContent).toBe("開始年月は終了年月以下にしてください。");

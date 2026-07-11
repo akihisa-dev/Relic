@@ -155,7 +155,7 @@ export function registerWorkspaceDataHandlers(): void {
         workspaceId: context.value.activeWorkspace.id,
         workspacePath: context.value.activeWorkspace.path
       });
-      return readWorkspaceCharts(context.value.activeWorkspace.path, workspaceSettings.charts, workspaceSettings.chronicleCalendars, {
+      return readWorkspaceCharts(context.value.activeWorkspace.path, workspaceSettings.charts, undefined, {
         cachePath,
         fileIndex: snapshot.fileIndex,
         parseCache: snapshot.parseCache
@@ -179,7 +179,7 @@ export function registerWorkspaceDataHandlers(): void {
       if (!context.ok) return context;
 
       const savedCharts = normalizeChartSettingsForSave(input);
-      const workspaceSettings = await updateWorkspaceSettings(
+      await updateWorkspaceSettings(
         context.value.userDataPath,
         context.value.activeWorkspace.id,
         (workspaceSettings) => ({
@@ -194,7 +194,7 @@ export function registerWorkspaceDataHandlers(): void {
         workspacePath: context.value.activeWorkspace.path
       });
 
-      return readWorkspaceCharts(context.value.activeWorkspace.path, savedCharts, workspaceSettings.chronicleCalendars, {
+      return readWorkspaceCharts(context.value.activeWorkspace.path, savedCharts, undefined, {
         cachePath,
         fileIndex: snapshot.fileIndex,
         parseCache: snapshot.parseCache

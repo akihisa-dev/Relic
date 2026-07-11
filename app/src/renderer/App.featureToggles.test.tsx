@@ -39,7 +39,7 @@ describe("App feature toggles", () => {
     expect(screen.queryByRole("button", { name: "ツール" })).toBeNull();
   });
 
-  it("機能トグルで年表・暦設定のナビを非表示にする", async () => {
+  it("年表は右パネルに常設し、暦設定のナビを表示しない", async () => {
     window.relic = makeRelicApi({
       getFeatureToggles: vi.fn().mockResolvedValue({
         ok: true,
@@ -55,7 +55,7 @@ describe("App feature toggles", () => {
     await renderApp();
 
     await screen.findByRole("button", { name: "ファイル" });
-    expect(screen.queryByRole("button", { name: "年表" })).toBeNull();
+    expect(screen.getByRole("button", { name: "年表" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "暦設定" })).toBeNull();
   });
 });

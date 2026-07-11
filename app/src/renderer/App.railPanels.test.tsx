@@ -139,7 +139,7 @@ describe("App rail panels", () => {
     expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeDefined();
   });
 
-  it("レールの暦設定ボタンから専用設定を開ける", async () => {
+  it("レールに暦設定を表示しない", async () => {
     window.relic = makeRelicApi({
       getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceChronicleCalendars: vi.fn().mockResolvedValue({
@@ -156,22 +156,6 @@ describe("App rail panels", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
-
-    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
-    expect(activeTabId).toBe("panel-chronicleSettings");
-    expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
-      kind: "panel",
-      panel: "chronicleSettings"
-    });
-    expect(screen.getByRole("button", { name: "暦設定" })).toHaveClass("active");
-    expect(screen.getByDisplayValue("王国暦")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("帝国暦")).toBeInTheDocument();
-    expect(screen.getByText("帝国暦1年 = 王国暦100年")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
-
-    expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-chronicleSettings");
-    expect(useEditorStore.getState().tabs["panel-chronicleSettings"]).toBeDefined();
+    expect(screen.queryByRole("button", { name: "暦設定" })).toBeNull();
   });
 });
