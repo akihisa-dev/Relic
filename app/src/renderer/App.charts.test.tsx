@@ -47,7 +47,7 @@ import {
   resolveGraphHoverFocusId,
   stepGraphHighlightState,
   zoomGraphAtPoint
-} from "./components/GraphView";
+} from "./graph/graphViewModel";
 import { useEditorStore } from "./store/editorStore";
 import { useUiStore } from "./store/uiStore";
 
