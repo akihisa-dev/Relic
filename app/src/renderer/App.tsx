@@ -5,6 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import { type WorkspaceState } from "../shared/ipc";
 import type { AppLinkContextMenu } from "./appLinks";
 import { createAppLayoutProps } from "./appLayoutProps";
+import { selectAppEditorStoreState, selectAppUiStoreState } from "./appStoreSelectors";
 import { AppLayout } from "./components/AppLayout";
 import { createTranslator } from "./i18nModel";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
@@ -16,6 +17,7 @@ import { useAppPaneFileActions } from "./hooks/useAppPaneFileActions";
 import { useAppPreviewOutputActions } from "./hooks/useAppPreviewOutputActions";
 import { useAppRailNavigation } from "./hooks/useAppRailNavigation";
 import { useAppRailSidebarSelection } from "./hooks/useAppRailSidebarSelection";
+import { useAppRightPanel } from "./hooks/useAppRightPanel";
 import { useAppSettingsState } from "./hooks/useAppSettingsState";
 import { useAppTabRenderers } from "./hooks/useAppTabRenderers";
 import { useAppTheme } from "./hooks/useAppTheme";
@@ -38,7 +40,7 @@ import { useWorkspaceExternalRefresh } from "./hooks/useWorkspaceExternalRefresh
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { useEditorStore } from "./store/editorStore";
-import { useUiStore, type RightPanelView } from "./store/uiStore";
+import { useUiStore } from "./store/uiStore";
 import "./styles.css";
 
 export function App(): ReactElement {
@@ -94,35 +96,7 @@ export function App(): ReactElement {
     updateTabContent,
     updateTabFromExternal,
     updateTabMeta
-  } = useEditorStore(useShallow((state) => ({
-    closeAllTabs: state.closeAllTabs,
-    closeAllTabsInPane: state.closeAllTabsInPane,
-    closeOtherTabs: state.closeOtherTabs,
-    closeTab: state.closeTab,
-    closeTabsToRight: state.closeTabsToRight,
-    editorSettings: state.editorSettings,
-    focusedPane: state.focusedPane,
-    isSplit: state.isSplit,
-    leftPane: state.leftPane,
-    markTabSaved: state.markTabSaved,
-    moveTab: state.moveTab,
-    openChartInPane: state.openChartInPane,
-    openFileInPane: state.openFileInPane,
-    openImageInPane: state.openImageInPane,
-    openPdfInPane: state.openPdfInPane,
-    openPanelInPane: state.openPanelInPane,
-    rightPane: state.rightPane,
-    setEditorSettings: state.setEditorSettings,
-    setFocusedPane: state.setFocusedPane,
-    setTabActive: state.setTabActive,
-    setTabExternalConflict: state.setTabExternalConflict,
-    tabs: state.tabs,
-    toggleSplit: state.toggleSplit,
-    toggleTabPinned: state.toggleTabPinned,
-    updateTabContent: state.updateTabContent,
-    updateTabFromExternal: state.updateTabFromExternal,
-    updateTabMeta: state.updateTabMeta
-  })));
+  } = useEditorStore(useShallow(selectAppEditorStoreState));
 
   const {
     activeSidebarView,
@@ -136,19 +110,7 @@ export function App(): ReactElement {
     toggleRightPanel,
     toggleSidebar: toggleSidebarState,
     toggleTypewriterMode
-  } = useUiStore(useShallow((state) => ({
-    activeSidebarView: state.activeSidebarView,
-    closeSidebar: state.closeSidebar,
-    isRightPanelOpen: state.isRightPanelOpen,
-    isSidebarOpen: state.isSidebarOpen,
-    isTypewriterMode: state.isTypewriterMode,
-    rightPanelView: state.rightPanelView,
-    setRightPanelView: state.setRightPanelView,
-    setSidebarView: state.setSidebarView,
-    toggleRightPanel: state.toggleRightPanel,
-    toggleSidebar: state.toggleSidebar,
-    toggleTypewriterMode: state.toggleTypewriterMode
-  })));
+  } = useUiStore(useShallow(selectAppUiStoreState));
   const hasOpenChart = useMemo(
     () => Object.values(tabs).some((tab) => tab.kind === "chart"),
     [tabs]
@@ -178,25 +140,21 @@ export function App(): ReactElement {
   const isRightPanelOutlineAvailable = featureToggles.rightPanelOutline;
   const isRightPanelLinksAvailable = featureToggles.rightPanelLinks;
   const isRightPanelRecoveryAvailable = true;
-  const isRightPanelAvailable = isRightPanelOutlineAvailable || isRightPanelLinksAvailable || isRightPanelRecoveryAvailable;
-  const effectiveRightPanelView = resolveEnabledRightPanelView(
+  const {
+    effectiveRightPanelView,
+    handleRightPanelViewButton,
+    isEffectiveRightPanelOpen,
+    isLinksPanelActive,
+    toggleRightPanelIfAvailable
+  } = useAppRightPanel({
+    isLinksAvailable: isRightPanelLinksAvailable,
+    isOutlineAvailable: isRightPanelOutlineAvailable,
+    isRecoveryAvailable: isRightPanelRecoveryAvailable,
+    isRightPanelOpen,
     rightPanelView,
-    isRightPanelOutlineAvailable,
-    isRightPanelLinksAvailable,
-    isRightPanelRecoveryAvailable
-  );
-  const isEffectiveRightPanelOpen = isRightPanelAvailable && isRightPanelOpen;
-  const isLinksPanelActive = isEffectiveRightPanelOpen &&
-    isRightPanelLinksAvailable &&
-    effectiveRightPanelView === "links";
-  const toggleRightPanelIfAvailable = useCallback((): void => {
-    if (!isRightPanelAvailable) return;
-    if (!isRightPanelOpen && rightPanelView !== effectiveRightPanelView) {
-      setRightPanelView(effectiveRightPanelView);
-      return;
-    }
-    toggleRightPanel();
-  }, [effectiveRightPanelView, isRightPanelAvailable, isRightPanelOpen, rightPanelView, setRightPanelView, toggleRightPanel]);
+    setRightPanelView,
+    toggleRightPanel
+  });
 
   const {
     frontmatterCandidates,
@@ -425,27 +383,6 @@ export function App(): ReactElement {
 
   const leftEditorViewRef = useRef<EditorView | null>(null);
   const rightEditorViewRef = useRef<EditorView | null>(null);
-
-  const handleRightPanelViewButton = useCallback((view: RightPanelView): void => {
-    if (view === "outline" && !isRightPanelOutlineAvailable) return;
-    if (view === "links" && !isRightPanelLinksAvailable) return;
-    if (view === "recovery" && !isRightPanelRecoveryAvailable) return;
-
-    if (isEffectiveRightPanelOpen && effectiveRightPanelView === view) {
-      toggleRightPanel();
-      return;
-    }
-
-    setRightPanelView(view);
-  }, [
-    effectiveRightPanelView,
-    isEffectiveRightPanelOpen,
-    isRightPanelLinksAvailable,
-    isRightPanelOutlineAvailable,
-    isRightPanelRecoveryAvailable,
-    setRightPanelView,
-    toggleRightPanel
-  ]);
 
   const {
     handleCreateFileInFolder,
@@ -751,19 +688,4 @@ export function App(): ReactElement {
   });
 
   return <AppLayout {...appLayoutProps} />;
-}
-
-function resolveEnabledRightPanelView(
-  currentView: RightPanelView,
-  isOutlineAvailable: boolean,
-  isLinksAvailable: boolean,
-  isRecoveryAvailable: boolean
-): RightPanelView {
-  if (currentView === "outline" && isOutlineAvailable) return "outline";
-  if (currentView === "links" && isLinksAvailable) return "links";
-  if (currentView === "recovery" && isRecoveryAvailable) return "recovery";
-  if (isOutlineAvailable) return "outline";
-  if (isLinksAvailable) return "links";
-  if (isRecoveryAvailable) return "recovery";
-  return "links";
 }
