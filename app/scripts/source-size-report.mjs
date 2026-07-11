@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 
 const includedExtensions = new Set([".css", ".mjs", ".ts", ".tsx"]);
 const excludedDirectories = new Set([".vite", "coverage", "dist", "node_modules", "out"]);
+const retainedLargeSourceReasons = new Map([
+  ["src/renderer/styles/chronicle.css", "年表画面の構成要素とレスポンシブ上書きを一続きで管理する単一機能CSS"],
+  ["src/renderer/styles/settings.css", "設定画面の各セクションを共通レイアウトと状態上書きとともに管理する単一機能CSS"]
+]);
 
 export function classifySourceFile(filePath) {
   if (filePath.endsWith(".css")) return { category: "css", warningLines: 1000 };
@@ -39,6 +43,7 @@ async function walkSourceFiles(directory, rootDirectory) {
       ...classification,
       lines,
       path: relativePath,
+      retainedReason: retainedLargeSourceReasons.get(relativePath),
       warning: lines > classification.warningLines,
     });
   }
@@ -62,7 +67,8 @@ export async function collectSourceSizeEntries(rootDirectory) {
 export function renderSourceSizeReport(entries) {
   const rows = entries.map((entry) => {
     const warning = entry.warning ? "WARN" : "    ";
-    return `${warning} ${String(entry.lines).padStart(5)}  ${entry.category.padEnd(14)}  ${entry.path}`;
+    const retainedReason = entry.retainedReason ? ` （継続理由: ${entry.retainedReason}）` : "";
+    return `${warning} ${String(entry.lines).padStart(5)}  ${entry.category.padEnd(14)}  ${entry.path}${retainedReason}`;
   });
   const warningCount = entries.filter((entry) => entry.warning).length;
   return [

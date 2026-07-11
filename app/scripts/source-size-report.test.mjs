@@ -70,4 +70,17 @@ describe("source-size-report", () => {
     expect(report).toContain("WARN   701");
     expect(report).toContain("警告1件（警告のみ。終了コードには影響しません）");
   });
+
+  it("分割せずに残す警告対象は理由を表示する", () => {
+    const report = renderSourceSizeReport([{
+      category: "css",
+      lines: 1206,
+      path: "src/renderer/styles/chronicle.css",
+      retainedReason: "単一機能CSS",
+      warning: true,
+      warningLines: 1000
+    }]);
+
+    expect(report).toContain("継続理由: 単一機能CSS");
+  });
 });
