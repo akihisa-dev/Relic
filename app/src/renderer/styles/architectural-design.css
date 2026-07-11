@@ -3,33 +3,39 @@
 /* ────────────────────────────────── */
 
 :root {
-  --color-primary: #111111;
-  --color-primary-dark: #000000;
-  --color-accent: #5f6368;
+  --color-primary: #1c1c1a;
+  --color-primary-dark: var(--color-primary);
   --color-bg: #ffffff;
-  --color-surface: #fafafa;
-  --color-surface-alt: #f3f3f2;
+  --color-overlay: rgba(255, 255, 255, 0.36);
+  --color-overlay-subtle: rgba(28, 28, 26, 0.06);
+  --color-surface: #fafaf8;
+  --color-surface-alt: #f2f2ee;
   --color-surface-elevated: #ffffff;
-  --color-border: #dedede;
-  --color-border-strong: #b8b8b8;
-  --color-text: #111111;
-  --color-text-secondary: #5f6368;
-  --color-text-muted: #9a9a9a;
-  --font-display: Inter, "Noto Sans JP", system-ui, sans-serif;
-  --font-body: Inter, "Noto Sans JP", system-ui, sans-serif;
-  --font-sans: Inter, "Noto Sans JP", system-ui, sans-serif;
+  --color-border: #dadad4;
+  --color-border-strong: #bdbdb4;
+  --color-text: #1c1c1a;
+  --color-text-secondary: #5f5f59;
+  --color-text-muted: #74746d;
+  --color-on-primary: #ffffff;
+  --color-danger: #d92d20;
+  --color-warning: #b54708;
+  --color-success: #067647;
+  --color-info: #155eef;
+  --font-display: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
   --bg: var(--color-bg);
-  --texture-grain: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(247, 247, 246, 0.78));
-  --texture-fibers: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(250, 250, 249, 0.72));
-  --texture-stone-wash: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(245, 245, 244, 0.86));
-  --material-ink: linear-gradient(180deg, #1b1b1b 0%, #000000 100%);
-  --material-charcoal: linear-gradient(180deg, #2d2d2d 0%, #111111 100%);
-  --material-paper: linear-gradient(180deg, #ffffff 0%, #fbfbfa 100%);
-  --material-panel: linear-gradient(180deg, #fafafa 0%, #f5f5f4 100%);
+  --texture-grain: var(--color-bg);
+  --texture-fibers: var(--color-bg);
+  --texture-stone-wash: var(--color-surface);
+  --material-ink: var(--color-primary);
+  --material-charcoal: var(--color-primary);
+  --material-paper: var(--color-bg);
+  --material-panel: var(--color-surface);
   --material-control: #ffffff;
   --material-mineral-blue: var(--material-ink);
   --material-limestone: var(--material-paper);
@@ -48,9 +54,9 @@
   --surface: var(--color-surface-elevated);
   --surface-raised: var(--color-surface-elevated);
   --surface-subtle: var(--color-surface);
-  --rail-bg: var(--color-surface-elevated);
-  --sidebar-bg: var(--color-surface);
-  --popup-bg: var(--color-surface-elevated);
+  --rail-bg: var(--color-overlay);
+  --sidebar-bg: var(--color-overlay);
+  --popup-bg: color-mix(in srgb, var(--color-overlay) 72%, var(--color-bg));
   --text: var(--color-text);
   --text-2: var(--color-text-secondary);
   --text-3: var(--color-text-muted);
@@ -68,11 +74,11 @@
   --floating-panel-shadow: 0 0 0 1px var(--color-border);
   --chrome-shadow: 0 1px 0 var(--color-border);
   --accent: var(--color-primary);
-  --accent-hover: var(--color-primary-dark);
-  --accent-soft: rgba(0, 0, 0, 0.08);
-  --accent-softer: rgba(0, 0, 0, 0.04);
-  --accent-ring: rgba(0, 0, 0, 0.26);
-  --title-bar-bg: var(--color-surface-elevated);
+  --accent-hover: var(--color-primary);
+  --accent-soft: var(--color-overlay-subtle);
+  --accent-softer: color-mix(in srgb, var(--color-overlay-subtle) 60%, transparent);
+  --accent-ring: color-mix(in srgb, var(--color-primary) 54%, transparent);
+  --title-bar-bg: var(--color-overlay);
   --chrome-top-bg: var(--title-bar-bg);
   --chrome-top-border: var(--color-border);
   --chrome-tab-bg: color-mix(in srgb, var(--chrome-top-bg) 82%, var(--color-surface-elevated) 18%);
@@ -81,29 +87,41 @@
   --link: var(--color-primary-dark);
   --attention: var(--color-primary-dark);
   --attention-hover: var(--color-primary);
-  --highlight: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  --highlight: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  --error: var(--color-danger);
+  --error-bg: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  --success: var(--color-success);
   font-family: var(--font-body);
 }
 
 :root[data-theme="dark"] {
-  --color-bg: #111111;
-  --color-surface: #171717;
-  --color-surface-alt: #202020;
-  --color-surface-elevated: #141414;
-  --color-border: #303030;
-  --color-border-strong: #4a4a4a;
-  --color-text: #f4f4f4;
-  --color-text-secondary: #c2c2c2;
-  --color-text-muted: #888888;
+  --color-primary: #f2f2ee;
+  --color-primary-dark: var(--color-primary);
+  --color-bg: #121210;
+  --color-overlay: rgba(18, 18, 16, 0.64);
+  --color-overlay-subtle: rgba(242, 242, 238, 0.08);
+  --color-surface: #1a1a17;
+  --color-surface-alt: #24241f;
+  --color-surface-elevated: #1a1a17;
+  --color-border: #363630;
+  --color-border-strong: #56564e;
+  --color-text: #f2f2ee;
+  --color-text-secondary: #b9b9b0;
+  --color-text-muted: #8a8a82;
+  --color-on-primary: #121210;
+  --color-danger: #ff7a70;
+  --color-warning: #fec84b;
+  --color-success: #47cd89;
+  --color-info: #84adff;
   --bg: var(--color-bg);
-  --texture-grain: linear-gradient(180deg, rgba(26, 26, 26, 0.9), rgba(17, 17, 17, 0.9));
-  --texture-fibers: linear-gradient(180deg, rgba(28, 28, 28, 0.82), rgba(18, 18, 18, 0.82));
-  --texture-stone-wash: linear-gradient(180deg, rgba(30, 30, 30, 0.88), rgba(17, 17, 17, 0.88));
-  --material-ink: linear-gradient(180deg, #f5f5f5 0%, #e5e5e5 100%);
-  --material-charcoal: linear-gradient(180deg, #2a2a2a 0%, #161616 100%);
-  --material-paper: linear-gradient(180deg, #161616 0%, #101010 100%);
-  --material-panel: linear-gradient(180deg, #1b1b1b 0%, #151515 100%);
-  --material-control: #171717;
+  --texture-grain: var(--color-bg);
+  --texture-fibers: var(--color-bg);
+  --texture-stone-wash: var(--color-surface);
+  --material-ink: var(--color-primary);
+  --material-charcoal: var(--color-primary);
+  --material-paper: var(--color-bg);
+  --material-panel: var(--color-surface);
+  --material-control: var(--color-surface);
   --material-mineral-blue: var(--material-ink);
   --material-limestone: var(--material-paper);
   --material-stone-dust: var(--material-panel);
@@ -114,9 +132,9 @@
   --surface: var(--color-surface-elevated);
   --surface-raised: var(--color-surface-elevated);
   --surface-subtle: var(--color-surface);
-  --rail-bg: var(--color-surface-elevated);
-  --sidebar-bg: var(--color-surface);
-  --popup-bg: var(--color-surface-elevated);
+  --rail-bg: var(--color-overlay);
+  --sidebar-bg: var(--color-overlay);
+  --popup-bg: color-mix(in srgb, var(--color-overlay) 72%, var(--color-bg));
   --text: var(--color-text);
   --text-2: var(--color-text-secondary);
   --text-3: var(--color-text-muted);
@@ -131,43 +149,52 @@
   --shadow: rgba(0, 0, 0, 0.22);
   --shadow-soft: rgba(0, 0, 0, 0.12);
   --accent: var(--color-primary);
-  --accent-hover: var(--color-accent);
-  --accent-soft: rgba(255, 255, 255, 0.12);
-  --accent-softer: rgba(255, 255, 255, 0.07);
-  --accent-ring: rgba(255, 255, 255, 0.34);
-  --title-bar-bg: var(--color-surface-alt);
+  --accent-hover: var(--color-primary);
+  --accent-soft: var(--color-overlay-subtle);
+  --accent-softer: color-mix(in srgb, var(--color-overlay-subtle) 60%, transparent);
+  --accent-ring: color-mix(in srgb, var(--color-primary) 54%, transparent);
+  --title-bar-bg: var(--color-overlay);
   --chrome-top-bg: var(--title-bar-bg);
   --chrome-top-border: var(--color-border);
   --chrome-tab-bg: color-mix(in srgb, var(--chrome-top-bg) 82%, var(--color-surface-elevated) 18%);
   --chrome-tab-active-bg: var(--color-surface-elevated);
   --chrome-tab-divider: color-mix(in srgb, var(--chrome-top-border) 72%, transparent);
-  --link: var(--color-accent);
-  --attention: var(--color-accent);
+  --link: var(--color-primary);
+  --attention: var(--color-primary);
   --attention-hover: var(--color-primary);
-  --highlight: color-mix(in srgb, var(--color-accent) 24%, transparent);
+  --highlight: color-mix(in srgb, var(--color-primary) 18%, transparent);
   color-scheme: dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-bg: #111111;
-    --color-surface: #171717;
-    --color-surface-alt: #202020;
-    --color-surface-elevated: #141414;
-    --color-border: #303030;
-    --color-border-strong: #4a4a4a;
-    --color-text: #f4f4f4;
-    --color-text-secondary: #c2c2c2;
-    --color-text-muted: #888888;
+    --color-primary: #f2f2ee;
+    --color-primary-dark: var(--color-primary);
+    --color-bg: #121210;
+    --color-overlay: rgba(18, 18, 16, 0.64);
+    --color-overlay-subtle: rgba(242, 242, 238, 0.08);
+    --color-surface: #1a1a17;
+    --color-surface-alt: #24241f;
+    --color-surface-elevated: #1a1a17;
+    --color-border: #363630;
+    --color-border-strong: #56564e;
+    --color-text: #f2f2ee;
+    --color-text-secondary: #b9b9b0;
+    --color-text-muted: #8a8a82;
+    --color-on-primary: #121210;
+    --color-danger: #ff7a70;
+    --color-warning: #fec84b;
+    --color-success: #47cd89;
+    --color-info: #84adff;
     --bg: var(--color-bg);
-    --texture-grain: linear-gradient(180deg, rgba(26, 26, 26, 0.9), rgba(17, 17, 17, 0.9));
-    --texture-fibers: linear-gradient(180deg, rgba(28, 28, 28, 0.82), rgba(18, 18, 18, 0.82));
-    --texture-stone-wash: linear-gradient(180deg, rgba(30, 30, 30, 0.88), rgba(17, 17, 17, 0.88));
-    --material-ink: linear-gradient(180deg, #f5f5f5 0%, #e5e5e5 100%);
-    --material-charcoal: linear-gradient(180deg, #2a2a2a 0%, #161616 100%);
-    --material-paper: linear-gradient(180deg, #161616 0%, #101010 100%);
-    --material-panel: linear-gradient(180deg, #1b1b1b 0%, #151515 100%);
-    --material-control: #171717;
+    --texture-grain: var(--color-bg);
+    --texture-fibers: var(--color-bg);
+    --texture-stone-wash: var(--color-surface);
+    --material-ink: var(--color-primary);
+    --material-charcoal: var(--color-primary);
+    --material-paper: var(--color-bg);
+    --material-panel: var(--color-surface);
+    --material-control: var(--color-surface);
     --material-mineral-blue: var(--material-ink);
     --material-limestone: var(--material-paper);
     --material-stone-dust: var(--material-panel);
@@ -178,9 +205,9 @@
     --surface: var(--color-surface-elevated);
     --surface-raised: var(--color-surface-elevated);
     --surface-subtle: var(--color-surface);
-    --rail-bg: var(--color-surface-elevated);
-    --sidebar-bg: var(--color-surface);
-    --popup-bg: var(--color-surface-elevated);
+    --rail-bg: var(--color-overlay);
+    --sidebar-bg: var(--color-overlay);
+    --popup-bg: color-mix(in srgb, var(--color-overlay) 72%, var(--color-bg));
     --text: var(--color-text);
     --text-2: var(--color-text-secondary);
     --text-3: var(--color-text-muted);
@@ -195,20 +222,20 @@
     --shadow: rgba(0, 0, 0, 0.22);
     --shadow-soft: rgba(0, 0, 0, 0.12);
     --accent: var(--color-primary);
-    --accent-hover: var(--color-accent);
-    --accent-soft: rgba(255, 255, 255, 0.12);
-    --accent-softer: rgba(255, 255, 255, 0.07);
-    --accent-ring: rgba(255, 255, 255, 0.34);
-    --title-bar-bg: var(--color-surface-alt);
+    --accent-hover: var(--color-primary);
+    --accent-soft: var(--color-overlay-subtle);
+    --accent-softer: color-mix(in srgb, var(--color-overlay-subtle) 60%, transparent);
+    --accent-ring: color-mix(in srgb, var(--color-primary) 54%, transparent);
+    --title-bar-bg: var(--color-overlay);
     --chrome-top-bg: var(--title-bar-bg);
     --chrome-top-border: var(--color-border);
     --chrome-tab-bg: color-mix(in srgb, var(--chrome-top-bg) 82%, var(--color-surface-elevated) 18%);
     --chrome-tab-active-bg: var(--color-surface-elevated);
     --chrome-tab-divider: color-mix(in srgb, var(--chrome-top-border) 72%, transparent);
-    --link: var(--color-accent);
-    --attention: var(--color-accent);
+    --link: var(--color-primary);
+    --attention: var(--color-primary);
     --attention-hover: var(--color-primary);
-    --highlight: color-mix(in srgb, var(--color-accent) 24%, transparent);
+    --highlight: color-mix(in srgb, var(--color-primary) 18%, transparent);
     color-scheme: dark;
   }
 }
@@ -275,14 +302,14 @@ textarea {
 }
 
 .title-bar {
-  backdrop-filter: none;
-  background: var(--color-surface-elevated);
+  backdrop-filter: blur(12px) saturate(112%);
+  background: var(--color-overlay);
   box-shadow: none;
 }
 
 .pane-tab-bar-shell {
-  backdrop-filter: none;
-  background: var(--color-surface-elevated);
+  backdrop-filter: blur(10px) saturate(108%);
+  background: var(--color-overlay);
 }
 
 .workspace {
@@ -294,7 +321,7 @@ textarea {
 .rail,
 .sidebar,
 .right-panel {
-  backdrop-filter: none;
+  backdrop-filter: blur(14px) saturate(112%);
   border-color: var(--color-border);
   border-radius: 0;
   box-shadow: none;
@@ -488,7 +515,7 @@ textarea {
   border-color: var(--color-primary-dark);
   border-radius: var(--radius-md);
   box-shadow: none;
-  color: #ffffff;
+  color: var(--color-on-primary);
 }
 
 .editor-frontmatter-add-button:hover,
@@ -746,7 +773,7 @@ textarea {
 }
 
 .setting-row input[type="checkbox"]:checked::after {
-  background: #ffffff;
+  background: var(--color-on-primary);
   transform: translateX(16px);
 }
 
@@ -768,7 +795,7 @@ textarea {
   background: var(--material-ink);
   border-color: var(--color-primary);
   border-radius: var(--radius-md);
-  color: #ffffff;
+  color: var(--color-on-primary);
 }
 
 .primary-button:hover {
@@ -786,9 +813,9 @@ textarea {
   --chronicle-grid-line-major: color-mix(in srgb, var(--color-border-strong) 72%, transparent);
   --chronicle-grid-line-minor: color-mix(in srgb, var(--color-border) 50%, transparent);
   --chronicle-grid-line-row: color-mix(in srgb, var(--color-border) 42%, transparent);
-  --chronicle-planned-fill: color-mix(in srgb, var(--color-accent) 42%, transparent);
-  --chronicle-planned-fill-active: color-mix(in srgb, var(--color-accent) 58%, transparent);
-  --chronicle-planned-fill-hover: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  --chronicle-planned-fill: color-mix(in srgb, var(--color-primary) 42%, transparent);
+  --chronicle-planned-fill-active: color-mix(in srgb, var(--color-primary) 58%, transparent);
+  --chronicle-planned-fill-hover: color-mix(in srgb, var(--color-primary) 50%, transparent);
 }
 
 /* ────────────────────────────────── */
@@ -815,9 +842,9 @@ textarea {
 .rail,
 .sidebar,
 .right-panel {
-  background: var(--surface-texture-subtle);
-  background-size: var(--material-size-stone-dust);
-  backdrop-filter: none;
+  background: var(--color-overlay);
+  background-size: auto;
+  backdrop-filter: blur(14px) saturate(112%);
   border-radius: 0;
   box-shadow: none;
 }
@@ -827,8 +854,12 @@ textarea {
 }
 
 :where(.settings-segmented, .settings-segmented-indicator, .frontmatter-dialog, .file-search-panel, .command-palette, .quick-switcher, .tool-card, .tool-section) {
-  backdrop-filter: none;
   box-shadow: none;
+}
+
+:where(.frontmatter-dialog, .file-search-panel, .command-palette, .quick-switcher) {
+  backdrop-filter: blur(14px) saturate(112%);
+  background: var(--popup-bg);
 }
 
 .settings-segmented,
@@ -853,4 +884,11 @@ textarea {
 .settings-card {
   background: var(--material-limestone);
   background-size: var(--material-size-limestone);
+}
+
+@media (max-width: 760px) {
+  .layout-resize-boundary--right-panel,
+  .right-panel {
+    display: none;
+  }
 }
