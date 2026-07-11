@@ -39,4 +39,20 @@ describe("i18n dictionaries", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("does not leave literal natural-language accessibility labels in UI components", () => {
+    const untranslated: Array<{ filePath: string; label: string }> = [];
+    const literalNaturalLanguageAriaLabelPattern = /aria-label\s*=\s*["']([^"']*[A-Za-zぁ-んァ-ヶ一-龠][^"']*)["']/g;
+
+    for (const filePath of sourceFiles(path.join(process.cwd(), "src", "renderer"))) {
+      const source = readFileSync(filePath, "utf8");
+      let match: RegExpExecArray | null;
+
+      while ((match = literalNaturalLanguageAriaLabelPattern.exec(source))) {
+        untranslated.push({ filePath, label: match[1] });
+      }
+    }
+
+    expect(untranslated).toEqual([]);
+  });
 });

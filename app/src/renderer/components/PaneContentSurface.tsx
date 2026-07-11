@@ -224,6 +224,7 @@ interface PdfTabSurfaceProps {
 }
 
 function PdfTabSurface({ name, path }: PdfTabSurfaceProps): ReactElement {
+  const t = useT();
   const [pdfState, setPdfState] = useState<{ error: string | null; path: string; src: string | null } | null>(null);
   const pdfSrc = pdfState?.path === path ? pdfState.src : null;
   const loadError = pdfState?.path === path ? pdfState.error : null;
@@ -242,13 +243,13 @@ function PdfTabSurface({ name, path }: PdfTabSurfaceProps): ReactElement {
       setPdfState({ error: result.error.message, path, src: null });
     }).catch(() => {
       if (!active) return;
-      setPdfState({ error: "PDFファイルを表示できませんでした。", path, src: null });
+      setPdfState({ error: t("pane.pdfLoadFailed"), path, src: null });
     });
 
     return () => {
       active = false;
     };
-  }, [path]);
+  }, [path, t]);
 
   return (
     <div className="editor-surface pdf-tab-surface">
@@ -267,7 +268,7 @@ function PdfTabSurface({ name, path }: PdfTabSurfaceProps): ReactElement {
           />
         ) : (
           <output className="editor-conflict-banner">
-            <span>{loadError ?? "PDFを読み込んでいます。"}</span>
+            <span>{loadError ?? t("pane.pdfLoading")}</span>
           </output>
         )}
       </div>
@@ -281,6 +282,7 @@ interface ImageTabSurfaceProps {
 }
 
 function ImageTabSurface({ name, path }: ImageTabSurfaceProps): ReactElement {
+  const t = useT();
   const [imageState, setImageState] = useState<{ error: string | null; path: string; src: string | null } | null>(null);
   const imageSrc = imageState?.path === path ? imageState.src : null;
   const loadError = imageState?.path === path ? imageState.error : null;
@@ -299,13 +301,13 @@ function ImageTabSurface({ name, path }: ImageTabSurfaceProps): ReactElement {
       setImageState({ error: result.error.message, path, src: null });
     }).catch(() => {
       if (!active) return;
-      setImageState({ error: "画像ファイルを表示できませんでした。", path, src: null });
+      setImageState({ error: t("pane.imageLoadFailed"), path, src: null });
     });
 
     return () => {
       active = false;
     };
-  }, [path]);
+  }, [path, t]);
 
   return (
     <div className="editor-surface image-tab-surface">
@@ -319,7 +321,7 @@ function ImageTabSurface({ name, path }: ImageTabSurfaceProps): ReactElement {
           <img alt={name} className="image-tab-image" src={imageSrc} />
         ) : (
           <output className="editor-conflict-banner">
-            <span>{loadError ?? "画像を読み込んでいます。"}</span>
+            <span>{loadError ?? t("pane.imageLoading")}</span>
           </output>
         )}
       </div>

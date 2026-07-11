@@ -7,6 +7,7 @@ import type { AppLinkContextMenu } from "../appLinks";
 import type { HeadingScrollTarget, OutlineHeading } from "../editorDerivedState";
 import type { FileTab, PaneId, PanelTabKind } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
+import { useT } from "../i18n";
 import { AppRightPanel } from "./AppRightPanel";
 import { LayoutResizeBoundary } from "./LayoutResizeBoundary";
 import { PaneView, type PaneViewProps } from "./PaneView";
@@ -188,6 +189,7 @@ export function AppEditorWorkspace({
   userDefinedFields,
   workspacePath
 }: AppEditorWorkspaceProps): ReactElement {
+  const t = useT();
   void showRightPanelRecoveryControl;
 
   const commonPaneViewProps: CommonPaneViewProps = {
@@ -261,7 +263,7 @@ export function AppEditorWorkspace({
 
         {isRightPanelOpen ? (
           <LayoutResizeBoundary
-            aria-label="Resize right panel"
+            aria-label={t("pane.resizeRightPanel")}
             isActive={isRightPanelResizing}
             onResizeStart={onRightPanelResizeStart}
             side="right-panel"

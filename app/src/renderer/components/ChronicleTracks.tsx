@@ -1,6 +1,7 @@
 import { useMemo, useState, type CSSProperties, type PointerEvent, type ReactElement } from "react";
 
 import type { ChartEntry, ChartEntryEditKind, ChartSource } from "../../shared/ipc";
+import { useT } from "../i18n";
 import {
   entryKey,
   formatRange,
@@ -82,6 +83,7 @@ export function ChronicleTracks({
   unitWidth: number;
   visibleRange?: TimelineVisibleRange;
 }): ReactElement {
+  const t = useT();
   const [hoveredChronicleKey, setHoveredChronicleKey] = useState<string | null>(null);
   const [selectedChronicleKey, setSelectedChronicleKey] = useState<string | null>(null);
   const chronicleLaneIndexes = useMemo(
@@ -148,7 +150,7 @@ export function ChronicleTracks({
       />
       {activeSource === "chronicle" ? (
         <svg
-          aria-label="年表"
+          aria-label={t("chronicle.timelineAria")}
           className="chronicle-tracks-svg"
           height={trackHeight}
           onPointerDown={(event) => {
@@ -595,6 +597,7 @@ function ChronicleEntryCard({
   shape: ChronicleEntryShape;
   timelineWidth: number;
 }): ReactElement {
+  const t = useT();
   const rangeLabel = formatRange(shape.displayEntry);
   const left = Math.max(8, Math.min(timelineWidth - 260, shape.x + 10));
   const top = shape.y + 10;
@@ -606,7 +609,7 @@ function ChronicleEntryCard({
       style={{ left, top } as CSSProperties}
     >
       <button
-        aria-label={`${shape.entry.fileName}を開く`}
+        aria-label={t("chronicle.openFileAria", { name: shape.entry.fileName })}
         className="chronicle-entry-card-open"
         onClick={(event) => {
           event.stopPropagation();
