@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, memo, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent, MouseEvent, ReactElement } from "react";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
@@ -67,6 +67,8 @@ export interface FileTreeProps {
   pinnedPaths?: Set<string>;
   selectedItems?: FileTreeMoveItem[];
   selectedPaths?: Set<string>;
+  onShowAllFiles?: () => void;
+  showAllFiles?: boolean;
 }
 
 export interface FileTreeItemProps extends Omit<FileTreeProps, "isRoot" | "motionPaths" | "nodes"> {
@@ -79,6 +81,7 @@ export interface FileTreeItemProps extends Omit<FileTreeProps, "isRoot" | "motio
 const defaultSelectedItems: FileTreeMoveItem[] = [];
 const defaultSelectedPaths = new Set<string>();
 const largeFileTreeRowThreshold = 1000;
+const initialFolderFileLimit = 10;
 const outboundFileDragIgnoreMs = 2000;
 
 function droppedFilePathsFromEvent(event: DragEvent<HTMLElement>): string[] {
@@ -164,6 +167,7 @@ export const FileTreeItem = memo(function FileTreeItem({
   selectedItems = defaultSelectedItems,
   selectedPaths = defaultSelectedPaths
 }: FileTreeItemProps): ReactElement {
+  const [showAllChildFiles, setShowAllChildFiles] = useState(false);
   const actions = useMemo(() => (
     fileTreeActionsFromProps({
       actions: providedActions,
@@ -269,6 +273,10 @@ export const FileTreeItem = memo(function FileTreeItem({
     actions.onSelectFolder(node);
   };
 
+  useEffect(() => {
+    if (!isExpanded) setShowAllChildFiles(false);
+  }, [isExpanded]);
+
   const openContextMenuForNode = (event: MouseEvent<HTMLButtonElement>): void => {
     event.preventDefault();
     event.stopPropagation();
@@ -291,6 +299,9 @@ export const FileTreeItem = memo(function FileTreeItem({
         isRemoving={isRemoving}
         isRenaming={isRenaming}
         isSelected={isSelected}
+        directFileCount={node.type === "folder"
+          ? node.children.filter((child) => child.type === "file").length
+          : undefined}
         node={node}
         onActivate={activateNode}
         onContextMenu={openContextMenuForNode}
@@ -333,6 +344,8 @@ export const FileTreeItem = memo(function FileTreeItem({
           pinnedPaths={pinnedPaths}
           selectedItems={selectedItems}
           selectedPaths={selectedPaths}
+          showAllFiles={showAllChildFiles}
+          onShowAllFiles={() => setShowAllChildFiles(true)}
         />
       ) : null}
     </li>
@@ -368,12 +381,36 @@ export const FileTree = memo(function FileTree({
   pinnedPaths,
   selectedItems = defaultSelectedItems,
   selectedPaths = defaultSelectedPaths,
+  onShowAllFiles,
+  showAllFiles = false,
   suppressOpeningAnimation = false
 }: FileTreeProps & { animation?: "expand" }): ReactElement {
   const t = useT();
   const [isRootFileDragOver, setIsRootFileDragOver] = useState(false);
   const ignoreRootFileDragOverUntilRef = useRef(0);
   const activeAppearingPaths = useFileTreeMotion(nodes, motionPaths);
+  const directFiles = useMemo(() => nodes.filter((node) => node.type === "file"), [nodes]);
+  const hiddenFiles = directFiles.slice(initialFolderFileLimit);
+  const shouldRevealPriorityFile = hiddenFiles.some((node) => (
+    selectedPaths.has(node.path)
+    || openFilePaths?.has(node.path)
+    || openingFilePath === node.path
+    || activeAppearingPaths.has(node.path)
+  ));
+  const effectiveShowAllFiles = showAllFiles || shouldRevealPriorityFile;
+  useEffect(() => {
+    if (!showAllFiles && shouldRevealPriorityFile) onShowAllFiles?.();
+  }, [onShowAllFiles, shouldRevealPriorityFile, showAllFiles]);
+  const visibleFilePaths = useMemo(() => (
+    effectiveShowAllFiles || !onShowAllFiles
+      ? null
+      : new Set(directFiles.slice(0, initialFolderFileLimit).map((node) => node.path))
+  ), [directFiles, effectiveShowAllFiles, onShowAllFiles]);
+  const displayedNodes = visibleFilePaths
+    ? nodes.filter((node) => node.type === "folder" || visibleFilePaths.has(node.path))
+    : nodes;
+  const remainingFileCount = visibleFilePaths ? hiddenFiles.length : 0;
+  const lastInitiallyVisibleFilePath = directFiles[Math.min(directFiles.length, initialFolderFileLimit) - 1]?.path;
   const visibleRows = useMemo(
     () => buildVisibleFileTreeRows(nodes, { pinnedPaths }),
     [nodes, pinnedPaths]
@@ -488,23 +525,31 @@ export const FileTree = memo(function FileTree({
       {nodes.length === 0 ? (
         <li><div className="empty-note">{t("files.noFiles")}</div></li>
       ) : null}
-      {nodes.map((node) => (
-        <FileTreeItem
-          isAppearing={activeAppearingPaths.has(node.path)}
-          expansionRequest={expansionRequest}
-          isPinned={pinnedPaths?.has(node.path)}
-          key={node.path}
-          node={node}
-          actions={actions}
-          onOpenFile={actions.onOpenFile}
-          onSelectFolder={actions.onSelectFolder}
-          openingFilePath={effectiveOpeningFilePath}
-          suppressOpeningAnimation={effectiveSuppressOpeningAnimation}
-          openFilePaths={openFilePaths}
-          pinnedPaths={pinnedPaths}
-          selectedItems={selectedItems}
-          selectedPaths={selectedPaths}
-        />
+      {displayedNodes.map((node) => (
+        <Fragment key={node.path}>
+          <FileTreeItem
+            isAppearing={activeAppearingPaths.has(node.path)}
+            expansionRequest={expansionRequest}
+            isPinned={pinnedPaths?.has(node.path)}
+            node={node}
+            actions={actions}
+            onOpenFile={actions.onOpenFile}
+            onSelectFolder={actions.onSelectFolder}
+            openingFilePath={effectiveOpeningFilePath}
+            suppressOpeningAnimation={effectiveSuppressOpeningAnimation}
+            openFilePaths={openFilePaths}
+            pinnedPaths={pinnedPaths}
+            selectedItems={selectedItems}
+            selectedPaths={selectedPaths}
+          />
+          {remainingFileCount > 0 && node.path === lastInitiallyVisibleFilePath ? (
+            <li className="file-tree-more-item">
+              <button className="file-tree-more-button" onClick={onShowAllFiles} type="button">
+                {t("files.showRemaining", { count: remainingFileCount })}
+              </button>
+            </li>
+          ) : null}
+        </Fragment>
       ))}
     </ul>
   );

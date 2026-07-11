@@ -17,6 +17,7 @@ interface FileTreeItemRowProps {
   isRemoving: boolean;
   isRenaming: boolean;
   isSelected: boolean;
+  directFileCount?: number;
   node: WorkspaceTreeNode;
   onActivate: (event: MouseEvent<HTMLButtonElement>) => void;
   onContextMenu: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -45,6 +46,7 @@ export const FileTreeItemRow = memo(function FileTreeItemRow({
   isRemoving,
   isRenaming,
   isSelected,
+  directFileCount,
   node,
   onActivate,
   onContextMenu,
@@ -131,6 +133,11 @@ export const FileTreeItemRow = memo(function FileTreeItemRow({
       >
         {icon}
         <span className="file-tree-name">{node.name}</span>
+        {isFolder ? (
+          <span className="file-tree-folder-count">
+            {t("files.folderFileCount", { count: directFileCount ?? 0 })}
+          </span>
+        ) : null}
       </button>
       {onTogglePin ? (
         <button

@@ -88,6 +88,27 @@ function makeLargeFileTree(rowCount = 1000): WorkspaceTreeNode[] {
   ];
 }
 
+function makeProgressiveFolder(): WorkspaceTreeNode[] {
+  return [{
+    children: [
+      ...Array.from({ length: 12 }, (_, index) => ({
+        name: `Note ${index + 1}`,
+        path: `Folder/Note ${index + 1}.md`,
+        type: "file" as const
+      })),
+      {
+        children: [{ name: "Nested note", path: "Folder/Nested/Nested note.md", type: "file" as const }],
+        name: "Nested",
+        path: "Folder/Nested",
+        type: "folder" as const
+      }
+    ],
+    name: "Folder",
+    path: "Folder",
+    type: "folder" as const
+  }];
+}
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -122,6 +143,75 @@ describe("FileTree", () => {
 
     fireEvent.click(rowButton("Folder"));
     expect(screen.getByText("Child")).toBeInTheDocument();
+  });
+
+  it("フォルダ直下のファイルを10件に制限し、子フォルダと件数を常に表示する", () => {
+    renderFileTree({ nodes: makeProgressiveFolder() });
+
+    expect(screen.getByText("12 files")).toBeInTheDocument();
+    expect(screen.getByText("Note 10")).toBeInTheDocument();
+    expect(screen.queryByText("Note 11")).not.toBeInTheDocument();
+    expect(screen.getByText("Nested")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show 2 remaining" })).toBeInTheDocument();
+  });
+
+  it("続きを表示しても選択を変えず、フォルダを閉じると段階表示へ戻す", () => {
+    const onSelectItem = vi.fn(() => true);
+    renderFileTree({
+      nodes: makeProgressiveFolder(),
+      onSelectItem,
+      selectedItems: [{ path: "Folder/Note 1.md", type: "file" }],
+      selectedPaths: new Set(["Folder/Note 1.md"])
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Show 2 remaining" }));
+    expect(screen.getByText("Note 12")).toBeInTheDocument();
+    expect(rowButton("Note 1")).toHaveClass("selected");
+    expect(onSelectItem).not.toHaveBeenCalled();
+
+    fireEvent.click(rowButton("Folder"));
+    fireEvent.click(rowButton("Folder"));
+    expect(screen.queryByText("Note 12")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show 2 remaining" })).toBeInTheDocument();
+  });
+
+  it.each([
+    ["選択中", { selectedPaths: new Set(["Folder/Note 12.md"]) }],
+    ["開いている", { openFilePaths: new Set(["Folder/Note 12.md"]) }],
+    ["作成直後", { openingFilePath: "Folder/Note 12.md" }]
+  ])("初期範囲外の%sファイルがあれば自動的に全件表示する", (_label, overrides) => {
+    renderFileTree({ nodes: makeProgressiveFolder(), ...overrides });
+
+    expect(screen.getByText("Note 12")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show 2 remaining" })).not.toBeInTheDocument();
+  });
+
+  it("例外表示を開始した後は対象状態が消えてもフォルダを閉じるまで全件表示を維持する", () => {
+    const nodes = makeProgressiveFolder();
+    const { rerender } = render(
+      <I18nProvider language="en">
+        <FileTree
+          nodes={nodes}
+          onOpenFile={vi.fn()}
+          onSelectFolder={vi.fn()}
+          selectedPaths={new Set(["Folder/Note 12.md"])}
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText("Note 12")).toBeInTheDocument();
+    rerender(
+      <I18nProvider language="en">
+        <FileTree
+          nodes={nodes}
+          onOpenFile={vi.fn()}
+          onSelectFolder={vi.fn()}
+          selectedPaths={new Set()}
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText("Note 12")).toBeInTheDocument();
   });
 
   it("does not keep a visual open highlight for already-open files", () => {

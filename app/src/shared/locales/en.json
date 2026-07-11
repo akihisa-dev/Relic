@@ -68,6 +68,8 @@
   "files.createNote": "New file",
   "files.createNoteShort": "Create",
   "files.noFiles": "No files.",
+  "files.folderFileCount": "{{count}} files",
+  "files.showRemaining": "Show {{count}} remaining",
   "files.createNewWorkspace": "New Workspace",
   "files.creatingWorkspace": "Creating...",
   "files.copyPath": "Copy path",

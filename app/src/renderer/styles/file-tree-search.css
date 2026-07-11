@@ -42,7 +42,7 @@
   display: grid;
   font-size: 13px;
   gap: 6px;
-  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-columns: 24px minmax(0, 1fr) auto;
   min-height: 28px;
   padding: 0 8px;
   text-align: left;
@@ -260,6 +260,40 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.file-tree-folder-count {
+  color: var(--text-3);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.file-tree-more-item {
+  list-style: none;
+}
+
+.file-tree-more-button {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-3);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  min-height: 28px;
+  padding: 0 8px 0 38px;
+  text-align: left;
+  width: 100%;
+}
+
+.file-tree-more-button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.file-tree-more-button:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: -2px;
 }
 
 .file-tree-rename-input {

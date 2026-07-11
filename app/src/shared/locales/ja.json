@@ -68,6 +68,8 @@
   "files.createNote": "新規ファイル",
   "files.createNoteShort": "作成",
   "files.noFiles": "ファイルはまだありません。",
+  "files.folderFileCount": "{{count}}件",
+  "files.showRemaining": "残り{{count}}件を表示",
   "files.createNewWorkspace": "新規ワークスペース",
   "files.creatingWorkspace": "作成中…",
   "files.copyPath": "パスをコピー",
