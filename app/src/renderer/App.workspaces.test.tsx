@@ -65,6 +65,8 @@ describe("App workspaces", () => {
     expect(css).toMatch(/\.files-sidebar-section\s*\{[^}]*padding:\s*16px 16px 0;/s);
     expect(css).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*position:\s*relative;/s);
     expect(css).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*z-index:\s*6;/s);
+    expect(css).toMatch(/\.files-create-icon-button\[data-tooltip\]:hover::after,[^{]*\{[^}]*top:\s*calc\(100% \+ 6px\);/s);
+    expect(css).not.toMatch(/\.files-create-icon-button\[data-tooltip\]:hover::after,[^{]*\{[^}]*bottom:\s*calc\(100% \+ 6px\);/s);
     expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*min-height:\s*0;/s);
     expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*overflow-y:\s*auto;/s);
   });
