@@ -1,0 +1,19 @@
+/* ────────────────────────────────── */
+/* Status bar                         */
+/* ────────────────────────────────── */
+
+.status-bar {
+  align-items: center;
+  background: color-mix(in srgb, var(--sidebar-bg) 96%, transparent);
+  backdrop-filter: blur(18px) saturate(135%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(19, 35, 58, 0.12);
+  color: var(--text-3);
+  display: flex;
+  font-size: 12px;
+  gap: 16px;
+  margin: 0 12px 8px;
+  min-height: 26px;
+  padding: 0 14px;
+}

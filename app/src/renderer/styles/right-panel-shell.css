@@ -1,0 +1,64 @@
+/* ────────────────────────────────── */
+/* Right panel                        */
+/* ────────────────────────────────── */
+
+.right-panel {
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(18px) saturate(132%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--floating-panel-shadow);
+  display: flex;
+  flex: 0 0 240px;
+  flex-direction: column;
+  height: 100%;
+  min-width: 220px;
+  overflow: hidden;
+  position: relative;
+  transition:
+    flex-basis var(--motion-slow) var(--ease-enter),
+    width var(--motion-slow) var(--ease-enter),
+    border-color var(--motion-normal) var(--ease-standard),
+    background-color var(--motion-normal) var(--ease-standard);
+  will-change: width;
+  width: 240px;
+}
+
+.right-panel--closed {
+  border-color: transparent;
+  box-shadow: none;
+  flex-basis: 0;
+  min-width: 0;
+  pointer-events: none;
+  width: 0;
+}
+
+.right-panel--resizing {
+  border-color: var(--accent-ring);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.right-panel > .sidebar-header,
+.right-panel > .sidebar-body {
+  opacity: 1;
+  transform: translateX(0) scaleX(1);
+  transform-origin: right center;
+  transition:
+    opacity var(--motion-normal) var(--ease-standard) 60ms,
+    transform var(--motion-normal) var(--ease-enter) 60ms;
+}
+
+.right-panel--closed > .sidebar-header,
+.right-panel--closed > .sidebar-body {
+  opacity: 0;
+  transition-delay: 0ms;
+  transform: translateX(12px) scaleX(0.97);
+}
+
+.right-panel-content {
+  animation: right-panel-content-in var(--motion-normal) var(--ease-enter);
+  padding-top: 32px;
+  transform-origin: right center;
+}
