@@ -1,6 +1,6 @@
 import type { EditorView } from "@codemirror/view";
 
-import { findFrontmatterBlock, findFrontmatterLineRange, findTopLevelYamlFieldEntries } from "./editorFrontmatterModel";
+import { findFrontmatterBlock, findFrontmatterLineRange, findTopLevelYamlFieldEntries, serializeData } from "./editorFrontmatterModel";
 
 export {
   choicesFor,
@@ -83,7 +83,7 @@ export function appendFrontmatterArrayValue(view: EditorView, key: string, value
     ...(Array.isArray(currentValue) ? currentValue : currentValue === null || currentValue === undefined ? [] : [currentValue]),
     value
   ];
-  const serialized = `${key}: [${nextValue.map((item) => JSON.stringify(String(item))).join(", ")}]`;
+  const serialized = serializeData({ [key]: nextValue });
   const lines = block.yamlText.replace(/\r\n/g, "\n").split("\n");
   if (lines.at(-1) === "") lines.pop();
   const entry = findTopLevelYamlFieldEntries(lines).find((item) => item.key === key);

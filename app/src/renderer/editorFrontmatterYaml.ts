@@ -2,10 +2,7 @@ import { EditorState, type Text } from "@codemirror/state";
 import * as yaml from "js-yaml";
 
 import type { UserDefinedField } from "../shared/ipc";
-import {
-  fieldFor,
-  shouldSerializeArrayAsFlowSequence
-} from "./editorFrontmatterFields";
+import { fieldFor } from "./editorFrontmatterFields";
 
 export interface FrontmatterBlock {
   bodyFrom: number;
@@ -57,10 +54,6 @@ function findYamlScalarQuote(line: string): "'" | "\"" | null {
   return match[1] === "'" ? "'" : "\"";
 }
 
-function isYamlFlowSequence(line: string): boolean {
-  return /^[^:]+:\s*\[/.test(line);
-}
-
 export function findTopLevelYamlFieldEntries(lines: string[]): YamlFieldEntry[] {
   const entries: YamlFieldEntry[] = [];
 
@@ -77,27 +70,11 @@ export function findTopLevelYamlFieldEntries(lines: string[]): YamlFieldEntry[] 
   return entries;
 }
 
-function serializeFlowScalar(key: string, value: unknown, preserveDateLikeString = false): string {
-  void key;
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  if (preserveDateLikeString && typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-  if (typeof value === "string") return JSON.stringify(value);
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  if (value === null) return "null";
-  return JSON.stringify(String(value));
-}
-
 export function serializeData(data: Record<string, unknown>, userDefinedFields: UserDefinedField[] = []): string {
   return Object.entries(data)
     .map(([key, value]) => {
       const field = fieldFor(key, userDefinedFields);
       if (value === "") return `${key}:`;
-      if (key === "chronicle") {
-        return yaml.dump({ [key]: value }, { flowLevel: 2, lineWidth: -1, quoteStyle: "double", forceQuotes: false }).trimEnd();
-      }
-      if (Array.isArray(value) && shouldSerializeArrayAsFlowSequence(key, field)) {
-        return `${key}: [${value.map((item) => serializeFlowScalar(key, item)).join(", ")}]`;
-      }
       if (field?.type === "date" && typeof value === "string") return `${key}: ${value}`;
       return yaml.dump({ [key]: value }, { lineWidth: -1 }).trimEnd();
     })
@@ -110,22 +87,7 @@ function serializeEntryPreservingQuote(
   value: unknown,
   userDefinedFields: UserDefinedField[] = []
 ): string {
-  const field = fieldFor(entry.key, userDefinedFields);
-
-  if (entry.key === "chronicle") {
-    return serializeData({ [entry.key]: value }, userDefinedFields);
-  }
-
-  if (
-    Array.isArray(value) &&
-    (
-      shouldSerializeArrayAsFlowSequence(entry.key, field) ||
-      (entry.end === entry.start + 1 && isYamlFlowSequence(lines[entry.start]))
-    )
-  ) {
-    const preserveDateLikeString = isYamlFlowSequence(lines[entry.start]);
-    return `${entry.key}: [${value.map((item) => serializeFlowScalar(entry.key, item, preserveDateLikeString)).join(", ")}]`;
-  }
+  if (Array.isArray(value) || entry.key === "chronicle") return serializeData({ [entry.key]: value }, userDefinedFields);
 
   if (entry.end !== entry.start + 1 || typeof value !== "string" || value.includes("\n")) {
     return serializeData({ [entry.key]: value }, userDefinedFields);

@@ -10,6 +10,7 @@ import {
   isChronicleField,
   isEditableScalar,
   isSingleValueField,
+  chronicleYearRangeInput,
   parseChronicleYearInput,
   parseDateInputForFormat,
   parseScalarValue,
@@ -39,7 +40,7 @@ export function createFrontmatterValueInput({
   value: unknown;
   view: EditorView;
 }): HTMLElement {
-  if (isChronicleField(key)) return chronicleInput(view, Array.isArray(value) ? value : [], updateField, t);
+  if (isChronicleField(key)) return chronicleInput(view, value, updateField);
   if (field?.type === "boolean") return booleanInput(view, key, firstArrayValue(value), updateField, true);
   if (isSingleValueField(field)) {
     return scalarInput(view, key, firstArrayValue(value), field, candidates, updateField, dateFormat, true);
@@ -193,38 +194,50 @@ function booleanInput(
 
 function chronicleInput(
   view: EditorView,
-  value: unknown[],
-  updateField: FrontmatterFieldUpdater,
-  t: Translator
+  value: unknown,
+  updateField: FrontmatterFieldUpdater
 ): HTMLElement {
-  const wrap = document.createElement("div");
-  wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-chronicle cm-frontmatter-chronicle-list";
-  const entries = normalizeChronicleEntries(value);
-
-  const commit = (nextEntries: ChronicleFormEntry[]): void => {
-    updateField(view, "chronicle", nextEntries.map(serializeChronicleEntry));
+  const wrap = document.createElement("span");
+  wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-chronicle";
+  const range = chronicleYearRangeInput(value);
+  const startInput = chronicleYearInput("chronicle-start", range.start, "開始年");
+  const endInput = chronicleYearInput("chronicle-end", range.end, "終了年（任意）");
+  const commit = (): void => {
+    const startRaw = startInput.value.trim();
+    const endRaw = endInput.value.trim();
+    if (!startRaw) {
+      startInput.removeAttribute("aria-invalid");
+      endInput.removeAttribute("aria-invalid");
+      updateField(view, "chronicle", undefined);
+      return;
+    }
+    const start = parseChronicleYearInput(startRaw, true);
+    const end = endRaw ? parseChronicleYearInput(endRaw, true) : start;
+    const invalid = start === null || end === null || start === 0 || end === 0 || start > end;
+    if (invalid) {
+      startInput.setAttribute("aria-invalid", "true");
+      endInput.setAttribute("aria-invalid", "true");
+      return;
+    }
+    startInput.removeAttribute("aria-invalid");
+    endInput.removeAttribute("aria-invalid");
+    updateField(view, "chronicle", endRaw && end !== start ? { start, end } : start);
   };
-
-  entries.forEach((entry, index) => {
-    wrap.append(chronicleEntryInput({
-      entry,
-      index,
-      onDelete: () => commit(entries.filter((_item, entryIndex) => entryIndex !== index)),
-      onUpdate: (nextEntry) => commit(entries.map((item, entryIndex) => entryIndex === index ? nextEntry : item)),
-      t
-    }));
-  });
-
-  const addButton = document.createElement("button");
-  addButton.className = "cm-frontmatter-pill-add";
-  addButton.ariaLabel = t("frontmatter.addValue");
-  addButton.title = t("frontmatter.addValue");
-  addButton.textContent = "+";
-  addButton.type = "button";
-  addButton.addEventListener("click", () => commit([...entries, emptyChronicleEntry()]));
-  wrap.append(addButton);
-
+  startInput.addEventListener("input", commit);
+  endInput.addEventListener("input", commit);
+  wrap.append(startInput, endInput);
   return wrap;
+}
+
+function chronicleYearInput(label: string, value: string, placeholder: string): HTMLInputElement {
+  const input = document.createElement("input");
+  input.ariaLabel = label;
+  input.className = "cm-frontmatter-input";
+  input.inputMode = "numeric";
+  input.placeholder = placeholder;
+  input.type = "text";
+  input.value = value;
+  return input;
 }
 
 function parseDateTextInput(input: HTMLInputElement, dateFormat: FrontmatterDateFormat): string | null | undefined {
@@ -242,182 +255,6 @@ function parseDateTextInput(input: HTMLInputElement, dateFormat: FrontmatterDate
 
   input.removeAttribute("aria-invalid");
   return parsedValue;
-}
-
-interface ChronicleFormEntry {
-  calendarName: string;
-  endMonth: string;
-  endYear: string;
-  startMonth: string;
-  startYear: string;
-}
-
-function chronicleEntryInput({
-  entry,
-  index,
-  onDelete,
-  onUpdate,
-  t
-}: {
-  entry: ChronicleFormEntry;
-  index: number;
-  onDelete: () => void;
-  onUpdate: (entry: ChronicleFormEntry) => void;
-  t: Translator;
-}): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "cm-frontmatter-chronicle-entry";
-  const error = document.createElement("span");
-  error.className = "cm-frontmatter-input-error";
-
-  const startYearInput = chronicleTextInput(`chronicle-${index}-start-year`, entry.startYear, t("frontmatter.rangeStart"));
-  const startMonthInput = chronicleTextInput(`chronicle-${index}-start-month`, entry.startMonth, "月");
-  const endYearInput = chronicleTextInput(`chronicle-${index}-end-year`, entry.endYear, t("frontmatter.rangeEnd"));
-  const endMonthInput = chronicleTextInput(`chronicle-${index}-end-month`, entry.endMonth, "月");
-
-  const readEntry = (): ChronicleFormEntry => ({
-    calendarName: entry.calendarName,
-    endMonth: endMonthInput.value.trim(),
-    endYear: endYearInput.value.trim(),
-    startMonth: startMonthInput.value.trim(),
-    startYear: startYearInput.value.trim()
-  });
-
-  const commit = (): void => {
-    const next = readEntry();
-    const validation = validateChronicleEntry(next);
-    error.textContent = validation;
-    for (const input of [startYearInput, startMonthInput, endYearInput, endMonthInput]) {
-      if (validation) input.setAttribute("aria-invalid", "true");
-      else input.removeAttribute("aria-invalid");
-    }
-    if (!validation) onUpdate(next);
-  };
-
-  for (const input of [startYearInput, startMonthInput, endYearInput, endMonthInput]) {
-    input.addEventListener("input", commit);
-  }
-
-  const deleteButton = document.createElement("button");
-  deleteButton.className = "cm-frontmatter-pill-remove cm-frontmatter-chronicle-delete";
-  deleteButton.type = "button";
-  deleteButton.append(createFrontmatterTrashIcon());
-  deleteButton.addEventListener("click", onDelete);
-
-  row.append(startYearInput, startMonthInput, endYearInput, endMonthInput, deleteButton, error);
-  return row;
-}
-
-function createFrontmatterTrashIcon(): SVGSVGElement {
-  const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  icon.setAttribute("aria-hidden", "true");
-  icon.setAttribute("fill", "none");
-  icon.setAttribute("height", "18");
-  icon.setAttribute("stroke", "currentColor");
-  icon.setAttribute("stroke-linecap", "round");
-  icon.setAttribute("stroke-linejoin", "round");
-  icon.setAttribute("stroke-width", "1.7");
-  icon.setAttribute("viewBox", "0 0 24 24");
-  icon.setAttribute("width", "18");
-  for (const pathData of [
-    "M10 11v6",
-    "M14 11v6",
-    "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6",
-    "M3 6h18",
-    "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-  ]) {
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", pathData);
-    icon.append(path);
-  }
-  return icon;
-}
-
-function chronicleTextInput(label: string, value: string, placeholder: string): HTMLInputElement {
-  const input = document.createElement("input");
-  input.ariaLabel = label;
-  input.className = "cm-frontmatter-input";
-  input.placeholder = placeholder;
-  input.type = "text";
-  input.value = value;
-  return input;
-}
-
-function normalizeChronicleEntries(value: unknown[]): ChronicleFormEntry[] {
-  return value.flatMap((entry): ChronicleFormEntry[] => {
-    if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== "string") return [];
-    const range = entry[1];
-    if (!Array.isArray(range) || range.length !== 2) return [];
-    const start = chroniclePointInputValue(range[0]);
-    const end = chroniclePointInputValue(range[1]);
-    if (!start || !end) return [];
-
-    return [{
-      calendarName: entry[0],
-      endMonth: end.month,
-      endYear: end.year,
-      startMonth: start.month,
-      startYear: start.year
-    }];
-  });
-}
-
-function chroniclePointInputValue(value: unknown): { month: string; year: string } | null {
-  if (!Array.isArray(value) || value.length !== 2) return null;
-  const [year, month] = value;
-  if (!Number.isInteger(year)) return null;
-  if (month !== null && !Number.isInteger(month)) return null;
-  return {
-    month: month === null ? "" : String(month),
-    year: String(year)
-  };
-}
-
-function emptyChronicleEntry(): ChronicleFormEntry {
-  return {
-    calendarName: "メイン暦",
-    endMonth: "",
-    endYear: "1",
-    startMonth: "",
-    startYear: "1"
-  };
-}
-
-function serializeChronicleEntry(entry: ChronicleFormEntry): unknown[] {
-  const startYear = Number(entry.startYear);
-  const endYear = Number(entry.endYear || entry.startYear);
-  const startMonth = entry.startMonth ? Number(entry.startMonth) : null;
-  const endMonth = entry.endMonth ? Number(entry.endMonth) : null;
-
-  return [
-    entry.calendarName.trim(),
-    [
-      [startYear, startMonth],
-      [endYear, endMonth]
-    ]
-  ];
-}
-
-function validateChronicleEntry(entry: ChronicleFormEntry): string | null {
-  if (!entry.calendarName.trim()) return "暦名を入力してください。";
-  const startYear = parseChronicleYearInput(entry.startYear, true);
-  const endYear = entry.endYear ? parseChronicleYearInput(entry.endYear, true) : startYear;
-  const startMonth = parseChronicleMonthInput(entry.startMonth);
-  const endMonth = entry.endMonth ? parseChronicleMonthInput(entry.endMonth) : null;
-
-  if (startYear === null || endYear === null) return "年は0以外の整数で入力してください。";
-  if (startYear === 0 || endYear === 0) return "年は0以外の整数で入力してください。";
-  if (startMonth === false || endMonth === false) return "月は1〜12で入力してください。";
-  const startValue = startYear * 12 + ((startMonth || 1) - 1);
-  const endValue = endYear * 12 + ((endMonth || 1) - 1);
-  return startValue <= endValue ? null : "開始年月は終了年月以下にしてください。";
-}
-
-function parseChronicleMonthInput(value: string): number | null | false {
-  if (!value.trim()) return null;
-  if (!/^\d+$/.test(value.trim())) return false;
-  const month = Number(value);
-  return Number.isInteger(month) && month >= 1 && month <= 12 ? month : false;
 }
 
 function arrayInput(

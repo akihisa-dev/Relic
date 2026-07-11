@@ -51,23 +51,23 @@ describe("FrontmatterPanel", () => {
     expect(screen.getByRole("button", { name: "tags Fixed" })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("button", { name: "category Fixed" })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("button", { name: "chronicle Fixed" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText("Alternative names that can link to this file. Used for link resolution and file name search. Write one or many values as the same one-line array.")).toBeNull();
-    expect(screen.queryByText("aliases: [Capital]")).toBeNull();
+    expect(screen.queryByText("Alternative names that can link to this file. Used for link resolution and file name search. Write values as a standard YAML list.")).toBeNull();
+    expect(screen.queryByText("aliases: - Capital")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "aliases Fixed" }));
 
     expect(screen.getByRole("button", { name: "aliases Fixed" })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("Alternative names that can link to this file. Used for link resolution and file name search. Write one or many values as the same one-line array.")).toBeInTheDocument();
-    expect(screen.getByText("aliases: [Capital]")).toBeInTheDocument();
-    expect(screen.getByText("aliases: [Capital, Old Capital]")).toBeInTheDocument();
+    expect(screen.getByText("Alternative names that can link to this file. Used for link resolution and file name search. Write values as a standard YAML list.")).toBeInTheDocument();
+    expect(screen.getByText("aliases: - Capital")).toBeInTheDocument();
+    expect(screen.getByText("aliases: - Capital - Old Capital")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "chronicle Fixed" }));
 
     expect(screen.getByRole("button", { name: "chronicle Fixed" })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.queryByText("Alternative names that can link to this file. Used for link resolution and file name search. Write one or many values as the same one-line array.")).toBeNull();
-    expect(screen.getByText("Places this file on the timeline with one or more calendar ranges. Each range stores a calendar name and start/end year-month points.")).toBeInTheDocument();
-    expect(screen.getByText("chronicle: [[Main calendar, [[1185, null], [1185, null]]]]")).toBeInTheDocument();
-    expect(screen.getByText("chronicle: [[Main calendar, [[1185, 5], [1333, 8]]]]")).toBeInTheDocument();
+    expect(screen.queryByText("Alternative names that can link to this file. Used for link resolution and file name search. Write values as a standard YAML list.")).toBeNull();
+    expect(screen.getByText("Places this file on the timeline by year. Use an integer for one year, or start and end for a range.")).toBeInTheDocument();
+    expect(screen.getByText("chronicle: 1185")).toBeInTheDocument();
+    expect(screen.getByText("chronicle: start: 1185 end: 1333")).toBeInTheDocument();
   });
 
   it("YAML書式ガイドは補助情報として必要な時だけ開く", () => {

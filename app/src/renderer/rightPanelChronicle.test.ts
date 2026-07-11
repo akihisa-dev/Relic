@@ -23,7 +23,7 @@ describe("rightPanelChronicleEntries", () => {
     const result = rightPanelChronicleEntries(
       [entry("前.md", 900), entry("編集中.md", 950), entry("後.md", 1100)],
       {
-        content: "---\nchronicle:\n  - [メイン暦, [[1000, null], [1000, null]]]\n---\n# 本文",
+        content: "---\nchronicle: 1000\n---\n# 本文",
         name: "編集中.md",
         path: "編集中.md"
       }
@@ -40,12 +40,22 @@ describe("rightPanelChronicleEntries", () => {
     const result = rightPanelChronicleEntries(
       [entry("編集中.md", 950), entry("後.md", 1100)],
       {
-        content: "---\nchronicle:\n  - [メイン暦, [[0, null], [0, null]]]\n---",
+        content: "---\nchronicle: 0\n---",
         name: "編集中.md",
         path: "編集中.md"
       }
     );
 
     expect(result.map((item) => item.path)).toEqual(["後.md"]);
+  });
+
+  it("年だけの期間を開始年順に配置する", () => {
+    const result = rightPanelChronicleEntries([], {
+      content: "---\nchronicle:\n  start: 800\n  end: 950\n---",
+      name: "王国.md",
+      path: "王国.md"
+    });
+
+    expect(result[0]).toMatchObject({ startLabel: "800", endLabel: "950" });
   });
 });

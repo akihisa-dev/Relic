@@ -460,7 +460,7 @@ describe("Editor frontmatter", () => {
 
     expect(viewRef.current?.state.doc.toString()).not.toContain("tags:");
     expect(viewRef.current?.state.doc.toString()).not.toContain("- 資料");
-    expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-25]");
+    expect(viewRef.current?.state.doc.toString()).toContain("plannedDate:\n  - '2026-05-25'");
   });
 
   it("配列プロパティの値を個別に編集・削除できる", async () => {
@@ -479,12 +479,12 @@ describe("Editor frontmatter", () => {
     const values = Array.from(container.querySelectorAll(".cm-frontmatter-pill-value")) as HTMLInputElement[];
     fireEvent.change(values[0], { target: { value: "idea" } });
 
-    expect(viewRef.current?.state.doc.toString()).toContain("tags: [\"idea\", \"review\"]");
+    expect(viewRef.current?.state.doc.toString()).toContain("tags:\n  - idea\n  - review");
 
     await waitFor(() => expect(container.querySelectorAll(".cm-frontmatter-pill-remove")).toHaveLength(2));
     fireEvent.click(container.querySelectorAll(".cm-frontmatter-pill-remove")[1] as HTMLButtonElement);
 
-    expect(viewRef.current?.state.doc.toString()).toContain("tags: [\"idea\"]");
+    expect(viewRef.current?.state.doc.toString()).toContain("tags:\n  - idea");
     expect(viewRef.current?.state.doc.toString()).not.toContain("review");
   });
 
@@ -509,10 +509,10 @@ describe("Editor frontmatter", () => {
 
     fireEvent.click(container.querySelector(".frontmatter-add-dialog-actions button:last-child") as HTMLButtonElement);
 
-    expect(viewRef.current?.state.doc.toString()).toContain("tags: [\"draft\", \"review\"]");
+    expect(viewRef.current?.state.doc.toString()).toContain("tags:\n  - draft\n  - review");
   });
 
-  it("aliasesとtagsは元が複数行でも1行配列として書き戻す", async () => {
+  it("aliasesとtagsを通常のYAML配列として書き戻す", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
@@ -528,15 +528,13 @@ describe("Editor frontmatter", () => {
     const values = Array.from(container.querySelectorAll(".cm-frontmatter-pill-value")) as HTMLInputElement[];
     fireEvent.change(values[0], { target: { value: "王都" } });
 
-    expect(viewRef.current?.state.doc.toString()).toContain("aliases: [\"王都\", \"旧都\"]");
-    expect(viewRef.current?.state.doc.toString()).not.toContain("aliases:\n  -");
+    expect(viewRef.current?.state.doc.toString()).toContain("aliases:\n  - 王都\n  - 旧都");
 
     await waitFor(() => expect(container.querySelectorAll(".cm-frontmatter-pill-value")).toHaveLength(3));
     const nextValues = Array.from(container.querySelectorAll(".cm-frontmatter-pill-value")) as HTMLInputElement[];
     fireEvent.change(nextValues[2], { target: { value: "下書き" } });
 
-    expect(viewRef.current?.state.doc.toString()).toContain("tags: [\"下書き\"]");
-    expect(viewRef.current?.state.doc.toString()).not.toContain("tags:\n  -");
+    expect(viewRef.current?.state.doc.toString()).toContain("tags:\n  - 下書き");
   });
 
   it("aliases入力では他ファイル由来の候補を表示しない", async () => {

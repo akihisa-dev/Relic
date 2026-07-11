@@ -17,7 +17,9 @@ export const frontmatterFieldNamePattern = /^[^#\s:][^\r\n:]*$/;
 export const fixedFrontmatterFieldNames = reservedFrontmatterFieldNames;
 
 export function shouldSerializeArrayAsFlowSequence(key: string, field?: UserDefinedField): boolean {
-  return key === "aliases" || key === "tags" || Boolean(field);
+  void key;
+  void field;
+  return false;
 }
 
 export function isSingleValueField(field?: UserDefinedField): boolean {
@@ -91,7 +93,37 @@ export function chronicleInputValue(value: unknown): string {
   if (value === null || value === undefined) return "";
   if (typeof value === "number") return Number.isInteger(value) ? String(value) : "";
   if (typeof value === "string") return value;
+  const legacyYear = legacyChronicleYear(value);
+  if (legacyYear !== null) return String(legacyYear);
   return "";
+}
+
+export function legacyChronicleYear(value: unknown): number | null {
+  if (!Array.isArray(value)) return null;
+  const firstEntry = value[0];
+  if (!Array.isArray(firstEntry) || !Array.isArray(firstEntry[1])) return null;
+  const start = firstEntry[1][0];
+  if (!Array.isArray(start) || !Number.isInteger(start[0]) || start[0] === 0) return null;
+  return Number(start[0]);
+}
+
+export function chronicleYearRangeInput(value: unknown): { end: string; start: string } {
+  if (typeof value === "number" && Number.isInteger(value) && value !== 0) {
+    return { end: "", start: String(value) };
+  }
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    const range = value as Record<string, unknown>;
+    const start = Number.isInteger(range.start) && range.start !== 0 ? String(range.start) : "";
+    const end = Number.isInteger(range.end) && range.end !== 0 ? String(range.end) : "";
+    return { end, start };
+  }
+  const legacyStart = legacyChronicleYear(value);
+  if (legacyStart === null) return { end: "", start: "" };
+  const legacyEntry = Array.isArray(value) ? value[0] : null;
+  const legacyEnd = Array.isArray(legacyEntry) && Array.isArray(legacyEntry[1]) && Array.isArray(legacyEntry[1][1]) && Number.isInteger(legacyEntry[1][1][0])
+    ? Number(legacyEntry[1][1][0])
+    : legacyStart;
+  return { end: legacyEnd === legacyStart ? "" : String(legacyEnd), start: String(legacyStart) };
 }
 
 export function parseDateInput(value: string): string | null {

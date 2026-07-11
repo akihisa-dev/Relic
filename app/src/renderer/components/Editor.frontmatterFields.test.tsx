@@ -8,7 +8,7 @@ import { Editor } from "./Editor";
 import { expandFrontmatter, settings } from "./editorTestHelpers";
 
 describe("Editor frontmatter fields", () => {
-  it("chronicleプロパティは開始終了年月を編集する", async () => {
+  it("chronicleプロパティは開始年と終了年を通常YAMLで編集する", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <I18nProvider language="ja">
@@ -26,15 +26,14 @@ describe("Editor frontmatter fields", () => {
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
     const controls = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as Array<HTMLInputElement | HTMLSelectElement>;
     expect(container.querySelector(".cm-frontmatter-chronicle select")).toBeNull();
-    expect((controls[0] as HTMLInputElement).placeholder).toBe("開始");
-    expect((controls[1] as HTMLInputElement).placeholder).toBe("月");
-    fireEvent.input(controls[1], { target: { value: "5" } });
-    const updatedControls = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
-    fireEvent.input(updatedControls[3], { target: { value: "5" } });
+    expect((controls[0] as HTMLInputElement).placeholder).toBe("開始年");
+    expect((controls[1] as HTMLInputElement).placeholder).toBe("終了年（任意）");
+    fireEvent.input(controls[1], { target: { value: "1333" } });
 
     expect(viewRef.current?.state.doc.toString()).toContain([
       "chronicle:",
-      "  - [メイン暦, [[1185, 5], [1185, 5]]]"
+      "  start: 1185",
+      "  end: 1333"
     ].join("\n"));
   });
 
@@ -58,7 +57,7 @@ describe("Editor frontmatter fields", () => {
     expect(container.querySelector(".cm-frontmatter-chronicle select")).toBeNull();
   });
 
-  it("chronicleプロパティは不正な月や逆順を書き戻さない", async () => {
+  it("chronicleプロパティは逆順の期間を書き戻さない", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <I18nProvider language="ja">
@@ -74,10 +73,9 @@ describe("Editor frontmatter fields", () => {
     await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
     const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle input.cm-frontmatter-input")) as HTMLInputElement[];
-    fireEvent.input(inputs[2], { target: { value: "1000" } });
+    fireEvent.input(inputs[1], { target: { value: "1000" } });
 
     expect(viewRef.current?.state.doc.toString()).toContain("[メイン暦, [[1185, null], [1185, null]]]");
-    expect(container.querySelector(".cm-frontmatter-input-error")?.textContent).toBe("開始年月は終了年月以下にしてください。");
     expect(inputs[0].getAttribute("aria-invalid")).toBe("true");
   });
 
@@ -195,7 +193,7 @@ describe("Editor frontmatter fields", () => {
 
     fireEvent.change(input, { target: { value: "updated" } });
 
-    expect(viewRef.current?.state.doc.toString()).toContain("unknown: [\"updated\"]");
+    expect(viewRef.current?.state.doc.toString()).toContain("unknown:\n  - updated");
   });
 
   it("未登録でも複雑なYAML値はYAML入力で安全に編集する", async () => {
@@ -260,18 +258,18 @@ describe("Editor frontmatter fields", () => {
       .map((option) => (option as HTMLOptionElement).value);
     expect(statusOptions).toEqual(["draft", "published", "review"]);
     fireEvent.change(statusSelect, { target: { value: "review" } });
-    expect(viewRef.current?.state.doc.toString()).toContain("status: [\"review\"]");
+    expect(viewRef.current?.state.doc.toString()).toContain("status:\n  - review");
 
     const dateInput = Array.from(container.querySelectorAll(".cm-frontmatter-input"))
       .find((input) => (input as HTMLInputElement).value === "2026-03-29") as HTMLInputElement;
     expect(dateInput.type).toBe("date");
     expect(dateInput.value).toBe("2026-03-29");
     fireEvent.change(dateInput, { target: { value: "2026-04-01" } });
-    expect(viewRef.current?.state.doc.toString()).toContain("updated: [\"2026-04-01\"]");
+    expect(viewRef.current?.state.doc.toString()).toContain("updated:\n  - '2026-04-01'");
 
     const checkbox = container.querySelector(".cm-frontmatter-checkbox") as HTMLInputElement;
     fireEvent.click(checkbox);
-    expect(viewRef.current?.state.doc.toString()).toContain("published: [true]");
+    expect(viewRef.current?.state.doc.toString()).toContain("published:\n  - true");
   });
 
   it("statusプロパティは未登録なら通常テキストとして編集する", async () => {
@@ -295,7 +293,7 @@ describe("Editor frontmatter fields", () => {
     expect(input.getAttribute("list")).toBeNull();
 
     fireEvent.change(input, { target: { value: "完了" } });
-    expect(viewRef.current?.state.doc.toString()).toContain("status: [\"完了\"]");
+    expect(viewRef.current?.state.doc.toString()).toContain("status:\n  - 完了");
   });
 
   it("日時・時刻・URL入力タイプと固定tagsをフォームに反映する", async () => {

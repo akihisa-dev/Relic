@@ -46,21 +46,46 @@ function chronicleEntriesFromMarkdown(file: { content: string; name: string; pat
   } catch {
     return [];
   }
-  if (!isRecord(data) || !Array.isArray(data.chronicle)) return [];
+  if (!isRecord(data)) return [];
+
+  const simpleRange = parseSimpleChronicleRange(data.chronicle);
+  if (simpleRange) return [entryForRange(file, simpleRange)];
+  if (!Array.isArray(data.chronicle)) return [];
 
   return data.chronicle.flatMap((value): RightPanelChronicleEntry[] => {
     const range = parseChronicleRange(value);
     if (!range) return [];
     const [start, end] = range;
-    return [{
-      endLabel: formatPoint(end),
-      endValue: pointToMonthAxis(end.year, end.month),
-      fileName: file.name.replace(/\.md$/i, ""),
-      path: file.path,
-      startLabel: formatPoint(start),
-      startValue: pointToMonthAxis(start.year, start.month)
-    }];
+    return [entryForRange(file, { start, end })];
   });
+}
+
+function entryForRange(
+  file: { name: string; path: string },
+  range: { end: ChroniclePoint; start: ChroniclePoint }
+): RightPanelChronicleEntry {
+  return {
+    endLabel: formatPoint(range.end),
+    endValue: pointToMonthAxis(range.end.year, range.end.month),
+    fileName: file.name.replace(/\.md$/i, ""),
+    path: file.path,
+    startLabel: formatPoint(range.start),
+    startValue: pointToMonthAxis(range.start.year, range.start.month)
+  };
+}
+
+function parseSimpleChronicleRange(value: unknown): { end: ChroniclePoint; start: ChroniclePoint } | null {
+  if (Number.isInteger(value) && value !== 0) {
+    const point = { month: null, year: Number(value) };
+    return { end: point, start: point };
+  }
+  if (!isRecord(value) || !Number.isInteger(value.start) || value.start === 0) return null;
+  const end = value.end === undefined ? value.start : value.end;
+  if (!Number.isInteger(end) || end === 0 || Number(value.start) > Number(end)) return null;
+  return {
+    end: { month: null, year: Number(end) },
+    start: { month: null, year: Number(value.start) }
+  };
 }
 
 function parseChronicleRange(value: unknown): [ChroniclePoint, ChroniclePoint] | null {

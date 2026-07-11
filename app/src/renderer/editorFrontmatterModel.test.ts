@@ -39,9 +39,12 @@ describe("editorFrontmatterModel", () => {
       title: "New"
     })).toBe([
       "title: 'New' # keep",
-      "aliases: [\"Alpha\", \"Beta\"]",
+      "aliases:",
+      "  - Alpha",
+      "  - Beta",
       "status: done",
-      "tags: [\"資料\"]"
+      "tags:",
+      "  - 資料"
     ].join("\n"));
   });
 
@@ -56,15 +59,21 @@ describe("editorFrontmatterModel", () => {
   it("固定フィールドと登録済みフィールドを仕様どおり書き戻す", () => {
     expect(serializeData({
       aliases: ["帝都", "王都"],
-      chronicle: [["メイン暦", [[1185, null], [1333, 8]]]],
+      chronicle: { start: 1185, end: 1333 },
       custom: ["A", "B"],
       tags: ["資料"]
     }, [{ name: "custom", type: "multi-select" }])).toBe([
-      "aliases: [\"帝都\", \"王都\"]",
+      "aliases:",
+      "  - 帝都",
+      "  - 王都",
       "chronicle:",
-      "  - [メイン暦, [[1185, null], [1333, 8]]]",
-      "custom: [\"A\", \"B\"]",
-      "tags: [\"資料\"]"
+      "  start: 1185",
+      "  end: 1333",
+      "custom:",
+      "  - A",
+      "  - B",
+      "tags:",
+      "  - 資料"
     ].join("\n"));
   });
 

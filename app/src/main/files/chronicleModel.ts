@@ -24,6 +24,18 @@ export function extractChronicleRangesFromData(
   calendars: ChronicleCalendarSettings[]
 ): ChronicleRange[] {
   const chronicle = data.chronicle;
+  const simpleRange = parseSimpleChronicleRange(chronicle);
+  if (simpleRange) {
+    const calendar = calendars[0];
+    if (!calendar) return [];
+    return [{
+      calendar,
+      calendarName: calendar.name,
+      end: { month: null, year: simpleRange.end },
+      entryIndex: 0,
+      start: { month: null, year: simpleRange.start }
+    }];
+  }
   if (!Array.isArray(chronicle)) return [];
 
   return chronicle.flatMap((entry, entryIndex): ChronicleRange[] => {
@@ -46,6 +58,16 @@ export function extractChronicleRangesFromData(
       start
     }];
   });
+}
+
+function parseSimpleChronicleRange(value: unknown): { end: number; start: number } | null {
+  if (Number.isInteger(value) && value !== 0) return { end: Number(value), start: Number(value) };
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const range = value as Record<string, unknown>;
+  if (!Number.isInteger(range.start) || range.start === 0) return null;
+  const end = range.end === undefined ? range.start : range.end;
+  if (!Number.isInteger(end) || end === 0 || Number(range.start) > Number(end)) return null;
+  return { end: Number(end), start: Number(range.start) };
 }
 
 export function parseChronicleYamlEntry(value: unknown): ChronicleYamlEntry | null {

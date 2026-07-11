@@ -9,6 +9,27 @@ import {
 } from "./chronicleModel";
 
 describe("chronicleModel", () => {
+  it("単年スカラーと年だけの期間を読む", () => {
+    const calendars = [{ name: "メイン暦" }];
+
+    expect(extractChronicleRangesFromData({ chronicle: 1185 }, calendars)[0]).toMatchObject({
+      start: { month: null, year: 1185 },
+      end: { month: null, year: 1185 }
+    });
+    expect(extractChronicleRangesFromData({ chronicle: { start: 1185, end: 1333 } }, calendars)[0]).toMatchObject({
+      start: { month: null, year: 1185 },
+      end: { month: null, year: 1333 }
+    });
+  });
+
+  it("年だけの期間で0年、逆順、非整数を読まない", () => {
+    const calendars = [{ name: "メイン暦" }];
+
+    expect(extractChronicleRangesFromData({ chronicle: 0 }, calendars)).toEqual([]);
+    expect(extractChronicleRangesFromData({ chronicle: { start: 2, end: 1 } }, calendars)).toEqual([]);
+    expect(extractChronicleRangesFromData({ chronicle: { start: 1.5, end: 2 } }, calendars)).toEqual([]);
+  });
+
   it("chronicle配列から複数の年月entryを読む", () => {
     const calendars = [
       { name: "王国暦" },
