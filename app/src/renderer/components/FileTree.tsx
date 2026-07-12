@@ -3,9 +3,13 @@ import type { DragEvent, MouseEvent, ReactElement } from "react";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import {
+  clearOutboundFileTreeDrag,
   childMotionPathsForAppearingFolder,
   buildVisibleFileTreeRows,
   FILE_TREE_OUTBOUND_FILE_DRAG_EVENT,
+  getOutboundFileTreeDragItems,
+  movableItemsForDestination,
+  moveItemsToDestination,
   shouldUseSelectedFileTreeItems,
   type FileTreeExpansionAction,
   type FileTreeExpansionRequest,
@@ -470,6 +474,12 @@ export const FileTree = memo(function FileTree({
     Array.from(event.dataTransfer.types ?? []).includes("Files")
   );
 
+  const canMoveOutboundFilesToRoot = (event: DragEvent<HTMLElement>): boolean => (
+    isRoot
+    && Array.from(event.dataTransfer.types ?? []).includes("Files")
+    && movableItemsForDestination(getOutboundFileTreeDragItems(), "").length > 0
+  );
+
   useEffect(() => {
     const ignoreOutboundFileDrag = (): void => {
       ignoreRootFileDragOverUntilRef.current = Date.now() + outboundFileDragIgnoreMs;
@@ -479,15 +489,19 @@ export const FileTree = memo(function FileTree({
       ignoreRootFileDragOverUntilRef.current = 0;
       setIsRootFileDragOver(false);
     };
+    const clearOutboundDrag = (): void => {
+      clearOutboundFileTreeDrag();
+      clearRootDragOver();
+    };
 
     window.addEventListener(FILE_TREE_OUTBOUND_FILE_DRAG_EVENT, ignoreOutboundFileDrag);
     window.addEventListener("blur", clearRootDragOver);
-    window.addEventListener("dragend", clearRootDragOver);
+    window.addEventListener("dragend", clearOutboundDrag);
     window.addEventListener("drop", clearRootDragOver);
     return () => {
       window.removeEventListener(FILE_TREE_OUTBOUND_FILE_DRAG_EVENT, ignoreOutboundFileDrag);
       window.removeEventListener("blur", clearRootDragOver);
-      window.removeEventListener("dragend", clearRootDragOver);
+      window.removeEventListener("dragend", clearOutboundDrag);
       window.removeEventListener("drop", clearRootDragOver);
     };
   }, []);
@@ -497,6 +511,13 @@ export const FileTree = memo(function FileTree({
   };
 
   const handleRootDragOver = (event: DragEvent<HTMLUListElement>): void => {
+    if (canMoveOutboundFilesToRoot(event)) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      setIsRootFileDragOver(true);
+      return;
+    }
+
     if (!canImportDroppedFiles(event)) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "copy";
@@ -505,6 +526,16 @@ export const FileTree = memo(function FileTree({
 
   const handleRootDrop = (event: DragEvent<HTMLUListElement>): void => {
     setIsRootFileDragOver(false);
+
+    const outboundItems = getOutboundFileTreeDragItems();
+    if (canMoveOutboundFilesToRoot(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      clearOutboundFileTreeDrag();
+      moveItemsToDestination(outboundItems, "", actions);
+      return;
+    }
+
     if (!canImportDroppedFiles(event)) return;
 
     const sourcePaths = droppedFilePathsFromEvent(event);

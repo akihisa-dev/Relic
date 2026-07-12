@@ -18,6 +18,8 @@ export type FileTreeMoveItem = {
 export const FILE_TREE_DRAG_MIME = "application/x-relic-file-tree-items";
 export const FILE_TREE_OUTBOUND_FILE_DRAG_EVENT = "relic:file-tree-outbound-file-drag";
 
+let outboundFileTreeDragItems: FileTreeMoveItem[] = [];
+
 interface FileTreeDragPayload {
   items: FileTreeMoveItem[];
 }
@@ -149,6 +151,18 @@ export function attachableFileTreePaths(items: FileTreeMoveItem[]): string[] {
 
 export function serializeFileTreeDragPayload(items: FileTreeMoveItem[]): string {
   return JSON.stringify({ items } satisfies FileTreeDragPayload);
+}
+
+export function beginOutboundFileTreeDrag(items: FileTreeMoveItem[]): void {
+  outboundFileTreeDragItems = items.map((item) => ({ ...item }));
+}
+
+export function clearOutboundFileTreeDrag(): void {
+  outboundFileTreeDragItems = [];
+}
+
+export function getOutboundFileTreeDragItems(): FileTreeMoveItem[] {
+  return outboundFileTreeDragItems.map((item) => ({ ...item }));
 }
 
 export function parseFileTreeDragPayload(value: string): FileTreeMoveItem[] {

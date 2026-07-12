@@ -7,7 +7,10 @@ import {
   FILE_TREE_DRAG_MIME,
   FILE_TREE_OUTBOUND_FILE_DRAG_EVENT,
   attachableFileTreePaths,
+  beginOutboundFileTreeDrag,
+  clearOutboundFileTreeDrag,
   fileTreeOperationItems,
+  getOutboundFileTreeDragItems,
   movableItemsForDestination,
   moveItemsToDestination,
   parseFileTreeDragPayload,
@@ -75,6 +78,11 @@ export function useFileTreeDragDrop({
   );
 
   const canDropOnNode = (event: DragEvent<HTMLButtonElement>): boolean => {
+    const outboundItems = getOutboundFileTreeDragItems();
+    if (outboundItems.length > 0 && isExternalFileDrag(event)) {
+      return movableItemsForDestination(outboundItems, dropDestinationForNode()).length > 0;
+    }
+
     if (actions.onImportMarkdownFiles && isExternalFileDrag(event)) {
       return true;
     }
@@ -98,6 +106,7 @@ export function useFileTreeDragDrop({
     const filePaths = attachableFileTreePaths(items);
     if (filePaths.length > 0 && typeof window.relic?.startWorkspaceFileDrag === "function") {
       event.preventDefault();
+      beginOutboundFileTreeDrag(items);
       window.dispatchEvent(new Event(FILE_TREE_OUTBOUND_FILE_DRAG_EVENT));
       window.relic.startWorkspaceFileDrag({ paths: filePaths });
       return;
@@ -109,6 +118,7 @@ export function useFileTreeDragDrop({
   };
 
   const handleDragEnd = (): void => {
+    clearOutboundFileTreeDrag();
     setIsDragging(false);
     setIsDragOver(false);
   };
@@ -116,7 +126,7 @@ export function useFileTreeDragDrop({
   const handleDragOver = (event: DragEvent<HTMLButtonElement>): void => {
     if (!canDropOnNode(event)) return;
     event.preventDefault();
-    event.dataTransfer.dropEffect = isExternalFileDrag(event) ? "copy" : "move";
+    event.dataTransfer.dropEffect = getOutboundFileTreeDragItems().length > 0 ? "move" : isExternalFileDrag(event) ? "copy" : "move";
     setIsDragOver(true);
   };
 
@@ -127,6 +137,18 @@ export function useFileTreeDragDrop({
   const handleDrop = (event: DragEvent<HTMLButtonElement>): void => {
     setIsDragOver(false);
     const destinationFolder = dropDestinationForNode();
+
+    const outboundItems = getOutboundFileTreeDragItems();
+    if (outboundItems.length > 0 && isExternalFileDrag(event)) {
+      if (movableItemsForDestination(outboundItems, destinationFolder).length === 0) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      clearOutboundFileTreeDrag();
+      if (node.type === "folder") setIsExpanded(true);
+      moveItemsToDestination(outboundItems, destinationFolder, actions);
+      return;
+    }
 
     if (actions.onImportMarkdownFiles && isExternalFileDrag(event)) {
       const sourcePaths = droppedFilePaths(event);

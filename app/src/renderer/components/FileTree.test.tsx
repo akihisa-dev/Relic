@@ -2,7 +2,7 @@ import { cleanup, createEvent, fireEvent, render, screen } from "@testing-librar
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
-import { FILE_TREE_OUTBOUND_FILE_DRAG_EVENT } from "../fileTreeModel";
+import { clearOutboundFileTreeDrag, FILE_TREE_OUTBOUND_FILE_DRAG_EVENT } from "../fileTreeModel";
 import { I18nProvider } from "../i18n";
 import { FileTree, FileTreeItem, type FileTreeProps } from "./FileTree";
 
@@ -110,6 +110,7 @@ function makeProgressiveFolder(): WorkspaceTreeNode[] {
 }
 
 afterEach(() => {
+  clearOutboundFileTreeDrag();
   cleanup();
   vi.restoreAllMocks();
 });
@@ -427,6 +428,26 @@ describe("FileTree", () => {
 
     expect(dragStartEvent.defaultPrevented).toBe(true);
     expect(startWorkspaceFileDrag).toHaveBeenCalledWith({ paths: ["Root.md", "Folder/Child.md"] });
+  });
+
+  it("moves a file from an attachment drag when it is dropped inside the file tree", () => {
+    const startWorkspaceFileDrag = vi.fn();
+    const onImportMarkdownFiles = vi.fn();
+    const onMoveFile = vi.fn();
+    Object.defineProperty(window, "relic", {
+      configurable: true,
+      value: { startWorkspaceFileDrag }
+    });
+    renderFileTree({ onImportMarkdownFiles, onMoveFile });
+
+    fireEvent.dragStart(rowButton("Root"), { dataTransfer: makeDataTransfer() });
+    const dataTransfer = makeDataTransfer([new File(["# Root"], "Root.md", { type: "text/markdown" })]);
+    fireEvent.dragOver(rowButton("Folder"), { dataTransfer });
+    expect(dataTransfer.dropEffect).toBe("move");
+    fireEvent.drop(rowButton("Folder"), { dataTransfer });
+
+    expect(onMoveFile).toHaveBeenCalledWith("Root.md", "Folder");
+    expect(onImportMarkdownFiles).not.toHaveBeenCalled();
   });
 
   it("does not start an attachment drag for folders without selected files", () => {
