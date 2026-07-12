@@ -314,7 +314,7 @@ textarea {
 .title-bar {
   backdrop-filter: blur(8px);
   background: var(--color-overlay);
-  box-shadow: none;
+  box-shadow: inset 0 -1px 0 var(--chrome-top-border, var(--border));
 }
 
 .pane-tab-bar-shell {

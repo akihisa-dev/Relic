@@ -48,6 +48,7 @@ describe("AppTitleBar", () => {
     expect(css).toMatch(/\.title-bar-drag-area\s*\{[^}]*grid-column:\s*1;/s);
     expect(css).toMatch(/\.title-bar\s*\{[^}]*z-index:\s*40;/s);
     expect(designCss).toMatch(/--chrome-top-bg:\s*var\(--title-bar-bg\);/);
+    expect(designCss).toMatch(/\.title-bar\s*\{[^}]*box-shadow:\s*inset 0 -1px 0 var\(--chrome-top-border, var\(--border\)\);/s);
     expect(css).toMatch(/\.title-bar\s*\{[^}]*background:\s*var\(--chrome-top-bg, var\(--title-bar-bg\)\);/s);
   });
 
