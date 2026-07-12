@@ -2,6 +2,7 @@ import {
   CHRONICLE_CANVAS_ITEM_LABEL_OFFSET,
   CHRONICLE_CANVAS_LABEL_HEIGHT,
   chronicleCanvasTextOpacity,
+  chronicleCanvasYearHeaderHeight,
   chronicleCanvasYearLabelY,
   chronicleCanvasYearFontSize,
   chronicleCanvasYearOpacity,
@@ -39,18 +40,46 @@ export function drawChronicleCanvas(
   context.fillStyle = theme.background;
   context.fillRect(0, 0, viewportWidth, viewportHeight);
 
+  drawYearGuides(context, scene, camera, viewportWidth, viewportHeight, theme);
   const labelHits: ChronicleCanvasLabelHit[] = [];
   for (const item of scene.items) {
     if (!isItemVisible(item, camera, viewportWidth, viewportHeight)) continue;
     const hit = drawItem(context, item, camera, item.id === hoveredItemId, viewportWidth, theme);
     labelHits.push(hit);
   }
-  drawYears(context, scene, camera, viewportWidth, theme);
+  drawYearHeader(context, scene, camera, viewportWidth, theme);
   context.restore();
   return { labelHits };
 }
 
-function drawYears(
+function drawYearGuides(
+  context: CanvasRenderingContext2D,
+  scene: ChronicleCanvasScene,
+  camera: ChronicleCanvasCamera,
+  viewportWidth: number,
+  viewportHeight: number,
+  theme: ChronicleCanvasTheme
+): void {
+  const opacity = chronicleCanvasYearOpacity(camera.scale);
+  const years = visibleChronicleCanvasYears(scene.years, camera);
+  const headerHeight = chronicleCanvasYearHeaderHeight(camera.scale);
+  context.save();
+  context.globalAlpha = opacity * 0.12;
+  context.strokeStyle = theme.mutedText;
+  context.lineWidth = 1;
+
+  for (const year of years) {
+    const position = worldToCanvas({ x: year.x, y: 0 }, camera);
+    if (position.x < -1 || position.x > viewportWidth + 1) continue;
+    context.beginPath();
+    context.moveTo(position.x, headerHeight);
+    context.lineTo(position.x, viewportHeight);
+    context.stroke();
+  }
+  context.restore();
+}
+
+function drawYearHeader(
   context: CanvasRenderingContext2D,
   scene: ChronicleCanvasScene,
   camera: ChronicleCanvasCamera,
@@ -60,7 +89,19 @@ function drawYears(
   const opacity = chronicleCanvasYearOpacity(camera.scale);
   const years = visibleChronicleCanvasYears(scene.years, camera);
   const fontSize = chronicleCanvasYearFontSize(camera.scale);
+  const headerHeight = chronicleCanvasYearHeaderHeight(camera.scale);
   context.save();
+  context.globalAlpha = 1;
+  context.fillStyle = theme.background;
+  context.fillRect(0, 0, viewportWidth, headerHeight);
+  context.globalAlpha = opacity * 0.3;
+  context.strokeStyle = theme.mutedText;
+  context.lineWidth = 1;
+  context.beginPath();
+  context.moveTo(0, headerHeight);
+  context.lineTo(viewportWidth, headerHeight);
+  context.stroke();
+
   context.font = `650 ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
   context.textAlign = "center";
   context.textBaseline = "middle";
@@ -72,13 +113,6 @@ function drawYears(
     context.globalAlpha = opacity * 0.88;
     context.fillStyle = theme.mutedText;
     context.fillText(formatYear(year.value), position.x, position.y);
-    context.globalAlpha = opacity * 0.3;
-    context.strokeStyle = theme.mutedText;
-    context.lineWidth = 1;
-    context.beginPath();
-    context.moveTo(position.x, position.y + fontSize / 2 + 4);
-    context.lineTo(position.x, position.y + fontSize / 2 + 16);
-    context.stroke();
   }
   context.restore();
 }
