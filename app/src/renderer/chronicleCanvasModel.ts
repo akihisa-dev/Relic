@@ -1,0 +1,317 @@
+import type { ChartEntry } from "../shared/ipc";
+import { formatRange } from "./chronicleTimelineAxis";
+import { entryKey } from "./chronicleTimelineRows";
+
+export const CHRONICLE_CANVAS_MIN_SCALE = 0.08;
+export const CHRONICLE_CANVAS_MAX_SCALE = 2.4;
+export const CHRONICLE_CANVAS_INITIAL_SCALE = 0.82;
+
+const itemHeight = 70;
+const labelCharacterWidth = 7.4;
+const minimumYearGap = 62;
+const yearGapScale = 48;
+const springStrength = 0.2;
+const damping = 0.72;
+
+export interface ChronicleCanvasCamera {
+  panX: number;
+  panY: number;
+  scale: number;
+  targetScale: number;
+  velocityX: number;
+  velocityY: number;
+}
+
+export interface ChronicleCanvasItem {
+  color: string;
+  endX: number;
+  endYear: number;
+  entry: ChartEntry;
+  height: number;
+  homeY: number;
+  id: string;
+  labelWidth: number;
+  rangeLabel: string;
+  startX: number;
+  startYear: number;
+  vx: number;
+  vy: number;
+  width: number;
+  x: number;
+  y: number;
+}
+
+export interface ChronicleCanvasYear {
+  value: number;
+  x: number;
+}
+
+export interface ChronicleCanvasScene {
+  items: ChronicleCanvasItem[];
+  years: ChronicleCanvasYear[];
+}
+
+export interface ChronicleCanvasLabelHit {
+  height: number;
+  itemId: string;
+  opacity: number;
+  width: number;
+  x: number;
+  y: number;
+}
+
+export interface ChronicleCanvasPoint {
+  x: number;
+  y: number;
+}
+
+export function createChronicleCanvasCamera(): ChronicleCanvasCamera {
+  return {
+    panX: 0,
+    panY: 0,
+    scale: CHRONICLE_CANVAS_INITIAL_SCALE,
+    targetScale: CHRONICLE_CANVAS_INITIAL_SCALE,
+    velocityX: 0,
+    velocityY: 0
+  };
+}
+
+export function createChronicleCanvasScene(
+  entries: ChartEntry[],
+  random: () => number = Math.random
+): ChronicleCanvasScene {
+  const years = buildChronicleCanvasYears(entries);
+  const xByYear = new Map(years.map((year) => [year.value, year.x]));
+  const paletteOffset = Math.floor(random() * 360);
+  const verticalSlots = entries.map((_, index) => (index - (entries.length - 1) / 2) * (itemHeight + 24));
+  for (let index = verticalSlots.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [verticalSlots[index], verticalSlots[swapIndex]] = [verticalSlots[swapIndex], verticalSlots[index]];
+  }
+  const items = entries.map((entry, index) => {
+    const startYear = entry.startPoint.year;
+    const endYear = entry.endPoint.year;
+    const startX = xByYear.get(startYear) ?? 0;
+    const endX = xByYear.get(endYear) ?? startX;
+    const rangeLabel = formatRange(entry);
+    const labelWidth = Math.max(48, entry.fileName.length * labelCharacterWidth + 18);
+    const width = Math.max(24, Math.abs(endX - startX));
+    const centerX = (startX + endX) / 2;
+    const initialY = verticalSlots[index] + (random() - 0.5) * 12;
+
+    return {
+      color: itemColor(index, entries.length, paletteOffset),
+      endX,
+      endYear,
+      entry,
+      height: itemHeight,
+      homeY: initialY,
+      id: entryKey(entry),
+      labelWidth,
+      rangeLabel,
+      startX,
+      startYear,
+      vx: 0,
+      vy: 0,
+      width: Math.max(width, labelWidth),
+      x: centerX,
+      y: initialY
+    } satisfies ChronicleCanvasItem;
+  });
+
+  settleChronicleCanvasScene(items, 240);
+  for (const item of items) item.homeY = item.y;
+  return { items, years };
+}
+
+export function buildChronicleCanvasYears(entries: ChartEntry[]): ChronicleCanvasYear[] {
+  const values = [...new Set(entries.flatMap((entry) => [entry.startPoint.year, entry.endPoint.year]))]
+    .sort((a, b) => a - b);
+  let x = 0;
+
+  return values.map((value, index) => {
+    if (index > 0) {
+      const yearDifference = Math.max(1, value - values[index - 1]);
+      x += compressedYearDistance(yearDifference);
+    }
+    return { value, x };
+  });
+}
+
+export function compressedYearDistance(yearDifference: number): number {
+  return minimumYearGap + Math.log1p(Math.max(0, yearDifference - 1)) * yearGapScale;
+}
+
+export function settleChronicleCanvasScene(items: ChronicleCanvasItem[], iterations: number): void {
+  for (let iteration = 0; iteration < iterations; iteration += 1) {
+    stepChronicleCanvasScene(items, null, 1 / 60);
+  }
+  for (const item of items) {
+    item.vx = 0;
+    item.vy = 0;
+  }
+}
+
+export function stepChronicleCanvasScene(
+  items: ChronicleCanvasItem[],
+  draggedItemId: string | null,
+  deltaSeconds: number
+): boolean {
+  const frameScale = Math.min(2, Math.max(0.25, deltaSeconds * 60));
+  let moving = false;
+
+  for (let leftIndex = 0; leftIndex < items.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < items.length; rightIndex += 1) {
+      applyItemRepulsion(items[leftIndex], items[rightIndex], frameScale);
+    }
+  }
+
+  for (const item of items) {
+    if (item.id !== draggedItemId) {
+      const anchorX = (item.startX + item.endX) / 2;
+      item.vx += (anchorX - item.x) * springStrength * frameScale;
+      item.vy += (item.homeY - item.y) * springStrength * frameScale;
+    }
+
+    item.vx *= Math.pow(damping, frameScale);
+    item.vy *= Math.pow(damping, frameScale);
+    if (item.id !== draggedItemId) {
+      item.x += item.vx * frameScale;
+      item.y += item.vy * frameScale;
+    }
+    moving ||= Math.abs(item.vx) + Math.abs(item.vy) > 0.02;
+  }
+
+  return moving;
+}
+
+function applyItemRepulsion(
+  left: ChronicleCanvasItem,
+  right: ChronicleCanvasItem,
+  frameScale: number
+): void {
+  const requiredX = (left.width + right.width) / 2 + 22;
+  const requiredY = (left.height + right.height) / 2 + 12;
+  const dx = right.x - left.x;
+  const dy = right.y - left.y;
+  const overlapX = requiredX - Math.abs(dx);
+  const overlapY = requiredY - Math.abs(dy);
+  if (overlapX <= 0 || overlapY <= 0) return;
+
+  const directionY = dy === 0 ? (left.id < right.id ? 1 : -1) : Math.sign(dy);
+  const force = Math.min(6, overlapY * 0.045) * frameScale;
+  left.vy -= directionY * force;
+  right.vy += directionY * force;
+}
+
+export function initializeChronicleCanvasCamera(
+  camera: ChronicleCanvasCamera,
+  scene: ChronicleCanvasScene,
+  viewportWidth: number,
+  viewportHeight: number
+): void {
+  const ordered = [...scene.items].sort((a, b) => a.startYear - b.startYear || a.endYear - b.endYear);
+  const median = ordered[Math.floor(ordered.length / 2)];
+  const centerX = median ? (median.startX + median.endX) / 2 : 0;
+  camera.scale = CHRONICLE_CANVAS_INITIAL_SCALE;
+  camera.targetScale = CHRONICLE_CANVAS_INITIAL_SCALE;
+  camera.panX = viewportWidth / 2 - centerX * camera.scale;
+  camera.panY = viewportHeight / 2 - (median?.y ?? 0) * camera.scale;
+  camera.velocityX = 0;
+  camera.velocityY = 0;
+}
+
+export function worldToCanvas(point: ChronicleCanvasPoint, camera: ChronicleCanvasCamera): ChronicleCanvasPoint {
+  return {
+    x: point.x * camera.scale + camera.panX,
+    y: point.y * camera.scale + camera.panY
+  };
+}
+
+export function canvasToWorld(point: ChronicleCanvasPoint, camera: ChronicleCanvasCamera): ChronicleCanvasPoint {
+  return {
+    x: (point.x - camera.panX) / camera.scale,
+    y: (point.y - camera.panY) / camera.scale
+  };
+}
+
+export function zoomChronicleCanvasAtPoint(
+  camera: ChronicleCanvasCamera,
+  nextScale: number,
+  point: ChronicleCanvasPoint
+): void {
+  const clampedScale = Math.min(CHRONICLE_CANVAS_MAX_SCALE, Math.max(CHRONICLE_CANVAS_MIN_SCALE, nextScale));
+  const worldPoint = canvasToWorld(point, camera);
+  camera.targetScale = clampedScale;
+  camera.scale = clampedScale;
+  camera.panX = point.x - worldPoint.x * clampedScale;
+  camera.panY = point.y - worldPoint.y * clampedScale;
+}
+
+export function chronicleCanvasTextOpacity(scale: number): number {
+  const progress = (scale - 0.2) / 0.65;
+  return smoothstep(Math.min(1, Math.max(0, progress)));
+}
+
+export function visibleChronicleCanvasYears(
+  years: ChronicleCanvasYear[],
+  camera: ChronicleCanvasCamera,
+  minimumScreenGap = 64
+): ChronicleCanvasYear[] {
+  const visible: ChronicleCanvasYear[] = [];
+  let previousScreenX = -Infinity;
+  for (const year of years) {
+    const screenX = year.x * camera.scale + camera.panX;
+    if (screenX - previousScreenX < minimumScreenGap) continue;
+    visible.push(year);
+    previousScreenX = screenX;
+  }
+  return visible;
+}
+
+export function chronicleCanvasItemAtPoint(
+  items: ChronicleCanvasItem[],
+  camera: ChronicleCanvasCamera,
+  point: ChronicleCanvasPoint
+): ChronicleCanvasItem | null {
+  const world = canvasToWorld(point, camera);
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    const item = items[index];
+    const halfWidth = Math.max(item.width / 2, 18 / camera.scale);
+    const halfHeight = Math.max(item.height / 2, 18 / camera.scale);
+    if (Math.abs(world.x - item.x) <= halfWidth && Math.abs(world.y - item.y) <= halfHeight) return item;
+  }
+  return null;
+}
+
+export function chronicleCanvasLabelAtPoint(
+  hits: ChronicleCanvasLabelHit[],
+  point: ChronicleCanvasPoint,
+  minimumOpacity = 0.72
+): ChronicleCanvasLabelHit | null {
+  for (let index = hits.length - 1; index >= 0; index -= 1) {
+    const hit = hits[index];
+    if (hit.opacity < minimumOpacity) continue;
+    if (point.x >= hit.x && point.x <= hit.x + hit.width && point.y >= hit.y && point.y <= hit.y + hit.height) return hit;
+  }
+  return null;
+}
+
+export function stepChronicleCanvasInertia(camera: ChronicleCanvasCamera): boolean {
+  camera.panX += camera.velocityX;
+  camera.panY += camera.velocityY;
+  camera.velocityX *= 0.9;
+  camera.velocityY *= 0.9;
+  if (Math.abs(camera.velocityX) < 0.05) camera.velocityX = 0;
+  if (Math.abs(camera.velocityY) < 0.05) camera.velocityY = 0;
+  return camera.velocityX !== 0 || camera.velocityY !== 0;
+}
+
+function itemColor(index: number, total: number, offset: number): string {
+  const hue = (offset + index * (360 / Math.max(1, total))) % 360;
+  return `hsl(${hue} 68% 52%)`;
+}
+
+function smoothstep(value: number): number {
+  return value * value * (3 - 2 * value);
+}

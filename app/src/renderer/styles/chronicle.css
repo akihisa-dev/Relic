@@ -9,6 +9,28 @@
   width: 100%;
 }
 
+.chronicle-canvas {
+  background: var(--bg);
+  cursor: grab;
+  display: block;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  touch-action: none;
+  width: 100%;
+}
+
+.chronicle-canvas:active {
+  cursor: grabbing;
+}
+
+.chronicle-canvas-empty {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+}
+
 .chronicle-panel-header {
   align-items: center;
   display: flex;
