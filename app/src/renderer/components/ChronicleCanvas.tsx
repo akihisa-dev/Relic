@@ -52,16 +52,30 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
   const simulationActiveRef = useRef(false);
   const lastPanDeltaRef = useRef({ x: 0, y: 0 });
   const openFileRef = useLatest(onOpenFile);
-  const themeRef = useRef<ChronicleCanvasTheme>({ background: "#ffffff", mutedText: "#6f7177", text: "#202124" });
+  const themeRef = useRef<ChronicleCanvasTheme>({
+    background: "#f4f0e6",
+    itemPalette: ["#f2691b", "#1a1b17", "#62625b", "#b8af9f", "#76756c", "#d95711"],
+    mutedText: "#76756c",
+    text: "#1a1b17"
+  });
 
   const updateTheme = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const styles = getComputedStyle(canvas);
+    const token = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
     themeRef.current = {
-      background: styles.getPropertyValue("--bg").trim() || "#ffffff",
-      mutedText: styles.getPropertyValue("--text-2").trim() || "#6f7177",
-      text: styles.getPropertyValue("--text").trim() || "#202124"
+      background: token("--color-bg", "#f4f0e6"),
+      itemPalette: [
+        token("--color-accent", "#f2691b"),
+        token("--color-primary", "#1a1b17"),
+        token("--color-text-secondary", "#62625b"),
+        token("--color-border-strong", "#b8af9f"),
+        token("--color-text-muted", "#76756c"),
+        token("--color-accent-strong", "#d95711")
+      ],
+      mutedText: token("--color-text-secondary", "#62625b"),
+      text: token("--color-text", "#1a1b17")
     };
   }, []);
 

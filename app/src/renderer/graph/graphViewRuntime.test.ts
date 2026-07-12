@@ -41,7 +41,7 @@ describe("graphViewRuntime", () => {
     }]));
 
     expect(loadGraphColorGroups()).toEqual([{
-      color: "#2f66b1",
+      color: "#f2691b",
       id: "group-1",
       query: "tag:note"
     }]);

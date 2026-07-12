@@ -18,6 +18,7 @@ const nodeRadius = 6;
 
 export interface ChronicleCanvasTheme {
   background: string;
+  itemPalette: string[];
   mutedText: string;
   text: string;
 }
@@ -42,9 +43,11 @@ export function drawChronicleCanvas(
 
   drawYearGuides(context, scene, camera, viewportWidth, viewportHeight, theme);
   const labelHits: ChronicleCanvasLabelHit[] = [];
-  for (const item of scene.items) {
+  const itemPalette = theme.itemPalette?.length ? theme.itemPalette : [theme.mutedText];
+  for (const [index, item] of scene.items.entries()) {
     if (!isItemVisible(item, camera, viewportWidth, viewportHeight)) continue;
-    const hit = drawItem(context, item, camera, item.id === hoveredItemId, viewportWidth, theme);
+    const itemColor = itemPalette[index % itemPalette.length] ?? theme.mutedText;
+    const hit = drawItem(context, item, itemColor, camera, item.id === hoveredItemId, viewportWidth, theme);
     labelHits.push(hit);
   }
   drawYearHeader(context, scene, camera, viewportWidth, theme);
@@ -120,6 +123,7 @@ function drawYearHeader(
 function drawItem(
   context: CanvasRenderingContext2D,
   item: ChronicleCanvasItem,
+  itemColor: string,
   camera: ChronicleCanvasCamera,
   hovered: boolean,
   viewportWidth: number,
@@ -137,8 +141,8 @@ function drawItem(
   const rangeY = start.y + 24;
 
   context.save();
-  context.strokeStyle = item.color;
-  context.fillStyle = item.color;
+  context.strokeStyle = itemColor;
+  context.fillStyle = itemColor;
   context.lineCap = "round";
   context.lineWidth = hovered ? 3.5 : 2.5;
   context.globalAlpha = hovered ? 1 : 0.86;
@@ -148,8 +152,8 @@ function drawItem(
     context.lineTo(end.x, end.y);
     context.stroke();
   }
-  drawNode(context, start.x, start.y, radius, item.color, theme.background, hovered);
-  if (item.startYear !== item.endYear) drawNode(context, end.x, end.y, radius, item.color, theme.background, hovered);
+  drawNode(context, start.x, start.y, radius, itemColor, theme.background, hovered);
+  if (item.startYear !== item.endYear) drawNode(context, end.x, end.y, radius, itemColor, theme.background, hovered);
 
   context.globalAlpha = renderedOpacity;
   context.fillStyle = theme.text;

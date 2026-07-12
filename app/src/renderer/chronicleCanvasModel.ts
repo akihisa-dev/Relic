@@ -25,7 +25,6 @@ export interface ChronicleCanvasCamera {
 }
 
 export interface ChronicleCanvasItem {
-  color: string;
   endX: number;
   endYear: number;
   entry: ChartEntry;
@@ -85,7 +84,6 @@ export function createChronicleCanvasScene(
 ): ChronicleCanvasScene {
   const years = buildChronicleCanvasYears(entries);
   const xByYear = new Map(years.map((year) => [year.value, year.x]));
-  const paletteOffset = Math.floor(random() * 360);
   const verticalSlots = entries.map((_, index) => (index - (entries.length - 1) / 2) * (itemHeight + 24));
   for (let index = verticalSlots.length - 1; index > 0; index -= 1) {
     const swapIndex = Math.floor(random() * (index + 1));
@@ -103,7 +101,6 @@ export function createChronicleCanvasScene(
     const initialY = verticalSlots[index] + (random() - 0.5) * 12;
 
     return {
-      color: itemColor(index, entries.length, paletteOffset),
       endX,
       endYear,
       entry,
@@ -332,11 +329,6 @@ export function stepChronicleCanvasInertia(camera: ChronicleCanvasCamera): boole
   if (Math.abs(camera.velocityX) < 0.05) camera.velocityX = 0;
   if (Math.abs(camera.velocityY) < 0.05) camera.velocityY = 0;
   return camera.velocityX !== 0 || camera.velocityY !== 0;
-}
-
-function itemColor(index: number, total: number, offset: number): string {
-  const hue = (offset + index * (360 / Math.max(1, total))) % 360;
-  return `hsl(${hue} 68% 52%)`;
 }
 
 function smoothstep(value: number): number {

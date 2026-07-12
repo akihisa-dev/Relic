@@ -121,7 +121,7 @@ export function drawGraph(
 
     const active = !focused || link.source === focused.id || link.target === focused.id;
     context.globalAlpha = graphHighlightAlpha(active, highlightStrength, 0.65, graphDimmedLinkAlpha) * linkScaleOpacity;
-    context.strokeStyle = active ? cssVar("--color-border-strong", "#9a9a9a") : cssVar("--color-border", "#dedede");
+    context.strokeStyle = active ? cssVar("--color-border-strong", "#5b5d52") : cssVar("--color-border", "#3b3c33");
     context.lineWidth = Math.max(0.4 / view.scale, options.lineSizeMultiplier * Math.sqrt(link.count) / view.scale);
     context.beginPath();
     context.moveTo(endpoints.sourceX, endpoints.sourceY);
@@ -146,12 +146,12 @@ export function drawGraph(
 
     if (node.id === focused?.id && highlightStrength > 0) {
       context.globalAlpha = 0.36 * highlightStrength;
-      context.fillStyle = cssVar("--color-primary", "#2f66b1");
+      context.fillStyle = cssVar("--color-primary", "#1a1b17");
       context.beginPath();
       context.arc(node.x, node.y, radius, 0, Math.PI * 2);
       context.fill();
       context.globalAlpha = highlightStrength;
-      context.strokeStyle = cssVar("--color-primary", "#2f66b1");
+      context.strokeStyle = cssVar("--color-primary", "#1a1b17");
       context.lineWidth = 2 / view.scale;
       context.beginPath();
       context.arc(node.x, node.y, radius + Math.max(2, 5 / view.scale), 0, Math.PI * 2);
@@ -252,11 +252,11 @@ export function nodeColor(node: WorkspaceGraphNode, groups: GraphColorGroup[], t
   const group = groups.find((candidate) => graphNodeMatchesQuery(node, candidate.query, tags));
   if (group) return group.color;
 
-  if (node.type === "tag") return cssVar("--color-accent", "#3c8f6d");
-  if (node.type === "attachment") return cssVar("--color-primary-muted", "#6f8fc8");
-  if (node.type === "unresolved") return cssVar("--color-text-muted", "#9a9a9a");
+  if (node.type === "tag") return cssVar("--color-accent", "#f2691b");
+  if (node.type === "attachment") return cssVar("--color-text-muted", "#76756c");
+  if (node.type === "unresolved") return cssVar("--color-text-muted", "#76756c");
 
-  return cssVar("--color-text-secondary", "#5f646d");
+  return cssVar("--color-text-secondary", "#62625b");
 }
 
 export function collectGraphNodeTags(

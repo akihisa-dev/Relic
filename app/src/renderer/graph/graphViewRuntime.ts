@@ -31,9 +31,17 @@ export function getCanvas2dContext(canvas: HTMLCanvasElement): CanvasRenderingCo
 }
 
 export function nextGroupColor(index: number): string {
-  const colors = ["#2f66b1", "#3c8f6d", "#b06a2c", "#8d66d9", "#b74b65", "#6c7786"];
+  const colors = [
+    ["--color-accent", "#f2691b"],
+    ["--color-primary", "#1a1b17"],
+    ["--color-text-secondary", "#62625b"],
+    ["--color-text-muted", "#76756c"],
+    ["--color-border-strong", "#b8af9f"],
+    ["--color-accent-strong", "#d95711"]
+  ] as const;
+  const [token, fallback] = colors[index % colors.length];
 
-  return colors[index % colors.length];
+  return cssVar(token, fallback);
 }
 
 export function loadGraphOptions(): GraphOptions {
