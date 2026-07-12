@@ -7,6 +7,8 @@ export const CHRONICLE_CANVAS_MAX_SCALE = 2.4;
 export const CHRONICLE_CANVAS_INITIAL_SCALE = 0.82;
 export const CHRONICLE_CANVAS_LABEL_HEIGHT = 20;
 export const CHRONICLE_CANVAS_ITEM_LABEL_OFFSET = 22;
+const CHRONICLE_CANVAS_TEXT_FADE_START_SCALE = 0.04;
+const CHRONICLE_CANVAS_TEXT_FADE_RANGE = 0.65;
 
 const itemHeight = 70;
 const labelCharacterWidth = 7.4;
@@ -256,7 +258,8 @@ export function zoomChronicleCanvasAtPoint(
 }
 
 export function chronicleCanvasTextOpacity(scale: number): number {
-  const progress = (scale - 0.2) / 0.65;
+  if (scale <= CHRONICLE_CANVAS_MIN_SCALE) return 0;
+  const progress = (scale - CHRONICLE_CANVAS_TEXT_FADE_START_SCALE) / CHRONICLE_CANVAS_TEXT_FADE_RANGE;
   return smoothstep(Math.min(1, Math.max(0, progress)));
 }
 

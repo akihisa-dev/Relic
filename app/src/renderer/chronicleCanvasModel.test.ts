@@ -106,6 +106,8 @@ describe("chronicleCanvasModel", () => {
 
   it("ズームに応じて文字を徐々に薄くし、年ラベルを間引く", () => {
     expect(chronicleCanvasTextOpacity(0.08)).toBe(0);
+    expect(chronicleCanvasTextOpacity(0.1)).toBeGreaterThan(0);
+    expect(chronicleCanvasTextOpacity(0.34)).toBeGreaterThan(0);
     expect(chronicleCanvasYearOpacity(0.08)).toBe(0.5);
     expect(chronicleCanvasTextOpacity(0.5)).toBeGreaterThan(0);
     expect(chronicleCanvasTextOpacity(1)).toBe(1);
