@@ -36,7 +36,6 @@ export function drawChronicleCanvas(
   context.clearRect(0, 0, viewportWidth, viewportHeight);
   context.fillStyle = theme.background;
   context.fillRect(0, 0, viewportWidth, viewportHeight);
-  drawYears(context, scene, camera, viewportWidth, theme);
 
   const labelHits: ChronicleCanvasLabelHit[] = [];
   for (const item of scene.items) {
@@ -44,6 +43,7 @@ export function drawChronicleCanvas(
     const hit = drawItem(context, item, camera, item.id === hoveredItemId, viewportWidth, theme);
     labelHits.push(hit);
   }
+  drawYears(context, scene, camera, viewportWidth, theme);
   context.restore();
   return { labelHits };
 }
