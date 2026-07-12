@@ -31,6 +31,10 @@ describe("editorLivePreviewBlocks", () => {
     expect(fencedBlocks("```\n本文")).toEqual([]);
   });
 
+  it("開始フェンスだけの1行は閉じたコードブロックにしない", () => {
+    expect(fencedBlocks("```")).toEqual([]);
+  });
+
   it("閉じフェンスが文書末尾にない場合はプレビュー対象にしない", () => {
     expect(fencedBlocks("```\n本文\n追記")).toEqual([]);
   });

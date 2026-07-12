@@ -54,8 +54,9 @@ export function fencedCodeBlocksInVisibleRanges(
     // Lezer keeps an unfinished FencedCode node open until EOF. Do not replace
     // the editable source with a preview widget until the closing fence exists.
     const openingLine = state.doc.lineAt(range.from);
-    const openingFence = parseCodeFenceOpening(openingLine.text);
     const closingLine = state.doc.line(lineNumberAtBlockEnd(state.doc, range.to));
+    const openingFence = parseCodeFenceOpening(openingLine.text);
+    if (closingLine.number <= openingLine.number) return [];
     if (!openingFence || !isClosingCodeFence(closingLine.text, openingFence)) return [];
 
     const openingBacktickFence = parseBacktickOpeningFence(openingLine.text);

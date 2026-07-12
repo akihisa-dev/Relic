@@ -39,6 +39,15 @@ describe("Editor live preview", () => {
     expect(view.state.doc.toString()).toBe("```\nって打つ\n```");
   });
 
+  it("開始フェンスだけのページを開いても編集元をプレビューへ置換しない", async () => {
+    const { container, view } = await renderEditorWithView({ content: "```" });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(container.querySelector(".cm-live-code-block-panel")).toBeNull();
+    expect(() => view.dispatch({ changes: { from: view.state.doc.length, insert: "\n" } })).not.toThrow();
+    expect(view.state.doc.toString()).toBe("```\n");
+  });
+
   it("文書更新前の可視範囲が末尾を越えていてもブロック装飾を再構築できる", () => {
     const state = EditorState.create({ doc: "---\nstatus: draft\n---\n本文" });
 
