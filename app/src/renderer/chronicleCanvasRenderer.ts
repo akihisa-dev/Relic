@@ -118,7 +118,7 @@ function drawItem(
   context.font = "750 12px -apple-system, BlinkMacSystemFont, sans-serif";
   context.textAlign = "center";
   context.textBaseline = "middle";
-  const measuredLabelWidth = context.measureText(item.entry.fileName).width;
+  const measuredLabelWidth = item.labelTextWidth ?? (item.labelTextWidth = context.measureText(item.entry.fileName).width);
   const centerX = Math.max(measuredLabelWidth / 2 + 12, Math.min(viewportWidth - measuredLabelWidth / 2 - 12, naturalCenterX));
   context.fillText(item.entry.fileName, centerX, labelY);
   context.fillStyle = theme.mutedText;

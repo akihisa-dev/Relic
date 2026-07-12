@@ -160,11 +160,15 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
   const handlePointerMove = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
     const point = canvasPoint(event.clientX, event.clientY);
     const hovered = chronicleCanvasItemAtPoint(sceneRef.current.items, cameraRef.current, point);
+    const hoveredChanged = hoveredItemIdRef.current !== (hovered?.id ?? null);
     hoveredItemIdRef.current = hovered?.id ?? null;
     const clickableLabel = chronicleCanvasLabelAtPoint(labelHitsRef.current, point);
     event.currentTarget.style.cursor = clickableLabel ? "pointer" : "grab";
     const pointer = pointerRef.current;
-    if (!pointer) return;
+    if (!pointer) {
+      if (hoveredChanged) requestCanvasFrame(animationFrameRef, draw);
+      return;
+    }
 
     const dx = event.clientX - pointer.lastX;
     const dy = event.clientY - pointer.lastY;
@@ -175,6 +179,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
       cameraRef.current.panX += dx;
       cameraRef.current.panY += dy;
       lastPanDeltaRef.current = { x: dx, y: dy };
+      requestCanvasFrame(animationFrameRef, draw);
       return;
     }
     if (pointer.item) {

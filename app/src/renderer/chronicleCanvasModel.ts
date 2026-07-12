@@ -31,6 +31,7 @@ export interface ChronicleCanvasItem {
   homeY: number;
   id: string;
   labelWidth: number;
+  labelTextWidth: number | null;
   rangeLabel: string;
   startX: number;
   startYear: number;
@@ -108,6 +109,7 @@ export function createChronicleCanvasScene(
       homeY: initialY,
       id: entryKey(entry),
       labelWidth,
+      labelTextWidth: null,
       rangeLabel,
       startX,
       startYear,
@@ -144,7 +146,7 @@ export function compressedYearDistance(yearDifference: number): number {
 
 export function settleChronicleCanvasScene(items: ChronicleCanvasItem[], iterations: number): void {
   for (let iteration = 0; iteration < iterations; iteration += 1) {
-    stepChronicleCanvasScene(items, null, 1 / 60);
+    if (!stepChronicleCanvasScene(items, null, 1 / 60)) break;
   }
   for (const item of items) {
     item.vx = 0;
@@ -160,9 +162,15 @@ export function stepChronicleCanvasScene(
   const frameScale = Math.min(2, Math.max(0.25, deltaSeconds * 60));
   let moving = false;
 
-  for (let leftIndex = 0; leftIndex < items.length; leftIndex += 1) {
-    for (let rightIndex = leftIndex + 1; rightIndex < items.length; rightIndex += 1) {
-      applyItemRepulsion(items[leftIndex], items[rightIndex], frameScale);
+  const verticalOrder = items.length > 24 ? [...items].sort((left, right) => left.y - right.y) : items;
+  const maximumItemHeight = items.reduce((maximum, item) => Math.max(maximum, item.height), 0);
+  for (let leftIndex = 0; leftIndex < verticalOrder.length; leftIndex += 1) {
+    const left = verticalOrder[leftIndex];
+    const maximumVerticalDistance = (left.height + maximumItemHeight) / 2 + 12;
+    for (let rightIndex = leftIndex + 1; rightIndex < verticalOrder.length; rightIndex += 1) {
+      const right = verticalOrder[rightIndex];
+      if (right.y - left.y > maximumVerticalDistance) break;
+      applyItemRepulsion(left, right, frameScale);
     }
   }
 
