@@ -32,13 +32,6 @@ function stopCodeBlockSourceEditEvent(event: Event): void {
   event.stopImmediatePropagation();
 }
 
-function restoreCodeBlockTextSelection(panel: HTMLElement, code: HTMLElement): void {
-  queueMicrotask(() => {
-    panel.contentEditable = "true";
-    code.contentEditable = "true";
-  });
-}
-
 function caretRangeFromPoint(document: Document, clientX: number, clientY: number): Range | null {
   const pointDocument = document as Document & {
     caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
@@ -314,7 +307,7 @@ export class CodeBlockWidget extends WidgetType {
     };
     const panel = document.createElement("div");
     panel.className = this.className;
-    panel.contentEditable = "true";
+    panel.contentEditable = "false";
     panel.spellcheck = false;
     panel.addEventListener("click", (event) => {
       if (event.target instanceof HTMLElement && event.target.closest("button")) return;
@@ -360,7 +353,7 @@ export class CodeBlockWidget extends WidgetType {
 
     const code = document.createElement("code");
     code.className = "cm-live-code-block-source";
-    code.contentEditable = "true";
+    code.contentEditable = "false";
     code.setAttribute("aria-readonly", "true");
     code.setAttribute("role", "textbox");
     code.spellcheck = false;
@@ -398,7 +391,6 @@ export class CodeBlockWidget extends WidgetType {
 
     pre.append(code);
     panel.append(header, pre);
-    restoreCodeBlockTextSelection(panel, code);
 
     return panel;
   }

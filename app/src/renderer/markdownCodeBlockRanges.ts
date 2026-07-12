@@ -1,17 +1,35 @@
 import type { EditorState } from "@codemirror/state";
 
+import { isClosingCodeFence, parseCodeFenceOpening, type CodeFenceMarker } from "./markdownCodeFence";
+
 interface FencedCodeBlockRange {
   from: number;
   to: number;
 }
 
-interface FenceMarker {
-  char: "`" | "~";
-  length: number;
-}
-
 export function isPositionInFencedCodeBlock(state: EditorState, position: number): boolean {
-  return fencedCodeBlockRanges(state).some((range) => position >= range.from && position <= range.to);
+  // This path runs while completion is being requested, so stop at the cursor
+  // instead of scanning the rest of a large document on every keystroke.
+  const targetPosition = Math.min(Math.max(0, position), state.doc.length);
+  const targetLineNumber = state.doc.lineAt(targetPosition).number;
+  let active: CodeFenceMarker | null = null;
+
+  for (let lineNumber = 1; lineNumber <= targetLineNumber; lineNumber += 1) {
+    const line = state.doc.line(lineNumber);
+    const marker = parseCodeFenceOpening(line.text);
+
+    if (!active) {
+      if (marker) active = marker;
+      continue;
+    }
+
+    if (marker && isClosingCodeFence(line.text, active)) {
+      if (lineNumber === targetLineNumber) return true;
+      active = null;
+    }
+  }
+
+  return active !== null;
 }
 
 export function rangeIntersectsFencedCodeBlock(state: EditorState, from: number, to: number): boolean {
@@ -23,18 +41,18 @@ export function rangeIntersectsFencedCodeBlock(state: EditorState, from: number,
 
 function fencedCodeBlockRanges(state: EditorState): FencedCodeBlockRange[] {
   const ranges: FencedCodeBlockRange[] = [];
-  let active: { from: number; marker: FenceMarker } | null = null;
+  let active: { from: number; marker: CodeFenceMarker } | null = null;
 
   for (let lineNumber = 1; lineNumber <= state.doc.lines; lineNumber += 1) {
     const line = state.doc.line(lineNumber);
-    const marker = fenceMarker(line.text);
+    const marker = parseCodeFenceOpening(line.text);
 
     if (!active) {
       if (marker) active = { from: line.from, marker };
       continue;
     }
 
-    if (marker && marker.char === active.marker.char && marker.length >= active.marker.length) {
+    if (marker && isClosingCodeFence(line.text, active.marker)) {
       ranges.push({ from: active.from, to: line.to });
       active = null;
     }
@@ -43,15 +61,4 @@ function fencedCodeBlockRanges(state: EditorState): FencedCodeBlockRange[] {
   if (active) ranges.push({ from: active.from, to: state.doc.length });
 
   return ranges;
-}
-
-function fenceMarker(text: string): FenceMarker | null {
-  const match = text.match(/^ {0,3}(`{3,}|~{3,})/);
-  if (!match) return null;
-
-  const marker = match[1];
-  return {
-    char: marker[0] as "`" | "~",
-    length: marker.length
-  };
 }

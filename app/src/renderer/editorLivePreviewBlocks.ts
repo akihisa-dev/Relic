@@ -1,7 +1,11 @@
 import { syntaxTree } from "@codemirror/language";
 import type { EditorState, Text } from "@codemirror/state";
 
-import { parseBacktickOpeningFence } from "./markdownCodeFence";
+import {
+  isClosingCodeFence,
+  parseBacktickOpeningFence,
+  parseCodeFenceOpening
+} from "./markdownCodeFence";
 
 export interface SyntaxBlockRange {
   from: number;
@@ -46,9 +50,16 @@ export function fencedCodeBlocksInVisibleRanges(
   state: EditorState,
   visibleRanges: readonly SyntaxBlockRange[]
 ): FencedCodeBlockRange[] {
-  return syntaxBlocksInVisibleRanges(state, visibleRanges, "FencedCode").map((range) => {
-    const openingFence = parseBacktickOpeningFence(state.doc.lineAt(range.from).text);
-    return { ...range, language: openingFence?.language ?? null };
+  return syntaxBlocksInVisibleRanges(state, visibleRanges, "FencedCode").flatMap((range) => {
+    // Lezer keeps an unfinished FencedCode node open until EOF. Do not replace
+    // the editable source with a preview widget until the closing fence exists.
+    const openingLine = state.doc.lineAt(range.from);
+    const openingFence = parseCodeFenceOpening(openingLine.text);
+    const closingLine = state.doc.line(lineNumberAtBlockEnd(state.doc, range.to));
+    if (!openingFence || !isClosingCodeFence(closingLine.text, openingFence)) return [];
+
+    const openingBacktickFence = parseBacktickOpeningFence(openingLine.text);
+    return [{ ...range, language: openingBacktickFence?.language ?? null }];
   });
 }
 
@@ -123,7 +134,7 @@ export function blockMathRangesInVisibleRanges(
 ): BlockMathRange[] {
   const ranges: BlockMathRange[] = [];
   const doc = state.doc;
-  const codeBlocks = fencedCodeBlocksInVisibleRanges(state, visibleRanges);
+  const codeBlocks = syntaxBlocksInVisibleRanges(state, visibleRanges, "FencedCode");
   let codeBlockIndex = 0;
 
   for (const { from: visFrom, to: visTo } of visibleRanges) {

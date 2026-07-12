@@ -17,10 +17,28 @@ import {
   collectInlineLivePreviewWidgets,
   collectLivePreviewClasses,
   collectLivePreviewReplacementRanges,
+  renderEditorWithView,
   settings
 } from "./editorTestHelpers";
 
 describe("Editor live preview", () => {
+  it("バッククォートの入力でエディタが停止しない", async () => {
+    const { view } = await renderEditorWithView();
+
+    for (const expected of ["`", "``", "```"]) {
+      expect(() => view.dispatch({ changes: { from: view.state.doc.length, insert: "`" } })).not.toThrow();
+      expect(view.state.doc.toString()).toBe(expected);
+    }
+
+    expect(() => view.dispatch({ changes: { from: view.state.doc.length, insert: "\n" } })).not.toThrow();
+    expect(view.state.doc.toString()).toBe("```\n");
+    expect(() => view.dispatch({ changes: { from: view.state.doc.length, insert: "って打つ" } })).not.toThrow();
+    expect(view.state.doc.toString()).toBe("```\nって打つ");
+
+    expect(() => view.dispatch({ changes: { from: view.state.doc.length, insert: "\n```" } })).not.toThrow();
+    expect(view.state.doc.toString()).toBe("```\nって打つ\n```");
+  });
+
   it("文書更新前の可視範囲が末尾を越えていてもブロック装飾を再構築できる", () => {
     const state = EditorState.create({ doc: "---\nstatus: draft\n---\n本文" });
 
@@ -629,9 +647,9 @@ describe("Editor live preview", () => {
     viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
     await waitFor(() => expect(container.querySelector(".cm-live-code-block-source")).not.toBeNull());
 
-    expect((container.querySelector(".cm-live-code-block-panel") as HTMLElement).contentEditable).not.toBe("false");
+    expect((container.querySelector(".cm-live-code-block-panel") as HTMLElement).contentEditable).toBe("false");
     expect((container.querySelector(".cm-live-code-block-header") as HTMLElement).contentEditable).toBe("false");
-    expect((container.querySelector(".cm-live-code-block-source") as HTMLElement).contentEditable).toBe("true");
+    expect((container.querySelector(".cm-live-code-block-source") as HTMLElement).contentEditable).toBe("false");
     expect(container.querySelector(".cm-live-code-block-source")?.getAttribute("aria-readonly")).toBe("true");
   });
 
