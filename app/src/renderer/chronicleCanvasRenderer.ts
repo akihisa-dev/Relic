@@ -67,10 +67,10 @@ function drawYears(
     const position = worldToCanvas({ x: year.x, y: 0 }, camera);
     position.y = Math.max(22, fontSize + 14);
     if (position.x < -60 || position.x > viewportWidth + 60) continue;
-    context.globalAlpha = opacity * 0.72;
+    context.globalAlpha = opacity * 0.88;
     context.fillStyle = theme.mutedText;
     context.fillText(formatYear(year.value), position.x, position.y);
-    context.globalAlpha = opacity * 0.22;
+    context.globalAlpha = opacity * 0.3;
     context.strokeStyle = theme.mutedText;
     context.lineWidth = 1;
     context.beginPath();
