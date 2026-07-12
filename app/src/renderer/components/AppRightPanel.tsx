@@ -1,6 +1,6 @@
 import type { Dispatch, MouseEvent as ReactMouseEvent, ReactElement, SetStateAction } from "react";
 
-import type { Backlink, ChartEntry, UnlinkedReference, UnlinkedReferencesResult } from "../../shared/ipc";
+import type { Backlink, UnlinkedReference, UnlinkedReferencesResult } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
 import { markdownLinkForPath } from "../appLinks";
@@ -11,13 +11,11 @@ import type { FileTab } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
 import { fixedMenuPosition } from "./railNavigationModel";
 import { RightPanelRecoveryList } from "./RightPanelRecoveryList";
-import { RightPanelChronicle } from "./RightPanelChronicle";
 
 interface AppRightPanelProps {
   activeFileTab: FileTab | null;
   applyingReferenceKey: string | null;
   backlinks: Backlink[];
-  chronicleEntries?: ChartEntry[];
   isLoadingBacklinks: boolean;
   isLoadingUnlinkedReferences: boolean;
   isOpen: boolean;
@@ -41,7 +39,6 @@ export function AppRightPanel({
   activeFileTab,
   applyingReferenceKey,
   backlinks,
-  chronicleEntries = [],
   isLoadingBacklinks,
   isLoadingUnlinkedReferences,
   isOpen,
@@ -76,9 +73,7 @@ export function AppRightPanel({
         {rightPanelTitle(rightPanelView, t)}
       </div>
       <div className={`sidebar-body right-panel-content right-panel-content--${rightPanelView}`}>
-      {rightPanelView === "chronicle" ? (
-        <RightPanelChronicle activeFileTab={activeFileTab} entries={chronicleEntries} onOpenFile={onOpenFile} />
-      ) : rightPanelView === "outline" ? (
+      {rightPanelView === "outline" ? (
         outlineHeadings.length > 0 ? (
           <div className="outline-panel-stack">
             <div className="links-panel-subheading">{t("outline.headingCount", { count: outlineHeadings.length })}</div>
@@ -258,7 +253,6 @@ export function AppRightPanel({
 }
 
 function rightPanelTitle(view: RightPanelView, t: ReturnType<typeof useT>): string {
-  if (view === "chronicle") return t("nav.chronicle");
   if (view === "outline") return t("pane.outline");
   if (view === "recovery") return t("pane.recovery");
   return t("pane.links");

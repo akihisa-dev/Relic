@@ -33,6 +33,7 @@ import { useSplitCloseMotion } from "./hooks/useSplitCloseMotion";
 import { useWindowCloseRequest } from "./hooks/useWindowCloseRequest";
 import { useWorkspaceAliases } from "./hooks/useWorkspaceAliases";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
+import { useWorkspaceChronicleCalendars } from "./hooks/useWorkspaceChronicleCalendars";
 import { useWorkspaceFrontmatterCategoryChoices } from "./hooks/useWorkspaceFrontmatterCategoryChoices";
 import { useWorkspaceCharts } from "./hooks/useWorkspaceCharts";
 import { useWorkspaceExternalRefresh } from "./hooks/useWorkspaceExternalRefresh";
@@ -110,6 +111,10 @@ export function App(): ReactElement {
     toggleSidebar: toggleSidebarState,
     toggleTypewriterMode
   } = useUiStore(useShallow(selectAppUiStoreState));
+  const hasOpenChart = useMemo(
+    () => Object.values(tabs).some((tab) => tab.kind === "chart"),
+    [tabs]
+  );
   const { isSplitClosing, toggleSplitWithMotion } = useSplitCloseMotion(isSplit, toggleSplit);
 
   const toggleSidebar = useCallback((): void => {
@@ -142,7 +147,6 @@ export function App(): ReactElement {
     isLinksPanelActive,
     toggleRightPanelIfAvailable
   } = useAppRightPanel({
-    isChronicleAvailable: true,
     isLinksAvailable: isRightPanelLinksAvailable,
     isOutlineAvailable: isRightPanelOutlineAvailable,
     isRecoveryAvailable: isRightPanelRecoveryAvailable,
@@ -180,11 +184,18 @@ export function App(): ReactElement {
     registeredWorkspaces
   } = useAppWorkspaceCollections({ tabs, workspaceState });
   const aliasesByPath = useWorkspaceAliases({ setWorkspaceError, workspaceState });
-  const { charts, reloadCharts } = useWorkspaceCharts({
-    enabled: effectiveRightPanelView === "chronicle" && isEffectiveRightPanelOpen,
+  const { charts, handleUpdateChartEntry, reloadCharts } = useWorkspaceCharts({
+    hasOpenChart,
     setWorkspaceError,
     tabs,
     updateTabContent,
+    workspaceState
+  });
+  const { chronicleCalendars, handleSaveChronicleCalendars } = useWorkspaceChronicleCalendars({
+    onSaved: () => {
+      if (hasOpenChart) void reloadCharts();
+    },
+    setWorkspaceError,
     workspaceState
   });
   const { categoryChoices, handleSaveCategoryChoices } = useWorkspaceFrontmatterCategoryChoices({
@@ -198,7 +209,7 @@ export function App(): ReactElement {
   }), [categoryChoices, frontmatterCandidates]);
 
   const handleFileSaved = useCallback((path?: string): void => {
-    if (effectiveRightPanelView === "chronicle" && isEffectiveRightPanelOpen) void reloadCharts();
+    if (hasOpenChart) void reloadCharts();
     if (!path || !window.relic) return;
 
     void window.relic.getWorkspaceState().then((result) => {
@@ -211,7 +222,7 @@ export function App(): ReactElement {
     }).catch((error) => {
       setWorkspaceError(error instanceof Error ? error.message : String(error));
     });
-  }, [effectiveRightPanelView, isEffectiveRightPanelOpen, reloadCharts, setWorkspaceError, setWorkspaceState]);
+  }, [hasOpenChart, reloadCharts, setWorkspaceError, setWorkspaceState]);
 
   const { flushTabsBeforeClose, saveStatusByTabId } = useEditorAutoSave({
     conflictCloseBlockedMessage: t("pane.externalConflictCloseBlocked"),
@@ -491,13 +502,17 @@ export function App(): ReactElement {
   const { renderChartTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
     categoryChoices,
+    chronicleCalendars,
     editorSettings,
     featureToggles,
+    charts,
     handleOpenFile,
     handleOpenTagSearch: handleOpenGraphTagSearch,
     handleSaveCategoryChoices,
+    handleSaveChronicleCalendars,
     handleSaveFeatureToggles,
     handleSaveSettings,
+    handleUpdateChartEntry,
     workspaceState
   });
   const appLayoutProps = createAppLayoutProps({
@@ -507,7 +522,6 @@ export function App(): ReactElement {
       appInlineHandlers,
       applyingReferenceKey,
       backlinks,
-      chronicleEntries: charts[0]?.entries ?? [],
       closeAllTabsInPaneWithMotion,
       closeOtherTabsWithMotion,
       closeTabWithMotion,
@@ -560,7 +574,6 @@ export function App(): ReactElement {
       setTabActive,
       setWorkspaceError,
       showRightPanelLinksControl: isRightPanelLinksAvailable,
-      showRightPanelChronicleControl: true,
       showRightPanelOutlineControl: isRightPanelOutlineAvailable,
       showRightPanelRecoveryControl: isRightPanelRecoveryAvailable,
       startRightPanelResize,

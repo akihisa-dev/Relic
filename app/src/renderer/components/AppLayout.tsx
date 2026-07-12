@@ -55,7 +55,6 @@ export function AppLayout({
             rightPanelView={editorWorkspaceProps.rightPanelView}
             showSourceControl={false}
             showRightPanelLinksControl={editorWorkspaceProps.showRightPanelLinksControl}
-            showRightPanelChronicleControl={editorWorkspaceProps.showRightPanelChronicleControl}
             showRightPanelOutlineControl={editorWorkspaceProps.showRightPanelOutlineControl}
             showRightPanelRecoveryControl={editorWorkspaceProps.showRightPanelRecoveryControl}
           />

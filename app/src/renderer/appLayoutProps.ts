@@ -37,7 +37,6 @@ export interface AppLayoutEditorWorkspaceInput {
   >;
   applyingReferenceKey: EditorWorkspaceProps["applyingReferenceKey"];
   backlinks: EditorWorkspaceProps["backlinks"];
-  chronicleEntries: EditorWorkspaceProps["chronicleEntries"];
   closeAllTabsInPaneWithMotion: EditorWorkspaceProps["onCloseAllTabsInPane"];
   closeOtherTabsWithMotion: EditorWorkspaceProps["onCloseOtherTabs"];
   closeTabWithMotion: EditorWorkspaceProps["onTabClose"];
@@ -90,7 +89,6 @@ export interface AppLayoutEditorWorkspaceInput {
   setTabActive: EditorWorkspaceProps["onTabSelect"];
   setWorkspaceError: EditorWorkspaceProps["onFileSaveError"];
   showRightPanelLinksControl: EditorWorkspaceProps["showRightPanelLinksControl"];
-  showRightPanelChronicleControl: EditorWorkspaceProps["showRightPanelChronicleControl"];
   showRightPanelOutlineControl: EditorWorkspaceProps["showRightPanelOutlineControl"];
   showRightPanelRecoveryControl: EditorWorkspaceProps["showRightPanelRecoveryControl"];
   startRightPanelResize: EditorWorkspaceProps["onRightPanelResizeStart"];

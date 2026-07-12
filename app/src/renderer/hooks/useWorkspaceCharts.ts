@@ -11,7 +11,7 @@ import { normalizeWorkspaceCharts } from "../chartData";
 import type { Tab } from "../store/editorStore";
 
 interface UseWorkspaceChartsInput {
-  enabled: boolean;
+  hasOpenChart: boolean;
   setWorkspaceError: (message: string | null) => void;
   tabs: Record<string, Tab>;
   updateTabContent: (tabId: string, content: string) => void;
@@ -19,7 +19,7 @@ interface UseWorkspaceChartsInput {
 }
 
 export function useWorkspaceCharts({
-  enabled,
+  hasOpenChart,
   setWorkspaceError,
   tabs,
   updateTabContent,
@@ -53,10 +53,10 @@ export function useWorkspaceCharts({
   }, [setWorkspaceError, workspaceState?.activeWorkspace?.id]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!hasOpenChart) return;
 
     void reloadCharts();
-  }, [enabled, reloadCharts]);
+  }, [hasOpenChart, reloadCharts]);
 
   const handleUpdateChartEntry = useCallback(async (input: UpdateChartEntryInput): Promise<void> => {
     if (!window.relic) return;
@@ -92,7 +92,7 @@ export function useWorkspaceCharts({
   }, [setWorkspaceError, tabs, updateTabContent]);
 
   return {
-    charts: workspaceState?.activeWorkspace && enabled ? charts : [],
+    charts: workspaceState?.activeWorkspace && hasOpenChart ? charts : [],
     handleUpdateChartEntry,
     reloadCharts
   };

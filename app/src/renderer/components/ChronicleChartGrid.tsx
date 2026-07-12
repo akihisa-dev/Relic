@@ -7,14 +7,12 @@ import {
   timelineVisibleRange,
   type ChartGuideTick,
   type ChartRow,
-  type TimelineOffscreenIndicator,
   type DragPreview
 } from "../chronicleTimeline";
 import { useT } from "../i18n";
 import { ChronicleTracks } from "./ChronicleTracks";
 import {
-  ChronicleAxis,
-  TimelineOffscreenJumpButtons
+  ChronicleAxis
 } from "./chronicleChartParts";
 
 export interface ChronicleChartGridProps {
@@ -25,7 +23,6 @@ export interface ChronicleChartGridProps {
   chartRef: RefObject<HTMLDivElement | null>;
   chartViewportHeight: number;
   chartViewportWidth: number;
-  chronicleOffscreenIndicators: { left: TimelineOffscreenIndicator | null; right: TimelineOffscreenIndicator | null };
   chronicleCalendars: ChronicleCalendarSettings[];
   axisHeight: number;
   dragPreview: DragPreview | null;
@@ -33,7 +30,6 @@ export interface ChronicleChartGridProps {
   nameColumnWidth: number;
   onChartPointerDown: (event: PointerEvent<HTMLDivElement>) => void;
   onChartScroll: (event: UIEvent<HTMLDivElement>) => void;
-  onJump: (value: number) => void;
   onOpenFile: (path: string) => void;
   onStartEntryEdit: (
     event: PointerEvent<Element>,
@@ -55,7 +51,6 @@ export function ChronicleChartGrid({
   chartRef,
   chartViewportHeight,
   chartViewportWidth,
-  chronicleOffscreenIndicators,
   chronicleCalendars,
   axisHeight,
   dragPreview,
@@ -63,7 +58,6 @@ export function ChronicleChartGrid({
   nameColumnWidth,
   onChartPointerDown,
   onChartScroll,
-  onJump,
   onOpenFile,
   onStartEntryEdit,
   rows,
@@ -99,12 +93,6 @@ export function ChronicleChartGrid({
         onScroll={onChartScroll}
         ref={chartRef}
       >
-        <TimelineOffscreenJumpButtons
-          indicators={chronicleOffscreenIndicators}
-          leftOffset={nameColumnWidth}
-          onJump={onJump}
-          t={t}
-        />
         <div className="chronicle-grid" style={{ width: nameColumnWidth + timelineWidth }}>
           <div className="chronicle-timeline" style={{ marginLeft: nameColumnWidth, width: timelineWidth }}>
             <ChronicleAxis

@@ -4,6 +4,7 @@ import type { TranslationKey } from "../i18nModel";
 import type { PanelTabKind } from "../store/editorStore";
 import type { SidebarView } from "../store/uiStore";
 import {
+  IconChronicle,
   IconFiles,
   IconFrontmatter,
   IconGraph,
@@ -18,5 +19,6 @@ export const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; 
   { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
   { id: "frontmatter", labelKey: "nav.frontmatter", icon: <IconFrontmatter /> },
   { id: "graph", labelKey: "nav.graph", icon: <IconGraph /> },
+  { id: "chronicle", labelKey: "nav.chronicle", icon: <IconChronicle /> },
   { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }
 ];

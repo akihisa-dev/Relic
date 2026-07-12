@@ -3,7 +3,6 @@ import { useCallback } from "react";
 import type { RightPanelView } from "../store/uiStore";
 
 interface UseAppRightPanelOptions {
-  isChronicleAvailable: boolean;
   isLinksAvailable: boolean;
   isOutlineAvailable: boolean;
   isRecoveryAvailable: boolean;
@@ -17,22 +16,18 @@ function resolveEnabledRightPanelView(
   currentView: RightPanelView,
   isOutlineAvailable: boolean,
   isLinksAvailable: boolean,
-  isChronicleAvailable: boolean,
   isRecoveryAvailable: boolean
 ): RightPanelView {
   if (currentView === "outline" && isOutlineAvailable) return "outline";
   if (currentView === "links" && isLinksAvailable) return "links";
-  if (currentView === "chronicle" && isChronicleAvailable) return "chronicle";
   if (currentView === "recovery" && isRecoveryAvailable) return "recovery";
   if (isOutlineAvailable) return "outline";
   if (isLinksAvailable) return "links";
-  if (isChronicleAvailable) return "chronicle";
   if (isRecoveryAvailable) return "recovery";
   return "links";
 }
 
 export function useAppRightPanel({
-  isChronicleAvailable,
   isLinksAvailable,
   isOutlineAvailable,
   isRecoveryAvailable,
@@ -41,12 +36,11 @@ export function useAppRightPanel({
   setRightPanelView,
   toggleRightPanel
 }: UseAppRightPanelOptions) {
-  const isRightPanelAvailable = isOutlineAvailable || isLinksAvailable || isChronicleAvailable || isRecoveryAvailable;
+  const isRightPanelAvailable = isOutlineAvailable || isLinksAvailable || isRecoveryAvailable;
   const effectiveRightPanelView = resolveEnabledRightPanelView(
     rightPanelView,
     isOutlineAvailable,
     isLinksAvailable,
-    isChronicleAvailable,
     isRecoveryAvailable
   );
   const isEffectiveRightPanelOpen = isRightPanelAvailable && isRightPanelOpen;
@@ -66,7 +60,6 @@ export function useAppRightPanel({
   const handleRightPanelViewButton = useCallback((view: RightPanelView): void => {
     if (view === "outline" && !isOutlineAvailable) return;
     if (view === "links" && !isLinksAvailable) return;
-    if (view === "chronicle" && !isChronicleAvailable) return;
     if (view === "recovery" && !isRecoveryAvailable) return;
 
     if (isEffectiveRightPanelOpen && effectiveRightPanelView === view) {
@@ -79,7 +72,6 @@ export function useAppRightPanel({
     effectiveRightPanelView,
     isEffectiveRightPanelOpen,
     isLinksAvailable,
-    isChronicleAvailable,
     isOutlineAvailable,
     isRecoveryAvailable,
     setRightPanelView,

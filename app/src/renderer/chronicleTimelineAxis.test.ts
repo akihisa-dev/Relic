@@ -15,18 +15,17 @@ describe("chronicleTimelineAxis", () => {
     expect(chronicleAxisHeightForCalendars([
       { name: "王国暦" },
       { name: "帝国暦", startYear: 100 }
-    ])).toBe(48);
+    ])).toBe(34);
   });
 
-  it("設定済み暦を横軸用に並べ、サブ暦の年をメイン暦から換算する", () => {
+  it("保存済みの暦設定があっても横軸は単一の年軸にする", () => {
     const calendars = activeChronicleAxisCalendars([
       { name: "王国暦" },
       { name: "帝国暦", startYear: 100 },
       { name: "未開始暦" }
     ]);
 
-    expect(calendars.map((calendar) => calendar.name)).toEqual(["王国暦", "帝国暦"]);
+    expect(calendars.map((calendar) => calendar.name)).toEqual(["王国暦"]);
     expect(formatChronicleCalendarAxisLabel(calendars[0], 120)).toBe("120");
-    expect(formatChronicleCalendarAxisLabel(calendars[1], 120)).toBe("21");
   });
 });

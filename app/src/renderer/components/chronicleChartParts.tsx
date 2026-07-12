@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
 import type { ChronicleCalendarSettings, ChartSource } from "../../shared/ipc";
-import { axisToYear } from "../../shared/chartTime";
+import { monthAxisToYear } from "../../shared/chartTime";
 import {
   ROW_HEIGHT,
   activeChronicleAxisCalendars,
@@ -63,7 +63,7 @@ export function ChronicleAxis({
                 width: Math.max(1, (segment.endValue - segment.startValue + 1) * unitWidth)
               }}
             >
-              {formatChronicleCalendarAxisLabel(calendar, axisToYear(segment.startValue))}
+              {formatChronicleCalendarAxisLabel(calendar, monthAxisToYear(segment.startValue))}
             </span>
           ))}
         </div>

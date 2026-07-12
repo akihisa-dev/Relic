@@ -442,13 +442,14 @@ describe("App charts", () => {
     fireEvent.click(screen.getByRole("button", { name: "年表" }));
     await waitFor(() => expect(getWorkspaceCharts).toHaveBeenCalledTimes(1));
 
-    expect(useEditorStore.getState().leftPane.activeTabId).toBeNull();
-    expect(useUiStore.getState().rightPanelView).toBe("chronicle");
-    await screen.findByText("鎌倉時代");
-    expect(renderResult.container.querySelector(".right-panel-chronicle-list")).toBeInTheDocument();
-    expect(renderResult.container.querySelector(".right-panel-chronicle-date")).toHaveTextContent("1185–1333");
-    expect(renderResult.container.querySelector(".chronicle-tracks")).toBeNull();
-    return;
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+    expect(activeTabId).toBe("chart-chronicle");
+    expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
+      chartId: "chronicle",
+      kind: "chart"
+    });
+    expect(useUiStore.getState().isSidebarOpen).toBe(false);
+    await screen.findByText("1185 〜 1333");
     expect(renderResult.container.querySelector(".chronicle-sidebar")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-name-column")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-year-summary")).toBeNull();
@@ -504,7 +505,7 @@ describe("App charts", () => {
     }));
   });
 
-  it.skip("chronicleチャートのバー編集は低速ドラッグで1年単位の細かな変更にする", async () => {
+  it("chronicleチャートのバー編集は低速ドラッグで1年単位の細かな変更にする", async () => {
     const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({
@@ -568,7 +569,7 @@ describe("App charts", () => {
     }));
   });
 
-  it.skip("chronicleチャートのバー編集は高速ドラッグで大きく移動する", async () => {
+  it("chronicleチャートのバー編集は高速ドラッグで大きく移動する", async () => {
     const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({

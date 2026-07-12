@@ -1,8 +1,7 @@
-import { useMemo } from "react";
 import type { ReactElement } from "react";
 
 import type { ChronicleCalendarSettings, UpdateChartEntryInput, WorkspaceChart } from "../../shared/ipc";
-import { buildChronicleViewportState, useChronicleChartModel } from "../hooks/useChronicleChartModel";
+import { useChronicleChartModel } from "../hooks/useChronicleChartModel";
 import { useChronicleChartViewport } from "../hooks/useChronicleChartViewport";
 import { useChronicleEntryDrag } from "../hooks/useChronicleEntryDrag";
 import { ChronicleChartGrid } from "./ChronicleChartGrid";
@@ -27,21 +26,6 @@ export function ChartView({ chart = null, charts = defaultCharts, chronicleCalen
     nameColumnWidth: model.nameColumnWidth,
     unitWidth: model.unitWidth
   });
-  const viewportState = useMemo(() => buildChronicleViewportState({
-    axisStart: model.axisStart,
-    chartViewportWidth: viewport.chartViewportWidth,
-    entries: model.entries,
-    nameColumnWidth: model.nameColumnWidth,
-    scrollLeft: viewport.scrollLeft,
-    unitWidth: model.unitWidth
-  }), [
-    model.axisStart,
-    model.entries,
-    model.nameColumnWidth,
-    model.unitWidth,
-    viewport.chartViewportWidth,
-    viewport.scrollLeft
-  ]);
   const entryDrag = useChronicleEntryDrag({
     activeSource: model.activeSource,
     onUpdateEntry,
@@ -59,7 +43,6 @@ export function ChartView({ chart = null, charts = defaultCharts, chronicleCalen
         chartRef={viewport.chartRef}
         chartViewportHeight={viewport.chartViewportHeight}
         chartViewportWidth={viewport.chartViewportWidth}
-        chronicleOffscreenIndicators={viewportState.chronicleOffscreenIndicators}
         chronicleCalendars={chronicleCalendars}
         axisHeight={model.axisHeight}
         dragPreview={entryDrag.dragPreview}
@@ -67,7 +50,6 @@ export function ChartView({ chart = null, charts = defaultCharts, chronicleCalen
         nameColumnWidth={model.nameColumnWidth}
         onChartPointerDown={viewport.startChartPan}
         onChartScroll={viewport.handleChartScroll}
-        onJump={viewport.scrollToTimelineValue}
         onOpenFile={onOpenFile}
         onStartEntryEdit={entryDrag.startEntryEdit}
         rows={model.rows}

@@ -238,18 +238,7 @@ export function chronicleUnitWidth(interval: number, tickWidth: number): number 
 
 export function activeChronicleAxisCalendars(calendars: ChronicleCalendarSettings[]): ChronicleCalendarSettings[] {
   const mainCalendar = calendars[0] ?? defaultChronicleCalendars[0];
-  const subCalendars = calendars.slice(1).filter((calendar) =>
-    Number.isInteger(calendar.startYear) &&
-      Number(calendar.startYear) >= 1
-  );
-
-  return [
-    { ...mainCalendar, name: mainCalendar.name.trim() || defaultChronicleCalendars[0].name },
-    ...subCalendars.map((calendar) => ({
-      ...calendar,
-      name: calendar.name.trim()
-    }))
-  ];
+  return [{ ...mainCalendar, name: mainCalendar.name.trim() || defaultChronicleCalendars[0].name }];
 }
 
 export function chronicleAxisHeightForCalendars(calendars: ChronicleCalendarSettings[]): number {
