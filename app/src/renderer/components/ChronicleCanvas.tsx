@@ -127,7 +127,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     return () => {
       observer.disconnect();
       resizeObserver?.disconnect();
-      if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current);
+      cancelChronicleCanvasFrame(animationFrameRef);
     };
   }, [draw, updateTheme]);
 
@@ -243,6 +243,12 @@ function requestCanvasFrame(
 ): void {
   if (frameRef.current !== null) return;
   frameRef.current = requestAnimationFrame(draw);
+}
+
+export function cancelChronicleCanvasFrame(frameRef: { current: number | null }): void {
+  if (frameRef.current === null) return;
+  cancelAnimationFrame(frameRef.current);
+  frameRef.current = null;
 }
 
 function canvasContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null {
