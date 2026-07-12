@@ -43,6 +43,8 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 - Command palette.
 - Full-text search, filename search, tag search, and front matter search.
 
+![Relic graph view screenshot](assets/relic-graph-screenshot.png)
+
 ### Front Matter and Tags
 
 - YAML front matter editing support.
@@ -306,6 +308,8 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 - クイックスイッチャー
 - コマンドパレット
 - 全文検索、ファイル名検索、タグ検索、フロントマター検索
+
+![Relic graph view screenshot](assets/relic-graph-screenshot.png)
 
 ### フロントマターとタグ
 
