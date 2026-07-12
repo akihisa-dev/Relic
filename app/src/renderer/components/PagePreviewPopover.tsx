@@ -30,6 +30,7 @@ export function PagePreviewPopover({
 }: PagePreviewPopoverProps): ReactElement | null {
   const t = useT();
   const [preview, setPreview] = useState<PreviewState | null>(null);
+  const hoveredLinkRef = useRef<HTMLElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
   const existingPathSet = useMemo(() => new Set(existingMarkdownPaths), [existingMarkdownPaths]);
@@ -43,6 +44,7 @@ export function PagePreviewPopover({
     };
     const hide = (): void => {
       clearTimer();
+      hoveredLinkRef.current = null;
       requestIdRef.current += 1;
       setPreview(null);
     };
@@ -52,9 +54,17 @@ export function PagePreviewPopover({
       const link = target.closest<HTMLElement>("[data-preview-target][data-preview-source-path]");
       const sourcePath = link?.dataset.previewSourcePath;
       const linkTarget = link?.dataset.previewTarget;
-      if (!link || !sourcePath || !linkTarget) return;
+      if (!link || !sourcePath || !linkTarget) {
+        if (hoveredLinkRef.current) hide();
+        return;
+      }
 
       clearTimer();
+      if (hoveredLinkRef.current !== link) {
+        hoveredLinkRef.current = link;
+        setPreview(null);
+        requestIdRef.current += 1;
+      }
       const path = resolveWikiLinkPathWithAliases(linkTarget, sourcePath, existingMarkdownPaths, aliasesByPath);
       const x = Math.min(clientX + 14, Math.max(12, window.innerWidth - popoverWidth - 12));
       const y = Math.min(clientY + 14, Math.max(12, window.innerHeight - popoverHeight - 12));
@@ -97,13 +107,25 @@ export function PagePreviewPopover({
     };
     const handlePointerOut = (event: PointerEvent): void => {
       const nextTarget = event.relatedTarget;
-      if (nextTarget instanceof Element && nextTarget.closest(".page-preview-popover")) return;
-      if (event.target instanceof Element && event.target.closest("[data-preview-target]")) hide();
+      const currentLink = event.target instanceof Element
+        ? event.target.closest<HTMLElement>("[data-preview-target][data-preview-source-path]")
+        : null;
+      if (!currentLink || currentLink !== hoveredLinkRef.current) return;
+      if (nextTarget instanceof Element && nextTarget.closest("[data-preview-target][data-preview-source-path]") === currentLink) return;
+      hide();
+    };
+    const handlePointerMove = (event: PointerEvent): void => {
+      if (!hoveredLinkRef.current) return;
+      const currentLink = event.target instanceof Element
+        ? event.target.closest<HTMLElement>("[data-preview-target][data-preview-source-path]")
+        : null;
+      if (currentLink !== hoveredLinkRef.current) hide();
     };
 
     window.addEventListener("pointerover", handlePointerOver, true);
     window.addEventListener("focusin", handleFocusIn, true);
     window.addEventListener("pointerout", handlePointerOut, true);
+    window.addEventListener("pointermove", handlePointerMove, true);
     window.addEventListener("scroll", hide, true);
     window.addEventListener("keydown", hide, true);
 
@@ -112,6 +134,7 @@ export function PagePreviewPopover({
       window.removeEventListener("pointerover", handlePointerOver, true);
       window.removeEventListener("focusin", handleFocusIn, true);
       window.removeEventListener("pointerout", handlePointerOut, true);
+      window.removeEventListener("pointermove", handlePointerMove, true);
       window.removeEventListener("scroll", hide, true);
       window.removeEventListener("keydown", hide, true);
     };
