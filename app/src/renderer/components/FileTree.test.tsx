@@ -146,10 +146,10 @@ describe("FileTree", () => {
     expect(screen.getByText("Child")).toBeInTheDocument();
   });
 
-  it("フォルダ直下のファイルを10件に制限し、子フォルダと件数を常に表示する", () => {
+  it("フォルダ直下のファイルを10件に制限し、子フォルダと配下の総件数を常に表示する", () => {
     renderFileTree({ nodes: makeProgressiveFolder() });
 
-    expect(screen.getByText("12 files")).toBeInTheDocument();
+    expect(screen.getByText("13 files")).toBeInTheDocument();
     expect(screen.getByText("Note 10")).toBeInTheDocument();
     expect(screen.queryByText("Note 11")).not.toBeInTheDocument();
     expect(screen.getByText("Nested")).toBeInTheDocument();

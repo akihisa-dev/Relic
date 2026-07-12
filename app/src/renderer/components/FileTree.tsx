@@ -6,6 +6,7 @@ import {
   clearOutboundFileTreeDrag,
   childMotionPathsForAppearingFolder,
   buildVisibleFileTreeRows,
+  countFilesInFolder,
   FILE_TREE_OUTBOUND_FILE_DRAG_EVENT,
   getOutboundFileTreeDragItems,
   movableItemsForDestination,
@@ -303,8 +304,8 @@ export const FileTreeItem = memo(function FileTreeItem({
         isRemoving={isRemoving}
         isRenaming={isRenaming}
         isSelected={isSelected}
-        directFileCount={node.type === "folder"
-          ? node.children.filter((child) => child.type === "file").length
+        fileCount={node.type === "folder"
+          ? countFilesInFolder(node)
           : undefined}
         node={node}
         onActivate={activateNode}

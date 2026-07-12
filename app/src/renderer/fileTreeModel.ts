@@ -77,6 +77,12 @@ export function collectFolderPaths(nodes: WorkspaceTreeNode[]): Set<string> {
   return paths;
 }
 
+export function countFilesInFolder(node: Extract<WorkspaceTreeNode, { type: "folder" }>): number {
+  return node.children.reduce((count, child) => (
+    count + (child.type === "folder" ? countFilesInFolder(child) : 1)
+  ), 0);
+}
+
 export function buildVisibleFileTreeRows(
   nodes: WorkspaceTreeNode[],
   options: {

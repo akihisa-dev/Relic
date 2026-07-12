@@ -7,6 +7,7 @@ import {
   buildVisibleFileTreeRows,
   childMotionPathsForAppearingFolder,
   collectFolderPaths,
+  countFilesInFolder,
   expansionRequestAppliesTo,
   fileTreeMarkdownLinkForPath,
   fileTreeOperationItems,
@@ -43,6 +44,13 @@ describe("fileTreeModel", () => {
   it("finds nested nodes by workspace path", () => {
     expect(findNodeByPath(tree, "Folder/Nested/Nested.md")?.name).toBe("Nested");
     expect(findNodeByPath(tree, "Missing.md")).toBeNull();
+  });
+
+  it("counts files recursively within a folder", () => {
+    const folder = tree[0];
+    if (folder?.type !== "folder") throw new Error("Expected a folder fixture");
+
+    expect(countFilesInFolder(folder)).toBe(2);
   });
 
   it("normalizes destination folders from prompt input", () => {
