@@ -2,7 +2,6 @@ import type { PointerEvent, ReactElement, RefObject, UIEvent } from "react";
 
 import type { ChronicleCalendarSettings, ChartEntry, ChartEntryEditKind, ChartSource, WorkspaceChart } from "../../shared/ipc";
 import {
-  buildVisibleChronicleGuideTicks,
   chronicleAxisTickInterval,
   timelineVisibleRange,
   type ChartGuideTick,
@@ -80,10 +79,6 @@ export function ChronicleChartGrid({
     unitWidth,
     viewportWidth: timelineViewportWidth
   });
-  const visibleGuideTicks = activeSource === "chronicle"
-    ? buildVisibleChronicleGuideTicks(axisStart, axisEnd, chronicleAxisTickInterval(tickInterval), visibleRange)
-    : guideTicks;
-
   return (
     <div className={`chronicle-chart-layout${activeSource === "chronicle" ? " chronicle-chart-layout--chronicle" : ""}`}>
       <div
@@ -99,6 +94,7 @@ export function ChronicleChartGrid({
               axisEnd={axisEnd}
               axisStart={axisStart}
               calendars={chronicleCalendars}
+              entries={rows.flatMap((row) => row.entries)}
               interval={chronicleAxisTickInterval(tickInterval)}
               scrollLeft={scrollLeft}
               unitWidth={unitWidth}
@@ -109,7 +105,7 @@ export function ChronicleChartGrid({
               activeSource={activeSource}
               axisStart={axisStart}
               dragPreview={dragPreview}
-              guideTicks={visibleGuideTicks}
+              guideTicks={guideTicks}
               onOpenFile={onOpenFile}
               onStartEntryEdit={onStartEntryEdit}
               rows={rows}

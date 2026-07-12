@@ -266,8 +266,9 @@
   --chronicle-planned-fill: color-mix(in srgb, var(--text-2) 42%, transparent);
   --chronicle-planned-fill-active: color-mix(in srgb, var(--text-2) 58%, transparent);
   --chronicle-planned-fill-hover: color-mix(in srgb, var(--text-2) 50%, transparent);
-  border: 1px solid var(--border);
-  border-radius: 7px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   cursor: grab;
   height: auto;
   min-height: 0;
@@ -390,8 +391,8 @@
 
 .chronicle-axis {
   color: var(--text-3);
-  background: var(--bg);
-  box-shadow: 0 1px 0 var(--border);
+  background: transparent;
+  box-shadow: none;
   display: block;
   font-size: 11px;
   min-height: 34px;
@@ -408,6 +409,25 @@
 
 .chronicle-axis-row--chronicle {
   height: 34px;
+}
+
+.chronicle-axis-year {
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  position: absolute;
+  top: 9px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.chronicle-axis-year::after {
+  background: color-mix(in srgb, var(--text-3) 48%, transparent);
+  content: "";
+  height: 5px;
+  left: 50%;
+  position: absolute;
+  top: 16px;
+  width: 1px;
 }
 
 .chronicle-axis-row--divider {
@@ -615,13 +635,8 @@
 }
 
 .chronicle-tracks {
-  background: color-mix(in srgb, var(--bg) 97%, var(--text));
+  background: transparent;
   position: relative;
-}
-
-.chronicle-lane-divider {
-  stroke: var(--chronicle-grid-line-row);
-  stroke-width: 1px;
 }
 
 .chronicle-guide-lines {

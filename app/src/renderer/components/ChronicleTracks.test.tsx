@@ -105,8 +105,8 @@ describe("ChronicleTracks", () => {
     );
 
     expect(container.querySelectorAll(".chronicle-fill-node")).toHaveLength(2);
-    expect(container.querySelector(".chronicle-fill-shape")).toHaveAttribute("x1", "35");
-    expect(container.querySelector(".chronicle-fill-shape")).toHaveAttribute("x2", "85");
+    expect(container.querySelector(".chronicle-fill-shape")).toHaveAttribute("x1", "30");
+    expect(container.querySelector(".chronicle-fill-shape")).toHaveAttribute("x2", "80");
     expect(container.querySelector(".chronicle-fill-range-label")).toHaveTextContent("3 〜 8");
   });
 });

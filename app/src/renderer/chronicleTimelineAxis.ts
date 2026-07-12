@@ -19,6 +19,11 @@ export interface ChartGuideTick {
   value: number;
 }
 
+export interface ChronicleDataYearTick {
+  value: number;
+  year: number;
+}
+
 export interface TimelineVisibleRange {
   visibleEnd: number;
   visibleStart: number;
@@ -121,6 +126,23 @@ export function buildVisibleChronicleGuideTicks(
     .map((value) => ({
       isMajor: majorTicks.has(value),
       value
+    }));
+}
+
+export function buildChronicleDataYearTicks(entries: ChartEntry[]): ChronicleDataYearTick[] {
+  const years = new Set<number>();
+
+  for (const entry of entries) {
+    years.add(monthAxisToYear(entry.startValue));
+    years.add(monthAxisToYear(entry.endValue));
+  }
+
+  return [...years]
+    .filter((year) => year !== 0)
+    .sort((a, b) => a - b)
+    .map((year) => ({
+      value: pointToMonthAxis(year, 1),
+      year
     }));
 }
 

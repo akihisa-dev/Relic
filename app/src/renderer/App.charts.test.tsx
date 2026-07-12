@@ -469,18 +469,11 @@ describe("App charts", () => {
     expect(renderResult.container.querySelector(".chronicle-actions")).toBeNull();
     expect(screen.queryByText("計画")).not.toBeInTheDocument();
     expect(screen.queryByText("実行")).not.toBeInTheDocument();
-    expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
-    expect(renderResult.container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
-    expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(
-      renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
-    );
-    const oneYearAxisLabels = Array.from(renderResult.container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-cell"))
+    expect(renderResult.container.querySelectorAll(".chronicle-guide-line")).toHaveLength(0);
+    const oneYearAxisLabels = Array.from(renderResult.container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-year"))
       .map((element) => Number(element.textContent?.replace("−", "-") ?? Number.NaN));
-    expect(oneYearAxisLabels.length).toBeGreaterThan(0);
+    expect(oneYearAxisLabels).toEqual([1185, 1333]);
     expect(oneYearAxisLabels.every(Number.isFinite)).toBe(true);
-    expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(
-      renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
-    );
     expect(renderResult.container.querySelectorAll(".chronicle-guide-row-line")).toHaveLength(0);
 
     const fill = renderResult.container.querySelector(".chronicle-fill") as SVGElement;

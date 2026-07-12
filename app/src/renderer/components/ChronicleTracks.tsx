@@ -14,7 +14,6 @@ import {
   type TimelineVisibleRange
 } from "../chronicleTimeline";
 import { IconFiles } from "./RailNavigationIcons";
-import { ChartGuideLines } from "./chronicleChartParts";
 
 const CHRONICLE_MIN_SEGMENT_HEIGHT = 72;
 const CHRONICLE_LABEL_HEIGHT = 18;
@@ -79,6 +78,7 @@ export function ChronicleTracks({
   visibleRange?: TimelineVisibleRange;
 }): ReactElement {
   const t = useT();
+  void guideTicks;
   const [hoveredChronicleKey, setHoveredChronicleKey] = useState<string | null>(null);
   const [selectedChronicleKey, setSelectedChronicleKey] = useState<string | null>(null);
   const chronicleLaneIndexes = useMemo(
@@ -136,13 +136,6 @@ export function ChronicleTracks({
         width: timelineWidth
       } as CSSProperties}
     >
-      <ChartGuideLines
-        axisStart={axisStart}
-        rowCount={0}
-        source={activeSource}
-        ticks={guideTicks}
-        unitWidth={unitWidth}
-      />
       {activeSource === "chronicle" ? (
         <svg
           aria-label={t("chronicle.timelineAria")}
@@ -157,16 +150,6 @@ export function ChronicleTracks({
           viewBox={`0 0 ${timelineWidth} ${trackHeight}`}
           width={timelineWidth}
         >
-          {Array.from({ length: chronicleLaneCount - 1 }, (_, index) => (
-            <line
-              className="chronicle-lane-divider"
-              key={`lane-divider-${index}`}
-              x1={0}
-              x2={timelineWidth}
-              y1={(index + 1) * chronicleLaneHeight}
-              y2={(index + 1) * chronicleLaneHeight}
-            />
-          ))}
           {visibleChronicleShapes.map((shape) => (
             <ChronicleEntrySvgShape
               dragPreview={dragPreview}
@@ -233,7 +216,7 @@ function buildChronicleEntryShapes(
     const laneIndex = laneIndexes[item.order] ?? 0;
     const startValue = item.displayEntry.startValue;
     const endValue = item.displayEntry.endValue;
-    const valueLeft = Math.max(0, (startValue - axisStart + 0.5) * unitWidth);
+    const valueLeft = Math.max(0, (startValue - axisStart) * unitWidth);
     const isSingleValue = startValue === endValue;
     const rangeLabel = formatRange(item.displayEntry);
     const fileNameLabelWidth = labelWidthForText(item.entry.fileName);

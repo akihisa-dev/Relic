@@ -1,14 +1,11 @@
 import type { ReactElement } from "react";
 
-import type { ChronicleCalendarSettings, ChartSource } from "../../shared/ipc";
-import { monthAxisToYear } from "../../shared/chartTime";
+import type { ChronicleCalendarSettings, ChartEntry, ChartSource } from "../../shared/ipc";
 import {
   ROW_HEIGHT,
   activeChronicleAxisCalendars,
-  buildVisibleChronicleAxisSegments,
-  buildVisibleChronicleGuideTicks,
+  buildChronicleDataYearTicks,
   formatChronicleCalendarAxisLabel,
-  timelineVisibleRange,
   type ChartGuideTick,
   type TimelineOffscreenIndicator
 } from "../chronicleTimeline";
@@ -18,6 +15,7 @@ export function ChronicleAxis({
   axisEnd,
   axisStart,
   calendars,
+  entries,
   interval,
   scrollLeft,
   unitWidth,
@@ -27,43 +25,38 @@ export function ChronicleAxis({
   axisEnd: number;
   axisStart: number;
   calendars: ChronicleCalendarSettings[];
+  entries: ChartEntry[];
   interval: number;
   scrollLeft: number;
   unitWidth: number;
   viewportWidth: number;
   width: number;
 }): ReactElement {
-  const visibleRange = timelineVisibleRange({ axisEnd, axisStart, scrollLeft, unitWidth, viewportWidth });
-  const segments = buildVisibleChronicleAxisSegments(axisStart, axisEnd, interval, visibleRange);
-  const guideTicks = buildVisibleChronicleGuideTicks(axisStart, axisEnd, interval, visibleRange);
+  void axisEnd;
+  void scrollLeft;
+  void viewportWidth;
+  void interval;
+  const dataYears = buildChronicleDataYearTicks(entries);
   const axisCalendars = activeChronicleAxisCalendars(calendars);
   const rowHeight = axisCalendars.length === 1 ? 34 : 24;
 
   return (
     <div className="chronicle-axis chronicle-axis--chronicle" style={{ width }}>
-      <ChartGuideLines
-        axisStart={axisStart}
-        rowCount={0}
-        source="chronicle"
-        ticks={guideTicks}
-        unitWidth={unitWidth}
-      />
       {axisCalendars.map((calendar, rowIndex) => (
         <div
           className={`chronicle-axis-row chronicle-axis-row--chronicle${rowIndex < axisCalendars.length - 1 ? " chronicle-axis-row--divider" : ""}`}
           key={`chronicle-axis-${calendar.name}`}
           style={{ height: rowHeight }}
         >
-          {segments.map((segment) => (
+          {dataYears.map(({ value, year }) => (
             <span
-              className="chronicle-axis-cell"
-              key={`${calendar.name}-${segment.startValue}`}
+              className="chronicle-axis-year"
+              key={`${calendar.name}-${year}`}
               style={{
-                left: (segment.startValue - axisStart) * unitWidth,
-                width: Math.max(1, (segment.endValue - segment.startValue + 1) * unitWidth)
+                left: (value - axisStart) * unitWidth
               }}
             >
-              {formatChronicleCalendarAxisLabel(calendar, monthAxisToYear(segment.startValue))}
+              {formatChronicleCalendarAxisLabel(calendar, year)}
             </span>
           ))}
         </div>
