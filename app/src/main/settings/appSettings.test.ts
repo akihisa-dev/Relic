@@ -312,12 +312,105 @@ describe("appSettings", () => {
     });
   });
 
+  it("有効なエディタ設定の選択値をそのまま復元する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      editorSettings: {
+        font: "gothic",
+        fontSize: 18,
+        frontmatterDateFormat: "system",
+        language: "system",
+        lineHeight: 1.8,
+        maxWidth: "550px",
+        showLineNumbers: true,
+        spellCheck: false,
+        theme: "light"
+      },
+      workspaces: []
+    }), "utf8");
+
+    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+      editorSettings: {
+        font: "gothic",
+        fontSize: 18,
+        frontmatterDateFormat: "system",
+        language: "system",
+        lineHeight: 1.8,
+        maxWidth: "550px",
+        showLineNumbers: true,
+        spellCheck: false,
+        theme: "light"
+      }
+    });
+  });
+
+  it("型が壊れた表示設定と機能設定は項目ごとの安全な既定値へ戻す", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      editorSettings: {
+        font: 1,
+        fontSize: "large",
+        frontmatterDateFormat: 1,
+        language: 1,
+        lineHeight: "wide",
+        maxWidth: 1,
+        showLineNumbers: "yes",
+        spellCheck: "yes",
+        theme: 1
+      },
+      featureToggles: {
+        chronicle: "yes",
+        chronicleSettings: "yes",
+        frontmatter: "yes",
+        rightPanelLinks: "yes",
+        rightPanelOutline: "yes",
+        tools: "yes"
+      },
+      workspaces: []
+    }), "utf8");
+
+    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+      editorSettings: defaultEditorSettings,
+      featureToggles: defaultFeatureToggles
+    });
+  });
+
+  it("壊れたテンプレートを除外し、有効なフィールド名だけを復元する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      frontmatterTemplates: [
+        null,
+        "invalid",
+        { fieldNames: ["priority"], name: 1 },
+        { fieldNames: ["priority"], name: " " },
+        { fieldNames: "priority", name: "No fields" },
+        { fieldNames: [1, "bad:name", "priority"], name: " Task " },
+        { fieldNames: ["status"], name: "Task" }
+      ],
+      workspaces: []
+    }), "utf8");
+
+    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+      frontmatterTemplates: [
+        { fieldNames: ["priority"], name: "Task" }
+      ]
+    });
+  });
+
   it("壊れたカスタムフィールドの選択肢は読み込み時に正規化する", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
       userDefinedFields: [
+        null,
+        "invalid",
+        { name: 1, type: "text" },
+        { name: "bad:name", type: "text" },
         { choices: ["draft", " draft ", "", "done", "draft", 1], name: "status", type: "select" },
+        { name: "status", type: "text" },
         { choices: ["unused"], name: "memo", type: "text" },
         { name: "tags", type: "text" },
         { name: "category", type: "text" },

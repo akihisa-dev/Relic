@@ -1,6 +1,7 @@
-import type { EditorSettings } from "../../shared/ipc";
+import type { EditorSettings, WindowCloseResponseInput } from "../../shared/ipc";
 
 export const editorClipboardMaxTextLength = 1_000_000;
+export const windowCloseRequestIdMaxLength = 256;
 
 export function isCopyEditorTextToClipboardInput(input: unknown): input is { text: string } {
   if (!input || typeof input !== "object") return false;
@@ -34,6 +35,16 @@ export function isEditorSettingsInput(input: unknown): input is EditorSettings {
     typeof settings.spellCheck === "boolean" &&
     (settings.theme === "light" || settings.theme === "dark" || settings.theme === "system")
   );
+}
+
+export function isWindowCloseResponseInput(input: unknown): input is WindowCloseResponseInput {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) return false;
+
+  const response = input as Record<string, unknown>;
+  return typeof response.ok === "boolean" &&
+    typeof response.requestId === "string" &&
+    response.requestId.length > 0 &&
+    response.requestId.length <= windowCloseRequestIdMaxLength;
 }
 
 function isPositiveFiniteNumber(value: unknown): value is number {

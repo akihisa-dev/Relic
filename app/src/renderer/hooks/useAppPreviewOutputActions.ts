@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback } from "react";
 
 import type { FileTab } from "../store/editorStore";
@@ -36,7 +37,7 @@ export function useAppPreviewOutputActions({
   }, [activeFileTab, t, workspacePath]);
 
   const handleSavePreviewAsPdf = useCallback((tab?: FileTab): void => {
-    if (!window.relic) return;
+    if (!relicClient.current) return;
 
     void buildPreviewOutput(tab).then(async (payload) => {
       if (!payload) {
@@ -44,7 +45,7 @@ export function useAppPreviewOutputActions({
         return;
       }
 
-      const result = await window.relic!.savePreviewAsPdf(payload);
+      const result = await relicClient.current!.savePreviewAsPdf(payload);
       if (!result.ok) {
         setWorkspaceError(result.error.message);
         return;

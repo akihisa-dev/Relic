@@ -1,8 +1,9 @@
+import { relicClient } from "../relicClient";
 import { useState } from "react";
 import type { Dispatch, DragEvent, SetStateAction } from "react";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
-import type { FileTreeActions } from "../components/FileTree";
+import type { FileTreeActions } from "../fileTreeTypes";
 import {
   FILE_TREE_DRAG_MIME,
   FILE_TREE_OUTBOUND_FILE_DRAG_EVENT,
@@ -47,11 +48,11 @@ const isExternalFileDrag = (event: DragEvent<HTMLButtonElement>): boolean => (
 );
 
 function droppedFilePaths(event: DragEvent<HTMLButtonElement>): string[] {
-  if (!window.relic) return [];
+  if (!relicClient.current) return [];
 
   const filePaths: string[] = [];
   for (const file of Array.from(event.dataTransfer.files)) {
-    const filePath = window.relic.getDroppedFilePath(file);
+    const filePath = relicClient.current.getDroppedFilePath(file);
     if (filePath) filePaths.push(filePath);
   }
 
@@ -104,11 +105,11 @@ export function useFileTreeDragDrop({
 
     const items = dragItemsForNode();
     const filePaths = attachableFileTreePaths(items);
-    if (filePaths.length > 0 && typeof window.relic?.startWorkspaceFileDrag === "function") {
+    if (filePaths.length > 0 && typeof relicClient.current?.startWorkspaceFileDrag === "function") {
       event.preventDefault();
       beginOutboundFileTreeDrag(items);
       window.dispatchEvent(new Event(FILE_TREE_OUTBOUND_FILE_DRAG_EVENT));
-      window.relic.startWorkspaceFileDrag({ paths: filePaths });
+      relicClient.current.startWorkspaceFileDrag({ paths: filePaths });
       return;
     }
 

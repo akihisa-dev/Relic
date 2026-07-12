@@ -1,4 +1,3 @@
-import { readFile, rename } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -18,7 +17,11 @@ import {
   userDefinedFieldNamePattern,
   userDefinedFieldTypeNeedsChoices
 } from "../../shared/frontmatterFields";
-import { writePrivateSettingsTextFile } from "./secureSettingsFile";
+import {
+  currentAppSettingsSchemaVersion,
+  migrateAppSettings
+} from "../compatibility/settingsCompatibility";
+import { SecureVersionedJsonStore } from "./secureVersionedJsonStore";
 
 export interface AppSettings {
   editorSettings: EditorSettings;
@@ -38,106 +41,48 @@ const defaultAppSettings: AppSettings = {
   workspaces: []
 };
 
-const currentAppSettingsSchemaVersion = 1;
-type MigrationResult<T> = {
-  didMigrate: boolean;
-  settings: T;
-};
-type SerializedUpdate = Promise<unknown>;
-const appSettingsUpdateQueues = new Map<string, SerializedUpdate>();
-
-function queueAppSettingsUpdate<T>(settingsPath: string, task: () => Promise<T>): Promise<T> {
-  const currentQueue = appSettingsUpdateQueues.get(settingsPath) ?? Promise.resolve();
-  const next = currentQueue.catch(() => undefined).then(task);
-  const settled = next.finally(() => undefined);
-
-  appSettingsUpdateQueues.set(settingsPath, settled);
-  void settled.finally(() => {
-    if (appSettingsUpdateQueues.get(settingsPath) === settled) {
-      appSettingsUpdateQueues.delete(settingsPath);
-    }
-  }).catch(() => undefined);
-
-  return next;
-}
+const appSettingsStore = new SecureVersionedJsonStore<Record<string, unknown>, AppSettings>({
+  createCorruptError: createCorruptSettingsError,
+  defaultValue: defaultAppSettings,
+  migrate: migrateAppSettings,
+  parse: parseAppSettings,
+  parseObject: parseSettingsObject,
+  serialize: serializeAppSettings
+});
 
 export function getAppSettingsPath(userDataPath: string): string {
   return path.join(userDataPath, "app-settings.json");
 }
 
 export async function readAppSettings(userDataPath: string): Promise<AppSettings> {
-  return readAppSettingsInternal(userDataPath, { persistMigration: true });
-}
-
-async function readAppSettingsInternal(
-  userDataPath: string,
-  options: { persistMigration: boolean }
-): Promise<AppSettings> {
-  const settingsPath = getAppSettingsPath(userDataPath);
-
-  try {
-    const rawSettings = await readFile(settingsPath, "utf8");
-    const parsedJson = parseSettingsJson(rawSettings);
-
-    if (!parsedJson.ok) {
-      await backupCorruptedSettingsFile(settingsPath);
-      throw createCorruptSettingsError(settingsPath);
-    }
-
-    const parsedSettings = parseSettingsObject(parsedJson.value);
-
-    if (!parsedSettings) {
-      return defaultAppSettings;
-    }
-
-    const migratedSettings = migrateAppSettings(parsedSettings, settingsPath);
-    if (migratedSettings.didMigrate && options.persistMigration) {
-      try {
-        await persistMigratedAppSettings(settingsPath);
-      } catch {
-        // 書き戻し失敗時も読み込み結果は捨てず、続行する
-      }
-    }
-
-    const workspaces = parseWorkspaceSummaries(migratedSettings.settings.workspaces);
-
-    return {
-      editorSettings: parseEditorSettings(migratedSettings.settings.editorSettings),
-      featureToggles: parseFeatureToggles(migratedSettings.settings.featureToggles),
-      frontmatterTemplates: parseFrontmatterTemplates(migratedSettings.settings.frontmatterTemplates),
-      lastWorkspaceId: parseLastWorkspaceId(migratedSettings.settings.lastWorkspaceId, workspaces),
-      userDefinedFields: parseUserDefinedFields(migratedSettings.settings.userDefinedFields),
-      workspaces
-    };
-  } catch (error) {
-    if (isMissingFileError(error)) {
-      return defaultAppSettings;
-    }
-
-    throw error;
-  }
+  return appSettingsStore.read(getAppSettingsPath(userDataPath));
 }
 
 export async function writeAppSettings(
   userDataPath: string,
   settings: AppSettings
 ): Promise<void> {
-  await writePrivateSettingsTextFile(
-    getAppSettingsPath(userDataPath),
-    `${JSON.stringify(serializeAppSettings(settings), null, 2)}\n`
-  );
+  await appSettingsStore.write(getAppSettingsPath(userDataPath), settings);
 }
 
 export async function updateAppSettings(
   userDataPath: string,
   update: (current: AppSettings) => Promise<AppSettings> | AppSettings
 ): Promise<AppSettings> {
-  return queueAppSettingsUpdate(getAppSettingsPath(userDataPath), async () => {
-    const current = await readAppSettingsInternal(userDataPath, { persistMigration: false });
-    const next = await update(current);
-    await writeAppSettings(userDataPath, next);
-    return next;
-  });
+  return appSettingsStore.update(getAppSettingsPath(userDataPath), update);
+}
+
+function parseAppSettings(raw: Record<string, unknown>): AppSettings {
+  const workspaces = parseWorkspaceSummaries(raw.workspaces);
+
+  return {
+    editorSettings: parseEditorSettings(raw.editorSettings),
+    featureToggles: parseFeatureToggles(raw.featureToggles),
+    frontmatterTemplates: parseFrontmatterTemplates(raw.frontmatterTemplates),
+    lastWorkspaceId: parseLastWorkspaceId(raw.lastWorkspaceId, workspaces),
+    userDefinedFields: parseUserDefinedFields(raw.userDefinedFields),
+    workspaces
+  };
 }
 
 function parseEditorSettings(raw: unknown): EditorSettings {
@@ -313,92 +258,12 @@ function parseLastWorkspaceId(raw: unknown, workspaces: WorkspaceSummary[]): str
   return workspaces.some((workspace) => workspace.id === raw) ? raw : null;
 }
 
-function parseSettingsJson(rawSettings: string): { ok: true; value: unknown } | { ok: false } {
-  try {
-    return { ok: true, value: JSON.parse(rawSettings) };
-  } catch {
-    return { ok: false };
-  }
-}
-
 function parseSettingsObject(raw: unknown): Record<string, unknown> | null {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     return null;
   }
 
   return raw as Record<string, unknown>;
-}
-
-function migrateAppSettings(raw: Record<string, unknown>, settingsPath: string): MigrationResult<Record<string, unknown>> {
-  const schemaVersion = readSchemaVersion(raw.schemaVersion, settingsPath, "AppSettings");
-
-  if (schemaVersion === currentAppSettingsSchemaVersion) {
-    return { didMigrate: false, settings: raw };
-  }
-
-  if (schemaVersion === 0) {
-    return {
-      didMigrate: true,
-      settings: {
-        ...raw,
-        featureToggles: migrateFeatureTogglesV0(raw.featureToggles),
-        schemaVersion: currentAppSettingsSchemaVersion
-      }
-    };
-  }
-
-  throw createUnsupportedSettingsVersionError(settingsPath, "AppSettings", schemaVersion);
-}
-
-async function persistMigratedAppSettings(
-  settingsPath: string,
-): Promise<void> {
-  return queueAppSettingsUpdate(settingsPath, async () => {
-    const rawSettings = await readFile(settingsPath, "utf8");
-    const parsedJson = parseSettingsJson(rawSettings);
-
-    if (!parsedJson.ok) {
-      return;
-    }
-
-    const parsedSettings = parseSettingsObject(parsedJson.value);
-    if (!parsedSettings) {
-      return;
-    }
-
-    const latestMigration = migrateAppSettings(parsedSettings, settingsPath);
-    if (!latestMigration.didMigrate) {
-      return;
-    }
-
-    await writeMigratedAppSettings(settingsPath, latestMigration.settings);
-  });
-}
-
-async function writeMigratedAppSettings(
-  settingsPath: string,
-  settings: Record<string, unknown>
-): Promise<void> {
-  await writePrivateSettingsTextFile(
-    settingsPath,
-    `${JSON.stringify({
-      ...settings,
-      schemaVersion: currentAppSettingsSchemaVersion
-    }, null, 2)}\n`
-  );
-}
-
-function migrateFeatureTogglesV0(raw: unknown): unknown {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return raw;
-
-  const toggles = raw as Record<string, unknown>;
-  const legacyRightPanel = typeof toggles.rightPanel === "boolean" ? toggles.rightPanel : true;
-
-  return {
-    ...toggles,
-    rightPanelLinks: typeof toggles.rightPanelLinks === "boolean" ? toggles.rightPanelLinks : legacyRightPanel,
-    rightPanelOutline: typeof toggles.rightPanelOutline === "boolean" ? toggles.rightPanelOutline : legacyRightPanel
-  };
 }
 
 function serializeAppSettings(settings: AppSettings): Record<string, unknown> {
@@ -408,43 +273,8 @@ function serializeAppSettings(settings: AppSettings): Record<string, unknown> {
   };
 }
 
-function readSchemaVersion(raw: unknown, settingsPath: string, scope: string): number {
-  if (raw === undefined) return 0;
-  if (!Number.isInteger(raw) || Number(raw) < 0) {
-    throw createUnsupportedSettingsVersionError(settingsPath, scope, raw);
-  }
-
-  const schemaVersion = Number(raw);
-  if (schemaVersion > currentAppSettingsSchemaVersion) {
-    throw createUnsupportedSettingsVersionError(settingsPath, scope, schemaVersion);
-  }
-
-  return schemaVersion;
-}
-
 function createCorruptSettingsError(settingsPath: string): Error {
   const error = new Error(`設定JSONが壊れています: ${settingsPath}`) as Error;
   error.name = "CorruptAppSettingsError";
   return error;
-}
-
-function createUnsupportedSettingsVersionError(settingsPath: string, scope: string, schemaVersion: unknown): Error {
-  const error = new Error(`${scope} の設定形式がこのRelicでは読めません: ${settingsPath} (schemaVersion: ${String(schemaVersion)})`) as Error;
-  error.name = "UnsupportedSettingsVersionError";
-  return error;
-}
-
-async function backupCorruptedSettingsFile(settingsPath: string): Promise<void> {
-  const parsedPath = path.parse(settingsPath);
-  const backupPath = path.join(parsedPath.dir, `${parsedPath.name}.corrupt-${Date.now()}.json`);
-  await rename(settingsPath, backupPath);
-}
-
-function isMissingFileError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "ENOENT"
-  );
 }

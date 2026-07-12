@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain } from "electron";
 
-import { windowCloseRequestedChannel, windowCloseResponseChannel, type WindowCloseResponseInput } from "../shared/ipc";
+import { windowCloseRequestedChannel, windowCloseResponseChannel } from "../shared/ipc";
+import { isWindowCloseResponseInput } from "./ipc/editorHandlerValidators";
 
 export const CLOSE_CONFIRM_TIMEOUT_MS = 5000;
 
@@ -29,8 +30,8 @@ export function configureWindowCloseProtection(
       clearTimeout(timer);
       ipcMain.removeListener(windowCloseResponseChannel, handleCloseResponse);
     };
-    const handleCloseResponse = (_event: Electron.IpcMainEvent, input: WindowCloseResponseInput): void => {
-      if (settled || input.requestId !== requestId) return;
+    const handleCloseResponse = (_event: Electron.IpcMainEvent, input: unknown): void => {
+      if (settled || !isWindowCloseResponseInput(input) || input.requestId !== requestId) return;
 
       cleanup();
 

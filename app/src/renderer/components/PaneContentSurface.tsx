@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { EditorView } from "@codemirror/view";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, KeyboardEvent, MutableRefObject, ReactElement, ReactNode } from "react";
@@ -232,7 +233,7 @@ function PdfTabSurface({ name, path }: PdfTabSurfaceProps): ReactElement {
   useEffect(() => {
     let active = true;
 
-    void window.relic?.readPdfFile({ path }).then((result) => {
+    void relicClient.current?.readPdfFile({ path }).then((result) => {
       if (!active) return;
 
       if (result.ok) {
@@ -290,7 +291,7 @@ function ImageTabSurface({ name, path }: ImageTabSurfaceProps): ReactElement {
   useEffect(() => {
     let active = true;
 
-    void window.relic?.readImageFile({ path }).then((result) => {
+    void relicClient.current?.readImageFile({ path }).then((result) => {
       if (!active) return;
 
       if (result.ok) {

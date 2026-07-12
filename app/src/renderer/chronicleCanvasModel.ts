@@ -1,6 +1,4 @@
 import type { ChartEntry } from "../shared/ipc";
-import { formatRange } from "./chronicleTimelineAxis";
-import { entryKey } from "./chronicleTimelineRows";
 
 export const CHRONICLE_CANVAS_MIN_SCALE = 0.08;
 export const CHRONICLE_CANVAS_MAX_SCALE = 2.4;
@@ -283,17 +281,60 @@ export function chronicleCanvasYearHeaderHeight(scale: number): number {
 export function visibleChronicleCanvasYears(
   years: ChronicleCanvasYear[],
   camera: ChronicleCanvasCamera,
-  minimumScreenGap = 64
+  minimumScreenGap = 64,
+  viewportWidth?: number
 ): ChronicleCanvasYear[] {
   const visible: ChronicleCanvasYear[] = [];
   let previousScreenX = -Infinity;
-  for (const year of years) {
+  const range = viewportWidth === undefined
+    ? { end: years.length, start: 0 }
+    : visibleYearRange(years, camera, viewportWidth, minimumScreenGap);
+  for (let index = range.start; index < range.end; index += 1) {
+    const year = years[index];
     const screenX = year.x * camera.scale + camera.panX;
     if (screenX - previousScreenX < minimumScreenGap) continue;
     visible.push(year);
     previousScreenX = screenX;
   }
   return visible;
+}
+
+function visibleYearRange(
+  years: ChronicleCanvasYear[],
+  camera: ChronicleCanvasCamera,
+  viewportWidth: number,
+  overscan: number
+): { end: number; start: number } {
+  if (years.length === 0 || camera.scale <= 0) return { end: 0, start: 0 };
+
+  const minimumWorldX = (-overscan - camera.panX) / camera.scale;
+  const maximumWorldX = (viewportWidth + overscan - camera.panX) / camera.scale;
+  return {
+    end: upperBoundYearX(years, maximumWorldX),
+    start: lowerBoundYearX(years, minimumWorldX)
+  };
+}
+
+function lowerBoundYearX(years: ChronicleCanvasYear[], target: number): number {
+  let low = 0;
+  let high = years.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (years[middle].x < target) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+function upperBoundYearX(years: ChronicleCanvasYear[], target: number): number {
+  let low = 0;
+  let high = years.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (years[middle].x <= target) low = middle + 1;
+    else high = middle;
+  }
+  return low;
 }
 
 export function chronicleCanvasItemAtPoint(
@@ -336,4 +377,22 @@ export function stepChronicleCanvasInertia(camera: ChronicleCanvasCamera): boole
 
 function smoothstep(value: number): number {
   return value * value * (3 - 2 * value);
+}
+
+function formatRange(entry: ChartEntry): string {
+  const startLabel = chronicleLabelWithoutCalendarName(entry.startLabel, entry.chronicleCalendarName);
+  const endLabel = chronicleLabelWithoutCalendarName(entry.endLabel, entry.chronicleCalendarName);
+  return entry.startValue === entry.endValue ? startLabel : `${startLabel} 〜 ${endLabel}`;
+}
+
+function chronicleLabelWithoutCalendarName(label: string, calendarName: string | undefined): string {
+  const name = calendarName?.trim();
+  if (!name) return label;
+
+  const trimmed = label.trim();
+  return trimmed.startsWith(`${name} `) ? trimmed.slice(name.length + 1) : trimmed;
+}
+
+function entryKey(entry: ChartEntry): string {
+  return `${entry.path}:chronicle:${entry.chronicleEntryIndex}`;
 }

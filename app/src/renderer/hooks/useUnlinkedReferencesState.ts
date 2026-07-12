@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type {
@@ -37,16 +38,16 @@ export function useUnlinkedReferencesState({
   });
   const [refreshKey, setRefreshKey] = useState(0);
   const [applyingReferenceKey, setApplyingReferenceKey] = useState<string | null>(null);
-  const hasActiveFile = Boolean(enabled && activeFilePath && window.relic);
+  const hasActiveFile = Boolean(enabled && activeFilePath && relicClient.current);
 
   useEffect(() => {
-    if (!enabled || !activeFilePath || !window.relic) {
+    if (!enabled || !activeFilePath || !relicClient.current) {
       return;
     }
 
     let canceled = false;
 
-    void window.relic
+    void relicClient.current
       .getUnlinkedReferences({ path: activeFilePath })
       .then((result) => {
         if (canceled) return;
@@ -76,7 +77,7 @@ export function useUnlinkedReferencesState({
   }, [tabs]);
 
   const applyUnlinkedReference = useCallback(async (reference: UnlinkedReference): Promise<void> => {
-    if (!window.relic) return;
+    if (!relicClient.current) return;
 
     const input: ApplyUnlinkedReferenceInput = {
       from: reference.from,
@@ -89,7 +90,7 @@ export function useUnlinkedReferencesState({
     setApplyingReferenceKey(key);
 
     try {
-      const result = await window.relic.applyUnlinkedReference(input);
+      const result = await relicClient.current.applyUnlinkedReference(input);
       if (result.ok) {
         for (const tabId of openFileTabsByPath.get(result.value.sourcePath) ?? []) {
           updateTabContent(tabId, result.value.content);

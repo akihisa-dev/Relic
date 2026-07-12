@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useEffect, useMemo, useState } from "react";
 
 import { extractEmbedTargets, maxEmbeddedFileLength, type EmbedState } from "../previewMarkdown";
@@ -11,7 +12,7 @@ export function usePreviewEmbeds(content: string, workspacePath: string | null |
   const targets = useMemo(() => extractEmbedTargets(content), [content]);
 
   useEffect(() => {
-    if (targets.length === 0 || !window.relic) {
+    if (targets.length === 0 || !relicClient.current) {
       return;
     }
 
@@ -20,7 +21,7 @@ export function usePreviewEmbeds(content: string, workspacePath: string | null |
 
     const loadEmbedTasks = targets.map((target): (() => Promise<[string, EmbedState]>) => async () => {
       try {
-        const result = await window.relic!.readMarkdownFile({ path: target });
+        const result = await relicClient.current!.readMarkdownFile({ path: target });
 
         if (!result.ok) {
           return [target, { status: "error", message: result.error.message }];
@@ -54,5 +55,5 @@ export function usePreviewEmbeds(content: string, workspacePath: string | null |
     };
   }, [targets, workspacePath]);
 
-  return targets.length > 0 && window.relic ? embeds : emptyEmbeds;
+  return targets.length > 0 && relicClient.current ? embeds : emptyEmbeds;
 }

@@ -12,7 +12,8 @@ import {
   type ChronicleCanvasItem,
   type ChronicleCanvasLabelHit,
   type ChronicleCanvasPoint,
-  type ChronicleCanvasScene
+  type ChronicleCanvasScene,
+  type ChronicleCanvasYear
 } from "./chronicleCanvasModel";
 
 const nodeRadius = 6;
@@ -47,7 +48,8 @@ export function drawChronicleCanvas(
   context.fillStyle = theme.background;
   context.fillRect(0, 0, viewportWidth, viewportHeight);
 
-  drawYearGuides(context, scene, camera, viewportWidth, viewportHeight, theme);
+  const visibleYears = visibleChronicleCanvasYears(scene.years, camera, 64, viewportWidth);
+  drawYearGuides(context, visibleYears, camera, viewportWidth, viewportHeight, theme);
   const labelHits: ChronicleCanvasLabelHit[] = [];
   const itemPalette = theme.itemPalette?.length ? theme.itemPalette : [theme.mutedText];
   for (const [index, item] of scene.items.entries()) {
@@ -66,21 +68,20 @@ export function drawChronicleCanvas(
     );
     labelHits.push(hit);
   }
-  drawYearHeader(context, scene, camera, viewportWidth, theme);
+  drawYearHeader(context, visibleYears, camera, viewportWidth, theme);
   context.restore();
   return { labelHits };
 }
 
 function drawYearGuides(
   context: CanvasRenderingContext2D,
-  scene: ChronicleCanvasScene,
+  years: ChronicleCanvasYear[],
   camera: ChronicleCanvasCamera,
   viewportWidth: number,
   viewportHeight: number,
   theme: ChronicleCanvasTheme
 ): void {
   const opacity = chronicleCanvasYearOpacity(camera.scale);
-  const years = visibleChronicleCanvasYears(scene.years, camera);
   const headerHeight = chronicleCanvasYearHeaderHeight(camera.scale);
   context.save();
   context.globalAlpha = opacity * 0.12;
@@ -100,13 +101,12 @@ function drawYearGuides(
 
 function drawYearHeader(
   context: CanvasRenderingContext2D,
-  scene: ChronicleCanvasScene,
+  years: ChronicleCanvasYear[],
   camera: ChronicleCanvasCamera,
   viewportWidth: number,
   theme: ChronicleCanvasTheme
 ): void {
   const opacity = chronicleCanvasYearOpacity(camera.scale);
-  const years = visibleChronicleCanvasYears(scene.years, camera);
   const fontSize = chronicleCanvasYearFontSize(camera.scale);
   const headerHeight = chronicleCanvasYearHeaderHeight(camera.scale);
   context.save();

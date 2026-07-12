@@ -1,4 +1,4 @@
-import { readFile, rm, rename } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -9,7 +9,12 @@ import {
   type ChartSource
 } from "../../shared/ipc";
 import { normalizeWorkspaceRelativeInputPath } from "../files/paths";
-import { writePrivateSettingsTextFile } from "./secureSettingsFile";
+import {
+  currentWorkspaceSettingsSchemaVersion,
+  migrateWorkspaceSettings,
+  type WorkspaceSettingsMigrationRecord
+} from "../compatibility/settingsCompatibility";
+import { SecureVersionedJsonStore } from "./secureVersionedJsonStore";
 
 export interface WorkspaceSettings {
   chronicleCalendars: ChronicleCalendarSettings[];
@@ -19,10 +24,8 @@ export interface WorkspaceSettings {
   workspacePath: string;
 }
 
-type PersistedWorkspaceSettings = Partial<Omit<WorkspaceSettings, "charts">> & {
+type PersistedWorkspaceSettings = Partial<Omit<WorkspaceSettings, "charts">> & WorkspaceSettingsMigrationRecord & {
   charts?: unknown;
-  ganttCharts?: unknown;
-  schemaVersion?: unknown;
 };
 
 export const defaultCharts: ChartSettings[] = [
@@ -37,30 +40,15 @@ const defaultWorkspaceSettings: WorkspaceSettings = {
   workspacePath: ""
 };
 
-const currentWorkspaceSettingsSchemaVersion = 1;
-type MigrationResult<T> = {
-  didMigrate: boolean;
-  settings: T;
-};
 const WORKSPACE_SETTINGS_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
-type SerializedUpdate = Promise<unknown>;
-const workspaceSettingsUpdateQueues = new Map<string, SerializedUpdate>();
-
-function queueWorkspaceSettingsUpdate<T>(
-  settingsPath: string,
-  task: () => Promise<T>
-): Promise<T> {
-  const currentQueue = workspaceSettingsUpdateQueues.get(settingsPath) ?? Promise.resolve();
-  const next = currentQueue.catch(() => undefined).then(task);
-  const settled = next.finally(() => undefined);
-  workspaceSettingsUpdateQueues.set(settingsPath, settled);
-  void settled.finally(() => {
-    if (workspaceSettingsUpdateQueues.get(settingsPath) === settled) {
-      workspaceSettingsUpdateQueues.delete(settingsPath);
-    }
-  }).catch(() => undefined);
-  return next;
-}
+const workspaceSettingsStore = new SecureVersionedJsonStore<PersistedWorkspaceSettings, WorkspaceSettings>({
+  createCorruptError: createCorruptWorkspaceSettingsError,
+  defaultValue: defaultWorkspaceSettings,
+  migrate: migrateWorkspaceSettings,
+  parse: parseWorkspaceSettings,
+  parseObject: parseSettingsObject,
+  serialize: serializeWorkspaceSettings
+});
 
 export function getWorkspaceSettingsPath(userDataPath: string, workspaceId: string): string {
   assertSafeWorkspaceSettingsId(workspaceId);
@@ -72,53 +60,23 @@ export async function readWorkspaceSettings(
   userDataPath: string,
   workspaceId: string
 ): Promise<WorkspaceSettings> {
-  return readWorkspaceSettingsInternal(userDataPath, workspaceId, { persistMigration: true });
-}
-
-async function readWorkspaceSettingsInternal(
-  userDataPath: string,
-  workspaceId: string,
-  options: { persistMigration: boolean }
-): Promise<WorkspaceSettings> {
   try {
     const settingsPath = getWorkspaceSettingsPath(userDataPath, workspaceId);
-    const raw = await readFile(settingsPath, "utf8");
-    const parsedJson = parseSettingsJson(raw);
-
-    if (!parsedJson.ok) {
-      await backupCorruptedSettingsFile(settingsPath);
-      throw createCorruptWorkspaceSettingsError(settingsPath);
-    }
-
-    const parsed = parseSettingsObject(parsedJson.value);
-
-    if (!parsed) {
-      return defaultWorkspaceSettings;
-    }
-
-    const migrated = migrateWorkspaceSettings(parsed, settingsPath);
-    if (migrated.didMigrate && options.persistMigration) {
-      try {
-        await persistMigratedWorkspaceSettings(settingsPath);
-      } catch {
-        // 書き戻し失敗時も読み込み結果は捨てず、続行する
-      }
-    }
-
-    return {
-      chronicleCalendars: parseChronicleCalendars(migrated.settings.chronicleCalendars),
-      charts: parseCharts(migrated.settings.charts),
-      frontmatterCategoryChoices: parseFrontmatterCategoryChoices(migrated.settings.frontmatterCategoryChoices),
-      pinnedPaths: parsePinnedPaths(migrated.settings.pinnedPaths),
-      workspacePath: typeof migrated.settings.workspacePath === "string" ? migrated.settings.workspacePath : ""
-    };
+    return workspaceSettingsStore.read(settingsPath);
   } catch (error) {
-    if (isMissingFileError(error) || isInvalidWorkspaceSettingsIdError(error)) {
-      return defaultWorkspaceSettings;
-    }
-
+    if (isInvalidWorkspaceSettingsIdError(error)) return defaultWorkspaceSettings;
     throw error;
   }
+}
+
+function parseWorkspaceSettings(raw: PersistedWorkspaceSettings): WorkspaceSettings {
+  return {
+    chronicleCalendars: parseChronicleCalendars(raw.chronicleCalendars),
+    charts: parseCharts(raw.charts),
+    frontmatterCategoryChoices: parseFrontmatterCategoryChoices(raw.frontmatterCategoryChoices),
+    pinnedPaths: parsePinnedPaths(raw.pinnedPaths),
+    workspacePath: typeof raw.workspacePath === "string" ? raw.workspacePath : ""
+  };
 }
 
 export function parseChronicleCalendars(raw: unknown): ChronicleCalendarSettings[] {
@@ -248,10 +206,7 @@ export async function writeWorkspaceSettings(
 ): Promise<void> {
   const settingsPath = getWorkspaceSettingsPath(userDataPath, workspaceId);
 
-  await writePrivateSettingsTextFile(
-    settingsPath,
-    `${JSON.stringify(serializeWorkspaceSettings(settings), null, 2)}\n`
-  );
+  await workspaceSettingsStore.write(settingsPath, settings);
 }
 
 export async function updateWorkspaceSettings(
@@ -259,12 +214,7 @@ export async function updateWorkspaceSettings(
   workspaceId: string,
   update: (current: WorkspaceSettings) => Promise<WorkspaceSettings> | WorkspaceSettings
 ): Promise<WorkspaceSettings> {
-  return queueWorkspaceSettingsUpdate(getWorkspaceSettingsPath(userDataPath, workspaceId), async () => {
-    const current = await readWorkspaceSettingsInternal(userDataPath, workspaceId, { persistMigration: false });
-    const next = await update(current);
-    await writeWorkspaceSettings(userDataPath, workspaceId, next);
-    return next;
-  });
+  return workspaceSettingsStore.update(getWorkspaceSettingsPath(userDataPath, workspaceId), update);
 }
 
 export async function removeWorkspaceSettings(
@@ -276,14 +226,6 @@ export async function removeWorkspaceSettings(
   await rm(settingsPath, { force: true });
 }
 
-function parseSettingsJson(raw: string): { ok: true; value: unknown } | { ok: false } {
-  try {
-    return { ok: true, value: JSON.parse(raw) };
-  } catch {
-    return { ok: false };
-  }
-}
-
 function parseSettingsObject(raw: unknown): PersistedWorkspaceSettings | null {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     return null;
@@ -292,110 +234,15 @@ function parseSettingsObject(raw: unknown): PersistedWorkspaceSettings | null {
   return raw as PersistedWorkspaceSettings;
 }
 
-function migrateWorkspaceSettings(
-  raw: PersistedWorkspaceSettings,
-  settingsPath: string
-): MigrationResult<PersistedWorkspaceSettings> {
-  const schemaVersion = readWorkspaceSettingsSchemaVersion(raw.schemaVersion, settingsPath);
-
-  if (schemaVersion === currentWorkspaceSettingsSchemaVersion) {
-    return { didMigrate: false, settings: raw };
-  }
-
-  if (schemaVersion === 0) {
-    return {
-      didMigrate: true,
-      settings: {
-        ...raw,
-        charts: raw.charts ?? raw.ganttCharts,
-        schemaVersion: currentWorkspaceSettingsSchemaVersion
-      }
-    };
-  }
-
-  throw createUnsupportedWorkspaceSettingsVersionError(settingsPath, schemaVersion);
-}
-
-async function persistMigratedWorkspaceSettings(settingsPath: string): Promise<void> {
-  return queueWorkspaceSettingsUpdate(settingsPath, async () => {
-    const raw = await readFile(settingsPath, "utf8");
-    const parsedJson = parseSettingsJson(raw);
-
-    if (!parsedJson.ok) {
-      return;
-    }
-
-    const parsedSettings = parseSettingsObject(parsedJson.value);
-    if (!parsedSettings) {
-      return;
-    }
-
-    const latestMigration = migrateWorkspaceSettings(parsedSettings, settingsPath);
-    if (!latestMigration.didMigrate) {
-      return;
-    }
-
-    await writeMigratedWorkspaceSettings(settingsPath, latestMigration.settings);
-  });
-}
-
-async function writeMigratedWorkspaceSettings(
-  settingsPath: string,
-  settings: PersistedWorkspaceSettings
-): Promise<void> {
-  await writePrivateSettingsTextFile(
-    settingsPath,
-    `${JSON.stringify({
-      ...settings,
-      schemaVersion: currentWorkspaceSettingsSchemaVersion
-    }, null, 2)}\n`
-  );
-}
-
-function serializeWorkspaceSettings(settings: WorkspaceSettings): Record<string, unknown> {
+function serializeWorkspaceSettings(settings: WorkspaceSettings): PersistedWorkspaceSettings {
   return {
     schemaVersion: currentWorkspaceSettingsSchemaVersion,
     ...settings
   };
 }
 
-function readWorkspaceSettingsSchemaVersion(raw: unknown, settingsPath: string): number {
-  if (raw === undefined) return 0;
-  if (!Number.isInteger(raw) || Number(raw) < 0) {
-    throw createUnsupportedWorkspaceSettingsVersionError(settingsPath, raw);
-  }
-
-  const schemaVersion = Number(raw);
-  if (schemaVersion > currentWorkspaceSettingsSchemaVersion) {
-    throw createUnsupportedWorkspaceSettingsVersionError(settingsPath, schemaVersion);
-  }
-
-  return schemaVersion;
-}
-
 function createCorruptWorkspaceSettingsError(settingsPath: string): Error {
   const error = new Error(`設定JSONが壊れています: ${settingsPath}`) as Error;
   error.name = "CorruptWorkspaceSettingsError";
   return error;
-}
-
-function createUnsupportedWorkspaceSettingsVersionError(settingsPath: string, schemaVersion: unknown): Error {
-  const error = new Error(`ワークスペース設定形式がこのRelicでは読めません: ${settingsPath} (schemaVersion: ${String(schemaVersion)})`) as Error;
-  error.name = "UnsupportedWorkspaceSettingsVersionError";
-  return error;
-}
-
-async function backupCorruptedSettingsFile(settingsPath: string): Promise<void> {
-  const parsedPath = path.parse(settingsPath);
-  const backupPath = path.join(parsedPath.dir, `${parsedPath.name}.corrupt-${Date.now()}.json`);
-  await rename(settingsPath, backupPath);
-}
-
-function isMissingFileError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "ENOENT"
-  );
 }

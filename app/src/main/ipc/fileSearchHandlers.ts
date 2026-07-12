@@ -24,18 +24,15 @@ import { applySearchAndReplace, replaceInFile, searchAndReplace } from "../files
 import { searchWorkspace, workspaceSearchMaxFileBytes } from "../files/search";
 import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordinator";
 import { applyUnlinkedReference, readUnlinkedReferences } from "../files/unlinkedReferences";
-import {
-  getWorkspaceDerivedDataSnapshot,
-  invalidateWorkspaceDerivedData
-} from "../files/workspaceDerivedDataSession";
-import { getWorkspaceFileIndexCachePath } from "../files/workspaceFileIndex";
+import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
+import { workspaceDataProvider } from "../files/workspaceDataProvider";
+import { normalizeSearchWorkspaceInput } from "../compatibility/searchInputCompatibility";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import {
   isPathInput,
   isApplyUnlinkedReferenceInput,
   isReplaceInFileInput,
-  isSearchAndReplaceInput,
-  normalizeSearchWorkspaceInput
+  isSearchAndReplaceInput
 } from "./fileHandlerValidators";
 
 export function registerFileSearchHandlers(): void {
@@ -47,7 +44,7 @@ export function registerFileSearchHandlers(): void {
         return fail("SEARCH_INVALID_INPUT", "検索リクエストが正しくありません。");
       }
 
-      return withActiveWorkspaceContext(
+      return await withActiveWorkspaceContext(
         { code: "SEARCH_FAILED", message: "検索できませんでした。" },
         async (context) => {
           if (
@@ -65,26 +62,20 @@ export function registerFileSearchHandlers(): void {
             context.activeWorkspace.id,
             searchRequestKey(searchInput),
             async ({ shouldContinue }) => {
-              const cachePath = getWorkspaceFileIndexCachePath(
-                context.userDataPath,
-                context.activeWorkspace.id
-              );
-              const snapshot = await getWorkspaceDerivedDataSnapshot({
-                cachePath,
+              const data = await workspaceDataProvider.get({
                 maxSearchFileBytes: workspaceSearchMaxFileBytes,
+                userDataPath: context.userDataPath,
                 workspaceId: context.activeWorkspace.id,
                 workspacePath: context.activeWorkspace.path
               });
 
               return searchWorkspace(
-                context.activeWorkspace.path,
+                data.workspacePath,
                 searchInput.query,
                 searchInput.mode,
                 searchInput.frontmatterField,
                 {
-                  cachePath,
-                  fileIndex: snapshot.fileIndex,
-                  parseCache: snapshot.parseCache,
+                  ...data.options,
                   shouldContinue
                 }
               );
@@ -107,7 +98,7 @@ export function registerFileSearchHandlers(): void {
         return fail("FILE_READ_INVALID_INPUT", "ファイルパスを指定してください。");
       }
 
-      return withActiveWorkspaceContext(
+      return await withActiveWorkspaceContext(
         { code: "FILE_READ_FAILED", message: "ファイルを読み込めませんでした。" },
         async (context) => readMarkdownFile(context.activeWorkspace.path, input.path)
       );
@@ -126,24 +117,16 @@ export function registerFileSearchHandlers(): void {
         return fail("BACKLINKS_INVALID_INPUT", "バックリンクを確認するファイルを指定してください。");
       }
 
-      return withActiveWorkspaceContext(
+      return await withActiveWorkspaceContext(
         { code: "BACKLINKS_READ_FAILED", message: "バックリンクを読み込めませんでした。" },
         async (context) => {
-          const cachePath = getWorkspaceFileIndexCachePath(
-            context.userDataPath,
-            context.activeWorkspace.id
-          );
-          const snapshot = await getWorkspaceDerivedDataSnapshot({
-            cachePath,
+          const data = await workspaceDataProvider.get({
+            userDataPath: context.userDataPath,
             workspaceId: context.activeWorkspace.id,
             workspacePath: context.activeWorkspace.path
           });
 
-          return readBacklinks(context.activeWorkspace.path, input.path, {
-            cachePath,
-            fileIndex: snapshot.fileIndex,
-            parseCache: snapshot.parseCache
-          });
+          return readBacklinks(data.workspacePath, input.path, data.options);
         }
       );
     } catch (error) {
@@ -161,24 +144,16 @@ export function registerFileSearchHandlers(): void {
         return fail("UNLINKED_REFERENCES_INVALID_INPUT", "未リンク参照を確認するファイルを指定してください。");
       }
 
-      return withActiveWorkspaceContext(
+      return await withActiveWorkspaceContext(
         { code: "UNLINKED_REFERENCES_READ_FAILED", message: "未リンク参照を読み込めませんでした。" },
         async (context) => {
-          const cachePath = getWorkspaceFileIndexCachePath(
-            context.userDataPath,
-            context.activeWorkspace.id
-          );
-          const snapshot = await getWorkspaceDerivedDataSnapshot({
-            cachePath,
+          const data = await workspaceDataProvider.get({
+            userDataPath: context.userDataPath,
             workspaceId: context.activeWorkspace.id,
             workspacePath: context.activeWorkspace.path
           });
 
-          return readUnlinkedReferences(context.activeWorkspace.path, input.path, {
-            cachePath,
-            fileIndex: snapshot.fileIndex,
-            parseCache: snapshot.parseCache
-          });
+          return readUnlinkedReferences(data.workspacePath, input.path, data.options);
         }
       );
     } catch (error) {
@@ -196,13 +171,12 @@ export function registerFileSearchHandlers(): void {
         return fail("UNLINKED_REFERENCE_INVALID_INPUT", "リンク化する未リンク参照を指定してください。");
       }
 
-      return withActiveWorkspaceContext(
+      return await withActiveWorkspaceContext(
         { code: "UNLINKED_REFERENCE_APPLY_FAILED", message: "未リンク参照をリンク化できませんでした。" },
         async (context) => {
           const result = await applyUnlinkedReference(context.activeWorkspace.path, input);
           if (result.ok) {
-            invalidateWorkspaceDerivedData(context.activeWorkspace.id);
-            workspaceSearchRequestCoordinator.invalidate(context.activeWorkspace.id);
+            invalidateWorkspaceData(context.activeWorkspace.id);
           }
 
           return result;
@@ -223,7 +197,7 @@ export function registerFileSearchHandlers(): void {
         return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
       }
 
-      return withActiveWorkspaceContext(
+      return await withActiveWorkspaceContext(
         { code: "REPLACE_FAILED", message: "置換できませんでした。" },
         async (context) => {
           const result = await replaceInFile(
@@ -234,8 +208,7 @@ export function registerFileSearchHandlers(): void {
             input.isRegex
           );
           if (result.ok) {
-            invalidateWorkspaceDerivedData(context.activeWorkspace.id);
-            workspaceSearchRequestCoordinator.invalidate(context.activeWorkspace.id);
+            invalidateWorkspaceData(context.activeWorkspace.id);
           }
           return result;
         }
@@ -255,7 +228,7 @@ export function registerFileSearchHandlers(): void {
         return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
       }
 
-      return withActiveWorkspaceContext(
+      return await withActiveWorkspaceContext(
         { code: "REPLACE_FAILED", message: "置換プレビューを生成できませんでした。" },
         async (context) => searchAndReplace(
           context.activeWorkspace.path,
@@ -279,7 +252,7 @@ export function registerFileSearchHandlers(): void {
         return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
       }
 
-      return withActiveWorkspaceContext(
+      return await withActiveWorkspaceContext(
         { code: "REPLACE_FAILED", message: "一括置換できませんでした。" },
         async (context) => {
           const result = await applySearchAndReplace(
@@ -291,8 +264,7 @@ export function registerFileSearchHandlers(): void {
             input.expectedFileSnapshots
           );
           if (result.ok) {
-            invalidateWorkspaceDerivedData(context.activeWorkspace.id);
-            workspaceSearchRequestCoordinator.invalidate(context.activeWorkspace.id);
+            invalidateWorkspaceData(context.activeWorkspace.id);
           }
           return result;
         }

@@ -1,6 +1,8 @@
+import { relicClient } from "../relicClient";
 import { useEffect, useState, type ReactElement } from "react";
 
 import type { FileRecoveryEntry } from "../../shared/ipc";
+import { useAsyncRequestGuard } from "../hooks/useAsyncRequestGuard";
 import { useT } from "../i18n";
 import type { FileTab } from "../store/editorStore";
 
@@ -19,21 +21,30 @@ export function RightPanelRecoveryList({
   const [isLoading, setIsLoading] = useState(false);
   const [recoveringId, setRecoveringId] = useState<string | null>(null);
   const path = activeFileTab?.path ?? null;
+  const tabId = activeFileTab?.id ?? null;
+  const beginEntriesRequest = useAsyncRequestGuard([path]);
+  const beginRecoveryRequest = useAsyncRequestGuard([tabId, path]);
 
   useEffect(() => {
-    if (!path || !window.relic) {
+    setRecoveringId(null);
+    setError(null);
+  }, [path, tabId]);
+
+  useEffect(() => {
+    const client = relicClient.current;
+    if (!path || !client) {
       setEntries([]);
       setError(null);
       setIsLoading(false);
       return;
     }
 
-    let active = true;
+    const isCurrentRequest = beginEntriesRequest();
     setIsLoading(true);
     setError(null);
 
-    void window.relic.listFileRecoverySnapshots({ path }).then((result) => {
-      if (!active) return;
+    void client.listFileRecoverySnapshots({ path }).then((result) => {
+      if (!isCurrentRequest()) return;
       if (result.ok) {
         setEntries(result.value);
       } else {
@@ -41,36 +52,40 @@ export function RightPanelRecoveryList({
         setEntries([]);
       }
     }).catch((reason) => {
-      if (!active) return;
+      if (!isCurrentRequest()) return;
       setError(reason instanceof Error ? reason.message : String(reason));
       setEntries([]);
     }).finally(() => {
-      if (active) setIsLoading(false);
+      if (isCurrentRequest()) setIsLoading(false);
     });
-
-    return () => {
-      active = false;
-    };
-  }, [path]);
+  }, [beginEntriesRequest, path]);
 
   const recover = (entry: FileRecoveryEntry): void => {
-    if (!activeFileTab || !window.relic) return;
+    const client = relicClient.current;
+    if (!activeFileTab || !client) return;
 
+    const targetPath = activeFileTab.path;
+    const targetTabId = activeFileTab.id;
+    const isCurrentRequest = beginRecoveryRequest();
     setRecoveringId(entry.id);
     setError(null);
 
-    void window.relic.readFileRecoverySnapshot({
-      path: activeFileTab.path,
+    void client.readFileRecoverySnapshot({
+      path: targetPath,
       snapshotId: entry.id
     }).then((result) => {
+      if (!isCurrentRequest()) return;
       if (result.ok) {
-        onRecoverContent(activeFileTab.id, result.value.content);
+        onRecoverContent(targetTabId, result.value.content);
       } else {
         setError(result.error.message);
       }
     }).catch((reason) => {
+      if (!isCurrentRequest()) return;
       setError(reason instanceof Error ? reason.message : String(reason));
-    }).finally(() => setRecoveringId(null));
+    }).finally(() => {
+      if (isCurrentRequest()) setRecoveringId(null);
+    });
   };
 
   if (!activeFileTab) {

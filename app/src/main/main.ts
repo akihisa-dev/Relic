@@ -9,6 +9,7 @@ import { registerOutputHandlers } from "./ipc/outputHandlers";
 import { registerToolHandlers } from "./ipc/toolHandlers";
 import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
 import { devServerLoadUrls, loadDevServerUrlWithRetry } from "./devServerLoader";
+import { configureDevelopmentUserDataPath } from "./developmentUserData";
 import { getMainTranslator } from "./i18n";
 import { configureWindowCloseProtection } from "./windowCloseProtection";
 import { stopWorkspaceWatcher } from "./workspace/workspaceWatcher";
@@ -24,6 +25,7 @@ let isDevelopmentQuitInProgress = false;
 let mainWindow: BrowserWindow | null = null;
 
 app.setName(APP_NAME);
+configureDevelopmentUserDataPath(app, MAIN_WINDOW_VITE_DEV_SERVER_URL, process.env.RELIC_DEV_USER_DATA_DIR);
 
 if (process.platform === "win32") {
   app.setAppUserModelId(APP_ID);

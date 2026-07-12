@@ -23,8 +23,7 @@ import {
   listFileRecoverySnapshots,
   readFileRecoverySnapshot
 } from "../files/fileRecovery";
-import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordinator";
-import { invalidateWorkspaceDerivedData } from "../files/workspaceDerivedDataSession";
+import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
 import { readAppSettings, updateAppSettings } from "../settings/appSettings";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import {
@@ -64,8 +63,7 @@ export function registerEditorHandlers(): void {
               )
             );
             if (result.ok) {
-              invalidateWorkspaceDerivedData(context.activeWorkspace.id);
-              workspaceSearchRequestCoordinator.invalidate(context.activeWorkspace.id);
+              invalidateWorkspaceData(context.activeWorkspace.id, [input.path]);
             }
             return result;
           }

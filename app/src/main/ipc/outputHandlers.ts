@@ -12,7 +12,7 @@ import {
   type SaveDiagramSvgInput,
   type SavePreviewAsPdfInput
 } from "../../shared/ipc";
-import { maxSvgInputBytes } from "../../shared/ipcLimits";
+import { maxSvgInputBytes } from "../../shared/ipc/output";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { redactSensitiveText } from "../../shared/securityRedaction";
 import { atomicWriteFile, atomicWriteTextFile } from "../files/atomicWrite";

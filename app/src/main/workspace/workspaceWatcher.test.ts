@@ -19,6 +19,7 @@ import {
   activeWorkspaceWatchTarget,
   notifyWorkspaceChanged,
   shouldNotifyWorkspaceChangeEvent,
+  workspaceChangeInvalidationPaths,
   workspaceChangeNotificationDelay,
   workspaceChangeNotifyDelayMs,
   workspaceChangeMaxNotifyDelayMs
@@ -72,6 +73,14 @@ describe("workspaceWatcher", () => {
     expect(workspaceChangeNotificationDelay(1000, 1000)).toBe(workspaceChangeNotifyDelayMs);
     expect(workspaceChangeNotificationDelay(1000, 2600)).toBe(400);
     expect(workspaceChangeNotificationDelay(1000, 1000 + workspaceChangeMaxNotifyDelayMs)).toBe(0);
+  });
+
+  it("Markdown本文のchangeだけを部分無効化の対象にする", () => {
+    expect(workspaceChangeInvalidationPaths("change", "folder/note.md")).toEqual(["folder/note.md"]);
+    expect(workspaceChangeInvalidationPaths("change", "folder\\note.md")).toEqual(["folder/note.md"]);
+    expect(workspaceChangeInvalidationPaths("rename", "note.md")).toBeUndefined();
+    expect(workspaceChangeInvalidationPaths("change", "image.png")).toBeUndefined();
+    expect(workspaceChangeInvalidationPaths("change", null)).toBeUndefined();
   });
 
   it("ワークスペース変更通知に絶対パスを含めない", () => {

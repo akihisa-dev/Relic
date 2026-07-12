@@ -338,6 +338,33 @@ describe("App charts", () => {
     expect(resolveGraphHoverFocusId([node], { x: 520, y: 300 }, view, graphTestOptions, 900, 600, state, 200)).toBeNull();
   });
 
+  it("同じ位置でホバー中は全ノードを再走査しない", () => {
+    const node = {
+      backlinkCount: 0,
+      exists: true,
+      fx: null,
+      fy: null,
+      id: "A.md",
+      label: "A",
+      linkCount: 0,
+      path: "A.md",
+      type: "file" as const,
+      vx: 0,
+      vy: 0,
+      x: 0,
+      y: 0
+    };
+    const nodes = new Map([[node.id, node]]);
+    const state = { id: null, releaseAt: 0 };
+    const view = { panX: 0, panY: 0, scale: 1 };
+
+    expect(resolveGraphHoverFocusId(nodes, { x: 450, y: 300 }, view, graphTestOptions, 900, 600, state, 0)).toBe("A.md");
+    const valuesSpy = vi.spyOn(nodes, "values");
+
+    expect(resolveGraphHoverFocusId(nodes, { x: 450, y: 300 }, view, graphTestOptions, 900, 600, state, 16)).toBe("A.md");
+    expect(valuesSpy).not.toHaveBeenCalled();
+  });
+
   it("グラフビューのハイライト透明度は段階的に収束する", () => {
     const state = { id: null, strength: 0 };
 

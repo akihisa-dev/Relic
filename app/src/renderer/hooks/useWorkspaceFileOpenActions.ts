@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback } from "react";
 
 import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
@@ -41,7 +42,7 @@ export function useWorkspaceFileOpenActions({
 }: WorkspaceFileOpenInput) {
   const handleOpenFile = useCallback(
     (path: string): void => {
-      if (!window.relic) return;
+      if (!relicClient.current) return;
 
       const paneState = focusedPane === "left" ? leftPane : rightPane;
       const activeTabId = paneState.activeTabId;
@@ -66,7 +67,7 @@ export function useWorkspaceFileOpenActions({
         return;
       }
 
-      void window.relic.readMarkdownFile({ path }).then((result) => {
+      void relicClient.current.readMarkdownFile({ path }).then((result) => {
         if (result.ok) {
           openFileInPane(focusedPane, result.value);
         } else {
@@ -82,19 +83,19 @@ export function useWorkspaceFileOpenActions({
       const paneState = focusedPane === "left" ? leftPane : rightPane;
       const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
 
-      if (!activeTab || activeTab.kind !== "file" || !window.relic) return;
+      if (!activeTab || activeTab.kind !== "file" || !relicClient.current) return;
 
       const path = resolveWikiLinkPathWithAliases(target, activeTab.path, existingMarkdownPaths, aliasesByPath);
       const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
 
-      void window.relic.readMarkdownFile({ path }).then((readResult) => {
+      void relicClient.current.readMarkdownFile({ path }).then((readResult) => {
         if (readResult.ok) {
           openFileInPane(focusedPane, readResult.value);
           if (heading) setScrollHeading(heading);
           return;
         }
 
-        void window.relic!.createLinkedMarkdownFile({ path }).then((createResult) => {
+        void relicClient.current!.createLinkedMarkdownFile({ path }).then((createResult) => {
           if (createResult.ok) {
             setWorkspaceState(createResult.value.workspaceState);
             openFileInPane(focusedPane, createResult.value.file);
@@ -124,21 +125,21 @@ export function useWorkspaceFileOpenActions({
       const paneState = focusedPane === "left" ? leftPane : rightPane;
       const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
 
-      if (!activeTab || activeTab.kind !== "file" || !window.relic) return;
+      if (!activeTab || activeTab.kind !== "file" || !relicClient.current) return;
 
       const resolved = resolveMarkdownLinkPath(href, activeTab.path);
       if (!resolved) return;
 
       const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
 
-      void window.relic.readMarkdownFile({ path: resolved.path }).then((readResult) => {
+      void relicClient.current.readMarkdownFile({ path: resolved.path }).then((readResult) => {
         if (readResult.ok) {
           openFileInPane(focusedPane, readResult.value);
           if (resolved.heading) setScrollHeading(resolved.heading);
           return;
         }
 
-        void window.relic!.createLinkedMarkdownFile({ path: resolved.path }).then((createResult) => {
+        void relicClient.current!.createLinkedMarkdownFile({ path: resolved.path }).then((createResult) => {
           if (createResult.ok) {
             setWorkspaceState(createResult.value.workspaceState);
             openFileInPane(focusedPane, createResult.value.file);

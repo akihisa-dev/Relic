@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useLatest } from "./useLatest";
@@ -21,13 +22,13 @@ export function useAutoSave(
   const onSaveErrorRef = useLatest(onSaveError);
 
   const startSave = useCallback((saveContent: string, savePath: string): void => {
-    if (!window.relic) return;
+    if (!relicClient.current) return;
 
     isSavingRef.current = true;
     pendingSaveRef.current = false;
     if (mountedRef.current) setIsSaving(true);
 
-    void window.relic.writeMarkdownFile({ content: saveContent, path: savePath })
+    void relicClient.current.writeMarkdownFile({ content: saveContent, path: savePath })
       .then((result) => {
         const isLatestSavedContent =
           enabledRef.current &&
@@ -52,7 +53,7 @@ export function useAutoSave(
         isSavingRef.current = false;
         if (mountedRef.current) setIsSaving(false);
 
-        if (!mountedRef.current || !pendingSaveRef.current || !enabledRef.current || !latestPathRef.current || !window.relic) return;
+        if (!mountedRef.current || !pendingSaveRef.current || !enabledRef.current || !latestPathRef.current || !relicClient.current) return;
 
         startSave(latestContentRef.current, latestPathRef.current);
       });
@@ -68,7 +69,7 @@ export function useAutoSave(
   }, []);
 
   useEffect(() => {
-    if (!enabled || !path || !window.relic) return;
+    if (!enabled || !path || !relicClient.current) return;
 
     if (timerRef.current) {
       clearTimeout(timerRef.current);

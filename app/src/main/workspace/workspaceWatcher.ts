@@ -5,8 +5,11 @@ import { BrowserWindow } from "electron";
 import { workspaceChangedChannel, type WorkspaceChangedEvent } from "../../shared/ipc";
 import type { AppSettings } from "../settings/appSettings";
 import { isAtomicWriteTemporaryPath } from "../files/atomicWrite";
-import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordinator";
-import { invalidateWorkspaceDerivedData } from "../files/workspaceDerivedDataSession";
+import {
+  workspaceMutationCoordinator,
+  workspaceWatchEventChangedPaths,
+  type WorkspaceWatchEvent
+} from "../files/workspaceDataInvalidation";
 
 interface WorkspaceWatchTarget {
   id: string;
@@ -17,6 +20,7 @@ let workspaceWatcher: FSWatcher | null = null;
 let watchedTarget: WorkspaceWatchTarget | null = null;
 let notifyTimer: NodeJS.Timeout | null = null;
 let firstPendingNotifyAt: number | null = null;
+let pendingWatchEvents: WorkspaceWatchEvent[] = [];
 
 export const workspaceChangeNotifyDelayMs = 500;
 export const workspaceChangeMaxNotifyDelayMs = 2000;
@@ -45,7 +49,7 @@ export function syncWorkspaceWatcher(settings: AppSettings): void {
   try {
     workspaceWatcher = watch(target.path, { recursive: true }, (eventType, filename) => {
       if (!shouldNotifyWorkspaceChangeEvent(eventType, filename)) return;
-      scheduleWorkspaceChangedNotification(target);
+      scheduleWorkspaceChangedNotification(target, eventType, filename);
     });
     workspaceWatcher.on("error", () => stopWorkspaceWatcher());
     watchedTarget = target;
@@ -68,13 +72,20 @@ export function stopWorkspaceWatcher(): void {
     notifyTimer = null;
   }
   firstPendingNotifyAt = null;
+  pendingWatchEvents = [];
 
   workspaceWatcher?.close();
   workspaceWatcher = null;
   watchedTarget = null;
 }
 
-function scheduleWorkspaceChangedNotification(target: WorkspaceWatchTarget): void {
+function scheduleWorkspaceChangedNotification(
+  target: WorkspaceWatchTarget,
+  eventType: string,
+  filename?: string | null
+): void {
+  pendingWatchEvents.push({ eventType, filename });
+
   const now = Date.now();
   firstPendingNotifyAt ??= now;
 
@@ -85,8 +96,17 @@ function scheduleWorkspaceChangedNotification(target: WorkspaceWatchTarget): voi
   notifyTimer = setTimeout(() => {
     notifyTimer = null;
     firstPendingNotifyAt = null;
-    notifyWorkspaceChanged(target);
+    const events = pendingWatchEvents;
+    pendingWatchEvents = [];
+    notifyWorkspaceChanged(target, events);
   }, delay);
+}
+
+export function workspaceChangeInvalidationPaths(
+  eventType: string,
+  filename?: string | null
+): string[] | undefined {
+  return workspaceWatchEventChangedPaths({ eventType, filename });
 }
 
 export function workspaceChangeNotificationDelay(firstEventAt: number, now: number): number {
@@ -97,9 +117,8 @@ export function workspaceChangeNotificationDelay(firstEventAt: number, now: numb
   return Math.min(workspaceChangeNotifyDelayMs, workspaceChangeMaxNotifyDelayMs - elapsed);
 }
 
-export function notifyWorkspaceChanged(target: WorkspaceWatchTarget): void {
-  invalidateWorkspaceDerivedData(target.id);
-  workspaceSearchRequestCoordinator.invalidate(target.id);
+export function notifyWorkspaceChanged(target: WorkspaceWatchTarget, events: WorkspaceWatchEvent[] = []): void {
+  workspaceMutationCoordinator.invalidateWatcherEvents(target.id, events);
 
   const payload: WorkspaceChangedEvent = {
     changedAt: new Date().toISOString(),

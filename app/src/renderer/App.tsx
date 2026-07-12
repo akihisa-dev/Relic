@@ -1,3 +1,4 @@
+import { relicClient } from "./relicClient";
 import type { EditorView } from "@codemirror/view";
 import { useCallback, useMemo, useRef, useState, type ReactElement } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -123,6 +124,10 @@ export function App(): ReactElement {
   }, [isWorkspaceRenameActive, toggleSidebarState]);
 
   const t = useMemo(() => createTranslator(editorSettings.language), [editorSettings.language]);
+  const removeWorkspaceLabel = useCallback(
+    (name: string) => t("files.removeWorkspace", { name }),
+    [t]
+  );
   const handleLargeMarkdownFallback = useCallback((name: string) => {
     showToast(t("pane.largeMarkdownToast", { name }), "info");
   }, [showToast, t]);
@@ -184,11 +189,9 @@ export function App(): ReactElement {
     registeredWorkspaces
   } = useAppWorkspaceCollections({ tabs, workspaceState });
   const aliasesByPath = useWorkspaceAliases({ setWorkspaceError, workspaceState });
-  const { charts, handleUpdateChartEntry, reloadCharts } = useWorkspaceCharts({
+  const { charts, reloadCharts } = useWorkspaceCharts({
     hasOpenChart,
     setWorkspaceError,
-    tabs,
-    updateTabContent,
     workspaceState
   });
   const { chronicleCalendars, handleSaveChronicleCalendars } = useWorkspaceChronicleCalendars({
@@ -210,9 +213,9 @@ export function App(): ReactElement {
 
   const handleFileSaved = useCallback((path?: string): void => {
     if (hasOpenChart) void reloadCharts();
-    if (!path || !window.relic) return;
+    if (!path || !relicClient.current) return;
 
-    void window.relic.getWorkspaceState().then((result) => {
+    void relicClient.current.getWorkspaceState().then((result) => {
       if (result.ok) {
         setWorkspaceState(result.value);
         return;
@@ -512,7 +515,6 @@ export function App(): ReactElement {
     handleSaveChronicleCalendars,
     handleSaveFeatureToggles,
     handleSaveSettings,
-    handleUpdateChartEntry,
     workspaceState
   });
   const appLayoutProps = createAppLayoutProps({
@@ -673,6 +675,7 @@ export function App(): ReactElement {
       panelRailViews,
       primaryRailViews,
       registeredWorkspaces,
+      removeWorkspaceLabel,
       setIsWorkspaceRenameActive,
       setRailSidebarView,
       t,

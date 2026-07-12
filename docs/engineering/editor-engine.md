@@ -66,7 +66,11 @@ js-yaml                   # フロントマターYAML処理
 
 主な実装位置:
 
-- `app/src/renderer/editorExtensions.ts`: CodeMirror拡張、Markdown言語サポート、内部リンク補完、リンククリック処理
+- `app/src/renderer/editorExtensions.ts`: CodeMirror拡張の既存importを保つ公開facade
+- `app/src/renderer/editorExtensionAssembly.ts`: `Compartment` と拡張の初期登録・再構成順序
+- `app/src/renderer/editorCompletionExtensions.ts`: Markdown言語サポート、内部リンク補完と候補索引
+- `app/src/renderer/editorThemeExtensions.ts`: テーマとタイプライターモード
+- `app/src/renderer/editorEventExtensions.ts`: キーマップ、リンククリック、入力・IMEイベント
 - `app/src/renderer/editorLivePreview.ts`: ライブプレビュー装飾、数式・脚注・図表ブロック検出
 - `app/src/renderer/editorLivePreviewWidgets.ts`: ライブプレビュー内のインライン表示、コードブロック、数式、脚注Widget
 - `app/src/renderer/editorDiagramLivePreview.ts`: ライブプレビュー内の図表Widget

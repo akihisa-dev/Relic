@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
 import type { AliasIndex } from "../../shared/links";
@@ -72,13 +73,13 @@ export function PagePreviewPopover({
       requestIdRef.current = requestId;
 
       timerRef.current = setTimeout(() => {
-        if (!existingPathSet.has(path) || !window.relic) {
+        if (!existingPathSet.has(path) || !relicClient.current) {
           setPreview({ content: null, error: t("preview.pageMissing"), isLoading: false, path, x, y });
           return;
         }
 
         setPreview({ content: null, error: null, isLoading: true, path, x, y });
-        void window.relic.readMarkdownFile({ path }).then((result) => {
+        void relicClient.current.readMarkdownFile({ path }).then((result) => {
           if (requestIdRef.current !== requestId) return;
           if (result.ok) {
             setPreview({ content: result.value.content, error: null, isLoading: false, path, x, y });

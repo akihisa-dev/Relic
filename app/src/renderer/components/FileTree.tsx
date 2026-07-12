@@ -1,7 +1,7 @@
+import { relicClient } from "../relicClient";
 import { Fragment, memo, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent, MouseEvent, ReactElement } from "react";
 
-import type { WorkspaceTreeNode } from "../../shared/ipc";
 import {
   clearOutboundFileTreeDrag,
   childMotionPathsForAppearingFolder,
@@ -12,10 +12,9 @@ import {
   movableItemsForDestination,
   moveItemsToDestination,
   shouldUseSelectedFileTreeItems,
-  type FileTreeExpansionAction,
-  type FileTreeExpansionRequest,
   type FileTreeMoveItem
 } from "../fileTreeModel";
+import type { FileTreeActions, FileTreeItemProps, FileTreeProps } from "../fileTreeTypes";
 import { useFileTreeDragDrop } from "../hooks/useFileTreeDragDrop";
 import { useFileTreeItemState } from "../hooks/useFileTreeItemState";
 import { useFileTreeMotion } from "../hooks/useFileTreeMotion";
@@ -23,65 +22,7 @@ import { useT } from "../i18n";
 import { FileTreeContextMenu } from "./FileTreeContextMenu";
 import { FileTreeItemRow } from "./FileTreeItemRow";
 
-export interface FileTreeActions {
-  onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
-  onDeleteSelectedItems?: () => void;
-  onCreateFileInFolder?: (folderPath: string) => void;
-  onCreateFolderInFolder?: (folderPath: string) => void;
-  onDuplicateFile?: (path: string) => void;
-  onImportMarkdownFiles?: (sourcePaths: string[], destFolder: string) => void;
-  onMoveFile?: (path: string, destFolder: string) => void;
-  onMoveFolder?: (path: string, destFolder: string) => void;
-  onMoveItems?: (items: FileTreeMoveItem[], destFolder: string) => void;
-  onOpenFile: (path: string, event?: MouseEvent<HTMLButtonElement>) => void;
-  onOpenInOtherPane?: (path: string) => void;
-  onRequestExpansion?: (action: FileTreeExpansionAction, scopePath?: string) => void;
-  onRevealItem?: (path: string) => void;
-  onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
-  onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
-  onSelectItem?: (node: WorkspaceTreeNode, e: MouseEvent<HTMLButtonElement>) => boolean;
-  onTogglePin?: (path: string) => void;
-}
-
-export interface FileTreeProps {
-  actions?: FileTreeActions;
-  expansionRequest?: FileTreeExpansionRequest;
-  isRoot?: boolean;
-  motionPaths?: Set<string>;
-  nodes: WorkspaceTreeNode[];
-  suppressOpeningAnimation?: boolean;
-  onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
-  onDeleteSelectedItems?: () => void;
-  onCreateFileInFolder?: (folderPath: string) => void;
-  onCreateFolderInFolder?: (folderPath: string) => void;
-  onDuplicateFile?: (path: string) => void;
-  onImportMarkdownFiles?: (sourcePaths: string[], destFolder: string) => void;
-  onMoveFile?: (path: string, destFolder: string) => void;
-  onMoveFolder?: (path: string, destFolder: string) => void;
-  onMoveItems?: (items: FileTreeMoveItem[], destFolder: string) => void;
-  onOpenFile: (path: string, event?: MouseEvent<HTMLButtonElement>) => void;
-  onOpenInOtherPane?: (path: string) => void;
-  onRequestExpansion?: (action: FileTreeExpansionAction, scopePath?: string) => void;
-  openingFilePath?: string | null;
-  openFilePaths?: Set<string>;
-  onRevealItem?: (path: string) => void;
-  onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
-  onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
-  onSelectItem?: (node: WorkspaceTreeNode, e: MouseEvent<HTMLButtonElement>) => boolean;
-  onTogglePin?: (path: string) => void;
-  pinnedPaths?: Set<string>;
-  selectedItems?: FileTreeMoveItem[];
-  selectedPaths?: Set<string>;
-  onShowAllFiles?: () => void;
-  showAllFiles?: boolean;
-}
-
-export interface FileTreeItemProps extends Omit<FileTreeProps, "isRoot" | "motionPaths" | "nodes"> {
-  isAppearing?: boolean;
-  isPinned?: boolean;
-  node: WorkspaceTreeNode;
-  suppressOpeningAnimation?: boolean;
-}
+export type { FileTreeActions, FileTreeItemProps, FileTreeProps } from "../fileTreeTypes";
 
 const defaultSelectedItems: FileTreeMoveItem[] = [];
 const defaultSelectedPaths = new Set<string>();
@@ -90,11 +31,11 @@ const initialFolderFileLimit = 10;
 const outboundFileDragIgnoreMs = 2000;
 
 function droppedFilePathsFromEvent(event: DragEvent<HTMLElement>): string[] {
-  if (!window.relic) return [];
+  if (!relicClient.current) return [];
 
   const filePaths: string[] = [];
   for (const file of Array.from(event.dataTransfer.files)) {
-    const filePath = window.relic.getDroppedFilePath(file);
+    const filePath = relicClient.current.getDroppedFilePath(file);
     if (filePath) filePaths.push(filePath);
   }
 

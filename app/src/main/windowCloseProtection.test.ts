@@ -91,6 +91,18 @@ describe("configureWindowCloseProtection", () => {
     expect(ipcListeners.get(windowCloseResponseChannel)?.size).toBe(0);
   });
 
+  it("不正な終了確認応答を無視して待受を維持する", () => {
+    const window = createWindow();
+    configureWindowCloseProtection(window as never, () => false);
+
+    window.triggerClose();
+    ipcListeners.get(windowCloseResponseChannel)?.forEach((listener) => listener({}, undefined));
+
+    expect(window.close).not.toHaveBeenCalled();
+    expect(electronMock.removeListener).not.toHaveBeenCalled();
+    expect(ipcListeners.get(windowCloseResponseChannel)?.size).toBe(1);
+  });
+
   it("タイムアウト時に古い待受を解除し、次のclose確認を受け付ける", () => {
     const window = createWindow();
     configureWindowCloseProtection(window as never, () => false);

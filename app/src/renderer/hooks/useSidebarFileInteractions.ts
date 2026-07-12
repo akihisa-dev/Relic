@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 
@@ -166,13 +167,13 @@ export function useSidebarFileInteractions({
       return;
     }
 
-    if (!window.relic) return;
+    if (!relicClient.current) return;
 
     setWorkspaceError(null);
     const token = sidebarFileOpenTokenRef.current + 1;
     sidebarFileOpenTokenRef.current = token;
     pendingSidebarFileOpenTokensRef.current[path] = token;
-    void window.relic.readMarkdownFile({ path }).then((result) => {
+    void relicClient.current.readMarkdownFile({ path }).then((result) => {
       if (pendingSidebarFileOpenTokensRef.current[path] !== token) return;
       delete pendingSidebarFileOpenTokensRef.current[path];
       if (result.ok) {

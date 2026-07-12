@@ -1,23 +1,19 @@
 import type { ReactElement } from "react";
 
-import type { ChronicleCalendarSettings, UpdateChartEntryInput, WorkspaceChart } from "../../shared/ipc";
+import type { WorkspaceChart } from "../../shared/ipc";
 import { useT } from "../i18n";
 import { ChronicleCanvas } from "./ChronicleCanvas";
 
 interface ChartViewProps {
   chart?: WorkspaceChart | null;
   charts?: WorkspaceChart[];
-  chronicleCalendars: ChronicleCalendarSettings[];
   onOpenFile: (path: string) => void;
-  onUpdateEntry?: (input: UpdateChartEntryInput) => Promise<void> | void;
 }
 
 const defaultCharts: WorkspaceChart[] = [];
 
-export function ChartView({ chart = null, charts = defaultCharts, chronicleCalendars, onOpenFile, onUpdateEntry }: ChartViewProps): ReactElement {
+export function ChartView({ chart = null, charts = defaultCharts, onOpenFile }: ChartViewProps): ReactElement {
   const t = useT();
-  void chronicleCalendars;
-  void onUpdateEntry;
   const activeChart = chart ?? charts[0] ?? null;
 
   if (!activeChart || activeChart.entries.length === 0) {

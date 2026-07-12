@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback, useEffect } from "react";
 
 import type { WorkspaceState } from "../../shared/ipc";
@@ -35,7 +36,7 @@ export function useWorkspaceExternalRefresh({
 }: UseWorkspaceExternalRefreshInput): void {
   const refreshWorkspaceAfterExternalChange = useCallback(
     async (workspaceId: string): Promise<void> => {
-      const relic = window.relic;
+      const relic = relicClient.current;
       if (!relic) return;
       if (workspaceState?.activeWorkspace?.id && workspaceState.activeWorkspace.id !== workspaceId) return;
 
@@ -132,9 +133,9 @@ export function useWorkspaceExternalRefresh({
   );
 
   useEffect(() => {
-    if (!window.relic?.onWorkspaceChanged) return undefined;
+    if (!relicClient.current?.onWorkspaceChanged) return undefined;
 
-    return window.relic.onWorkspaceChanged((event) => {
+    return relicClient.current.onWorkspaceChanged((event) => {
       void refreshWorkspaceAfterExternalChange(event.workspaceId);
     });
   }, [refreshWorkspaceAfterExternalChange]);

@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { useEffect, useRef } from "react";
@@ -142,8 +143,8 @@ export function Editor({
       setEditorEditable(view, true);
     };
     const handleDragOver = (event: DragEvent): void => {
-      if (!filePath || !window.relic) return;
-      const sourcePaths = droppedImageSourcePaths(event, window.relic.getDroppedFilePath);
+      if (!filePath || !relicClient.current) return;
+      const sourcePaths = droppedImageSourcePaths(event, relicClient.current.getDroppedFilePath);
       if (sourcePaths.length === 0) return;
 
       event.preventDefault();
@@ -154,9 +155,9 @@ export function Editor({
     };
     const handleDrop = (event: DragEvent): void => {
       const view = internalViewRef.current;
-      if (!view || !filePath || !window.relic) return;
+      if (!view || !filePath || !relicClient.current) return;
 
-      const sourcePaths = droppedImageSourcePaths(event, window.relic.getDroppedFilePath);
+      const sourcePaths = droppedImageSourcePaths(event, relicClient.current.getDroppedFilePath);
       if (sourcePaths.length === 0) return;
 
       event.preventDefault();

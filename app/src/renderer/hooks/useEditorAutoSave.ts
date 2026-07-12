@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { FileTab, Tab } from "../store/editorStore";
@@ -88,7 +89,7 @@ export function useEditorAutoSave({
     if (queue.saving) return;
 
     const request = queue.pending;
-    if (!request || !window.relic) {
+    if (!request || !relicClient.current) {
       wakeWaiters(queue);
       return;
     }
@@ -98,7 +99,7 @@ export function useEditorAutoSave({
     queue.lastError = null;
     notifyQueueChanged();
 
-    void window.relic.writeMarkdownFile({
+    void relicClient.current.writeMarkdownFile({
       content: request.content,
       expectedContent: request.expectedContent,
       path: request.path
@@ -140,7 +141,7 @@ export function useEditorAutoSave({
   }, [notifyQueueChanged, queueForPath, wakeWaiters]);
 
   const scheduleSave = useCallback((request: SaveRequest, delay: number): void => {
-    if (!window.relic) return;
+    if (!relicClient.current) return;
 
     const queue = queueForPath(request.path);
     queue.pending = request;

@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type {
@@ -83,13 +84,13 @@ export function useWorkspaceSearchState({
   }, [hasActiveWorkspace, userDefinedFields, workspaceFrontmatterCandidates]);
 
   useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic) {
+    if (!workspaceState?.activeWorkspace || !relicClient.current) {
       return;
     }
 
     let canceled = false;
 
-    void window.relic.getFrontmatterValueCandidates().then((result) => {
+    void relicClient.current.getFrontmatterValueCandidates().then((result) => {
       if (canceled) return;
 
       if (result.ok) {
@@ -128,7 +129,7 @@ export function useWorkspaceSearchState({
   }, [effectiveSearchFrontmatterField, hasActiveWorkspace, searchKey, searchMode, searchQuery]);
 
   useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic || activeDebouncedSearch.key === null) {
+    if (!workspaceState?.activeWorkspace || !relicClient.current || activeDebouncedSearch.key === null) {
       return;
     }
     if (lastRequestedSearchKey.current === activeDebouncedSearch.key) {
@@ -150,7 +151,7 @@ export function useWorkspaceSearchState({
 
     lastRequestedSearchKey.current = activeDebouncedSearch.key;
 
-    void window.relic
+    void relicClient.current
       .searchWorkspace(input)
       .then((result) => {
         if (canceled) return;

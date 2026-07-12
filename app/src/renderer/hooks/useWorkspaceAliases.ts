@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useEffect, useState } from "react";
 
 import type { WorkspaceState } from "../../shared/ipc";
@@ -15,13 +16,13 @@ export function useWorkspaceAliases({
   const [aliasesByPath, setAliasesByPath] = useState<AliasIndex>({});
 
   useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic) {
+    if (!workspaceState?.activeWorkspace || !relicClient.current) {
       return;
     }
 
     let canceled = false;
 
-    void window.relic.getWorkspaceAliases().then((result) => {
+    void relicClient.current.getWorkspaceAliases().then((result) => {
       if (canceled) return;
 
       if (result.ok) {

@@ -54,6 +54,7 @@ vi.mock("electron", () => {
 
 const fsMock = vi.hoisted(() => ({
   mkdir: vi.fn(),
+  open: vi.fn(),
   rename: vi.fn(),
   rm: vi.fn(),
   unlink: vi.fn(),
@@ -61,8 +62,9 @@ const fsMock = vi.hoisted(() => ({
 }));
 
 vi.mock("node:fs/promises", () => ({
-  default: { mkdir: fsMock.mkdir, rename: fsMock.rename, rm: fsMock.rm, unlink: fsMock.unlink, writeFile: fsMock.writeFile },
+  default: { mkdir: fsMock.mkdir, open: fsMock.open, rename: fsMock.rename, rm: fsMock.rm, unlink: fsMock.unlink, writeFile: fsMock.writeFile },
   mkdir: fsMock.mkdir,
+  open: fsMock.open,
   rename: fsMock.rename,
   rm: fsMock.rm,
   unlink: fsMock.unlink,

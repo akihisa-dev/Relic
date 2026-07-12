@@ -1,6 +1,7 @@
 import path from "node:path";
 
-import type { WorkspaceFileIndexOperations, WorkspaceFileIndexRecord } from "./workspaceFileIndex";
+import type { WorkspaceFileIndexOperations } from "./workspaceFileIndexIO";
+import type { WorkspaceFileIndexRecord } from "./workspaceFileIndexTypes";
 
 interface PersistedWorkspaceFileIndex {
   records?: unknown;

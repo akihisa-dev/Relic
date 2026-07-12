@@ -1,3 +1,4 @@
+import { relicClient } from "./relicClient";
 import { WidgetType } from "@codemirror/view";
 import type { EditorView } from "@codemirror/view";
 
@@ -124,7 +125,7 @@ function createDiagramSvgSaveButton(
   button.addEventListener("click", (event) => {
     stopDiagramOutputEvent(event);
     const svg = getRenderedDiagramSvgText(diagram);
-    if (!svg || !window.relic) {
+    if (!svg || !relicClient.current) {
       setTemporaryButtonText(button, t("diagram.saveFailed"), label);
       return;
     }
@@ -135,7 +136,7 @@ function createDiagramSvgSaveButton(
     const diagramIndex = diagramIndexForBlock(view.state.doc.toString(), blockFrom);
     const defaultFileName = buildDiagramDefaultFileName(fileName, diagramIndex, language);
 
-    void window.relic.saveDiagramSvg({ defaultFileName, language, svg }).then((result) => {
+    void relicClient.current.saveDiagramSvg({ defaultFileName, language, svg }).then((result) => {
       if (result.ok && result.value.status === "saved") {
         setTemporaryButtonText(button, t("diagram.saveDone"), label);
         return;
@@ -160,12 +161,12 @@ function createDiagramSvgCopyButton(diagram: HTMLElement, language: DiagramLangu
   button.addEventListener("click", (event) => {
     stopDiagramOutputEvent(event);
     const svg = getRenderedDiagramSvgText(diagram);
-    if (!svg || !window.relic) {
+    if (!svg || !relicClient.current) {
       setTemporaryButtonText(button, t("editor.copyFailed"), label);
       return;
     }
 
-    void window.relic.copyDiagramSvg({ language, svg }).then((result) => {
+    void relicClient.current.copyDiagramSvg({ language, svg }).then((result) => {
       if (result.ok) {
         setTemporaryButtonText(button, t("editor.copyDone"), label);
         return;

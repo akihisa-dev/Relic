@@ -6,7 +6,7 @@ import type {
   AppLayoutPropsInput,
   AppLayoutRailInput,
   AppLayoutStatusBarInput
-} from "./appLayoutProps";
+} from "./appLayoutPropsTypes";
 
 type EditorWorkspaceProps = AppLayoutProps["editorWorkspaceProps"];
 type FilesSidebarProps = AppLayoutProps["filesSidebarProps"];
@@ -191,7 +191,7 @@ export function createRailProps(input: AppLayoutRailInput): RailProps {
     primaryRailViews: input.primaryRailViews,
     registeredWorkspaces: input.registeredWorkspaces,
     copyWorkspacePathLabel: input.t("files.copyWorkspacePath"),
-    removeWorkspaceLabel: (name) => input.t("files.removeWorkspace", { name }),
+    removeWorkspaceLabel: input.removeWorkspaceLabel,
     renameLabel: input.t("files.rename"),
     revealWorkspaceLabel: input.t("files.revealInFinder"),
     viewSwitcherLabel: input.t("nav.viewSwitcher"),

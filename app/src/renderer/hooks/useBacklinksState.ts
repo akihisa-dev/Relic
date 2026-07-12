@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useEffect, useState } from "react";
 
 import type { Backlink, WorkspaceTreeNode } from "../../shared/ipc";
@@ -21,16 +22,16 @@ export function useBacklinksState({
     backlinks: emptyBacklinks,
     path: null
   });
-  const hasActiveFile = Boolean(enabled && activeFilePath && window.relic);
+  const hasActiveFile = Boolean(enabled && activeFilePath && relicClient.current);
 
   useEffect(() => {
-    if (!enabled || !activeFilePath || !window.relic) {
+    if (!enabled || !activeFilePath || !relicClient.current) {
       return;
     }
 
     let canceled = false;
 
-    void window.relic
+    void relicClient.current
       .getBacklinks({ path: activeFilePath })
       .then((result) => {
         if (canceled) return;

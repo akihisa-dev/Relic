@@ -1,5 +1,5 @@
 import type { EditorSettings, MarkdownFileContent } from "../../shared/ipc";
-import type { FileTab, ChartTab, ImageTab, PaneId, PaneState, PdfTab, PanelTab, PanelTabKind, Tab } from "./editorStore";
+import type { FileTab, ChartTab, ImageTab, PaneId, PaneState, PdfTab, PanelTab, PanelTabKind, Tab } from "./editorStoreTypes";
 
 export interface EditorStoreModelState {
   editorSettings: EditorSettings;

@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { EditorView } from "@codemirror/view";
 import type { MutableRefObject, ReactElement, ReactNode } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -117,9 +118,9 @@ export function PaneView({
   };
 
   const saveRelicVersion = (): void => {
-    if (activeTab?.kind !== "file" || !window.relic) return;
+    if (activeTab?.kind !== "file" || !relicClient.current) return;
 
-    void window.relic.writeMarkdownFile({ content: activeTab.content, path: activeTab.path }).then((result) => {
+    void relicClient.current.writeMarkdownFile({ content: activeTab.content, path: activeTab.path }).then((result) => {
       if (result.ok) {
         resolveTabExternalConflict(activeTab.id, "relic");
         markTabSaved(activeTab.id, activeTab.content);

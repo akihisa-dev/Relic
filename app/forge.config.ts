@@ -2,12 +2,16 @@ import { MakerDMG } from "@electron-forge/maker-dmg";
 import { MakerZIP } from "@electron-forge/maker-zip";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 
+import { ignoreRelicPackagePath, relicPackageExtraResources } from "./build-tools/packageContents";
+
 const config = {
   outDir: process.env.RELIC_FORGE_OUT_DIR,
   packagerConfig: {
     asar: true,
     appBundleId: "app.relic.desktop",
+    extraResource: relicPackageExtraResources(process.cwd()),
     icon: "assets/icon",
+    ignore: ignoreRelicPackagePath,
     name: "Relic",
     osxUniversal: {
       mergeASARs: true

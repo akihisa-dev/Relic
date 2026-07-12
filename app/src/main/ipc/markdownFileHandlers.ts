@@ -46,8 +46,7 @@ import {
   resolveExistingWorkspacePathOrRoot,
   verifyExistingWorkspacePath
 } from "../files/paths";
-import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordinator";
-import { invalidateWorkspaceDerivedData } from "../files/workspaceDerivedDataSession";
+import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
   isCreateMarkdownFileInput,
@@ -115,8 +114,7 @@ export function registerMarkdownFileHandlers(): void {
           return createdFile;
         }
 
-        invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
-        workspaceSearchRequestCoordinator.invalidate(context.value.activeWorkspace.id);
+        invalidateWorkspaceData(context.value.activeWorkspace.id);
         return ok(await buildWorkspaceState(context.value.settings));
       } catch (error) {
         return fail(
@@ -149,8 +147,7 @@ export function registerMarkdownFileHandlers(): void {
           return importedFiles;
         }
 
-        invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
-        workspaceSearchRequestCoordinator.invalidate(context.value.activeWorkspace.id);
+        invalidateWorkspaceData(context.value.activeWorkspace.id);
         return ok(await buildWorkspaceState(context.value.settings));
       } catch (error) {
         return fail(
@@ -173,11 +170,15 @@ export function registerMarkdownFileHandlers(): void {
         const context = await getActiveWorkspaceContext();
         if (!context.ok) return context;
 
-        return importImageFile(
+        const importedImage = await importImageFile(
           context.value.activeWorkspace.path,
           input.sourcePath,
           input.destinationFolder
         );
+        if (importedImage.ok) {
+          invalidateWorkspaceData(context.value.activeWorkspace.id);
+        }
+        return importedImage;
       } catch (error) {
         return fail(
           "IMAGE_IMPORT_FAILED",
@@ -290,8 +291,7 @@ export function registerMarkdownFileHandlers(): void {
           return createdFile;
         }
 
-        invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
-        workspaceSearchRequestCoordinator.invalidate(context.value.activeWorkspace.id);
+        invalidateWorkspaceData(context.value.activeWorkspace.id);
         return ok({
           file: createdFile.value,
           workspaceState: await buildWorkspaceState(context.value.settings)
@@ -321,8 +321,7 @@ export function registerMarkdownFileHandlers(): void {
         return duplicatedFile;
       }
 
-      invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
-      workspaceSearchRequestCoordinator.invalidate(context.value.activeWorkspace.id);
+      invalidateWorkspaceData(context.value.activeWorkspace.id);
       return ok({
         file: duplicatedFile.value,
         workspaceState: await buildWorkspaceState(context.value.settings)
@@ -355,8 +354,7 @@ export function registerMarkdownFileHandlers(): void {
         return renamedFile;
       }
 
-      invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
-      workspaceSearchRequestCoordinator.invalidate(context.value.activeWorkspace.id);
+      invalidateWorkspaceData(context.value.activeWorkspace.id);
       return ok({
         file: renamedFile.value,
         workspaceState: await buildWorkspaceState(context.value.settings)
@@ -389,8 +387,7 @@ export function registerMarkdownFileHandlers(): void {
         return movedFile;
       }
 
-      invalidateWorkspaceDerivedData(context.value.activeWorkspace.id);
-      workspaceSearchRequestCoordinator.invalidate(context.value.activeWorkspace.id);
+      invalidateWorkspaceData(context.value.activeWorkspace.id);
       return ok({
         file: movedFile.value,
         workspaceState: await buildWorkspaceState(context.value.settings)

@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback, useState } from "react";
 
 import { ensureMarkdownExtension } from "../../shared/markdownExtension";
@@ -30,21 +31,21 @@ export function useWorkspaceFileCreationActions({
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
   const handleCreateFile = useCallback((): void => {
-    if (!window.relic) return;
+    if (!relicClient.current) return;
 
     const fileName = fileNameDraft.trim() || nextUniqueFileName(workspaceState, t);
 
     setIsCreatingFile(true);
     setWorkspaceError(null);
 
-    void window.relic
+    void relicClient.current
       .createMarkdownFile({ name: fileName })
       .then((result) => {
         if (result.ok) {
           setWorkspaceState(result.value);
           setFileNameDraft("");
           const expectedPath = ensureMarkdownExtension(fileName);
-          void window.relic!.readMarkdownFile({ path: expectedPath }).then((readResult) => {
+          void relicClient.current!.readMarkdownFile({ path: expectedPath }).then((readResult) => {
             if (readResult.ok) {
               openFileInPane(focusedPane, readResult.value);
             }
@@ -65,11 +66,11 @@ export function useWorkspaceFileCreationActions({
   ]);
 
   const handleCreateNoteFromPane = useCallback((name: string): void => {
-    if (!window.relic) return;
+    if (!relicClient.current) return;
 
     const fileName = name.trim() || nextUniqueFileName(workspaceState, t);
 
-    void window.relic
+    void relicClient.current
       .createMarkdownFile({ name: fileName })
       .then((result) => {
         if (result.ok) {
@@ -78,7 +79,7 @@ export function useWorkspaceFileCreationActions({
           const newFile = findCreatedMarkdownPath(result.value.fileTree, expectedPath);
 
           if (newFile) {
-            void window.relic!.readMarkdownFile({ path: newFile }).then((readResult) => {
+            void relicClient.current!.readMarkdownFile({ path: newFile }).then((readResult) => {
               if (readResult.ok) openFileInPane(focusedPane, readResult.value);
             });
           }
@@ -96,12 +97,12 @@ export function useWorkspaceFileCreationActions({
   ]);
 
   const handleCreateFolder = useCallback((): void => {
-    if (!window.relic) return;
+    if (!relicClient.current) return;
 
     setIsCreatingFolder(true);
     setWorkspaceError(null);
 
-    void window.relic
+    void relicClient.current
       .createFolder({ name: folderNameDraft.trim() || nextUniqueFolderName(workspaceState, t) })
       .then((result) => {
         if (result.ok) {

@@ -1,3 +1,4 @@
+import { relicClient } from "./relicClient";
 import type { EditorView } from "@codemirror/view";
 
 import { isSupportedMarkdownImagePath, markdownImageAltFromPath } from "../shared/imageFiles";
@@ -21,13 +22,13 @@ export async function importDroppedImagesAsMarkdown(
   filePath: string,
   sourcePaths: string[]
 ): Promise<void> {
-  if (!window.relic || sourcePaths.length === 0) return;
+  if (!relicClient.current || sourcePaths.length === 0) return;
 
   const destinationFolder = workspaceFolderForMarkdownFile(filePath);
   const snippets: string[] = [];
 
   for (const sourcePath of sourcePaths) {
-    const importedImage = await window.relic.importImageFile({ destinationFolder, sourcePath });
+    const importedImage = await relicClient.current.importImageFile({ destinationFolder, sourcePath });
     if (!importedImage.ok) continue;
 
     snippets.push(`![${markdownImageAltFromPath(importedImage.value.path)}](${importedImage.value.path})`);

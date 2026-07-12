@@ -2,7 +2,7 @@ import type { ReactElement, RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
-import type { FileTreeActions } from "./FileTree";
+import type { FileTreeActions } from "../fileTreeTypes";
 import {
   fileTreeMarkdownLinkForPath,
   fileTreeOperationItems,

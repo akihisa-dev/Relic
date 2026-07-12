@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactElement } from "react";
@@ -112,7 +113,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     error: string | null;
     graph: WorkspaceGraph | null;
     loading: boolean;
-  }>(() => window.relic
+  }>(() => relicClient.current
     ? { error: null, graph: null, loading: true }
     : { error: t("graph.loadFailed"), graph: null, loading: false });
   const [options, setOptions] = useState(loadGraphOptions);
@@ -138,13 +139,13 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   useEffect(() => {
     let active = true;
 
-    if (!window.relic) {
+    if (!relicClient.current) {
       return () => {
         active = false;
       };
     }
 
-    void window.relic.getWorkspaceGraph().then((result) => {
+    void relicClient.current.getWorkspaceGraph().then((result) => {
       if (!active) return;
 
       if (result.ok) {
@@ -266,7 +267,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     applyGraphZoomTransition(viewRef.current, cssWidth, cssHeight);
     const nodes = [...nodesRef.current.values()];
     const hoverFocusId = pointerRef.current ? null : resolveGraphHoverFocusId(
-      nodes,
+      nodesRef.current,
       hoverPointRef.current,
       viewRef.current,
       latestOptionsRef.current,

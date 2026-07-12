@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
-import type { WorkspaceSearchResultSet } from "../../shared/ipcWorkspace";
+import type { WorkspaceSearchResultSet } from "../../shared/ipc/search";
 
 import { searchWorkspace, workspaceSearchMaxFileBytes, workspaceSearchMaxResults } from "./search";
 

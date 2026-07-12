@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback, useState } from "react";
 
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
@@ -19,7 +20,7 @@ export function useWorkspaceRegistryActions({
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
 
   const handleOpenWorkspace = useCallback((): void => {
-    const relic = window.relic;
+    const relic = relicClient.current;
     if (!relic) return;
 
     runAfterCloseCheck(beforeCloseAllTabs, () => {
@@ -41,7 +42,7 @@ export function useWorkspaceRegistryActions({
   }, [beforeCloseAllTabs, closeAllTabs, setWorkspaceError, setWorkspaceState]);
 
   const handleCreateNewWorkspace = useCallback((): void => {
-    const relic = window.relic;
+    const relic = relicClient.current;
     if (!relic) return;
 
     runAfterCloseCheck(beforeCloseAllTabs, () => {
@@ -63,7 +64,7 @@ export function useWorkspaceRegistryActions({
   }, [beforeCloseAllTabs, closeAllTabs, setWorkspaceError, setWorkspaceState]);
 
   const handleSwitchWorkspace = useCallback((workspaceId: string): void => {
-    const relic = window.relic;
+    const relic = relicClient.current;
     if (!relic) return;
 
     runAfterCloseCheck(beforeCloseAllTabs, () => {
@@ -79,7 +80,7 @@ export function useWorkspaceRegistryActions({
   }, [beforeCloseAllTabs, closeAllTabs, setWorkspaceError, setWorkspaceState]);
 
   const handleRemoveWorkspace = useCallback((workspaceId: string): void => {
-    const relic = window.relic;
+    const relic = relicClient.current;
     if (!relic) return;
 
     runAfterCloseCheck(beforeCloseAllTabs, () => {
@@ -95,9 +96,9 @@ export function useWorkspaceRegistryActions({
   }, [beforeCloseAllTabs, closeAllTabs, setWorkspaceError, setWorkspaceState]);
 
   const handleRenameWorkspace = useCallback(async (workspaceId: string, name: string): Promise<boolean> => {
-    if (!window.relic) return false;
+    if (!relicClient.current) return false;
 
-    const result = await window.relic.renameWorkspace({ name, workspaceId });
+    const result = await relicClient.current.renameWorkspace({ name, workspaceId });
     if (result.ok) {
       setWorkspaceState(result.value);
       return true;
@@ -108,23 +109,23 @@ export function useWorkspaceRegistryActions({
   }, [setWorkspaceError, setWorkspaceState]);
 
   const handleRevealWorkspace = useCallback((workspaceId: string): void => {
-    if (!window.relic) return;
+    if (!relicClient.current) return;
 
-    void window.relic.revealWorkspaceItem({ path: "", workspaceId }).then((result) => {
+    void relicClient.current.revealWorkspaceItem({ path: "", workspaceId }).then((result) => {
       if (!result.ok) setWorkspaceError(result.error.message);
     });
   }, [setWorkspaceError]);
 
   const handleRefreshWorkspaceState = useCallback((): void => {
-    void window.relic?.getWorkspaceState().then((result) => {
+    void relicClient.current?.getWorkspaceState().then((result) => {
       if (result.ok) setWorkspaceState(result.value);
     });
   }, [setWorkspaceState]);
 
   const handleTogglePin = useCallback((path: string): void => {
-    if (!window.relic) return;
+    if (!relicClient.current) return;
 
-    void window.relic.togglePin(path).then((result) => {
+    void relicClient.current.togglePin(path).then((result) => {
       if (result.ok) setWorkspaceState(result.value);
       else setWorkspaceError(result.error.message);
     });

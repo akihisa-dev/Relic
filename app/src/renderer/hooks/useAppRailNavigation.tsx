@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import type { MouseEvent, ReactElement, ReactNode } from "react";
 
 import type { FeatureToggles } from "../../shared/ipc";
@@ -69,16 +69,20 @@ export function useAppRailNavigation({
     [t]
   );
   const panelLabels = useMemo(() => panelLabelsForTranslator(t), [t]);
-  const openPanelTabIds = useMemo(() => openPanelTabIdsForTabs(tabs), [tabs]);
-  const openChartIds = useMemo(() => openChartIdsForTabs(tabs), [tabs]);
-  const activePanelTabIds = useMemo(
+  const nextOpenPanelTabIds = useMemo(() => openPanelTabIdsForTabs(tabs), [tabs]);
+  const nextOpenChartIds = useMemo(() => openChartIdsForTabs(tabs), [tabs]);
+  const nextActivePanelTabIds = useMemo(
     () => activePanelTabIdsForPanes(leftPane, rightPane, tabs),
     [leftPane, rightPane, tabs]
   );
-  const activeChartIds = useMemo(
+  const nextActiveChartIds = useMemo(
     () => activeChartIdsForPanes(leftPane, rightPane, tabs),
     [leftPane, rightPane, tabs]
   );
+  const openPanelTabIds = useStableSet(nextOpenPanelTabIds);
+  const openChartIds = useStableSet(nextOpenChartIds);
+  const activePanelTabIds = useStableSet(nextActivePanelTabIds);
+  const activeChartIds = useStableSet(nextActiveChartIds);
   const enabledRailViews = useMemo(
     () => enabledRailViewsForFeatures(sidebarViews, featureToggles),
     [featureToggles, sidebarViews]
@@ -156,4 +160,18 @@ export function useAppRailNavigation({
     renderPanelTabIcon,
     sidebarViews
   };
+}
+
+function useStableSet<T>(value: Set<T>): Set<T> {
+  const stableRef = useRef(value);
+  if (!setsEqual(stableRef.current, value)) stableRef.current = value;
+  return stableRef.current;
+}
+
+function setsEqual<T>(left: Set<T>, right: Set<T>): boolean {
+  if (left.size !== right.size) return false;
+  for (const value of left) {
+    if (!right.has(value)) return false;
+  }
+  return true;
 }

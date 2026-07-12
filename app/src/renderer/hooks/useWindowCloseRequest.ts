@@ -1,16 +1,17 @@
+import { relicClient } from "../relicClient";
 import { useEffect } from "react";
 
 export function useWindowCloseRequest(ensureCanCloseAllTabs: () => Promise<boolean> | boolean): void {
   useEffect(() => {
-    if (!window.relic?.onWindowCloseRequested) return undefined;
+    if (!relicClient.current?.onWindowCloseRequested) return undefined;
 
-    return window.relic.onWindowCloseRequested((event) => {
+    return relicClient.current.onWindowCloseRequested((event) => {
       void Promise.resolve(ensureCanCloseAllTabs())
         .then((ok) => {
-          window.relic?.respondToWindowCloseRequest({ ok, requestId: event.requestId });
+          relicClient.current?.respondToWindowCloseRequest({ ok, requestId: event.requestId });
         })
         .catch(() => {
-          window.relic?.respondToWindowCloseRequest({ ok: false, requestId: event.requestId });
+          relicClient.current?.respondToWindowCloseRequest({ ok: false, requestId: event.requestId });
         });
     });
   }, [ensureCanCloseAllTabs]);

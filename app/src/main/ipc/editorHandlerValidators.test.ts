@@ -4,7 +4,9 @@ import { defaultEditorSettings } from "../../shared/ipc";
 import {
   editorClipboardMaxTextLength,
   isCopyEditorTextToClipboardInput,
-  isEditorSettingsInput
+  isEditorSettingsInput,
+  isWindowCloseResponseInput,
+  windowCloseRequestIdMaxLength
 } from "./editorHandlerValidators";
 
 describe("editorHandlerValidators", () => {
@@ -24,5 +26,14 @@ describe("editorHandlerValidators", () => {
     expect(isCopyEditorTextToClipboardInput({ text: "x".repeat(editorClipboardMaxTextLength) })).toBe(true);
     expect(isCopyEditorTextToClipboardInput({ text: "x".repeat(editorClipboardMaxTextLength + 1) })).toBe(false);
     expect(isCopyEditorTextToClipboardInput({ text: 1 })).toBe(false);
+  });
+
+  it("終了確認応答の真偽値とrequest IDを検証する", () => {
+    expect(isWindowCloseResponseInput({ ok: true, requestId: "close-1" })).toBe(true);
+    expect(isWindowCloseResponseInput({ ok: false, requestId: "close-1" })).toBe(true);
+    expect(isWindowCloseResponseInput({ ok: true, requestId: "" })).toBe(false);
+    expect(isWindowCloseResponseInput({ ok: true, requestId: "x".repeat(windowCloseRequestIdMaxLength + 1) })).toBe(false);
+    expect(isWindowCloseResponseInput({ ok: "yes", requestId: "close-1" })).toBe(false);
+    expect(isWindowCloseResponseInput(undefined)).toBe(false);
   });
 });

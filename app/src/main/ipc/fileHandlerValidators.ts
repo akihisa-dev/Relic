@@ -15,23 +15,19 @@ import type {
   RenameMarkdownFileInput,
   ReplaceInFileInput,
   SearchAndReplaceInput,
-  SearchMode,
   SearchWorkspaceInput,
   StartWorkspaceFileDragInput,
   WriteMarkdownFileInput
 } from "../../shared/ipc";
 import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import { isSupportedPdfPath } from "../../shared/pdfFiles";
-import {
-  maxExpectedFileSnapshots,
-  maxImportMarkdownFiles,
-  maxMarkdownWriteBytes,
-  maxReplacementBytes,
-  maxSearchQueryLength,
-  maxWorkspaceRelativePathLength
-} from "../../shared/ipcLimits";
+import { maxMarkdownWriteBytes } from "../../shared/ipc/editor";
+import { maxImportMarkdownFiles, maxWorkspaceRelativePathLength } from "../../shared/ipc/files";
+import { maxExpectedFileSnapshots, maxReplacementBytes, maxSearchQueryLength } from "../../shared/ipc/search";
 import { isWorkspaceRelativeInputPath, isWorkspaceRelativeInputPathOrRoot } from "../files/paths";
 import { isWorkspaceIdInput } from "./workspaceHandlerValidators";
+
+export { normalizeSearchWorkspaceInput } from "../compatibility/searchInputCompatibility";
 
 export function isCreateMarkdownFileInput(input: unknown): input is CreateMarkdownFileInput {
   return isNameInput(input);
@@ -321,172 +317,8 @@ export function isSearchWorkspaceInput(input: unknown): input is SearchWorkspace
   );
 }
 
-export function normalizeSearchWorkspaceInput(input: unknown): SearchWorkspaceInput | null {
-  if (typeof input === "string") {
-    if (input.length > maxSearchQueryLength) return null;
-
-    return { mode: "fullText", query: input };
-  }
-
-  if (Array.isArray(input)) {
-    return normalizeSearchWorkspaceArgs(input);
-  }
-
-  if (typeof input !== "object" || input === null) {
-    return null;
-  }
-
-  const record = input as {
-    field?: unknown;
-    frontmatterField?: unknown;
-    keyword?: unknown;
-    mode?: unknown;
-    query?: unknown;
-    searchMode?: unknown;
-    searchQuery?: unknown;
-    searchTerm?: unknown;
-    term?: unknown;
-    text?: unknown;
-    type?: unknown;
-    value?: unknown;
-  };
-  const query = firstString(
-    record.query,
-    record.searchQuery,
-    record.searchTerm,
-    record.term,
-    record.keyword,
-    record.value,
-    record.text
-  );
-  const mode = firstSearchMode(record.mode, record.searchMode, record.type);
-  const frontmatterField = firstString(record.frontmatterField, record.field);
-
-  if (query === null || mode === null) {
-    return null;
-  }
-
-  if (query.length > maxSearchQueryLength) {
-    return null;
-  }
-
-  if (
-    ("frontmatterField" in input &&
-      record.frontmatterField !== undefined &&
-      (
-        typeof record.frontmatterField !== "string" ||
-        record.frontmatterField.length > maxSearchQueryLength
-      )) ||
-    ("field" in input &&
-      record.field !== undefined &&
-      (
-        typeof record.field !== "string" ||
-        record.field.length > maxSearchQueryLength
-      ))
-  ) {
-    return null;
-  }
-
-  return frontmatterField === null ? { mode, query } : { frontmatterField, mode, query };
-}
-
-function normalizeSearchWorkspaceArgs(args: unknown[]): SearchWorkspaceInput | null {
-  if (args.length === 0) {
-    return null;
-  }
-
-  if (args.length === 1) {
-    return normalizeSearchWorkspaceInput(args[0]);
-  }
-
-  const first = args[0];
-  const second = args[1];
-  const third = args[2];
-  const firstMode = parseSearchMode(first);
-  const secondMode = parseSearchMode(second);
-
-  if (typeof first === "string" && secondMode) {
-    if (first.length > maxSearchQueryLength || (typeof third === "string" && third.length > maxSearchQueryLength)) {
-      return null;
-    }
-
-    return {
-      frontmatterField: typeof third === "string" ? third : undefined,
-      mode: secondMode,
-      query: first
-    };
-  }
-
-  if (firstMode && typeof second === "string") {
-    if (second.length > maxSearchQueryLength || (typeof third === "string" && third.length > maxSearchQueryLength)) {
-      return null;
-    }
-
-    return {
-      frontmatterField: typeof third === "string" ? third : undefined,
-      mode: firstMode,
-      query: second
-    };
-  }
-
-  return null;
-}
-
-function firstString(...values: unknown[]): string | null {
-  for (const value of values) {
-    if (typeof value === "string") {
-      return value;
-    }
-  }
-
-  return null;
-}
-
-function firstSearchMode(...values: unknown[]): SearchMode | null {
-  for (const value of values) {
-    const mode = parseSearchMode(value);
-
-    if (mode) {
-      return mode;
-    }
-  }
-
-  return null;
-}
-
-function isSearchMode(value: unknown): value is SearchMode {
-  return parseSearchMode(value) === value;
-}
-
-function parseSearchMode(value: unknown): SearchMode | null {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const normalized = value.trim().toLocaleLowerCase();
-
-  if (normalized === "fulltext" || normalized === "full text" || value === "全文") {
-    return "fullText";
-  }
-
-  if (normalized === "filename" || normalized === "file name" || value === "ファイル名") {
-    return "fileName";
-  }
-
-  if (normalized === "tag" || value === "タグ") {
-    return "tag";
-  }
-
-  if (
-    normalized === "frontmatter" ||
-    normalized === "property" ||
-    value === "プロパティ" ||
-    value === "フロントマター"
-  ) {
-    return "frontmatter";
-  }
-
-  return null;
+function isSearchMode(value: unknown): value is SearchWorkspaceInput["mode"] {
+  return value === "fullText" || value === "fileName" || value === "tag" || value === "frontmatter";
 }
 
 function isLimitedWorkspaceRelativeInputPath(input: unknown): input is string {

@@ -383,9 +383,6 @@ textarea {
 .settings-page-kicker,
 .frontmatter-field-group-label,
 .links-panel-subheading,
-.chronicle-search span,
-.chronicle-name-header,
-.chronicle-axis,
 .status-bar {
   font-family: var(--font-body);
   font-weight: 600;
@@ -447,8 +444,7 @@ textarea {
 
 .toolbar-btn,
 .main-area-actions .toolbar-btn,
-.files-create-icon-button,
-.chronicle-icon-button {
+.files-create-icon-button {
   border-radius: 0;
 }
 
@@ -707,7 +703,6 @@ textarea {
 
 .settings-page-header h2,
 .sidebar-section-title,
-.chronicle-panel-header h2,
 .tools-panel-title,
 .frontmatter-panel-title {
   color: var(--color-text);
@@ -722,8 +717,6 @@ textarea {
 .frontmatter-field-add,
 .frontmatter-field-collapse-summary,
 .frontmatter-format-guide,
-.chronicle-sidebar-item,
-.chronicle-chart,
 .preview-file-embed {
   background: var(--material-paper);
   border: 1px solid var(--color-border);
@@ -788,9 +781,6 @@ textarea {
 }
 
 .search-frontmatter-field-count,
-.chronicle-scale-thumb,
-.chronicle-minimap-window,
-.chronicle-minimap-handle,
 .cm-search-match,
 .cm-search-match-selected,
 .cm-live-task-checkbox,
@@ -811,21 +801,6 @@ textarea {
 .primary-button:hover {
   background: var(--color-accent-strong);
   border-color: var(--color-accent-strong);
-}
-
-.chronicle-chart {
-  --chronicle-actual-fill: color-mix(in srgb, var(--color-primary-dark) 30%, transparent);
-  --chronicle-actual-fill-active: color-mix(in srgb, var(--color-primary-dark) 46%, transparent);
-  --chronicle-actual-fill-hover: color-mix(in srgb, var(--color-primary-dark) 38%, transparent);
-  --chronicle-fill: color-mix(in srgb, var(--color-primary) 26%, transparent);
-  --chronicle-fill-active: color-mix(in srgb, var(--color-primary) 42%, transparent);
-  --chronicle-fill-hover: color-mix(in srgb, var(--color-primary) 34%, transparent);
-  --chronicle-grid-line-major: color-mix(in srgb, var(--color-border-strong) 72%, transparent);
-  --chronicle-grid-line-minor: color-mix(in srgb, var(--color-border) 50%, transparent);
-  --chronicle-grid-line-row: color-mix(in srgb, var(--color-border) 42%, transparent);
-  --chronicle-planned-fill: color-mix(in srgb, var(--color-primary) 42%, transparent);
-  --chronicle-planned-fill-active: color-mix(in srgb, var(--color-primary) 58%, transparent);
-  --chronicle-planned-fill-hover: color-mix(in srgb, var(--color-primary) 50%, transparent);
 }
 
 /* ────────────────────────────────── */
@@ -942,8 +917,6 @@ textarea {
   color: var(--color-text);
 }
 
-.chronicle-offscreen-jump,
-.chronicle-vertical-offscreen-jump,
 .rail-tab-flight,
 .sidebar-create-flight {
   background: var(--color-overlay);
@@ -952,11 +925,6 @@ textarea {
   box-shadow: none;
   color: var(--color-text);
   backdrop-filter: blur(8px);
-}
-
-.chronicle-offscreen-jump:hover,
-.chronicle-vertical-offscreen-jump:hover {
-  background: var(--color-surface-alt);
 }
 
 .empty-pane-create-button {
@@ -1000,14 +968,12 @@ textarea {
 
 .graph-view-status,
 .graph-controls,
-.preview-diagram-overlay-panel,
-.chronicle-entry-card {
+.preview-diagram-overlay-panel {
   border-radius: var(--radius-md);
   box-shadow: none;
 }
 
-.preview-diagram-overlay-panel,
-.chronicle-entry-card {
+.preview-diagram-overlay-panel {
   backdrop-filter: blur(8px);
   background: var(--color-overlay);
   border-color: var(--color-border-strong);

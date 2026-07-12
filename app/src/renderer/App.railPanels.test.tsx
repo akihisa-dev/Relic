@@ -129,7 +129,7 @@ describe("App rail panels", () => {
     });
     expect(document.querySelector('.pane-tab[data-tab-id="panel-frontmatter"] .pane-tab-icon svg')).toBeInTheDocument();
     expect(frontmatterButton).toHaveClass("active");
-    expect(screen.getByText("フロントマター設定")).toBeInTheDocument();
+    expect(await screen.findByText("フロントマター設定")).toBeInTheDocument();
     expect(await screen.findByText("draft")).toBeInTheDocument();
 
     fireEvent.click(frontmatterButton);

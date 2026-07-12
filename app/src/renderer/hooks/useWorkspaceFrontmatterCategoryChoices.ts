@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback, useEffect, useState } from "react";
 
 import type { FrontmatterCategoryChoice, WorkspaceState } from "../../shared/ipc";
@@ -18,14 +19,14 @@ export function useWorkspaceFrontmatterCategoryChoices({
   const [categoryChoices, setCategoryChoices] = useState<FrontmatterCategoryChoice[]>([]);
 
   useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic) {
+    if (!workspaceState?.activeWorkspace || !relicClient.current) {
       setCategoryChoices([]);
       return;
     }
 
     let canceled = false;
 
-    void window.relic.getWorkspaceFrontmatterCategoryChoices().then((result) => {
+    void relicClient.current.getWorkspaceFrontmatterCategoryChoices().then((result) => {
       if (canceled) return;
 
       if (result.ok) {
@@ -46,7 +47,7 @@ export function useWorkspaceFrontmatterCategoryChoices({
       return normalizedChoice ? [normalizedChoice] : [];
     }));
     setCategoryChoices(normalizedChoices);
-    void window.relic?.saveWorkspaceFrontmatterCategoryChoices(normalizedChoices).then((result) => {
+    void relicClient.current?.saveWorkspaceFrontmatterCategoryChoices(normalizedChoices).then((result) => {
       if (result.ok) {
         setCategoryChoices(result.value);
       } else {

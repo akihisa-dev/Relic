@@ -2,6 +2,8 @@ import { access, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { inspectPackagedResources, renderPackageContentReport } from './package-content-report.mjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const platform = process.argv[2];
@@ -61,6 +63,8 @@ async function checkMacApp(appDir) {
   const appBundlePath = path.join(appDir, 'Relic.app');
   await access(path.join(appBundlePath, 'Contents', 'MacOS', 'Relic'));
   await access(path.join(appBundlePath, 'Contents', 'Resources', 'app.asar'));
+  const report = await inspectPackagedResources(path.join(appBundlePath, 'Contents', 'Resources'));
+  console.log(renderPackageContentReport(report));
   console.log(`[check:mac:safe] OK: unpacked app verified at ${appDir}`);
   console.log('[check:mac:safe] OK: Relic.app exists');
 }
@@ -68,6 +72,8 @@ async function checkMacApp(appDir) {
 async function checkWindowsApp(appDir) {
   await access(path.join(appDir, 'Relic.exe'));
   await access(path.join(appDir, 'resources', 'app.asar'));
+  const report = await inspectPackagedResources(path.join(appDir, 'resources'));
+  console.log(renderPackageContentReport(report));
   console.log(`[check:win:safe] OK: unpacked app verified at ${appDir}`);
   console.log('[check:win:safe] OK: Relic.exe exists');
 }

@@ -1,4 +1,4 @@
-import type { MouseEvent, ReactElement } from "react";
+import { memo, type MouseEvent, type ReactElement } from "react";
 
 import type { WorkspaceState } from "../../shared/ipc";
 import { chartIdForRailView, type AppRailView, type AppRailViewId } from "../appShellModel";
@@ -39,7 +39,7 @@ interface AppRailProps {
   workspacesLabel: string;
 }
 
-export function AppRail({
+export const AppRail = memo(function AppRail({
   activePanelTabIds,
   activeSidebarView,
   activeWorkspaceId,
@@ -145,7 +145,7 @@ export function AppRail({
       ) : null}
     </nav>
   );
-}
+});
 
 function chartRailButtonClass(
   view: AppRailView,

@@ -58,8 +58,18 @@ describe("chronicleCanvasModel", () => {
     expect(scene.items).toHaveLength(3);
     expect(scene.items[0].x).toBeCloseTo(scene.items[0].startX, 1);
     expect(scene.items[2].endX).toBeGreaterThan(scene.items[2].startX);
+    expect(scene.items[2].rangeLabel).toBe("100 〜 300");
     expect(Math.abs(scene.items[0].y - scene.items[1].y)).toBeGreaterThan(10);
     expect(scene.items.every((item) => item.vx === 0 && item.vy === 0)).toBe(true);
+  });
+
+  it("表示範囲から暦名だけを取り除く", () => {
+    const calendarEntry = entry("Calendar", "calendar.md", 100, 200);
+    calendarEntry.chronicleCalendarName = "メイン暦";
+    calendarEntry.startLabel = "メイン暦 100";
+    calendarEntry.endLabel = "メイン暦 200";
+
+    expect(createChronicleCanvasScene([calendarEntry], () => 0.5).items[0].rangeLabel).toBe("100 〜 200");
   });
 
   it("一時移動した項目を対応年へ戻し、近傍項目にも反発を伝える", () => {
@@ -121,6 +131,27 @@ describe("chronicleCanvasModel", () => {
       { value: 3, x: 1000 }
     ];
     expect(visibleChronicleCanvasYears(years, camera).map((year) => year.value)).toEqual([1, 3]);
+  });
+
+  it("limits year selection to the visible viewport for large timelines", () => {
+    const years = Array.from({ length: 10_000 }, (_, index) => ({ value: index, x: index * 100 }));
+    let indexedReads = 0;
+    const measuredYears = new Proxy(years, {
+      get(target, property, receiver) {
+        if (typeof property === "string" && /^\d+$/.test(property)) indexedReads += 1;
+        return Reflect.get(target, property, receiver);
+      }
+    });
+    const camera = createChronicleCanvasCamera();
+    camera.scale = 1;
+    camera.panX = -500_000;
+
+    const visible = visibleChronicleCanvasYears(measuredYears, camera, 64, 800);
+
+    expect(visible.length).toBeLessThan(12);
+    expect(visible.at(0)?.value).toBeGreaterThanOrEqual(4_999);
+    expect(visible.at(-1)?.value).toBeLessThanOrEqual(5_009);
+    expect(indexedReads).toBeLessThan(100);
   });
 
   it("通常の濃さに達したファイル名だけをクリック対象にする", () => {

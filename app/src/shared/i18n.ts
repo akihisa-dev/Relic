@@ -1,4 +1,4 @@
-import type { AppLanguage } from "./ipcSettings";
+import type { AppLanguage } from "./ipc/editor";
 import en from "./locales/en.json";
 import ja from "./locales/ja.json";
 

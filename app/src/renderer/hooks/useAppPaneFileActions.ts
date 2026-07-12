@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback } from "react";
 
 import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
@@ -70,7 +71,7 @@ export function useAppPaneFileActions({
   }, [tabs, isSplit, openFileInPane, openImageInPane, openPdfInPane, openChartInPane, openPanelInPane]);
 
   const openTreeFileInOtherPane = useCallback((path: string): void => {
-    if (!window.relic || !isSplit) return;
+    if (!relicClient.current || !isSplit) return;
     const otherPane = focusedPane === "left" ? "right" : "left";
     if (isSupportedMarkdownImagePath(path)) {
       openImageInPane(otherPane, { name: path.split("/").at(-1) ?? path, path });
@@ -82,7 +83,7 @@ export function useAppPaneFileActions({
       return;
     }
 
-    void window.relic.readMarkdownFile({ path }).then((result) => {
+    void relicClient.current.readMarkdownFile({ path }).then((result) => {
       if (result.ok) {
         openFileInPane(otherPane, result.value);
       } else {
@@ -92,8 +93,8 @@ export function useAppPaneFileActions({
   }, [focusedPane, isSplit, openFileInPane, openImageInPane, openPdfInPane, setWorkspaceError]);
 
   const openWorkspacePathInOtherPane = useCallback((path: string, heading?: string): void => {
-    if (!window.relic || !isSplit) return;
-    const relic = window.relic;
+    if (!relicClient.current || !isSplit) return;
+    const relic = relicClient.current;
     const otherPane = focusedPane === "left" ? "right" : "left";
     const setScrollHeading = otherPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
 
@@ -125,7 +126,7 @@ export function useAppPaneFileActions({
   ]);
 
   const handleCreateFileInFolder = useCallback((folderPath: string): void => {
-    if (!window.relic) return;
+    if (!relicClient.current) return;
     const fileName = window.prompt(t("files.newNoteName"), t("files.defaultNewNoteName"));
     if (fileName === null) return;
     const trimmedFileName = fileName.trim();
@@ -134,7 +135,7 @@ export function useAppPaneFileActions({
     const nextPath = joinWorkspacePath(folderPath, ensureMarkdownExtension(trimmedFileName));
 
     setWorkspaceError(null);
-    void window.relic.createLinkedMarkdownFile({ path: nextPath }).then((result) => {
+    void relicClient.current.createLinkedMarkdownFile({ path: nextPath }).then((result) => {
       if (result.ok) {
         setWorkspaceState(result.value.workspaceState);
         openFileInPane(focusedPane, result.value.file);
@@ -145,14 +146,14 @@ export function useAppPaneFileActions({
   }, [focusedPane, openFileInPane, setWorkspaceError, setWorkspaceState, t]);
 
   const handleCreateFolderInFolder = useCallback((folderPath: string): void => {
-    if (!window.relic) return;
+    if (!relicClient.current) return;
     const folderName = window.prompt(t("files.newFolderName"), t("files.defaultNewFolderName"));
     if (folderName === null) return;
     const trimmedFolderName = folderName.trim();
     if (!trimmedFolderName) return;
 
     setWorkspaceError(null);
-    void window.relic.createFolder({ name: trimmedFolderName, parentFolder: folderPath }).then((result) => {
+    void relicClient.current.createFolder({ name: trimmedFolderName, parentFolder: folderPath }).then((result) => {
       if (result.ok) {
         setWorkspaceState(result.value);
       } else {
@@ -162,10 +163,10 @@ export function useAppPaneFileActions({
   }, [setWorkspaceError, setWorkspaceState, t]);
 
   const handleRevealWorkspaceItem = useCallback((path: string): void => {
-    if (!window.relic) return;
+    if (!relicClient.current) return;
 
     setWorkspaceError(null);
-    void window.relic.revealWorkspaceItem({ path }).then((result) => {
+    void relicClient.current.revealWorkspaceItem({ path }).then((result) => {
       if (!result.ok) setWorkspaceError(result.error.message);
     });
   }, [setWorkspaceError]);

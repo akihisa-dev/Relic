@@ -1,7 +1,7 @@
 import type { Stats } from "node:fs";
 import path from "node:path";
 
-import type { WorkspaceFileIndexEntry, WorkspaceFileKind, WorkspaceTreeNode } from "../../shared/ipc";
+import type { WorkspaceFileKind, WorkspaceTreeNode } from "../../shared/ipc";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceFileTree } from "./fileTree";
@@ -17,20 +17,18 @@ import {
   workspaceFileContentHash,
   type WorkspaceFileIndexOperations
 } from "./workspaceFileIndexIO";
+import type {
+  WorkspaceFileIndex,
+  WorkspaceFileIndexRecord,
+  WorkspaceFileIndexStats
+} from "./workspaceFileIndexTypes";
 
 export type { WorkspaceFileIndexOperations } from "./workspaceFileIndexIO";
-
-export interface WorkspaceFileIndex {
-  entries: WorkspaceFileIndexEntry[];
-  stats: WorkspaceFileIndexStats;
-  records: WorkspaceFileIndexRecord[];
-}
-
-export interface WorkspaceFileIndexRecord extends WorkspaceFileIndexEntry {
-  lines: string[];
-  searchable: boolean;
-  contentHash?: string;
-}
+export type {
+  WorkspaceFileIndex,
+  WorkspaceFileIndexRecord,
+  WorkspaceFileIndexStats
+} from "./workspaceFileIndexTypes";
 
 export interface WorkspaceFileIndexOptions {
   cachePath?: string;
@@ -39,17 +37,6 @@ export interface WorkspaceFileIndexOptions {
   includeSearchContent?: boolean;
   maxSearchFileBytes?: number;
   operations?: Partial<WorkspaceFileIndexOperations>;
-}
-
-export interface WorkspaceFileIndexStats {
-  cacheHitCount: number;
-  cachedContentHitCount: number;
-  cacheMissCount: number;
-  readFileCount: number;
-  readHeadCount: number;
-  statCount: number;
-  targetPathCount: number;
-  unreadableCount: number;
 }
 
 const defaultMaxSearchFileBytes = 2 * 1024 * 1024;

@@ -5,7 +5,7 @@ import { getRenderedDiagramSvgText } from "./diagramSvg";
 import { sanitizePreviewHtml, sanitizeSvgHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
 import { escapeHtml, renderMarkdown } from "./previewMarkdown";
-import type { OutputPdfOptions } from "../shared/ipcOutput";
+import type { OutputPdfOptions } from "../shared/ipc/output";
 import { runWithConcurrency } from "./concurrency";
 import { outputCss } from "./outputCss";
 

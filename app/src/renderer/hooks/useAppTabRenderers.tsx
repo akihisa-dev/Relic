@@ -1,5 +1,5 @@
-import { useCallback } from "react";
-import type { ReactNode } from "react";
+import { lazy, Suspense, useCallback } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import type {
   AppInfo,
@@ -7,17 +7,39 @@ import type {
   EditorSettings,
   FeatureToggles,
   FrontmatterCategoryChoice,
-  UpdateChartEntryInput,
   WorkspaceChart,
   WorkspaceState
 } from "../../shared/ipc";
-import { ChartView } from "../components/ChartPanel";
-import { ChronicleSettingsPanel } from "../components/ChronicleSettingsPanel";
-import { FrontmatterPanel } from "../components/FrontmatterPanel";
-import { GraphView } from "../components/GraphView";
-import { SettingsPanel } from "../components/SettingsPanel";
-import { ToolsPanel } from "../components/ToolsPanel";
+import { useT } from "../i18n";
 import type { PanelTabKind } from "../store/editorStore";
+
+const LazyChartView = lazy(async () => ({
+  default: (await import("../components/ChartPanel")).ChartView
+}));
+const LazyGraphView = lazy(async () => ({
+  default: (await import("../components/GraphView")).GraphView
+}));
+const LazyChronicleSettingsPanel = lazy(async () => ({
+  default: (await import("../components/ChronicleSettingsPanel")).ChronicleSettingsPanel
+}));
+const LazyFrontmatterPanel = lazy(async () => ({
+  default: (await import("../components/FrontmatterPanel")).FrontmatterPanel
+}));
+const LazySettingsPanel = lazy(async () => ({
+  default: (await import("../components/SettingsPanel")).SettingsPanel
+}));
+const LazyToolsPanel = lazy(async () => ({
+  default: (await import("../components/ToolsPanel")).ToolsPanel
+}));
+
+function LazyTabFallback({ graph = false }: { graph?: boolean }): ReactElement {
+  const t = useT();
+  return (
+    <div className={graph ? "graph-view-status" : "list-loading-note"}>
+      {t(graph ? "graph.loading" : "common.loading")}
+    </div>
+  );
+}
 
 interface UseAppTabRenderersInput {
   appInfo: AppInfo | null;
@@ -32,7 +54,6 @@ interface UseAppTabRenderersInput {
   handleSaveChronicleCalendars: (calendars: ChronicleCalendarSettings[]) => void;
   handleSaveCategoryChoices: (choices: FrontmatterCategoryChoice[]) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
-  handleUpdateChartEntry: (input: UpdateChartEntryInput) => Promise<void> | void;
   workspaceState: WorkspaceState | null;
 }
 
@@ -49,7 +70,6 @@ export function useAppTabRenderers({
   handleSaveChronicleCalendars,
   handleSaveCategoryChoices,
   handleSaveSettings,
-  handleUpdateChartEntry,
   workspaceState
 }: UseAppTabRenderersInput): {
   renderChartTab: (chartId: string) => ReactNode;
@@ -57,51 +77,65 @@ export function useAppTabRenderers({
 } {
   const renderChartTab = useCallback((chartId: string): ReactNode => {
     if (chartId === "graph") {
-      return <GraphView onOpenFile={handleOpenFile} onOpenTagSearch={handleOpenTagSearch} />;
+      return (
+        <Suspense fallback={<LazyTabFallback graph />}>
+          <LazyGraphView onOpenFile={handleOpenFile} onOpenTagSearch={handleOpenTagSearch} />
+        </Suspense>
+      );
     }
 
     return (
-      <ChartView
-        chart={chartId === "charts" ? null : charts.find((chart) => chart.id === chartId) ?? null}
-        charts={chartId === "charts" ? charts : undefined}
-        chronicleCalendars={chronicleCalendars}
-        onOpenFile={handleOpenFile}
-        onUpdateEntry={handleUpdateChartEntry}
-      />
+      <Suspense fallback={<LazyTabFallback />}>
+        <LazyChartView
+          chart={chartId === "charts" ? null : charts.find((chart) => chart.id === chartId) ?? null}
+          charts={chartId === "charts" ? charts : undefined}
+          onOpenFile={handleOpenFile}
+        />
+      </Suspense>
     );
-  }, [charts, chronicleCalendars, handleOpenFile, handleOpenTagSearch, handleUpdateChartEntry]);
+  }, [charts, handleOpenFile, handleOpenTagSearch]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {
-      return <ToolsPanel workspacePath={workspaceState?.activeWorkspace?.path ?? null} />;
+      return (
+        <Suspense fallback={<LazyTabFallback />}>
+          <LazyToolsPanel workspacePath={workspaceState?.activeWorkspace?.path ?? null} />
+        </Suspense>
+      );
     }
 
     if (panel === "frontmatter") {
       return (
-        <FrontmatterPanel
-          categoryChoices={categoryChoices}
-          onCategoryChoicesSave={handleSaveCategoryChoices}
-        />
+        <Suspense fallback={<LazyTabFallback />}>
+          <LazyFrontmatterPanel
+            categoryChoices={categoryChoices}
+            onCategoryChoicesSave={handleSaveCategoryChoices}
+          />
+        </Suspense>
       );
     }
 
     if (panel === "chronicleSettings") {
       return (
-        <ChronicleSettingsPanel
-          calendars={chronicleCalendars}
-          onSave={handleSaveChronicleCalendars}
-        />
+        <Suspense fallback={<LazyTabFallback />}>
+          <LazyChronicleSettingsPanel
+            calendars={chronicleCalendars}
+            onSave={handleSaveChronicleCalendars}
+          />
+        </Suspense>
       );
     }
 
     return (
-      <SettingsPanel
-        appInfo={appInfo}
-        featureToggles={featureToggles}
-        onFeatureTogglesSave={handleSaveFeatureToggles}
-        onSave={handleSaveSettings}
-        settings={editorSettings}
-      />
+      <Suspense fallback={<LazyTabFallback />}>
+        <LazySettingsPanel
+          appInfo={appInfo}
+          featureToggles={featureToggles}
+          onFeatureTogglesSave={handleSaveFeatureToggles}
+          onSave={handleSaveSettings}
+          settings={editorSettings}
+        />
+      </Suspense>
     );
   }, [
     appInfo,

@@ -5,7 +5,7 @@ import {
   defaultChronicleCalendars,
   type ChronicleCalendarSettings,
   type UpdateChartEntryInput
-} from "./ipcCharts";
+} from "./ipc/workspace";
 import { fail, ok, type RelicResult } from "./result";
 
 interface FrontmatterBlock {

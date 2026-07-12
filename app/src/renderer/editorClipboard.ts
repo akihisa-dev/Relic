@@ -1,8 +1,9 @@
+import { relicClient } from "./relicClient";
 export async function writeEditorClipboardText(text: string): Promise<void> {
-  if (window.relic?.copyEditorTextToClipboard) {
+  if (relicClient.current?.copyEditorTextToClipboard) {
     let receivedIpcResult = false;
     try {
-      const result = await window.relic.copyEditorTextToClipboard({ text });
+      const result = await relicClient.current.copyEditorTextToClipboard({ text });
       receivedIpcResult = true;
       if (result.ok) return;
       throw new Error(result.error.message);
@@ -38,10 +39,10 @@ export async function writeEditorClipboardText(text: string): Promise<void> {
 }
 
 export async function readEditorClipboardTextForPaste(): Promise<string> {
-  if (window.relic?.readEditorTextFromClipboard) {
+  if (relicClient.current?.readEditorTextFromClipboard) {
     let receivedIpcResult = false;
     try {
-      const result = await window.relic.readEditorTextFromClipboard();
+      const result = await relicClient.current.readEditorTextFromClipboard();
       receivedIpcResult = true;
       if (result.ok) return result.value;
       throw new Error(result.error.message);

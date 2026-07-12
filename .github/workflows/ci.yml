@@ -1,0 +1,61 @@
+name: Pull Request CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pull-request-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Check types
+        working-directory: app
+        run: pnpm typecheck
+
+      - name: Run tests with coverage gates
+        working-directory: app
+        run: pnpm test:coverage
+
+      - name: Check process boundaries and dependency cycles
+        working-directory: app
+        run: pnpm architecture:check
+
+      - name: Check documentation catalog
+        working-directory: app
+        run: pnpm docs:index:check
+
+      - name: Check dependency notices and SBOM
+        working-directory: app
+        run: pnpm licenses:check
+
+      - name: Check renderer bundle budgets
+        working-directory: app
+        run: pnpm build:size:check
+
+      - name: Check whitespace errors
+        run: git diff --check

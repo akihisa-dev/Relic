@@ -97,6 +97,10 @@ UI文言は辞書へ集約し、コンポーネント内へ散在させない。
 `app/` で `pnpm source:size` を実行すると、実装、テスト、CSSの行数を多い順に確認できる。
 基準超過は責務を確認するための警告であり、行数だけを理由にCIを失敗させたり、機械的に分割したりしない。
 ビルド後の出力容量を確認する `pnpm build:size` とは目的が異なる。
+`pnpm build:size:check` はrendererをビルドし、初期読込・遅延読込・CSS・assetの容量が保存済み基準値から5%を超えて増えていないことを確認する。
+意図して基準値を更新する場合だけ、変更内容を確認したうえで `pnpm build:size:baseline` を実行する。
+`pnpm performance:workspace` は再現可能な1,000ファイルfixture、`pnpm performance:workspace:large` は10,000ファイルfixtureで、ファイルツリー、索引、変更ファイルだけの再読込、検索、タグ、バックリンク、グラフ、年表を複数回測定して中央値とI/O回数を表示する。
+性能を比較するときは、同じfixture fingerprint、実行回数、warmup回数を使い、単発値ではなく中央値と読み取り・stat回数を確認する。
 
 ---
 
@@ -138,13 +142,22 @@ UI文言は辞書へ集約し、コンポーネント内へ散在させない。
 ```sh
 pnpm typecheck
 pnpm test
+pnpm test:node
+pnpm test:renderer
+pnpm test:coverage
+pnpm architecture:check
 pnpm verify
 pnpm verify:full
 ```
 
-`verify:full` は型チェック、テスト、文書索引、差分の空白・改行をまとめて確認する。
+Node APIを使うmain・preload・shared・scriptsのテストはNode環境、rendererのテストはjsdom環境で分離して実行する。
+`test:coverage` は全テストと製品コードのカバレッジ下限を確認する。測定用・診断用の `scripts/` はテスト対象に含めるが、製品コードのカバレッジ集計からは除外する。
+`architecture:check` はプロセス境界と循環依存を確認する。
+`verify:full` は型チェック、テスト、カバレッジ、アーキテクチャ境界、文書索引、差分の空白・改行をまとめて確認する。
 変更に対して `verify` が過剰な場合も検証自体は省略せず、対象テスト、型チェック、文書確認、差分確認などへ絞る。
 E2E、配布ビルド、実アプリ操作は通常の変更の必須確認にはしない。
+macOS／Windowsのsafe checkは、配布用ASARの許可内容と必須entry、`LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOM、およびElectron本体を除くアプリ固有resourcesの容量とファイル数を確認する。
+開発版を一時データだけで実アプリ確認する場合は、絶対パスの `RELIC_DEV_USER_DATA_DIR` を指定して起動する。この切り替えはVite開発server起動時だけ有効で、package版では既定のユーザーデータ保存先を変更しない。
 
 ### 優先してテストする領域
 

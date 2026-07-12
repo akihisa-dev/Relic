@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -23,13 +24,13 @@ export function useWorkspaceChronicleCalendars({
   const [chronicleCalendars, setChronicleCalendars] = useState<ChronicleCalendarSettings[]>(defaultChronicleCalendars);
 
   useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic) {
+    if (!workspaceState?.activeWorkspace || !relicClient.current) {
       return;
     }
 
     let canceled = false;
 
-    void window.relic.getWorkspaceChronicleCalendars().then((result) => {
+    void relicClient.current.getWorkspaceChronicleCalendars().then((result) => {
       if (canceled) return;
 
       if (result.ok) {
@@ -46,7 +47,7 @@ export function useWorkspaceChronicleCalendars({
 
   const handleSaveChronicleCalendars = useCallback((calendars: ChronicleCalendarSettings[]): void => {
     setChronicleCalendars(calendars);
-    void window.relic?.saveWorkspaceChronicleCalendars(calendars).then((result) => {
+    void relicClient.current?.saveWorkspaceChronicleCalendars(calendars).then((result) => {
       if (result.ok) {
         setChronicleCalendars(result.value);
         onSaved?.();

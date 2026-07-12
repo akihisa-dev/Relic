@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useState } from "react";
 
 import type { Translator } from "../i18nModel";
@@ -43,28 +44,28 @@ export function useToolsPanelState(workspacePath: string | null, t: Translator):
 
   const handleGenerateTitleList = async (): Promise<void> => {
     await runTool("titleList", async () => {
-      const result = await window.relic!.generateTitleList(buildTitleListInput(createDefaultTitleListDraft(t), t));
+      const result = await relicClient.current!.generateTitleList(buildTitleListInput(createDefaultTitleListDraft(t), t));
       return resultStatus(result, t, String);
     });
   };
 
   const handleGenerateToc = async (): Promise<void> => {
     await runTool("toc", async () => {
-      const result = await window.relic!.generateTableOfContents(buildTocInput(createDefaultTocDraft(t), t));
+      const result = await relicClient.current!.generateTableOfContents(buildTocInput(createDefaultTocDraft(t), t));
       return resultStatus(result, t, String);
     });
   };
 
   const handleGenerateTagIndex = async (): Promise<void> => {
     await runTool("tagIndex", async () => {
-      const result = await window.relic!.generateTagIndex(buildTagIndexInput(createDefaultTagIndexDraft(t), t));
+      const result = await relicClient.current!.generateTagIndex(buildTagIndexInput(createDefaultTagIndexDraft(t), t));
       return resultStatus(result, t, String);
     });
   };
 
   const handleMergeFiles = async (): Promise<void> => {
     await runTool("mergeFiles", async () => {
-      const result = await window.relic!.mergeFiles(buildMergeFilesInput(createDefaultMergeFilesDraft(t), t));
+      const result = await relicClient.current!.mergeFiles(buildMergeFilesInput(createDefaultMergeFilesDraft(t), t));
       return resultStatus(result, t, String);
     });
   };

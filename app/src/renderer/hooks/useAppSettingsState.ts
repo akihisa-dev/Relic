@@ -1,3 +1,4 @@
+import { relicClient } from "../relicClient";
 import { useCallback, useEffect, useState } from "react";
 
 import type {
@@ -33,12 +34,12 @@ export function useAppSettingsState({
   useEffect(() => {
     let canceled = false;
 
-    void window.relic?.getAppInfo().then((result) => {
+    void relicClient.current?.getAppInfo().then((result) => {
       if (canceled) return;
       if (result.ok) setAppInfo(result.value);
     });
 
-    void window.relic?.getWorkspaceState().then((result) => {
+    void relicClient.current?.getWorkspaceState().then((result) => {
       if (canceled) return;
       if (result.ok) {
         setWorkspaceState(result.value);
@@ -47,22 +48,22 @@ export function useAppSettingsState({
       }
     });
 
-    void window.relic?.getEditorSettings().then((result) => {
+    void relicClient.current?.getEditorSettings().then((result) => {
       if (canceled) return;
       if (result.ok) setEditorSettings(result.value);
     });
 
-    void window.relic?.getFeatureToggles().then((result) => {
+    void relicClient.current?.getFeatureToggles().then((result) => {
       if (canceled) return;
       if (result.ok) setFeatureToggles(result.value);
     });
 
-    void window.relic?.getUserDefinedFields().then((result) => {
+    void relicClient.current?.getUserDefinedFields().then((result) => {
       if (canceled) return;
       if (result.ok) setUserDefinedFields(result.value);
     });
 
-    void window.relic?.getFrontmatterTemplates().then((result) => {
+    void relicClient.current?.getFrontmatterTemplates().then((result) => {
       if (canceled) return;
       if (result.ok) setFrontmatterTemplates(result.value);
     });
@@ -73,7 +74,7 @@ export function useAppSettingsState({
   const handleSaveSettings = useCallback(
     (settings: EditorSettings): void => {
       setEditorSettings(settings);
-      void window.relic?.saveEditorSettings(settings).then((result) => {
+      void relicClient.current?.saveEditorSettings(settings).then((result) => {
         if (!result.ok) setWorkspaceError(result.error.message);
       });
     },
@@ -82,21 +83,21 @@ export function useAppSettingsState({
 
   const handleSaveFeatureToggles = useCallback((toggles: FeatureToggles): void => {
     setFeatureToggles(toggles);
-    void window.relic?.saveFeatureToggles(toggles).then((result) => {
+    void relicClient.current?.saveFeatureToggles(toggles).then((result) => {
       if (!result.ok) setWorkspaceError(result.error.message);
     });
   }, [setWorkspaceError]);
 
   const handleSaveUserDefinedFields = useCallback((fields: UserDefinedField[]): void => {
     setUserDefinedFields(fields);
-    void window.relic?.saveUserDefinedFields(fields).then((result) => {
+    void relicClient.current?.saveUserDefinedFields(fields).then((result) => {
       if (!result.ok) setWorkspaceError(result.error.message);
     });
   }, [setWorkspaceError]);
 
   const handleSaveFrontmatterTemplates = useCallback((templates: FrontmatterTemplate[]): void => {
     setFrontmatterTemplates(templates);
-    void window.relic?.saveFrontmatterTemplates(templates).then((result) => {
+    void relicClient.current?.saveFrontmatterTemplates(templates).then((result) => {
       if (!result.ok) setWorkspaceError(result.error.message);
     });
   }, [setWorkspaceError]);

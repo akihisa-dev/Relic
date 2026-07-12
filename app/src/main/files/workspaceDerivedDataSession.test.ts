@@ -89,6 +89,42 @@ describe("WorkspaceDerivedDataSession", () => {
     expect(readCount).toBe(2);
   });
 
+  it("変更パスが既知の場合は対象ファイルだけを再読込する", async () => {
+    const workspacePath = await createWorkspace();
+    await writeFile(path.join(workspacePath, "other.md"), "# Other\n", "utf8");
+    const session = new WorkspaceDerivedDataSession(() => 1000);
+    let readCount = 0;
+    let statCount = 0;
+    const request = {
+      filePaths: ["note.md", "other.md"],
+      operations: {
+        readFile: async (filePath: string) => {
+          readCount += 1;
+          return readFile(filePath, "utf8");
+        },
+        stat: async (filePath: string) => {
+          statCount += 1;
+          return stat(filePath);
+        }
+      },
+      workspaceId: "ws-1",
+      workspacePath
+    };
+
+    await session.getSnapshot(request);
+    readCount = 0;
+    statCount = 0;
+    await writeFile(path.join(workspacePath, "note.md"), "# Updated\n", "utf8");
+
+    session.invalidate("ws-1", ["note.md"]);
+    const refreshed = await session.getSnapshot(request);
+
+    expect(readCount).toBe(1);
+    expect(statCount).toBe(1);
+    expect(refreshed.fileIndex.records.map((record) => record.path)).toEqual(["note.md", "other.md"]);
+    expect(refreshed.fileIndex.records.find((record) => record.path === "note.md")?.lines).toEqual(["# Updated", ""]);
+  });
+
   it("検索用のファイルサイズ上限が異なる要求は別スナップショットとして扱う", async () => {
     const workspacePath = await createWorkspace();
     const session = new WorkspaceDerivedDataSession(() => 1000);
