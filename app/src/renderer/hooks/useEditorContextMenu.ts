@@ -14,9 +14,32 @@ interface UseEditorContextMenuInput {
   viewRef: MutableRefObject<EditorView | null>;
 }
 
+interface StoredSelection {
+  from: number;
+  text: string;
+  to: number;
+}
+
+function selectionForCurrentDocument(state: EditorState, selection: StoredSelection): StoredSelection | null {
+  if (selection.from < 0 || selection.from > selection.to || selection.to > state.doc.length) return null;
+  if (state.sliceDoc(selection.from, selection.to) !== selection.text) return null;
+  return selection;
+}
+
+function contextSelectionForCurrentDocument(
+  state: EditorState,
+  selection: EditorContextMenuState
+): StoredSelection | null {
+  return selectionForCurrentDocument(state, {
+    from: selection.selectionFrom,
+    text: selection.selectionText,
+    to: selection.selectionTo
+  });
+}
+
 export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
   const openedGestureRef = useRef<{ openedAt: number; x: number; y: number } | null>(null);
-  const lastSelectionRef = useRef<{ from: number; text: string; to: number } | null>(null);
+  const lastSelectionRef = useRef<StoredSelection | null>(null);
   const [contextMenu, setContextMenu] = useState<EditorContextMenuState | null>(null);
 
   const closeContextMenu = useCallback((): void => {
@@ -63,7 +86,10 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     let selectionText = "";
 
     if (selection.empty) {
-      const lastSelection = lastSelectionRef.current;
+      const lastSelection = lastSelectionRef.current
+        ? selectionForCurrentDocument(view.state, lastSelectionRef.current)
+        : null;
+      if (!lastSelection) lastSelectionRef.current = null;
       if (
         lastSelection &&
         clickedPosition !== null &&
@@ -122,23 +148,29 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
   const copySelection = useCallback(async (): Promise<void> => {
     const view = viewRef.current;
     const selection = view?.state.selection.main;
+    const contextSelection = view && contextMenu
+      ? contextSelectionForCurrentDocument(view.state, contextMenu)
+      : null;
     const selectionText = view && selection && !selection.empty
       ? view.state.sliceDoc(selection.from, selection.to)
-      : contextMenu?.selectionText ?? "";
+      : contextSelection?.text ?? "";
     if (!selectionText) return;
     await writeEditorClipboardText(selectionText);
-  }, [contextMenu?.selectionText, viewRef]);
+  }, [contextMenu, viewRef]);
 
   const cutSelection = useCallback(async (): Promise<void> => {
     const view = viewRef.current;
     if (!view) return;
     const selection = view.state.selection.main;
+    const contextSelection = contextMenu
+      ? contextSelectionForCurrentDocument(view.state, contextMenu)
+      : null;
     const selectionText = !selection.empty
       ? view.state.sliceDoc(selection.from, selection.to)
-      : contextMenu?.selectionText ?? "";
+      : contextSelection?.text ?? "";
     if (!selectionText) return;
-    const from = !selection.empty ? selection.from : contextMenu?.selectionFrom ?? selection.from;
-    const to = !selection.empty ? selection.to : contextMenu?.selectionTo ?? selection.to;
+    const from = !selection.empty ? selection.from : contextSelection?.from ?? selection.from;
+    const to = !selection.empty ? selection.to : contextSelection?.to ?? selection.to;
 
     await writeEditorClipboardText(selectionText);
     if (view.state.sliceDoc(from, to) !== selectionText) return;
@@ -153,8 +185,11 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
   const pasteClipboard = useCallback(async (): Promise<void> => {
     const view = viewRef.current;
     if (!view) return;
-    const from = contextMenu?.selectionFrom ?? view.state.selection.main.from;
-    const to = contextMenu?.selectionTo ?? view.state.selection.main.to;
+    const contextSelection = contextMenu
+      ? contextSelectionForCurrentDocument(view.state, contextMenu)
+      : null;
+    const from = contextSelection?.from ?? view.state.selection.main.from;
+    const to = contextSelection?.to ?? view.state.selection.main.to;
 
     try {
       const text = await readEditorClipboardTextForPaste();
@@ -184,10 +219,16 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     const view = viewRef.current;
     if (!view || !contextMenu) return null;
 
+    const contextSelection = contextSelectionForCurrentDocument(view.state, contextMenu);
+    if (!contextSelection) {
+      closeContextMenu();
+      return null;
+    }
+
     view.dispatch({
       selection: {
-        anchor: contextMenu.selectionFrom,
-        head: contextMenu.selectionTo
+        anchor: contextSelection.from,
+        head: contextSelection.to
       }
     });
     view.focus();

@@ -1,8 +1,9 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { contextSelectionHighlightField } from "../editorContextSelectionHighlight";
 import { makeRelicApi } from "../../test/rendererTestUtils";
+import { Editor } from "./Editor";
 import { renderEditorWithView, settings } from "./editorTestHelpers";
 
 describe("Editor selection commands", () => {
@@ -133,5 +134,29 @@ describe("Editor selection commands", () => {
       "Numbered list",
       "Checkbox"
     ]);
+  });
+
+  it("文書切り替え後の右クリックで以前の選択範囲を再利用しない", async () => {
+    const { rerender, view, viewRef } = await renderEditorWithView({
+      content: "hello world",
+      settings: { ...settings, language: "ja" }
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    view.dispatch({ selection: { anchor: 0, head: 5 } });
+    view.dispatch({ selection: { anchor: 0 } });
+
+    rerender(
+      <Editor
+        content="```"
+        onChange={() => undefined}
+        settings={{ ...settings, language: "ja" }}
+        viewRef={viewRef}
+      />
+    );
+    await waitFor(() => expect(view.state.doc.toString()).toBe("```"));
+
+    expect(() => fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 })).not.toThrow();
+    expect(view.state.selection.main.empty).toBe(true);
+    expect(await screen.findByRole("menuitem", { name: "Copy" })).toBeInTheDocument();
   });
 });
