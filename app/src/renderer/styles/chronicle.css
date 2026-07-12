@@ -252,6 +252,8 @@
 }
 
 .chronicle-chart {
+  --chronicle-line: color-mix(in srgb, var(--accent) 72%, var(--text));
+  --chronicle-line-active: color-mix(in srgb, var(--accent) 90%, var(--text));
   --chronicle-actual-fill: color-mix(in srgb, var(--text) 30%, transparent);
   --chronicle-actual-fill-active: color-mix(in srgb, var(--text) 46%, transparent);
   --chronicle-actual-fill-hover: color-mix(in srgb, var(--text) 38%, transparent);
@@ -613,8 +615,13 @@
 }
 
 .chronicle-tracks {
-  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 97%, var(--text));
   position: relative;
+}
+
+.chronicle-lane-divider {
+  stroke: var(--chronicle-grid-line-row);
+  stroke-width: 1px;
 }
 
 .chronicle-guide-lines {
@@ -909,21 +916,39 @@
 }
 
 .chronicle-fill-shape {
-  fill: var(--chronicle-fill);
+  stroke: var(--chronicle-line);
+  stroke-linecap: round;
+  stroke-width: 3px;
 }
 
 .chronicle-fill-hit {
-  fill: transparent;
+  stroke: transparent;
+  stroke-linecap: round;
+  stroke-width: 24px;
   pointer-events: all;
 }
 
 .chronicle-tracks-svg .chronicle-fill:hover .chronicle-fill-shape {
-  fill: var(--chronicle-fill-hover);
+  stroke: var(--chronicle-line-active);
 }
 
 .chronicle-tracks-svg .chronicle-fill:active .chronicle-fill-shape,
 .chronicle-tracks-svg .chronicle-fill--dragging .chronicle-fill-shape {
-  fill: var(--chronicle-fill-active);
+  stroke: var(--chronicle-line-active);
+  stroke-width: 4px;
+}
+
+.chronicle-fill-node {
+  fill: var(--bg);
+  stroke: var(--chronicle-line);
+  stroke-width: 3px;
+}
+
+.chronicle-tracks-svg .chronicle-fill:hover .chronicle-fill-node,
+.chronicle-tracks-svg .chronicle-fill:active .chronicle-fill-node,
+.chronicle-tracks-svg .chronicle-fill--dragging .chronicle-fill-node {
+  fill: color-mix(in srgb, var(--accent) 14%, var(--bg));
+  stroke: var(--chronicle-line-active);
 }
 
 .chronicle-fill-label-bg {
@@ -932,7 +957,11 @@
 }
 
 .chronicle-fill-label-bg--file {
-  fill: color-mix(in srgb, var(--bg) 62%, transparent);
+  fill: color-mix(in srgb, var(--bg) 94%, transparent);
+}
+
+.chronicle-fill-label-bg--range {
+  fill: color-mix(in srgb, var(--bg) 88%, transparent);
 }
 
 .chronicle-fill-label-bg--hover-file {
@@ -955,7 +984,15 @@
 }
 
 .chronicle-tracks-svg .chronicle-fill-file-label {
+  fill: var(--text);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.chronicle-tracks-svg .chronicle-fill-range-label {
   fill: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
 }
 
 .chronicle-hover-file-label {
@@ -1129,13 +1166,9 @@
 }
 
 .chronicle-fill-resize {
-  bottom: 4px;
   cursor: ew-resize;
   fill: transparent;
-  position: absolute;
-  top: 4px;
-  width: 10px;
-  z-index: 2;
+  pointer-events: all;
 }
 
 .chronicle-fill-resize::after {

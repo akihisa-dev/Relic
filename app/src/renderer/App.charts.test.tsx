@@ -459,7 +459,8 @@ describe("App charts", () => {
     expect(renderResult.container.querySelector(".chronicle-bubble-item")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "386px" });
     expect(renderResult.container.querySelector(".chronicle-tracks-svg")).toHaveAttribute("height", "386");
-    expect(renderResult.container.querySelector(".chronicle-fill-shape")).toHaveAttribute("d");
+    expect(renderResult.container.querySelector(".chronicle-fill-shape")).toHaveAttribute("x1");
+    expect(renderResult.container.querySelectorAll(".chronicle-fill-node")).toHaveLength(2);
     expect(renderResult.container.querySelector(".chronicle-toolbar")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-minimap")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-minimap-item")).toBeNull();

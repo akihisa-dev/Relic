@@ -16,12 +16,11 @@ import {
 import { IconFiles } from "./RailNavigationIcons";
 import { ChartGuideLines } from "./chronicleChartParts";
 
-const CHRONICLE_MIN_SEGMENT_HEIGHT = 38;
+const CHRONICLE_MIN_SEGMENT_HEIGHT = 72;
 const CHRONICLE_LABEL_HEIGHT = 18;
 const CHRONICLE_LABEL_PADDING_X = 7;
-const CHRONICLE_MIN_LABEL_WIDTH = 16;
-const CHRONICLE_OUTSIDE_LABEL_GAP = 6;
 const CHRONICLE_VIEWPORT_LABEL_MARGIN = 8;
+const CHRONICLE_NODE_RADIUS = 6;
 
 interface OrderedChronicleEntry {
   displayEntry: ChartEntry;
@@ -33,18 +32,14 @@ interface OrderedChronicleEntry {
 interface ChronicleEntryShape {
   displayEntry: ChartEntry;
   entry: ChartEntry;
-  fileNameClipId: string;
   fileNameLabelWidth: number;
   fileNameLabelX: number;
   fileNameLabelY: number;
   height: number;
   key: string;
-  labelClipId: string;
-  labelPlacement: "inside" | "outside";
   labelX: number;
   labelY: number;
   labelWidth: number;
-  path: string;
   width: number;
   x: number;
   y: number;
@@ -162,6 +157,16 @@ export function ChronicleTracks({
           viewBox={`0 0 ${timelineWidth} ${trackHeight}`}
           width={timelineWidth}
         >
+          {Array.from({ length: chronicleLaneCount - 1 }, (_, index) => (
+            <line
+              className="chronicle-lane-divider"
+              key={`lane-divider-${index}`}
+              x1={0}
+              x2={timelineWidth}
+              y1={(index + 1) * chronicleLaneHeight}
+              y2={(index + 1) * chronicleLaneHeight}
+            />
+          ))}
           {visibleChronicleShapes.map((shape) => (
             <ChronicleEntrySvgShape
               dragPreview={dragPreview}
@@ -228,54 +233,42 @@ function buildChronicleEntryShapes(
     const laneIndex = laneIndexes[item.order] ?? 0;
     const startValue = item.displayEntry.startValue;
     const endValue = item.displayEntry.endValue;
-    const valueLeft = Math.max(0, (startValue - axisStart) * unitWidth);
+    const valueLeft = Math.max(0, (startValue - axisStart + 0.5) * unitWidth);
     const isSingleValue = startValue === endValue;
     const rangeLabel = formatRange(item.displayEntry);
     const fileNameLabelWidth = labelWidthForText(item.entry.fileName);
     const labelWidth = labelWidthForText(rangeLabel);
-    const naturalWidth = isSingleValue ? unitWidth : (endValue - startValue + 1) * unitWidth;
-    const width = Math.max(4, naturalWidth);
-    const x = isSingleValue
-      ? Math.max(0, valueLeft + (naturalWidth - width) / 2)
-      : valueLeft;
+    const naturalWidth = isSingleValue ? 0 : (endValue - startValue) * unitWidth;
+    const width = Math.max(isSingleValue ? 0 : 18, naturalWidth);
+    const x = valueLeft;
     const height = laneHeight;
     const y = laneIndex * laneHeight;
-    const maxLabelLeft = Math.max(0, width - labelWidth);
-    const labelLeft = isSingleValue
-      ? (width - labelWidth) / 2
-      : Math.max(CHRONICLE_LABEL_PADDING_X, Math.min(maxLabelLeft, scrollLeft - x + CHRONICLE_LABEL_PADDING_X));
-    const labelX = x + labelLeft;
-    const labelY = y + Math.max(30, Math.min(height - 5, height / 2 + 12));
-    const fileNameLabelX = labelX;
-    const fileNameLabelY = labelY - 20;
-    const fileNameBackgroundWidth = labelFitsInBar(fileNameLabelWidth, width, labelLeft) ? fileNameLabelWidth : 0;
-    const labelPlacement = labelFitsInBar(labelWidth, width, labelLeft) ? "inside" : "outside";
-    const placedRangeLabel = labelPlacement === "inside"
-      ? { labelX, labelWidth }
-      : outsideRangeLabelPlacement({
-        barWidth: width,
-        labelWidth,
-        scrollLeft,
-        timelineViewportWidth,
-        x
-      });
-    const clipKey = clipIdKey(item.entry, item.order);
-
+    const lineCenter = x + width / 2;
+    const fileNameLabelX = clampLabelX(
+      lineCenter - fileNameLabelWidth / 2,
+      fileNameLabelWidth,
+      scrollLeft,
+      timelineViewportWidth
+    );
+    const fileNameLabelY = y + height / 2 - 15;
+    const labelX = clampLabelX(
+      lineCenter - labelWidth / 2,
+      labelWidth,
+      scrollLeft,
+      timelineViewportWidth
+    );
+    const labelY = y + height / 2 + 25;
     return {
       displayEntry: item.displayEntry,
       entry: item.entry,
-      fileNameClipId: `chronicle-file-label-${clipKey}`,
-      fileNameLabelWidth: fileNameBackgroundWidth,
+      fileNameLabelWidth,
       fileNameLabelX,
       fileNameLabelY,
       height,
       key: entryKey(item.entry),
-      labelClipId: `chronicle-range-label-${clipKey}`,
-      labelPlacement,
-      labelWidth: placedRangeLabel.labelWidth,
-      labelX: placedRangeLabel.labelX,
+      labelWidth,
+      labelX,
       labelY,
-      path: roundedRectPath(x, y, width, height, 3),
       width,
       x,
       y
@@ -312,60 +305,17 @@ function rangesOverlap(startA: number, endA: number, startB: number, endB: numbe
   return startA <= endB && endA >= startB;
 }
 
-function labelFitsInBar(labelWidth: number, barWidth: number, labelLeft: number): boolean {
-  return (
-    labelWidth >= CHRONICLE_MIN_LABEL_WIDTH &&
-    labelLeft >= 0 &&
-    labelLeft + labelWidth <= barWidth
-  );
-}
-
-function outsideRangeLabelPlacement({
-  barWidth,
-  labelWidth,
-  scrollLeft,
-  timelineViewportWidth,
-  x
-}: {
-  barWidth: number;
-  labelWidth: number;
-  scrollLeft: number;
-  timelineViewportWidth: number;
-  x: number;
-}): { labelX: number; labelWidth: number } {
+function clampLabelX(
+  preferredX: number,
+  labelWidth: number,
+  scrollLeft: number,
+  timelineViewportWidth: number
+): number {
   const visibleLeft = scrollLeft + CHRONICLE_VIEWPORT_LABEL_MARGIN;
   const visibleRight = scrollLeft + Math.max(CHRONICLE_VIEWPORT_LABEL_MARGIN, timelineViewportWidth - CHRONICLE_VIEWPORT_LABEL_MARGIN);
   const maxLabelX = Math.max(visibleLeft, visibleRight - labelWidth);
-  const rightSideX = x + barWidth + CHRONICLE_OUTSIDE_LABEL_GAP;
-  const leftSideX = x - labelWidth - CHRONICLE_OUTSIDE_LABEL_GAP;
-  const preferredX = rightSideX + labelWidth <= visibleRight || leftSideX < visibleLeft
-    ? rightSideX
-    : leftSideX;
 
-  return {
-    labelWidth,
-    labelX: Math.max(visibleLeft, Math.min(maxLabelX, preferredX))
-  };
-}
-
-function clipIdKey(entry: ChartEntry, order: number): string {
-  return `${entryKey(entry)}-${order}`.replace(/[^a-zA-Z0-9_-]/g, "-");
-}
-
-function roundedRectPath(x: number, y: number, width: number, height: number, radius: number): string {
-  const r = Math.min(radius, width / 2, height / 2);
-  return [
-    `M ${x + r},${y}`,
-    `H ${x + width - r}`,
-    `Q ${x + width},${y} ${x + width},${y + r}`,
-    `V ${y + height - r}`,
-    `Q ${x + width},${y + height} ${x + width - r},${y + height}`,
-    `H ${x + r}`,
-    `Q ${x},${y + height} ${x},${y + height - r}`,
-    `V ${y + r}`,
-    `Q ${x},${y} ${x + r},${y}`,
-    "Z"
-  ].join(" ");
+  return Math.max(visibleLeft, Math.min(maxLabelX, preferredX));
 }
 
 function buildChronicleLaneIndexes(rows: ChartRow[], dragPreview: DragPreview | null): Record<number, number> {
@@ -458,59 +408,55 @@ function ChronicleEntrySvgShape({
       tabIndex={0}
     >
       <title>{`${entry.fileName} ${rangeLabel}`}</title>
-      <path
+      <line
         className="chronicle-fill-shape"
-        d={shape.path}
+        x1={shape.x}
+        x2={shape.x + shape.width}
+        y1={shape.y + shape.height / 2}
+        y2={shape.y + shape.height / 2}
       />
-      <path
+      <line
         className="chronicle-fill-hit"
-        d={shape.path}
+        x1={shape.x}
+        x2={shape.x + Math.max(shape.width, CHRONICLE_NODE_RADIUS * 2)}
+        y1={shape.y + shape.height / 2}
+        y2={shape.y + shape.height / 2}
       />
-      {shape.fileNameLabelWidth > 0 ? (
-        <>
-          <clipPath id={shape.fileNameClipId}>
-            <rect
-              height={CHRONICLE_LABEL_HEIGHT}
-              width={shape.fileNameLabelWidth}
-              x={shape.fileNameLabelX}
-              y={shape.fileNameLabelY - 14}
-            />
-          </clipPath>
-          <rect
-            className="chronicle-fill-label-bg chronicle-fill-label-bg--file"
-            height={CHRONICLE_LABEL_HEIGHT}
-            rx={4}
-            ry={4}
-            width={shape.fileNameLabelWidth}
-            x={shape.fileNameLabelX}
-            y={shape.fileNameLabelY - 14}
-          />
-          <text
-            className="chronicle-fill-label chronicle-fill-file-label"
-            clipPath={`url(#${shape.fileNameClipId})`}
-            dominantBaseline="middle"
-            x={shape.fileNameLabelX + CHRONICLE_LABEL_PADDING_X}
-            y={shape.fileNameLabelY - 5}
-          >
-            {entry.fileName}
-          </text>
-        </>
+      <circle
+        className="chronicle-fill-node chronicle-fill-node--start"
+        cx={shape.x}
+        cy={shape.y + shape.height / 2}
+        r={CHRONICLE_NODE_RADIUS}
+      />
+      {shape.width > 0 ? (
+        <circle
+          className="chronicle-fill-node chronicle-fill-node--end"
+          cx={shape.x + shape.width}
+          cy={shape.y + shape.height / 2}
+          r={CHRONICLE_NODE_RADIUS}
+        />
       ) : null}
+      <rect
+        className="chronicle-fill-label-bg chronicle-fill-label-bg--file"
+        height={CHRONICLE_LABEL_HEIGHT}
+        rx={4}
+        ry={4}
+        width={shape.fileNameLabelWidth}
+        x={shape.fileNameLabelX}
+        y={shape.fileNameLabelY - 14}
+      />
+      <text
+        className="chronicle-fill-label chronicle-fill-file-label"
+        dominantBaseline="middle"
+        x={shape.fileNameLabelX + CHRONICLE_LABEL_PADDING_X}
+        y={shape.fileNameLabelY - 5}
+      >
+        {entry.fileName}
+      </text>
       {shape.labelWidth > 0 ? (
         <>
-          {shape.labelPlacement === "inside" ? (
-            <clipPath id={shape.labelClipId}>
-              <rect
-                height={CHRONICLE_LABEL_HEIGHT}
-                width={shape.labelWidth}
-                x={shape.labelX}
-                y={shape.labelY - 14}
-              />
-            </clipPath>
-          ) : null}
           <rect
-            className={`chronicle-fill-label-bg${shape.labelPlacement === "outside" ? " chronicle-fill-label-bg--outside" : ""}`}
-            data-label-placement={shape.labelPlacement}
+            className="chronicle-fill-label-bg chronicle-fill-label-bg--range"
             height={CHRONICLE_LABEL_HEIGHT}
             rx={4}
             ry={4}
@@ -519,9 +465,7 @@ function ChronicleEntrySvgShape({
             y={shape.labelY - 14}
           />
           <text
-            className={`chronicle-fill-label${shape.labelPlacement === "outside" ? " chronicle-fill-label--outside" : ""}`}
-            clipPath={shape.labelPlacement === "inside" ? `url(#${shape.labelClipId})` : undefined}
-            data-label-placement={shape.labelPlacement}
+            className="chronicle-fill-label chronicle-fill-range-label"
             dominantBaseline="middle"
             x={shape.labelX + CHRONICLE_LABEL_PADDING_X}
             y={shape.labelY - 5}
@@ -533,20 +477,20 @@ function ChronicleEntrySvgShape({
       <rect
         aria-hidden="true"
         className="chronicle-fill-resize chronicle-fill-resize--start"
-        height={Math.max(18, shape.height - 8)}
+        height={24}
         onPointerDown={(event) => onStartEntryEdit(event, entry, "resize-start")}
-        width={10}
-        x={shape.x}
-        y={shape.y + 4}
+        width={14}
+        x={shape.x - 7}
+        y={shape.y + shape.height / 2 - 12}
       />
       <rect
         aria-hidden="true"
         className="chronicle-fill-resize chronicle-fill-resize--end"
-        height={Math.max(18, shape.height - 8)}
+        height={24}
         onPointerDown={(event) => onStartEntryEdit(event, entry, "resize-end")}
-        width={10}
-        x={shape.x + shape.width - 10}
-        y={shape.y + 4}
+        width={14}
+        x={shape.x + shape.width - 7}
+        y={shape.y + shape.height / 2 - 12}
       />
     </g>
   );

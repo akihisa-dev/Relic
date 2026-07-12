@@ -52,7 +52,7 @@ describe("ChronicleTracks", () => {
     expect(screen.queryByRole("button", { name: /Far/ })).not.toBeInTheDocument();
   });
 
-  it("短いバーの期間ラベルを表示範囲内の外側ラベルとして描画する", () => {
+  it("短い項目を節点と読み取れるラベルで表示範囲内に描画する", () => {
     const { container } = render(
       <ChronicleTracks
         activeSource="chronicle"
@@ -73,16 +73,40 @@ describe("ChronicleTracks", () => {
       />
     );
 
-    const outsideLabel = container.querySelector(".chronicle-fill-label--outside") as SVGTextElement;
-    const outsideBackground = container.querySelector(".chronicle-fill-label-bg--outside") as SVGRectElement;
+    const rangeLabel = container.querySelector(".chronicle-fill-range-label") as SVGTextElement;
 
     expect(container.querySelector(".chronicle-tracks")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-fill-shape")).toBeInTheDocument();
-    expect(outsideLabel).toBeInTheDocument();
-    expect(outsideLabel).toHaveTextContent("9");
-    expect(outsideLabel).toHaveAttribute("data-label-placement", "outside");
-    expect(outsideBackground).toHaveAttribute("data-label-placement", "outside");
-    expect(Number(outsideLabel.getAttribute("x"))).toBeGreaterThanOrEqual(80);
-    expect(Number(outsideLabel.getAttribute("x"))).toBeLessThanOrEqual(200);
+    expect(container.querySelectorAll(".chronicle-fill-node")).toHaveLength(1);
+    expect(container.querySelector(".chronicle-fill-file-label")).toHaveTextContent("Short");
+    expect(rangeLabel).toHaveTextContent("9");
+    expect(Number(rangeLabel.getAttribute("x"))).toBeGreaterThanOrEqual(80);
+    expect(Number(rangeLabel.getAttribute("x"))).toBeLessThanOrEqual(200);
+  });
+
+  it("期間を開始と終了の節点を結ぶ線として描画する", () => {
+    const { container } = render(
+      <ChronicleTracks
+        activeSource="chronicle"
+        axisStart={0}
+        dragPreview={null}
+        guideTicks={[]}
+        onOpenFile={vi.fn()}
+        onStartEntryEdit={vi.fn()}
+        rows={[
+          { entries: [entry("Range", "range.md", 0, 3, 8)], fileName: "Range", key: "range", path: "range.md", statuses: [] }
+        ]}
+        scrollLeft={0}
+        timelineWidth={400}
+        timelineViewportWidth={300}
+        trackViewportHeight={100}
+        unitWidth={10}
+      />
+    );
+
+    expect(container.querySelectorAll(".chronicle-fill-node")).toHaveLength(2);
+    expect(container.querySelector(".chronicle-fill-shape")).toHaveAttribute("x1", "35");
+    expect(container.querySelector(".chronicle-fill-shape")).toHaveAttribute("x2", "85");
+    expect(container.querySelector(".chronicle-fill-range-label")).toHaveTextContent("3 〜 8");
   });
 });
