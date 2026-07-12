@@ -14,6 +14,7 @@ import {
 } from "../editorFrontmatter";
 import { useEditorContextMenu } from "../hooks/useEditorContextMenu";
 import { useEditorFrontmatterDialog } from "../hooks/useEditorFrontmatterDialog";
+import { useLatest } from "../hooks/useLatest";
 import { useToolbarActions } from "../hooks/useToolbarActions";
 import { useT } from "../i18n";
 import { outputFileNameFromPath } from "../outputHtml";
@@ -63,13 +64,13 @@ export function Editor({
   const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const internalViewRef = useRef<EditorView | null>(null);
-  const onChangeRef = useRef(onChange);
-  const onOpenLinkRef = useRef(onOpenLink);
-  const onOpenWikiLinkRef = useRef(onOpenWikiLink);
-  const allFilePathsRef = useRef(allFilePaths);
-  const frontmatterCandidatesRef = useRef(frontmatterCandidates);
+  const onChangeRef = useLatest(onChange);
+  const onOpenLinkRef = useLatest(onOpenLink);
+  const onOpenWikiLinkRef = useLatest(onOpenWikiLink);
+  const allFilePathsRef = useLatest(allFilePaths);
+  const frontmatterCandidatesRef = useLatest(frontmatterCandidates);
   const sourceModeRef = useRef(sourceMode);
-  const userDefinedFieldsRef = useRef(userDefinedFields);
+  const userDefinedFieldsRef = useLatest(userDefinedFields);
   const {
     closeContextMenu,
     contextMenu,
@@ -103,13 +104,6 @@ export function Editor({
     t,
     viewRef: internalViewRef
   });
-
-  onChangeRef.current = onChange;
-  onOpenLinkRef.current = onOpenLink;
-  onOpenWikiLinkRef.current = onOpenWikiLink;
-  allFilePathsRef.current = allFilePaths;
-  frontmatterCandidatesRef.current = frontmatterCandidates;
-  userDefinedFieldsRef.current = userDefinedFields;
 
   useEffect(() => {
     const container = containerRef.current;

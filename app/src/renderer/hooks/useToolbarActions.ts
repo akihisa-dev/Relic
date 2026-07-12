@@ -118,6 +118,7 @@ export function useToolbarActions({
   };
 
   const closeHeadingMenu = (): void => closePanel("heading", () => setShowHeadingMenu(false));
+  const clearLinkUrl = (): void => setLinkUrl("");
   const closeLinkDialog = (afterClose?: () => void): void => closePanel("link", () => setShowLinkDialog(false), afterClose);
   const closeTableDialog = (): void => closePanel("table", () => setShowTableDialog(false));
 
@@ -193,7 +194,7 @@ export function useToolbarActions({
     if (linkUrl) {
       insertMarkdownLink(view, linkUrl, placeholderLinkText);
       onEditorAction?.();
-      closeLinkDialog(() => setLinkUrl(""));
+      closeLinkDialog(clearLinkUrl);
       return;
     }
 
@@ -207,7 +208,7 @@ export function useToolbarActions({
 
     insertMarkdownLink(view, linkUrl || "URL", placeholderLinkText);
     onEditorAction?.();
-    closeLinkDialog(() => setLinkUrl(""));
+    closeLinkDialog(clearLinkUrl);
   };
 
   const handleTableSubmit = (): void => {

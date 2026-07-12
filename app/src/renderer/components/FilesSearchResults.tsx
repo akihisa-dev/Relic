@@ -49,8 +49,8 @@ export function FilesSearchResults({
       ) : null}
       {results.length > 0 ? (
         <ul className="search-results">
-          {results.map((result, index) => (
-            <li className="search-result-item" key={`${result.path}-${result.lineNumber}-${index}`}>
+          {results.map((result) => (
+            <li className="search-result-item" key={`${result.path}-${result.lineNumber ?? "metadata"}`}>
               <button
                 className={`search-result-button${openingFilePath === result.path ? " search-result-button--opening" : ""}`}
                 onClick={(event) => onOpenFile(result.path, event, { lineNumber: result.lineNumber })}

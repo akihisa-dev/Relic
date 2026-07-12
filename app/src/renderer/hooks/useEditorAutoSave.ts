@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { FileTab, Tab } from "../store/editorStore";
 import { useEditorStore } from "../store/editorStore";
+import { useLatest } from "./useLatest";
 
 export type EditorSaveStatus = "saved" | "dirty" | "saving" | "error" | "externalConflict";
 
@@ -47,17 +48,14 @@ export function useEditorAutoSave({
 } {
   const [queueSnapshot, setQueueSnapshot] = useState(0);
   const queuesRef = useRef<Map<string, SaveQueue> | null>(null);
-  const onSavedRef = useRef(onSaved);
-  const onSaveErrorRef = useRef(onSaveError);
+  const onSavedRef = useLatest(onSaved);
+  const onSaveErrorRef = useLatest(onSaveError);
 
   if (queuesRef.current === null) {
     queuesRef.current = new Map();
   }
 
   const queues = queuesRef.current;
-
-  onSavedRef.current = onSaved;
-  onSaveErrorRef.current = onSaveError;
 
   const notifyQueueChanged = useCallback((): void => {
     setQueueSnapshot((value) => value + 1);

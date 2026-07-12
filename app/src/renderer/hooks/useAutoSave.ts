@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import { useLatest } from "./useLatest";
 
 export function useAutoSave(
   content: string,
@@ -11,21 +13,14 @@ export function useAutoSave(
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSavingRef = useRef(false);
   const pendingSaveRef = useRef(false);
-  const latestContentRef = useRef(content);
-  const latestPathRef = useRef(path);
-  const enabledRef = useRef(enabled);
+  const latestContentRef = useLatest(content);
+  const latestPathRef = useLatest(path);
+  const enabledRef = useLatest(enabled);
   const mountedRef = useRef(true);
-  const onSavedRef = useRef(onSaved);
-  const onSaveErrorRef = useRef(onSaveError);
-  const startSaveRef = useRef<(saveContent: string, savePath: string) => void>(() => undefined);
+  const onSavedRef = useLatest(onSaved);
+  const onSaveErrorRef = useLatest(onSaveError);
 
-  onSavedRef.current = onSaved;
-  onSaveErrorRef.current = onSaveError;
-  latestContentRef.current = content;
-  latestPathRef.current = path;
-  enabledRef.current = enabled;
-
-  startSaveRef.current = (saveContent: string, savePath: string): void => {
+  const startSave = useCallback((saveContent: string, savePath: string): void => {
     if (!window.relic) return;
 
     isSavingRef.current = true;
@@ -59,9 +54,9 @@ export function useAutoSave(
 
         if (!mountedRef.current || !pendingSaveRef.current || !enabledRef.current || !latestPathRef.current || !window.relic) return;
 
-        startSaveRef.current(latestContentRef.current, latestPathRef.current);
+        startSave(latestContentRef.current, latestPathRef.current);
       });
-  };
+  }, [enabledRef, latestContentRef, latestPathRef, mountedRef, onSaveErrorRef, onSavedRef]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -87,7 +82,7 @@ export function useAutoSave(
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
 
-      startSaveRef.current(latestContentRef.current, path);
+      startSave(latestContentRef.current, path);
     }, 1000);
 
     return () => {
@@ -95,7 +90,7 @@ export function useAutoSave(
         clearTimeout(timerRef.current);
       }
     };
-  }, [content, path, enabled]);
+  }, [content, path, enabled, startSave]);
 
   return { isSaving };
 }

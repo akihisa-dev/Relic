@@ -19,6 +19,7 @@ import {
   type GraphViewTransform
 } from "../graph/graphTypes";
 import { useT } from "../i18n";
+import { useLatest } from "../hooks/useLatest";
 import { GraphControls } from "./GraphControls";
 import {
   animateGraph,
@@ -104,10 +105,8 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     time: number;
     type: "node" | "pan";
   } | null>(null);
-  const latestOptionsRef = useRef(defaultGraphOptions);
-  const colorGroupsRef = useRef<GraphColorGroup[]>([]);
-  const openFileRef = useRef(onOpenFile);
-  const openTagSearchRef = useRef(onOpenTagSearch);
+  const openFileRef = useLatest(onOpenFile);
+  const openTagSearchRef = useLatest(onOpenTagSearch);
   const [controlsOpen, setControlsOpen] = useState(loadGraphControlsOpen);
   const [graphState, setGraphState] = useState<{
     error: string | null;
@@ -121,11 +120,8 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const [draggingColorGroupId, setDraggingColorGroupId] = useState<string | null>(null);
   const [sectionCollapsed, setSectionCollapsed] = useState(loadGraphSectionCollapsed);
   const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
-
-  openFileRef.current = onOpenFile;
-  openTagSearchRef.current = onOpenTagSearch;
-  latestOptionsRef.current = options;
-  colorGroupsRef.current = colorGroups;
+  const latestOptionsRef = useLatest(options);
+  const colorGroupsRef = useLatest(colorGroups);
 
   useEffect(() => {
     const client = createGraphSimulationClient((message) => {

@@ -162,7 +162,7 @@ export function stepChronicleCanvasScene(
   const frameScale = Math.min(2, Math.max(0.25, deltaSeconds * 60));
   let moving = false;
 
-  const verticalOrder = items.length > 24 ? [...items].sort((left, right) => left.y - right.y) : items;
+  const verticalOrder = items.length > 24 ? items.toSorted((left, right) => left.y - right.y) : items;
   const maximumItemHeight = items.reduce((maximum, item) => Math.max(maximum, item.height), 0);
   for (let leftIndex = 0; leftIndex < verticalOrder.length; leftIndex += 1) {
     const left = verticalOrder[leftIndex];
@@ -218,7 +218,7 @@ export function initializeChronicleCanvasCamera(
   viewportWidth: number,
   viewportHeight: number
 ): void {
-  const ordered = [...scene.items].sort((a, b) => a.startYear - b.startYear || a.endYear - b.endYear);
+  const ordered = scene.items.toSorted((a, b) => a.startYear - b.startYear || a.endYear - b.endYear);
   const median = ordered[Math.floor(ordered.length / 2)];
   const centerX = median ? (median.startX + median.endX) / 2 : 0;
   camera.scale = CHRONICLE_CANVAS_INITIAL_SCALE;

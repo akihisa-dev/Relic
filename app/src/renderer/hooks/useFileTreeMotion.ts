@@ -7,14 +7,9 @@ export function useFileTreeMotion(nodes: WorkspaceTreeNode[], motionPaths?: Set<
   const previousPathsRef = useRef<Set<string> | null>(null);
   const [appearingPaths, setAppearingPaths] = useState<Set<string>>(new Set());
 
-  if (previousPathsRef.current === null) {
-    previousPathsRef.current = collectNodePaths(nodes);
-  }
-
   useEffect(() => {
-    const previousPaths = previousPathsRef.current ?? collectNodePaths(nodes);
     const nextPaths = collectNodePaths(nodes);
-    const addedPaths = addedNodePaths(previousPaths, nodes);
+    const addedPaths = previousPathsRef.current ? addedNodePaths(previousPathsRef.current, nodes) : new Set<string>();
     previousPathsRef.current = nextPaths;
 
     if (addedPaths.size === 0) return;

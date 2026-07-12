@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, type PointerEvent, type ReactElement, type WheelEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type ReactElement, type WheelEvent } from "react";
 
 import type { ChartEntry } from "../../shared/ipc";
+import { cancelChronicleCanvasFrame, chronicleCanvasWheelFactor } from "../chronicleCanvasHelpers";
 import {
   CHRONICLE_CANVAS_MAX_SCALE,
   CHRONICLE_CANVAS_MIN_SCALE,
@@ -16,6 +17,7 @@ import {
   type ChronicleCanvasLabelHit
 } from "../chronicleCanvasModel";
 import { drawChronicleCanvas, type ChronicleCanvasTheme } from "../chronicleCanvasRenderer";
+import { useLatest } from "../hooks/useLatest";
 import { useT } from "../i18n";
 
 interface ChronicleCanvasProps {
@@ -38,8 +40,8 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const scene = useMemo(() => createChronicleCanvasScene(entries), [entries]);
-  const sceneRef = useRef(scene);
-  const cameraRef = useRef(createChronicleCanvasCamera());
+  const sceneRef = useLatest(scene);
+  const [camera] = useState(createChronicleCanvasCamera);
   const initializedSceneRef = useRef<unknown>(null);
   const pointerRef = useRef<PointerSession | null>(null);
   const hoveredItemIdRef = useRef<string | null>(null);
@@ -48,10 +50,8 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
   const animationFrameRef = useRef<number | null>(null);
   const simulationActiveRef = useRef(false);
   const lastPanDeltaRef = useRef({ x: 0, y: 0 });
-  const openFileRef = useRef(onOpenFile);
+  const openFileRef = useLatest(onOpenFile);
   const themeRef = useRef<ChronicleCanvasTheme>({ background: "#ffffff", mutedText: "#6f7177", text: "#202124" });
-  sceneRef.current = scene;
-  openFileRef.current = onOpenFile;
 
   const updateTheme = useCallback(() => {
     const canvas = canvasRef.current;
@@ -84,7 +84,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     }
     if (initializedSceneRef.current !== sceneRef.current) {
       initializedSceneRef.current = sceneRef.current;
-      initializeChronicleCanvasCamera(cameraRef.current, sceneRef.current, width, height);
+      initializeChronicleCanvasCamera(camera, sceneRef.current, width, height);
     }
 
     const previous = previousFrameRef.current ?? timestamp;
@@ -96,13 +96,13 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
       simulationActiveRef.current = stepChronicleCanvasScene(sceneRef.current.items, draggedItemId, deltaSeconds);
       simulationMoving = simulationActiveRef.current;
     }
-    const inertiaMoving = pointerRef.current?.type !== "pan" && stepChronicleCanvasInertia(cameraRef.current);
+    const inertiaMoving = pointerRef.current?.type !== "pan" && stepChronicleCanvasInertia(camera);
 
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     const result = drawChronicleCanvas(
       context,
       sceneRef.current,
-      cameraRef.current,
+      camera,
       hoveredItemIdRef.current,
       width,
       height,
@@ -139,10 +139,10 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
   const handlePointerDown = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
     if (event.button !== 0) return;
     const point = canvasPoint(event.clientX, event.clientY);
-    const item = chronicleCanvasItemAtPoint(sceneRef.current.items, cameraRef.current, point);
+    const item = chronicleCanvasItemAtPoint(sceneRef.current.items, camera, point);
     event.currentTarget.setPointerCapture(event.pointerId);
-    cameraRef.current.velocityX = 0;
-    cameraRef.current.velocityY = 0;
+    camera.velocityX = 0;
+    camera.velocityY = 0;
     lastPanDeltaRef.current = { x: 0, y: 0 };
     pointerRef.current = {
       item,
@@ -159,7 +159,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
 
   const handlePointerMove = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
     const point = canvasPoint(event.clientX, event.clientY);
-    const hovered = chronicleCanvasItemAtPoint(sceneRef.current.items, cameraRef.current, point);
+    const hovered = chronicleCanvasItemAtPoint(sceneRef.current.items, camera, point);
     const hoveredChanged = hoveredItemIdRef.current !== (hovered?.id ?? null);
     hoveredItemIdRef.current = hovered?.id ?? null;
     const clickableLabel = chronicleCanvasLabelAtPoint(labelHitsRef.current, point);
@@ -176,17 +176,17 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     pointer.lastY = event.clientY;
     pointer.moved ||= Math.hypot(event.clientX - pointer.startX, event.clientY - pointer.startY) >= 4;
     if (pointer.type === "pan") {
-      cameraRef.current.panX += dx;
-      cameraRef.current.panY += dy;
+      camera.panX += dx;
+      camera.panY += dy;
       lastPanDeltaRef.current = { x: dx, y: dy };
       requestCanvasFrame(animationFrameRef, draw);
       return;
     }
     if (pointer.item) {
-      pointer.item.x += dx / cameraRef.current.scale;
-      pointer.item.y += dy / cameraRef.current.scale;
-      pointer.item.vx = dx / cameraRef.current.scale;
-      pointer.item.vy = dy / cameraRef.current.scale;
+      pointer.item.x += dx / camera.scale;
+      pointer.item.y += dy / camera.scale;
+      pointer.item.vx = dx / camera.scale;
+      pointer.item.vy = dy / camera.scale;
       simulationActiveRef.current = true;
     }
     requestCanvasFrame(animationFrameRef, draw);
@@ -197,8 +197,8 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     if (!pointer) return;
     if (event.currentTarget.hasPointerCapture(pointer.pointerId)) event.currentTarget.releasePointerCapture(pointer.pointerId);
     if (pointer.type === "pan") {
-      cameraRef.current.velocityX = lastPanDeltaRef.current.x * 0.88;
-      cameraRef.current.velocityY = lastPanDeltaRef.current.y * 0.88;
+      camera.velocityX = lastPanDeltaRef.current.x * 0.88;
+      camera.velocityY = lastPanDeltaRef.current.y * 0.88;
     } else if (!pointer.moved) {
       const point = canvasPoint(event.clientX, event.clientY);
       const label = chronicleCanvasLabelAtPoint(labelHitsRef.current, point);
@@ -218,8 +218,8 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     const point = canvasPoint(event.clientX, event.clientY);
     const factor = chronicleCanvasWheelFactor(event.deltaY);
     const sceneMaximum = maximumScaleForScene(sceneRef.current, event.currentTarget.clientWidth || 720);
-    const nextScale = Math.min(sceneMaximum, Math.max(CHRONICLE_CANVAS_MIN_SCALE, cameraRef.current.scale * factor));
-    zoomChronicleCanvasAtPoint(cameraRef.current, nextScale, point);
+    const nextScale = Math.min(sceneMaximum, Math.max(CHRONICLE_CANVAS_MIN_SCALE, camera.scale * factor));
+    zoomChronicleCanvasAtPoint(camera, nextScale, point);
     requestCanvasFrame(animationFrameRef, draw);
   }, [canvasPoint, draw]);
 
@@ -247,16 +247,6 @@ function requestCanvasFrame(
 ): void {
   if (frameRef.current !== null) return;
   frameRef.current = requestAnimationFrame(draw);
-}
-
-export function cancelChronicleCanvasFrame(frameRef: { current: number | null }): void {
-  if (frameRef.current === null) return;
-  cancelAnimationFrame(frameRef.current);
-  frameRef.current = null;
-}
-
-export function chronicleCanvasWheelFactor(deltaY: number): number {
-  return Math.exp(-deltaY * 0.006);
 }
 
 function canvasContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null {

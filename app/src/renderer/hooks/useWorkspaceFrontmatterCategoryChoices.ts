@@ -41,7 +41,10 @@ export function useWorkspaceFrontmatterCategoryChoices({
   }, [setWorkspaceError, workspaceState?.activeWorkspace?.id]);
 
   const handleSaveCategoryChoices = useCallback((choices: FrontmatterCategoryChoice[]): void => {
-    const normalizedChoices = uniqueChoices(choices.map((choice) => choice.trim()).filter(Boolean));
+    const normalizedChoices = uniqueChoices(choices.flatMap((choice) => {
+      const normalizedChoice = choice.trim();
+      return normalizedChoice ? [normalizedChoice] : [];
+    }));
     setCategoryChoices(normalizedChoices);
     void window.relic?.saveWorkspaceFrontmatterCategoryChoices(normalizedChoices).then((result) => {
       if (result.ok) {

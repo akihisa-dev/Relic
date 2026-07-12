@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { cancelChronicleCanvasFrame, chronicleCanvasWheelFactor } from "./ChronicleCanvas";
+import { cancelChronicleCanvasFrame, chronicleCanvasWheelFactor } from "../chronicleCanvasHelpers";
 
 describe("cancelChronicleCanvasFrame", () => {
   afterEach(() => {
