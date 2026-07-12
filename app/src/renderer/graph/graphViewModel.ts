@@ -30,6 +30,7 @@ const graphHighlightMinimumStrength = 0.01;
 const graphDimmedLinkAlpha = 0.18;
 const graphDimmedNodeAlpha = 0.34;
 const graphDimmedLabelAlpha = 0.32;
+const graphHighlightPulsePeriodMs = 1_700;
 
 export interface GraphHoverFocusState {
   id: string | null;
@@ -114,8 +115,16 @@ export function drawGraph(
     }
   }
 
+  const highlightPulse = graphHighlightPulse(typeof performance === "undefined" ? 0 : performance.now());
+  const focusedColor = focused
+    ? nodeColor(focused, colorGroups, tagsByNode.get(focused.id) ?? [])
+    : null;
+  if (focused && focusedColor) {
+    drawGraphNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, highlightPulse);
+  }
+
   const linkScaleOpacity = graphLinkScaleOpacity(view.scale);
-  for (const link of links) {
+  for (const [index, link] of links.entries()) {
     const endpoints = graphLinkEndpoints(link.sourceNode, link.targetNode, options, view.scale);
     if (!endpoints.visible) continue;
 
@@ -127,6 +136,20 @@ export function drawGraph(
     context.moveTo(endpoints.sourceX, endpoints.sourceY);
     context.lineTo(endpoints.targetX, endpoints.targetY);
     context.stroke();
+
+    if (focused && focusedColor && active && highlightStrength > 0.05) {
+      drawGraphConnectionPulse(
+        context,
+        endpoints,
+        link.source === focused.id,
+        focusedColor,
+        view.scale,
+        highlightStrength,
+        highlightPulse,
+        index,
+        linkScaleOpacity
+      );
+    }
 
     if (options.showArrows && linkScaleOpacity > 0.001) {
       drawArrow(context, link.sourceNode, link.targetNode, options, view.scale);
@@ -169,6 +192,72 @@ export function drawGraph(
       context.fillText(node.label, node.x, node.y + radius + 4 / view.scale, 240 / view.scale);
     }
   }
+  context.restore();
+}
+
+export function graphHighlightPulse(timeMs: number): number {
+  const phase = (timeMs % graphHighlightPulsePeriodMs) / graphHighlightPulsePeriodMs;
+  return 0.5 + Math.sin(phase * Math.PI * 2) * 0.5;
+}
+
+function drawGraphNodeHalo(
+  context: CanvasRenderingContext2D,
+  node: GraphSimNode,
+  color: string,
+  options: GraphOptions,
+  scale: number,
+  strength: number,
+  pulse: number
+): void {
+  const radius = graphNodeVisualRadius(node, options, scale);
+  const outerRadius = radius + (10 + pulse * 6) / scale;
+  const gradient = context.createRadialGradient(
+    node.x,
+    node.y,
+    Math.max(0.5, radius * 0.45),
+    node.x,
+    node.y,
+    outerRadius
+  );
+  gradient.addColorStop(0, color);
+  gradient.addColorStop(0.58, color);
+  gradient.addColorStop(1, "transparent");
+
+  context.save();
+  context.globalAlpha = (0.11 + pulse * 0.07) * strength;
+  context.fillStyle = gradient;
+  context.beginPath();
+  context.arc(node.x, node.y, outerRadius, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
+function drawGraphConnectionPulse(
+  context: CanvasRenderingContext2D,
+  endpoints: ReturnType<typeof graphLinkEndpoints>,
+  sourceIsFocused: boolean,
+  color: string,
+  scale: number,
+  strength: number,
+  pulse: number,
+  linkIndex: number,
+  linkOpacity: number
+): void {
+  const progress = (pulse + linkIndex * 0.19) % 1;
+  const fromX = sourceIsFocused ? endpoints.sourceX : endpoints.targetX;
+  const fromY = sourceIsFocused ? endpoints.sourceY : endpoints.targetY;
+  const toX = sourceIsFocused ? endpoints.targetX : endpoints.sourceX;
+  const toY = sourceIsFocused ? endpoints.targetY : endpoints.sourceY;
+  const x = fromX + (toX - fromX) * progress;
+  const y = fromY + (toY - fromY) * progress;
+  const radius = Math.max(1.4 / scale, 2.4 / scale);
+
+  context.save();
+  context.globalAlpha = 0.62 * strength * linkOpacity;
+  context.fillStyle = color;
+  context.beginPath();
+  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.fill();
   context.restore();
 }
 

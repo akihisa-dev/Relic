@@ -38,6 +38,7 @@ import {
   graphNodeScale,
   graphPointerMovedBeyondClickThreshold,
   graphWheelZoomPoint,
+  graphHighlightPulse,
   graphNodePrimaryAction,
   isGraphNodePrimaryPointerButton,
   finishGraphPanVelocity,
@@ -351,6 +352,13 @@ describe("App charts", () => {
       stepGraphHighlightState(state, null);
     }
     expect(state).toStrictEqual({ id: null, strength: 0 });
+  });
+
+  it("グラフビューのホバー発光は周期的に穏やかに変化する", () => {
+    expect(graphHighlightPulse(0)).toBeCloseTo(0.5);
+    expect(graphHighlightPulse(425)).toBeGreaterThan(0.9);
+    expect(graphHighlightPulse(850)).toBeCloseTo(0.5);
+    expect(graphHighlightPulse(1_700)).toBeCloseTo(0.5);
   });
 
   it("グラフビューのノードと文字はズーム係数で描画する", () => {
