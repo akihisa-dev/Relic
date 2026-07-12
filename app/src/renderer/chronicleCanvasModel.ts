@@ -5,6 +5,8 @@ import { entryKey } from "./chronicleTimelineRows";
 export const CHRONICLE_CANVAS_MIN_SCALE = 0.08;
 export const CHRONICLE_CANVAS_MAX_SCALE = 2.4;
 export const CHRONICLE_CANVAS_INITIAL_SCALE = 0.82;
+export const CHRONICLE_CANVAS_LABEL_HEIGHT = 20;
+export const CHRONICLE_CANVAS_ITEM_LABEL_OFFSET = 22;
 
 const itemHeight = 70;
 const labelCharacterWidth = 7.4;
@@ -227,6 +229,7 @@ export function initializeChronicleCanvasCamera(
   camera.panY = viewportHeight / 2 - (median?.y ?? 0) * camera.scale;
   camera.velocityX = 0;
   camera.velocityY = 0;
+  constrainChronicleCanvasCameraToItems(camera, scene);
 }
 
 export function worldToCanvas(point: ChronicleCanvasPoint, camera: ChronicleCanvasCamera): ChronicleCanvasPoint {
@@ -267,6 +270,39 @@ export function chronicleCanvasYearOpacity(scale: number): number {
 
 export function chronicleCanvasYearFontSize(scale: number): number {
   return Math.min(18, Math.max(9, 11 * Math.sqrt(scale / CHRONICLE_CANVAS_INITIAL_SCALE)));
+}
+
+export function chronicleCanvasYearLabelY(scale: number): number {
+  return Math.max(22, chronicleCanvasYearFontSize(scale) + 14);
+}
+
+export function chronicleCanvasItemCenterTopBoundary(scale: number): number {
+  const yearFontSize = chronicleCanvasYearFontSize(scale);
+  const yearLabelBottom = chronicleCanvasYearLabelY(scale) + yearFontSize / 2;
+  return yearLabelBottom + 4 + CHRONICLE_CANVAS_ITEM_LABEL_OFFSET + CHRONICLE_CANVAS_LABEL_HEIGHT / 2;
+}
+
+export function constrainChronicleCanvasCameraToItems(
+  camera: ChronicleCanvasCamera,
+  scene: ChronicleCanvasScene
+): void {
+  if (scene.items.length === 0) return;
+  const minimumItemY = scene.items.reduce((minimum, item) => Math.min(minimum, item.y), Infinity);
+  const minimumScreenY = minimumItemY * camera.scale + camera.panY;
+  const boundary = chronicleCanvasItemCenterTopBoundary(camera.scale);
+  if (minimumScreenY >= boundary) return;
+  camera.panY += boundary - minimumScreenY;
+  if (camera.velocityY < 0) camera.velocityY = 0;
+}
+
+export function constrainChronicleCanvasItemToTopBoundary(
+  item: ChronicleCanvasItem,
+  camera: ChronicleCanvasCamera
+): void {
+  const minimumWorldY = (chronicleCanvasItemCenterTopBoundary(camera.scale) - camera.panY) / camera.scale;
+  if (item.y >= minimumWorldY) return;
+  item.y = minimumWorldY;
+  if (item.vy < 0) item.vy = 0;
 }
 
 export function visibleChronicleCanvasYears(

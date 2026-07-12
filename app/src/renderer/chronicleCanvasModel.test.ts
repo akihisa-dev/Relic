@@ -4,6 +4,7 @@ import type { ChartEntry } from "../shared/ipc";
 import {
   buildChronicleCanvasYears,
   canvasToWorld,
+  chronicleCanvasItemCenterTopBoundary,
   chronicleCanvasLabelAtPoint,
   chronicleCanvasTextOpacity,
   chronicleCanvasYearFontSize,
@@ -11,6 +12,8 @@ import {
   compressedYearDistance,
   createChronicleCanvasCamera,
   createChronicleCanvasScene,
+  constrainChronicleCanvasCameraToItems,
+  constrainChronicleCanvasItemToTopBoundary,
   initializeChronicleCanvasCamera,
   stepChronicleCanvasScene,
   visibleChronicleCanvasYears,
@@ -93,6 +96,28 @@ describe("chronicleCanvasModel", () => {
     expect(canvasToWorld(focus, camera)).toEqual(worldBefore);
     expect(worldToCanvas(worldBefore, camera).x).toBeCloseTo(focus.x);
     expect(worldToCanvas(worldBefore, camera).y).toBeCloseTo(focus.y);
+  });
+
+  it("年ラベルの下端より項目を上へ出さない", () => {
+    const scene = createChronicleCanvasScene([
+      entry("A", "a.md", 100),
+      entry("B", "b.md", 200)
+    ], () => 0.5);
+    const camera = { ...createChronicleCanvasCamera(), panY: -100, velocityY: -2 };
+    const boundary = chronicleCanvasItemCenterTopBoundary(camera.scale);
+
+    constrainChronicleCanvasCameraToItems(camera, scene);
+
+    expect(Math.min(...scene.items.map((item) => worldToCanvas({ x: item.x, y: item.y }, camera).y))).toBeCloseTo(boundary);
+    expect(camera.velocityY).toBe(0);
+
+    const dragged = scene.items[0];
+    dragged.y = -100;
+    dragged.vy = -3;
+    constrainChronicleCanvasItemToTopBoundary(dragged, camera);
+
+    expect(worldToCanvas({ x: dragged.x, y: dragged.y }, camera).y).toBeCloseTo(boundary);
+    expect(dragged.vy).toBe(0);
   });
 
   it("ズームに応じて文字を徐々に薄くし、年ラベルを間引く", () => {

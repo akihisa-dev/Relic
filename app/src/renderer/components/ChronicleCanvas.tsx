@@ -7,6 +7,8 @@ import {
   CHRONICLE_CANVAS_MIN_SCALE,
   chronicleCanvasItemAtPoint,
   chronicleCanvasLabelAtPoint,
+  constrainChronicleCanvasCameraToItems,
+  constrainChronicleCanvasItemToTopBoundary,
   createChronicleCanvasCamera,
   createChronicleCanvasScene,
   initializeChronicleCanvasCamera,
@@ -97,6 +99,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
       simulationMoving = simulationActiveRef.current;
     }
     const inertiaMoving = pointerRef.current?.type !== "pan" && stepChronicleCanvasInertia(camera);
+    constrainChronicleCanvasCameraToItems(camera, sceneRef.current);
 
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     const result = drawChronicleCanvas(
@@ -178,6 +181,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     if (pointer.type === "pan") {
       camera.panX += dx;
       camera.panY += dy;
+      constrainChronicleCanvasCameraToItems(camera, sceneRef.current);
       lastPanDeltaRef.current = { x: dx, y: dy };
       requestCanvasFrame(animationFrameRef, draw);
       return;
@@ -187,6 +191,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
       pointer.item.y += dy / camera.scale;
       pointer.item.vx = dx / camera.scale;
       pointer.item.vy = dy / camera.scale;
+      constrainChronicleCanvasItemToTopBoundary(pointer.item, camera);
       simulationActiveRef.current = true;
     }
     requestCanvasFrame(animationFrameRef, draw);
@@ -220,6 +225,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     const sceneMaximum = maximumScaleForScene(sceneRef.current, event.currentTarget.clientWidth || 720);
     const nextScale = Math.min(sceneMaximum, Math.max(CHRONICLE_CANVAS_MIN_SCALE, camera.scale * factor));
     zoomChronicleCanvasAtPoint(camera, nextScale, point);
+    constrainChronicleCanvasCameraToItems(camera, sceneRef.current);
     requestCanvasFrame(animationFrameRef, draw);
   }, [canvasPoint, draw]);
 

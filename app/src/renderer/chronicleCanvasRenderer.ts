@@ -1,5 +1,8 @@
 import {
+  CHRONICLE_CANVAS_ITEM_LABEL_OFFSET,
+  CHRONICLE_CANVAS_LABEL_HEIGHT,
   chronicleCanvasTextOpacity,
+  chronicleCanvasYearLabelY,
   chronicleCanvasYearFontSize,
   chronicleCanvasYearOpacity,
   visibleChronicleCanvasYears,
@@ -11,7 +14,6 @@ import {
 } from "./chronicleCanvasModel";
 
 const nodeRadius = 6;
-const labelHeight = 20;
 
 export interface ChronicleCanvasTheme {
   background: string;
@@ -65,7 +67,7 @@ function drawYears(
 
   for (const year of years) {
     const position = worldToCanvas({ x: year.x, y: 0 }, camera);
-    position.y = Math.max(22, fontSize + 14);
+    position.y = chronicleCanvasYearLabelY(camera.scale);
     if (position.x < -60 || position.x > viewportWidth + 60) continue;
     context.globalAlpha = opacity * 0.88;
     context.fillStyle = theme.mutedText;
@@ -97,7 +99,7 @@ function drawItem(
   const baseOpacity = chronicleCanvasTextOpacity(camera.scale);
   const renderedOpacity = hovered ? Math.max(0.92, baseOpacity) : baseOpacity;
   const naturalCenterX = (start.x + end.x) / 2;
-  const labelY = start.y - 22;
+  const labelY = start.y - CHRONICLE_CANVAS_ITEM_LABEL_OFFSET;
   const rangeY = start.y + 24;
 
   context.save();
@@ -129,12 +131,12 @@ function drawItem(
   context.restore();
 
   return {
-    height: labelHeight,
+    height: CHRONICLE_CANVAS_LABEL_HEIGHT,
     itemId: item.id,
     opacity: baseOpacity,
     width: measuredLabelWidth + 12,
     x: centerX - measuredLabelWidth / 2 - 6,
-    y: labelY - labelHeight / 2
+    y: labelY - CHRONICLE_CANVAS_LABEL_HEIGHT / 2
   };
 }
 
