@@ -17,6 +17,7 @@
   "common.none": "-",
   "common.running": "処理中…",
   "chronicle.empty": "時系列に表示できるファイルはまだありません。",
+  "chronicle.yearsLater": "{{count}}年後",
   "chronicle.dragHandle": "チャートメニューを移動",
   "chronicle.jumpToPeriod": "この年代へ移動",
   "chronicle.offscreenLeft": "左に{{count}}件の日付があります",

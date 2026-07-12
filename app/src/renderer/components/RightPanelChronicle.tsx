@@ -31,13 +31,17 @@ export function RightPanelChronicle({ activeFileTab, entries, onOpenFile }: Righ
     <ol className="right-panel-chronicle-list">
       {timelineEntries.map((entry, index) => {
         const active = entry.path === activeFileTab?.path;
-        const side = index % 2 === 0 ? "left" : "right";
+        const previous = timelineEntries[index - 1];
+        const yearGap = previous ? Math.trunc(entry.startValue / 12) - Math.trunc(previous.startValue / 12) : null;
         return (
           <li
-            className={`right-panel-chronicle-item right-panel-chronicle-item--${side}${active ? " right-panel-chronicle-item--active" : ""}`}
+            className={`right-panel-chronicle-item${active ? " right-panel-chronicle-item--active" : ""}`}
             key={`${entry.path}-${entry.startValue}-${entry.endValue}`}
             ref={active ? activeRef : undefined}
           >
+            {yearGap && yearGap > 0 ? (
+              <div className="right-panel-chronicle-gap">{t("chronicle.yearsLater", { count: yearGap })}</div>
+            ) : null}
             <div className="right-panel-chronicle-row">
               <span className="right-panel-chronicle-date">
                 {entry.startLabel === entry.endLabel ? entry.startLabel : `${entry.startLabel}–${entry.endLabel}`}
