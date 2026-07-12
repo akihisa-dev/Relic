@@ -1,5 +1,7 @@
 import {
   chronicleCanvasTextOpacity,
+  chronicleCanvasYearFontSize,
+  chronicleCanvasYearOpacity,
   visibleChronicleCanvasYears,
   worldToCanvas,
   type ChronicleCanvasCamera,
@@ -53,17 +55,17 @@ function drawYears(
   viewportWidth: number,
   theme: ChronicleCanvasTheme
 ): void {
-  const opacity = chronicleCanvasTextOpacity(camera.scale);
-  if (opacity <= 0.015) return;
+  const opacity = chronicleCanvasYearOpacity(camera.scale);
   const years = visibleChronicleCanvasYears(scene.years, camera);
+  const fontSize = chronicleCanvasYearFontSize(camera.scale);
   context.save();
-  context.font = "650 11px -apple-system, BlinkMacSystemFont, sans-serif";
+  context.font = `650 ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
   context.textAlign = "center";
   context.textBaseline = "middle";
 
   for (const year of years) {
     const position = worldToCanvas({ x: year.x, y: 0 }, camera);
-    position.y = 28;
+    position.y = Math.max(22, fontSize + 14);
     if (position.x < -60 || position.x > viewportWidth + 60) continue;
     context.globalAlpha = opacity * 0.72;
     context.fillStyle = theme.mutedText;
@@ -72,8 +74,8 @@ function drawYears(
     context.strokeStyle = theme.mutedText;
     context.lineWidth = 1;
     context.beginPath();
-    context.moveTo(position.x, position.y + 12);
-    context.lineTo(position.x, position.y + 24);
+    context.moveTo(position.x, position.y + fontSize / 2 + 4);
+    context.lineTo(position.x, position.y + fontSize / 2 + 16);
     context.stroke();
   }
   context.restore();

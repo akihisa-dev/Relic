@@ -261,6 +261,14 @@ export function chronicleCanvasTextOpacity(scale: number): number {
   return smoothstep(Math.min(1, Math.max(0, progress)));
 }
 
+export function chronicleCanvasYearOpacity(scale: number): number {
+  return Math.max(0.28, chronicleCanvasTextOpacity(scale));
+}
+
+export function chronicleCanvasYearFontSize(scale: number): number {
+  return Math.min(18, Math.max(7, 11 * Math.sqrt(scale / CHRONICLE_CANVAS_INITIAL_SCALE)));
+}
+
 export function visibleChronicleCanvasYears(
   years: ChronicleCanvasYear[],
   camera: ChronicleCanvasCamera,
