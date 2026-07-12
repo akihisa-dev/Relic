@@ -331,6 +331,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
 
     const canvas = event.currentTarget;
     canvas.setPointerCapture(event.pointerId);
+    canvas.style.cursor = "grabbing";
 
     if (node) {
       node.fx = node.x;
@@ -372,8 +373,10 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
 
     const pointer = pointerRef.current;
     if (!pointer) {
+      event.currentTarget.style.cursor = "grab";
       return;
     }
+    event.currentTarget.style.cursor = "grabbing";
 
     const dx = event.clientX - pointer.lastX;
     const dy = event.clientY - pointer.lastY;
@@ -406,7 +409,9 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     const pointer = pointerRef.current;
     if (!pointer) return;
 
-    event.currentTarget.releasePointerCapture(pointer.pointerId);
+    if (event.currentTarget.hasPointerCapture(pointer.pointerId)) {
+      event.currentTarget.releasePointerCapture(pointer.pointerId);
+    }
     if (pointer.dragNode) {
       pointer.dragNode.fx = null;
       pointer.dragNode.fy = null;
@@ -423,6 +428,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       panSampleMsRef.current = 0;
     }
     pointerRef.current = null;
+    event.currentTarget.style.cursor = "grab";
   }, []);
 
   const handleContextMenu = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -558,8 +564,10 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
         onPointerDown={handlePointerDown}
         onPointerLeave={() => {
           hoverPointRef.current = null;
+          if (!pointerRef.current && canvasRef.current) canvasRef.current.style.cursor = "grab";
         }}
         onPointerMove={handlePointerMove}
+        onPointerCancel={handlePointerUp}
         onPointerUp={handlePointerUp}
         onWheel={handleWheel}
         ref={canvasRef}

@@ -48,4 +48,22 @@ describe("GraphView", () => {
     expect(screen.getByPlaceholderText("ノードを検索...")).toBeInTheDocument();
     expect(screen.getByText("タグ")).toBeInTheDocument();
   });
+
+  it("グラフを押している間はgrabbingカーソルを表示する", () => {
+    renderGraphView("en");
+
+    const canvas = screen.getByLabelText("Graph view");
+    Object.defineProperty(canvas, "setPointerCapture", { configurable: true, value: vi.fn() });
+    Object.defineProperty(canvas, "hasPointerCapture", { configurable: true, value: vi.fn(() => true) });
+    Object.defineProperty(canvas, "releasePointerCapture", { configurable: true, value: vi.fn() });
+
+    fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 0, clientY: 0 }));
+    expect(canvas).toHaveStyle("cursor: grabbing");
+
+    fireEvent(canvas, new MouseEvent("pointermove", { bubbles: true, clientX: 8, clientY: 8 }));
+    expect(canvas).toHaveStyle("cursor: grabbing");
+
+    fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 8, clientY: 8 }));
+    expect(canvas).toHaveStyle("cursor: grab");
+  });
 });

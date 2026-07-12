@@ -221,6 +221,10 @@
   color: var(--live-table-handle-active-color);
 }
 
+.cm-live-table[data-drag-axis] .cm-live-table-handle {
+  cursor: grabbing;
+}
+
 .cm-live-table[data-can-grab-column="true"] .cm-live-table-handle--column,
 .cm-live-table[data-can-grab-row="true"] .cm-live-table-handle--row,
 .cm-live-table[data-drag-axis="column"] .cm-live-table-handle--column,

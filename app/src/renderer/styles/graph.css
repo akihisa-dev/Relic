@@ -274,6 +274,10 @@
   cursor: grabbing;
 }
 
+.graph-color-group.is-dragging .graph-color-group-drag {
+  cursor: grabbing;
+}
+
 .graph-color-group-drag:hover {
   background: var(--color-surface-alt);
   color: var(--color-text);
