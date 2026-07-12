@@ -37,6 +37,7 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 
 - Internal links using `[[...]]`.
 - Backlinks and outgoing links.
+- Graph view for Markdown, tags, attachments, and unresolved links.
 - Outline view.
 - Quick switcher.
 - Command palette.
@@ -300,6 +301,7 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 
 - 内部リンク `[[...]]`
 - バックリンク / アウトゴーイングリンク
+- Markdown、タグ、添付画像、未解決リンクの関係を表示するグラフビュー
 - アウトライン表示
 - クイックスイッチャー
 - コマンドパレット
