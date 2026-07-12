@@ -117,7 +117,7 @@ export function drawGraph(
 
   const highlightPulse = graphHighlightPulse(typeof performance === "undefined" ? 0 : performance.now());
   const focusedColor = focused
-    ? nodeColor(focused, colorGroups, tagsByNode.get(focused.id) ?? [])
+    ? cssVar("--color-accent", "#f2691b")
     : null;
   if (focused && focusedColor) {
     drawGraphNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, highlightPulse);
@@ -174,7 +174,7 @@ export function drawGraph(
       context.arc(node.x, node.y, radius, 0, Math.PI * 2);
       context.fill();
       context.globalAlpha = highlightStrength;
-      context.strokeStyle = cssVar("--color-primary", "#1a1b17");
+      context.strokeStyle = focusedColor ?? cssVar("--color-primary", "#1a1b17");
       context.lineWidth = 2 / view.scale;
       context.beginPath();
       context.arc(node.x, node.y, radius + Math.max(2, 5 / view.scale), 0, Math.PI * 2);
