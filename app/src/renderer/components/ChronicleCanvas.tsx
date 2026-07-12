@@ -15,7 +15,8 @@ import {
   stepChronicleCanvasScene,
   zoomChronicleCanvasAtPoint,
   type ChronicleCanvasItem,
-  type ChronicleCanvasLabelHit
+  type ChronicleCanvasLabelHit,
+  type ChronicleCanvasPoint
 } from "../chronicleCanvasModel";
 import { drawChronicleCanvas, type ChronicleCanvasTheme } from "../chronicleCanvasRenderer";
 import { useLatest } from "../hooks/useLatest";
@@ -46,6 +47,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
   const initializedSceneRef = useRef<unknown>(null);
   const pointerRef = useRef<PointerSession | null>(null);
   const hoveredItemIdRef = useRef<string | null>(null);
+  const hoveredPointRef = useRef<ChronicleCanvasPoint | null>(null);
   const labelHitsRef = useRef<ChronicleCanvasLabelHit[]>([]);
   const previousFrameRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -119,6 +121,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
       sceneRef.current,
       camera,
       hoveredItemIdRef.current,
+      hoveredPointRef.current,
       width,
       height,
       themeRef.current
@@ -171,6 +174,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
       startY: event.clientY,
       type: item ? "item" : "pan"
     };
+    event.currentTarget.style.cursor = "grabbing";
     requestCanvasFrame(animationFrameRef, draw);
   }, [canvasPoint, draw]);
 
@@ -179,12 +183,16 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     const inHeader = point.y < chronicleCanvasYearHeaderHeight(camera.scale);
     const hovered = inHeader ? null : chronicleCanvasItemAtPoint(sceneRef.current.items, camera, point);
     const hoveredChanged = hoveredItemIdRef.current !== (hovered?.id ?? null);
+    const hoveredPointChanged = hovered
+      ? hoveredPointRef.current?.x !== point.x || hoveredPointRef.current?.y !== point.y
+      : hoveredPointRef.current !== null;
     hoveredItemIdRef.current = hovered?.id ?? null;
+    hoveredPointRef.current = hovered ? point : null;
     const clickableLabel = inHeader ? null : chronicleCanvasLabelAtPoint(labelHitsRef.current, point);
-    event.currentTarget.style.cursor = clickableLabel ? "pointer" : "grab";
     const pointer = pointerRef.current;
+    event.currentTarget.style.cursor = pointer ? "grabbing" : clickableLabel ? "pointer" : "grab";
     if (!pointer) {
-      if (hoveredChanged) requestCanvasFrame(animationFrameRef, draw);
+      if (hoveredChanged || hoveredPointChanged) requestCanvasFrame(animationFrameRef, draw);
       return;
     }
 
@@ -230,6 +238,11 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
       simulationActiveRef.current = true;
     }
     pointerRef.current = null;
+    const point = canvasPoint(event.clientX, event.clientY);
+    const clickableLabel = point.y >= chronicleCanvasYearHeaderHeight(camera.scale)
+      ? chronicleCanvasLabelAtPoint(labelHitsRef.current, point)
+      : null;
+    event.currentTarget.style.cursor = clickableLabel ? "pointer" : "grab";
     requestCanvasFrame(animationFrameRef, draw);
   }, [canvasPoint, draw]);
 
@@ -251,6 +264,8 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
       onPointerDown={handlePointerDown}
       onPointerLeave={() => {
         hoveredItemIdRef.current = null;
+        hoveredPointRef.current = null;
+        if (!pointerRef.current) canvasRef.current?.style.setProperty("cursor", "grab");
         requestCanvasFrame(animationFrameRef, draw);
       }}
       onPointerMove={handlePointerMove}

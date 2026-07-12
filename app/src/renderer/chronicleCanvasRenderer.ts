@@ -11,10 +11,15 @@ import {
   type ChronicleCanvasCamera,
   type ChronicleCanvasItem,
   type ChronicleCanvasLabelHit,
+  type ChronicleCanvasPoint,
   type ChronicleCanvasScene
 } from "./chronicleCanvasModel";
 
 const nodeRadius = 6;
+const itemLabelFontFamily = "-apple-system, BlinkMacSystemFont, sans-serif";
+const itemLabelFontSize = 12;
+const hoveredItemLabelFontSize = 14;
+const hoveredItemGlowBlur = 10;
 
 export interface ChronicleCanvasTheme {
   background: string;
@@ -32,6 +37,7 @@ export function drawChronicleCanvas(
   scene: ChronicleCanvasScene,
   camera: ChronicleCanvasCamera,
   hoveredItemId: string | null,
+  hoveredPoint: ChronicleCanvasPoint | null,
   viewportWidth: number,
   viewportHeight: number,
   theme: ChronicleCanvasTheme
@@ -47,7 +53,17 @@ export function drawChronicleCanvas(
   for (const [index, item] of scene.items.entries()) {
     if (!isItemVisible(item, camera, viewportWidth, viewportHeight)) continue;
     const itemColor = itemPalette[index % itemPalette.length] ?? theme.mutedText;
-    const hit = drawItem(context, item, itemColor, camera, item.id === hoveredItemId, viewportWidth, theme);
+    const hit = drawItem(
+      context,
+      item,
+      itemColor,
+      camera,
+      item.id === hoveredItemId,
+      hoveredPoint,
+      viewportWidth,
+      viewportHeight,
+      theme
+    );
     labelHits.push(hit);
   }
   drawYearHeader(context, scene, camera, viewportWidth, theme);
@@ -126,7 +142,9 @@ function drawItem(
   itemColor: string,
   camera: ChronicleCanvasCamera,
   hovered: boolean,
+  hoveredPoint: ChronicleCanvasPoint | null,
   viewportWidth: number,
+  viewportHeight: number,
   theme: ChronicleCanvasTheme
 ): ChronicleCanvasLabelHit {
   const anchorCenter = (item.startX + item.endX) / 2;
@@ -137,8 +155,8 @@ function drawItem(
   const baseOpacity = chronicleCanvasTextOpacity(camera.scale);
   const renderedOpacity = hovered ? Math.max(0.92, baseOpacity) : baseOpacity;
   const naturalCenterX = (start.x + end.x) / 2;
-  const labelY = start.y - CHRONICLE_CANVAS_ITEM_LABEL_OFFSET;
-  const rangeY = start.y + 24;
+  const defaultLabelY = start.y - CHRONICLE_CANVAS_ITEM_LABEL_OFFSET;
+  const defaultRangeY = start.y + 24;
 
   context.save();
   context.strokeStyle = itemColor;
@@ -146,6 +164,8 @@ function drawItem(
   context.lineCap = "round";
   context.lineWidth = hovered ? 3.5 : 2.5;
   context.globalAlpha = hovered ? 1 : 0.86;
+  context.shadowColor = hovered ? itemColor : "transparent";
+  context.shadowBlur = hovered ? hoveredItemGlowBlur : 0;
   if (item.startYear !== item.endYear) {
     context.beginPath();
     context.moveTo(start.x, start.y);
@@ -154,14 +174,27 @@ function drawItem(
   }
   drawNode(context, start.x, start.y, radius, itemColor, theme.background, hovered);
   if (item.startYear !== item.endYear) drawNode(context, end.x, end.y, radius, itemColor, theme.background, hovered);
+  context.shadowColor = "transparent";
+  context.shadowBlur = 0;
 
   context.globalAlpha = renderedOpacity;
   context.fillStyle = theme.text;
-  context.font = "750 12px -apple-system, BlinkMacSystemFont, sans-serif";
+  const labelFontSize = hovered ? hoveredItemLabelFontSize : itemLabelFontSize;
+  context.font = `750 ${labelFontSize}px ${itemLabelFontFamily}`;
   context.textAlign = "center";
   context.textBaseline = "middle";
-  const measuredLabelWidth = item.labelTextWidth ?? (item.labelTextWidth = context.measureText(item.entry.fileName).width);
-  const centerX = Math.max(measuredLabelWidth / 2 + 12, Math.min(viewportWidth - measuredLabelWidth / 2 - 12, naturalCenterX));
+  const measuredLabelWidth = hovered
+    ? context.measureText(item.entry.fileName).width
+    : item.labelTextWidth ?? (item.labelTextWidth = context.measureText(item.entry.fileName).width);
+  const hoveredLabel = hovered && hoveredPoint;
+  const centerX = Math.max(
+    measuredLabelWidth / 2 + 12,
+    Math.min(viewportWidth - measuredLabelWidth / 2 - 12, hoveredLabel ? hoveredPoint.x : naturalCenterX)
+  );
+  const labelY = hoveredLabel
+    ? Math.max(chronicleCanvasYearHeaderHeight(camera.scale) + 14, Math.min(viewportHeight - 24, hoveredPoint.y - 20))
+    : defaultLabelY;
+  const rangeY = hoveredLabel ? labelY + 18 : defaultRangeY;
   context.fillText(item.entry.fileName, centerX, labelY);
   context.fillStyle = theme.mutedText;
   context.font = "650 11px -apple-system, BlinkMacSystemFont, sans-serif";
