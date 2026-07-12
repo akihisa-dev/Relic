@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { cancelChronicleCanvasFrame } from "./ChronicleCanvas";
+import { cancelChronicleCanvasFrame, chronicleCanvasWheelFactor } from "./ChronicleCanvas";
 
 describe("cancelChronicleCanvasFrame", () => {
   afterEach(() => {
@@ -25,5 +25,13 @@ describe("cancelChronicleCanvasFrame", () => {
     cancelChronicleCanvasFrame({ current: null });
 
     expect(cancelAnimationFrame).not.toHaveBeenCalled();
+  });
+});
+
+describe("chronicleCanvasWheelFactor", () => {
+  it("上方向のホイールで拡大し、下方向で縮小する", () => {
+    expect(chronicleCanvasWheelFactor(-100)).toBeGreaterThan(1);
+    expect(chronicleCanvasWheelFactor(100)).toBeLessThan(1);
+    expect(chronicleCanvasWheelFactor(0)).toBe(1);
   });
 });

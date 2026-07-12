@@ -209,10 +209,9 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
   }, [canvasPoint, draw]);
 
   const handleWheel = useCallback((event: WheelEvent<HTMLCanvasElement>) => {
-    if (!event.ctrlKey && !event.metaKey) return;
     event.preventDefault();
     const point = canvasPoint(event.clientX, event.clientY);
-    const factor = Math.exp(-event.deltaY * 0.006);
+    const factor = chronicleCanvasWheelFactor(event.deltaY);
     const sceneMaximum = maximumScaleForScene(sceneRef.current, event.currentTarget.clientWidth || 720);
     const nextScale = Math.min(sceneMaximum, Math.max(CHRONICLE_CANVAS_MIN_SCALE, cameraRef.current.scale * factor));
     zoomChronicleCanvasAtPoint(cameraRef.current, nextScale, point);
@@ -249,6 +248,10 @@ export function cancelChronicleCanvasFrame(frameRef: { current: number | null })
   if (frameRef.current === null) return;
   cancelAnimationFrame(frameRef.current);
   frameRef.current = null;
+}
+
+export function chronicleCanvasWheelFactor(deltaY: number): number {
+  return Math.exp(-deltaY * 0.006);
 }
 
 function canvasContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null {
