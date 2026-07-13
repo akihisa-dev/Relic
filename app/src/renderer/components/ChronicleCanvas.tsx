@@ -246,6 +246,23 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     requestCanvasFrame(animationFrameRef, draw);
   }, [canvasPoint, draw]);
 
+  const handlePointerCancel = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
+    const pointer = pointerRef.current;
+    if (!pointer) return;
+    if (event.currentTarget.hasPointerCapture(pointer.pointerId)) event.currentTarget.releasePointerCapture(pointer.pointerId);
+    pointerRef.current = null;
+    camera.velocityX = 0;
+    camera.velocityY = 0;
+    lastPanDeltaRef.current = { x: 0, y: 0 };
+    simulationActiveRef.current = false;
+    if (pointer.item) {
+      pointer.item.vx = 0;
+      pointer.item.vy = 0;
+    }
+    event.currentTarget.style.cursor = "grab";
+    requestCanvasFrame(animationFrameRef, draw);
+  }, [draw]);
+
   const handleWheel = useCallback((event: WheelEvent<HTMLCanvasElement>) => {
     event.preventDefault();
     const point = canvasPoint(event.clientX, event.clientY);
@@ -260,7 +277,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     <canvas
       aria-label={t("chronicle.timelineAria")}
       className="chronicle-canvas"
-      onPointerCancel={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       onPointerDown={handlePointerDown}
       onPointerLeave={() => {
         hoveredItemIdRef.current = null;
