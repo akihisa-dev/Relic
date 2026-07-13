@@ -17,6 +17,7 @@ import {
   createChronicleCanvasCamera,
   createChronicleCanvasScene,
   initializeChronicleCanvasCamera,
+  prepareChronicleCanvasPointerCancel,
   stepChronicleCanvasScene,
   visibleChronicleCanvasYears,
   worldToCanvas,
@@ -194,5 +195,29 @@ describe("chronicleCanvasModel", () => {
     expect(chronicleCanvasClickPath(null, false)).toBeNull();
     expect(chronicleCanvasPointerMovedBeyondClickThreshold({ x: 0, y: 0 }, { x: 3, y: 0 })).toBe(false);
     expect(chronicleCanvasPointerMovedBeyondClickThreshold({ x: 0, y: 0 }, { x: 4, y: 0 })).toBe(true);
+  });
+
+  it("ドラッグ中断時だけ項目を本来の配置へ戻す計算を再開する", () => {
+    const scene = createChronicleCanvasScene([entry("Moved", "moved.md", 100)], () => 0.5);
+    const item = scene.items[0];
+    const anchorX = item.startX;
+    item.x += 80;
+    item.y += 40;
+    item.vx = 12;
+    item.vy = 8;
+    const camera = { ...createChronicleCanvasCamera(), velocityX: 6, velocityY: 4 };
+    const distanceBefore = Math.hypot(item.x - anchorX, item.y - item.homeY);
+
+    expect(prepareChronicleCanvasPointerCancel(camera, item, true)).toBe(true);
+    expect(camera).toMatchObject({ velocityX: 0, velocityY: 0 });
+    expect(item).toMatchObject({ vx: 0, vy: 0 });
+    stepChronicleCanvasScene(scene.items, null, 1 / 60);
+
+    expect(Math.hypot(item.x - anchorX, item.y - item.homeY)).toBeLessThan(distanceBefore);
+    expect(prepareChronicleCanvasPointerCancel(camera, item, false)).toBe(false);
+    camera.velocityX = 5;
+    camera.velocityY = 3;
+    expect(prepareChronicleCanvasPointerCancel(camera, null, true)).toBe(false);
+    expect(camera).toMatchObject({ velocityX: 0, velocityY: 0 });
   });
 });

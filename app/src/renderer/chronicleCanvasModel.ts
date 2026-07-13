@@ -373,6 +373,20 @@ export function chronicleCanvasPointerMovedBeyondClickThreshold(
   return Math.hypot(current.x - start.x, current.y - start.y) >= 4;
 }
 
+export function prepareChronicleCanvasPointerCancel(
+  camera: ChronicleCanvasCamera,
+  item: ChronicleCanvasItem | null,
+  moved: boolean
+): boolean {
+  camera.velocityX = 0;
+  camera.velocityY = 0;
+  if (!item) return false;
+
+  item.vx = 0;
+  item.vy = 0;
+  return moved;
+}
+
 export function chronicleCanvasLabelAtPoint(
   hits: ChronicleCanvasLabelHit[],
   point: ChronicleCanvasPoint,
