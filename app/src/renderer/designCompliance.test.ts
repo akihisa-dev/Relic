@@ -50,12 +50,13 @@ describe("DESIGN.md compliance", () => {
     expect(designCss).toMatch(/\.setting-row input\[type="checkbox"\],\s*\.setting-row input\[type="checkbox"\]::after\s*\{[^}]*box-shadow:\s*none;/s);
   });
 
-  it("moves settings switch knobs with restrained elastic feedback", () => {
+  it("moves settings switch knobs through the on class with elastic feedback", () => {
     expect(settingsCss).toMatch(
-      /\.setting-row input\[type="checkbox"\]::after\s*\{[^}]*background-color 300ms var\(--ease-standard\),\s*transform 400ms cubic-bezier\(0\.34, 1\.56, 0\.64, 1\);/s
+      /\.settings-toggle-switch \.switch-knob\s*\{[^}]*background-color 300ms var\(--ease-standard\),\s*transform 400ms cubic-bezier\(0\.34, 1\.56, 0\.64, 1\);/s
     );
+    expect(settingsCss).toMatch(/\.settings-toggle-switch\.on \.switch-knob\s*\{[^}]*transform:\s*translateX\(22px\);/s);
     expect(motionCss).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.setting-row input\[type="checkbox"\],\s*\.setting-row input\[type="checkbox"\]::after[\s\S]*?transition-duration:\s*1ms;/s
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.settings-toggle-switch,\s*\.settings-toggle-switch \.switch-knob[\s\S]*?transition-duration:\s*1ms;/s
     );
   });
 

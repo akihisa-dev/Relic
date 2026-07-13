@@ -8,6 +8,7 @@ import {
 import { useT } from "../i18n";
 import type { TranslationKey } from "../i18nModel";
 import { SettingsSegmentedControl } from "./SettingsSegmentedControl";
+import { SettingsToggleSwitch } from "./SettingsToggleSwitch";
 
 const publicRepositoryUrl = "https://github.com/akihisa-dev/Relic";
 
@@ -152,22 +153,22 @@ export function SettingsPanel({
               value={settings.maxWidth}
             />
           </div>
-          <label className="setting-row">
+          <div className="setting-row">
             <span>{t("settings.showLineNumbers")}</span>
-            <input
-              checked={settings.showLineNumbers}
-              onChange={(e) => update("showLineNumbers", e.target.checked)}
-              type="checkbox"
+            <SettingsToggleSwitch
+              label={t("settings.showLineNumbers")}
+              on={settings.showLineNumbers}
+              onChange={(on) => update("showLineNumbers", on)}
             />
-          </label>
-          <label className="setting-row">
+          </div>
+          <div className="setting-row">
             <span>{t("settings.spellCheck")}</span>
-            <input
-              checked={settings.spellCheck}
-              onChange={(e) => update("spellCheck", e.target.checked)}
-              type="checkbox"
+            <SettingsToggleSwitch
+              label={t("settings.spellCheck")}
+              on={settings.spellCheck}
+              onChange={(on) => update("spellCheck", on)}
             />
-          </label>
+          </div>
           <div className="setting-row">
             <span>{t("settings.frontmatterDateFormat")}</span>
             <SettingsSegmentedControl
@@ -197,17 +198,17 @@ export function SettingsPanel({
               { key: "rightPanelLinks", label: t("settings.featureRightPanelLinks") }
             ] as { key: keyof FeatureToggles; label: string }[]
           ).map(({ key, label }) => (
-            <label className="setting-row" key={key}>
+            <div className="setting-row" key={key}>
               <span>{label}</span>
-              <input
-                checked={featureToggles[key]}
-                onChange={(e) => {
-                  const next = { ...featureToggles, [key]: e.target.checked };
+              <SettingsToggleSwitch
+                label={label}
+                on={featureToggles[key]}
+                onChange={(on) => {
+                  const next = { ...featureToggles, [key]: on };
                   onFeatureTogglesSave(next);
                 }}
-                type="checkbox"
               />
-            </label>
+            </div>
           ))}
         </div>
       </section>

@@ -204,6 +204,12 @@ describe("SettingsPanel", () => {
     fireEvent.change(screen.getByDisplayValue("16"), { target: { value: "18" } });
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ fontSize: 18 }));
 
+    fireEvent.click(screen.getByRole("switch", { name: "Show line numbers" }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ showLineNumbers: true }));
+
+    fireEvent.click(screen.getByRole("switch", { name: "Spell check" }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ spellCheck: false }));
+
     fireEvent.click(screen.getByRole("button", { name: "DD/MM/YYYY" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ frontmatterDateFormat: "dmy" }));
   });
@@ -218,6 +224,9 @@ describe("SettingsPanel", () => {
     fireEvent.click(screen.getByLabelText("File tools"));
 
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ tools: false }));
+
+    expect(screen.getByRole("switch", { name: "File tools" })).toHaveClass("switch", "settings-toggle-switch", "on");
+    expect(screen.getByRole("switch", { name: "Right panel: Links" })).toHaveClass("on");
 
     fireEvent.click(screen.getByLabelText("Right panel: Links"));
 
