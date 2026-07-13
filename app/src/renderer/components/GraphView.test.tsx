@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { makeRelicApi } from "../../test/rendererTestUtils";
@@ -193,5 +193,25 @@ describe("GraphView", () => {
     computedStyle.mockClear();
     notifyColorSchemeChange();
     expect(computedStyle).toHaveBeenCalledWith(canvas);
+  });
+
+  it("静止時は描画予約を止め、最初の操作で重複なく再開する", () => {
+    const scheduled: FrameRequestCallback[] = [];
+    const requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
+      scheduled.push(callback);
+      return scheduled.length;
+    });
+    vi.stubGlobal("requestAnimationFrame", requestAnimationFrame);
+
+    renderGraphView("ja");
+    const canvas = screen.getByLabelText("グラフ");
+    expect(requestAnimationFrame).toHaveBeenCalledOnce();
+
+    act(() => scheduled[0]?.(16));
+    expect(requestAnimationFrame).toHaveBeenCalledOnce();
+
+    fireEvent(canvas, new MouseEvent("pointermove", { bubbles: true, clientX: 10, clientY: 10 }));
+    fireEvent(canvas, new MouseEvent("pointermove", { bubbles: true, clientX: 12, clientY: 12 }));
+    expect(requestAnimationFrame).toHaveBeenCalledTimes(2);
   });
 });

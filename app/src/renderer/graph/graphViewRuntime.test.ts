@@ -5,6 +5,7 @@ import {
   graphColorGroupsStorageKey,
   loadGraphColorGroups,
   readGraphDrawTheme,
+  requestGraphFrameOnce,
   sanitizeGraphOptions
 } from "./graphViewRuntime";
 
@@ -75,5 +76,27 @@ describe("graphViewRuntime", () => {
     expect(computedStyle).toHaveBeenCalledOnce();
     expect(computedStyle).toHaveBeenCalledWith(canvas);
     expect(getPropertyValue).toHaveBeenCalledTimes(7);
+  });
+
+  it("描画フレームを重複予約せず、実行後は再予約できる", () => {
+    const scheduled: FrameRequestCallback[] = [];
+    const requestAnimationFrame = vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      scheduled.push(callback);
+      return 42;
+    });
+    const frameRef = { current: null as number | null };
+    const callback = vi.fn();
+
+    requestGraphFrameOnce(frameRef, callback);
+    requestGraphFrameOnce(frameRef, callback);
+    expect(requestAnimationFrame).toHaveBeenCalledOnce();
+    expect(frameRef.current).toBe(42);
+
+    scheduled[0]?.(16);
+    expect(callback).toHaveBeenCalledWith(16);
+    expect(frameRef.current).toBeNull();
+
+    requestGraphFrameOnce(frameRef, callback);
+    expect(requestAnimationFrame).toHaveBeenCalledTimes(2);
   });
 });

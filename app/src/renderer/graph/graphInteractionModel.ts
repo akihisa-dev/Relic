@@ -36,6 +36,15 @@ export interface GraphHighlightState {
   strength: number;
 }
 
+export interface GraphFrameActivity {
+  highlight: GraphHighlightState;
+  keyboard: GraphKeyboardState;
+  panVelocity: { x: number; y: number };
+  pointerActive: boolean;
+  targetHighlightId: string | null;
+  view: Pick<GraphViewTransform, "scale" | "targetScale">;
+}
+
 export function initialGraphViewTransform(): GraphViewTransform {
   return {
     panX: 0,
@@ -45,6 +54,19 @@ export function initialGraphViewTransform(): GraphViewTransform {
     zoomCenterX: 0,
     zoomCenterY: 0
   };
+}
+
+export function shouldContinueGraphFrame(activity: GraphFrameActivity): boolean {
+  const keyboardActive = activity.keyboard.left || activity.keyboard.right || activity.keyboard.up ||
+    activity.keyboard.down || activity.keyboard.zoomIn || activity.keyboard.zoomOut;
+  const panActive = activity.panVelocity.x !== 0 || activity.panVelocity.y !== 0;
+  const zoomRatio = activity.view.scale > activity.view.targetScale
+    ? activity.view.scale / activity.view.targetScale
+    : activity.view.targetScale / activity.view.scale;
+  const zoomActive = zoomRatio - 1 >= 0.01;
+  const highlightActive = activity.targetHighlightId !== null || activity.highlight.strength > 0;
+
+  return activity.pointerActive || keyboardActive || panActive || zoomActive || highlightActive;
 }
 
 export function animateGraph(

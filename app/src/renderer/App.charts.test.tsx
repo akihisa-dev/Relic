@@ -48,6 +48,7 @@ import {
   nextGraphPanVelocity,
   nextGraphPanSampleMs,
   resolveGraphHoverFocusId,
+  shouldContinueGraphFrame,
   stepGraphHighlightState,
   zoomGraphAtPoint
 } from "./graph/graphViewModel";
@@ -381,6 +382,39 @@ describe("App charts", () => {
       stepGraphHighlightState(state, null);
     }
     expect(state).toStrictEqual({ id: null, strength: 0 });
+  });
+
+  it("グラフビューは静止時だけ描画ループを停止する", () => {
+    const activity = {
+      highlight: { id: null, strength: 0 },
+      keyboard: {
+        down: false,
+        left: false,
+        right: false,
+        shift: false,
+        up: false,
+        zoomIn: false,
+        zoomOut: false
+      },
+      panVelocity: { x: 0, y: 0 },
+      pointerActive: false,
+      targetHighlightId: null,
+      view: { scale: 1, targetScale: 1 }
+    };
+
+    expect(shouldContinueGraphFrame(activity)).toBe(false);
+    expect(shouldContinueGraphFrame({ ...activity, pointerActive: true })).toBe(true);
+    expect(shouldContinueGraphFrame({ ...activity, panVelocity: { x: 0.1, y: 0 } })).toBe(true);
+    expect(shouldContinueGraphFrame({
+      ...activity,
+      keyboard: { ...activity.keyboard, right: true }
+    })).toBe(true);
+    expect(shouldContinueGraphFrame({ ...activity, view: { scale: 1, targetScale: 2 } })).toBe(true);
+    expect(shouldContinueGraphFrame({ ...activity, targetHighlightId: "A.md" })).toBe(true);
+    expect(shouldContinueGraphFrame({
+      ...activity,
+      highlight: { id: "A.md", strength: 0.1 }
+    })).toBe(true);
   });
 
   it("グラフビューの接続線発光は周期内を一方向に進む", () => {

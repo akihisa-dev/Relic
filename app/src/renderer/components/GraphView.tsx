@@ -45,6 +45,7 @@ import {
   nextGraphPanVelocity,
   requestGraphZoom,
   resolveGraphHoverFocusId,
+  shouldContinueGraphFrame,
   stepGraphHighlightState,
   type GraphHighlightState,
   type GraphHoverFocusState
@@ -62,7 +63,7 @@ import {
   loadGraphSectionCollapsed,
   nextGroupColor,
   readGraphDrawTheme,
-  requestGraphFrame,
+  requestGraphFrameOnce,
   saveJson
 } from "../graph/graphViewRuntime";
 
@@ -76,6 +77,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<number | null>(null);
+  const drawRef = useRef<() => void>(() => undefined);
   const themeRef = useRef(defaultGraphDrawTheme);
   const initialNodes = useMemo(() => new Map<string, GraphSimNode>(), []);
   const initialLinks = useMemo<GraphSimLink[]>(() => [], []);
@@ -127,9 +129,14 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const latestOptionsRef = useLatest(options);
   const colorGroupsRef = useLatest(colorGroups);
 
+  const requestDraw = useCallback(() => {
+    requestGraphFrameOnce(frameRef, () => drawRef.current());
+  }, []);
+
   const updateTheme = useCallback(() => {
     themeRef.current = readGraphDrawTheme(canvasRef.current ?? document.documentElement);
-  }, []);
+    requestDraw();
+  }, [requestDraw]);
 
   useEffect(() => {
     updateTheme();
@@ -152,6 +159,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   useEffect(() => {
     const client = createGraphSimulationClient((message) => {
       applyGraphSimulationPositions(nodesRef.current, message);
+      requestDraw();
     });
     simulationClientRef.current = client;
 
@@ -159,7 +167,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       client.dispose();
       simulationClientRef.current = null;
     };
-  }, []);
+  }, [requestDraw]);
 
   useEffect(() => {
     let active = true;
@@ -254,16 +262,19 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       graphSimulationLinks(links),
       latestOptionsRef.current
     );
-  }, [filteredGraph]);
+    requestDraw();
+  }, [filteredGraph, requestDraw]);
 
   useEffect(() => {
     simulationClientRef.current?.updateOptions(options);
+    requestDraw();
   }, [
     options.centerStrength,
     options.linkDistance,
     options.linkStrength,
     options.nodeSizeMultiplier,
-    options.repelStrength
+    options.repelStrength,
+    requestDraw
   ]);
 
   const draw = useCallback(() => {
@@ -317,16 +328,39 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       cssHeight
     );
 
-    frameRef.current = requestGraphFrame(draw);
-  }, [filteredGraph.tagsByNode, pinnedNodeId]);
+    if (shouldContinueGraphFrame({
+      highlight,
+      keyboard: keyboardRef.current,
+      panVelocity: panVelocityRef.current,
+      pointerActive: pointerRef.current !== null,
+      targetHighlightId,
+      view: viewRef.current
+    })) {
+      requestDraw();
+    }
+  }, [filteredGraph.tagsByNode, pinnedNodeId, requestDraw]);
+
+  drawRef.current = draw;
 
   useEffect(() => {
-    frameRef.current = requestGraphFrame(draw);
+    requestDraw();
+  }, [colorGroups, draw, options, requestDraw]);
+
+  useEffect(() => {
+    const resizeObserver = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(requestDraw);
+    if (canvasRef.current) resizeObserver?.observe(canvasRef.current);
 
     return () => {
-      if (frameRef.current !== null) cancelGraphFrame(frameRef.current);
+      resizeObserver?.disconnect();
     };
-  }, [draw]);
+  }, [requestDraw]);
+
+  useEffect(() => () => {
+    if (frameRef.current !== null) cancelGraphFrame(frameRef.current);
+    frameRef.current = null;
+  }, []);
 
   const nodeAtPoint = useCallback((clientX: number, clientY: number): GraphSimNode | null => {
     const canvas = canvasRef.current;
@@ -359,6 +393,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     const canvas = event.currentTarget;
     canvas.setPointerCapture(event.pointerId);
     canvas.style.cursor = "grabbing";
+    requestDraw();
 
     if (node) {
       node.fx = node.x;
@@ -389,7 +424,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       time: performance.now(),
       type: "pan"
     };
-  }, [nodeAtPoint]);
+  }, [nodeAtPoint, requestDraw]);
 
   const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -401,6 +436,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     const pointer = pointerRef.current;
     if (!pointer) {
       event.currentTarget.style.cursor = "grab";
+      requestDraw();
       return;
     }
     event.currentTarget.style.cursor = "grabbing";
@@ -423,6 +459,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       pointer.dragNode.x = pointer.dragNode.fx;
       pointer.dragNode.y = pointer.dragNode.fy;
       simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, pointer.dragNode.x, pointer.dragNode.y);
+      requestDraw();
       return;
     }
 
@@ -430,7 +467,8 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     viewRef.current.panY += dy;
     panSampleMsRef.current = nextGraphPanSampleMs(panSampleMsRef.current, elapsed);
     panVelocityRef.current = nextGraphPanVelocity(panVelocityRef.current, dx, dy);
-  }, [nodeAtPoint]);
+    requestDraw();
+  }, [requestDraw]);
 
   const handlePointerUp = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     const pointer = pointerRef.current;
@@ -456,7 +494,8 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     }
     pointerRef.current = null;
     event.currentTarget.style.cursor = "grab";
-  }, []);
+    requestDraw();
+  }, [requestDraw]);
 
   const handlePointerCancel = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     const pointer = pointerRef.current;
@@ -475,14 +514,16 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     panVelocityRef.current = { x: 0, y: 0 };
     panSampleMsRef.current = 0;
     event.currentTarget.style.cursor = "grab";
-  }, []);
+    requestDraw();
+  }, [requestDraw]);
 
   const handleContextMenu = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     event.preventDefault();
     event.currentTarget.focus();
     const node = nodeAtPoint(event.clientX, event.clientY);
     setPinnedNodeId(node?.id ?? null);
-  }, [nodeAtPoint]);
+    requestDraw();
+  }, [nodeAtPoint, requestDraw]);
 
   const handleWheel = useCallback((event: React.WheelEvent<HTMLCanvasElement>) => {
     event.preventDefault();
@@ -504,13 +545,15 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       zoomPoint.y,
       nextScale
     );
-  }, []);
+    requestDraw();
+  }, [requestDraw]);
 
   const handleKeyDown = useCallback((event: ReactKeyboardEvent<HTMLCanvasElement>) => {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
 
     const keyboard = keyboardRef.current;
     keyboard.shift = event.shiftKey;
+    requestDraw();
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
@@ -541,11 +584,12 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       event.preventDefault();
       keyboard.zoomOut = true;
     }
-  }, []);
+  }, [requestDraw]);
 
   const handleKeyUp = useCallback((event: ReactKeyboardEvent<HTMLCanvasElement>) => {
     const keyboard = keyboardRef.current;
     keyboard.shift = event.shiftKey;
+    requestDraw();
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
@@ -576,7 +620,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       event.preventDefault();
       keyboard.zoomOut = false;
     }
-  }, []);
+  }, [requestDraw]);
 
   const resetView = useCallback(() => {
     viewRef.current = initialGraphViewTransform();
@@ -597,7 +641,8 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     setOptions(defaultGraphOptions);
     setColorGroups([]);
     setPinnedNodeId(null);
-  }, []);
+    requestDraw();
+  }, [requestDraw]);
 
   return (
     <div className="graph-view-shell">
@@ -611,6 +656,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
         onPointerLeave={() => {
           hoverPointRef.current = null;
           if (!pointerRef.current && canvasRef.current) canvasRef.current.style.cursor = "grab";
+          requestDraw();
         }}
         onPointerMove={handlePointerMove}
         onPointerCancel={handlePointerCancel}
@@ -640,7 +686,10 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
         onColorGroupMove={(targetGroupId) => setColorGroups((current) =>
           draggingColorGroupId ? moveGraphColorGroup(current, draggingColorGroupId, targetGroupId) : current
         )}
-        onAnimate={() => animateGraph(nodesRef.current, linksRef.current, viewRef, simulationClientRef.current, latestOptionsRef.current)}
+        onAnimate={() => {
+          animateGraph(nodesRef.current, linksRef.current, viewRef, simulationClientRef.current, latestOptionsRef.current);
+          requestDraw();
+        }}
         onOptionsChange={(patch) => setOptions((current) => ({ ...current, ...patch }))}
         onReset={resetView}
         onSectionCollapsedChange={(sectionId, collapsed) => setSectionCollapsed((current) => ({

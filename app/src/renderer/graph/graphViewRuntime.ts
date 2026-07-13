@@ -163,6 +163,18 @@ export function requestGraphFrame(callback: FrameRequestCallback): number {
   return window.setTimeout(() => callback(performance.now()), 16);
 }
 
+export function requestGraphFrameOnce(
+  frameRef: { current: number | null },
+  callback: FrameRequestCallback
+): void {
+  if (frameRef.current !== null) return;
+
+  frameRef.current = requestGraphFrame((timestamp) => {
+    frameRef.current = null;
+    callback(timestamp);
+  });
+}
+
 export function cancelGraphFrame(id: number): void {
   if (typeof window.cancelAnimationFrame === "function") {
     window.cancelAnimationFrame(id);
