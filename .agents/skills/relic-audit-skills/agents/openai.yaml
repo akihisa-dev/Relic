@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Skill Audit"
+  short_description: "Skill集合の責務・発火・履歴整合を監査して改善案を示す"
+  default_prompt: "Use $relic-audit-skills to audit the available Skill set and propose evidence-backed routing and maintenance improvements."
