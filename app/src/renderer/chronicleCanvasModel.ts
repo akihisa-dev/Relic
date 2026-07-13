@@ -352,6 +352,27 @@ export function chronicleCanvasItemAtPoint(
   return null;
 }
 
+export function chronicleCanvasPointerItemAtPoint(
+  items: ChronicleCanvasItem[],
+  camera: ChronicleCanvasCamera,
+  point: ChronicleCanvasPoint
+): ChronicleCanvasItem | null {
+  return point.y < chronicleCanvasYearHeaderHeight(camera.scale)
+    ? null
+    : chronicleCanvasItemAtPoint(items, camera, point);
+}
+
+export function chronicleCanvasClickPath(item: ChronicleCanvasItem | null, moved: boolean): string | null {
+  return item && !moved ? item.entry.path : null;
+}
+
+export function chronicleCanvasPointerMovedBeyondClickThreshold(
+  start: ChronicleCanvasPoint,
+  current: ChronicleCanvasPoint
+): boolean {
+  return Math.hypot(current.x - start.x, current.y - start.y) >= 4;
+}
+
 export function chronicleCanvasLabelAtPoint(
   hits: ChronicleCanvasLabelHit[],
   point: ChronicleCanvasPoint,

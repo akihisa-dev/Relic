@@ -4,7 +4,10 @@ import type { ChartEntry } from "../shared/ipc";
 import {
   buildChronicleCanvasYears,
   canvasToWorld,
+  chronicleCanvasClickPath,
   chronicleCanvasLabelAtPoint,
+  chronicleCanvasPointerItemAtPoint,
+  chronicleCanvasPointerMovedBeyondClickThreshold,
   chronicleCanvasTextOpacity,
   chronicleCanvasYearFontSize,
   chronicleCanvasYearHeaderHeight,
@@ -162,5 +165,34 @@ describe("chronicleCanvasModel", () => {
 
     expect(chronicleCanvasLabelAtPoint(hits, { x: 10, y: 10 })).toBeNull();
     expect(chronicleCanvasLabelAtPoint(hits, { x: 10, y: 40 })?.itemId).toBe("visible");
+  });
+
+  it("ノード・期間線・ラベル領域を同じ年表項目としてクリック対象にする", () => {
+    const scene = createChronicleCanvasScene([entry("Range", "range.md", 100, 300)], () => 0.5);
+    const item = scene.items[0];
+    const camera = createChronicleCanvasCamera();
+    initializeChronicleCanvasCamera(camera, scene, 800, 500);
+    const displacementX = item.x - (item.startX + item.endX) / 2;
+    const start = worldToCanvas({ x: item.startX + displacementX, y: item.y }, camera);
+    const middle = worldToCanvas({ x: item.x, y: item.y }, camera);
+    const label = { x: middle.x, y: middle.y - 22 };
+
+    expect(chronicleCanvasPointerItemAtPoint(scene.items, camera, start)).toBe(item);
+    expect(chronicleCanvasPointerItemAtPoint(scene.items, camera, middle)).toBe(item);
+    expect(chronicleCanvasPointerItemAtPoint(scene.items, camera, label)).toBe(item);
+    expect(chronicleCanvasClickPath(item, false)).toBe("range.md");
+  });
+
+  it("ドラッグと年表ヘッダーはファイルを開く対象にしない", () => {
+    const scene = createChronicleCanvasScene([entry("Range", "range.md", 100, 300)], () => 0.5);
+    const item = scene.items[0];
+    const camera = createChronicleCanvasCamera();
+    initializeChronicleCanvasCamera(camera, scene, 800, 500);
+
+    expect(chronicleCanvasClickPath(item, true)).toBeNull();
+    expect(chronicleCanvasPointerItemAtPoint(scene.items, camera, { x: 400, y: 10 })).toBeNull();
+    expect(chronicleCanvasClickPath(null, false)).toBeNull();
+    expect(chronicleCanvasPointerMovedBeyondClickThreshold({ x: 0, y: 0 }, { x: 3, y: 0 })).toBe(false);
+    expect(chronicleCanvasPointerMovedBeyondClickThreshold({ x: 0, y: 0 }, { x: 4, y: 0 })).toBe(true);
   });
 });
