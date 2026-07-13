@@ -236,6 +236,8 @@
 
   .settings-segmented-indicator,
   .settings-segmented-button,
+  .setting-row input[type="checkbox"],
+  .setting-row input[type="checkbox"]::after,
   .frontmatter-field-collapse-summary::before {
     transition-duration: 1ms;
   }

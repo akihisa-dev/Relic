@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 describe("DESIGN.md compliance", () => {
   const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+  const settingsCss = readFileSync("src/renderer/styles/settings.css", "utf8");
+  const motionCss = readFileSync("src/renderer/styles/theme-motion.css", "utf8");
 
   it("uses the DESIGN.md color tokens", () => {
     expect(designCss).toContain("--color-primary: #1a1b17;");
@@ -46,6 +48,15 @@ describe("DESIGN.md compliance", () => {
     expect(designCss).toMatch(/\.settings-segmented\s*\{[^}]*background:\s*var\(--color-surface-alt\);/s);
     expect(designCss).toMatch(/\.settings-segmented-indicator\s*\{[^}]*background:\s*var\(--color-accent\);/s);
     expect(designCss).toMatch(/\.setting-row input\[type="checkbox"\],\s*\.setting-row input\[type="checkbox"\]::after\s*\{[^}]*box-shadow:\s*none;/s);
+  });
+
+  it("moves settings switch knobs with restrained elastic feedback", () => {
+    expect(settingsCss).toMatch(
+      /\.setting-row input\[type="checkbox"\]::after\s*\{[^}]*background-color 300ms var\(--ease-standard\),\s*transform 400ms cubic-bezier\(0\.34, 1\.56, 0\.64, 1\);/s
+    );
+    expect(motionCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.setting-row input\[type="checkbox"\],\s*\.setting-row input\[type="checkbox"\]::after[\s\S]*?transition-duration:\s*1ms;/s
+    );
   });
 
   it("does not force all surfaces to square corners globally", () => {
