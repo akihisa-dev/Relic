@@ -66,8 +66,8 @@ describe("App workspaces", () => {
     expect(css).toMatch(/\.files-sidebar-section\s*\{[^}]*padding:\s*16px 16px 0;/s);
     expect(css).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*position:\s*relative;/s);
     expect(css).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*z-index:\s*6;/s);
-    expect(tooltipCss).toMatch(/\.delayed-tooltip-content\s*\{[^}]*bottom:\s*calc\(100% \+ 11px\);/s);
-    expect(tooltipCss).not.toMatch(/\.delayed-tooltip-content\s*\{[^}]*top:\s*calc\(100% \+ 6px\);/s);
+    expect(tooltipCss).toMatch(/\.delayed-tooltip--file-action \.delayed-tooltip-content\s*\{[^}]*bottom:\s*auto;[^}]*top:\s*calc\(100% \+ 11px\);/s);
+    expect(tooltipCss).toMatch(/\.delayed-tooltip--file-action \.delayed-tooltip-content::after\s*\{[^}]*border-bottom:\s*7px solid var\(--color-tooltip-surface\);[^}]*border-top:\s*0;/s);
     expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*min-height:\s*0;/s);
     expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*overflow-y:\s*auto;/s);
   });

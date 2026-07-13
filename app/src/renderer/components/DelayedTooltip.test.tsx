@@ -37,4 +37,11 @@ describe("DelayedTooltip", () => {
     expect(css).toMatch(/\.delayed-tooltip-content\s*\{[^}]*background:\s*var\(--color-tooltip-surface\);[^}]*border-radius:\s*12px;[^}]*bottom:\s*calc\(100% \+ 11px\);[^}]*color:\s*var\(--color-tooltip-text\);/s);
     expect(css).toMatch(/\.delayed-tooltip-content::after\s*\{[^}]*border-top:\s*7px solid var\(--color-tooltip-surface\);[^}]*top:\s*calc\(100% - 1px\);/s);
   });
+
+  it("画面上端のボタンでは吹き出しを下へ逃がして切り取りを防ぐ", () => {
+    const css = readFileSync("src/renderer/styles/delayed-tooltip.css", "utf8");
+
+    expect(css).toMatch(/\.delayed-tooltip--below \.delayed-tooltip-content,[^{]*\{[^}]*bottom:\s*auto;[^}]*top:\s*calc\(100% \+ 11px\);[^}]*transform-origin:\s*center top;/s);
+    expect(css).toMatch(/\.delayed-tooltip--below \.delayed-tooltip-content::after,[^{]*\{[^}]*border-bottom:\s*7px solid var\(--color-tooltip-surface\);[^}]*border-top:\s*0;/s);
+  });
 });

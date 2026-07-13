@@ -58,6 +58,21 @@
   z-index: 20;
 }
 
+.delayed-tooltip--below .delayed-tooltip-content,
+.delayed-tooltip--file-action .delayed-tooltip-content {
+  bottom: auto;
+  top: calc(100% + 11px);
+  transform-origin: center top;
+}
+
+.delayed-tooltip--below .delayed-tooltip-content::after,
+.delayed-tooltip--file-action .delayed-tooltip-content::after {
+  border-bottom: 7px solid var(--color-tooltip-surface);
+  border-top: 0;
+  bottom: calc(100% - 1px);
+  top: auto;
+}
+
 .delayed-tooltip--context-menu .delayed-tooltip-content {
   z-index: 1001;
 }

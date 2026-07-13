@@ -44,7 +44,7 @@ export function AppMainActions({
           onSourceModeToggle={onSourceModeToggle}
         />
       ) : null}
-      <DelayedTooltip label={t("pane.split", { shortcut: splitShortcut })}>
+      <DelayedTooltip className="delayed-tooltip--below" label={t("pane.split", { shortcut: splitShortcut })}>
         <button
           aria-label={t("pane.splitShort")}
           className={`toolbar-btn${isSplit ? " active" : ""}`}
@@ -55,7 +55,7 @@ export function AppMainActions({
         </button>
       </DelayedTooltip>
       {showRightPanelOutlineControl ? (
-        <DelayedTooltip label={t("pane.toggleOutline", { shortcut: toggleOutlineShortcut })}>
+        <DelayedTooltip className="delayed-tooltip--below" label={t("pane.toggleOutline", { shortcut: toggleOutlineShortcut })}>
           <button
             aria-label={t("pane.outline")}
             className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
@@ -67,7 +67,7 @@ export function AppMainActions({
         </DelayedTooltip>
       ) : null}
       {showRightPanelLinksControl ? (
-        <DelayedTooltip label={t("pane.toggleLinks")}>
+        <DelayedTooltip className="delayed-tooltip--below" label={t("pane.toggleLinks")}>
           <button
             aria-label={t("pane.links")}
             className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
@@ -79,7 +79,7 @@ export function AppMainActions({
         </DelayedTooltip>
       ) : null}
       {showRightPanelRecoveryControl ? (
-        <DelayedTooltip label={t("pane.toggleRecovery")}>
+        <DelayedTooltip className="delayed-tooltip--below" label={t("pane.toggleRecovery")}>
           <button
             aria-label={t("pane.recovery")}
             className={`toolbar-btn${rightPanelView === "recovery" && isRightPanelOpen ? " active" : ""}`}
@@ -103,7 +103,7 @@ export function SourceModeButton({ isSourceMode, onSourceModeToggle }: SourceMod
   const t = useT();
 
   return (
-    <DelayedTooltip label={t("pane.sourceMode")}>
+    <DelayedTooltip className="delayed-tooltip--below" label={t("pane.sourceMode")}>
       <button
         aria-label={t("pane.sourceShort")}
         className={`toolbar-btn${isSourceMode ? " active" : ""}`}
