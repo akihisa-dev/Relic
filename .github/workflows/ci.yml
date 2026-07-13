@@ -19,6 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Setup Node.js
@@ -48,6 +49,11 @@ jobs:
       - name: Check documentation catalog
         working-directory: app
         run: pnpm docs:index:check
+
+      - name: Check version policy
+        if: github.event_name == 'pull_request'
+        working-directory: app
+        run: pnpm version:check -- "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
 
       - name: Check dependency notices and SBOM
         working-directory: app

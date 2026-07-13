@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Version"
+  short_description: "Relicの次版を変更種別から一貫して決定・検証する"
+  default_prompt: "Use $relic-manage-version to calculate and validate the next Relic version."

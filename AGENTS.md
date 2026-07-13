@@ -98,6 +98,7 @@
 - Skill集合全体の棚卸し、責務・発火・重複・履歴・ルーティングの監査と承認後の整理では `.agents/skills/relic-audit-skills/SKILL.md` に従う
 - React診断、責務分離、ソース肥大化、アーキテクチャ、bundle、性能の監査や改善では `.agents/skills/relic-audit-code-health/SKILL.md` に従う
 - 依存関係、Electron、ビルド基盤、GitHub Actions、監査対応の更新では `.agents/skills/relic-update-dependencies/SKILL.md` に従う
+- バージョンの決定、更新、コミット件名との整合確認では `.agents/skills/relic-manage-version/SKILL.md` に従う
 - 差分をコミットする場合は `.agents/skills/relic-commit/SKILL.md` に従う
 - Issue番号、Issue URL、Issue対応依頼では `.agents/skills/relic-issue/SKILL.md` に従う。調査・相談だけではコメントやcloseを行わない
 - タグ、配布、Release作業では `.agents/skills/relic-release/SKILL.md` に従う
