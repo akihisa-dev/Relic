@@ -24,7 +24,7 @@ describe("GraphView", () => {
   it("shows graph controls in English", () => {
     renderGraphView("en");
 
-    expect(screen.getByLabelText("Graph view")).toBeInTheDocument();
+    expect(screen.getByLabelText("Graph")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Close graph settings" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Play graph timelapse" })).toHaveAttribute("title", "Play timelapse");
     expect(screen.getByRole("button", { name: "Reset graph settings" })).toHaveAttribute("title", "Reset to defaults");
@@ -38,7 +38,7 @@ describe("GraphView", () => {
   it("shows graph controls in Japanese", () => {
     renderGraphView("ja");
 
-    expect(screen.getByLabelText("グラフビュー")).toBeInTheDocument();
+    expect(screen.getByLabelText("グラフ")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "グラフ設定を閉じる" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "グラフのタイムラプスを再生" })).toHaveAttribute("title", "タイムラプスを再生");
     expect(screen.getByRole("button", { name: "グラフ設定をリセット" })).toHaveAttribute("title", "初期設定に戻す");
@@ -52,7 +52,7 @@ describe("GraphView", () => {
   it("グラフを押している間はgrabbingカーソルを表示する", () => {
     renderGraphView("en");
 
-    const canvas = screen.getByLabelText("Graph view");
+    const canvas = screen.getByLabelText("Graph");
     Object.defineProperty(canvas, "setPointerCapture", { configurable: true, value: vi.fn() });
     Object.defineProperty(canvas, "hasPointerCapture", { configurable: true, value: vi.fn(() => true) });
     Object.defineProperty(canvas, "releasePointerCapture", { configurable: true, value: vi.fn() });

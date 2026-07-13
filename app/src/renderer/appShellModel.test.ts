@@ -93,11 +93,11 @@ describe("appShellModel", () => {
 
   it("filters and splits rail views without changing order", () => {
     const railViews: AppRailView[] = [
-      { icon: null, id: "files", label: "File View" },
+      { icon: null, id: "files", label: "Files" },
       { icon: null, id: "tools", label: "Tools" },
       { icon: null, id: "frontmatter", label: "Frontmatter" },
-      { icon: null, id: "graph", label: "Graph View" },
-      { icon: null, id: "chronicle", label: "Chronicle View" },
+      { icon: null, id: "graph", label: "Graph" },
+      { icon: null, id: "chronicle", label: "Chronicle" },
       { icon: null, id: "chronicleSettings", label: "Calendar Settings" },
       { icon: null, id: "settings", label: "Settings" }
     ];

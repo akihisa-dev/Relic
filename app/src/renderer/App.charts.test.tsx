@@ -96,7 +96,7 @@ describe("App charts", () => {
     resetRendererStores();
   });
 
-  it("レールのグラフビューボタンからワークスペースグラフを表示できる", async () => {
+  it("レールのグラフボタンからグラフビューを表示できる", async () => {
     const getWorkspaceGraph = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -120,7 +120,7 @@ describe("App charts", () => {
     const { container } = await renderApp();
 
     await screen.findByText("Notes");
-    fireEvent.click(screen.getByRole("button", { name: "グラフビュー" }));
+    fireEvent.click(screen.getByRole("button", { name: "グラフ" }));
 
     await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledTimes(1));
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
@@ -474,7 +474,7 @@ describe("App charts", () => {
     await screen.findByText("Notes");
     expect(getWorkspaceCharts).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "クロニクルビュー" }));
+    fireEvent.click(screen.getByRole("button", { name: "クロニクル" }));
     await waitFor(() => expect(getWorkspaceCharts).toHaveBeenCalledTimes(1));
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
@@ -540,7 +540,7 @@ describe("App charts", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "クロニクルビュー" }));
+    fireEvent.click(screen.getByRole("button", { name: "クロニクル" }));
     await waitFor(() => expect(container.querySelector(".chronicle-canvas")).not.toBeNull());
     expect(container.querySelector(".chronicle-actions")).toBeNull();
     expect(updateChartEntry).not.toHaveBeenCalled();

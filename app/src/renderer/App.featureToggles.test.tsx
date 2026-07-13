@@ -35,7 +35,7 @@ describe("App feature toggles", () => {
 
     await renderApp();
 
-    await screen.findByRole("button", { name: "ファイルビュー" });
+    await screen.findByRole("button", { name: "ファイル" });
     expect(screen.queryByRole("button", { name: "ツール" })).toBeNull();
   });
 
@@ -53,8 +53,8 @@ describe("App feature toggles", () => {
 
     await renderApp();
 
-    await screen.findByRole("button", { name: "ファイルビュー" });
-    expect(screen.queryByRole("button", { name: "クロニクルビュー" })).toBeNull();
+    await screen.findByRole("button", { name: "ファイル" });
+    expect(screen.queryByRole("button", { name: "クロニクル" })).toBeNull();
     expect(screen.queryByRole("button", { name: "暦設定" })).toBeNull();
   });
 });
