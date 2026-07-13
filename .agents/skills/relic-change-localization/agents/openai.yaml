@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic用語・ローカライズ"
+  short_description: "Relicの用語と日英翻訳を正本・辞書・表示まで同期する"
+  default_prompt: "$relic-change-localization を使って、画面用語と日英翻訳を整合させてください。"

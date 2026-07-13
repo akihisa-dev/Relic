@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relicコードテスト"
+  short_description: "Relicの自動テスト追加と失敗切り分けを安全に進める"
+  default_prompt: "$relic-test-code を使って、失敗するテストの原因を切り分けて修正してください。"

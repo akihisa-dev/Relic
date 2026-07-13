@@ -83,6 +83,8 @@
 
 - UI、デザイン、画面構成、操作感、表示状態の変更では `.agents/skills/relic-change-ui/SKILL.md` に従う
 - 実アプリの起動、GUI操作、実画面確認、スクリーンショットでは `.agents/skills/relic-test-development-app/SKILL.md` に従う
+- 自動テストの追加・修正、ローカルのテスト失敗、flaky test、coverage不足の切り分けでは `.agents/skills/relic-test-code/SKILL.md` に従う
+- UI用語、日本語・英語の翻訳、翻訳キー、未翻訳、言語別の見切れでは `.agents/skills/relic-change-localization/SKILL.md` に従う
 - Markdownエディタ、ライブプレビュー、選択範囲、編集履歴、自動保存接続の変更では `.agents/skills/relic-change-markdown-editor/SKILL.md` に従う
 - フロントマターYAML、固定プロパティ、フォーム、往復保持の変更では `.agents/skills/relic-change-frontmatter/SKILL.md` に従う
 - Markdown描画、HTML・PDF・SVG出力、安全化の変更では `.agents/skills/relic-change-markdown-output/SKILL.md` に従う
