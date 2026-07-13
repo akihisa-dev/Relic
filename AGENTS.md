@@ -81,6 +81,9 @@
 
 ## オンデマンド手順
 
+- UI、デザイン、画面構成、操作感、表示状態の変更では `.agents/skills/relic-change-ui/SKILL.md` に従う
+- React診断、責務分離、ソース肥大化、アーキテクチャ、bundle、性能の監査や改善では `.agents/skills/relic-audit-code-health/SKILL.md` に従う
+- 依存関係、Electron、ビルド基盤、GitHub Actions、監査対応の更新では `.agents/skills/relic-update-dependencies/SKILL.md` に従う
 - 差分をコミットする場合は `.agents/skills/relic-commit/SKILL.md` に従う
 - Issue番号、Issue URL、Issue対応依頼では `.agents/skills/relic-issue/SKILL.md` に従う。調査・相談だけではコメントやcloseを行わない
 - タグ、配布、Release作業では `.agents/skills/relic-release/SKILL.md` に従う

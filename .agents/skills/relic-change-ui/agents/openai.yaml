@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic UI Change"
+  short_description: "RelicのUI変更を仕様・状態・実画面まで安全に検証する"
+  default_prompt: "Use $relic-change-ui to implement and verify the requested Relic UI change across relevant states and canonical documentation."

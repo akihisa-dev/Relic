@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Code Health Audit"
+  short_description: "Relicの診断結果を実害で評価し安全に品質改善する"
+  default_prompt: "Use $relic-audit-code-health to assess Relic code health findings and apply only evidence-backed improvements when authorized."

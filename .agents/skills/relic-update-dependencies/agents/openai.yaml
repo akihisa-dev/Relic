@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Dependency Update"
+  short_description: "Relicの依存更新とライセンス・SBOM同期を安全に進める"
+  default_prompt: "Use $relic-update-dependencies to update Relic dependencies incrementally and verify compatibility, licenses, SBOM, and packaging impact."
