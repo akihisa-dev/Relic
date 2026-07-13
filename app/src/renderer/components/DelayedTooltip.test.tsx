@@ -30,4 +30,11 @@ describe("DelayedTooltip", () => {
     );
     expect(css).toMatch(/\.delayed-tooltip:focus-within \.delayed-tooltip-content\s*\{[^}]*opacity:\s*1;[^}]*transition:\s*opacity 150ms ease,/s);
   });
+
+  it("明るい吹き出しをボタン上へ表示して下向きの三角を付ける", () => {
+    const css = readFileSync("src/renderer/styles/delayed-tooltip.css", "utf8");
+
+    expect(css).toMatch(/\.delayed-tooltip-content\s*\{[^}]*background:\s*var\(--color-tooltip-surface\);[^}]*border-radius:\s*12px;[^}]*bottom:\s*calc\(100% \+ 11px\);[^}]*color:\s*var\(--color-tooltip-text\);/s);
+    expect(css).toMatch(/\.delayed-tooltip-content::after\s*\{[^}]*border-top:\s*7px solid var\(--color-tooltip-surface\);[^}]*top:\s*calc\(100% - 1px\);/s);
+  });
 });

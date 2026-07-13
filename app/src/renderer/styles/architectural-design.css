@@ -16,6 +16,8 @@
   --color-text: #1a1b17;
   --color-text-secondary: #62625b;
   --color-text-muted: #76756c;
+  --color-tooltip-surface: #f4f0e6;
+  --color-tooltip-text: #1a1b17;
   --color-on-primary: #ffffff;
   --color-accent-surface: rgba(242, 105, 27, 0.84);
   --color-accent: #f2691b;
@@ -912,14 +914,6 @@ textarea {
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   box-shadow: none;
-}
-
-.delayed-tooltip-content {
-  background: var(--color-overlay);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  box-shadow: none;
-  color: var(--color-text);
 }
 
 .rail-tab-flight,
