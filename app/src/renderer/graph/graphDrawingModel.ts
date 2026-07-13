@@ -48,12 +48,14 @@ export function drawGraph(
     }
   }
 
-  const highlightPulse = graphHighlightPulse(typeof performance === "undefined" ? 0 : performance.now());
+  const animationTimeMs = typeof performance === "undefined" ? 0 : performance.now();
+  const highlightProgress = graphHighlightProgress(animationTimeMs);
+  const highlightOpacity = graphHighlightOpacity(animationTimeMs);
   const focusedColor = focused
     ? cssVar("--color-accent", "#f2691b")
     : null;
   if (focused && focusedColor) {
-    drawGraphNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, highlightPulse);
+    drawGraphNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, highlightOpacity);
   }
 
   const linkScaleOpacity = graphLinkScaleOpacity(view.scale);
@@ -78,7 +80,7 @@ export function drawGraph(
         focusedColor,
         view.scale,
         highlightStrength,
-        highlightPulse,
+        highlightProgress,
         index,
         linkScaleOpacity
       );
@@ -128,9 +130,12 @@ export function drawGraph(
   context.restore();
 }
 
-export function graphHighlightPulse(timeMs: number): number {
-  const phase = (timeMs % graphHighlightPulsePeriodMs) / graphHighlightPulsePeriodMs;
-  return 0.5 + Math.sin(phase * Math.PI * 2) * 0.5;
+export function graphHighlightProgress(timeMs: number): number {
+  return (timeMs % graphHighlightPulsePeriodMs) / graphHighlightPulsePeriodMs;
+}
+
+export function graphHighlightOpacity(timeMs: number): number {
+  return 0.5 + Math.sin(graphHighlightProgress(timeMs) * Math.PI * 2) * 0.5;
 }
 
 function drawGraphNodeHalo(
@@ -140,10 +145,10 @@ function drawGraphNodeHalo(
   options: GraphOptions,
   scale: number,
   strength: number,
-  pulse: number
+  opacity: number
 ): void {
   const radius = graphNodeVisualRadius(node, options, scale);
-  const outerRadius = radius + (10 + pulse * 6) / scale;
+  const outerRadius = radius + (10 + opacity * 6) / scale;
   const gradient = context.createRadialGradient(
     node.x,
     node.y,
@@ -157,7 +162,7 @@ function drawGraphNodeHalo(
   gradient.addColorStop(1, "transparent");
 
   context.save();
-  context.globalAlpha = (0.11 + pulse * 0.07) * strength;
+  context.globalAlpha = (0.11 + opacity * 0.07) * strength;
   context.fillStyle = gradient;
   context.beginPath();
   context.arc(node.x, node.y, outerRadius, 0, Math.PI * 2);
@@ -172,26 +177,37 @@ function drawGraphConnectionPulse(
   color: string,
   scale: number,
   strength: number,
-  pulse: number,
+  progress: number,
   linkIndex: number,
   linkOpacity: number
 ): void {
-  const progress = (pulse + linkIndex * 0.19) % 1;
-  const fromX = sourceIsFocused ? endpoints.sourceX : endpoints.targetX;
-  const fromY = sourceIsFocused ? endpoints.sourceY : endpoints.targetY;
-  const toX = sourceIsFocused ? endpoints.targetX : endpoints.sourceX;
-  const toY = sourceIsFocused ? endpoints.targetY : endpoints.sourceY;
-  const x = fromX + (toX - fromX) * progress;
-  const y = fromY + (toY - fromY) * progress;
+  const point = graphConnectionPulsePoint(endpoints, sourceIsFocused, progress, linkIndex);
   const radius = Math.max(1.4 / scale, 2.4 / scale);
 
   context.save();
   context.globalAlpha = 0.62 * strength * linkOpacity;
   context.fillStyle = color;
   context.beginPath();
-  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.arc(point.x, point.y, radius, 0, Math.PI * 2);
   context.fill();
   context.restore();
+}
+
+export function graphConnectionPulsePoint(
+  endpoints: ReturnType<typeof graphLinkEndpoints>,
+  sourceIsFocused: boolean,
+  progress: number,
+  linkIndex: number
+): { x: number; y: number } {
+  const linkProgress = (progress + linkIndex * 0.19) % 1;
+  const fromX = sourceIsFocused ? endpoints.sourceX : endpoints.targetX;
+  const fromY = sourceIsFocused ? endpoints.sourceY : endpoints.targetY;
+  const toX = sourceIsFocused ? endpoints.targetX : endpoints.sourceX;
+  const toY = sourceIsFocused ? endpoints.targetY : endpoints.sourceY;
+  return {
+    x: fromX + (toX - fromX) * linkProgress,
+    y: fromY + (toY - fromY) * linkProgress
+  };
 }
 
 export function graphLinkEndpoints(

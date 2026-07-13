@@ -30,6 +30,7 @@ import {
   applyGraphPanInertia,
   applyGraphZoomTransition,
   graphHoveredNodeContainsPoint,
+  graphConnectionPulsePoint,
   graphLabelOpacity,
   graphLinkEndpoints,
   graphLinkScaleOpacity,
@@ -38,7 +39,8 @@ import {
   graphNodeScale,
   graphPointerMovedBeyondClickThreshold,
   graphWheelZoomPoint,
-  graphHighlightPulse,
+  graphHighlightOpacity,
+  graphHighlightProgress,
   graphNodePrimaryAction,
   isGraphNodePrimaryPointerButton,
   finishGraphPanVelocity,
@@ -381,11 +383,34 @@ describe("App charts", () => {
     expect(state).toStrictEqual({ id: null, strength: 0 });
   });
 
-  it("グラフビューのホバー発光は周期的に穏やかに変化する", () => {
-    expect(graphHighlightPulse(0)).toBeCloseTo(0.5);
-    expect(graphHighlightPulse(425)).toBeGreaterThan(0.9);
-    expect(graphHighlightPulse(850)).toBeCloseTo(0.5);
-    expect(graphHighlightPulse(1_700)).toBeCloseTo(0.5);
+  it("グラフビューの接続線発光は周期内を一方向に進む", () => {
+    expect(graphHighlightProgress(0)).toBe(0);
+    expect(graphHighlightProgress(425)).toBeCloseTo(0.25);
+    expect(graphHighlightProgress(850)).toBeCloseTo(0.5);
+    expect(graphHighlightProgress(1_275)).toBeCloseTo(0.75);
+    expect(graphHighlightProgress(1_700)).toBe(0);
+  });
+
+  it("グラフビューのハローは周期的に穏やかに明滅する", () => {
+    expect(graphHighlightOpacity(0)).toBeCloseTo(0.5);
+    expect(graphHighlightOpacity(425)).toBeCloseTo(1);
+    expect(graphHighlightOpacity(850)).toBeCloseTo(0.5);
+    expect(graphHighlightOpacity(1_275)).toBeCloseTo(0);
+    expect(graphHighlightOpacity(1_700)).toBeCloseTo(0.5);
+  });
+
+  it("グラフビューの接続線発光は注目ノードから進み、リンクごとに位置をずらす", () => {
+    const endpoints = {
+      sourceX: 10,
+      sourceY: 20,
+      targetX: 110,
+      targetY: 220,
+      visible: true
+    };
+
+    expect(graphConnectionPulsePoint(endpoints, true, 0.25, 0)).toStrictEqual({ x: 35, y: 70 });
+    expect(graphConnectionPulsePoint(endpoints, false, 0.25, 0)).toStrictEqual({ x: 85, y: 170 });
+    expect(graphConnectionPulsePoint(endpoints, true, 0.25, 1)).toStrictEqual({ x: 54, y: 108 });
   });
 
   it("グラフビューのノードと文字はズーム係数で描画する", () => {
