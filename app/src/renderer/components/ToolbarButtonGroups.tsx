@@ -25,6 +25,7 @@ import {
   TableIcon,
   UnderlineIcon
 } from "./MarkdownActionIcons";
+import { DelayedTooltip } from "./DelayedTooltip";
 
 interface ToolbarButtonProps {
   children: ReactNode;
@@ -35,9 +36,11 @@ interface ToolbarButtonProps {
 
 function ToolbarButton({ children, label, onClick, tooltip = label }: ToolbarButtonProps): ReactElement {
   return (
-    <button aria-label={label} className="toolbar-btn" data-tooltip={tooltip} onClick={onClick} type="button">
-      {children}
-    </button>
+    <DelayedTooltip label={tooltip}>
+      <button aria-label={label} className="toolbar-btn" onClick={onClick} type="button">
+        {children}
+      </button>
+    </DelayedTooltip>
   );
 }
 
@@ -114,16 +117,16 @@ export function ToolbarBlockFormattingGroup({
         {showHeadingMenu ? (
           <div className={toolbarPanelClass("toolbar-dropdown-menu", "heading", closingPanel)}>
             {TOOLBAR_HEADING_LEVELS.map((level) => (
-              <button
-                className="toolbar-dropdown-item"
-                key={level}
-              onClick={() => onHeading(level)}
-              aria-label={`H${level}`}
-              data-tooltip={`H${level}`}
-              type="button"
-            >
-                <HeadingIcon level={level} />
-              </button>
+              <DelayedTooltip key={level} label={`H${level}`}>
+                <button
+                  aria-label={`H${level}`}
+                  className="toolbar-dropdown-item"
+                  onClick={() => onHeading(level)}
+                  type="button"
+                >
+                  <HeadingIcon level={level} />
+                </button>
+              </DelayedTooltip>
             ))}
           </div>
         ) : null}

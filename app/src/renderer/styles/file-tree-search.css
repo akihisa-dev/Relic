@@ -416,38 +416,6 @@
   opacity: 0.55;
 }
 
-.files-create-icon-button[data-tooltip]:hover::after,
-.files-create-icon-button[data-tooltip]:focus-visible::after {
-  background: var(--popup-bg);
-  border: 1px solid var(--border-soft);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  color: var(--text);
-  content: attr(data-tooltip);
-  font-size: 12px;
-  font-weight: 600;
-  left: 50%;
-  line-height: 1;
-  max-width: 180px;
-  overflow: hidden;
-  padding: 7px 8px;
-  pointer-events: none;
-  position: absolute;
-  text-overflow: ellipsis;
-  top: calc(100% + 6px);
-  transform: translateX(-50%);
-  white-space: nowrap;
-  z-index: 20;
-}
-
-.files-create-icon-button[data-tooltip]:hover::after {
-  animation: tooltip-in 140ms ease 400ms backwards;
-}
-
-.files-create-icon-button[data-tooltip]:focus-visible::after {
-  animation: tooltip-in 140ms ease;
-}
-
 .files-search {
   display: grid;
   gap: 8px;

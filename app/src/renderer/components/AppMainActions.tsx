@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { useT } from "../i18n";
 import { formatShortcut } from "../keyboardShortcuts";
 import type { RightPanelView } from "../store/uiStore";
+import { DelayedTooltip } from "./DelayedTooltip";
 
 interface AppMainActionsProps {
   isRightPanelOpen: boolean;
@@ -43,47 +44,51 @@ export function AppMainActions({
           onSourceModeToggle={onSourceModeToggle}
         />
       ) : null}
-      <button
-        aria-label={t("pane.splitShort")}
-        className={`toolbar-btn${isSplit ? " active" : ""}`}
-        data-tooltip={t("pane.split", { shortcut: splitShortcut })}
-        onClick={onSplitToggle}
-        type="button"
-      >
-        <SplitViewIcon />
-      </button>
-      {showRightPanelOutlineControl ? (
+      <DelayedTooltip label={t("pane.split", { shortcut: splitShortcut })}>
         <button
-          aria-label={t("pane.outline")}
-          className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
-          data-tooltip={t("pane.toggleOutline", { shortcut: toggleOutlineShortcut })}
-          onClick={() => onRightPanelViewButton("outline")}
+          aria-label={t("pane.splitShort")}
+          className={`toolbar-btn${isSplit ? " active" : ""}`}
+          onClick={onSplitToggle}
           type="button"
         >
-          <OutlineIcon />
+          <SplitViewIcon />
         </button>
+      </DelayedTooltip>
+      {showRightPanelOutlineControl ? (
+        <DelayedTooltip label={t("pane.toggleOutline", { shortcut: toggleOutlineShortcut })}>
+          <button
+            aria-label={t("pane.outline")}
+            className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
+            onClick={() => onRightPanelViewButton("outline")}
+            type="button"
+          >
+            <OutlineIcon />
+          </button>
+        </DelayedTooltip>
       ) : null}
       {showRightPanelLinksControl ? (
-        <button
-          aria-label={t("pane.links")}
-          className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
-          data-tooltip={t("pane.toggleLinks")}
-          onClick={() => onRightPanelViewButton("links")}
-          type="button"
-        >
-          <LinksIcon />
-        </button>
+        <DelayedTooltip label={t("pane.toggleLinks")}>
+          <button
+            aria-label={t("pane.links")}
+            className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
+            onClick={() => onRightPanelViewButton("links")}
+            type="button"
+          >
+            <LinksIcon />
+          </button>
+        </DelayedTooltip>
       ) : null}
       {showRightPanelRecoveryControl ? (
-        <button
-          aria-label={t("pane.recovery")}
-          className={`toolbar-btn${rightPanelView === "recovery" && isRightPanelOpen ? " active" : ""}`}
-          data-tooltip={t("pane.toggleRecovery")}
-          onClick={() => onRightPanelViewButton("recovery")}
-          type="button"
-        >
-          <RecoveryIcon />
-        </button>
+        <DelayedTooltip label={t("pane.toggleRecovery")}>
+          <button
+            aria-label={t("pane.recovery")}
+            className={`toolbar-btn${rightPanelView === "recovery" && isRightPanelOpen ? " active" : ""}`}
+            onClick={() => onRightPanelViewButton("recovery")}
+            type="button"
+          >
+            <RecoveryIcon />
+          </button>
+        </DelayedTooltip>
       ) : null}
     </div>
   );
@@ -98,15 +103,16 @@ export function SourceModeButton({ isSourceMode, onSourceModeToggle }: SourceMod
   const t = useT();
 
   return (
-    <button
-      aria-label={t("pane.sourceShort")}
-      className={`toolbar-btn${isSourceMode ? " active" : ""}`}
-      data-tooltip={t("pane.sourceMode")}
-      onClick={onSourceModeToggle}
-      type="button"
-    >
-      <SourceModeIcon />
-    </button>
+    <DelayedTooltip label={t("pane.sourceMode")}>
+      <button
+        aria-label={t("pane.sourceShort")}
+        className={`toolbar-btn${isSourceMode ? " active" : ""}`}
+        onClick={onSourceModeToggle}
+        type="button"
+      >
+        <SourceModeIcon />
+      </button>
+    </DelayedTooltip>
   );
 }
 

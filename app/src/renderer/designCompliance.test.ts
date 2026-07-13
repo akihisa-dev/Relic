@@ -4,10 +4,8 @@ import { describe, expect, it } from "vitest";
 
 describe("DESIGN.md compliance", () => {
   const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
-  const fileTreeCss = readFileSync("src/renderer/styles/file-tree-search.css", "utf8");
   const settingsCss = readFileSync("src/renderer/styles/settings.css", "utf8");
   const motionCss = readFileSync("src/renderer/styles/theme-motion.css", "utf8");
-  const workspaceEditorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
   it("uses the DESIGN.md color tokens", () => {
     expect(designCss).toContain("--color-primary: #1a1b17;");
@@ -60,17 +58,6 @@ describe("DESIGN.md compliance", () => {
     expect(motionCss).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.settings-toggle-switch,\s*\.settings-toggle-switch \.switch-knob[\s\S]*?transition-duration:\s*1ms;/s
     );
-  });
-
-  it("delays pointer tooltips while showing keyboard tooltips immediately", () => {
-    expect(fileTreeCss).toMatch(/\.files-create-icon-button\[data-tooltip\]:hover::after\s*\{[^}]*animation:\s*tooltip-in 140ms ease 400ms backwards;/s);
-    expect(fileTreeCss).toMatch(/\.files-create-icon-button\[data-tooltip\]:focus-visible::after\s*\{[^}]*animation:\s*tooltip-in 140ms ease;/s);
-    expect(workspaceEditorCss).toMatch(/\.toolbar-btn\[data-tooltip\]:hover::after\s*\{[^}]*animation:\s*tooltip-in 140ms ease 400ms backwards;/s);
-    expect(workspaceEditorCss).toMatch(/\.toolbar-btn\[data-tooltip\]:focus-visible::after\s*\{[^}]*animation:\s*tooltip-in 140ms ease;/s);
-    expect(workspaceEditorCss).toMatch(/\.toolbar-dropdown-item\[data-tooltip\]:hover::after\s*\{[^}]*animation:\s*tooltip-in 140ms ease 400ms backwards;/s);
-    expect(workspaceEditorCss).toMatch(/\.toolbar-dropdown-item\[data-tooltip\]:focus-visible::after\s*\{[^}]*animation:\s*tooltip-in 140ms ease;/s);
-    expect(workspaceEditorCss).toMatch(/\.editor-context-menu-icon-button:hover \.editor-context-menu-tooltip\s*\{[^}]*animation:\s*tooltip-in 140ms ease 400ms backwards;/s);
-    expect(workspaceEditorCss).toMatch(/\.editor-context-menu-icon-button:focus-visible \.editor-context-menu-tooltip\s*\{[^}]*animation:\s*tooltip-in 140ms ease;/s);
   });
 
   it("does not force all surfaces to square corners globally", () => {

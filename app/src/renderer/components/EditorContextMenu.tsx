@@ -42,6 +42,7 @@ import {
   TableIcon,
   UnderlineIcon
 } from "./MarkdownActionIcons";
+import { DelayedTooltip } from "./DelayedTooltip";
 
 interface EditorContextMenuProps {
   contextMenu: EditorContextMenuState | null;
@@ -63,19 +64,18 @@ interface IconMenuButtonProps {
 
 function IconMenuButton({ icon, label, onClick }: IconMenuButtonProps): ReactElement {
   return (
-    <button
-      aria-label={label}
-      className="tab-context-menu-item editor-context-menu-icon-button"
-      onClick={onClick}
-      onMouseDown={(event) => event.preventDefault()}
-      role="menuitem"
-      type="button"
-    >
-      {icon}
-      <span aria-hidden="true" className="editor-context-menu-tooltip">
-        {label}
-      </span>
-    </button>
+    <DelayedTooltip className="delayed-tooltip--context-menu" label={label}>
+      <button
+        aria-label={label}
+        className="tab-context-menu-item editor-context-menu-icon-button"
+        onClick={onClick}
+        onMouseDown={(event) => event.preventDefault()}
+        role="menuitem"
+        type="button"
+      >
+        {icon}
+      </button>
+    </DelayedTooltip>
   );
 }
 

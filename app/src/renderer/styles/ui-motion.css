@@ -9,17 +9,6 @@
   }
 }
 
-@keyframes tooltip-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-3px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
 @keyframes tab-enter {
   from {
     max-width: 0;
