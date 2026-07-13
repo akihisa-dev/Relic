@@ -17,7 +17,7 @@ description: Relicリポジトリで利用可能なSkill集合を一覧化し、
 
 1. `AGENTS.md`、`README.md`、`CONTRIBUTING.md`、`docs/INDEX.md` と、Skillに関係する現行文書だけを確認する。上位文書から未読の詳細を推測しない。
 2. 利用可能なSkillカタログに示された全Skillの名前と場所を記録する。リポジトリの `.agents/skills/` に加え、カタログで利用可能とされた外部Skillも対象にし、読めないものは未確認として明示する。
-3. 次のコマンドを基本形として、決定的な台帳、frontmatter、補助資源、参照切れ、重複名、description類似候補を収集する。追加rootは `--root`、個別の `SKILL.md` は `--skill` を繰り返して渡す。カタログ名がfolder内のnameと異なるSkillは `--catalog-entry 'catalog-name=/path/to/SKILL.md'` で渡し、名前空間を失わない。結果は候補抽出であり、問題の確定判定にしない。
+3. 次のコマンドを基本形として、決定的な台帳、frontmatter、補助資源、参照切れ、参照切れ候補、重複名、description類似候補を収集する。コードフェンス外のMarkdownリンクは確定参照として検査し、インラインコードのパスは説明例を含み得る候補として分離する。追加rootは `--root`、個別の `SKILL.md` は `--skill` を繰り返して渡す。カタログ名がfolder内のnameと異なるSkillは `--catalog-entry 'catalog-name=/path/to/SKILL.md'` で渡し、名前空間を失わない。結果は候補抽出であり、問題の確定判定にしない。
 
    ```sh
    python3 .agents/skills/relic-audit-skills/scripts/collect_skill_evidence.py \
@@ -60,5 +60,5 @@ description: Relicリポジトリで利用可能なSkill集合を一覧化し、
 1. 変更ターンの冒頭で対象ファイルを再読し、現行HEADに対する対象候補、理由、影響範囲を短く再監査してから編集する。
 2. 固有知識を失わない。削除前に必要な知識を移し、改名では全参照、description変更では正例・誤発火・未発火、統合では双方の固有情報、分割では責務境界と入口を確認する。
 3. 現行の命名、frontmatter、`agents/openai.yaml`、補助ディレクトリ、ルーティング文書へ合わせる。単一Skillの新規作成手順そのものは `$skill-creator`、文書更新とコミットはリポジトリの対応Skill・規則も使う。
-4. 対象Skillごとの構文、参照、script、代表routing caseを再検証し、収集スクリプトを `--fail-on-issues` 付きで実行する。利用可能なら公式Skill validatorも実行し、未実行なら理由と代替確認を示す。
+4. 対象Skillごとの構文、参照、script、代表routing caseを再検証し、収集スクリプトを `--fail-on-issues` 付きで実行する。参照切れ候補は目視で分類し、確定参照、構文、重複名の問題だけを終了失敗として扱う。利用可能なら公式Skill validatorも実行し、未実行なら理由と代替確認を示す。
 5. `git diff --check` と全差分を確認し、最終差分、検証結果、残る不確実性、他Skillへの影響を報告する。承認されていない追加変更、削除、外部書き込み、pushを行わない。

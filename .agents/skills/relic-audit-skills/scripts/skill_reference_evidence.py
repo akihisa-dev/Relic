@@ -21,6 +21,7 @@ ROOT_RELATIVE_PREFIXES = (
 )
 SKILL_RELATIVE_PREFIXES = ("agents/", "assets/", "evals/", "references/", "scripts/")
 INLINE_PATH_IGNORE_MARKER = "<!-- skill-audit: ignore-inline-paths -->"
+FENCE_START_PATTERN = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})")
 ROOT_FILENAMES = {
     "AGENTS.md",
     "CONTRIBUTING.md",
@@ -81,6 +82,31 @@ def resolve_markdown_reference(source: Path, target: str) -> Path | None:
     return (source.parent / decoded).resolve()
 
 
+def without_fenced_code_blocks(text: str) -> str:
+    """Remove fenced examples while preserving line boundaries for link scanning."""
+    visible_lines: list[str] = []
+    fence_character: str | None = None
+    minimum_fence_length = 0
+    for line in text.splitlines(keepends=True):
+        content = line.rstrip("\r\n")
+        if fence_character is None:
+            opening = FENCE_START_PATTERN.match(content)
+            if opening is None:
+                visible_lines.append(line)
+                continue
+            fence = opening.group(1)
+            fence_character = fence[0]
+            minimum_fence_length = len(fence)
+        elif re.fullmatch(
+            rf"[ \t]{{0,3}}{re.escape(fence_character)}{{{minimum_fence_length},}}[ \t]*",
+            content,
+        ):
+            fence_character = None
+            minimum_fence_length = 0
+        visible_lines.append("\n" if line.endswith(("\n", "\r")) else "")
+    return "".join(visible_lines)
+
+
 def inline_path_candidate(value: str) -> str | None:
     candidate = value.strip().rstrip(".,;:")
     if not candidate or "\n" in candidate:
@@ -123,7 +149,8 @@ def collect_references(
         except (OSError, UnicodeError):
             continue
         source_name = display_path(source, workspace)
-        for raw_target in MARKDOWN_LINK_PATTERN.findall(text):
+        visible_text = without_fenced_code_blocks(text)
+        for raw_target in MARKDOWN_LINK_PATTERN.findall(visible_text):
             target = markdown_target(raw_target)
             resolved = resolve_markdown_reference(source, target)
             if resolved is None:

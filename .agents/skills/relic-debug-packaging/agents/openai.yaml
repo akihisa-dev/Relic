@@ -1,4 +1,4 @@
 interface:
   display_name: "Relic Packaging Debug"
-  short_description: "配布ビルド障害を成果物・OS差・安全検査から診断修正する"
-  default_prompt: "Use $relic-debug-packaging to diagnose and fix a Relic packaging failure using current build scripts and artifact evidence."
+  short_description: "配布設定とビルド障害を成果物・OS差・安全検査から整合する"
+  default_prompt: "Use $relic-debug-packaging to change or diagnose Relic packaging with current build scripts and artifact evidence."

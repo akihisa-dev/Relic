@@ -93,7 +93,7 @@
 - グラフ、年表、Canvas描画、物理演算、派生データの変更では `.agents/skills/relic-change-visualizations/SKILL.md` に従う
 - アプリ設定、ワークスペース設定、schema、互換移行、設定保存の変更では `.agents/skills/relic-change-settings/SKILL.md` に従う
 - IPC、preload、main handler、BrowserWindow、CSPの変更では `.agents/skills/relic-change-electron-boundaries/SKILL.md` に従う
-- package、make、ASAR、OS別成果物の障害診断と修正では `.agents/skills/relic-debug-packaging/SKILL.md` に従う
+- package、make、ASAR、resources、アイコン、OS別成果物の構成変更、障害診断、修正では `.agents/skills/relic-debug-packaging/SKILL.md` に従う
 - 正本文書、README、索引の作成、整理、同期では `.agents/skills/relic-maintain-docs/SKILL.md` に従う
 - Skill集合全体の棚卸し、責務・発火・重複・履歴・ルーティングの監査と承認後の整理では `.agents/skills/relic-audit-skills/SKILL.md` に従う
 - React診断、責務分離、ソース肥大化、アーキテクチャ、bundle、性能の監査や改善では `.agents/skills/relic-audit-code-health/SKILL.md` に従う

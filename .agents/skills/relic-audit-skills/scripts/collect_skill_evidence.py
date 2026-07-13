@@ -281,7 +281,7 @@ def collect_skill(target: SkillTarget, workspace: Path) -> SkillEvidence:
         issues.append("resource-scan-error")
     references = collect_references(markdown_files, skill_directory, workspace)
     for reference in references:
-        if not reference.exists:
+        if not reference.exists and reference.kind == "markdown-link":
             issues.append(f"missing-{reference.kind}:{reference.target}")
 
     combined_markdown: list[str] = []
@@ -415,11 +415,20 @@ def collect_evidence(
         }
         for skill in skills
         for reference in skill.references
-        if not reference.exists
+        if not reference.exists and reference.kind == "markdown-link"
+    ]
+    missing_reference_candidates = [
+        {
+            "skill": skill.name,
+            **asdict(reference),
+        }
+        for skill in skills
+        for reference in skill.references
+        if not reference.exists and reference.kind == "inline-path-candidate"
     ]
     issue_count = sum(len(skill.issues) for skill in skills) + len(duplicates)
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "workspace": workspace.resolve().as_posix(),
         "roots": [path.expanduser().resolve().as_posix() for path in roots],
@@ -435,21 +444,23 @@ def collect_evidence(
             "skill_count": len(skills),
             "structural_issue_count": issue_count,
             "missing_reference_count": len(missing_references),
+            "missing_reference_candidate_count": len(missing_reference_candidates),
             "duplicate_name_count": len(duplicates),
         },
         "skills": [skill.public_dict() for skill in skills],
         "duplicate_names": duplicates,
         "missing_references": missing_references,
+        "missing_reference_candidates": missing_reference_candidates,
         "similarity_candidates": similarity_candidates(skills, threshold),
         "notes": [
-            "Similarity and inline-path results are candidates, not confirmed audit findings.",
+            "Similarity and inline-path results are candidates, not confirmed audit findings or fail-on-issues conditions.",
             (
                 "Use --catalog-entry for Skills whose available-catalog name differs "
                 "from frontmatter name."
             ),
             (
-                "A Markdown file containing the skill-audit ignore marker skips "
-                "inline-path candidates but still checks Markdown links."
+                "Fenced code examples are excluded from Markdown-link checks. A Markdown "
+                "file containing the skill-audit ignore marker skips inline-path candidates."
             ),
             (
                 "Purpose, triggers, inputs, outputs, tools, conflicts, and change "
@@ -483,14 +494,23 @@ def run_self_test() -> None:
         second.joinpath("SKILL.md").write_text(
             "---\nname: duplicate-skill\ndescription: "
             + description
-            + "\n---\n# Second\n",
+            + "\n---\n# Second\n\n"
+            + "```markdown\n[example](references/example.md)\n```\n\n"
+            + "For illustration, use `references/schema.md`.\n",
             encoding="utf-8",
         )
         evidence = collect_evidence(workspace, [root], [], [], 0.5)
         assert evidence["summary"]["skill_count"] == 2
         assert evidence["summary"]["duplicate_name_count"] == 1
         assert evidence["summary"]["missing_reference_count"] == 1
+        assert evidence["summary"]["missing_reference_candidate_count"] == 1
         assert len(evidence["similarity_candidates"]) == 1
+        assert evidence["missing_reference_candidates"][0]["target"] == "references/schema.md"
+        assert not any(
+            issue.startswith("missing-inline-path-candidate:")
+            for skill in evidence["skills"]
+            for issue in skill["issues"]
+        )
         assert all(
             "frontmatter-folder-name-mismatch" in skill["issues"]
             for skill in evidence["skills"]
@@ -528,6 +548,7 @@ def run_self_test() -> None:
         )
         assert catalog_evidence["summary"]["duplicate_name_count"] == 0
         assert catalog_evidence["summary"]["missing_reference_count"] == 0
+        assert catalog_evidence["summary"]["missing_reference_candidate_count"] == 0
         assert {skill["name"] for skill in catalog_evidence["skills"]} == {
             "plugin-a:index",
             "plugin-a:worker",

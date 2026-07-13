@@ -16,6 +16,7 @@ def render_markdown(evidence: dict[str, object]) -> str:
         f"- Skills: {summary['skill_count']}",
         f"- Structural issues: {summary['structural_issue_count']}",
         f"- Missing references: {summary['missing_reference_count']}",
+        f"- Missing reference candidates: {summary['missing_reference_candidate_count']}",
         f"- Duplicate names: {summary['duplicate_name_count']}",
         "",
         "## Inventory",
@@ -48,6 +49,21 @@ def render_markdown(evidence: dict[str, object]) -> str:
     if missing:
         lines.extend(["| Skill | Source | Target | Kind |", "|---|---|---|---|"])
         for item in missing:
+            lines.append(
+                "| {skill} | {source} | {target} | {kind} |".format(
+                    skill=markdown_escape(item["skill"]),
+                    source=markdown_escape(item["source"]),
+                    target=markdown_escape(item["target"]),
+                    kind=markdown_escape(item["kind"]),
+                )
+            )
+    else:
+        lines.append("None detected.")
+    lines.extend(["", "## Missing reference candidates", ""])
+    candidates = evidence["missing_reference_candidates"]
+    if candidates:
+        lines.extend(["| Skill | Source | Target | Kind |", "|---|---|---|---|"])
+        for item in candidates:
             lines.append(
                 "| {skill} | {source} | {target} | {kind} |".format(
                     skill=markdown_escape(item["skill"]),
