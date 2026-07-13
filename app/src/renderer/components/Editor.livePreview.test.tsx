@@ -640,9 +640,42 @@ describe("Editor live preview", () => {
     expect(css).toMatch(/\.cm-live-code-block-source\s*\{[^}]*user-select:\s*text;/s);
   });
 
-  it("通常コードブロックは本文だけを選択可能な読み取り専用DOMにする", async () => {
+  it("通常コードブロックはブロック表示とフェンスを維持したまま本文を入力できる", async () => {
     const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
     const content = ["```yaml", "sample: 11", "```", "", "本文"].join("\n");
+    const { container } = render(
+      <Editor
+        content={content}
+        onChange={onChange}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-source")).not.toBeNull());
+
+    const source = container.querySelector(".cm-live-code-block-source") as HTMLTextAreaElement;
+    expect((container.querySelector(".cm-live-code-block-panel") as HTMLElement).contentEditable).toBe("false");
+    expect((container.querySelector(".cm-live-code-block-header") as HTMLElement).contentEditable).toBe("false");
+    expect(source).toBeInstanceOf(HTMLTextAreaElement);
+    expect(source.readOnly).toBe(false);
+
+    fireEvent.input(source, { target: { value: "sample: 12\n追加" } });
+
+    const expected = ["```yaml", "sample: 12", "追加", "```", "", "本文"].join("\n");
+    await waitFor(() => expect(viewRef.current?.state.doc.toString()).toBe(expected));
+    expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull();
+    expect((container.querySelector(".cm-live-code-block-source") as HTMLTextAreaElement).value).toBe("sample: 12\n追加");
+    expect(viewRef.current?.state.doc.toString()).toContain("```yaml\nsample: 12\n追加\n```");
+    expect(onChange).toHaveBeenCalledWith(expected);
+  });
+
+  it("空の通常コードブロックへ日本語を入力してもブロック表示を維持する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const content = ["```", "```", "", "本文"].join("\n");
     const { container } = render(
       <Editor
         content={content}
@@ -656,10 +689,14 @@ describe("Editor live preview", () => {
     viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
     await waitFor(() => expect(container.querySelector(".cm-live-code-block-source")).not.toBeNull());
 
-    expect((container.querySelector(".cm-live-code-block-panel") as HTMLElement).contentEditable).toBe("false");
-    expect((container.querySelector(".cm-live-code-block-header") as HTMLElement).contentEditable).toBe("false");
-    expect((container.querySelector(".cm-live-code-block-source") as HTMLElement).contentEditable).toBe("false");
-    expect(container.querySelector(".cm-live-code-block-source")?.getAttribute("aria-readonly")).toBe("true");
+    const source = container.querySelector(".cm-live-code-block-source") as HTMLTextAreaElement;
+    fireEvent.compositionStart(source);
+    fireEvent.input(source, { target: { value: "日本語" } });
+    fireEvent.compositionEnd(source);
+
+    await waitFor(() => expect(viewRef.current?.state.doc.toString()).toBe(["```", "日本語", "```", "", "本文"].join("\n")));
+    expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull();
+    expect((container.querySelector(".cm-live-code-block-source") as HTMLTextAreaElement).value).toBe("日本語");
   });
 
   it("通常コードブロックはフェンス行に選択が移ったらソース表示に戻す", async () => {

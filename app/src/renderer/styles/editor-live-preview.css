@@ -188,14 +188,21 @@
 
 .cm-live-code-block-source {
   background: transparent;
+  border: 0;
+  box-sizing: border-box;
   color: inherit;
   cursor: text;
+  display: block;
   font: inherit;
+  line-height: inherit;
   outline: none;
+  overflow: auto hidden;
   padding: 0;
+  resize: none;
   -webkit-user-select: text;
   user-select: text;
   white-space: inherit;
+  width: 100%;
 }
 
 .cm-live-code-block-label {
