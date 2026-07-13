@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Settings"
+  short_description: "設定schema・移行・保存を互換性と安全性を保って変更する"
+  default_prompt: "Use $relic-change-settings to evolve Relic settings schemas and persistence without losing compatibility or corrupting stored state."

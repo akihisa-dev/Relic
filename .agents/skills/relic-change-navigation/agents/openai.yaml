@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Navigation and Commands"
+  short_description: "コマンド・タブ・ペイン・画面移動の状態を一貫して変更する"
+  default_prompt: "Use $relic-change-navigation to change Relic commands, tabs, panes, shortcuts, or navigation while preserving state transitions."

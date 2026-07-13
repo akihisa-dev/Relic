@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Workspace Files"
+  short_description: "ワークスペース内のファイル操作を境界・競合まで安全に変更する"
+  default_prompt: "Use $relic-change-workspace-files to implement the requested Relic file operation without crossing workspace or concurrency boundaries."

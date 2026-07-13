@@ -82,6 +82,18 @@
 ## オンデマンド手順
 
 - UI、デザイン、画面構成、操作感、表示状態の変更では `.agents/skills/relic-change-ui/SKILL.md` に従う
+- Markdownエディタ、ライブプレビュー、選択範囲、編集履歴、自動保存接続の変更では `.agents/skills/relic-change-markdown-editor/SKILL.md` に従う
+- フロントマターYAML、固定プロパティ、フォーム、往復保持の変更では `.agents/skills/relic-change-frontmatter/SKILL.md` に従う
+- Markdown描画、HTML・PDF・SVG出力、安全化の変更では `.agents/skills/relic-change-markdown-output/SKILL.md` に従う
+- ワークスペース、ファイル、フォルダ、保存、移動、削除、外部変更の変更では `.agents/skills/relic-change-workspace-files/SKILL.md` に従う
+- ファイル加工、フォルダ内マージ、タイトル一覧、目次、タグ別索引の変更では `.agents/skills/relic-change-tools/SKILL.md` に従う
+- 検索、置換、内部リンク、バックリンク、未リンク参照、派生索引の変更では `.agents/skills/relic-change-search-links/SKILL.md` に従う
+- コマンド、クイックスイッチャー、ショートカット、タブ、ペイン、画面移動の変更では `.agents/skills/relic-change-navigation/SKILL.md` に従う
+- グラフ、年表、Canvas描画、物理演算、派生データの変更では `.agents/skills/relic-change-visualizations/SKILL.md` に従う
+- アプリ設定、ワークスペース設定、schema、互換移行、設定保存の変更では `.agents/skills/relic-change-settings/SKILL.md` に従う
+- IPC、preload、main handler、BrowserWindow、CSPの変更では `.agents/skills/relic-change-electron-boundaries/SKILL.md` に従う
+- package、make、ASAR、OS別成果物の障害診断と修正では `.agents/skills/relic-debug-packaging/SKILL.md` に従う
+- 正本文書、README、索引の作成、整理、同期では `.agents/skills/relic-maintain-docs/SKILL.md` に従う
 - React診断、責務分離、ソース肥大化、アーキテクチャ、bundle、性能の監査や改善では `.agents/skills/relic-audit-code-health/SKILL.md` に従う
 - 依存関係、Electron、ビルド基盤、GitHub Actions、監査対応の更新では `.agents/skills/relic-update-dependencies/SKILL.md` に従う
 - 差分をコミットする場合は `.agents/skills/relic-commit/SKILL.md` に従う

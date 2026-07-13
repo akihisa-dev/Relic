@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Documentation"
+  short_description: "正本文書の責務と索引を保ちながら追加・整理・同期する"
+  default_prompt: "Use $relic-maintain-docs to add, reorganize, or synchronize Relic canonical documentation without duplication."

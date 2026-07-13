@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Electron Boundaries"
+  short_description: "IPC・preload・ウインドウ境界を契約と安全条件に沿って変更する"
+  default_prompt: "Use $relic-change-electron-boundaries to modify Relic Electron boundaries while preserving typed IPC contracts and security conditions."
