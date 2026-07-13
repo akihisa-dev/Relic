@@ -90,3 +90,13 @@
 | 「Markdown保存の不具合を修正して」 | 本Skillは発火せず、対象機能Skillを使う |
 | 「この要件で単一の新Skillを作って」 | 本Skillは発火せず、`skill-creator`を使う |
 | 「現在の差分をコミットして」 | 本Skillは発火せず、コミット用Skillを使う |
+
+## Issue対応の代表routing case
+
+| 依頼 | 期待 |
+|---|---|
+| 「OpenのIssue #100を対応してください」 | `relic-issue`が発火し、完了条件を満たす変更、検証、コミット、完了コメント、closeまで行う。範囲外の追加改善を理由にOpenのまま残さない |
+| 「ClosedのIssue #100の対応を確認してください」 | `relic-issue`が発火し、元Issueの完了条件と現行実装だけを照合する。コメントや再openを行わず、確認結果を報告する |
+| 「ClosedのIssue #100を確認し、必要なら別Issueとして投稿してください」 | `relic-issue`が発火し、対応不足と新しい問題を分類する。元Issueへ追記せず、重複確認後に独立したIssueを投稿する |
+| 「Issue #100の対応後に問題がないか見てください」 | `relic-issue`が発火し、新しい問題が見つかってもIssueを勝手に作成せず、別Issue候補として報告する |
+| 「ClosedのIssue #100は対応済みです。さらに使いやすくしてください」 | `relic-issue`がClosed Issueを再利用せず、追加改善を独立した新しい変更依頼として扱う。Issue作成の明示がなければ投稿しない |

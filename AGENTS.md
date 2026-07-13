@@ -105,4 +105,5 @@
 - Issue番号、Issue URL、Issue対応依頼では `.agents/skills/relic-issue/SKILL.md` に従う。調査・相談だけではコメントやcloseを行わない
 - タグ、配布、Release作業では `.agents/skills/relic-release/SKILL.md` に従う
 - 外部への書き込みは明示指示の範囲だけ行う。「Issueを対応して」は対象Issueの完了コメントとcloseを含むが、「Issueを調査して」は含まない
+- Issueの完了条件を満たしたらcloseし、Closed Issueへ新しい課題を継ぎ足したり自動で再openしたりしない。追加課題は別Issue候補として分離し、新規Issueは明示指示時だけ作成する
 - pushと公開は、ユーザーが明示的に指示した場合だけ行う
