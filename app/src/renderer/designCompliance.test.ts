@@ -19,6 +19,7 @@ describe("DESIGN.md compliance", () => {
     expect(designCss).toContain("--color-text: #1a1b17;");
     expect(designCss).toContain("--color-text-secondary: #62625b;");
     expect(designCss).toContain("--color-text-muted: #76756c;");
+    expect(designCss).toContain("--color-tooltip-border: #b8af9f;");
     expect(designCss).toContain("--color-tooltip-surface: #f4f0e6;");
     expect(designCss).toContain("--color-tooltip-text: #1a1b17;");
     expect(designCss).toContain("--color-accent-surface: rgba(242, 105, 27, 0.84);");

@@ -44,4 +44,12 @@ describe("DelayedTooltip", () => {
     expect(css).toMatch(/\.delayed-tooltip--below \.delayed-tooltip-content,[^{]*\{[^}]*bottom:\s*auto;[^}]*top:\s*calc\(100% \+ 11px\);[^}]*transform-origin:\s*center top;/s);
     expect(css).toMatch(/\.delayed-tooltip--below \.delayed-tooltip-content::after,[^{]*\{[^}]*border-bottom:\s*7px solid var\(--color-tooltip-surface\);[^}]*border-top:\s*0;/s);
   });
+
+  it("吹き出しと三角へ同じアウトラインを付ける", () => {
+    const css = readFileSync("src/renderer/styles/delayed-tooltip.css", "utf8");
+
+    expect(css).toMatch(/\.delayed-tooltip-content\s*\{[^}]*border:\s*1px solid var\(--color-tooltip-border\);/s);
+    expect(css).toMatch(/\.delayed-tooltip-content::before\s*\{[^}]*border-top:\s*8px solid var\(--color-tooltip-border\);/s);
+    expect(css).toMatch(/\.delayed-tooltip--below \.delayed-tooltip-content::before,[^{]*\{[^}]*border-bottom:\s*8px solid var\(--color-tooltip-border\);/s);
+  });
 });
