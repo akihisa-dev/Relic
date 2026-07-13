@@ -1,4 +1,11 @@
-import { defaultGraphOptions, type GraphColorGroup, type GraphOptions, type GraphSectionCollapsedState } from "./graphTypes";
+import {
+  defaultGraphDrawTheme,
+  defaultGraphOptions,
+  type GraphColorGroup,
+  type GraphDrawTheme,
+  type GraphOptions,
+  type GraphSectionCollapsedState
+} from "./graphTypes";
 
 export const graphOptionsStorageKey = "relic.graphView.options.v1";
 export const graphControlsStorageKey = "relic.graphView.controlsOpen.v1";
@@ -16,6 +23,22 @@ export function cssVar(name: string, fallback: string): string {
   if (typeof window === "undefined") return fallback;
 
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
+export function readGraphDrawTheme(element: Element = document.documentElement): GraphDrawTheme {
+  if (typeof window === "undefined") return defaultGraphDrawTheme;
+
+  const styles = getComputedStyle(element);
+  const token = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+  return {
+    accent: token("--color-accent", defaultGraphDrawTheme.accent),
+    border: token("--color-border", defaultGraphDrawTheme.border),
+    borderStrong: token("--color-border-strong", defaultGraphDrawTheme.borderStrong),
+    primary: token("--color-primary", defaultGraphDrawTheme.primary),
+    text: token("--color-text", defaultGraphDrawTheme.text),
+    textMuted: token("--color-text-muted", defaultGraphDrawTheme.textMuted),
+    textSecondary: token("--color-text-secondary", defaultGraphDrawTheme.textSecondary)
+  };
 }
 
 export function getCanvas2dContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null {

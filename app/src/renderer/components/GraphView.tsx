@@ -12,6 +12,7 @@ import {
 } from "../graph/graphLayout";
 import { createGraphSimulationClient, type GraphSimulationClient } from "../graph/graphSimulationClient";
 import {
+  defaultGraphDrawTheme,
   defaultGraphOptions,
   type GraphColorGroup,
   type GraphKeyboardState,
@@ -60,6 +61,7 @@ import {
   loadGraphOptions,
   loadGraphSectionCollapsed,
   nextGroupColor,
+  readGraphDrawTheme,
   requestGraphFrame,
   saveJson
 } from "../graph/graphViewRuntime";
@@ -74,6 +76,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<number | null>(null);
+  const themeRef = useRef(defaultGraphDrawTheme);
   const initialNodes = useMemo(() => new Map<string, GraphSimNode>(), []);
   const initialLinks = useMemo<GraphSimLink[]>(() => [], []);
   const initialView = useMemo(() => initialGraphViewTransform(), []);
@@ -123,6 +126,28 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
   const latestOptionsRef = useLatest(options);
   const colorGroupsRef = useLatest(colorGroups);
+
+  const updateTheme = useCallback(() => {
+    themeRef.current = readGraphDrawTheme(canvasRef.current ?? document.documentElement);
+  }, []);
+
+  useEffect(() => {
+    updateTheme();
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    const colorScheme = typeof window.matchMedia === "function"
+      ? window.matchMedia("(prefers-color-scheme: dark)")
+      : null;
+    const handleColorSchemeChange = () => {
+      if (!document.documentElement.hasAttribute("data-theme")) updateTheme();
+    };
+    colorScheme?.addEventListener("change", handleColorSchemeChange);
+
+    return () => {
+      observer.disconnect();
+      colorScheme?.removeEventListener("change", handleColorSchemeChange);
+    };
+  }, [updateTheme]);
 
   useEffect(() => {
     const client = createGraphSimulationClient((message) => {
@@ -287,6 +312,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
       colorGroupsRef.current,
       filteredGraph.tagsByNode,
       highlight,
+      themeRef.current,
       cssWidth,
       cssHeight
     );

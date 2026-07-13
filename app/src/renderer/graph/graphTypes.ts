@@ -32,6 +32,26 @@ export const defaultGraphOptions: GraphOptions = {
   textFadeMultiplier: 0
 };
 
+export interface GraphDrawTheme {
+  accent: string;
+  border: string;
+  borderStrong: string;
+  primary: string;
+  text: string;
+  textMuted: string;
+  textSecondary: string;
+}
+
+export const defaultGraphDrawTheme: GraphDrawTheme = {
+  accent: "#f2691b",
+  border: "#3b3c33",
+  borderStrong: "#5b5d52",
+  primary: "#1a1b17",
+  text: "#1e1e1e",
+  textMuted: "#76756c",
+  textSecondary: "#62625b"
+};
+
 export interface GraphSimNode extends WorkspaceGraphNode {
   fx: number | null;
   fy: number | null;

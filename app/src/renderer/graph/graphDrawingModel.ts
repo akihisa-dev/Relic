@@ -10,12 +10,12 @@ import {
 import { graphNodeMatchesQuery } from "./graphSearchModel";
 import type {
   GraphColorGroup,
+  GraphDrawTheme,
   GraphLinkEndpointNode,
   GraphOptions,
   GraphSimLink,
   GraphSimNode
 } from "./graphTypes";
-import { cssVar } from "./graphViewRuntime";
 
 const graphDimmedLinkAlpha = 0.18;
 const graphDimmedNodeAlpha = 0.34;
@@ -31,6 +31,7 @@ export function drawGraph(
   colorGroups: GraphColorGroup[],
   tagsByNode: Map<string, string[]>,
   highlight: GraphHighlightState,
+  theme: GraphDrawTheme,
   width: number,
   height: number
 ): void {
@@ -51,9 +52,7 @@ export function drawGraph(
   const animationTimeMs = typeof performance === "undefined" ? 0 : performance.now();
   const highlightProgress = graphHighlightProgress(animationTimeMs);
   const highlightOpacity = graphHighlightOpacity(animationTimeMs);
-  const focusedColor = focused
-    ? cssVar("--color-accent", "#f2691b")
-    : null;
+  const focusedColor = focused ? theme.accent : null;
   if (focused && focusedColor) {
     drawGraphNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, highlightOpacity);
   }
@@ -65,7 +64,7 @@ export function drawGraph(
 
     const active = !focused || link.source === focused.id || link.target === focused.id;
     context.globalAlpha = graphHighlightAlpha(active, highlightStrength, 0.65, graphDimmedLinkAlpha) * linkScaleOpacity;
-    context.strokeStyle = active ? cssVar("--color-border-strong", "#5b5d52") : cssVar("--color-border", "#3b3c33");
+    context.strokeStyle = active ? theme.borderStrong : theme.border;
     context.lineWidth = Math.max(0.4 / view.scale, options.lineSizeMultiplier * Math.sqrt(link.count) / view.scale);
     context.beginPath();
     context.moveTo(endpoints.sourceX, endpoints.sourceY);
@@ -95,7 +94,7 @@ export function drawGraph(
   for (const node of nodes) {
     const active = !focused || node.id === focused.id || neighbors.has(node.id);
     const radius = graphNodeVisualRadius(node, options, view.scale);
-    const color = nodeColor(node, colorGroups, tagsByNode.get(node.id) ?? []);
+    const color = nodeColor(node, colorGroups, tagsByNode.get(node.id) ?? [], theme);
     context.globalAlpha = graphHighlightAlpha(active, highlightStrength, 1, graphDimmedNodeAlpha);
     context.fillStyle = color;
     context.beginPath();
@@ -104,12 +103,12 @@ export function drawGraph(
 
     if (node.id === focused?.id && highlightStrength > 0) {
       context.globalAlpha = 0.36 * highlightStrength;
-      context.fillStyle = cssVar("--color-primary", "#1a1b17");
+      context.fillStyle = theme.primary;
       context.beginPath();
       context.arc(node.x, node.y, radius, 0, Math.PI * 2);
       context.fill();
       context.globalAlpha = highlightStrength;
-      context.strokeStyle = focusedColor ?? cssVar("--color-primary", "#1a1b17");
+      context.strokeStyle = focusedColor ?? theme.primary;
       context.lineWidth = 2 / view.scale;
       context.beginPath();
       context.arc(node.x, node.y, radius + Math.max(2, 5 / view.scale), 0, Math.PI * 2);
@@ -119,7 +118,7 @@ export function drawGraph(
     const labelAlpha = graphLabelOpacity(view.scale, options.textFadeMultiplier);
     if (labelAlpha > 0.02) {
       context.globalAlpha = graphHighlightAlpha(active, highlightStrength, 1, graphDimmedLabelAlpha) * labelAlpha;
-      context.fillStyle = cssVar("--color-text", "#1e1e1e");
+      context.fillStyle = theme.text;
       const labelScale = node.id === focused?.id && view.scale < 1 ? 1 / view.scale : graphNodeScale(view.scale);
       context.font = `${Math.max(10 / view.scale, 13 * labelScale)}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
       context.textAlign = "center";
@@ -266,15 +265,20 @@ export function drawArrow(context: CanvasRenderingContext2D, source: GraphSimNod
   context.fill();
 }
 
-export function nodeColor(node: WorkspaceGraphNode, groups: GraphColorGroup[], tags: string[]): string {
+export function nodeColor(
+  node: WorkspaceGraphNode,
+  groups: GraphColorGroup[],
+  tags: string[],
+  theme: GraphDrawTheme
+): string {
   const group = groups.find((candidate) => graphNodeMatchesQuery(node, candidate.query, tags));
   if (group) return group.color;
 
-  if (node.type === "tag") return cssVar("--color-accent", "#f2691b");
-  if (node.type === "attachment") return cssVar("--color-text-muted", "#76756c");
-  if (node.type === "unresolved") return cssVar("--color-text-muted", "#76756c");
+  if (node.type === "tag") return theme.accent;
+  if (node.type === "attachment") return theme.textMuted;
+  if (node.type === "unresolved") return theme.textMuted;
 
-  return cssVar("--color-text-secondary", "#62625b");
+  return theme.textSecondary;
 }
 
 export function graphHighlightAlpha(

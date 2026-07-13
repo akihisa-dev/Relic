@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { defaultGraphOptions } from "./graphTypes";
 import {
   graphColorGroupsStorageKey,
   loadGraphColorGroups,
+  readGraphDrawTheme,
   sanitizeGraphOptions
 } from "./graphViewRuntime";
 
@@ -45,5 +46,34 @@ describe("graphViewRuntime", () => {
       id: "group-1",
       query: "tag:note"
     }]);
+  });
+
+  it("描画用のCSS変数を1回のスタイル取得で読み込む", () => {
+    const getPropertyValue = vi.fn((name: string) => ({
+      "--color-accent": " #111111 ",
+      "--color-border": "#222222",
+      "--color-border-strong": "#333333",
+      "--color-primary": "#444444",
+      "--color-text": "#555555",
+      "--color-text-muted": "#666666",
+      "--color-text-secondary": "#777777"
+    })[name] ?? "");
+    const computedStyle = vi.spyOn(window, "getComputedStyle").mockReturnValue({
+      getPropertyValue
+    } as unknown as CSSStyleDeclaration);
+    const canvas = document.createElement("canvas");
+
+    expect(readGraphDrawTheme(canvas)).toEqual({
+      accent: "#111111",
+      border: "#222222",
+      borderStrong: "#333333",
+      primary: "#444444",
+      text: "#555555",
+      textMuted: "#666666",
+      textSecondary: "#777777"
+    });
+    expect(computedStyle).toHaveBeenCalledOnce();
+    expect(computedStyle).toHaveBeenCalledWith(canvas);
+    expect(getPropertyValue).toHaveBeenCalledTimes(7);
   });
 });

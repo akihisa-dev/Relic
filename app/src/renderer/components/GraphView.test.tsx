@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { makeRelicApi } from "../../test/rendererTestUtils";
@@ -17,7 +17,9 @@ function renderGraphView(language: "en" | "ja") {
 
 afterEach(() => {
   cleanup();
+  document.documentElement.removeAttribute("data-theme");
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("GraphView", () => {
@@ -65,5 +67,41 @@ describe("GraphView", () => {
 
     fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 8, clientY: 8 }));
     expect(canvas).toHaveStyle("cursor: grab");
+  });
+
+  it("テーマ属性とOSの配色変更時だけ描画色を更新する", async () => {
+    let notifyColorSchemeChange = () => undefined;
+    vi.stubGlobal("matchMedia", vi.fn(() => ({
+      addEventListener: (_type: string, listener: EventListenerOrEventListenerObject) => {
+        notifyColorSchemeChange = () => {
+          if (typeof listener === "function") listener(new Event("change"));
+          else listener.handleEvent(new Event("change"));
+        };
+      },
+      dispatchEvent: vi.fn(),
+      matches: false,
+      media: "(prefers-color-scheme: dark)",
+      onchange: null,
+      removeEventListener: vi.fn()
+    })));
+    const computedStyle = vi.spyOn(window, "getComputedStyle");
+
+    renderGraphView("ja");
+    const canvas = screen.getByLabelText("グラフ");
+    await waitFor(() => expect(computedStyle).toHaveBeenCalledWith(canvas));
+
+    computedStyle.mockClear();
+    document.documentElement.dataset.theme = "dark";
+    await waitFor(() => expect(computedStyle).toHaveBeenCalledWith(canvas));
+
+    computedStyle.mockClear();
+    notifyColorSchemeChange();
+    expect(computedStyle).not.toHaveBeenCalled();
+
+    document.documentElement.removeAttribute("data-theme");
+    await waitFor(() => expect(computedStyle).toHaveBeenCalledWith(canvas));
+    computedStyle.mockClear();
+    notifyColorSchemeChange();
+    expect(computedStyle).toHaveBeenCalledWith(canvas);
   });
 });
