@@ -1,0 +1,8 @@
+# AIの権限判断、外部操作、コミット、リリースへ影響する設定はオーナーが確認する。
+/AGENTS.md @akihisa-dev
+/.agents/skills/relic-commit/ @akihisa-dev
+/.agents/skills/relic-issue/ @akihisa-dev
+/.agents/skills/relic-manage-version/ @akihisa-dev
+/.agents/skills/relic-release/ @akihisa-dev
+/.github/ @akihisa-dev
+/.githooks/ @akihisa-dev

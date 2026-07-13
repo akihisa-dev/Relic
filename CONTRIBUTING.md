@@ -20,6 +20,14 @@ Pull Requestを送ることで、提出内容をAGPL-3.0-or-laterで配布・改
 - 秘密情報、APIキー、個人情報、ローカル環境固有の設定ファイルを含めないでください。
 - 可能な範囲で、型チェックや関連テストを実行してください。
 
+AIの権限判断、外部操作、コミット、リリース、GitHub Actions、秘密情報検査に関わるファイルは、通常のコードレビューに加えてオーナー確認の対象です。対象パスは [`.github/CODEOWNERS`](.github/CODEOWNERS) を正本とします。機能別Skillの通常の改善まで一律にオーナー確認へ広げません。
+
+Pull RequestではGitHub Actionsが変更コミットの秘密情報パターンを検査します。ローカルでも次の設定で `.githooks/pre-commit` と `.githooks/pre-push` を有効にし、公開前に同じ検査を行ってください。
+
+```sh
+git config core.hooksPath .githooks
+```
+
 ## 開発ルール
 
 文書更新を含む開発ルールは [docs/development.md](docs/development.md) に従ってください。
