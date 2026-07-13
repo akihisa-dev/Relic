@@ -35,11 +35,11 @@ describe("App feature toggles", () => {
 
     await renderApp();
 
-    await screen.findByRole("button", { name: "ファイル" });
+    await screen.findByRole("button", { name: "ファイルビュー" });
     expect(screen.queryByRole("button", { name: "ツール" })).toBeNull();
   });
 
-  it("機能トグルで年表のナビを非表示にする", async () => {
+  it("機能トグルでクロニクルビューのナビを非表示にする", async () => {
     window.relic = makeRelicApi({
       getFeatureToggles: vi.fn().mockResolvedValue({
         ok: true,
@@ -53,8 +53,8 @@ describe("App feature toggles", () => {
 
     await renderApp();
 
-    await screen.findByRole("button", { name: "ファイル" });
-    expect(screen.queryByRole("button", { name: "年表" })).toBeNull();
+    await screen.findByRole("button", { name: "ファイルビュー" });
+    expect(screen.queryByRole("button", { name: "クロニクルビュー" })).toBeNull();
     expect(screen.queryByRole("button", { name: "暦設定" })).toBeNull();
   });
 });

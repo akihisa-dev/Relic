@@ -25,6 +25,7 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 
 ### Markdown Workspace
 
+- File view for reading and editing Markdown.
 - Markdown editor with live preview.
 - Local workspace management.
 - File and folder creation, rename, move, duplicate, delete, and pinning.
@@ -57,11 +58,9 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 - PDF export from Markdown preview.
 - Copy and save diagram SVG output.
 
-### Timeline
+### Chronicle View
 
-- Optional timeline view from `chronicle` front matter values.
-
-![Relic timeline screenshot](assets/relic-timeline-screenshot.png)
+- Optional Chronicle view that places Markdown files on a timeline from `chronicle` front matter values.
 
 ### File Processing Tools
 
@@ -71,7 +70,7 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 - Generate tables of contents.
 - Generate tag indexes.
 
-Front matter settings, calendar settings, timeline, and file processing tools are implemented but hidden by default. They can be enabled from Settings feature toggles.
+Front matter settings, calendar settings, Chronicle view, and file processing tools are implemented but hidden by default. They can be enabled from Settings feature toggles.
 
 ---
 
@@ -291,6 +290,7 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 
 ### Markdownワークスペース
 
+- Markdownを表示・編集するファイルビュー
 - Markdownエディタ（ライブプレビュー）
 - ローカルワークスペース管理
 - ファイル / フォルダの作成、リネーム、移動、複製、削除、ピン留め
@@ -323,11 +323,9 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 - MarkdownプレビューのPDF保存
 - 図表SVGのコピー / 保存
 
-### 年表
+### クロニクルビュー
 
-- 任意で有効化できる `chronicle` フロントマター値による年表表示
-
-![Relic timeline screenshot](assets/relic-timeline-screenshot.png)
+- `chronicle` フロントマター値からMarkdownファイルを時間軸上の年表へ配置する、任意で有効化できるクロニクルビュー
 
 ### ファイル加工ツール
 
@@ -337,7 +335,7 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 - 目次生成
 - タグ別索引生成
 
-フロントマター設定、暦設定、年表、ファイル加工ツールは実装済みですが、初期状態では非表示です。設定の機能トグルから有効化できます。
+フロントマター設定、暦設定、クロニクルビュー、ファイル加工ツールは実装済みですが、初期状態では非表示です。設定の機能トグルから有効化できます。
 
 ---
 

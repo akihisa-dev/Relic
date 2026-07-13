@@ -186,7 +186,7 @@ function isChartSource(value: unknown): value is ChartSource {
 
 function defaultChartName(source: ChartSource): string {
   void source;
-  return "年表";
+  return "クロニクルビュー";
 }
 
 function assertSafeWorkspaceSettingsId(workspaceId: string): void {

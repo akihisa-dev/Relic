@@ -304,14 +304,14 @@ describe("App navigation and shortcuts", () => {
     expect(screen.getByText("Ctrl+N")).toBeInTheDocument();
   });
 
-  it("ファイルボタンでファイルサイドバーを開閉できる", async () => {
+  it("ファイルビューボタンでファイルサイドバーを開閉できる", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
     await renderApp();
 
-    const fileButton = await screen.findByRole("button", { name: "ファイル" });
+    const fileButton = await screen.findByRole("button", { name: "ファイルビュー" });
 
     expect(useUiStore.getState().isSidebarOpen).toBe(true);
     expect(fileButton).toHaveClass("active");

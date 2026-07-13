@@ -474,7 +474,7 @@ describe("App charts", () => {
     await screen.findByText("Notes");
     expect(getWorkspaceCharts).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    fireEvent.click(screen.getByRole("button", { name: "クロニクルビュー" }));
     await waitFor(() => expect(getWorkspaceCharts).toHaveBeenCalledTimes(1));
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
@@ -540,7 +540,7 @@ describe("App charts", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    fireEvent.click(screen.getByRole("button", { name: "クロニクルビュー" }));
     await waitFor(() => expect(container.querySelector(".chronicle-canvas")).not.toBeNull());
     expect(container.querySelector(".chronicle-actions")).toBeNull();
     expect(updateChartEntry).not.toHaveBeenCalled();
