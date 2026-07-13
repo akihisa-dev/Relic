@@ -33,6 +33,7 @@ import {
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
   workspaceChangedChannel,
+  workspaceWatcherStatusChannel,
   windowCloseRequestedChannel,
   windowCloseResponseChannel,
   moveFolderChannel,
@@ -131,6 +132,7 @@ import {
   type StartWorkspaceFileDragInput,
   type SwitchWorkspaceInput,
   type WorkspaceChangedEvent,
+  type WorkspaceWatcherStatusEvent,
   type WindowCloseRequestEvent,
   type WindowCloseResponseInput,
   type UnlinkedReferencesResult,
@@ -292,6 +294,14 @@ const relicApi: RelicApi = {
 
     ipcRenderer.on(workspaceChangedChannel, listener);
     return () => ipcRenderer.removeListener(workspaceChangedChannel, listener);
+  },
+  onWorkspaceWatcherStatus: (callback: (event: WorkspaceWatcherStatusEvent) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: WorkspaceWatcherStatusEvent): void => {
+      callback(payload);
+    };
+
+    ipcRenderer.on(workspaceWatcherStatusChannel, listener);
+    return () => ipcRenderer.removeListener(workspaceWatcherStatusChannel, listener);
   },
   onWindowCloseRequested: (callback: (event: WindowCloseRequestEvent) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, payload: WindowCloseRequestEvent): void => {

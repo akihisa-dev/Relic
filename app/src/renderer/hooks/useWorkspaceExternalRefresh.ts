@@ -139,4 +139,13 @@ export function useWorkspaceExternalRefresh({
       void refreshWorkspaceAfterExternalChange(event.workspaceId);
     });
   }, [refreshWorkspaceAfterExternalChange]);
+
+  useEffect(() => {
+    if (!relicClient.current?.onWorkspaceWatcherStatus) return undefined;
+
+    return relicClient.current.onWorkspaceWatcherStatus((event) => {
+      if (event.workspaceId !== workspaceState?.activeWorkspace?.id) return;
+      setWorkspaceError(t("files.workspaceWatcherUnavailable"));
+    });
+  }, [setWorkspaceError, t, workspaceState?.activeWorkspace?.id]);
 }

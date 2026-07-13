@@ -4,6 +4,8 @@ const electronMock = vi.hoisted(() => ({
   exposeInMainWorld: vi.fn(),
   getPathForFile: vi.fn(),
   invoke: vi.fn(),
+  on: vi.fn(),
+  removeListener: vi.fn(),
   send: vi.fn()
 }));
 
@@ -13,8 +15,8 @@ vi.mock("electron", () => ({
   },
   ipcRenderer: {
     invoke: electronMock.invoke,
-    on: vi.fn(),
-    removeListener: vi.fn(),
+    on: electronMock.on,
+    removeListener: electronMock.removeListener,
     send: electronMock.send
   },
   webUtils: {
@@ -30,6 +32,7 @@ import {
   saveDiagramSvgChannel,
   savePreviewAsPdfChannel,
   startWorkspaceFileDragChannel,
+  workspaceWatcherStatusChannel,
   type RelicApi
 } from "../shared/ipc";
 
@@ -91,5 +94,23 @@ describe("preload output API", () => {
     expect(electronMock.getPathForFile).toHaveBeenCalledWith(expect.any(File));
     expect("readClipboardText" in api).toBe(false);
     expect("writeClipboardText" in api).toBe(false);
+  });
+
+  it("ワークスペース監視状態の購読と解除を公開する", () => {
+    const api = exposedApi();
+    const callback = vi.fn();
+
+    const unsubscribe = api.onWorkspaceWatcherStatus(callback);
+    const listener = electronMock.on.mock.calls.find(([channel]) => channel === workspaceWatcherStatusChannel)?.[1];
+    const payload = {
+      changedAt: new Date().toISOString(),
+      status: "unavailable" as const,
+      workspaceId: "ws-1"
+    };
+    listener?.({}, payload);
+
+    expect(callback).toHaveBeenCalledWith(payload);
+    unsubscribe();
+    expect(electronMock.removeListener).toHaveBeenCalledWith(workspaceWatcherStatusChannel, listener);
   });
 });

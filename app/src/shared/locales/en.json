@@ -115,6 +115,7 @@
   "files.unpinSidebar": "Unpin in sidebar",
   "files.workspaceEmptyTitle": "Choose a place to write",
   "files.workspaceHint": "Open any local folder as a workspace.",
+  "files.workspaceWatcherUnavailable": "Workspace changes cannot be monitored. Files changed outside Relic may not update automatically. Recovery will be retried.",
   "graph.animateTimelapse": "Animate timelapse",
   "graph.arrows": "Arrows",
   "graph.attachments": "Attachments",

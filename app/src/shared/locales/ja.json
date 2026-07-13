@@ -115,6 +115,7 @@
   "files.unpinSidebar": "サイドバーのピン留めを解除",
   "files.workspaceEmptyTitle": "書く場所を選ぶ",
   "files.workspaceHint": "任意のローカルフォルダをワークスペースとして開けます。",
+  "files.workspaceWatcherUnavailable": "ワークスペースの変更を監視できません。外部で変更したファイルは自動反映されない場合があります。復旧を自動で試みています。",
   "graph.animateTimelapse": "タイムラプスを再生",
   "graph.arrows": "矢印",
   "graph.attachments": "添付",

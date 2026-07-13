@@ -41,6 +41,30 @@ describe("App external file changes", () => {
     resetRendererStores();
   });
 
+  it("現在のワークスペースを長時間監視できない場合だけ通知する", async () => {
+    let watcherStatus: Parameters<NonNullable<typeof window.relic>["onWorkspaceWatcherStatus"]>[0] = () => undefined;
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      onWorkspaceWatcherStatus: vi.fn((callback) => {
+        watcherStatus = callback;
+        return vi.fn();
+      })
+    });
+
+    await renderApp();
+    await waitFor(() => expect(window.relic?.onWorkspaceWatcherStatus).toHaveBeenCalled());
+
+    act(() => {
+      watcherStatus({ changedAt: new Date().toISOString(), status: "unavailable", workspaceId: "ws-2" });
+    });
+    expect(screen.queryByText(/ワークスペースの変更を監視できません/)).toBeNull();
+
+    act(() => {
+      watcherStatus({ changedAt: new Date().toISOString(), status: "unavailable", workspaceId: "ws-1" });
+    });
+    expect(await screen.findByText(/ワークスペースの変更を監視できません/)).toHaveClass("toast--error");
+  });
+
   it("未編集の開きタブは外部変更を自動反映する", async () => {
     let workspaceChanged: Parameters<NonNullable<typeof window.relic>["onWorkspaceChanged"]>[0] = () => undefined;
     const readMarkdownFile = vi.fn()

@@ -2,7 +2,12 @@ import { watch, type FSWatcher } from "node:fs";
 
 import { BrowserWindow } from "electron";
 
-import { workspaceChangedChannel, type WorkspaceChangedEvent } from "../../shared/ipc";
+import {
+  workspaceChangedChannel,
+  workspaceWatcherStatusChannel,
+  type WorkspaceChangedEvent,
+  type WorkspaceWatcherStatusEvent
+} from "../../shared/ipc";
 import type { AppSettings } from "../settings/appSettings";
 import { isAtomicWriteTemporaryPath } from "../files/atomicWrite";
 import {
@@ -17,13 +22,21 @@ interface WorkspaceWatchTarget {
 }
 
 let workspaceWatcher: FSWatcher | null = null;
-let watchedTarget: WorkspaceWatchTarget | null = null;
+let desiredTarget: WorkspaceWatchTarget | null = null;
 let notifyTimer: NodeJS.Timeout | null = null;
 let firstPendingNotifyAt: number | null = null;
 let pendingWatchEvents: WorkspaceWatchEvent[] = [];
+let retryTimer: NodeJS.Timeout | null = null;
+let failureNotifyTimer: NodeJS.Timeout | null = null;
+let retryAttempt = 0;
+let watcherUnavailable = false;
+let watcherUnavailableNotified = false;
 
 export const workspaceChangeNotifyDelayMs = 500;
 export const workspaceChangeMaxNotifyDelayMs = 2000;
+export const workspaceWatcherRetryBaseDelayMs = 1000;
+export const workspaceWatcherRetryMaxDelayMs = 30_000;
+export const workspaceWatcherFailureNotifyDelayMs = 5000;
 
 export function activeWorkspaceWatchTarget(settings: AppSettings): WorkspaceWatchTarget | null {
   if (!settings.lastWorkspaceId) return null;
@@ -42,20 +55,74 @@ export function syncWorkspaceWatcher(settings: AppSettings): void {
     return;
   }
 
-  if (watchedTarget?.id === target.id && watchedTarget.path === target.path) return;
+  if (sameWorkspaceWatchTarget(desiredTarget, target)) {
+    if (workspaceWatcher || retryTimer) return;
+    startWorkspaceWatcher(target);
+    return;
+  }
 
   stopWorkspaceWatcher();
+  desiredTarget = target;
+  startWorkspaceWatcher(target);
+}
+
+function startWorkspaceWatcher(target: WorkspaceWatchTarget): void {
+  if (!sameWorkspaceWatchTarget(desiredTarget, target)) return;
+  clearWorkspaceWatcherRetry();
 
   try {
-    workspaceWatcher = watch(target.path, { recursive: true }, (eventType, filename) => {
+    let watcher: FSWatcher | null = null;
+    watcher = watch(target.path, { recursive: true }, (eventType, filename) => {
+      if (workspaceWatcher !== watcher || !sameWorkspaceWatchTarget(desiredTarget, target)) return;
       if (!shouldNotifyWorkspaceChangeEvent(eventType, filename)) return;
       scheduleWorkspaceChangedNotification(target, eventType, filename);
     });
-    workspaceWatcher.on("error", () => stopWorkspaceWatcher());
-    watchedTarget = target;
+    workspaceWatcher = watcher;
+    watcher.on("error", () => handleWorkspaceWatcherFailure(target, watcher));
+
+    if (watcherUnavailable) {
+      clearWorkspaceWatcherFailureState();
+      notifyWorkspaceChanged(target);
+    }
+    retryAttempt = 0;
   } catch {
-    stopWorkspaceWatcher();
+    handleWorkspaceWatcherFailure(target);
   }
+}
+
+function handleWorkspaceWatcherFailure(target: WorkspaceWatchTarget, watcher?: FSWatcher): void {
+  if (!sameWorkspaceWatchTarget(desiredTarget, target)) return;
+  if (watcher && workspaceWatcher !== watcher) return;
+
+  closeActiveWorkspaceWatcher();
+  watcherUnavailable = true;
+  scheduleWorkspaceWatcherFailureNotification(target);
+  scheduleWorkspaceWatcherRetry(target);
+}
+
+function scheduleWorkspaceWatcherRetry(target: WorkspaceWatchTarget): void {
+  clearWorkspaceWatcherRetry();
+  const delay = workspaceWatcherRetryDelay(retryAttempt);
+  retryAttempt = Math.min(retryAttempt + 1, 5);
+  retryTimer = setTimeout(() => {
+    retryTimer = null;
+    startWorkspaceWatcher(target);
+  }, delay);
+}
+
+function scheduleWorkspaceWatcherFailureNotification(target: WorkspaceWatchTarget): void {
+  if (failureNotifyTimer || watcherUnavailableNotified) return;
+
+  failureNotifyTimer = setTimeout(() => {
+    failureNotifyTimer = null;
+    if (!watcherUnavailable || !sameWorkspaceWatchTarget(desiredTarget, target)) return;
+    watcherUnavailableNotified = true;
+    notifyWorkspaceWatcherStatus(target);
+  }, workspaceWatcherFailureNotifyDelayMs);
+}
+
+export function workspaceWatcherRetryDelay(attempt: number): number {
+  return Math.min(workspaceWatcherRetryBaseDelayMs * (2 ** attempt), workspaceWatcherRetryMaxDelayMs);
 }
 
 export function shouldNotifyWorkspaceChangeEvent(
@@ -67,6 +134,14 @@ export function shouldNotifyWorkspaceChangeEvent(
 }
 
 export function stopWorkspaceWatcher(): void {
+  desiredTarget = null;
+  clearWorkspaceWatcherRetry();
+  clearWorkspaceWatcherFailureState();
+  retryAttempt = 0;
+  closeActiveWorkspaceWatcher();
+}
+
+function closeActiveWorkspaceWatcher(): void {
   if (notifyTimer) {
     clearTimeout(notifyTimer);
     notifyTimer = null;
@@ -76,7 +151,28 @@ export function stopWorkspaceWatcher(): void {
 
   workspaceWatcher?.close();
   workspaceWatcher = null;
-  watchedTarget = null;
+}
+
+function clearWorkspaceWatcherRetry(): void {
+  if (!retryTimer) return;
+  clearTimeout(retryTimer);
+  retryTimer = null;
+}
+
+function clearWorkspaceWatcherFailureState(): void {
+  if (failureNotifyTimer) {
+    clearTimeout(failureNotifyTimer);
+    failureNotifyTimer = null;
+  }
+  watcherUnavailable = false;
+  watcherUnavailableNotified = false;
+}
+
+function sameWorkspaceWatchTarget(
+  first: WorkspaceWatchTarget | null,
+  second: WorkspaceWatchTarget | null
+): boolean {
+  return first?.id === second?.id && first?.path === second?.path;
 }
 
 function scheduleWorkspaceChangedNotification(
@@ -128,6 +224,20 @@ export function notifyWorkspaceChanged(target: WorkspaceWatchTarget, events: Wor
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) {
       window.webContents.send(workspaceChangedChannel, payload);
+    }
+  }
+}
+
+export function notifyWorkspaceWatcherStatus(target: WorkspaceWatchTarget): void {
+  const payload: WorkspaceWatcherStatusEvent = {
+    changedAt: new Date().toISOString(),
+    status: "unavailable",
+    workspaceId: target.id
+  };
+
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) {
+      window.webContents.send(workspaceWatcherStatusChannel, payload);
     }
   }
 }

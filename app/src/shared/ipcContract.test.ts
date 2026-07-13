@@ -44,6 +44,7 @@ describe("IPC public contract", () => {
       moveMarkdownFile: "workspace:moveMarkdownFile",
       onWindowCloseRequested: "window:closeRequested",
       onWorkspaceChanged: "workspace:changed",
+      onWorkspaceWatcherStatus: "workspace:watcherStatus",
       openWorkspace: "workspace:open",
       readEditorTextFromClipboard: "editor:readTextFromClipboard",
       readFileRecoverySnapshot: "workspace:readFileRecoverySnapshot",

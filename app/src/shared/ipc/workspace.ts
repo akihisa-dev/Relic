@@ -5,6 +5,7 @@ export const createNewWorkspaceChannel = "workspace:createNew";
 export const togglePinChannel = "workspace:togglePin";
 export const getWorkspaceStateChannel = "workspace:getState";
 export const workspaceChangedChannel = "workspace:changed";
+export const workspaceWatcherStatusChannel = "workspace:watcherStatus";
 export const openWorkspaceChannel = "workspace:open";
 export const removeWorkspaceChannel = "workspace:remove";
 export const renameWorkspaceChannel = "workspace:rename";
@@ -62,6 +63,12 @@ export interface WorkspaceState {
 
 export interface WorkspaceChangedEvent {
   changedAt: string;
+  workspaceId: string;
+}
+
+export interface WorkspaceWatcherStatusEvent {
+  changedAt: string;
+  status: "unavailable";
   workspaceId: string;
 }
 
@@ -151,6 +158,7 @@ export interface WorkspaceApi {
   saveWorkspaceCharts: (input: ChartSettings[]) => Promise<RelicResult<WorkspaceChart[]>>;
   updateChartEntry: (input: UpdateChartEntryInput) => Promise<RelicResult<WorkspaceChart[]>>;
   onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => () => void;
+  onWorkspaceWatcherStatus: (callback: (event: WorkspaceWatcherStatusEvent) => void) => () => void;
 }
 
 export const workspaceIpcContract = {
@@ -168,5 +176,6 @@ export const workspaceIpcContract = {
   saveWorkspaceFrontmatterCategoryChoices: { channel: saveWorkspaceFrontmatterCategoryChoicesChannel, main: "handle", transport: "invoke", validatesInput: true },
   saveWorkspaceCharts: { channel: saveWorkspaceChartsChannel, main: "handle", transport: "invoke", validatesInput: true },
   updateChartEntry: { channel: updateChartEntryChannel, main: "handle", transport: "invoke", validatesInput: true },
-  onWorkspaceChanged: { channel: workspaceChangedChannel, main: "sender", transport: "subscribe", validatesInput: false }
+  onWorkspaceChanged: { channel: workspaceChangedChannel, main: "sender", transport: "subscribe", validatesInput: false },
+  onWorkspaceWatcherStatus: { channel: workspaceWatcherStatusChannel, main: "sender", transport: "subscribe", validatesInput: false }
 } as const satisfies IpcFeatureContract;
