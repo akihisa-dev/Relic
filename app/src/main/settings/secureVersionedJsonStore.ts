@@ -21,14 +21,19 @@ type SerializedUpdate = Promise<unknown>;
 const settingsUpdateQueues = new Map<string, SerializedUpdate>();
 
 export class SecureVersionedJsonStore<TRaw extends object, TValue> {
-  constructor(private readonly codec: SecureVersionedJsonCodec<TRaw, TValue>) {}
+  constructor(
+    private readonly codec: SecureVersionedJsonCodec<TRaw, TValue>,
+    private readonly writeSettingsFile = writePrivateSettingsTextFile
+  ) {}
 
   async read(settingsPath: string): Promise<TValue> {
     return this.readInternal(settingsPath, true);
   }
 
   async write(settingsPath: string, value: TValue): Promise<void> {
-    await this.writeRaw(settingsPath, this.codec.serialize(value));
+    await queueSettingsUpdate(settingsPath, async () => {
+      await this.writeRaw(settingsPath, this.codec.serialize(value));
+    });
   }
 
   update(
@@ -38,7 +43,7 @@ export class SecureVersionedJsonStore<TRaw extends object, TValue> {
     return queueSettingsUpdate(settingsPath, async () => {
       const current = await this.readInternal(settingsPath, false);
       const next = await update(current);
-      await this.write(settingsPath, next);
+      await this.writeRaw(settingsPath, this.codec.serialize(next));
       return next;
     });
   }
@@ -89,7 +94,7 @@ export class SecureVersionedJsonStore<TRaw extends object, TValue> {
   }
 
   private async writeRaw(settingsPath: string, raw: TRaw): Promise<void> {
-    await writePrivateSettingsTextFile(
+    await this.writeSettingsFile(
       settingsPath,
       `${JSON.stringify(raw, null, 2)}\n`
     );
