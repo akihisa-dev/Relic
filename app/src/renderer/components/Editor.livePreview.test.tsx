@@ -633,11 +633,12 @@ describe("Editor live preview", () => {
     const css = readFileSync("src/renderer/styles/editor-live-preview.css", "utf8");
 
     expect(css).toMatch(/\.cm-live-code-block-pre\s*\{[^}]*cursor:\s*text;/s);
-    expect(css).toMatch(/\.cm-live-code-block-source\s*\{[^}]*cursor:\s*text;/s);
+    expect(css).toMatch(/textarea\.cm-live-code-block-source\s*\{[^}]*cursor:\s*text;/s);
     expect(css).toMatch(/\.cm-live-code-block-pre\s*\{[^}]*-webkit-user-select:\s*text;/s);
-    expect(css).toMatch(/\.cm-live-code-block-source\s*\{[^}]*-webkit-user-select:\s*text;/s);
+    expect(css).toMatch(/textarea\.cm-live-code-block-source\s*\{[^}]*-webkit-user-select:\s*text;/s);
     expect(css).toMatch(/\.cm-live-code-block-pre\s*\{[^}]*user-select:\s*text;/s);
-    expect(css).toMatch(/\.cm-live-code-block-source\s*\{[^}]*user-select:\s*text;/s);
+    expect(css).toMatch(/textarea\.cm-live-code-block-source\s*\{[^}]*user-select:\s*text;/s);
+    expect(css).toMatch(/textarea\.cm-live-code-block-source:focus-visible\s*\{[^}]*outline:\s*none;/s);
   });
 
   it("通常コードブロックはブロック表示とフェンスを維持したまま本文を入力できる", async () => {

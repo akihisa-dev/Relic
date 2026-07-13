@@ -186,10 +186,13 @@
   white-space: pre-wrap;
 }
 
-.cm-live-code-block-source {
+.cm-live-code-block-panel textarea.cm-live-code-block-source {
+  appearance: none;
   background: transparent;
   border: 0;
+  border-radius: 0;
   box-sizing: border-box;
+  box-shadow: none;
   color: inherit;
   cursor: text;
   display: block;
@@ -203,6 +206,14 @@
   user-select: text;
   white-space: inherit;
   width: 100%;
+}
+
+.cm-live-code-block-panel textarea.cm-live-code-block-source:focus,
+.cm-live-code-block-panel textarea.cm-live-code-block-source:focus-visible {
+  border: 0;
+  box-shadow: none;
+  outline: none;
+  outline-offset: 0;
 }
 
 .cm-live-code-block-label {
