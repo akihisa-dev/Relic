@@ -82,6 +82,7 @@
 ## オンデマンド手順
 
 - UI、デザイン、画面構成、操作感、表示状態の変更では `.agents/skills/relic-change-ui/SKILL.md` に従う
+- 実アプリの起動、GUI操作、実画面確認、スクリーンショットでは `.agents/skills/relic-test-development-app/SKILL.md` に従う
 - Markdownエディタ、ライブプレビュー、選択範囲、編集履歴、自動保存接続の変更では `.agents/skills/relic-change-markdown-editor/SKILL.md` に従う
 - フロントマターYAML、固定プロパティ、フォーム、往復保持の変更では `.agents/skills/relic-change-frontmatter/SKILL.md` に従う
 - Markdown描画、HTML・PDF・SVG出力、安全化の変更では `.agents/skills/relic-change-markdown-output/SKILL.md` に従う

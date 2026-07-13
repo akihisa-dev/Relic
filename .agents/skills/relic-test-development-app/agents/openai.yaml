@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic 開発版実画面テスト"
+  short_description: "Relicの開発版だけを安全に起動・識別・操作して確認する"
+  default_prompt: "Use $relic-test-development-app to verify this Relic change in the development app only."
