@@ -458,6 +458,25 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     event.currentTarget.style.cursor = "grab";
   }, []);
 
+  const handlePointerCancel = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
+    const pointer = pointerRef.current;
+    if (!pointer) return;
+
+    if (event.currentTarget.hasPointerCapture(pointer.pointerId)) {
+      event.currentTarget.releasePointerCapture(pointer.pointerId);
+    }
+    if (pointer.dragNode) {
+      pointer.dragNode.fx = null;
+      pointer.dragNode.fy = null;
+      simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, null, null, 0.08);
+    }
+
+    pointerRef.current = null;
+    panVelocityRef.current = { x: 0, y: 0 };
+    panSampleMsRef.current = 0;
+    event.currentTarget.style.cursor = "grab";
+  }, []);
+
   const handleContextMenu = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
     event.preventDefault();
     event.currentTarget.focus();
@@ -594,7 +613,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
           if (!pointerRef.current && canvasRef.current) canvasRef.current.style.cursor = "grab";
         }}
         onPointerMove={handlePointerMove}
-        onPointerCancel={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
         onPointerUp={handlePointerUp}
         onWheel={handleWheel}
         ref={canvasRef}
