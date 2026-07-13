@@ -418,7 +418,6 @@
 
 .files-create-icon-button[data-tooltip]:hover::after,
 .files-create-icon-button[data-tooltip]:focus-visible::after {
-  animation: tooltip-in 140ms ease;
   background: var(--popup-bg);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
@@ -439,6 +438,14 @@
   transform: translateX(-50%);
   white-space: nowrap;
   z-index: 20;
+}
+
+.files-create-icon-button[data-tooltip]:hover::after {
+  animation: tooltip-in 140ms ease 400ms backwards;
+}
+
+.files-create-icon-button[data-tooltip]:focus-visible::after {
+  animation: tooltip-in 140ms ease;
 }
 
 .files-search {

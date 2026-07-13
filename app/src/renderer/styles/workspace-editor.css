@@ -118,7 +118,6 @@
 
 .toolbar-btn[data-tooltip]:hover::after,
 .toolbar-btn[data-tooltip]:focus-visible::after {
-  animation: tooltip-in 140ms ease;
   background: rgba(31, 35, 40, 0.92);
   border-radius: 5px;
   color: white;
@@ -135,6 +134,14 @@
   transform: translateX(-50%);
   white-space: nowrap;
   z-index: 300;
+}
+
+.toolbar-btn[data-tooltip]:hover::after {
+  animation: tooltip-in 140ms ease 400ms backwards;
+}
+
+.toolbar-btn[data-tooltip]:focus-visible::after {
+  animation: tooltip-in 140ms ease;
 }
 
 .toolbar-dropdown:has(.toolbar-dropdown-menu) > .toolbar-btn::after,
@@ -198,7 +205,6 @@
 
 .toolbar-dropdown-item[data-tooltip]:hover::after,
 .toolbar-dropdown-item[data-tooltip]:focus-visible::after {
-  animation: tooltip-in 140ms ease;
   background: rgba(31, 35, 40, 0.92);
   border-radius: 5px;
   color: white;
@@ -214,6 +220,14 @@
   transform: translateX(-50%);
   white-space: nowrap;
   z-index: 300;
+}
+
+.toolbar-dropdown-item[data-tooltip]:hover::after {
+  animation: tooltip-in 140ms ease 400ms backwards;
+}
+
+.toolbar-dropdown-item[data-tooltip]:focus-visible::after {
+  animation: tooltip-in 140ms ease;
 }
 
 .toolbar-dropdown-item:hover {
@@ -806,10 +820,17 @@
 
 .editor-context-menu-icon-button:hover .editor-context-menu-tooltip,
 .editor-context-menu-icon-button:focus-visible .editor-context-menu-tooltip {
-  animation: tooltip-in 140ms ease;
   opacity: 1;
   transform: translateX(-50%) translateY(1px);
   visibility: visible;
+}
+
+.editor-context-menu-icon-button:hover .editor-context-menu-tooltip {
+  animation: tooltip-in 140ms ease 400ms backwards;
+}
+
+.editor-context-menu-icon-button:focus-visible .editor-context-menu-tooltip {
+  animation: tooltip-in 140ms ease;
 }
 
 .editor-context-menu-text-item {

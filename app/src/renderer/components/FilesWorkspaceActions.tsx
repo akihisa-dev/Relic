@@ -42,7 +42,6 @@ export function FilesCreateActions({
         className="files-create-icon-button"
         data-tooltip={searchLabel}
         onClick={onOpenQuickSwitcher}
-        title={searchLabel}
         type="button"
       >
         <SearchIcon />
@@ -53,7 +52,6 @@ export function FilesCreateActions({
         data-tooltip={createFileLabel}
         disabled={isCreatingFile}
         onClick={onCreateFile}
-        title={createFileLabel}
         type="button"
       >
         <NewFileIcon />
@@ -64,7 +62,6 @@ export function FilesCreateActions({
         data-tooltip={createFolderLabel}
         disabled={isCreatingFolder}
         onClick={onCreateFolder}
-        title={createFolderLabel}
         type="button"
       >
         <NewFolderIcon />
@@ -74,7 +71,6 @@ export function FilesCreateActions({
         className="files-create-icon-button"
         data-tooltip={expandAllLabel}
         onClick={onExpandAllFolders}
-        title={expandAllLabel}
         type="button"
       >
         <ExpandAllFoldersIcon />
@@ -84,7 +80,6 @@ export function FilesCreateActions({
         className="files-create-icon-button"
         data-tooltip={collapseAllLabel}
         onClick={onCollapseAllFolders}
-        title={collapseAllLabel}
         type="button"
       >
         <CollapseAllFoldersIcon />

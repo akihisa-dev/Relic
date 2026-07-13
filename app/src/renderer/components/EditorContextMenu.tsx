@@ -69,7 +69,6 @@ function IconMenuButton({ icon, label, onClick }: IconMenuButtonProps): ReactEle
       onClick={onClick}
       onMouseDown={(event) => event.preventDefault()}
       role="menuitem"
-      title={label}
       type="button"
     >
       {icon}

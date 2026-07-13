@@ -35,7 +35,7 @@ interface ToolbarButtonProps {
 
 function ToolbarButton({ children, label, onClick, tooltip = label }: ToolbarButtonProps): ReactElement {
   return (
-    <button aria-label={label} className="toolbar-btn" data-tooltip={tooltip} onClick={onClick} title={tooltip} type="button">
+    <button aria-label={label} className="toolbar-btn" data-tooltip={tooltip} onClick={onClick} type="button">
       {children}
     </button>
   );
@@ -120,7 +120,6 @@ export function ToolbarBlockFormattingGroup({
               onClick={() => onHeading(level)}
               aria-label={`H${level}`}
               data-tooltip={`H${level}`}
-              title={`H${level}`}
               type="button"
             >
                 <HeadingIcon level={level} />

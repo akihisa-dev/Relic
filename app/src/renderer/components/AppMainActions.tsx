@@ -48,7 +48,6 @@ export function AppMainActions({
         className={`toolbar-btn${isSplit ? " active" : ""}`}
         data-tooltip={t("pane.split", { shortcut: splitShortcut })}
         onClick={onSplitToggle}
-        title={t("pane.split", { shortcut: splitShortcut })}
         type="button"
       >
         <SplitViewIcon />
@@ -59,7 +58,6 @@ export function AppMainActions({
           className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
           data-tooltip={t("pane.toggleOutline", { shortcut: toggleOutlineShortcut })}
           onClick={() => onRightPanelViewButton("outline")}
-          title={t("pane.toggleOutline", { shortcut: toggleOutlineShortcut })}
           type="button"
         >
           <OutlineIcon />
@@ -71,7 +69,6 @@ export function AppMainActions({
           className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
           data-tooltip={t("pane.toggleLinks")}
           onClick={() => onRightPanelViewButton("links")}
-          title={t("pane.toggleLinks")}
           type="button"
         >
           <LinksIcon />
@@ -83,7 +80,6 @@ export function AppMainActions({
           className={`toolbar-btn${rightPanelView === "recovery" && isRightPanelOpen ? " active" : ""}`}
           data-tooltip={t("pane.toggleRecovery")}
           onClick={() => onRightPanelViewButton("recovery")}
-          title={t("pane.toggleRecovery")}
           type="button"
         >
           <RecoveryIcon />
@@ -107,7 +103,6 @@ export function SourceModeButton({ isSourceMode, onSourceModeToggle }: SourceMod
       className={`toolbar-btn${isSourceMode ? " active" : ""}`}
       data-tooltip={t("pane.sourceMode")}
       onClick={onSourceModeToggle}
-      title={t("pane.sourceMode")}
       type="button"
     >
       <SourceModeIcon />
