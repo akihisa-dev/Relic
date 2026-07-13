@@ -141,16 +141,20 @@
 
 .cm-frontmatter-row-icon {
   appearance: none;
+  align-self: stretch;
   background: transparent;
   border: 0;
   color: var(--text-3);
   cursor: grab;
-  align-self: center;
-  height: 40px;
-  justify-self: center;
+  display: grid;
+  height: auto;
+  justify-self: stretch;
+  padding: 0;
+  place-items: center;
   position: relative;
   touch-action: none;
-  width: 18px;
+  user-select: none;
+  width: 100%;
   transition:
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
@@ -158,11 +162,27 @@
 
 .cm-frontmatter-row--dragging {
   cursor: grabbing;
-  opacity: 0.72;
+  opacity: 0.2;
 }
 
 .cm-frontmatter-row--dragging .cm-frontmatter-row-icon {
   cursor: grabbing;
+}
+
+.cm-frontmatter-row--drag-preview {
+  animation: none;
+  box-shadow: var(--shadow-popover, 0 12px 34px rgba(15, 23, 42, 0.14));
+  opacity: 0.96;
+  pointer-events: none;
+  position: fixed;
+  transition: none;
+  z-index: 1000;
+}
+
+.frontmatter-row-drag-active,
+.frontmatter-row-drag-active * {
+  cursor: grabbing !important;
+  user-select: none !important;
 }
 
 .cm-frontmatter-row-icon::before {

@@ -22,6 +22,7 @@ describe("Editor frontmatter", () => {
     expect(css).toMatch(/\.cm-frontmatter-properties--panel\s*\{[^}]*margin-left:\s*0;/s);
     expect(css).not.toContain("--frontmatter-panel-width");
     expect(css).not.toMatch(/\.cm-frontmatter-properties\s*\{[^}]*width:\s*max\(/s);
+    expect(css).toMatch(/\.cm-frontmatter-row-icon\s*\{[^}]*align-self:\s*stretch;[^}]*width:\s*100%;/s);
   });
 
   it("先頭フロントマターは水平線にせずメタデータとして薄く表示する", async () => {
@@ -240,8 +241,20 @@ describe("Editor frontmatter", () => {
       fireEvent(handle, event);
     };
     firePointerEvent("pointerdown", 190);
+    firePointerEvent("pointermove", 192);
+    expect(document.querySelector(".cm-frontmatter-row--drag-preview")).toBeNull();
+    expect(viewRef.current?.state.doc.toString()).toBe(content);
+
     firePointerEvent("pointermove", 10);
+    expect(document.querySelector(".cm-frontmatter-row--drag-preview")).not.toBeNull();
+    expect(rows[2].classList.contains("cm-frontmatter-row--dragging")).toBe(true);
+    expect(Array.from(container.querySelectorAll<HTMLElement>(".cm-frontmatter-row")).map((row) => (
+      row.dataset.frontmatterKey
+    ))).toEqual(["tags", "title", "custom"]);
+    expect(viewRef.current?.state.doc.toString()).toBe(content);
+
     firePointerEvent("pointerup", 10);
+    expect(document.querySelector(".cm-frontmatter-row--drag-preview")).toBeNull();
 
     expect(viewRef.current?.state.doc.toString()).toBe([
       "---",

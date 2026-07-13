@@ -228,6 +228,9 @@ function enableFrontmatterRowReordering(
 ): void {
   if (rows.length < 2) return;
 
+  const dragStartDistance = 4;
+  let activeRow: HTMLElement | null = null;
+
   const updateBoundaryClasses = (orderedRows: HTMLElement[]): void => {
     orderedRows.forEach((row, index) => {
       row.classList.toggle("cm-frontmatter-row--first", index === 0);
@@ -239,9 +242,6 @@ function enableFrontmatterRowReordering(
     const handle = row.querySelector<HTMLButtonElement>(".cm-frontmatter-row-icon");
     if (!handle) continue;
 
-    let activePointerId: number | null = null;
-    let initialRows: HTMLElement[] = [];
-
     const orderedRows = (): HTMLElement[] => {
       const parent = row.parentElement;
       if (!parent) return [];
@@ -250,60 +250,98 @@ function enableFrontmatterRowReordering(
       ));
     };
 
-    const restoreInitialOrder = (): void => {
-      const parent = row.parentElement;
-      const footer = parent?.querySelector(".cm-frontmatter-footer") ?? null;
-      if (!parent) return;
-      for (const initialRow of initialRows) parent.insertBefore(initialRow, footer);
-      updateBoundaryClasses(initialRows);
-    };
-
-    const finish = (commit: boolean): void => {
-      if (activePointerId === null) return;
-      const pointerId = activePointerId;
-      activePointerId = null;
-      row.classList.remove("cm-frontmatter-row--dragging");
-      if (!commit) restoreInitialOrder();
-
-      const nextRows = orderedRows();
-      updateBoundaryClasses(nextRows);
-      if (commit) {
-        reorderFields(nextRows.map((item) => item.dataset.frontmatterKey ?? ""));
-      }
-      if (typeof handle.releasePointerCapture === "function" && handle.hasPointerCapture(pointerId)) {
-        handle.releasePointerCapture(pointerId);
-      }
-    };
-
     handle.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0 || activePointerId !== null) return;
+      if (event.button !== 0 || activeRow !== null) return;
       event.preventDefault();
-      activePointerId = event.pointerId;
-      initialRows = orderedRows();
-      row.classList.add("cm-frontmatter-row--dragging");
+      activeRow = row;
+      const pointerId = event.pointerId;
+      const startY = event.clientY;
+      const startRect = row.getBoundingClientRect();
+      const initialRows = orderedRows();
+      let preview: HTMLElement | null = null;
+      let dragging = false;
+
       if (typeof handle.setPointerCapture === "function") handle.setPointerCapture(event.pointerId);
-    });
 
-    handle.addEventListener("pointermove", (event) => {
-      if (activePointerId !== event.pointerId) return;
-      const parent = row.parentElement;
-      if (!parent) return;
+      const beginDragging = (): void => {
+        dragging = true;
+        row.classList.add("cm-frontmatter-row--dragging");
+        document.body.classList.add("frontmatter-row-drag-active");
 
-      const stationaryRows = orderedRows().filter((candidate) => candidate !== row);
-      const before = stationaryRows.find((candidate) => {
-        const rect = candidate.getBoundingClientRect();
-        return event.clientY < rect.top + rect.height / 2;
-      });
-      const footer = parent.querySelector(".cm-frontmatter-footer");
-      parent.insertBefore(row, before ?? footer);
-      updateBoundaryClasses(orderedRows());
-    });
+        preview = row.cloneNode(true) as HTMLElement;
+        preview.classList.remove("cm-frontmatter-row--dragging");
+        preview.classList.add("cm-frontmatter-row--drag-preview");
+        preview.ariaHidden = "true";
+        preview.inert = true;
+        preview.style.height = `${startRect.height}px`;
+        preview.style.left = `${startRect.left}px`;
+        preview.style.top = `${startRect.top}px`;
+        preview.style.width = `${startRect.width}px`;
+        for (const element of preview.querySelectorAll<HTMLElement>("[id]")) element.removeAttribute("id");
+        document.body.append(preview);
+      };
 
-    handle.addEventListener("pointerup", (event) => {
-      if (activePointerId === event.pointerId) finish(true);
-    });
-    handle.addEventListener("pointercancel", (event) => {
-      if (activePointerId === event.pointerId) finish(false);
+      const restoreInitialOrder = (): void => {
+        const parent = row.parentElement;
+        const footer = parent?.querySelector(".cm-frontmatter-footer") ?? null;
+        if (!parent) return;
+        for (const initialRow of initialRows) parent.insertBefore(initialRow, footer);
+        updateBoundaryClasses(initialRows);
+      };
+
+      const cleanup = (): void => {
+        document.removeEventListener("pointermove", move, true);
+        document.removeEventListener("pointerup", up, true);
+        document.removeEventListener("pointercancel", cancel, true);
+        row.classList.remove("cm-frontmatter-row--dragging");
+        document.body.classList.remove("frontmatter-row-drag-active");
+        preview?.remove();
+        activeRow = null;
+        if (typeof handle.releasePointerCapture === "function" && handle.hasPointerCapture(pointerId)) {
+          handle.releasePointerCapture(pointerId);
+        }
+      };
+
+      const finish = (commit: boolean): void => {
+        if (activeRow !== row) return;
+        if (!commit && dragging) restoreInitialOrder();
+        const nextRows = orderedRows();
+        const nextKeys = nextRows.map((item) => item.dataset.frontmatterKey ?? "");
+        updateBoundaryClasses(nextRows);
+        cleanup();
+        if (commit && dragging) reorderFields(nextKeys);
+      };
+
+      const move = (moveEvent: PointerEvent): void => {
+        if (moveEvent.pointerId !== pointerId || activeRow !== row) return;
+        const offsetY = moveEvent.clientY - startY;
+        if (!dragging && Math.abs(offsetY) < dragStartDistance) return;
+        moveEvent.preventDefault();
+        if (!dragging) beginDragging();
+        if (preview) preview.style.transform = `translate3d(0, ${offsetY}px, 0)`;
+
+        const parent = row.parentElement;
+        if (!parent) return;
+        const stationaryRows = orderedRows().filter((candidate) => candidate !== row);
+        const before = stationaryRows.find((candidate) => {
+          const rect = candidate.getBoundingClientRect();
+          return moveEvent.clientY < rect.top + rect.height / 2;
+        });
+        const footer = parent.querySelector(".cm-frontmatter-footer");
+        parent.insertBefore(row, before ?? footer);
+        updateBoundaryClasses(orderedRows());
+      };
+
+      const up = (upEvent: PointerEvent): void => {
+        if (upEvent.pointerId === pointerId) finish(true);
+      };
+      const cancel = (cancelEvent: PointerEvent): void => {
+        if (cancelEvent.pointerId === pointerId) finish(false);
+      };
+
+      document.addEventListener("pointermove", move, true);
+      document.addEventListener("pointerup", up, true);
+      document.addEventListener("pointercancel", cancel, true);
     });
   }
 }
