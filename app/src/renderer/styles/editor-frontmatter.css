@@ -160,15 +160,6 @@
     transform var(--motion-fast) var(--ease-press);
 }
 
-.cm-frontmatter-row--dragging {
-  cursor: grabbing;
-  opacity: 0.2;
-}
-
-.cm-frontmatter-row--dragging .cm-frontmatter-row-icon {
-  cursor: grabbing;
-}
-
 .cm-frontmatter-row--drag-preview {
   animation: none;
   box-shadow: var(--shadow-popover, 0 12px 34px rgba(15, 23, 42, 0.14));
@@ -177,6 +168,24 @@
   position: fixed;
   transition: none;
   z-index: 1000;
+}
+
+.cm-frontmatter-row-drag-origin {
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  border: 1px dashed var(--border);
+  pointer-events: none;
+  position: fixed;
+  z-index: 999;
+}
+
+.cm-frontmatter-row-drop-indicator {
+  background: var(--accent);
+  border-radius: 999px;
+  height: 3px;
+  pointer-events: none;
+  position: fixed;
+  transform: translateY(-1px);
+  z-index: 1001;
 }
 
 .frontmatter-row-drag-active,

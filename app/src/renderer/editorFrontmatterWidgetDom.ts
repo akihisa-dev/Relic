@@ -231,13 +231,6 @@ function enableFrontmatterRowReordering(
   const dragStartDistance = 4;
   let activeRow: HTMLElement | null = null;
 
-  const updateBoundaryClasses = (orderedRows: HTMLElement[]): void => {
-    orderedRows.forEach((row, index) => {
-      row.classList.toggle("cm-frontmatter-row--first", index === 0);
-      row.classList.toggle("cm-frontmatter-row--last", index === orderedRows.length - 1);
-    });
-  };
-
   for (const row of rows) {
     const handle = row.querySelector<HTMLButtonElement>(".cm-frontmatter-row-icon");
     if (!handle) continue;
@@ -258,6 +251,10 @@ function enableFrontmatterRowReordering(
       const startY = event.clientY;
       const startRect = row.getBoundingClientRect();
       const initialRows = orderedRows();
+      const sourceIndex = initialRows.indexOf(row);
+      let targetIndex = sourceIndex;
+      let indicator: HTMLElement | null = null;
+      let origin: HTMLElement | null = null;
       let preview: HTMLElement | null = null;
       let dragging = false;
 
@@ -265,11 +262,25 @@ function enableFrontmatterRowReordering(
 
       const beginDragging = (): void => {
         dragging = true;
-        row.classList.add("cm-frontmatter-row--dragging");
         document.body.classList.add("frontmatter-row-drag-active");
 
+        origin = document.createElement("div");
+        origin.className = "cm-frontmatter-row-drag-origin";
+        origin.ariaHidden = "true";
+        origin.style.height = `${startRect.height}px`;
+        origin.style.left = `${startRect.left}px`;
+        origin.style.top = `${startRect.top}px`;
+        origin.style.width = `${startRect.width}px`;
+        document.body.append(origin);
+
+        indicator = document.createElement("div");
+        indicator.className = "cm-frontmatter-row-drop-indicator";
+        indicator.ariaHidden = "true";
+        indicator.style.left = `${startRect.left}px`;
+        indicator.style.width = `${startRect.width}px`;
+        document.body.append(indicator);
+
         preview = row.cloneNode(true) as HTMLElement;
-        preview.classList.remove("cm-frontmatter-row--dragging");
         preview.classList.add("cm-frontmatter-row--drag-preview");
         preview.ariaHidden = "true";
         preview.inert = true;
@@ -281,20 +292,13 @@ function enableFrontmatterRowReordering(
         document.body.append(preview);
       };
 
-      const restoreInitialOrder = (): void => {
-        const parent = row.parentElement;
-        const footer = parent?.querySelector(".cm-frontmatter-footer") ?? null;
-        if (!parent) return;
-        for (const initialRow of initialRows) parent.insertBefore(initialRow, footer);
-        updateBoundaryClasses(initialRows);
-      };
-
       const cleanup = (): void => {
         document.removeEventListener("pointermove", move, true);
         document.removeEventListener("pointerup", up, true);
         document.removeEventListener("pointercancel", cancel, true);
-        row.classList.remove("cm-frontmatter-row--dragging");
         document.body.classList.remove("frontmatter-row-drag-active");
+        indicator?.remove();
+        origin?.remove();
         preview?.remove();
         activeRow = null;
         if (typeof handle.releasePointerCapture === "function" && handle.hasPointerCapture(pointerId)) {
@@ -304,10 +308,10 @@ function enableFrontmatterRowReordering(
 
       const finish = (commit: boolean): void => {
         if (activeRow !== row) return;
-        if (!commit && dragging) restoreInitialOrder();
-        const nextRows = orderedRows();
+        const nextRows = [...initialRows];
+        const [movedRow] = nextRows.splice(sourceIndex, 1);
+        nextRows.splice(targetIndex, 0, movedRow);
         const nextKeys = nextRows.map((item) => item.dataset.frontmatterKey ?? "");
-        updateBoundaryClasses(nextRows);
         cleanup();
         if (commit && dragging) reorderFields(nextKeys);
       };
@@ -320,16 +324,18 @@ function enableFrontmatterRowReordering(
         if (!dragging) beginDragging();
         if (preview) preview.style.transform = `translate3d(0, ${offsetY}px, 0)`;
 
-        const parent = row.parentElement;
-        if (!parent) return;
-        const stationaryRows = orderedRows().filter((candidate) => candidate !== row);
-        const before = stationaryRows.find((candidate) => {
+        const stationaryRows = initialRows.filter((candidate) => candidate !== row);
+        const beforeIndex = stationaryRows.findIndex((candidate) => {
           const rect = candidate.getBoundingClientRect();
           return moveEvent.clientY < rect.top + rect.height / 2;
         });
-        const footer = parent.querySelector(".cm-frontmatter-footer");
-        parent.insertBefore(row, before ?? footer);
-        updateBoundaryClasses(orderedRows());
+        targetIndex = beforeIndex === -1 ? stationaryRows.length : beforeIndex;
+
+        const before = stationaryRows[targetIndex];
+        const indicatorTop = before
+          ? before.getBoundingClientRect().top
+          : stationaryRows.at(-1)?.getBoundingClientRect().bottom ?? startRect.bottom;
+        if (indicator) indicator.style.top = `${indicatorTop}px`;
       };
 
       const up = (upEvent: PointerEvent): void => {

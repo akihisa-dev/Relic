@@ -247,14 +247,17 @@ describe("Editor frontmatter", () => {
 
     firePointerEvent("pointermove", 10);
     expect(document.querySelector(".cm-frontmatter-row--drag-preview")).not.toBeNull();
-    expect(rows[2].classList.contains("cm-frontmatter-row--dragging")).toBe(true);
+    expect(document.querySelector(".cm-frontmatter-row-drag-origin")).not.toBeNull();
+    expect(document.querySelector(".cm-frontmatter-row-drop-indicator")).not.toBeNull();
     expect(Array.from(container.querySelectorAll<HTMLElement>(".cm-frontmatter-row")).map((row) => (
       row.dataset.frontmatterKey
-    ))).toEqual(["tags", "title", "custom"]);
+    ))).toEqual(["title", "custom", "tags"]);
     expect(viewRef.current?.state.doc.toString()).toBe(content);
 
     firePointerEvent("pointerup", 10);
     expect(document.querySelector(".cm-frontmatter-row--drag-preview")).toBeNull();
+    expect(document.querySelector(".cm-frontmatter-row-drag-origin")).toBeNull();
+    expect(document.querySelector(".cm-frontmatter-row-drop-indicator")).toBeNull();
 
     expect(viewRef.current?.state.doc.toString()).toBe([
       "---",
