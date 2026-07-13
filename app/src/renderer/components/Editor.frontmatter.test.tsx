@@ -318,7 +318,7 @@ describe("Editor frontmatter", () => {
     await expandFrontmatter(container);
 
     fireEvent.click(container.querySelector(".cm-frontmatter-add-property") as HTMLButtonElement);
-    const items = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"));
+    const items = Array.from(document.body.querySelectorAll(".editor-frontmatter-add-menu-item"));
     expect(items.some((item) => item.textContent?.includes("status"))).toBe(false);
     expect(items.some((item) => item.textContent?.includes("plannedDate"))).toBe(false);
     expect(items.some((item) => item.textContent?.includes("actualDate"))).toBe(false);
@@ -347,7 +347,7 @@ describe("Editor frontmatter", () => {
     expect(container.querySelector(".cm-frontmatter-add-input")).toBeNull();
 
     fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
-    const tagsItem = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"))
+    const tagsItem = Array.from(document.body.querySelectorAll(".editor-frontmatter-add-menu-item"))
       .find((item) => item.textContent?.includes("tags")) as HTMLButtonElement;
     fireEvent.click(tagsItem);
 
@@ -371,7 +371,7 @@ describe("Editor frontmatter", () => {
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).toBeNull());
 
     fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
-    const tagsItem = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"))
+    const tagsItem = Array.from(document.body.querySelectorAll(".editor-frontmatter-add-menu-item"))
       .find((item) => item.textContent?.includes("tags")) as HTMLButtonElement;
     fireEvent.click(tagsItem);
 
@@ -394,9 +394,11 @@ describe("Editor frontmatter", () => {
     await waitFor(() => expect(container.querySelector(".cm-editor")).not.toBeNull());
 
     fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
-    const menu = container.querySelector(".editor-frontmatter-add-menu") as HTMLElement;
+    const menu = document.body.querySelector(".editor-frontmatter-add-menu") as HTMLElement;
 
     expect(menu).not.toBeNull();
+    expect(menu.parentElement).toBe(document.body);
+    expect(container.contains(menu)).toBe(false);
     expect(menu.style.top).not.toBe("");
     expect(menu.style.left).not.toBe("");
     expect(menu.style.maxHeight).not.toBe("");
@@ -437,7 +439,7 @@ describe("Editor frontmatter", () => {
     });
 
     fireEvent.click(button);
-    const menu = container.querySelector(".editor-frontmatter-add-menu") as HTMLElement;
+    const menu = document.body.querySelector(".editor-frontmatter-add-menu") as HTMLElement;
 
     expect(menu.style.left).toBe("44px");
     expect(menu.style.top).toBe("192px");
@@ -470,8 +472,8 @@ describe("Editor frontmatter", () => {
 
     fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
 
-    expect(container.querySelector(".editor-frontmatter-add-menu-empty")).not.toBeNull();
-    expect(container.querySelector(".editor-frontmatter-add-menu-item")).toBeNull();
+    expect(document.body.querySelector(".editor-frontmatter-add-menu-empty")).not.toBeNull();
+    expect(document.body.querySelector(".editor-frontmatter-add-menu-item")).toBeNull();
     expect(onChange).not.toHaveBeenCalled();
     expect(viewRef.current?.state.doc.toString()).toBe("---\nstatus: draft\n# 本文");
   });

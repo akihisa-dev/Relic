@@ -130,38 +130,39 @@ export function EditorFrontmatterPropertyMenu({
       +
     </button>
   );
+  const propertyMenu = menu ? (
+    <div className="editor-frontmatter-add-menu" ref={menuRef} role="menu" style={menuStyle}>
+      <div className="editor-frontmatter-add-menu-title">{t("frontmatter.addProperty")}</div>
+      {menu.unavailable ? (
+        <div className="editor-frontmatter-add-menu-empty">{t("frontmatter.fixYamlBeforeAdding")}</div>
+      ) : menu.groups.length === 0 ? (
+        <div className="editor-frontmatter-add-menu-empty">{t("frontmatter.noAvailableProperties")}</div>
+      ) : (
+        menu.groups.map((group) => (
+          <div className="editor-frontmatter-add-menu-group" key={group.id}>
+            <div className="editor-frontmatter-add-menu-group-label">{group.label}</div>
+            {group.options.map((option) => (
+              <button
+                className="editor-frontmatter-add-menu-item"
+                key={option.key}
+                onClick={() => addProperty(option.key)}
+                role="menuitem"
+                type="button"
+              >
+                <span>{option.label}</span>
+                <code>{option.key}</code>
+              </button>
+            ))}
+          </div>
+        ))
+      )}
+    </div>
+  ) : null;
 
   return (
     <>
       {host ? null : button}
-      {menu ? (
-        <div className="editor-frontmatter-add-menu" ref={menuRef} role="menu" style={menuStyle}>
-          <div className="editor-frontmatter-add-menu-title">{t("frontmatter.addProperty")}</div>
-          {menu.unavailable ? (
-            <div className="editor-frontmatter-add-menu-empty">{t("frontmatter.fixYamlBeforeAdding")}</div>
-          ) : menu.groups.length === 0 ? (
-            <div className="editor-frontmatter-add-menu-empty">{t("frontmatter.noAvailableProperties")}</div>
-          ) : (
-            menu.groups.map((group) => (
-              <div className="editor-frontmatter-add-menu-group" key={group.id}>
-                <div className="editor-frontmatter-add-menu-group-label">{group.label}</div>
-                {group.options.map((option) => (
-                  <button
-                    className="editor-frontmatter-add-menu-item"
-                    key={option.key}
-                    onClick={() => addProperty(option.key)}
-                    role="menuitem"
-                    type="button"
-                  >
-                    <span>{option.label}</span>
-                    <code>{option.key}</code>
-                  </button>
-                ))}
-              </div>
-            ))
-          )}
-        </div>
-      ) : null}
+      {propertyMenu ? createPortal(propertyMenu, document.body) : null}
       {host ? createPortal(button, host) : null}
     </>
   );
