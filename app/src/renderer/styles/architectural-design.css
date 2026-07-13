@@ -20,6 +20,7 @@
   --color-accent-surface: rgba(242, 105, 27, 0.84);
   --color-accent: #f2691b;
   --color-accent-strong: #d95711;
+  --color-on-accent: #1a1b17;
   --color-danger: #e23b30;
   --color-warning: var(--color-danger);
   --color-success: #008a5a;
@@ -116,6 +117,7 @@
   --color-accent-surface: rgba(255, 155, 77, 0.82);
   --color-accent: #ff9b4d;
   --color-accent-strong: #ffd0ad;
+  --color-on-accent: #11120f;
   --color-danger: #ff6b5f;
   --color-warning: var(--color-danger);
   --color-success: #45e39b;
@@ -192,6 +194,7 @@
     --color-accent-surface: rgba(255, 155, 77, 0.82);
     --color-accent: #ff9b4d;
     --color-accent-strong: #ffd0ad;
+    --color-on-accent: #11120f;
     --color-danger: #ff6b5f;
     --color-warning: var(--color-danger);
     --color-success: #45e39b;
@@ -727,7 +730,7 @@ textarea {
 .settings-segmented,
 .settings-segmented-indicator {
   backdrop-filter: none;
-  border-radius: var(--radius-md);
+  border-radius: 999px;
   box-shadow: none;
 }
 
@@ -736,20 +739,27 @@ textarea {
 }
 
 .settings-segmented-indicator {
-  background: var(--color-surface-elevated);
-  border: 1px solid var(--color-border);
+  background: var(--color-accent);
+  border: 0;
 }
 
 .settings-segmented-button {
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   line-height: 1.15;
-  min-height: 30px;
+  min-height: 36px;
   overflow: hidden;
-  padding-inline: 6px;
+  padding-inline: 15px;
   text-align: center;
   text-overflow: ellipsis;
   white-space: normal;
   word-break: keep-all;
+}
+
+@container (max-width: 640px) {
+  .settings-segmented-button {
+    flex: 1 1 auto;
+    padding-inline: 6px;
+  }
 }
 
 .setting-row input[type="checkbox"] {
@@ -857,7 +867,7 @@ textarea {
 }
 
 .settings-segmented-indicator {
-  background: var(--color-surface);
+  background: var(--color-accent);
 }
 
 .setting-row input[type="checkbox"],

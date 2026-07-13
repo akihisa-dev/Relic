@@ -44,7 +44,7 @@ describe("DESIGN.md compliance", () => {
     expect(designCss).toMatch(/\.rail,\s*\.sidebar,\s*\.right-panel\s*\{[^}]*backdrop-filter:\s*blur\(8px\)/s);
     expect(designCss).toMatch(/\.rail,\s*\.sidebar,\s*\.right-panel\s*\{[^}]*box-shadow:\s*none;/s);
     expect(designCss).toMatch(/\.settings-segmented\s*\{[^}]*background:\s*var\(--color-surface-alt\);/s);
-    expect(designCss).toMatch(/\.settings-segmented-indicator\s*\{[^}]*background:\s*var\(--color-surface\);/s);
+    expect(designCss).toMatch(/\.settings-segmented-indicator\s*\{[^}]*background:\s*var\(--color-accent\);/s);
     expect(designCss).toMatch(/\.setting-row input\[type="checkbox"\],\s*\.setting-row input\[type="checkbox"\]::after\s*\{[^}]*box-shadow:\s*none;/s);
   });
 

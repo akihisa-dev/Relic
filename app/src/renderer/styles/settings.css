@@ -200,38 +200,35 @@
 }
 
 .settings-segmented {
-  align-items: stretch;
+  align-items: center;
   background: var(--color-surface-alt);
   border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
+  border-radius: 999px;
   box-shadow: none;
-  display: grid;
-  grid-template-columns: repeat(var(--settings-segmented-count), minmax(0, 1fr));
+  display: inline-flex;
   justify-self: end;
   max-width: 100%;
   min-width: 0;
   padding: 4px;
   position: relative;
-  width: 100%;
+  width: max-content;
 }
 
 .settings-segmented-indicator {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  border: 0;
+  border-radius: 999px;
   bottom: 4px;
   box-shadow: none;
   left: 4px;
   pointer-events: none;
   position: absolute;
   top: 4px;
-  transform: translateX(calc(var(--settings-segmented-index) * 100%));
   transition:
-    transform var(--motion-surface) var(--ease-standard),
-    background-color var(--motion-surface) var(--ease-standard),
-    box-shadow var(--motion-surface) var(--ease-standard);
-  will-change: transform;
-  width: calc((100% - 8px) / var(--settings-segmented-count));
+    left 400ms cubic-bezier(0.65, 0, 0.35, 1),
+    width 400ms cubic-bezier(0.65, 0, 0.35, 1),
+    background-color var(--motion-surface) var(--ease-standard);
+  will-change: left, width;
   z-index: 0;
 }
 
@@ -242,14 +239,14 @@
   border-radius: var(--radius-sm);
   color: var(--text-2);
   display: inline-flex;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   font-size: 11px;
   font-weight: 600;
   gap: 4px;
   justify-content: center;
-  min-height: 26px;
+  min-height: 36px;
   min-width: 0;
-  padding: 0 10px;
+  padding: 0 15px;
   position: relative;
   transition:
     color var(--motion-normal) var(--ease-standard),
@@ -264,7 +261,7 @@
 }
 
 .settings-segmented-button[aria-pressed="true"] {
-  color: var(--text);
+  color: var(--color-on-accent);
 }
 
 .settings-segmented-button:not([aria-pressed="true"]):hover {
@@ -1079,6 +1076,8 @@
   }
 
   .settings-segmented-button {
+    flex: 1 1 auto;
+    padding-inline: 6px;
     white-space: normal;
   }
 
