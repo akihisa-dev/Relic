@@ -189,6 +189,73 @@ describe("Editor frontmatter", () => {
     expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(0);
   });
 
+  it("左端のハンドルをドラッグしてすべてのトップレベルプロパティを並び替える", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const content = [
+      "---",
+      "title: 'Old' # keep",
+      "# このコメント行は位置を保持",
+      "custom:",
+      "  nested: value",
+      "tags:",
+      "  - 資料",
+      "---",
+      "# 本文"
+    ].join("\n");
+    const { container } = render(
+      <I18nProvider language="ja">
+        <Editor
+          content={content}
+          onChange={vi.fn()}
+          settings={settings}
+          viewRef={viewRef}
+        />
+      </I18nProvider>
+    );
+
+    await expandFrontmatter(container);
+    const rows = Array.from(container.querySelectorAll<HTMLElement>(".cm-frontmatter-row"));
+    expect(rows.map((row) => row.dataset.frontmatterKey)).toEqual(["title", "custom", "tags"]);
+    expect(rows.map((row) => row.querySelector(".cm-frontmatter-row-icon")?.getAttribute("aria-label"))).toEqual([
+      "title ドラッグしてプロパティを並び替え",
+      "custom ドラッグしてプロパティを並び替え",
+      "tags ドラッグしてプロパティを並び替え"
+    ]);
+
+    vi.spyOn(rows[0], "getBoundingClientRect").mockReturnValue({
+      bottom: 76,
+      height: 76,
+      left: 0,
+      right: 600,
+      top: 0,
+      width: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({})
+    });
+    const handle = rows[2].querySelector(".cm-frontmatter-row-icon") as HTMLButtonElement;
+    const firePointerEvent = (type: string, clientY: number): void => {
+      const event = new MouseEvent(type, { bubbles: true, button: 0, clientY });
+      Object.defineProperty(event, "pointerId", { value: 1 });
+      fireEvent(handle, event);
+    };
+    firePointerEvent("pointerdown", 190);
+    firePointerEvent("pointermove", 10);
+    firePointerEvent("pointerup", 10);
+
+    expect(viewRef.current?.state.doc.toString()).toBe([
+      "---",
+      "tags:",
+      "  - 資料",
+      "# このコメント行は位置を保持",
+      "title: 'Old' # keep",
+      "custom:",
+      "  nested: value",
+      "---",
+      "# 本文"
+    ].join("\n"));
+  });
+
   it("展開中のフロントマターはエディタ再生成後も勝手に閉じない", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container, rerender } = render(

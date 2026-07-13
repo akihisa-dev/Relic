@@ -96,6 +96,7 @@ export function frontmatterRowForLine({
 export function frontmatterRowsForBlock({
   block,
   candidates,
+  reorderFields,
   t,
   updateField,
   userDefinedFields,
@@ -105,6 +106,7 @@ export function frontmatterRowsForBlock({
   block: FrontmatterBlock;
   candidates: Record<string, string[]>;
   dateFormat: FrontmatterDateFormat;
+  reorderFields: (orderedKeys: string[]) => void;
   t: Translator;
   updateField: FrontmatterFieldUpdater;
   userDefinedFields: UserDefinedField[];
@@ -115,7 +117,7 @@ export function frontmatterRowsForBlock({
   const entries = findTopLevelYamlFieldEntries(lines)
     .filter((item) => Object.prototype.hasOwnProperty.call(block.data, item.key));
 
-  return entries.map((entry, entryIndex) => createFrontmatterRow({
+  const rows = entries.map((entry, entryIndex) => createFrontmatterRow({
     candidates,
     dateFormat,
     isFirst: entryIndex === 0,
@@ -127,6 +129,8 @@ export function frontmatterRowsForBlock({
     value: block.data[entry.key],
     view
   }));
+  enableFrontmatterRowReordering(rows, reorderFields);
+  return rows;
 }
 
 export function createFrontmatterFooter({
@@ -184,9 +188,12 @@ function createFrontmatterRow({
   if (isFirst) row.classList.add("cm-frontmatter-row--first");
   if (isLast) row.classList.add("cm-frontmatter-row--last");
 
-  const drag = document.createElement("span");
+  const drag = document.createElement("button");
   drag.className = "cm-frontmatter-row-icon";
-  drag.ariaHidden = "true";
+  drag.type = "button";
+  drag.title = t("frontmatter.reorderProperty");
+  drag.ariaLabel = `${key} ${t("frontmatter.reorderProperty")}`;
+  isolateFrontmatterWidgetControl(drag);
 
   const label = document.createElement("span");
   label.className = "cm-frontmatter-key";
@@ -213,6 +220,92 @@ function createFrontmatterRow({
 
   row.append(drag, label, input, removeButton);
   return row;
+}
+
+function enableFrontmatterRowReordering(
+  rows: HTMLElement[],
+  reorderFields: (orderedKeys: string[]) => void
+): void {
+  if (rows.length < 2) return;
+
+  const updateBoundaryClasses = (orderedRows: HTMLElement[]): void => {
+    orderedRows.forEach((row, index) => {
+      row.classList.toggle("cm-frontmatter-row--first", index === 0);
+      row.classList.toggle("cm-frontmatter-row--last", index === orderedRows.length - 1);
+    });
+  };
+
+  for (const row of rows) {
+    const handle = row.querySelector<HTMLButtonElement>(".cm-frontmatter-row-icon");
+    if (!handle) continue;
+
+    let activePointerId: number | null = null;
+    let initialRows: HTMLElement[] = [];
+
+    const orderedRows = (): HTMLElement[] => {
+      const parent = row.parentElement;
+      if (!parent) return [];
+      return Array.from(parent.children).filter((child): child is HTMLElement => (
+        child instanceof HTMLElement && child.classList.contains("cm-frontmatter-row")
+      ));
+    };
+
+    const restoreInitialOrder = (): void => {
+      const parent = row.parentElement;
+      const footer = parent?.querySelector(".cm-frontmatter-footer") ?? null;
+      if (!parent) return;
+      for (const initialRow of initialRows) parent.insertBefore(initialRow, footer);
+      updateBoundaryClasses(initialRows);
+    };
+
+    const finish = (commit: boolean): void => {
+      if (activePointerId === null) return;
+      const pointerId = activePointerId;
+      activePointerId = null;
+      row.classList.remove("cm-frontmatter-row--dragging");
+      if (!commit) restoreInitialOrder();
+
+      const nextRows = orderedRows();
+      updateBoundaryClasses(nextRows);
+      if (commit) {
+        reorderFields(nextRows.map((item) => item.dataset.frontmatterKey ?? ""));
+      }
+      if (typeof handle.releasePointerCapture === "function" && handle.hasPointerCapture(pointerId)) {
+        handle.releasePointerCapture(pointerId);
+      }
+    };
+
+    handle.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || activePointerId !== null) return;
+      event.preventDefault();
+      activePointerId = event.pointerId;
+      initialRows = orderedRows();
+      row.classList.add("cm-frontmatter-row--dragging");
+      if (typeof handle.setPointerCapture === "function") handle.setPointerCapture(event.pointerId);
+    });
+
+    handle.addEventListener("pointermove", (event) => {
+      if (activePointerId !== event.pointerId) return;
+      const parent = row.parentElement;
+      if (!parent) return;
+
+      const stationaryRows = orderedRows().filter((candidate) => candidate !== row);
+      const before = stationaryRows.find((candidate) => {
+        const rect = candidate.getBoundingClientRect();
+        return event.clientY < rect.top + rect.height / 2;
+      });
+      const footer = parent.querySelector(".cm-frontmatter-footer");
+      parent.insertBefore(row, before ?? footer);
+      updateBoundaryClasses(orderedRows());
+    });
+
+    handle.addEventListener("pointerup", (event) => {
+      if (activePointerId === event.pointerId) finish(true);
+    });
+    handle.addEventListener("pointercancel", (event) => {
+      if (activePointerId === event.pointerId) finish(false);
+    });
+  }
 }
 
 export function createTrashIcon(): SVGSVGElement {

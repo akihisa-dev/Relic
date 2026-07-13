@@ -6,6 +6,7 @@ import {
   parseChronicleYearInput,
   parseDateInput,
   parseDateInputForFormat,
+  reorderTopLevelYamlFields,
   serializeData,
   serializeDataPreservingYaml,
   type FrontmatterBlock
@@ -54,6 +55,44 @@ describe("editorFrontmatterModel", () => {
     expect(serializeDataPreservingYaml(frontmatterBlock(yamlText), {
       title: "New # text"
     })).toBe("title: \"New # text\" # keep");
+  });
+
+  it("トップレベルプロパティを値の書式を変えずに並び替える", () => {
+    const yamlText = [
+      "title: 'Old' # keep",
+      "# このコメント行は位置を保持",
+      "aliases:",
+      "  - Alpha",
+      "chronicle:",
+      "  start: 1185",
+      "  end: 1333",
+      ""
+    ].join("\n");
+
+    expect(reorderTopLevelYamlFields(yamlText, ["chronicle", "title", "aliases"])).toBe([
+      "chronicle:",
+      "  start: 1185",
+      "  end: 1333",
+      "# このコメント行は位置を保持",
+      "title: 'Old' # keep",
+      "aliases:",
+      "  - Alpha",
+      ""
+    ].join("\n"));
+  });
+
+  it("対象外のトップレベルプロパティと改行形式はその場に保持する", () => {
+    const yamlText = "first: 1\r\nuntouched: true\r\nlast:\r\n  nested: value\r\n";
+
+    expect(reorderTopLevelYamlFields(yamlText, ["last", "first"])).toBe(
+      "last:\r\n  nested: value\r\nuntouched: true\r\nfirst: 1\r\n"
+    );
+  });
+
+  it("指定されたキーが現在のYAMLと一致しない場合は変更しない", () => {
+    const yamlText = "first: 1\nlast: 2\n";
+
+    expect(reorderTopLevelYamlFields(yamlText, ["last", "missing"])).toBe(yamlText);
   });
 
   it("固定フィールドと登録済みフィールドを仕様どおり書き戻す", () => {

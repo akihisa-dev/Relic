@@ -485,6 +485,7 @@
   "frontmatter.invalidPropertyName": "プロパティ名に使えない文字があります",
   "frontmatter.duplicateProperty": "同じプロパティが既にあります",
   "frontmatter.removeProperty": "プロパティを削除",
+  "frontmatter.reorderProperty": "ドラッグしてプロパティを並び替え",
   "frontmatter.removeValue": "値を削除",
   "editor.tableAddRowAbove": "行を上に追加",
   "editor.tableAddRowBelow": "行を下に追加",

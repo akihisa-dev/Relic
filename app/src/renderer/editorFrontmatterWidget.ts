@@ -5,6 +5,7 @@ import type { FrontmatterDateFormat, UserDefinedField } from "../shared/ipc";
 import { setEditorEditable } from "./editorEditable";
 import {
   findFrontmatterBlock,
+  reorderTopLevelYamlFields,
   serializeDataPreservingYaml,
   type FrontmatterBlock
 } from "./editorFrontmatterModel";
@@ -111,6 +112,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
       block: this.block,
       candidates: this.candidates,
       dateFormat: this.dateFormat,
+      reorderFields: (orderedKeys) => this.reorderFields(view, orderedKeys),
       t: this.t,
       updateField: (editorView, key, value) => this.updateField(editorView, key, value),
       userDefinedFields: this.userDefinedFields,
@@ -136,6 +138,22 @@ class FrontmatterPropertiesWidget extends WidgetType {
     }
 
     this.writeData(view, nextData);
+  }
+
+  private reorderFields(view: EditorView, orderedKeys: string[]): void {
+    const nextYaml = reorderTopLevelYamlFields(this.block.yamlText, orderedKeys);
+    if (nextYaml === this.block.yamlText) return;
+
+    setEditorEditable(view, true);
+    const openLine = view.state.doc.line(this.block.startLine);
+    const closeLine = view.state.doc.line(this.block.endLine);
+    view.dispatch({
+      changes: {
+        from: openLine.to + 1,
+        insert: nextYaml,
+        to: closeLine.from
+      }
+    });
   }
 
   private writeData(view: EditorView, nextData: Record<string, unknown>): void {

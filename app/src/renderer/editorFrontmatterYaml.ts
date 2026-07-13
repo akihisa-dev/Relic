@@ -70,6 +70,49 @@ export function findTopLevelYamlFieldEntries(lines: string[]): YamlFieldEntry[] 
   return entries;
 }
 
+export function reorderTopLevelYamlFields(yamlText: string, orderedKeys: string[]): string {
+  const newline = yamlText.includes("\r\n") ? "\r\n" : "\n";
+  const hasTrailingNewline = yamlText.endsWith(newline);
+  const lines = yamlText.split(/\r?\n/);
+  if (hasTrailingNewline) lines.pop();
+
+  const entries = findTopLevelYamlFieldEntries(lines);
+  const orderedKeySet = new Set(orderedKeys);
+  if (orderedKeySet.size !== orderedKeys.length) return yamlText;
+
+  const movableEntries = entries.filter((entry) => orderedKeySet.has(entry.key));
+  if (
+    movableEntries.length !== orderedKeys.length ||
+    orderedKeys.some((key) => !movableEntries.some((entry) => entry.key === key))
+  ) {
+    return yamlText;
+  }
+
+  const entryByStart = new Map(entries.map((entry) => [entry.start, entry]));
+  const movableBlocks = new Map(movableEntries.map((entry) => [entry.key, lines.slice(entry.start, entry.end)]));
+  let movableIndex = 0;
+  const output: string[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const entry = entryByStart.get(index);
+    if (!entry) {
+      output.push(lines[index]);
+      continue;
+    }
+
+    if (orderedKeySet.has(entry.key)) {
+      output.push(...(movableBlocks.get(orderedKeys[movableIndex]) ?? []));
+      movableIndex += 1;
+    } else {
+      output.push(...lines.slice(entry.start, entry.end));
+    }
+    index = entry.end - 1;
+  }
+
+  const result = output.join(newline);
+  return hasTrailingNewline ? `${result}${newline}` : result;
+}
+
 export function serializeData(data: Record<string, unknown>, userDefinedFields: UserDefinedField[] = []): string {
   return Object.entries(data)
     .map(([key, value]) => {

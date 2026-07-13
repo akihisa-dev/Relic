@@ -485,6 +485,7 @@
   "frontmatter.invalidPropertyName": "The property name contains unsupported characters.",
   "frontmatter.duplicateProperty": "This property already exists.",
   "frontmatter.removeProperty": "Remove property",
+  "frontmatter.reorderProperty": "Drag to reorder property",
   "frontmatter.removeValue": "Remove value",
   "editor.tableAddRowAbove": "Add row above",
   "editor.tableAddRowBelow": "Add row below",

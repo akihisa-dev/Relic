@@ -140,15 +140,29 @@
 }
 
 .cm-frontmatter-row-icon {
+  appearance: none;
+  background: transparent;
+  border: 0;
   color: var(--text-3);
+  cursor: grab;
   align-self: center;
   height: 40px;
   justify-self: center;
   position: relative;
+  touch-action: none;
   width: 18px;
   transition:
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
+}
+
+.cm-frontmatter-row--dragging {
+  cursor: grabbing;
+  opacity: 0.72;
+}
+
+.cm-frontmatter-row--dragging .cm-frontmatter-row-icon {
+  cursor: grabbing;
 }
 
 .cm-frontmatter-row-icon::before {
