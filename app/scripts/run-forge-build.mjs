@@ -26,12 +26,23 @@ if (arch) {
 }
 
 const pnpmCommand = 'pnpm';
+const forgeEnvironment = {
+  ...process.env,
+  RELIC_FORGE_OUT_DIR: outputDirs.get(platform)
+};
+
+if (process.platform === 'darwin' && platform === 'darwin' && Number.parseInt(process.versions.node, 10) >= 25) {
+  const extractorPath = path.join(__dirname, 'forge-electron-extract.cjs');
+  forgeEnvironment.RELIC_ELECTRON_EXTRACTOR = 'ditto';
+  forgeEnvironment.NODE_OPTIONS = [
+    process.env.NODE_OPTIONS,
+    `--require=${extractorPath}`
+  ].filter(Boolean).join(' ');
+}
+
 const spawnOptions = {
   cwd: appDir,
-  env: {
-    ...process.env,
-    RELIC_FORGE_OUT_DIR: outputDirs.get(platform)
-  },
+  env: forgeEnvironment,
   shell: process.platform === 'win32',
   stdio: 'inherit'
 };
