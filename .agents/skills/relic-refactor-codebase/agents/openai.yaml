@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Codebase Refactoring"
+  short_description: "Relicの互換性を保ち構造・性能・配布を包括的に改善する"
+  default_prompt: "Use $relic-refactor-codebase to refactor Relic comprehensively while preserving behavior and verifying architecture, performance, and packaging."

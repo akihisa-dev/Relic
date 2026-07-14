@@ -99,6 +99,7 @@
 - 正本文書、README、索引の作成、整理、同期では `.agents/skills/relic-maintain-docs/SKILL.md` に従う
 - Skill集合全体の棚卸し、責務・発火・重複・履歴・ルーティングの監査と承認後の整理では `.agents/skills/relic-audit-skills/SKILL.md` に従う
 - React診断、責務分離、ソース肥大化、アーキテクチャ、bundle、性能の監査や改善では `.agents/skills/relic-audit-code-health/SKILL.md` に従う
+- コードベース全体または指定領域を、複数の責務、状態所有、実行境界、性能、配布、文書まで含めて包括的にリファクタリングする場合は `.agents/skills/relic-refactor-codebase/SKILL.md` に従う
 - 依存関係、Electron、ビルド基盤、GitHub Actions、監査対応の更新では `.agents/skills/relic-update-dependencies/SKILL.md` に従う
 - バージョンの決定、更新、コミット件名との整合確認では `.agents/skills/relic-manage-version/SKILL.md` に従う
 - 差分をコミットする場合は `.agents/skills/relic-commit/SKILL.md` に従う
