@@ -50,6 +50,10 @@ jobs:
         working-directory: app
         run: pnpm docs:index:check
 
+      - name: Check GitHub workflows
+        working-directory: app
+        run: pnpm ci:workflows:check
+
       - name: Check version policy
         if: github.event_name == 'pull_request'
         working-directory: app

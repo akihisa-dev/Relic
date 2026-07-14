@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Feature Retirement"
+  short_description: "機能廃止をデータ互換性と残存参照まで安全に完了する"
+  default_prompt: "Use $relic-retire-feature to retire an explicitly selected Relic feature without leaving data, code, or documentation inconsistencies."

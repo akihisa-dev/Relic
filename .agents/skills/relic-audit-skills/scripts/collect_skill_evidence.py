@@ -2,14 +2,18 @@
 """Collect deterministic, read-only evidence for a Skill-set audit.
 
 The script intentionally reports candidates rather than deciding whether a Skill
-should be changed. It uses only the Python standard library so it can run in a
-fresh repository checkout without installing a YAML package.
+should be changed. Repository-owned structural gates and external informational
+findings remain separate. It uses only the Python standard library so it can run
+in a fresh repository checkout without installing a YAML package.
 """
 
 from __future__ import annotations
 
 import argparse
 import ast
+import contextlib
+import hashlib
+import io
 import json
 import re
 import shlex
@@ -33,7 +37,7 @@ NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+?)\s*$", re.MULTILINE)
 INLINE_CODE_PATTERN = re.compile(r"`([^`\n]+)`")
 SKILL_REFERENCE_PATTERN = re.compile(
-    r"\$([a-z0-9]+(?:-[a-z0-9]+)*)"
+    r"\$([a-z][a-z0-9]*(?:-[a-z0-9]+)*)"
     r"|(?<![A-Za-z0-9_./:-])((?:relic|gh)-[a-z0-9-]+|skill-creator)"
     r"(?![A-Za-z0-9_.-])"
 )
@@ -58,6 +62,8 @@ COMMAND_HEADS = {
     "swift",
     "xcodebuild",
 }
+REPOSITORY_SCOPE = "repository-owned"
+EXTERNAL_SCOPE = "external"
 
 
 class CollectionError(RuntimeError):
@@ -68,17 +74,24 @@ class CollectionError(RuntimeError):
 class SkillTarget:
     skill_file: Path
     catalog_name: str | None = None
+    repository_owned: bool | None = None
+    catalog_locations: tuple[Path, ...] = ()
+    catalog_content_digest: str | None = None
 
 
 @dataclass
 class SkillEvidence:
     name: str
     catalog_name: str | None
+    scope: str
     frontmatter_name: str
     description: str
     folder_name: str
     skill_file: str
     skill_directory: str
+    catalog_locations: list[str] = field(default_factory=list)
+    catalog_content_digest: str | None = None
+    catalog_variant_id: str | None = None
     frontmatter_keys: list[str] = field(default_factory=list)
     headings: list[str] = field(default_factory=list)
     resource_files: dict[str, list[str]] = field(default_factory=dict)
@@ -88,6 +101,7 @@ class SkillEvidence:
     unresolved_skill_references: list[str] = field(default_factory=list)
     references: list[ReferenceEvidence] = field(default_factory=list)
     issues: list[str] = field(default_factory=list)
+    informational_findings: list[str] = field(default_factory=list)
     _search_text: str = field(default="", repr=False)
 
     def public_dict(self) -> dict[str, object]:
@@ -203,12 +217,55 @@ def checked_skill_file(path: Path, label: str) -> Path:
     return resolved
 
 
+def is_repository_owned(path: Path, workspace: Path) -> bool:
+    try:
+        path.resolve().relative_to(workspace.resolve())
+    except ValueError:
+        return False
+    return True
+
+
+def skill_package_digest(skill_file: Path) -> str:
+    """Hash the complete Skill package so merged catalog entries retain semantics."""
+    digest = hashlib.sha256()
+    skill_directory = skill_file.parent
+    try:
+        package_files = sorted(
+            (
+                path
+                for path in skill_directory.rglob("*")
+                if path.is_file()
+                and "__pycache__" not in path.relative_to(skill_directory).parts
+                and path.name != ".DS_Store"
+                and path.suffix != ".pyc"
+            ),
+            key=lambda path: path.relative_to(skill_directory).as_posix(),
+        )
+    except OSError as error:
+        raise CollectionError(
+            f"Cannot fingerprint catalog Skill package {skill_directory}: {error}"
+        ) from error
+    for package_file in package_files:
+        relative_path = package_file.relative_to(skill_directory).as_posix()
+        digest.update(relative_path.encode("utf-8"))
+        digest.update(b"\0")
+        try:
+            digest.update(package_file.read_bytes())
+        except OSError as error:
+            raise CollectionError(
+                f"Cannot fingerprint catalog Skill resource {package_file}: {error}"
+            ) from error
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def discover_skill_files(
+    workspace: Path,
     roots: Sequence[Path],
     explicit_skills: Sequence[Path],
     catalog_entries: Sequence[SkillTarget],
 ) -> list[SkillTarget]:
-    discovered: dict[Path, str | None] = {}
+    discovered: set[Path] = set()
     for root in roots:
         resolved = root.expanduser().resolve()
         if not resolved.exists():
@@ -216,25 +273,62 @@ def discover_skill_files(
         if resolved.is_file():
             if resolved.name != "SKILL.md":
                 raise CollectionError(f"Skill root file is not SKILL.md: {resolved}")
-            discovered.setdefault(resolved, None)
+            discovered.add(resolved)
             continue
         try:
             for path in resolved.rglob("SKILL.md"):
                 if path.is_file():
-                    discovered.setdefault(path.resolve(), None)
+                    discovered.add(path.resolve())
         except OSError as error:
             raise CollectionError(f"Cannot scan Skill root {resolved}: {error}") from error
 
     for skill_file in explicit_skills:
         resolved = checked_skill_file(skill_file, "Explicit Skill")
-        discovered.setdefault(resolved, None)
+        discovered.add(resolved)
+
+    catalog_groups: dict[tuple[str, str], set[Path]] = {}
     for entry in catalog_entries:
         resolved = checked_skill_file(entry.skill_file, f"Catalog entry {entry.catalog_name}")
-        discovered[resolved] = entry.catalog_name
-    return [
-        SkillTarget(skill_file=path, catalog_name=catalog_name)
-        for path, catalog_name in sorted(discovered.items(), key=lambda item: item[0].as_posix())
-    ]
+        assert entry.catalog_name is not None
+        content_digest = skill_package_digest(resolved)
+        catalog_groups.setdefault((entry.catalog_name, content_digest), set()).add(resolved)
+
+    targets: list[SkillTarget] = []
+    catalog_paths: set[Path] = set()
+    for (catalog_name, content_digest), grouped_paths in sorted(
+        catalog_groups.items(), key=lambda item: (item[0][0], item[0][1])
+    ):
+        locations = tuple(sorted(grouped_paths, key=lambda path: path.as_posix()))
+        repository_locations = [
+            path for path in locations if is_repository_owned(path, workspace)
+        ]
+        primary = repository_locations[0] if repository_locations else locations[0]
+        targets.append(
+            SkillTarget(
+                skill_file=primary,
+                catalog_name=catalog_name,
+                repository_owned=bool(repository_locations),
+                catalog_locations=locations,
+                catalog_content_digest=content_digest,
+            )
+        )
+        catalog_paths.update(locations)
+
+    for path in sorted(discovered - catalog_paths, key=lambda item: item.as_posix()):
+        targets.append(
+            SkillTarget(
+                skill_file=path,
+                repository_owned=is_repository_owned(path, workspace),
+            )
+        )
+    return sorted(
+        targets,
+        key=lambda target: (
+            target.catalog_name or "",
+            target.skill_file.as_posix(),
+            target.catalog_content_digest or "",
+        ),
+    )
 
 
 def extract_commands(text: str) -> set[str]:
@@ -259,18 +353,42 @@ def extract_skill_references(text: str) -> set[str]:
     return references
 
 
+def external_finding(issue: str) -> str:
+    if issue.startswith("frontmatter-unexpected-key:"):
+        return issue.replace(
+            "frontmatter-unexpected-key:", "external-frontmatter-extension:", 1
+        )
+    return f"external-structure:{issue}"
+
+
 def collect_skill(target: SkillTarget, workspace: Path) -> SkillEvidence:
     skill_file = target.skill_file
     skill_directory = skill_file.parent
     folder_name = skill_directory.name
+    repository_owned = (
+        target.repository_owned
+        if target.repository_owned is not None
+        else is_repository_owned(skill_file, workspace)
+    )
     issues: list[str] = []
+    informational_findings: list[str] = []
     try:
         text = skill_file.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as error:
         text = ""
-        issues.append(f"skill-read-error:{type(error).__name__}")
+        read_issue = f"skill-read-error:{type(error).__name__}"
+        if repository_owned:
+            issues.append(read_issue)
+        else:
+            informational_findings.append(external_finding(read_issue))
     frontmatter, body, parse_issues = parse_frontmatter(text)
-    issues.extend(validate_frontmatter(frontmatter, folder_name, parse_issues))
+    validation_issues = validate_frontmatter(frontmatter, folder_name, parse_issues)
+    if repository_owned:
+        issues.extend(validation_issues)
+    else:
+        informational_findings.extend(
+            external_finding(issue) for issue in validation_issues
+        )
 
     try:
         markdown_files = sorted(
@@ -278,18 +396,29 @@ def collect_skill(target: SkillTarget, workspace: Path) -> SkillEvidence:
         )
     except OSError:
         markdown_files = [skill_file]
-        issues.append("resource-scan-error")
+        if repository_owned:
+            issues.append("resource-scan-error")
+        else:
+            informational_findings.append(external_finding("resource-scan-error"))
     references = collect_references(markdown_files, skill_directory, workspace)
     for reference in references:
         if not reference.exists and reference.kind == "markdown-link":
-            issues.append(f"missing-{reference.kind}:{reference.target}")
+            missing_issue = f"missing-{reference.kind}:{reference.target}"
+            if repository_owned:
+                issues.append(missing_issue)
+            else:
+                informational_findings.append(external_finding(missing_issue))
 
     combined_markdown: list[str] = []
     for markdown_file in markdown_files:
         try:
             combined_markdown.append(markdown_file.read_text(encoding="utf-8"))
         except (OSError, UnicodeError):
-            issues.append(f"resource-read-error:{display_path(markdown_file, workspace)}")
+            read_issue = f"resource-read-error:{display_path(markdown_file, workspace)}"
+            if repository_owned:
+                issues.append(read_issue)
+            else:
+                informational_findings.append(external_finding(read_issue))
     search_text = "\n".join(combined_markdown)
     frontmatter_name = frontmatter.get("name", "").strip() or folder_name
     name = target.catalog_name or frontmatter_name
@@ -302,11 +431,21 @@ def collect_skill(target: SkillTarget, workspace: Path) -> SkillEvidence:
     return SkillEvidence(
         name=name,
         catalog_name=target.catalog_name,
+        scope=REPOSITORY_SCOPE if repository_owned else EXTERNAL_SCOPE,
         frontmatter_name=frontmatter_name,
         description=description,
         folder_name=folder_name,
         skill_file=display_path(skill_file, workspace),
         skill_directory=display_path(skill_directory, workspace),
+        catalog_locations=[
+            display_path(path, workspace) for path in target.catalog_locations
+        ],
+        catalog_content_digest=target.catalog_content_digest,
+        catalog_variant_id=(
+            target.catalog_content_digest[:12]
+            if target.catalog_content_digest is not None
+            else None
+        ),
         frontmatter_keys=sorted(frontmatter),
         headings=[match.group(2).strip() for match in HEADING_PATTERN.finditer(body)],
         resource_files=collect_resource_files(skill_directory, workspace),
@@ -317,6 +456,7 @@ def collect_skill(target: SkillTarget, workspace: Path) -> SkillEvidence:
         referenced_skills=sorted(referenced_skills),
         references=references,
         issues=sorted(set(issues)),
+        informational_findings=sorted(set(informational_findings)),
         _search_text=search_text,
     )
 
@@ -357,6 +497,8 @@ def similarity_candidates(
 def duplicate_names(skills: Sequence[SkillEvidence]) -> list[dict[str, object]]:
     paths_by_name: dict[str, list[str]] = {}
     for skill in skills:
+        if skill.scope != REPOSITORY_SCOPE:
+            continue
         paths_by_name.setdefault(skill.name, []).append(skill.skill_file)
     return [
         {"name": name, "skill_files": sorted(paths)}
@@ -365,11 +507,44 @@ def duplicate_names(skills: Sequence[SkillEvidence]) -> list[dict[str, object]]:
     ]
 
 
+def catalog_duplicate_groups(skills: Sequence[SkillEvidence]) -> list[dict[str, object]]:
+    return [
+        {
+            "name": skill.catalog_name,
+            "content_digest": skill.catalog_content_digest,
+            "variant_id": skill.catalog_variant_id,
+            "skill_files": skill.catalog_locations,
+        }
+        for skill in skills
+        if skill.catalog_name is not None and len(skill.catalog_locations) > 1
+    ]
+
+
+def catalog_name_variants(skills: Sequence[SkillEvidence]) -> list[dict[str, object]]:
+    variants_by_name: dict[str, list[dict[str, object]]] = {}
+    for skill in skills:
+        if skill.catalog_name is None:
+            continue
+        variants_by_name.setdefault(skill.catalog_name, []).append(
+            {
+                "content_digest": skill.catalog_content_digest,
+                "variant_id": skill.catalog_variant_id,
+                "scope": skill.scope,
+                "skill_files": skill.catalog_locations,
+            }
+        )
+    return [
+        {"name": name, "variants": sorted(variants, key=lambda item: str(item["variant_id"]))}
+        for name, variants in sorted(variants_by_name.items())
+        if len(variants) > 1
+    ]
+
+
 def resolve_skill_relations(skills: Sequence[SkillEvidence]) -> None:
     known_names = {skill.name for skill in skills}
-    effective_by_frontmatter: dict[str, list[str]] = {}
+    effective_by_frontmatter: dict[str, set[str]] = {}
     for skill in skills:
-        effective_by_frontmatter.setdefault(skill.frontmatter_name, []).append(skill.name)
+        effective_by_frontmatter.setdefault(skill.frontmatter_name, set()).add(skill.name)
 
     for skill in skills:
         namespace = (
@@ -387,7 +562,7 @@ def resolve_skill_relations(skills: Sequence[SkillEvidence]) -> None:
             if namespaced and namespaced in known_names:
                 resolved.add(namespaced)
                 continue
-            candidates = effective_by_frontmatter.get(reference, [])
+            candidates = sorted(effective_by_frontmatter.get(reference, set()))
             if len(candidates) == 1:
                 resolved.add(candidates[0])
             else:
@@ -404,31 +579,64 @@ def collect_evidence(
     catalog_entries: Sequence[SkillTarget],
     threshold: float,
 ) -> dict[str, object]:
-    skill_targets = discover_skill_files(roots, explicit_skills, catalog_entries)
+    skill_targets = discover_skill_files(
+        workspace, roots, explicit_skills, catalog_entries
+    )
     skills = [collect_skill(target, workspace) for target in skill_targets]
     resolve_skill_relations(skills)
     duplicates = duplicate_names(skills)
+    catalog_duplicates = catalog_duplicate_groups(skills)
+    catalog_variants = catalog_name_variants(skills)
     missing_references = [
         {
             "skill": skill.name,
+            "scope": skill.scope,
             **asdict(reference),
         }
         for skill in skills
         for reference in skill.references
-        if not reference.exists and reference.kind == "markdown-link"
+        if skill.scope == REPOSITORY_SCOPE
+        and not reference.exists
+        and reference.kind == "markdown-link"
+    ]
+    external_missing_references = [
+        {
+            "skill": skill.name,
+            "scope": skill.scope,
+            **asdict(reference),
+        }
+        for skill in skills
+        for reference in skill.references
+        if skill.scope == EXTERNAL_SCOPE
+        and not reference.exists
+        and reference.kind == "markdown-link"
     ]
     missing_reference_candidates = [
         {
             "skill": skill.name,
+            "scope": skill.scope,
             **asdict(reference),
         }
         for skill in skills
         for reference in skill.references
         if not reference.exists and reference.kind == "inline-path-candidate"
     ]
-    issue_count = sum(len(skill.issues) for skill in skills) + len(duplicates)
+    external_informational_findings = [
+        {
+            "skill": skill.name,
+            "skill_file": skill.skill_file,
+            "finding": finding,
+        }
+        for skill in skills
+        if skill.scope == EXTERNAL_SCOPE
+        for finding in skill.informational_findings
+    ]
+    repository_issue_count = (
+        sum(len(skill.issues) for skill in skills if skill.scope == REPOSITORY_SCOPE)
+        + len(duplicates)
+    )
     return {
-        "schema_version": 3,
+        "schema_version": 4,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "workspace": workspace.resolve().as_posix(),
         "roots": [path.expanduser().resolve().as_posix() for path in roots],
@@ -442,21 +650,42 @@ def collect_evidence(
         ],
         "summary": {
             "skill_count": len(skills),
-            "structural_issue_count": issue_count,
+            "repository_skill_count": sum(
+                skill.scope == REPOSITORY_SCOPE for skill in skills
+            ),
+            "external_skill_count": sum(skill.scope == EXTERNAL_SCOPE for skill in skills),
+            "repository_structural_issue_count": repository_issue_count,
+            "structural_issue_count": repository_issue_count,
+            "external_informational_finding_count": len(
+                external_informational_findings
+            ),
+            "catalog_informational_finding_count": len(catalog_variants),
             "missing_reference_count": len(missing_references),
+            "external_missing_reference_count": len(external_missing_references),
             "missing_reference_candidate_count": len(missing_reference_candidates),
             "duplicate_name_count": len(duplicates),
+            "catalog_duplicate_group_count": len(catalog_duplicates),
+            "catalog_name_variant_count": len(catalog_variants),
         },
         "skills": [skill.public_dict() for skill in skills],
         "duplicate_names": duplicates,
+        "catalog_duplicate_groups": catalog_duplicates,
+        "catalog_name_variants": catalog_variants,
         "missing_references": missing_references,
+        "external_missing_references": external_missing_references,
         "missing_reference_candidates": missing_reference_candidates,
+        "external_informational_findings": external_informational_findings,
         "similarity_candidates": similarity_candidates(skills, threshold),
         "notes": [
             "Similarity and inline-path results are candidates, not confirmed audit findings or fail-on-issues conditions.",
             (
-                "Use --catalog-entry for Skills whose available-catalog name differs "
-                "from frontmatter name."
+                "--fail-on-issues evaluates repository-owned structural issues only. "
+                "External Skill schema differences and unresolved references remain informational."
+            ),
+            (
+                "Repeated --catalog-entry names are accepted. Byte-identical Skill "
+                "packages are consolidated with all locations retained; distinct "
+                "packages are reported as catalog name variants."
             ),
             (
                 "Fenced code examples are excluded from Markdown-link checks. A Markdown "
@@ -468,6 +697,12 @@ def collect_evidence(
             ),
         ],
     }
+
+
+def has_repository_issues(evidence: dict[str, object]) -> bool:
+    summary = evidence["summary"]
+    assert isinstance(summary, dict)
+    return bool(summary["repository_structural_issue_count"])
 
 
 def run_self_test() -> None:
@@ -515,6 +750,20 @@ def run_self_test() -> None:
             "frontmatter-folder-name-mismatch" in skill["issues"]
             for skill in evidence["skills"]
         )
+        assert has_repository_issues(evidence)
+        with contextlib.redirect_stdout(io.StringIO()):
+            assert (
+                main(
+                    [
+                        "--workspace",
+                        workspace.as_posix(),
+                        "--root",
+                        root.as_posix(),
+                        "--fail-on-issues",
+                    ]
+                )
+                == 1
+            )
 
         catalog_targets: list[SkillTarget] = []
         for plugin_name in ("plugin-a", "plugin-b"):
@@ -559,6 +808,89 @@ def run_self_test() -> None:
             if skill["name"].endswith(":index"):
                 expected_worker = skill["name"].replace(":index", ":worker")
                 assert skill["referenced_skills"] == [expected_worker]
+
+        with tempfile.TemporaryDirectory(
+            prefix="skill-audit-external-"
+        ) as external_directory:
+            external_root = Path(external_directory)
+            identical_skill_text = (
+                "---\n"
+                "name: Worker\n"
+                "description: Inspect an external catalog worker.\n"
+                "user-invocable: false\n"
+                "---\n"
+                "# Worker\n\n"
+                "[API route](/api/docs/workers)\n\n"
+                "[Web docs](https://example.com/docs)\n\n"
+                "[Optional local detail](references/detail.md)\n\n"
+                "A price such as `$12` is not a Skill reference.\n"
+            )
+            external_paths: list[Path] = []
+            for plugin_name in ("copy-a", "copy-b"):
+                skill_directory = external_root / plugin_name / "worker"
+                skill_directory.mkdir(parents=True)
+                skill_file = skill_directory / "SKILL.md"
+                skill_file.write_text(identical_skill_text, encoding="utf-8")
+                external_paths.append(skill_file)
+
+            variant_directory = external_root / "variant" / "worker"
+            variant_directory.mkdir(parents=True)
+            variant_file = variant_directory / "SKILL.md"
+            variant_file.write_text(
+                identical_skill_text.replace(
+                    "Inspect an external catalog worker.",
+                    "Route a distinct external catalog worker.",
+                ),
+                encoding="utf-8",
+            )
+            external_paths.append(variant_file)
+            raw_entries = [
+                f"external:worker={path.as_posix()}" for path in external_paths
+            ]
+            parsed_entries = parse_catalog_entries(raw_entries, workspace)
+            assert len(parsed_entries) == 3
+            external_evidence = collect_evidence(
+                workspace, [], [], parsed_entries, 0.5
+            )
+            external_summary = external_evidence["summary"]
+            assert external_summary["skill_count"] == 2
+            assert external_summary["repository_skill_count"] == 0
+            assert external_summary["external_skill_count"] == 2
+            assert external_summary["repository_structural_issue_count"] == 0
+            assert external_summary["catalog_duplicate_group_count"] == 1
+            assert external_summary["catalog_name_variant_count"] == 1
+            assert external_summary["external_missing_reference_count"] == 2
+            assert not has_repository_issues(external_evidence)
+            duplicate_group = external_evidence["catalog_duplicate_groups"][0]
+            assert len(duplicate_group["skill_files"]) == 2
+            assert len(external_evidence["catalog_name_variants"][0]["variants"]) == 2
+            assert all(skill["issues"] == [] for skill in external_evidence["skills"])
+            assert all(
+                "12" not in skill["referenced_skills"]
+                for skill in external_evidence["skills"]
+            )
+            assert all(
+                len(skill["catalog_locations"]) in {1, 2}
+                for skill in external_evidence["skills"]
+            )
+            assert any(
+                finding["finding"]
+                == "external-frontmatter-extension:user-invocable"
+                for finding in external_evidence["external_informational_findings"]
+            )
+            assert all(
+                item["target"] == "references/detail.md"
+                for item in external_evidence["external_missing_references"]
+            )
+            rendered_external = render_markdown(external_evidence)
+            assert "## External informational findings" in rendered_external
+            assert "external-frontmatter-extension:user-invocable" in rendered_external
+            assert "## Catalog name variants" in rendered_external
+            cli_arguments = ["--workspace", workspace.as_posix(), "--fail-on-issues"]
+            for raw_entry in raw_entries:
+                cli_arguments.extend(["--catalog-entry", raw_entry])
+            with contextlib.redirect_stdout(io.StringIO()):
+                assert main(cli_arguments) == 0
     print("self-test: ok")
 
 
@@ -591,7 +923,10 @@ def parse_arguments(argv: Sequence[str]) -> argparse.Namespace:
         action="append",
         default=[],
         metavar="NAME=PATH",
-        help="Available-catalog name and SKILL.md path; repeat to preserve namespaces.",
+        help=(
+            "Available-catalog name and SKILL.md path; repeat to preserve namespaces "
+            "and every location, including repeated names."
+        ),
     )
     parser.add_argument("--format", choices=("json", "markdown"), default="json")
     parser.add_argument(
@@ -603,7 +938,10 @@ def parse_arguments(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument(
         "--fail-on-issues",
         action="store_true",
-        help="Exit 1 when structural, duplicate-name, or missing-reference issues exist.",
+        help=(
+            "Exit 1 when repository-owned structural, duplicate-name, or "
+            "missing-reference issues exist; external findings remain informational."
+        ),
     )
     parser.add_argument(
         "--self-test", action="store_true", help="Run deterministic temporary-fixture checks."
@@ -616,7 +954,6 @@ def parse_arguments(argv: Sequence[str]) -> argparse.Namespace:
 
 def parse_catalog_entries(raw_entries: Sequence[str], workspace: Path) -> list[SkillTarget]:
     entries: list[SkillTarget] = []
-    seen_names: set[str] = set()
     for raw_entry in raw_entries:
         if "=" not in raw_entry:
             raise CollectionError(
@@ -627,9 +964,6 @@ def parse_catalog_entries(raw_entries: Sequence[str], workspace: Path) -> list[S
         raw_path = raw_path.strip()
         if not name or re.search(r"\s", name) or not raw_path:
             raise CollectionError(f"Invalid catalog entry: {raw_entry}")
-        if name in seen_names:
-            raise CollectionError(f"Duplicate catalog entry name: {name}")
-        seen_names.add(name)
         path = Path(raw_path).expanduser()
         if not path.is_absolute():
             path = workspace / path
@@ -664,7 +998,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(render_markdown(evidence))
     else:
         print(json.dumps(evidence, ensure_ascii=False, indent=2))
-    if args.fail_on_issues and evidence["summary"]["structural_issue_count"]:
+    if args.fail_on_issues and has_repository_issues(evidence):
         return 1
     return 0
 

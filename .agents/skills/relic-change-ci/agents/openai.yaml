@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic CI Change"
+  short_description: "RelicのCI権限・workflow・秘密情報検査を安全に変更する"
+  default_prompt: "Use $relic-change-ci to change Relic CI workflows and repository protection safely."

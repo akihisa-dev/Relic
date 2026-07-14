@@ -1,4 +1,4 @@
 interface:
   display_name: "Relic Code Health Audit"
-  short_description: "Relicの診断結果を実害で評価し局所的な品質改善を行う"
-  default_prompt: "Use $relic-audit-code-health to assess a focused Relic code health concern and apply evidence-backed local improvements when authorized."
+  short_description: "React・production TS/TSX・性能を実害で監査する"
+  default_prompt: "Use $relic-audit-code-health to assess a focused Relic code health concern, applying production TypeScript size criteria and evidence-backed local improvements when authorized."

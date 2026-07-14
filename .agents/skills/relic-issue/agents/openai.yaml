@@ -1,4 +1,4 @@
 interface:
   display_name: "Relic Issue"
-  short_description: "RelicのIssueを検証し必要な実装と完了処理を進める"
+  short_description: "RelicのIssueを実装しremote反映後に完了処理する"
   default_prompt: "Use $relic-issue to assess and complete the requested Relic Issue workflow."

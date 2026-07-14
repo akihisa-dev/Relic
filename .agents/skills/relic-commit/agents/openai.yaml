@@ -1,4 +1,4 @@
 interface:
   display_name: "Relic Commit"
-  short_description: "Relicの変更を安全に検証・分割し規約どおりコミットする"
-  default_prompt: "Use $relic-commit to validate, stage, and commit the current Relic changes safely."
+  short_description: "Relicの変更を安全に検証しstageまたはcommitする"
+  default_prompt: "Use $relic-commit to validate and either stage-only or commit the current Relic changes safely."

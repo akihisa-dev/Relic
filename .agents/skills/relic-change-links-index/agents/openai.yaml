@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Links and Index"
+  short_description: "内部リンク・バックリンク・タグ派生索引を安全に変更する"
+  default_prompt: "Use $relic-change-links-index to change Relic links, backlinks, tags, and derived index behavior consistently."

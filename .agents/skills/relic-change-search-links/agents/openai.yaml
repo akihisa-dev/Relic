@@ -1,4 +1,0 @@
-interface:
-  display_name: "Relic Search and Links"
-  short_description: "検索・置換・内部リンク・派生索引を一貫して安全に変更する"
-  default_prompt: "Use $relic-change-search-links to update Relic search, replacement, links, and derived indexes consistently and safely."

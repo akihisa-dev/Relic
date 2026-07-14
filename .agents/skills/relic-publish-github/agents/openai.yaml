@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic GitHub Publication"
+  short_description: "Relicの変更を安全にpushしDraft PRへ公開する"
+  default_prompt: "Use $relic-publish-github to publish the approved Relic commits to GitHub safely."

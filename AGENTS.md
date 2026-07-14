@@ -89,10 +89,13 @@
 - フロントマターYAML、固定プロパティ、フォーム、往復保持の変更では `.agents/skills/relic-change-frontmatter/SKILL.md` に従う
 - Markdown描画、HTML・PDF・SVG出力、安全化の変更では `.agents/skills/relic-change-markdown-output/SKILL.md` に従う
 - ワークスペース、ファイル、フォルダ、保存、移動、削除、外部変更の変更では `.agents/skills/relic-change-workspace-files/SKILL.md` に従う
+- 添付画像・PDFの対応形式、取込、安全な読込、Markdownへの画像追加、画像・PDF表示では `.agents/skills/relic-change-attachments/SKILL.md` に従う
 - ファイル加工、フォルダ内マージ、タイトル一覧、目次、タグ別索引の変更では `.agents/skills/relic-change-tools/SKILL.md` に従う
-- 検索、置換、内部リンク、バックリンク、未リンク参照、派生索引の変更では `.agents/skills/relic-change-search-links/SKILL.md` に従う
+- 全文・ファイル名・タグ・フロントマター検索と置換では `.agents/skills/relic-change-search-replace/SKILL.md` に従う
+- 内部リンク、Markdown相対リンク、埋め込み、バックリンク、未リンク参照、aliases、共有派生索引では `.agents/skills/relic-change-links-index/SKILL.md` に従う
 - コマンド、クイックスイッチャー、ショートカット、タブ、ペイン、画面移動の変更では `.agents/skills/relic-change-navigation/SKILL.md` に従う
-- グラフ、年表、Canvas描画、物理演算、派生データの変更では `.agents/skills/relic-change-visualizations/SKILL.md` に従う
+- グラフの派生データ、Canvas描画、検索、強調、物理演算では `.agents/skills/relic-change-graph/SKILL.md` に従う
+- クロニクルのfrontmatter解析、暦換算、配置、Canvas描画、操作では `.agents/skills/relic-change-chronicle/SKILL.md` に従う
 - アプリ設定、ワークスペース設定、schema、互換移行、設定保存の変更では `.agents/skills/relic-change-settings/SKILL.md` に従う
 - IPC、preload、main handler、BrowserWindow、CSPの変更では `.agents/skills/relic-change-electron-boundaries/SKILL.md` に従う
 - package、make、ASAR、resources、アイコン、OS別成果物の構成変更、障害診断、修正では `.agents/skills/relic-debug-packaging/SKILL.md` に従う
@@ -100,11 +103,15 @@
 - Skill集合全体の棚卸し、責務・発火・重複・履歴・ルーティングの監査と承認後の整理では `.agents/skills/relic-audit-skills/SKILL.md` に従う
 - React診断、責務分離、ソース肥大化、アーキテクチャ、bundle、性能の監査や改善では `.agents/skills/relic-audit-code-health/SKILL.md` に従う
 - コードベース全体または指定領域を、複数の責務、状態所有、実行境界、性能、配布、文書まで含めて包括的にリファクタリングする場合は `.agents/skills/relic-refactor-codebase/SKILL.md` に従う
-- 依存関係、Electron、ビルド基盤、GitHub Actions、監査対応の更新では `.agents/skills/relic-update-dependencies/SKILL.md` に従う
+- 明示された機能廃止を、入口、保存データ、UI、IPC、設定、依存、文書まで横断して完了する場合は `.agents/skills/relic-retire-feature/SKILL.md` に従う
+- npm・pnpm依存関係、Electron、ビルド基盤、GitHub Action参照version、依存関係監査対応の更新では `.agents/skills/relic-update-dependencies/SKILL.md` に従う
+- GitHub Actionsのtrigger、permissions、concurrency、実行内容、秘密情報検査、Git hook、CODEOWNERSの変更では `.agents/skills/relic-change-ci/SKILL.md` に従う
 - バージョンの決定、更新、コミット件名との整合確認では `.agents/skills/relic-manage-version/SKILL.md` に従う
-- 差分をコミットする場合は `.agents/skills/relic-commit/SKILL.md` に従う
+- 差分をステージまたはコミットする場合は `.agents/skills/relic-commit/SKILL.md` に従う
+- 通常ブランチのpush、Draft Pull Request作成・更新では `.agents/skills/relic-publish-github/SKILL.md` に従う
 - Issue番号、Issue URL、Issue対応依頼では `.agents/skills/relic-issue/SKILL.md` に従う。調査・相談だけではコメントやcloseを行わない
 - タグ、配布、Release作業では `.agents/skills/relic-release/SKILL.md` に従う
-- 外部への書き込みは明示指示の範囲だけ行う。「Issueを対応して」は対象Issueの完了コメントとcloseを含むが、「Issueを調査して」は含まない
+- 外部への書き込みは明示指示の範囲だけ行う。「Issueを対応して」は、コード変更が対象remoteへ反映済みの場合の完了コメントとcloseを含むが、push許可は含まない。「Issueを調査して」は外部書き込みを含まない
+- コード変更を伴うIssueは、関連コミットが対象remote branchから到達可能な場合だけcloseする。pushが許可されずlocalにしかない場合は「local修正・検証済み、remote反映待ち」としてOpenのまま報告する
 - Issueの完了条件を満たしたらcloseし、Closed Issueへ新しい課題を継ぎ足したり自動で再openしたりしない。追加課題は別Issue候補として分離し、新規Issueは明示指示時だけ作成する
 - pushと公開は、ユーザーが明示的に指示した場合だけ行う

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Attachments"
+  short_description: "画像・PDF添付の取込・安全な読込・表示を一貫して変更する"
+  default_prompt: "Use $relic-change-attachments to change Relic image and PDF attachment handling safely across import, loading, and display."

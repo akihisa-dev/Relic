@@ -20,17 +20,19 @@ RelicはGitHub Public Repositoryとして公開する前提で管理する。脆
 
 ## 秘密情報検知
 
-- `.githooks/pre-commit` は、ステージ済みの差分から禁止ファイル名と秘密情報らしい文字列を検知する。
+- `.githooks/pre-commit` は `.githooks/secret-guard.sh --staged` を呼び出し、ステージ済みの差分から禁止ファイル名と秘密情報らしい文字列を検知する。
 - `.githooks/pre-push` は `.githooks/secret-guard.sh --pre-push` を呼び出し、push対象コミットを検査する。
 - 検知対象は、環境変数ファイル、認証情報を示すファイル名、HTTP Authorization header、provider token、秘密鍵、認証情報を含むDB接続文字列など、漏えいリスクが高い形に限定する。
 - 画像、ZIP、実行ファイルなど、テキストとして検査する必要がないファイルは内容検査の対象外とする。
 - 検知ルールの確認には `.githooks/secret-guard.sh --self-test` を使い、本物のtoken、秘密鍵、実在credentialをテストやログへ含めない。
+- AIエージェントのコミット・公開手順は `core.hooksPath` の設定だけに依存せず、staged差分または送信commit rangeのguardを明示実行する。
 - 誤検知した場合は、まず検知対象文字列を含まない安全な表現へ変更する。検知ルールを緩める場合は、対象パターンと安全性を確認する。
 
 ## GitHub Actions
 
 - Draft Release workflowは `pnpm licenses:check` と `pnpm security:audit` を実行し、配布対象依存関係を確認する。
 - GitHub Actions workflowは原則として `permissions: contents: read` を使い、checkoutでは `persist-credentials: false` を指定する。write権限が必要なworkflowを追加する場合は、必要な理由と対象操作を文書化する。
+- workflow変更は `app/` の `pnpm ci:workflows:check` でtrigger、permissions、concurrency、Action参照、checkout credential設定を確認する。
 
 ## 参照
 

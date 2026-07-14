@@ -1,4 +1,4 @@
 interface:
   display_name: "Relic Frontmatter"
-  short_description: "フロントマターを未知項目と既存YAMLを保って安全に変更する"
-  default_prompt: "Use $relic-change-frontmatter to update Relic frontmatter behavior while preserving existing YAML and unknown fields safely."
+  short_description: "YAML往復とdrop時だけの並べ替えを安全に変更する"
+  default_prompt: "Use $relic-change-frontmatter to update Relic frontmatter behavior, including confirmed-drop reordering, while preserving comments, quoting, multiline YAML, and unknown fields."

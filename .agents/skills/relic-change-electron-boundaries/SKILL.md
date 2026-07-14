@@ -1,6 +1,6 @@
 ---
 name: relic-change-electron-boundaries
-description: Relicのmain・preload・renderer間のElectron境界、型付きIPC、window.relic、BrowserWindow安全設定、外部遷移・権限・CSPを追加・変更し、入力検証と契約テストまで整合させる。IPCチャンネル追加、preload API変更、main handler登録、ウィンドウ生成・終了・通知の安全条件変更に使う。Markdown出力ウィンドウはrelic-change-markdown-output、構造監査だけはrelic-audit-code-health、ElectronやForgeの更新はrelic-update-dependencies、配布診断はrelic-debug-packagingを優先する。
+description: Relicのmain・preload・renderer間のElectron境界、型付きIPC、window.relic、IPC入力検証、BrowserWindow安全設定、外部遷移・権限・CSPを追加・変更し、処理前の拒否と契約回帰テストまで整合させる。IPCチャンネル追加、preload API変更、main handler登録、validator・上限変更、ウィンドウ生成・終了・通知の安全条件変更に使う。Markdown出力ウィンドウはrelic-change-markdown-output、添付ファイルの読込・表示契約はrelic-change-attachments、構造監査だけはrelic-audit-code-health、ElectronやForgeの更新はrelic-update-dependencies、配布診断はrelic-debug-packagingを優先する。
 ---
 
 # Relic Electron Boundary Change
@@ -37,13 +37,15 @@ description: Relicのmain・preload・renderer間のElectron境界、型付きIP
 8. 新規ウィンドウ、webview、権限要求、許可外遷移を拒否し、外部URLは現行許可範囲だけをOSへ渡す。
 9. CSPは機能に必要な最小範囲だけを許可し、開発版の例外をpackage版へ持ち込まない。
 
+入力検証を変更した場合は、validator単体の成功だけで完了としない。main handlerが不正入力、上限超過、未選択workspaceを処理本体へ渡さず、Rendererが失敗を判定できるところまでを同じ契約として扱う。
+
 ## 検証する
 
 1. shared、preload、mainのIPC契約テストを更新し、API、チャンネル、登録方式、入力検証要否を一致させる。
 2. handlerとvalidatorの対象テストへ正常入力、不正入力、上限境界、過大入力、処理未実行、失敗結果を追加する。
 3. パス入力では絶対パス、`..`、NUL文字、外部を指すシンボリックリンクを必要に応じて確認する。
 4. ウィンドウ変更ではwindow options、security、終了保護、出力ウィンドウの対象テストを実行する。
-5. `app/` で `pnpm architecture:check`、`pnpm typecheck` と対象のNode・rendererテストを実行し、影響が広い場合は `pnpm verify` を実行する。
+5. IPC入力検証、handlerの仕様分岐、ファイル操作へ触れた場合は、対象テストまたは回帰テストを追加し、`app/` で `pnpm verify` を実行する。その他の境界変更でも `pnpm architecture:check`、`pnpm typecheck` と対象のNode・rendererテストを実行し、影響が広い場合は `pnpm verify` を実行する。
 6. lifecycleの実確認が必要なら、その作業で起動した開発版と一時userDataだけを使う。
 7. ユーザーから見える契約や安全条件を変えた場合は、関連機能文書とarchitectureを同期する。
 8. `git diff --check` と全差分を確認し、秘密情報、絶対パス、一時ログを残さない。

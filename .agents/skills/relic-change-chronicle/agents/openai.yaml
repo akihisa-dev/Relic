@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Chronicle"
+  short_description: "クロニクル解析・年表配置・Canvas操作を安全に変更する"
+  default_prompt: "Use $relic-change-chronicle to update Relic chronicle parsing, timeline layout, Canvas rendering, and interactions safely."

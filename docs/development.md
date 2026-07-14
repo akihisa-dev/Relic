@@ -134,6 +134,7 @@ UI文言は辞書へ集約し、コンポーネント内へ散在させない。
 | UIだけの軽微な見た目調整 | 型チェック、関連する既存テスト、必要な表示確認 |
 | 文書だけの変更 | 正本と参照先の整合、参照切れ、`git diff --check` |
 | 正本文書の追加、削除、移動 | `pnpm docs:index:check` |
+| GitHub Actions、Git hook、秘密情報検査の変更 | `pnpm ci:workflows:check` と [SECURITY.md](../SECURITY.md) の対象検査 |
 | 依存関係変更 | [engineering/dependency-licenses.md](engineering/dependency-licenses.md) の確認一式 |
 | 配布物に影響する変更 | 対象OSの安全ビルドまたはパッケージ確認 |
 
@@ -146,6 +147,7 @@ pnpm test:node
 pnpm test:renderer
 pnpm test:coverage
 pnpm architecture:check
+pnpm ci:workflows:check
 pnpm verify
 pnpm verify:full
 ```
@@ -153,11 +155,11 @@ pnpm verify:full
 Node APIを使うmain・preload・shared・scriptsのテストはNode環境、rendererのテストはjsdom環境で分離して実行する。
 `test:coverage` は全テストと製品コードのカバレッジ下限を確認する。測定用・診断用の `scripts/` はテスト対象に含めるが、製品コードのカバレッジ集計からは除外する。
 `architecture:check` はプロセス境界と循環依存を確認する。
-`verify:full` は型チェック、テスト、カバレッジ、アーキテクチャ境界、文書索引、差分の空白・改行をまとめて確認する。
+`verify:full` は型チェック、テスト、カバレッジ、アーキテクチャ境界、文書索引、GitHub Actionsの安全条件、差分の空白・改行をまとめて確認する。
 変更に対して `verify` が過剰な場合も検証自体は省略せず、対象テスト、型チェック、文書確認、差分確認などへ絞る。
 E2E、配布ビルド、実アプリ操作は通常の変更の必須確認にはしない。
 macOS／Windowsのsafe checkは、配布用ASARの許可内容と必須entry、`LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOM、およびElectron本体を除くアプリ固有resourcesの容量とファイル数を確認する。
-開発版を一時データだけで実アプリ確認する場合は、絶対パスの `RELIC_DEV_USER_DATA_DIR` を指定して起動する。この切り替えはVite開発server起動時だけ有効で、package版では既定のユーザーデータ保存先を変更しない。
+開発版を一時データだけで実アプリ確認する場合は、`pnpm start:isolated -- --user-data-dir <absolute-temp-path>` で起動する。起動元のterminalに出る `RELIC_DEV_APP_IDENTITY` のPIDと完全な実行pathを操作対象の確認に使い、表示名だけで既存ウインドウを選ばない。この切り替えはVite開発server起動時だけ有効で、package版では既定のユーザーデータ保存先を変更しない。
 
 ### 優先してテストする領域
 
@@ -172,8 +174,8 @@ macOS／Windowsのsafe checkは、配布用ASARの許可内容と必須entry、`
 
 ### テストの配置と安全性
 
-- 原則として対象ファイルの近くに `*.test.ts` または `*.test.tsx` を置く
-- 複数モジュールをまたぐ統合テストは `app/src/test/` に置く
+- 単体テストと複数モジュールをまたぐ統合テストの本体は、主な責務を持つ対象実装の近くに `*.test.ts` または `*.test.tsx` として置く
+- `app/src/test/` は複数テストで共有するsetup、fixture、mock、utility専用とし、テスト本体は置かない
 - `describe` は対象モジュール、`it` は期待する振る舞いが分かる名前にする。日本語仕様に密接なテストは日本語で記述してよい
 - 小さなサンプルはテスト内に書き、大きなデータが必要な場合だけ `fixtures/` を使う
 - ファイル操作テストは一時ディレクトリで実行し、終了後に削除する

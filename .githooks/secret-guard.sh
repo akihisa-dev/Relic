@@ -3,6 +3,8 @@ set -eu
 
 blocked=0
 zero=0000000000000000000000000000000000000000
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+script_path="$script_dir/secret-guard.sh"
 
 is_text_path() {
   case "$1" in
@@ -120,18 +122,53 @@ check_blob_content() {
 
 check_commit() {
   commit="$1"
+  if ! git diff-tree --root --no-commit-id --name-only -r -z "$commit" \
+    | xargs -0 -n 1 "$script_path" --commit-path "$commit"; then
+    blocked=1
+  fi
+}
 
-  files=$(git diff-tree --root --no-commit-id --name-only -r "$commit")
+check_commit_path() {
+  commit="$1"
+  path="$2"
+  failed=0
+  if ! check_path_name "$path"; then
+    failed=1
+  fi
+  if ! check_blob_content "$commit" "$path"; then
+    failed=1
+  fi
+  [ "$failed" -eq 0 ]
+}
 
-  for path in $files; do
-    if ! check_path_name "$path"; then
-      blocked=1
+check_staged_path() {
+  path="$1"
+  failed=0
+
+  if ! check_path_name "$path"; then
+    failed=1
+  fi
+
+  if ! is_guard_path "$path" && is_text_path "$path"; then
+    content=$(git show ":$path" 2>/dev/null || true)
+    if [ -n "$content" ] && ! check_content "$content" "$path" staged; then
+      failed=1
     fi
+  fi
 
-    if ! check_blob_content "$commit" "$path"; then
-      blocked=1
-    fi
-  done
+  [ "$failed" -eq 0 ]
+}
+
+check_staged() {
+  staged_files=$(git diff --cached --name-only --diff-filter=ACMR)
+  if [ -z "$staged_files" ]; then
+    return 0
+  fi
+
+  if ! git diff --cached --name-only --diff-filter=ACMR -z \
+    | xargs -0 -n 1 "$script_path" --staged-path; then
+    blocked=1
+  fi
 }
 
 check_range() {
@@ -168,8 +205,14 @@ run_self_test() {
     git config user.email relic-secret-guard@example.invalid
     git config user.name "Relic Secret Guard"
 
-    printf '%s\n' "safe fixture" > safe.txt
-    git add safe.txt
+    printf '%s\n' "safe fixture" > "safe fixture.txt"
+    git add "safe fixture.txt"
+    blocked=0
+    check_staged
+    if [ "$blocked" -ne 0 ]; then
+      echo "Secret guard self-test failed: safe staged fixture was blocked." >&2
+      exit 1
+    fi
     git commit -q -m "safe"
     safe_commit=$(git rev-parse HEAD)
     blocked=0
@@ -182,6 +225,12 @@ run_self_test() {
     dummy_token="$(printf '%s%s' 'gh' 'p_dummy_token_for_secret_guard_only')"
     printf '%s\n' "$dummy_token" > leak.txt
     git add leak.txt
+    blocked=0
+    check_staged
+    if [ "$blocked" -eq 0 ]; then
+      echo "Secret guard self-test failed: staged dummy token fixture was not blocked." >&2
+      exit 1
+    fi
     git commit -q -m "blocked"
     blocked_commit=$(git rev-parse HEAD)
     blocked=0
@@ -197,12 +246,35 @@ print_blocked_message() {
   cat >&2 <<'EOF'
 
 Blocked by Relic secret guard.
-The checked commits contain a token, client secret, private key, .env file, keychain export, or local credential file.
+The checked changes or commits contain a token, client secret, private key, .env file, keychain export, or local credential file.
 Remove the sensitive data from history before pushing or merging.
 EOF
 }
 
 case "${1:---pre-push}" in
+  --staged)
+    check_staged
+    ;;
+  --staged-path)
+    if [ "${2:-}" = "" ]; then
+      exit 0
+    fi
+    if ! check_staged_path "$2"; then
+      print_blocked_message
+      exit 1
+    fi
+    exit 0
+    ;;
+  --commit-path)
+    if [ "${2:-}" = "" ] || [ "${3:-}" = "" ]; then
+      exit 0
+    fi
+    if ! check_commit_path "$2" "$3"; then
+      print_blocked_message
+      exit 1
+    fi
+    exit 0
+    ;;
   --pre-push)
     check_pre_push
     ;;
@@ -217,7 +289,7 @@ case "${1:---pre-push}" in
     run_self_test
     ;;
   *)
-    echo "Usage: secret-guard.sh [--pre-push | --range <git-rev-range> | --self-test]" >&2
+    echo "Usage: secret-guard.sh [--staged | --pre-push | --range <git-rev-range> | --self-test]" >&2
     exit 2
     ;;
 esac

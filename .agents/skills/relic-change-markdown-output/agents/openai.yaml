@@ -1,4 +1,4 @@
 interface:
   display_name: "Relic Markdown Output"
-  short_description: "Markdown描画・PDF・図表SVG出力を安全に変更する"
-  default_prompt: "Use $relic-change-markdown-output to change Relic Markdown rendering or output with safe sanitization and bounded processing."
+  short_description: "Markdown・Mermaid・D2描画とPDF・SVG出力を安全に変更する"
+  default_prompt: "Use $relic-change-markdown-output to change Relic Markdown, Mermaid, or D2 rendering and PDF/SVG output with safe sanitization and bounded processing."

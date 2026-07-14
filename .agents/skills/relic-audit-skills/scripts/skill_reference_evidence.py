@@ -73,7 +73,7 @@ def path_exists(path: Path, raw_target: str) -> bool:
 
 
 def resolve_markdown_reference(source: Path, target: str) -> Path | None:
-    if not target or target.startswith("#"):
+    if not target or target.startswith(("#", "/")):
         return None
     lowered = target.lower()
     if re.match(r"^[a-z][a-z0-9+.-]*:", lowered) or target.startswith("//"):

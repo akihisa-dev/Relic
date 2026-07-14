@@ -104,8 +104,9 @@ function markdownCode(value) {
 export function extractMarkdownLinks(content) {
   const links = [];
   const pattern = /!?\[[^\]]*\]\(([^)]+)\)/gu;
+  const visibleContent = stripMarkdownCodeAndComments(content);
 
-  for (const match of content.matchAll(pattern)) {
+  for (const match of visibleContent.matchAll(pattern)) {
     let target = match[1].trim();
     if (target.startsWith("<") && target.endsWith(">")) {
       target = target.slice(1, -1);
@@ -116,6 +117,37 @@ export function extractMarkdownLinks(content) {
   }
 
   return links;
+}
+
+function stripMarkdownCodeAndComments(content) {
+  return stripMarkdownFencesAndComments(content)
+    .split("\n")
+    .map((line) => line.replace(/(`+)(.*?)\1/gu, ""))
+    .join("\n");
+}
+
+function stripMarkdownFencesAndComments(content) {
+  const withoutComments = content.replace(/<!--[\s\S]*?-->/gu, "");
+  const lines = withoutComments.split("\n");
+  let fenceCharacter = "";
+  let fenceLength = 0;
+
+  return lines.map((line) => {
+    const fence = line.match(/^\s{0,3}(`{3,}|~{3,})/u)?.[1] ?? "";
+    if (fenceCharacter) {
+      if (fence.startsWith(fenceCharacter.repeat(fenceLength))) {
+        fenceCharacter = "";
+        fenceLength = 0;
+      }
+      return "";
+    }
+    if (fence) {
+      fenceCharacter = fence[0];
+      fenceLength = fence.length;
+      return "";
+    }
+    return line;
+  }).join("\n");
 }
 
 function markerRange(content) {
@@ -142,13 +174,18 @@ function markerRange(content) {
 }
 
 function localRepositoryPath(target, sourceRepoPath = indexRepoPath) {
-  if (!target || target.startsWith("#") || /^[a-z][a-z\d+.-]*:/iu.test(target)) {
+  if (!target || /^[a-z][a-z\d+.-]*:/iu.test(target)) {
     return null;
   }
 
+  const hashIndex = target.indexOf("#");
+  const rawPath = hashIndex >= 0 ? target.slice(0, hashIndex) : target;
+  const rawAnchor = hashIndex >= 0 ? target.slice(hashIndex + 1) : "";
   let decodedTarget;
+  let decodedAnchor;
   try {
-    decodedTarget = decodeURIComponent(target.split("#", 1)[0]);
+    decodedTarget = decodeURIComponent(rawPath);
+    decodedAnchor = decodeURIComponent(rawAnchor);
   } catch {
     return { error: `リンク先をURLデコードできません: ${target}` };
   }
@@ -157,14 +194,80 @@ function localRepositoryPath(target, sourceRepoPath = indexRepoPath) {
     return { error: `リポジトリ外を指す絶対リンクは使えません: ${target}` };
   }
 
-  const resolved = path.posix.normalize(
-    path.posix.join(path.posix.dirname(sourceRepoPath), decodedTarget),
-  );
+  const resolved = decodedTarget === ""
+    ? sourceRepoPath
+    : path.posix.normalize(path.posix.join(path.posix.dirname(sourceRepoPath), decodedTarget));
   if (resolved === ".." || resolved.startsWith("../")) {
     return { error: `リポジトリ外を指すリンクは使えません: ${target}` };
   }
 
-  return { path: resolved };
+  return { path: resolved, anchor: decodedAnchor };
+}
+
+function headingSlug(heading) {
+  return heading
+    .replace(/<[^>]*>/gu, "")
+    .replace(/[`*_~]/gu, "")
+    .trim()
+    .toLocaleLowerCase("en")
+    .replace(/[^\p{Letter}\p{Number}\p{Mark}\s_-]/gu, "")
+    .replace(/\s+/gu, "-");
+}
+
+export function markdownHeadingAnchors(content) {
+  const anchors = new Set();
+  const counts = new Map();
+  const visibleContent = stripMarkdownFencesAndComments(content);
+  for (const line of visibleContent.split("\n")) {
+    const heading = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$/u)?.[1];
+    if (!heading) continue;
+    const base = headingSlug(heading);
+    if (!base) continue;
+    const count = counts.get(base) ?? 0;
+    anchors.add(count === 0 ? base : `${base}-${count}`);
+    counts.set(base, count + 1);
+  }
+  return anchors;
+}
+
+export function validateMarkdownDocuments(trackedFiles, options = {}) {
+  const tracked = new Set(trackedFiles);
+  const isTrackedPath = (repoPath) => tracked.has(repoPath)
+    || trackedFiles.some((file) => file.startsWith(`${repoPath}/`));
+  const pathExists = options.pathExists
+    ?? ((repoPath) => existsSync(path.join(repoRoot, repoPath)));
+  const readContent = options.readContent
+    ?? ((repoPath) => readFileSync(path.join(repoRoot, repoPath), "utf8"));
+  const errors = [];
+
+  for (const sourceRepoPath of trackedFiles.filter((file) => /\.md$/iu.test(file))) {
+    if (!pathExists(sourceRepoPath)) continue;
+    const content = readContent(sourceRepoPath);
+    for (const target of extractMarkdownLinks(content)) {
+      const resolved = localRepositoryPath(target, sourceRepoPath);
+      if (resolved === null) continue;
+      if (resolved.error) {
+        errors.push(`${sourceRepoPath}: ${resolved.error}`);
+        continue;
+      }
+      if (!pathExists(resolved.path)) {
+        errors.push(`${sourceRepoPath}: リンク先が存在しません: ${target} -> ${resolved.path}`);
+        continue;
+      }
+      if (!isTrackedPath(resolved.path)) {
+        errors.push(`${sourceRepoPath}: リンク先がGitで追跡されていません: ${target} -> ${resolved.path}`);
+        continue;
+      }
+      if (resolved.anchor && /\.md$/iu.test(resolved.path)) {
+        const anchors = markdownHeadingAnchors(readContent(resolved.path));
+        if (!anchors.has(resolved.anchor)) {
+          errors.push(`${sourceRepoPath}: リンク先の見出しが存在しません: ${target}`);
+        }
+      }
+    }
+  }
+
+  return errors;
 }
 
 export function validateIndexContent(content, trackedFiles, options = {}) {
@@ -246,7 +349,10 @@ export function main(args = process.argv.slice(2)) {
   }
 
   const content = readFileSync(indexPath, "utf8");
-  const errors = validateIndexContent(content, trackedFiles);
+  const errors = [
+    ...validateIndexContent(content, trackedFiles),
+    ...validateMarkdownDocuments(trackedFiles),
+  ];
   if (errors.length > 0) {
     console.error("docs/INDEX.md の検証に失敗しました。");
     for (const error of errors) {
@@ -255,7 +361,8 @@ export function main(args = process.argv.slice(2)) {
     return 1;
   }
 
-  console.log(`docs/INDEX.md is valid (${requiredDocuments(trackedFiles).length} canonical documents).`);
+  const markdownCount = trackedFiles.filter((file) => /\.md$/iu.test(file)).length;
+  console.log(`Documentation is valid (${requiredDocuments(trackedFiles).length} canonical documents, ${markdownCount} Markdown files).`);
   return 0;
 }
 

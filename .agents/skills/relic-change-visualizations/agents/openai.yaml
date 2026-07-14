@@ -1,4 +1,0 @@
-interface:
-  display_name: "Relic Visualizations"
-  short_description: "グラフと年表をMarkdown派生データのまま安全に変更する"
-  default_prompt: "Use $relic-change-visualizations to change Relic graph or chronicle behavior while keeping Markdown as the source of truth."

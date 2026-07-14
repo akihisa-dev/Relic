@@ -1,17 +1,26 @@
 # Release Checklist
 
-RelicのGitタグ作成前と、Draft ReleaseをPublishする前に確認する項目です。
+RelicのローカルGitタグ作成、タグのGitHubへのpush、Draft ReleaseのPublishを、それぞれ独立して確認する項目です。タグ作成の依頼はpushや公開の許可を含みません。
 
 ## タグ作成前
 
 - [ ] `app/package.json` の `version` が配布する `MAJOR.MINOR.PATCH` になっている
 - [ ] 必要なバージョン更新がコミット済みである
 - [ ] 作業中の差分が残っていない
-- [ ] リリース対象コミットがGitHubの `main` にpush済みである
+- [ ] リリース対象コミットがローカル `main` とGitHubの `main` の両方から到達できる
 - [ ] `app/` で `pnpm outdated` と `pnpm audit --prod` を実行し、依存状態を確認した
 - [ ] `app/` で `pnpm verify` が成功した
 - [ ] リポジトリルートで `git diff --check` が成功した
 - [ ] 作成するGitタグが `app/package.json` の `version` と一致している
+- [ ] 同名タグがローカルにもGitHubにも存在しない
+
+## タグをGitHubへpushする前
+
+- [ ] タグpushが明示的に依頼されている
+- [ ] push対象タグが、確認済みのリリース対象コミットを指している
+- [ ] push前に `.githooks/secret-guard.sh --range <outgoing-range>` が成功している
+- [ ] GitHubの `main` がリリース対象コミットへ到達できることを再確認した
+- [ ] 同名のremote tagが存在しない
 
 GitタグをGitHubへpushすると、`.github/workflows/draft-release.yml` が配布物を作成してDraft Releaseへ添付する。
 

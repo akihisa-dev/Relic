@@ -1,4 +1,4 @@
 interface:
   display_name: "Relic File Tools"
-  short_description: "既存ファイルを変えず加工結果を新規Markdownとして安全に作る"
-  default_prompt: "Use $relic-change-tools to add or fix a Relic file-processing tool while keeping source files read-only and outputs safe."
+  short_description: "入力検証を保ち既存ファイルを変えず加工結果を安全に作る"
+  default_prompt: "Use $relic-change-tools to add or fix a Relic file-processing tool with validated IPC inputs, read-only source files, and safe new outputs."
