@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -64,25 +64,70 @@ export async function collectSourceSizeEntries(rootDirectory) {
   return entries.sort((left, right) => right.lines - left.lines || left.path.localeCompare(right.path, "en"));
 }
 
+export function createSourceSizeBaseline(entries) {
+  return {
+    entries: Object.fromEntries(entries.map((entry) => [entry.path, entry.lines])),
+    version: 1
+  };
+}
+
+export function compareSourceSizeEntries(entries, baseline) {
+  const baselineEntries = baseline?.version === 1 && baseline.entries ? baseline.entries : {};
+  return entries.map((entry) => {
+    const baselineLines = baselineEntries[entry.path];
+    const delta = typeof baselineLines === "number" ? entry.lines - baselineLines : null;
+    const growthPercent = typeof baselineLines === "number" && baselineLines > 0
+      ? (delta / baselineLines) * 100
+      : null;
+    const minimumGrowth = entry.category === "implementation" ? 50 : 100;
+    return {
+      ...entry,
+      baselineLines: typeof baselineLines === "number" ? baselineLines : null,
+      delta,
+      growthPercent,
+      growthWarning: delta !== null && delta >= minimumGrowth && growthPercent >= 20
+    };
+  });
+}
+
 export function renderSourceSizeReport(entries) {
   const rows = entries.map((entry) => {
-    const warning = entry.warning ? "WARN" : "    ";
+    const warning = entry.growthWarning ? "GROW" : entry.warning ? "WARN" : "    ";
     const retainedReason = entry.retainedReason ? ` （継続理由: ${entry.retainedReason}）` : "";
-    return `${warning} ${String(entry.lines).padStart(5)}  ${entry.category.padEnd(14)}  ${entry.path}${retainedReason}`;
+    const delta = entry.delta === null || entry.delta === undefined
+      ? "   new"
+      : `${entry.delta >= 0 ? "+" : ""}${entry.delta}`.padStart(6);
+    return `${warning} ${String(entry.lines).padStart(5)} ${delta}  ${entry.category.padEnd(14)}  ${entry.path}${retainedReason}`;
   });
   const warningCount = entries.filter((entry) => entry.warning).length;
+  const growthWarningCount = entries.filter((entry) => entry.growthWarning).length;
   return [
-    "状態  行数   分類            ファイル",
+    "状態  行数   増減    分類            ファイル",
     ...rows,
     "",
-    `${entries.length}ファイル、警告${warningCount}件（警告のみ。終了コードには影響しません）`,
+    `${entries.length}ファイル、絶対行数警告${warningCount}件、急増警告${growthWarningCount}件（警告のみ。終了コードには影響しません）`,
   ].join("\n");
 }
 
 async function main() {
   const rootDirectory = process.cwd();
   const entries = await collectSourceSizeEntries(rootDirectory);
-  console.log(renderSourceSizeReport(entries));
+  const writeBaselineIndex = process.argv.indexOf("--write-baseline");
+  if (writeBaselineIndex >= 0) {
+    const outputPath = process.argv[writeBaselineIndex + 1];
+    if (!outputPath) throw new Error("--write-baseline requires an output path.");
+    await writeFile(path.resolve(rootDirectory, outputPath), `${JSON.stringify(createSourceSizeBaseline(entries), null, 2)}\n`);
+    console.log(`Source size baseline updated: ${outputPath}`);
+    return;
+  }
+
+  let baseline = null;
+  try {
+    baseline = JSON.parse(await readFile(path.join(rootDirectory, "scripts/baselines/source-lines.json"), "utf8"));
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+  console.log(renderSourceSizeReport(compareSourceSizeEntries(entries, baseline)));
 }
 
 const isDirectExecution = process.argv[1]

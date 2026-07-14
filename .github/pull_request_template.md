@@ -4,9 +4,8 @@
 
 ## Verification
 
-- [ ] `cd app && pnpm verify`
-- [ ] Documentation catalog is valid: `cd app && pnpm docs:index:check`
-- [ ] `git diff --check`
+- [ ] `cd app && pnpm verify:full`
+- [ ] If CI-equivalent local checks are required: `cd app && pnpm verify:ci`
 - [ ] GitHub CI passed
 
 ## Checklist

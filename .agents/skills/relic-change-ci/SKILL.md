@@ -25,7 +25,7 @@ description: RelicのGitHub Actions workflow、trigger、permissions、concurren
 ## Actionと検査scriptを変更する
 
 1. Action変更では公式の `action.yml`、release notes、対応runner、必須input、権限を一次情報で確認する。major tagだけから互換性を推測しない。
-2. workflowから呼ぶpackage scriptと実在パスを現行HEADへ照合し、ローカルで再現できる検査は同名scriptへ集約する。
+2. workflowから呼ぶpackage scriptと実在パスを現行HEADへ照合し、ローカルで再現できるCode CI検査は `pnpm verify:ci` へ集約する。Pull Requestのbase/headなどイベント固有入力を使う検査は別stepとして差分を明示する。
 3. Secret Guardはstaged内容、送信commit range、CIのPR rangeで同じ検知規則を使い、hook設定がなくてもSkillから明示実行できる状態を保つ。
 4. guard自身のfixtureに実在credentialを入れず、分割した架空値で正常系と拒否系を検証する。
 5. workflow、hook、権限判断、外部操作Skillを変更した場合は `.github/CODEOWNERS` の保護対象を同期する。
@@ -34,10 +34,11 @@ description: RelicのGitHub Actions workflow、trigger、permissions、concurren
 ## 検証する
 
 1. `app/` で `pnpm ci:workflows:check` を実行し、全workflowのYAML、trigger、permissions、concurrency、Action参照、checkout credential設定を確認する。
-2. Secret Guard変更では `.githooks/secret-guard.sh --self-test` とstaged・rangeの対象ケースを確認する。
-3. workflowが呼ぶ対象scriptのテスト、`pnpm typecheck`、必要な `pnpm verify` を実行する。
-4. Actionのremote実行、OS別runner、repository権限などローカルで証明できない項目は未確認として分ける。
-5. `git diff --check` とworkflow差分を確認し、秘密情報、内部URL、ローカル絶対パス、不要なwrite権限がないことを確かめる。
+2. Node.jsは `app/package.json` の `engines.node`、pnpmは `packageManager` を正本とし、workflowのsetup、Corepack、frozen lockfileとの整合も同じ検査で確認する。
+3. Secret Guard変更では `.githooks/secret-guard.sh --self-test` とstaged・rangeの対象ケースを確認する。
+4. workflowが呼ぶ対象scriptのテスト、`pnpm typecheck`、必要な `pnpm verify` または `pnpm verify:ci` を実行する。
+5. Actionのremote実行、OS別runner、repository権限などローカルで証明できない項目は未確認として分ける。
+6. `git diff --check` とworkflow差分を確認し、秘密情報、内部URL、ローカル絶対パス、不要なwrite権限がないことを確かめる。
 
 ## 完了する
 

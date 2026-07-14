@@ -1,0 +1,71 @@
+name: Pre-release Verification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pre-release-verification-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-macos:
+    name: Verify macOS package
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and inspect macOS package
+        working-directory: app
+        run: pnpm build:mac:safe
+
+      - name: Check Apple Silicon runner
+        shell: bash
+        run: |
+          if [ "$(uname -m)" != "arm64" ]; then
+            echo "macos-latest must verify the arm64 package." >&2
+            echo "Actual architecture: $(uname -m)" >&2
+            exit 1
+          fi
+
+  build-windows:
+    name: Verify Windows package
+    runs-on: windows-2025-vs2026
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and inspect Windows package
+        working-directory: app
+        run: pnpm build:win:safe

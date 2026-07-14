@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 const sourceExtensions = [".ts", ".tsx", ".mts", ".mjs", ".js", ".jsx"];
+const localModuleExtensions = [...sourceExtensions, ".css", ".json"];
 const nodeBuiltins = new Set([
   ...builtinModules,
   ...builtinModules.map((name) => `node:${name}`)
@@ -20,9 +21,9 @@ const allowedLocalLayers = {
 export async function analyzeArchitecture(rootDirectory) {
   const sourceRoot = path.join(rootDirectory, "src");
   const files = await collectSourceFiles(sourceRoot);
-  const fileSet = new Set(files);
+  const localFileSet = new Set(await collectLocalFiles(sourceRoot));
   const graph = new Map(files.map((filePath) => [filePath, new Set()]));
-  const violations = [];
+  const violations = await validateModuleResolutionPolicy(rootDirectory);
 
   for (const filePath of files) {
     const sourceLayer = sourceLayerForPath(sourceRoot, filePath);
@@ -41,9 +42,12 @@ export async function analyzeArchitecture(rootDirectory) {
       }
       if (!specifier.startsWith(".")) continue;
 
-      const targetPath = resolveLocalModule(filePath, specifier, fileSet);
-      if (!targetPath) continue;
-      graph.get(filePath)?.add(targetPath);
+      const targetPath = resolveLocalModule(filePath, specifier, localFileSet);
+      if (!targetPath) {
+        violations.push(formatViolation(sourceRoot, filePath, `相対import「${specifier}」を解決できません`));
+        continue;
+      }
+      if (graph.has(targetPath)) graph.get(filePath)?.add(targetPath);
 
       const targetLayer = sourceLayerForPath(sourceRoot, targetPath);
       if (!targetLayer || allowedLocalLayers[sourceLayer].has(targetLayer)) continue;
@@ -59,6 +63,31 @@ export async function analyzeArchitecture(rootDirectory) {
     cycles: findCycles(graph).map((cycle) => cycle.map((filePath) => relativeSourcePath(sourceRoot, filePath))),
     violations: violations.sort((left, right) => left.localeCompare(right, "en"))
   };
+}
+
+export async function validateModuleResolutionPolicy(rootDirectory) {
+  const violations = [];
+  const packageJson = await readJsonIfPresent(path.join(rootDirectory, "package.json"));
+  if (packageJson?.imports) violations.push("package.json: package importsはarchitecture checkが対応するまで使用できません");
+  if (packageJson?.workspaces) violations.push("package.json: workspace packageはarchitecture checkが対応するまで使用できません");
+
+  const tsconfig = await readJsonIfPresent(path.join(rootDirectory, "tsconfig.json"));
+  if (tsconfig?.compilerOptions?.paths) {
+    violations.push("tsconfig.json: compilerOptions.pathsはarchitecture checkが対応するまで使用できません");
+  }
+  if (tsconfig?.compilerOptions?.baseUrl) {
+    violations.push("tsconfig.json: compilerOptions.baseUrlはarchitecture checkが対応するまで使用できません");
+  }
+
+  const rootEntries = await readdir(rootDirectory, { withFileTypes: true });
+  for (const entry of rootEntries) {
+    if (!entry.isFile() || !/^vite(?:\.[^.]+)?\.config\.[cm]?[jt]s$/u.test(entry.name)) continue;
+    const content = await readFile(path.join(rootDirectory, entry.name), "utf8");
+    if (/\bresolve\s*:\s*\{[\s\S]*?\balias\s*:/u.test(content)) {
+      violations.push(`${entry.name}: resolve.aliasはarchitecture checkが対応するまで使用できません`);
+    }
+  }
+  return violations;
 }
 
 export function collectModuleSpecifiers(content, fileName = "source.ts") {
@@ -127,6 +156,35 @@ async function collectSourceFiles(directory) {
   return files;
 }
 
+async function collectLocalFiles(directory) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name, "en"))) {
+    const filePath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === "test") continue;
+      files.push(...await collectLocalFiles(filePath));
+      continue;
+    }
+    if (entry.isFile()
+      && localModuleExtensions.includes(path.extname(entry.name))
+      && !/\.(?:test|spec)\.[^.]+$/u.test(entry.name)
+      && !entry.name.endsWith(".d.ts")) {
+      files.push(path.resolve(filePath));
+    }
+  }
+  return files;
+}
+
+async function readJsonIfPresent(filePath) {
+  try {
+    return JSON.parse(await readFile(filePath, "utf8"));
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
 function sourceLayerForPath(sourceRoot, filePath) {
   const [layer] = relativeSourcePath(sourceRoot, filePath).split("/");
   return Object.hasOwn(allowedLocalLayers, layer) ? layer : null;
@@ -149,8 +207,8 @@ function resolveLocalModule(importerPath, specifier, fileSet) {
   const candidates = path.extname(basePath)
     ? [basePath]
     : [
-        ...sourceExtensions.map((extension) => `${basePath}${extension}`),
-        ...sourceExtensions.map((extension) => path.join(basePath, `index${extension}`))
+        ...localModuleExtensions.map((extension) => `${basePath}${extension}`),
+        ...localModuleExtensions.map((extension) => path.join(basePath, `index${extension}`))
       ];
   return candidates.map((candidate) => path.resolve(candidate)).find((candidate) => fileSet.has(candidate)) ?? null;
 }

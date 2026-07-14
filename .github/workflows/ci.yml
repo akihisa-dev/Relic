@@ -1,6 +1,9 @@
-name: Pull Request CI
+name: Code CI
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
 
@@ -8,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pull-request-ci-${{ github.event.pull_request.number || github.ref }}
+  group: code-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -34,38 +37,11 @@ jobs:
         working-directory: app
         run: pnpm install --frozen-lockfile
 
-      - name: Check types
+      - name: Run reproducible CI verification
         working-directory: app
-        run: pnpm typecheck
-
-      - name: Run tests with coverage gates
-        working-directory: app
-        run: pnpm test:coverage
-
-      - name: Check process boundaries and dependency cycles
-        working-directory: app
-        run: pnpm architecture:check
-
-      - name: Check documentation catalog
-        working-directory: app
-        run: pnpm docs:index:check
-
-      - name: Check GitHub workflows
-        working-directory: app
-        run: pnpm ci:workflows:check
+        run: pnpm verify:ci
 
       - name: Check version policy
         if: github.event_name == 'pull_request'
         working-directory: app
         run: pnpm version:check -- "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
-
-      - name: Check dependency notices and SBOM
-        working-directory: app
-        run: pnpm licenses:check
-
-      - name: Check renderer bundle budgets
-        working-directory: app
-        run: pnpm build:size:check
-
-      - name: Check whitespace errors
-        run: git diff --check

@@ -928,7 +928,7 @@ def parse_arguments(argv: Sequence[str]) -> argparse.Namespace:
             "and every location, including repeated names."
         ),
     )
-    parser.add_argument("--format", choices=("json", "markdown"), default="json")
+    parser.add_argument("--format", choices=("json", "markdown", "summary"), default="json")
     parser.add_argument(
         "--similarity-threshold",
         type=float,
@@ -996,6 +996,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     if args.format == "markdown":
         print(render_markdown(evidence))
+    elif args.format == "summary":
+        summary = evidence["summary"]
+        print(
+            "Skill structure check: "
+            f"{summary['repository_skill_count']} repository-owned, "
+            f"{summary['repository_structural_issue_count']} structural issue(s), "
+            f"{summary['missing_reference_count']} missing reference(s)."
+        )
     else:
         print(json.dumps(evidence, ensure_ascii=False, indent=2))
     if args.fail_on_issues and has_repository_issues(evidence):

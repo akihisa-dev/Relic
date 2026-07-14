@@ -5,8 +5,10 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   classifySourceFile,
+  compareSourceSizeEntries,
   collectSourceSizeEntries,
   countSourceLines,
+  createSourceSizeBaseline,
   renderSourceSizeReport,
 } from "./source-size-report.mjs";
 
@@ -68,7 +70,20 @@ describe("source-size-report", () => {
     ]);
 
     expect(report).toContain("WARN   701");
-    expect(report).toContain("警告1件（警告のみ。終了コードには影響しません）");
+    expect(report).toContain("絶対行数警告1件、急増警告0件");
+  });
+
+  it("ベースラインからの急増を分類別の増加量と増加率で警告する", () => {
+    const current = [
+      { category: "implementation", lines: 160, path: "src/model.ts", warning: false, warningLines: 700 },
+      { category: "test", lines: 160, path: "src/model.test.ts", warning: false, warningLines: 1200 }
+    ];
+    const baseline = createSourceSizeBaseline(current.map((entry) => ({ ...entry, lines: 100 })));
+    const compared = compareSourceSizeEntries(current, baseline);
+
+    expect(compared[0]).toMatchObject({ delta: 60, growthPercent: 60, growthWarning: true });
+    expect(compared[1]).toMatchObject({ delta: 60, growthPercent: 60, growthWarning: false });
+    expect(renderSourceSizeReport(compared)).toContain("GROW   160    +60");
   });
 
   it("分割せずに残す警告対象は理由を表示する", () => {

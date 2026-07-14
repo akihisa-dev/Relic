@@ -39,6 +39,23 @@ Git管理対象の全ファイルを階層表示する必要がある場合は `
 
 ---
 
+## 開発環境
+
+- 開発用Node.jsの対応範囲は `app/package.json` の `engines.node` を正本とする。CIと配布workflowはその範囲内の版を再現用の基準として使う
+- pnpmの版は `app/package.json` の `packageManager` を正本とし、Corepackで有効化する。独立したpnpm版管理ファイルは追加しない
+- `pnpm install` の `preinstall` と各標準検証の冒頭で `pnpm runtime:check` を実行し、対応外Node.jsは依存導入や検証を続ける前に理由と切替手順を表示する
+- 開発用Node.jsはpackage script、テスト、ビルドツールを実行する環境である。Electron Main／Preloadが実行時に使う内蔵Node.jsや、コンパイル時のAPI型を提供する `@types/node` と同じ版を表すものではない
+- Node.js対応範囲を変える場合は、`engines.node`を先に変更し、`pnpm ci:workflows:check` で全workflowの `setup-node` が範囲内か確認する
+
+初回は `app/` で次を実行する。
+
+```sh
+corepack enable
+pnpm install
+```
+
+---
+
 ## 実装規約
 
 ### 基本方針
@@ -95,7 +112,8 @@ UI文言は辞書へ集約し、コンポーネント内へ散在させない。
 - 新機能を肥大したファイルへ足す前に、hook、component、lib、serviceへ切り出せる責務を確認する
 
 `app/` で `pnpm source:size` を実行すると、実装、テスト、CSSの行数を多い順に確認できる。
-基準超過は責務を確認するための警告であり、行数だけを理由にCIを失敗させたり、機械的に分割したりしない。
+保存済みの `scripts/baselines/source-lines.json` との差分も表示し、実装は50行以上かつ20%以上、テストとCSSは100行以上かつ20%以上の増加を急増警告にする。
+絶対行数と急増はいずれも責務を確認するための警告であり、行数だけを理由にCIを失敗させたり、機械的に分割したりしない。意図した構造変更を確認した場合だけ `pnpm source:size:baseline` で基準を更新する。
 ビルド後の出力容量を確認する `pnpm build:size` とは目的が異なる。
 `pnpm build:size:check` はrendererをビルドし、初期読込・遅延読込・CSS・assetの容量が保存済み基準値から5%を超えて増えていないことを確認する。
 意図して基準値を更新する場合だけ、変更内容を確認したうえで `pnpm build:size:baseline` を実行する。
@@ -124,6 +142,7 @@ UI文言は辞書へ集約し、コンポーネント内へ散在させない。
 - React UIは、仕様分岐と状態遷移が複雑な箇所からテストする
 - E2Eテストは通常の変更では必須にせず、必要性を確認してから扱う
 - テストは実ユーザーのワークスペースや外部サービスを使わない
+- テスト層ごとの責務、主要利用経路、回帰対応、E2E候補は [engineering/test-strategy.md](engineering/test-strategy.md) を正とする
 
 ### 変更別の確認
 
@@ -146,19 +165,27 @@ pnpm test
 pnpm test:node
 pnpm test:renderer
 pnpm test:coverage
+pnpm test:inventory
 pnpm architecture:check
 pnpm ci:workflows:check
+pnpm skills:check
 pnpm verify
 pnpm verify:full
+pnpm verify:ci
 ```
 
 Node APIを使うmain・preload・shared・scriptsのテストはNode環境、rendererのテストはjsdom環境で分離して実行する。
 `test:coverage` は全テストと製品コードのカバレッジ下限を確認する。測定用・診断用の `scripts/` はテスト対象に含めるが、製品コードのカバレッジ集計からは除外する。
-`architecture:check` はプロセス境界と循環依存を確認する。
-`verify:full` は型チェック、テスト、カバレッジ、アーキテクチャ境界、文書索引、GitHub Actionsの安全条件、差分の空白・改行をまとめて確認する。
+`architecture:check` はプロセス境界、循環依存、未解決相対import、module alias禁止方針を確認する。保証範囲は [engineering/architecture.md](engineering/architecture.md) を正とする。
+`test:inventory` は全テストファイルを失敗責務の層へ分類し、Electron実行とOS別packageがVitest外の責務であることも表示する。
+`verify` は日常変更向けにNode.js環境、型、全テストを確認する。
+`verify:full` はローカルで再現可能な包括確認として、Node.js環境、型、全テストとカバレッジ、アーキテクチャ境界、文書索引、workflow安全条件、Skill構造・routing台帳、差分の空白・改行を確認する。
+`verify:ci` は `verify:full` に依存通知・SBOM整合とrenderer bundle基準を追加し、Code CIの再現可能部分をまとめる。Pull Requestのbase/headを使うバージョン検査はGitHubイベント固有のため別stepで実行する。
 変更に対して `verify` が過剰な場合も検証自体は省略せず、対象テスト、型チェック、文書確認、差分確認などへ絞る。
 E2E、配布ビルド、実アプリ操作は通常の変更の必須確認にはしない。
 macOS／Windowsのsafe checkは、配布用ASARの許可内容と必須entry、`LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOM、およびElectron本体を除くアプリ固有resourcesの容量とファイル数を確認する。
+GitHubのCode CIはPull Request、`main`へのpush、手動実行で `pnpm verify:ci` を実行する。Pull Requestだけは追加でコミット範囲のバージョン規則を確認する。
+タグ作成前のOS別配布確認は、GitHub ActionsのPre-release Verificationを手動実行する。macOSとWindowsのrunnerでRelease workflowと同じ `build:mac:safe`／`build:win:safe` を使い、タグ、Release、push、repository内容を変更しない。
 開発版を一時データだけで実アプリ確認する場合は、`pnpm start:isolated -- --user-data-dir <absolute-temp-path>` で起動する。起動元のterminalに出る `RELIC_DEV_APP_IDENTITY` のPIDと完全な実行pathを操作対象の確認に使い、表示名だけで既存ウインドウを選ばない。この切り替えはVite開発server起動時だけ有効で、package版では既定のユーザーデータ保存先を変更しない。
 
 ### 優先してテストする領域
