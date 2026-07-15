@@ -32,7 +32,7 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 - Tabs, split view, and a right-side panel.
 - Light, dark, and system-following themes.
 
-![Relic workspace screenshot](assets/relic-workspace-screenshot.png)
+![Relic file view screenshot](assets/relic-workspace-screenshot.png)
 
 ### Linking, Search, and Structure
 
@@ -307,7 +307,7 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 - タブ、左右分割表示、右パネル
 - ライト / ダーク / システム追従テーマ
 
-![Relic workspace screenshot](assets/relic-workspace-screenshot.png)
+![Relicファイルビューのスクリーンショット](assets/relic-workspace-screenshot.png)
 
 ### リンク・検索・構造表示
 
