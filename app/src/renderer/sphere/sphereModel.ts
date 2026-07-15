@@ -38,9 +38,6 @@ export interface SphereLayoutSettings {
   nodeRelSize: number;
 }
 
-export const SPHERE_NODE_PULSE_MIN_AMPLITUDE = 3;
-export const SPHERE_NODE_PULSE_MAX_AMPLITUDE = 18;
-export const SPHERE_NODE_PULSE_PERIOD_MS = 4_800;
 export const SPHERE_MIN_GUIDE_RADIUS = 80;
 
 export function sphereLayoutSettings(nodeCount: number, linkCount: number): SphereLayoutSettings {
@@ -128,37 +125,6 @@ export function sphereNodeColors(
 
 export function sphereNodeValue(node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">): number {
   return Math.min(18, 2 + Math.sqrt(node.backlinkCount + node.linkCount + 1) * 2.2);
-}
-
-export function sphereNodePulsePhase(nodeId: string): number {
-  let hash = 0;
-  for (let index = 0; index < nodeId.length; index += 1) {
-    hash = (hash * 31 + nodeId.charCodeAt(index)) >>> 0;
-  }
-  return (hash / 0xffffffff) * Math.PI * 2;
-}
-
-export function sphereNodePulsePosition(
-  coordinates: SphereCoordinates,
-  elapsedMs: number,
-  phase: number
-): SphereCoordinates {
-  const distance = Math.hypot(coordinates.x, coordinates.y, coordinates.z);
-  if (!Number.isFinite(distance) || distance === 0) return coordinates;
-
-  const amplitude = Math.min(
-    SPHERE_NODE_PULSE_MAX_AMPLITUDE,
-    Math.max(SPHERE_NODE_PULSE_MIN_AMPLITUDE, distance * 0.04),
-    distance * 0.25
-  );
-  const elapsed = elapsedMs % SPHERE_NODE_PULSE_PERIOD_MS;
-  const offset = Math.sin((elapsed / SPHERE_NODE_PULSE_PERIOD_MS) * Math.PI * 2 + phase) * amplitude;
-  const scale = (distance + offset) / distance;
-  return {
-    x: coordinates.x * scale,
-    y: coordinates.y * scale,
-    z: coordinates.z * scale
-  };
 }
 
 export function sphereFocusIds(data: SphereData, focusId: string | null): Set<string> {

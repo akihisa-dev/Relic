@@ -4,17 +4,12 @@ import { defaultGraphDrawTheme } from "../graph/graphTypes";
 import {
   createSphereData,
   SPHERE_MIN_GUIDE_RADIUS,
-  SPHERE_NODE_PULSE_MAX_AMPLITUDE,
-  SPHERE_NODE_PULSE_MIN_AMPLITUDE,
-  SPHERE_NODE_PULSE_PERIOD_MS,
   sphereCoreRadius,
   sphereFocusIds,
   sphereLayoutSettings,
   sphereLinkDistance,
   sphereLinkTouchesFocus,
   sphereNodeChargeStrength,
-  sphereNodePulsePhase,
-  sphereNodePulsePosition,
   sphereNodeColors,
   sphereNodeValue
 } from "./sphereModel";
@@ -92,26 +87,5 @@ describe("sphereModel", () => {
 
     expect(sphereCoreRadius(nodes)).toBe(100);
     expect(sphereCoreRadius([])).toBe(SPHERE_MIN_GUIDE_RADIUS);
-  });
-
-  it("ノードを球の中心からの放射方向へ接近・離脱させる", () => {
-    const coordinates = { x: 300, y: 400, z: 0 };
-    const outward = sphereNodePulsePosition(coordinates, SPHERE_NODE_PULSE_PERIOD_MS / 4, 0);
-    const inward = sphereNodePulsePosition(coordinates, SPHERE_NODE_PULSE_PERIOD_MS * 0.75, 0);
-
-    expect(Math.hypot(outward.x, outward.y, outward.z)).toBeCloseTo(500 + SPHERE_NODE_PULSE_MAX_AMPLITUDE);
-    expect(Math.hypot(inward.x, inward.y, inward.z)).toBeCloseTo(500 - SPHERE_NODE_PULSE_MAX_AMPLITUDE);
-    expect(outward.x / outward.y).toBeCloseTo(coordinates.x / coordinates.y);
-    expect(inward.x / inward.y).toBeCloseTo(coordinates.x / coordinates.y);
-    expect(sphereNodePulsePosition({ x: 0, y: 0, z: 0 }, 1_000, 0)).toEqual({ x: 0, y: 0, z: 0 });
-    const nearCenter = sphereNodePulsePosition(
-      { x: 30, y: 40, z: 0 },
-      SPHERE_NODE_PULSE_PERIOD_MS / 4,
-      0
-    );
-    expect(Math.hypot(nearCenter.x, nearCenter.y, nearCenter.z))
-      .toBeCloseTo(50 + SPHERE_NODE_PULSE_MIN_AMPLITUDE);
-    expect(sphereNodePulsePhase("A.md")).toBe(sphereNodePulsePhase("A.md"));
-    expect(sphereNodePulsePhase("A.md")).not.toBe(sphereNodePulsePhase("B.md"));
   });
 });

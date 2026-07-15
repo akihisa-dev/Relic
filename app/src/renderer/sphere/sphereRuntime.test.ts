@@ -87,7 +87,7 @@ describe("sphereRuntime", () => {
     };
     for (const method of [
       "showNavInfo", "enableNodeDrag", "nodeId", "nodeLabel", "nodeVal", "nodeOpacity", "linkOpacity",
-      "nodePositionUpdate", "linkVisibility", "linkWidth", "nodeColor", "linkColor", "onNodeHover", "onNodeClick", "onNodeRightClick",
+      "linkVisibility", "linkWidth", "nodeColor", "linkColor", "onNodeHover", "onNodeClick", "onNodeRightClick",
       "onBackgroundRightClick", "onEngineTick", "onEngineStop", "width", "height", "backgroundColor", "nodeResolution",
       "nodeRelSize", "cooldownTicks", "cooldownTime", "graphData", "refresh", "zoomToFit", "pauseAnimation",
       "resumeAnimation", "_destructor"
@@ -153,18 +153,8 @@ describe("sphereRuntime", () => {
     boundaryForce.initialize([boundaryNode]);
     boundaryForce(1);
     expect(boundaryNode.vx).toBeLessThan(0);
-    const positionAccessor = forceGraphMocks.graph.nodePositionUpdate.mock.calls[0][0];
-    const position = { set: vi.fn() };
-    expect(positionAccessor({ position }, { x: 10, y: 20, z: 30 }, data.nodes[0])).toBe(false);
     forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
-    expect(positionAccessor({ position }, { x: 10, y: 20, z: 30 }, data.nodes[0])).toBe(true);
-    expect(position.set).toHaveBeenCalledWith(expect.any(Number), expect.any(Number), expect.any(Number));
-    const [pulseX, pulseY, pulseZ] = position.set.mock.calls[0];
-    expect(pulseX / pulseY).toBeCloseTo(10 / 20);
-    expect(pulseZ / pulseY).toBeCloseTo(30 / 20);
-    expect(Math.abs(Math.hypot(pulseX, pulseY, pulseZ) - Math.hypot(10, 20, 30)))
-      .toBeLessThanOrEqual(3);
-    expect(data.nodes[0]).toMatchObject({ x: pulseX, y: pulseY, z: pulseZ });
+    expect(data.nodes[0]).toMatchObject({ x: 10, y: 20, z: 30 });
     expect(forceGraphMocks.graph.zoomToFit).toHaveBeenCalledWith(420, 72);
     runtime.setData(sphereData());
     runAnimationFrame();
@@ -285,27 +275,7 @@ describe("sphereRuntime", () => {
     expect(forceGraphMocks.graph.graphData).not.toHaveBeenCalledWith(data);
   });
 
-  it("アニメーションを減らす設定ではノードを揺らさない", () => {
-    vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
-    const host = document.createElement("div");
-    const runtime = createSphereRuntime(host, {
-      canvasLabel: "スフィア",
-      onBackgroundFocusClear: vi.fn(),
-      onContextLost: vi.fn(),
-      onNodeActivate: vi.fn(),
-      onNodeFocus: vi.fn(),
-      onNodeHover: vi.fn()
-    });
-    const positionAccessor = forceGraphMocks.graph.nodePositionUpdate.mock.calls[0][0];
-    const position = { set: vi.fn() };
-
-    expect(positionAccessor({ position }, { x: 10, y: 20, z: 30 }, sphereData().nodes[0])).toBe(false);
-    expect(position.set).not.toHaveBeenCalled();
-
-    runtime.dispose();
-  });
-
-  it("同一更新を無視し、配置停止後は低頻度描画へ移行して操作時に再開する", () => {
+  it("同一更新を無視し、配置停止後は描画を止めて操作時に再開する", () => {
     const host = document.createElement("div");
     const runtime = createSphereRuntime(host, {
       canvasLabel: "スフィア",
@@ -335,16 +305,15 @@ describe("sphereRuntime", () => {
     forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
     vi.advanceTimersByTime(500);
     expect(forceGraphMocks.graph.pauseAnimation).toHaveBeenCalledOnce();
+    const renderCallCount = rendererRender.mock.calls.length;
     vi.advanceTimersByTime(100);
     runAnimationFrame();
-    expect(rendererRender).toHaveBeenCalled();
+    expect(rendererRender).toHaveBeenCalledTimes(renderCallCount);
 
     const startListener = (controls.addEventListener as ReturnType<typeof vi.fn>).mock.calls
       .find(([type]) => type === "start")?.[1];
     startListener();
     expect(forceGraphMocks.graph.resumeAnimation).toHaveBeenCalledOnce();
-    const positionAccessor = forceGraphMocks.graph.nodePositionUpdate.mock.calls[0][0];
-    expect(positionAccessor({ position: { set: vi.fn() } }, {}, data.nodes[0])).toBe(false);
 
     runtime.dispose();
     expect(controls.removeEventListener).toHaveBeenCalledTimes(2);

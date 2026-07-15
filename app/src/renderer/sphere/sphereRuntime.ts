@@ -1,5 +1,4 @@
 import ForceGraph3D, { type ForceGraph3DInstance } from "3d-force-graph";
-import type { Object3D } from "three";
 
 import { defaultGraphDrawTheme, type GraphDrawTheme } from "../graph/graphTypes";
 import {
@@ -14,8 +13,6 @@ import {
   sphereLinkDistance,
   sphereLinkTouchesFocus,
   sphereNodeChargeStrength,
-  sphereNodePulsePhase,
-  sphereNodePulsePosition,
   type SphereData,
   type SphereLink,
   type SphereNode
@@ -101,15 +98,9 @@ export function createSphereRuntime(
   let guideRadius = SPHERE_MIN_GUIDE_RADIUS;
   let nodeDataFrame: number | null = null;
   let resizeFrame: number | null = null;
-  let idlePulseTimer: number | null = null;
   let idleTransitionTimer: number | null = null;
   let interactionActive = false;
   let animationPaused = false;
-  let pulseActive = false;
-  let pulseBasePositions = new WeakMap<SphereNode, { x: number; y: number; z: number }>();
-  let nodeObjects = new WeakMap<SphereNode, Object3D>();
-  const nodePulsePhases = new WeakMap<SphereNode, number>();
-  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? null;
 
   const graph = new ForceGraph3D(host, {
     controlType: "orbit",
@@ -128,9 +119,7 @@ export function createSphereRuntime(
     nodeDataFrame = null;
   };
   const clearIdleTimers = () => {
-    if (idlePulseTimer !== null) window.clearTimeout(idlePulseTimer);
     if (idleTransitionTimer !== null) window.clearTimeout(idleTransitionTimer);
-    idlePulseTimer = null;
     idleTransitionTimer = null;
   };
   const pauseAnimation = () => {
@@ -144,50 +133,14 @@ export function createSphereRuntime(
     graph.resumeAnimation();
     animationPaused = false;
   };
-  const updatePulsePositions = () => {
-    if (reducedMotion?.matches || !pulseActive) return;
-    const elapsed = performance.now();
-    for (const node of data.nodes) {
-      const nodeObject = nodeObjects.get(node);
-      const basePosition = pulseBasePositions.get(node);
-      if (!nodeObject || !basePosition) continue;
-      let phase = nodePulsePhases.get(node);
-      if (phase === undefined) {
-        phase = sphereNodePulsePhase(node.id);
-        nodePulsePhases.set(node, phase);
-      }
-      const position = sphereNodePulsePosition(basePosition, elapsed, phase);
-      node.x = position.x;
-      node.y = position.y;
-      node.z = position.z;
-      nodeObject.position.set(position.x, position.y, position.z);
-    }
-  };
   const renderStaticFrame = () => {
     if (disposed || document.hidden) return;
     renderer.render(scene, graph.camera());
-  };
-  const scheduleIdlePulse = () => {
-    if (
-      idlePulseTimer !== null || disposed || document.hidden ||
-      interactionActive || layoutPending || reducedMotion?.matches
-    ) return;
-    idlePulseTimer = window.setTimeout(() => {
-      idlePulseTimer = null;
-      if (disposed || interactionActive || layoutPending || document.hidden) return;
-      requestAnimationFrame(() => {
-        if (disposed || interactionActive || layoutPending || document.hidden) return;
-        updatePulsePositions();
-        renderStaticFrame();
-        scheduleIdlePulse();
-      });
-    }, 100);
   };
   const enterIdle = () => {
     if (disposed || interactionActive || layoutPending || document.hidden) return;
     pauseAnimation();
     renderStaticFrame();
-    scheduleIdlePulse();
   };
   const scheduleIdle = (delayMs: number) => {
     if (idleTransitionTimer !== null) window.clearTimeout(idleTransitionTimer);
@@ -226,23 +179,6 @@ export function createSphereRuntime(
     .nodeLabel((node) => node.label)
     .nodeVal((node) => node.val)
     .nodeOpacity(0.9)
-    .nodePositionUpdate((nodeObject, _coordinates, node) => {
-      nodeObjects.set(node, nodeObject);
-      if (reducedMotion?.matches || !pulseActive || interactionActive) return false;
-      const basePosition = pulseBasePositions.get(node);
-      if (!basePosition) return false;
-      let phase = nodePulsePhases.get(node);
-      if (phase === undefined) {
-        phase = sphereNodePulsePhase(node.id);
-        nodePulsePhases.set(node, phase);
-      }
-      const position = sphereNodePulsePosition(basePosition, performance.now(), phase);
-      node.x = position.x;
-      node.y = position.y;
-      node.z = position.z;
-      nodeObject.position.set(position.x, position.y, position.z);
-      return true;
-    })
     .linkVisibility(true)
     .linkOpacity(0.48)
     .linkWidth((link) => {
@@ -276,15 +212,7 @@ export function createSphereRuntime(
       layoutPending = false;
       const shouldFit = fitPending;
       fitPending = false;
-      pulseBasePositions = new WeakMap();
-      for (const node of data.nodes) {
-        if (Number.isFinite(node.x) && Number.isFinite(node.y) && Number.isFinite(node.z)) {
-          const position = { x: node.x!, y: node.y!, z: node.z! };
-          pulseBasePositions.set(node, position);
-        }
-      }
       followLayoutRadius();
-      pulseActive = true;
       if (shouldFit) {
         hasFittedData = true;
         graph.zoomToFit(420, 72);
@@ -382,7 +310,6 @@ export function createSphereRuntime(
       graph
         .nodeLabel("")
         .nodeVal(1)
-        .nodePositionUpdate(() => false)
         .nodeColor(theme.textSecondary)
         .linkColor(theme.border)
         .linkWidth(0)
@@ -405,9 +332,6 @@ export function createSphereRuntime(
       const shouldClearRenderedData = hasRenderedData;
       data = nextData;
       layoutPending = false;
-      pulseActive = false;
-      pulseBasePositions = new WeakMap();
-      nodeObjects = new WeakMap();
       cancelNodeDataFrame();
       if (shouldClearRenderedData) {
         graph.graphData({ links: [], nodes: [] });
