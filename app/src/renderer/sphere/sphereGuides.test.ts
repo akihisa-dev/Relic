@@ -24,12 +24,14 @@ describe("sphereGuides", () => {
       toneMapped: false,
       transparent: true
     });
+    expect(axis.renderOrder).toBeLessThan(0);
     expect(ring.material).toMatchObject({
       isLineDashedMaterial: true,
       opacity: 0.9,
       toneMapped: false,
       transparent: true
     });
+    expect(ring.renderOrder).toBeLessThan(0);
   });
 
   it("生成したgeometryとmaterialを破棄する", () => {

@@ -9,6 +9,7 @@ import {
 } from "three";
 
 const RING_SEGMENTS = 128;
+const GUIDE_RENDER_ORDER = -1;
 
 export interface SphereGuides {
   dispose: () => void;
@@ -43,6 +44,7 @@ export function createSphereGuides(radius: number, color: ColorRepresentation): 
   const axisMaterial = guideMaterial(color, 1, dashSize, gapSize);
   const axis = new Line(axisGeometry, axisMaterial);
   axis.name = "sphere-center-axis";
+  axis.renderOrder = GUIDE_RENDER_ORDER;
   axis.computeLineDistances();
   axis.raycast = () => undefined;
 
@@ -54,6 +56,7 @@ export function createSphereGuides(radius: number, color: ColorRepresentation): 
   const ringMaterial = guideMaterial(color, 0.9, dashSize, gapSize);
   const ring = new LineLoop(ringGeometry, ringMaterial);
   ring.name = "sphere-equator-ring";
+  ring.renderOrder = GUIDE_RENDER_ORDER;
   ring.computeLineDistances();
   ring.raycast = () => undefined;
 
