@@ -10,7 +10,7 @@ import type {
   WorkspaceState
 } from "../../shared/ipc";
 import { useT } from "../i18n";
-import { preloadSphereWorkspaceGraph } from "../sphere/sphereGraphLoader";
+import { preloadWorkspaceGraph } from "../graph/workspaceGraphLoader";
 import type { PanelTabKind } from "../store/editorStore";
 
 const LazyChartView = lazy(async () => ({
@@ -78,7 +78,10 @@ export function useAppTabRenderers({
     if (!featureToggles.sphere || sphereWorkspaceCacheKey === "none") return;
     const timer = window.setTimeout(() => {
       void import("../components/SphereView");
-      preloadSphereWorkspaceGraph(`${sphereWorkspaceCacheKey}:${workspaceDataRevision}`);
+      preloadWorkspaceGraph({
+        revision: workspaceDataRevision,
+        workspaceId: sphereWorkspaceCacheKey
+      });
     }, 0);
     return () => window.clearTimeout(timer);
   }, [featureToggles.sphere, sphereWorkspaceCacheKey, workspaceDataRevision]);
@@ -91,6 +94,7 @@ export function useAppTabRenderers({
             onOpenFile={handleOpenFile}
             onOpenTagSearch={handleOpenTagSearch}
             refreshRevision={workspaceDataRevision}
+            workspaceCacheKey={sphereWorkspaceCacheKey}
           />
         </Suspense>
       );

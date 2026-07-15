@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
 import type { WorkspaceGraph } from "../../shared/ipc";
-import { loadSphereWorkspaceGraph } from "../sphere/sphereGraphLoader";
+import { loadWorkspaceGraph } from "../graph/workspaceGraphLoader";
 import { createSphereData, sphereNodeColors } from "../sphere/sphereModel";
 import { createSphereRuntime, type SphereRuntime } from "../sphere/sphereRuntime";
 import { deriveVisibleGraph } from "../graph/graphDisplayModel";
@@ -162,7 +162,7 @@ export function SphereView({
       active = false;
     };
 
-    void loadSphereWorkspaceGraph(`${workspaceCacheKey}:${refreshRevision}`).then((result) => {
+    void loadWorkspaceGraph({ revision: refreshRevision, workspaceId: workspaceCacheKey }).then((result) => {
       if (!active) return;
       if (result.ok) {
         setGraphState({ error: null, graph: result.value, loading: false });

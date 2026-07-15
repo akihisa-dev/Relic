@@ -126,6 +126,7 @@ describe("App charts", () => {
     const { container } = await renderApp();
 
     await screen.findByText("Notes");
+    expect(getWorkspaceGraph).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "グラフ" }));
 
     await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledTimes(1));
@@ -179,13 +180,19 @@ describe("App charts", () => {
   });
 
   it("レールのスフィアボタンから独立したスフィアビューを表示できる", async () => {
+    const getWorkspaceGraph = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { links: [], nodes: [] }
+    });
     window.relic = makeRelicApi({
       getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
+      getWorkspaceGraph,
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
-    await renderApp();
+    const { container } = await renderApp();
     await screen.findByText("Notes");
+    await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledOnce());
     fireEvent.click(screen.getByRole("button", { name: "スフィア" }));
 
     await screen.findByLabelText("スフィア表示");
@@ -197,6 +204,10 @@ describe("App charts", () => {
       name: "スフィア"
     });
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
+
+    fireEvent.click(screen.getByRole("button", { name: "グラフ" }));
+    await waitFor(() => expect(container.querySelector(".graph-view-canvas")).toBeInTheDocument());
+    expect(getWorkspaceGraph).toHaveBeenCalledOnce();
   });
 
   it("グラフビューのタグノードクリックはタグ検索アクションになる", () => {

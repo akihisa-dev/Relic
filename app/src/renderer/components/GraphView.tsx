@@ -5,6 +5,7 @@ import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerE
 
 import type { WorkspaceGraph } from "../../shared/ipc";
 import { deriveVisibleGraph } from "../graph/graphDisplayModel";
+import { loadWorkspaceGraph } from "../graph/workspaceGraphLoader";
 import {
   applyGraphSimulationPositions,
   graphSimulationLinks,
@@ -70,10 +71,16 @@ interface GraphViewProps {
   onOpenFile: (path: string) => void;
   onOpenTagSearch: (tag: string) => void;
   refreshRevision?: number;
+  workspaceCacheKey?: string;
 }
 
 const graphCanvasSizeFallback = { height: 600, width: 900 };
-export function GraphView({ onOpenFile, onOpenTagSearch, refreshRevision = 0 }: GraphViewProps): ReactElement {
+export function GraphView({
+  onOpenFile,
+  onOpenTagSearch,
+  refreshRevision = 0,
+  workspaceCacheKey = "current"
+}: GraphViewProps): ReactElement {
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -178,7 +185,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch, refreshRevision = 0 }: 
       };
     }
 
-    void relicClient.current.getWorkspaceGraph().then((result) => {
+    void loadWorkspaceGraph({ revision: refreshRevision, workspaceId: workspaceCacheKey }).then((result) => {
       if (!active) return;
 
       if (result.ok) {
@@ -195,7 +202,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch, refreshRevision = 0 }: 
     return () => {
       active = false;
     };
-  }, [refreshRevision, t]);
+  }, [refreshRevision, t, workspaceCacheKey]);
 
   const filteredGraph = useMemo(() => {
     return deriveVisibleGraph(graphState.graph, options);
