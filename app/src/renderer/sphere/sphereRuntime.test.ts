@@ -46,7 +46,7 @@ describe("sphereRuntime", () => {
     };
     for (const method of [
       "showNavInfo", "enableNodeDrag", "nodeId", "nodeLabel", "nodeVal", "nodeOpacity", "linkOpacity",
-      "linkWidth", "nodeColor", "linkColor", "onNodeHover", "onNodeClick", "onNodeRightClick",
+      "linkVisibility", "linkWidth", "nodeColor", "linkColor", "onNodeHover", "onNodeClick", "onNodeRightClick",
       "onBackgroundRightClick", "onEngineStop", "width", "height", "backgroundColor", "nodeResolution",
       "cooldownTicks", "cooldownTime", "graphData", "refresh", "zoomToFit", "pauseAnimation",
       "resumeAnimation", "_destructor"
@@ -76,20 +76,26 @@ describe("sphereRuntime", () => {
     expect(canvas).toHaveAttribute("aria-label", "スフィア");
     expect(controls).toMatchObject({ enablePan: false, minDistance: 48, maxDistance: 4_800 });
     expect(forceGraphMocks.graph.graphData).toHaveBeenCalled();
+    expect(forceGraphMocks.graph.linkVisibility).toHaveBeenCalledWith(true);
+    expect(forceGraphMocks.graph.linkOpacity).toHaveBeenCalledWith(0.72);
     const colorAccessor = forceGraphMocks.graph.nodeColor.mock.calls[0][0];
+    const linkColorAccessor = forceGraphMocks.graph.linkColor.mock.calls[0][0];
     const linkWidthAccessor = forceGraphMocks.graph.linkWidth.mock.calls[0][0];
     expect(colorAccessor(sphereData().nodes[0])).toBe(defaultGraphDrawTheme.accent);
     expect(colorAccessor(sphereData().nodes[1])).toBe("#222222");
     expect(colorAccessor(sphereData().nodes[2])).toBe(defaultGraphDrawTheme.border);
-    expect(linkWidthAccessor(sphereData().links[0])).toBe(1.3);
-    expect(linkWidthAccessor({
+    expect(linkWidthAccessor(sphereData().links[0])).toBe(2.4);
+    const unfocusedLink = {
       count: 1,
       source: "B.md",
       sourceId: "B.md",
       target: "C.md",
       targetId: "C.md",
       type: "link"
-    })).toBe(0.4);
+    } as const;
+    expect(linkWidthAccessor(unfocusedLink)).toBe(1);
+    expect(linkColorAccessor(sphereData().links[0])).toBe(defaultGraphDrawTheme.accent);
+    expect(linkColorAccessor(unfocusedLink)).toBe(defaultGraphDrawTheme.textSecondary);
 
     canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
     expect(callbacks.onContextLost).toHaveBeenCalled();

@@ -54,9 +54,10 @@ export function createSphereRuntime(
     .nodeLabel((node) => node.label)
     .nodeVal((node) => node.val)
     .nodeOpacity(0.9)
-    .linkOpacity(0.34)
+    .linkVisibility(true)
+    .linkOpacity(0.72)
     .linkWidth((link) => {
-      return sphereLinkTouchesFocus(link, focusId) ? 1.3 : 0.4;
+      return sphereLinkTouchesFocus(link, focusId) ? 2.4 : 1;
     })
     .nodeColor((node) => {
       if (!focusId) return node.baseColor;
@@ -65,7 +66,7 @@ export function createSphereRuntime(
     })
     .linkColor((link) => focusId && sphereLinkTouchesFocus(link, focusId)
       ? theme.accent
-      : theme.border)
+      : theme.textSecondary)
     .onNodeHover((node) => callbacks.onNodeHover(node))
     .onNodeClick((node) => callbacks.onNodeActivate(node))
     .onNodeRightClick((node, event) => {
