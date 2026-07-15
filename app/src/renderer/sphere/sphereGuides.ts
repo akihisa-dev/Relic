@@ -10,6 +10,7 @@ import {
 
 const RING_SEGMENTS = 128;
 const GUIDE_RENDER_ORDER = -1;
+const INITIAL_RADIUS_PER_NODE_SCALE = 32;
 
 export interface SphereGuides {
   dispose: () => void;
@@ -27,6 +28,10 @@ function guideMaterial(color: ColorRepresentation, opacity: number, dashSize: nu
     toneMapped: false,
     transparent: true
   });
+}
+
+export function estimateSphereGuideRadius(nodeCount: number): number {
+  return Math.max(80, Math.cbrt(Math.max(1, nodeCount)) * INITIAL_RADIUS_PER_NODE_SCALE);
 }
 
 export function createSphereGuides(radius: number, color: ColorRepresentation): SphereGuides {

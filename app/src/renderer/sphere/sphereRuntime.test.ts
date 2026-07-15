@@ -27,16 +27,31 @@ function sphereData(): SphereData {
 }
 
 describe("sphereRuntime", () => {
+  let animationFrames: Array<{ callback: FrameRequestCallback; id: number }>;
   let canvas: HTMLCanvasElement;
   let controls: Record<string, unknown>;
   let observerDisconnect: ReturnType<typeof vi.fn>;
   let scene: { add: ReturnType<typeof vi.fn>; remove: ReturnType<typeof vi.fn> };
 
+  const runAnimationFrame = () => {
+    const frames = animationFrames.splice(0);
+    for (const frame of frames) frame.callback(performance.now());
+  };
+
   beforeEach(() => {
+    animationFrames = [];
     canvas = document.createElement("canvas");
     controls = {};
     observerDisconnect = vi.fn();
     scene = { add: vi.fn(), remove: vi.fn() };
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => {
+      const id = animationFrames.length + 1;
+      animationFrames.push({ callback, id });
+      return id;
+    }));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn((id: number) => {
+      animationFrames = animationFrames.filter((frame) => frame.id !== id);
+    }));
     vi.stubGlobal("ResizeObserver", vi.fn(function (callback: () => void) {
       callback();
       return { disconnect: observerDisconnect, observe: vi.fn() };
@@ -79,6 +94,8 @@ describe("sphereRuntime", () => {
     Object.assign(data.nodes[2], { x: 5, y: -15, z: -10 });
     runtime.setData(data, defaultGraphDrawTheme);
     runtime.setFocus("A.md");
+    runAnimationFrame();
+    runAnimationFrame();
 
     expect(canvas).toHaveAttribute("aria-label", "スフィア");
     expect(controls).toMatchObject({ enablePan: false, minDistance: 48, maxDistance: 4_800 });
@@ -99,9 +116,11 @@ describe("sphereRuntime", () => {
     expect(data.nodes[0]).toMatchObject({ x: pulseX, y: pulseY, z: pulseZ });
     expect(forceGraphMocks.graph.zoomToFit).toHaveBeenCalledWith(420, 72);
     runtime.setData(sphereData(), defaultGraphDrawTheme);
+    runAnimationFrame();
+    runAnimationFrame();
     forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
     expect(forceGraphMocks.graph.zoomToFit).toHaveBeenCalledTimes(1);
-    expect(scene.add).toHaveBeenCalledTimes(2);
+    expect(scene.add).toHaveBeenCalledTimes(4);
     const colorAccessor = forceGraphMocks.graph.nodeColor.mock.calls[0][0];
     const linkColorAccessor = forceGraphMocks.graph.linkColor.mock.calls[0][0];
     const linkWidthAccessor = forceGraphMocks.graph.linkWidth.mock.calls[0][0];
@@ -129,7 +148,56 @@ describe("sphereRuntime", () => {
     expect(forceGraphMocks.graph.pauseAnimation).toHaveBeenCalledOnce();
     expect(forceGraphMocks.graph._destructor).toHaveBeenCalledOnce();
     expect(observerDisconnect).toHaveBeenCalledOnce();
-    expect(scene.remove).toHaveBeenCalledTimes(2);
+    expect(scene.remove).toHaveBeenCalledTimes(4);
+  });
+
+  it("中心ガイドを1画面分先に表示してからノード配置を始める", () => {
+    const host = document.createElement("div");
+    const runtime = createSphereRuntime(host, {
+      canvasLabel: "スフィア",
+      onBackgroundFocusClear: vi.fn(),
+      onContextLost: vi.fn(),
+      onNodeActivate: vi.fn(),
+      onNodeFocus: vi.fn(),
+      onNodeHover: vi.fn()
+    });
+    const data = sphereData();
+
+    runtime.setData(data, defaultGraphDrawTheme);
+
+    expect(scene.add).toHaveBeenCalledOnce();
+    expect(forceGraphMocks.graph.graphData).toHaveBeenLastCalledWith({ links: [], nodes: [] });
+    expect(forceGraphMocks.graph.graphData).not.toHaveBeenCalledWith(data);
+
+    runAnimationFrame();
+
+    expect(forceGraphMocks.graph.graphData).not.toHaveBeenCalledWith(data);
+
+    runAnimationFrame();
+
+    expect(forceGraphMocks.graph.graphData).toHaveBeenLastCalledWith(data);
+    runtime.dispose();
+  });
+
+  it("破棄した場合は待機中のノード配置を開始しない", () => {
+    const host = document.createElement("div");
+    const runtime = createSphereRuntime(host, {
+      canvasLabel: "スフィア",
+      onBackgroundFocusClear: vi.fn(),
+      onContextLost: vi.fn(),
+      onNodeActivate: vi.fn(),
+      onNodeFocus: vi.fn(),
+      onNodeHover: vi.fn()
+    });
+    const data = sphereData();
+
+    runtime.setData(data, defaultGraphDrawTheme);
+    runtime.dispose();
+    runAnimationFrame();
+    runAnimationFrame();
+
+    expect(cancelAnimationFrame).toHaveBeenCalled();
+    expect(forceGraphMocks.graph.graphData).not.toHaveBeenCalledWith(data);
   });
 
   it("アニメーションを減らす設定ではノードを揺らさない", () => {

@@ -1,7 +1,11 @@
 import ForceGraph3D, { type ForceGraph3DInstance } from "3d-force-graph";
 
 import { defaultGraphDrawTheme, type GraphDrawTheme } from "../graph/graphTypes";
-import { createSphereGuides, type SphereGuides } from "./sphereGuides";
+import {
+  createSphereGuides,
+  estimateSphereGuideRadius,
+  type SphereGuides
+} from "./sphereGuides";
 import {
   sphereFocusIds,
   sphereLinkTouchesFocus,
@@ -48,6 +52,7 @@ export function createSphereRuntime(
   let hasFittedData = false;
   let disposed = false;
   let guides: SphereGuides | null = null;
+  let nodeDataFrame: number | null = null;
   let pulseActive = false;
   let pulseBasePositions = new WeakMap<SphereNode, { x: number; y: number; z: number }>();
   const nodePulsePhases = new WeakMap<SphereNode, number>();
@@ -63,6 +68,27 @@ export function createSphereRuntime(
     scene.remove(guides.group);
     guides.dispose();
     guides = null;
+  };
+  const cancelNodeDataFrame = () => {
+    if (nodeDataFrame === null) return;
+    cancelAnimationFrame(nodeDataFrame);
+    nodeDataFrame = null;
+  };
+  const showGuidesBeforeNodes = () => {
+    if (data.nodes.length === 0) return;
+    guides = createSphereGuides(estimateSphereGuideRadius(data.nodes.length), theme.accent);
+    scene.add(guides.group);
+  };
+  const scheduleNodeData = () => {
+    nodeDataFrame = requestAnimationFrame(() => {
+      nodeDataFrame = requestAnimationFrame(() => {
+        nodeDataFrame = null;
+        if (disposed) return;
+        layoutPending = data.nodes.length > 0;
+        graph.graphData(data);
+        graph.refresh();
+      });
+    });
   };
   graph
     .showNavInfo(false)
@@ -172,6 +198,7 @@ export function createSphereRuntime(
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       canvas.removeEventListener("webglcontextlost", handleContextLost);
       resizeObserver?.disconnect();
+      cancelNodeDataFrame();
       clearGuides();
       graph.pauseAnimation();
       graph._destructor();
@@ -180,21 +207,24 @@ export function createSphereRuntime(
     setData: (nextData, nextTheme) => {
       data = nextData;
       theme = nextTheme;
-      layoutPending = data.nodes.length > 0;
+      layoutPending = false;
       fitPending = data.nodes.length > 0 && !hasFittedData;
       pulseActive = false;
       pulseBasePositions = new WeakMap();
+      cancelNodeDataFrame();
+      graph.graphData({ links: [], nodes: [] });
       clearGuides();
+      showGuidesBeforeNodes();
       focusIds = sphereFocusIds(data, focusId);
       const isLarge = data.nodes.length >= 1_500 || data.links.length >= 3_000;
       graph
         .backgroundColor(theme.background)
         .nodeResolution(isLarge ? 4 : 8)
         .cooldownTicks(isLarge ? 90 : 180)
-        .cooldownTime(isLarge ? 4_000 : 8_000)
-        .graphData(data);
+        .cooldownTime(isLarge ? 4_000 : 8_000);
       renderer.setPixelRatio(isLarge ? 1 : Math.min(window.devicePixelRatio || 1, 2));
       graph.refresh();
+      if (data.nodes.length > 0) scheduleNodeData();
     },
     setFocus: (nextFocusId) => {
       focusId = nextFocusId;
