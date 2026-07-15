@@ -40,7 +40,8 @@ jobs:
       - name: Configure Electron sandbox helper
         working-directory: app
         run: |
-          sandbox_path="$(dirname "$(node -p "require('electron')")")/chrome-sandbox"
+          electron_path="$(node -p "require('electron')" | tail -n 1)"
+          sandbox_path="$(dirname "$electron_path")/chrome-sandbox"
           sudo chown root:root "$sandbox_path"
           sudo chmod 4755 "$sandbox_path"
           test "$(stat -c '%u:%g:%a' "$sandbox_path")" = "0:0:4755"
