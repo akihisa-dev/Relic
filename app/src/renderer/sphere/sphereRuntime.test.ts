@@ -15,6 +15,10 @@ vi.mock("3d-force-graph", () => ({
 
 import { createSphereRuntime } from "./sphereRuntime";
 
+type SphereBoundaryForceMock = ((alpha: number) => void) & {
+  initialize: (nodes: SphereData["nodes"]) => void;
+};
+
 function sphereData(): SphereData {
   return {
     links: [{ count: 1, source: "A.md", sourceId: "A.md", target: "B.md", targetId: "B.md", type: "link" }],
@@ -29,7 +33,9 @@ function sphereData(): SphereData {
 describe("sphereRuntime", () => {
   let animationFrames: Array<{ callback: FrameRequestCallback; id: number }>;
   let canvas: HTMLCanvasElement;
+  let chargeForce: { strength: ReturnType<typeof vi.fn> };
   let controls: Record<string, unknown>;
+  let linkForce: { distance: ReturnType<typeof vi.fn> };
   let observerDisconnect: ReturnType<typeof vi.fn>;
   let scene: { add: ReturnType<typeof vi.fn>; remove: ReturnType<typeof vi.fn> };
 
@@ -41,7 +47,9 @@ describe("sphereRuntime", () => {
   beforeEach(() => {
     animationFrames = [];
     canvas = document.createElement("canvas");
+    chargeForce = { strength: vi.fn() };
     controls = {};
+    linkForce = { distance: vi.fn() };
     observerDisconnect = vi.fn();
     scene = { add: vi.fn(), remove: vi.fn() };
     vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => {
@@ -66,11 +74,17 @@ describe("sphereRuntime", () => {
       "showNavInfo", "enableNodeDrag", "nodeId", "nodeLabel", "nodeVal", "nodeOpacity", "linkOpacity",
       "nodePositionUpdate", "linkVisibility", "linkWidth", "nodeColor", "linkColor", "onNodeHover", "onNodeClick", "onNodeRightClick",
       "onBackgroundRightClick", "onEngineTick", "onEngineStop", "width", "height", "backgroundColor", "nodeResolution",
-      "cooldownTicks", "cooldownTime", "graphData", "refresh", "zoomToFit", "pauseAnimation",
+      "nodeRelSize", "cooldownTicks", "cooldownTime", "graphData", "refresh", "zoomToFit", "pauseAnimation",
       "resumeAnimation", "_destructor"
     ]) {
       graph[method] = vi.fn(() => graph);
     }
+    graph.d3Force = vi.fn((name: string, force?: unknown) => {
+      if (force !== undefined) return graph;
+      if (name === "charge") return chargeForce;
+      if (name === "link") return linkForce;
+      return undefined;
+    });
     forceGraphMocks.graph = graph;
   });
 
@@ -103,6 +117,19 @@ describe("sphereRuntime", () => {
     expect(forceGraphMocks.graph.graphData).toHaveBeenCalled();
     expect(forceGraphMocks.graph.linkVisibility).toHaveBeenCalledWith(true);
     expect(forceGraphMocks.graph.linkOpacity).toHaveBeenCalledWith(0.72);
+    const chargeAccessor = chargeForce.strength.mock.calls[0][0];
+    const distanceAccessor = linkForce.distance.mock.calls[0][0];
+    expect(chargeAccessor(data.nodes[0])).toBe(-60);
+    expect(distanceAccessor(data.links[0])).toBe(30);
+    expect(forceGraphMocks.graph.nodeRelSize).toHaveBeenCalledWith(expect.any(Number));
+    expect(forceGraphMocks.graph.d3Force).toHaveBeenCalledWith("sphere-boundary", expect.any(Function));
+    const boundaryForce = forceGraphMocks.graph.d3Force.mock.calls
+      .find(([name]: [string]) => name === "sphere-boundary")?.[1] as SphereBoundaryForceMock;
+    const boundaryNode = sphereData().nodes[0]!;
+    Object.assign(boundaryNode, { vx: 0, vy: 0, vz: 0, x: 1_000, y: 0, z: 0 });
+    boundaryForce.initialize([boundaryNode]);
+    boundaryForce(1);
+    expect(boundaryNode.vx).toBeLessThan(0);
     const positionAccessor = forceGraphMocks.graph.nodePositionUpdate.mock.calls[0][0];
     const position = { set: vi.fn() };
     expect(positionAccessor({ position }, { x: 10, y: 20, z: 30 }, data.nodes[0])).toBe(false);

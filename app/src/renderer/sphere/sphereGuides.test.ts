@@ -1,15 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { Line, LineDashedMaterial, LineLoop } from "three";
 
-import { createSphereGuides, estimateSphereGuideRadius } from "./sphereGuides";
+import { createSphereGuides } from "./sphereGuides";
 
 describe("sphereGuides", () => {
-  it("ノード配置前に表示するガイド半径を件数から見積もる", () => {
-    expect(estimateSphereGuideRadius(0)).toBe(80);
-    expect(estimateSphereGuideRadius(1)).toBe(80);
-    expect(estimateSphereGuideRadius(1_000)).toBeCloseTo(320);
-  });
-
   it("傾きのない中心軸と水平な赤道リングを点線で生成する", () => {
     const guides = createSphereGuides(100, "#8899aa");
     const axis = guides.group.getObjectByName("sphere-center-axis") as Line;

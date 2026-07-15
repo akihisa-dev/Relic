@@ -3,11 +3,16 @@ import { describe, expect, it } from "vitest";
 import { defaultGraphDrawTheme } from "../graph/graphTypes";
 import {
   createSphereData,
+  SPHERE_MIN_GUIDE_RADIUS,
   SPHERE_NODE_PULSE_MAX_AMPLITUDE,
   SPHERE_NODE_PULSE_MIN_AMPLITUDE,
   SPHERE_NODE_PULSE_PERIOD_MS,
+  sphereCoreRadius,
   sphereFocusIds,
+  sphereLayoutSettings,
+  sphereLinkDistance,
   sphereLinkTouchesFocus,
+  sphereNodeChargeStrength,
   sphereNodePulsePhase,
   sphereNodePulsePosition,
   sphereNodeValue
@@ -46,6 +51,35 @@ describe("sphereModel", () => {
   it("関連数に応じてノード体積を増やし上限を設ける", () => {
     expect(sphereNodeValue({ backlinkCount: 0, linkCount: 0 })).toBeCloseTo(4.2);
     expect(sphereNodeValue({ backlinkCount: 10_000, linkCount: 10_000 })).toBe(18);
+  });
+
+  it("リンク密度が高いほど反発力とリンク距離を増やす", () => {
+    const sparse = sphereLayoutSettings(100, 40);
+    const dense = sphereLayoutSettings(100, 500);
+
+    expect(dense.chargeStrength).toBeLessThan(sparse.chargeStrength);
+    expect(dense.linkDistance).toBeGreaterThan(sparse.linkDistance);
+    expect(dense.nodeRelSize).toBeLessThan(sparse.nodeRelSize);
+    expect(dense.boundaryRadius).toBe(sparse.boundaryRadius);
+  });
+
+  it("接続数の多いノードを追加で押し広げる", () => {
+    const settings = sphereLayoutSettings(900, 3_600);
+    const ordinary = { backlinkCount: 1, linkCount: 2 };
+    const hub = { backlinkCount: 40, linkCount: 60 };
+
+    expect(sphereNodeChargeStrength(hub, settings))
+      .toBeLessThan(sphereNodeChargeStrength(ordinary, settings));
+    expect(sphereLinkDistance(hub, ordinary, settings))
+      .toBeGreaterThan(sphereLinkDistance(ordinary, ordinary, settings));
+  });
+
+  it("少数の外れ値ではなく大部分のノードからガイド半径を求める", () => {
+    const nodes = Array.from({ length: 10 }, (_, index) => ({ x: (index + 1) * 10, y: 0, z: 0 }));
+    nodes.push({ x: 1_000, y: 0, z: 0 });
+
+    expect(sphereCoreRadius(nodes)).toBe(100);
+    expect(sphereCoreRadius([])).toBe(SPHERE_MIN_GUIDE_RADIUS);
   });
 
   it("ノードを球の中心からの放射方向へ接近・離脱させる", () => {

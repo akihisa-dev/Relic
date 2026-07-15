@@ -30,9 +30,59 @@ export interface SphereCoordinates {
   z: number;
 }
 
+export interface SphereLayoutSettings {
+  boundaryRadius: number;
+  chargeStrength: number;
+  linkDistance: number;
+  nodeRelSize: number;
+}
+
 export const SPHERE_NODE_PULSE_MIN_AMPLITUDE = 3;
 export const SPHERE_NODE_PULSE_MAX_AMPLITUDE = 18;
 export const SPHERE_NODE_PULSE_PERIOD_MS = 4_800;
+export const SPHERE_MIN_GUIDE_RADIUS = 80;
+
+export function sphereLayoutSettings(nodeCount: number, linkCount: number): SphereLayoutSettings {
+  const safeNodeCount = Math.max(1, nodeCount);
+  const averageDegree = (Math.max(0, linkCount) * 2) / safeNodeCount;
+  const linkPressure = Math.max(0, averageDegree - 1);
+  const countPressure = Math.min(0.7, Math.max(0, nodeCount - 300) / 1_000);
+  return {
+    boundaryRadius: Math.max(180, Math.cbrt(safeNodeCount) * 55),
+    chargeStrength: -Math.min(360, 60 + linkPressure * 28),
+    linkDistance: Math.min(160, 30 + linkPressure * 16),
+    nodeRelSize: Math.max(2.2, 4 - Math.min(1.2, linkPressure * 0.2) - countPressure)
+  };
+}
+
+export function sphereNodeChargeStrength(
+  node: Pick<SphereNode, "backlinkCount" | "linkCount">,
+  settings: SphereLayoutSettings
+): number {
+  const degreePressure = Math.sqrt(Math.max(0, node.backlinkCount + node.linkCount - 4));
+  return settings.chargeStrength * (1 + Math.min(1.5, degreePressure * 0.18));
+}
+
+export function sphereLinkDistance(
+  source: Pick<SphereNode, "backlinkCount" | "linkCount"> | undefined,
+  target: Pick<SphereNode, "backlinkCount" | "linkCount"> | undefined,
+  settings: SphereLayoutSettings
+): number {
+  const sourceDegree = source ? source.backlinkCount + source.linkCount : 0;
+  const targetDegree = target ? target.backlinkCount + target.linkCount : 0;
+  const hubPressure = Math.sqrt(Math.max(0, Math.max(sourceDegree, targetDegree) - 4));
+  return settings.linkDistance * (1 + Math.min(1, hubPressure * 0.12));
+}
+
+export function sphereCoreRadius(nodes: Array<Partial<SphereCoordinates>>): number {
+  const radii = nodes.flatMap((node) => {
+    if (!Number.isFinite(node.x) || !Number.isFinite(node.y) || !Number.isFinite(node.z)) return [];
+    return [Math.hypot(node.x!, node.y!, node.z!)];
+  }).sort((left, right) => left - right);
+  if (radii.length === 0) return SPHERE_MIN_GUIDE_RADIUS;
+  const coreIndex = Math.floor((radii.length - 1) * 0.9);
+  return Math.max(SPHERE_MIN_GUIDE_RADIUS, radii[coreIndex]!);
+}
 
 export function createSphereData(
   graph: VisibleGraph,

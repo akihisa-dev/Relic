@@ -3,12 +3,16 @@ import ForceGraph3D, { type ForceGraph3DInstance } from "3d-force-graph";
 import { defaultGraphDrawTheme, type GraphDrawTheme } from "../graph/graphTypes";
 import {
   createSphereGuides,
-  estimateSphereGuideRadius,
   type SphereGuides
 } from "./sphereGuides";
 import {
+  SPHERE_MIN_GUIDE_RADIUS,
+  sphereCoreRadius,
   sphereFocusIds,
+  sphereLayoutSettings,
+  sphereLinkDistance,
   sphereLinkTouchesFocus,
+  sphereNodeChargeStrength,
   sphereNodePulsePhase,
   sphereNodePulsePosition,
   type SphereData,
@@ -39,6 +43,37 @@ type OrbitControlLimits = {
   minPolarAngle?: number;
 };
 
+type ConfigurableChargeForce = {
+  strength: (value: number | ((node: SphereNode) => number)) => unknown;
+};
+
+type ConfigurableLinkForce = {
+  distance: (value: number | ((link: SphereLink) => number)) => unknown;
+};
+
+type SphereBoundaryForce = ((alpha: number) => void) & {
+  initialize: (nodes: SphereNode[]) => void;
+};
+
+function createSphereBoundaryForce(radius: number): SphereBoundaryForce {
+  let nodes: SphereNode[] = [];
+  const force = ((alpha: number) => {
+    for (const node of nodes) {
+      if (!Number.isFinite(node.x) || !Number.isFinite(node.y) || !Number.isFinite(node.z)) continue;
+      const distance = Math.hypot(node.x!, node.y!, node.z!);
+      if (distance <= radius || distance === 0) continue;
+      const pull = ((distance - radius) / distance) * 0.12 * alpha;
+      node.vx = (Number.isFinite(node.vx) ? node.vx! : 0) - node.x! * pull;
+      node.vy = (Number.isFinite(node.vy) ? node.vy! : 0) - node.y! * pull;
+      node.vz = (Number.isFinite(node.vz) ? node.vz! : 0) - node.z! * pull;
+    }
+  }) as SphereBoundaryForce;
+  force.initialize = (nextNodes) => {
+    nodes = nextNodes;
+  };
+  return force;
+}
+
 export function createSphereRuntime(
   host: HTMLElement,
   callbacks: SphereRuntimeCallbacks
@@ -52,7 +87,7 @@ export function createSphereRuntime(
   let hasFittedData = false;
   let disposed = false;
   let guides: SphereGuides | null = null;
-  let guideRadiusFloor = 0;
+  let guideRadius = SPHERE_MIN_GUIDE_RADIUS;
   let nodeDataFrame: number | null = null;
   let pulseActive = false;
   let pulseBasePositions = new WeakMap<SphereNode, { x: number; y: number; z: number }>();
@@ -77,18 +112,15 @@ export function createSphereRuntime(
   };
   const showGuidesBeforeNodes = () => {
     if (data.nodes.length === 0) return;
-    guideRadiusFloor = estimateSphereGuideRadius(data.nodes.length);
-    guides = createSphereGuides(guideRadiusFloor, theme.accent);
+    guideRadius = SPHERE_MIN_GUIDE_RADIUS;
+    guides = createSphereGuides(guideRadius, theme.accent);
     scene.add(guides.group);
   };
-  const currentLayoutRadius = () => {
-    let radius = 0;
-    for (const node of data.nodes) {
-      if (Number.isFinite(node.x) && Number.isFinite(node.y) && Number.isFinite(node.z)) {
-        radius = Math.max(radius, Math.hypot(node.x!, node.y!, node.z!));
-      }
-    }
-    return radius;
+  const followLayoutRadius = () => {
+    if (!guides) return;
+    const targetRadius = sphereCoreRadius(data.nodes);
+    guideRadius += (targetRadius - guideRadius) * 0.18;
+    guides.setRadius(guideRadius);
   };
   const scheduleNodeData = () => {
     nodeDataFrame = requestAnimationFrame(() => {
@@ -149,7 +181,7 @@ export function createSphereRuntime(
     })
     .onEngineTick(() => {
       if (!layoutPending || !guides) return;
-      guides.setRadius(Math.max(guideRadiusFloor, currentLayoutRadius()));
+      followLayoutRadius();
     })
     .onEngineStop(() => {
       if (!layoutPending || data.nodes.length === 0) return;
@@ -157,15 +189,13 @@ export function createSphereRuntime(
       const shouldFit = fitPending;
       fitPending = false;
       pulseBasePositions = new WeakMap();
-      let radius = 0;
       for (const node of data.nodes) {
         if (Number.isFinite(node.x) && Number.isFinite(node.y) && Number.isFinite(node.z)) {
           const position = { x: node.x!, y: node.y!, z: node.z! };
           pulseBasePositions.set(node, position);
-          radius = Math.max(radius, Math.hypot(position.x, position.y, position.z));
         }
       }
-      guides?.setRadius(Math.max(guideRadiusFloor, radius));
+      followLayoutRadius();
       pulseActive = true;
       if (shouldFit) {
         hasFittedData = true;
@@ -230,8 +260,20 @@ export function createSphereRuntime(
       showGuidesBeforeNodes();
       focusIds = sphereFocusIds(data, focusId);
       const isLarge = data.nodes.length >= 1_500 || data.links.length >= 3_000;
+      const layoutSettings = sphereLayoutSettings(data.nodes.length, data.links.length);
+      const nodesById = new Map(data.nodes.map((node) => [node.id, node]));
+      const chargeForce = graph.d3Force("charge") as ConfigurableChargeForce | undefined;
+      const linkForce = graph.d3Force("link") as ConfigurableLinkForce | undefined;
+      chargeForce?.strength((node) => sphereNodeChargeStrength(node, layoutSettings));
+      linkForce?.distance((link) => {
+        const source = typeof link.source === "string" ? nodesById.get(link.source) : link.source;
+        const target = typeof link.target === "string" ? nodesById.get(link.target) : link.target;
+        return sphereLinkDistance(source, target, layoutSettings);
+      });
+      graph.d3Force("sphere-boundary", createSphereBoundaryForce(layoutSettings.boundaryRadius));
       graph
         .backgroundColor(theme.background)
+        .nodeRelSize(layoutSettings.nodeRelSize)
         .nodeResolution(isLarge ? 4 : 8)
         .cooldownTicks(isLarge ? 90 : 180)
         .cooldownTime(isLarge ? 4_000 : 8_000);
