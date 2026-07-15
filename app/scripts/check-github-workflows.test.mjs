@@ -90,7 +90,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: ${command}
 `);
-    const codeCi = workflow("Code CI", "push", "pnpm verify:ci && pnpm smoke:electron");
+    const codeCi = workflow("Code CI", "push", "pnpm verify:ci && pnpm smoke:electron && sudo chmod 4755 node_modules/electron/dist/chrome-sandbox");
     codeCi.on.push = { branches: ["main"] };
     const workflows = new Map([
       [".github/workflows/ci.yml", codeCi],

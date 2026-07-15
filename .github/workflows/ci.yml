@@ -37,6 +37,13 @@ jobs:
         working-directory: app
         run: pnpm install --frozen-lockfile
 
+      - name: Configure Electron sandbox helper
+        working-directory: app
+        run: |
+          sudo chown root:root node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
+          test "$(stat -c '%u:%g:%a' node_modules/electron/dist/chrome-sandbox)" = "0:0:4755"
+
       - name: Run reproducible CI verification
         working-directory: app
         run: pnpm verify:ci

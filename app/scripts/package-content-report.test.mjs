@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   auditAsarEntries,
   isForbiddenAsarEntry,
+  normalizeAsarEntry,
   renderPackageContentReport
 } from "./package-content-report.mjs";
 
@@ -19,6 +20,13 @@ const requiredEntries = [
 describe("package-content-report", () => {
   it("必須entryが揃った最小packageを受け付ける", () => {
     expect(auditAsarEntries(requiredEntries)).toEqual({ forbidden: [], missing: [] });
+  });
+
+  it("WindowsのASAR entryを共通形式へ正規化して監査する", () => {
+    const windowsEntries = requiredEntries.map((entry) => entry.replaceAll("/", "\\"));
+
+    expect(normalizeAsarEntry("\\.vite\\build\\main.js")).toBe("/.vite/build/main.js");
+    expect(auditAsarEntries(windowsEntries)).toEqual({ forbidden: [], missing: [] });
   });
 
   it("source、test、cache、source map、開発設定を拒否する", () => {

@@ -14,12 +14,18 @@ const requiredAsarEntries = [
 ];
 
 export function auditAsarEntries(entries) {
-  const entrySet = new Set(entries);
+  const normalizedEntries = entries.map(normalizeAsarEntry);
+  const entrySet = new Set(normalizedEntries);
   const missing = requiredAsarEntries.filter((entry) => !entrySet.has(entry));
-  const forbidden = entries.filter((entry) => isForbiddenAsarEntry(entry));
-  const hasRendererAssets = entries.some((entry) => entry.startsWith("/.vite/renderer/main_window/assets/"));
+  const forbidden = normalizedEntries.filter((entry) => isForbiddenAsarEntry(entry));
+  const hasRendererAssets = normalizedEntries.some((entry) => entry.startsWith("/.vite/renderer/main_window/assets/"));
   if (!hasRendererAssets) missing.push("/.vite/renderer/main_window/assets/*");
   return { forbidden, missing };
+}
+
+export function normalizeAsarEntry(entry) {
+  const normalized = entry.replaceAll("\\", "/");
+  return normalized.startsWith("/") ? normalized : `/${normalized}`;
 }
 
 export function isForbiddenAsarEntry(entry) {

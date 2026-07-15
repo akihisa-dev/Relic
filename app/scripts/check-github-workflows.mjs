@@ -170,6 +170,10 @@ export function validateRepositoryWorkflowPolicy(workflows, packageJson) {
     errors.push(".github/workflows/ci.yml: Code CI must run pnpm verify:ci.");
   } else if (!workflowCommands(codeCi).some((command) => command.includes("pnpm smoke:electron"))) {
     errors.push(".github/workflows/ci.yml: Code CI must run the development Electron smoke.");
+  } else if (!workflowCommands(codeCi).some((command) => (
+    command.includes("chrome-sandbox") && command.includes("chmod 4755")
+  ))) {
+    errors.push(".github/workflows/ci.yml: Code CI must configure the Electron sandbox helper before startup smoke.");
   }
 
   const preRelease = workflows.get(".github/workflows/pre-release-verification.yml");
