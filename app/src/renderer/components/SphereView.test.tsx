@@ -3,14 +3,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { makeRelicApi } from "../../test/rendererTestUtils";
 import { I18nProvider } from "../i18n";
-import { SphereView } from "./SphereView";
+import { disposeParkedSphereRuntime, SphereView } from "./SphereView";
 
 const runtimeMocks = vi.hoisted(() => ({
   callbacks: null as null | Record<string, (...args: any[]) => void>,
   createSphereRuntime: vi.fn(),
   dispose: vi.fn(),
+  attach: vi.fn(),
+  setCallbacks: vi.fn(),
   setData: vi.fn(),
-  setFocus: vi.fn()
+  setFocus: vi.fn(),
+  setTheme: vi.fn(),
+  suspend: vi.fn()
 }));
 
 vi.mock("../sphere/sphereRuntime", () => ({
@@ -35,9 +39,13 @@ function renderSphereView(language: "en" | "ja" = "ja") {
   runtimeMocks.createSphereRuntime.mockImplementation((_host, callbacks) => {
     runtimeMocks.callbacks = callbacks;
     return {
+      attach: runtimeMocks.attach,
       dispose: runtimeMocks.dispose,
+      setCallbacks: runtimeMocks.setCallbacks,
       setData: runtimeMocks.setData,
-      setFocus: runtimeMocks.setFocus
+      setFocus: runtimeMocks.setFocus,
+      setTheme: runtimeMocks.setTheme,
+      suspend: runtimeMocks.suspend
     };
   });
 
@@ -51,6 +59,7 @@ function renderSphereView(language: "en" | "ja" = "ja") {
 
 afterEach(() => {
   cleanup();
+  disposeParkedSphereRuntime();
   runtimeMocks.callbacks = null;
   vi.clearAllMocks();
 });
@@ -64,6 +73,8 @@ describe("SphereView", () => {
     const latestData = runtimeMocks.setData.mock.calls.at(-1)?.[0];
     expect(latestData.nodes.map((node: { id: string }) => node.id)).toEqual(["A.md", "B.md"]);
     expect(latestData.links).toHaveLength(1);
+    expect(runtimeMocks.setData).toHaveBeenCalledTimes(2);
+    expect(runtimeMocks.setTheme).toHaveBeenCalled();
     expect(screen.getByText("2件のノード")).toBeInTheDocument();
   });
 
@@ -102,5 +113,20 @@ describe("SphereView", () => {
 
     expect(runtimeMocks.dispose).toHaveBeenCalled();
     expect(screen.getByText("3D描画が停止しました。2Dのグラフは引き続き利用できます。")).toBeInTheDocument();
+  });
+
+  it("短時間の再表示では停止中のruntimeを再利用する", async () => {
+    const first = renderSphereView();
+    await waitFor(() => expect(runtimeMocks.createSphereRuntime).toHaveBeenCalledTimes(1));
+
+    first.unmount();
+    expect(runtimeMocks.suspend).toHaveBeenCalledTimes(1);
+
+    const second = renderSphereView();
+    await waitFor(() => expect(runtimeMocks.attach).toHaveBeenCalledTimes(1));
+
+    expect(runtimeMocks.createSphereRuntime).toHaveBeenCalledTimes(1);
+    expect(runtimeMocks.setCallbacks).toHaveBeenCalledTimes(1);
+    second.unmount();
   });
 });

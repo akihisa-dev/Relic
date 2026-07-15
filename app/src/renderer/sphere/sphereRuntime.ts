@@ -1,4 +1,5 @@
 import ForceGraph3D, { type ForceGraph3DInstance } from "3d-force-graph";
+import type { Object3D } from "three";
 
 import { defaultGraphDrawTheme, type GraphDrawTheme } from "../graph/graphTypes";
 import {
@@ -30,17 +31,23 @@ interface SphereRuntimeCallbacks {
 }
 
 export interface SphereRuntime {
+  attach: (host: HTMLElement) => void;
   dispose: () => void;
-  setData: (data: SphereData, theme: GraphDrawTheme) => void;
+  setData: (data: SphereData) => void;
+  setCallbacks: (callbacks: SphereRuntimeCallbacks) => void;
   setFocus: (focusId: string | null) => void;
+  setTheme: (theme: GraphDrawTheme, nodeColors: ReadonlyMap<string, string>) => void;
+  suspend: () => void;
 }
 
 type OrbitControlLimits = {
+  addEventListener?: (type: "end" | "start", listener: () => void) => void;
   enablePan?: boolean;
   maxDistance?: number;
   maxPolarAngle?: number;
   minDistance?: number;
   minPolarAngle?: number;
+  removeEventListener?: (type: "end" | "start", listener: () => void) => void;
 };
 
 type ConfigurableChargeForce = {
@@ -76,21 +83,31 @@ function createSphereBoundaryForce(radius: number): SphereBoundaryForce {
 
 export function createSphereRuntime(
   host: HTMLElement,
-  callbacks: SphereRuntimeCallbacks
+  initialCallbacks: SphereRuntimeCallbacks
 ): SphereRuntime {
-  let data: SphereData = { links: [], nodes: [] };
+  let callbacks = initialCallbacks;
+  let currentHost = host;
+  let data: SphereData = { focusIdsByNode: new Map(), links: [], nodes: [] };
   let focusId: string | null = null;
   let focusIds = new Set<string>();
   let theme: GraphDrawTheme = defaultGraphDrawTheme;
+  let nodeColors: ReadonlyMap<string, string> = new Map();
   let layoutPending = false;
   let fitPending = false;
   let hasFittedData = false;
+  let hasRenderedData = false;
   let disposed = false;
   let guides: SphereGuides | null = null;
   let guideRadius = SPHERE_MIN_GUIDE_RADIUS;
   let nodeDataFrame: number | null = null;
+  let resizeFrame: number | null = null;
+  let idlePulseTimer: number | null = null;
+  let idleTransitionTimer: number | null = null;
+  let interactionActive = false;
+  let animationPaused = false;
   let pulseActive = false;
   let pulseBasePositions = new WeakMap<SphereNode, { x: number; y: number; z: number }>();
+  let nodeObjects = new WeakMap<SphereNode, Object3D>();
   const nodePulsePhases = new WeakMap<SphereNode, number>();
   const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? null;
 
@@ -109,6 +126,75 @@ export function createSphereRuntime(
     if (nodeDataFrame === null) return;
     cancelAnimationFrame(nodeDataFrame);
     nodeDataFrame = null;
+  };
+  const clearIdleTimers = () => {
+    if (idlePulseTimer !== null) window.clearTimeout(idlePulseTimer);
+    if (idleTransitionTimer !== null) window.clearTimeout(idleTransitionTimer);
+    idlePulseTimer = null;
+    idleTransitionTimer = null;
+  };
+  const pauseAnimation = () => {
+    if (animationPaused) return;
+    graph.pauseAnimation();
+    animationPaused = true;
+  };
+  const resumeAnimation = () => {
+    clearIdleTimers();
+    if (!animationPaused) return;
+    graph.resumeAnimation();
+    animationPaused = false;
+  };
+  const updatePulsePositions = () => {
+    if (reducedMotion?.matches || !pulseActive) return;
+    const elapsed = performance.now();
+    for (const node of data.nodes) {
+      const nodeObject = nodeObjects.get(node);
+      const basePosition = pulseBasePositions.get(node);
+      if (!nodeObject || !basePosition) continue;
+      let phase = nodePulsePhases.get(node);
+      if (phase === undefined) {
+        phase = sphereNodePulsePhase(node.id);
+        nodePulsePhases.set(node, phase);
+      }
+      const position = sphereNodePulsePosition(basePosition, elapsed, phase);
+      node.x = position.x;
+      node.y = position.y;
+      node.z = position.z;
+      nodeObject.position.set(position.x, position.y, position.z);
+    }
+  };
+  const renderStaticFrame = () => {
+    if (disposed || document.hidden) return;
+    renderer.render(scene, graph.camera());
+  };
+  const scheduleIdlePulse = () => {
+    if (
+      idlePulseTimer !== null || disposed || document.hidden ||
+      interactionActive || layoutPending || reducedMotion?.matches
+    ) return;
+    idlePulseTimer = window.setTimeout(() => {
+      idlePulseTimer = null;
+      if (disposed || interactionActive || layoutPending || document.hidden) return;
+      requestAnimationFrame(() => {
+        if (disposed || interactionActive || layoutPending || document.hidden) return;
+        updatePulsePositions();
+        renderStaticFrame();
+        scheduleIdlePulse();
+      });
+    }, 100);
+  };
+  const enterIdle = () => {
+    if (disposed || interactionActive || layoutPending || document.hidden) return;
+    pauseAnimation();
+    renderStaticFrame();
+    scheduleIdlePulse();
+  };
+  const scheduleIdle = (delayMs: number) => {
+    if (idleTransitionTimer !== null) window.clearTimeout(idleTransitionTimer);
+    idleTransitionTimer = window.setTimeout(() => {
+      idleTransitionTimer = null;
+      enterIdle();
+    }, delayMs);
   };
   const showGuidesBeforeNodes = () => {
     if (data.nodes.length === 0) return;
@@ -129,7 +215,7 @@ export function createSphereRuntime(
         if (disposed) return;
         layoutPending = data.nodes.length > 0;
         graph.graphData(data);
-        graph.refresh();
+        hasRenderedData = data.nodes.length > 0;
       });
     });
   };
@@ -141,7 +227,8 @@ export function createSphereRuntime(
     .nodeVal((node) => node.val)
     .nodeOpacity(0.9)
     .nodePositionUpdate((nodeObject, _coordinates, node) => {
-      if (reducedMotion?.matches || !pulseActive) return false;
+      nodeObjects.set(node, nodeObject);
+      if (reducedMotion?.matches || !pulseActive || interactionActive) return false;
       const basePosition = pulseBasePositions.get(node);
       if (!basePosition) return false;
       let phase = nodePulsePhases.get(node);
@@ -159,12 +246,13 @@ export function createSphereRuntime(
     .linkVisibility(true)
     .linkOpacity(0.48)
     .linkWidth((link) => {
-      return sphereLinkTouchesFocus(link, focusId) ? 2.4 : 1;
+      return sphereLinkTouchesFocus(link, focusId) ? 2.4 : 0;
     })
     .nodeColor((node) => {
-      if (!focusId) return node.baseColor;
+      const baseColor = nodeColors.get(node.id) ?? theme.textSecondary;
+      if (!focusId) return baseColor;
       if (node.id === focusId) return theme.accent;
-      return focusIds.has(node.id) ? node.baseColor : theme.border;
+      return focusIds.has(node.id) ? baseColor : theme.border;
     })
     .linkColor((link) => focusId && sphereLinkTouchesFocus(link, focusId)
       ? theme.accent
@@ -201,6 +289,7 @@ export function createSphereRuntime(
         hasFittedData = true;
         graph.zoomToFit(420, 72);
       }
+      scheduleIdle(shouldFit ? 500 : 0);
     });
 
   const controls = graph.controls() as OrbitControlLimits;
@@ -209,17 +298,40 @@ export function createSphereRuntime(
   controls.maxDistance = 4_800;
   controls.minPolarAngle = 0.04;
   controls.maxPolarAngle = Math.PI - 0.04;
+  const handleControlStart = () => {
+    interactionActive = true;
+    resumeAnimation();
+  };
+  const handleControlEnd = () => {
+    interactionActive = false;
+    if (!layoutPending) scheduleIdle(120);
+  };
+  controls.addEventListener?.("start", handleControlStart);
+  controls.addEventListener?.("end", handleControlEnd);
 
   const renderer = graph.renderer();
   const canvas = renderer.domElement;
   canvas.setAttribute("aria-label", callbacks.canvasLabel);
   canvas.setAttribute("tabindex", "0");
+  let lastWidth = 0;
+  let lastHeight = 0;
+  const applyResize = () => {
+    resizeFrame = null;
+    const rect = currentHost.getBoundingClientRect();
+    const width = Math.max(1, Math.floor(rect.width));
+    const height = Math.max(1, Math.floor(rect.height));
+    if (width === lastWidth && height === lastHeight) return;
+    lastWidth = width;
+    lastHeight = height;
+    graph.width(width).height(height);
+    if (animationPaused) renderStaticFrame();
+  };
   const resize = () => {
-    const rect = host.getBoundingClientRect();
-    graph.width(Math.max(1, Math.floor(rect.width))).height(Math.max(1, Math.floor(rect.height)));
+    if (resizeFrame !== null) return;
+    resizeFrame = requestAnimationFrame(applyResize);
   };
   const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(resize);
-  resizeObserver?.observe(host);
+  resizeObserver?.observe(currentHost);
   resize();
 
   const handleContextLost = (event: Event) => {
@@ -229,33 +341,83 @@ export function createSphereRuntime(
   canvas.addEventListener("webglcontextlost", handleContextLost);
 
   const handleVisibilityChange = () => {
-    if (document.hidden) graph.pauseAnimation();
-    else graph.resumeAnimation();
+    if (document.hidden) {
+      clearIdleTimers();
+      pauseAnimation();
+    } else if (layoutPending || interactionActive) {
+      resumeAnimation();
+    } else {
+      enterIdle();
+    }
   };
   document.addEventListener("visibilitychange", handleVisibilityChange);
 
   return {
+    attach: (nextHost) => {
+      if (disposed || nextHost === currentHost) return;
+      resizeObserver?.unobserve(currentHost);
+      nextHost.append(...currentHost.childNodes);
+      currentHost = nextHost;
+      lastWidth = 0;
+      lastHeight = 0;
+      resizeObserver?.observe(currentHost);
+      resize();
+      if (layoutPending || interactionActive) resumeAnimation();
+      else enterIdle();
+    },
     dispose: () => {
       if (disposed) return;
       disposed = true;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       canvas.removeEventListener("webglcontextlost", handleContextLost);
+      controls.removeEventListener?.("start", handleControlStart);
+      controls.removeEventListener?.("end", handleControlEnd);
+      resizeObserver?.unobserve(currentHost);
       resizeObserver?.disconnect();
       cancelNodeDataFrame();
+      if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
+      clearIdleTimers();
       clearGuides();
-      graph.pauseAnimation();
+      pauseAnimation();
+      graph
+        .nodeLabel("")
+        .nodeVal(1)
+        .nodePositionUpdate(() => false)
+        .nodeColor(theme.textSecondary)
+        .linkColor(theme.border)
+        .linkWidth(0)
+        .onNodeHover(() => undefined)
+        .onNodeClick(() => undefined)
+        .onNodeRightClick(() => undefined)
+        .onBackgroundRightClick(() => undefined)
+        .onEngineTick(() => undefined)
+        .onEngineStop(() => undefined);
+      graph.d3Force("sphere-boundary", null);
+      graph.d3Force("link", null);
+      graph.d3Force("charge", null);
+      renderer.forceContextLoss();
       graph._destructor();
-      host.replaceChildren();
+      currentHost.replaceChildren();
     },
-    setData: (nextData, nextTheme) => {
+    setData: (nextData) => {
+      if (nextData === data) return;
+      resumeAnimation();
+      const shouldClearRenderedData = hasRenderedData;
       data = nextData;
-      theme = nextTheme;
       layoutPending = false;
-      fitPending = data.nodes.length > 0 && !hasFittedData;
       pulseActive = false;
       pulseBasePositions = new WeakMap();
+      nodeObjects = new WeakMap();
       cancelNodeDataFrame();
-      graph.graphData({ links: [], nodes: [] });
+      if (shouldClearRenderedData) {
+        graph.graphData({ links: [], nodes: [] });
+        hasRenderedData = false;
+      }
+      const hasCompleteCoordinates = data.nodes.length > 0 && data.nodes.every((node) => (
+        Number.isFinite(node.x) && Number.isFinite(node.y) && Number.isFinite(node.z)
+      ));
+      if (data.nodes.length > 0 && !hasCompleteCoordinates) hasFittedData = false;
+      fitPending = data.nodes.length > 0 && !hasFittedData;
       clearGuides();
       showGuidesBeforeNodes();
       focusIds = sphereFocusIds(data, focusId);
@@ -272,20 +434,46 @@ export function createSphereRuntime(
       });
       graph.d3Force("sphere-boundary", createSphereBoundaryForce(layoutSettings.boundaryRadius));
       graph
-        .backgroundColor(theme.background)
         .linkOpacity(layoutSettings.linkOpacity)
         .nodeRelSize(layoutSettings.nodeRelSize)
         .nodeResolution(isLarge ? 4 : 8)
         .cooldownTicks(isLarge ? 90 : 180)
         .cooldownTime(isLarge ? 4_000 : 8_000);
       renderer.setPixelRatio(isLarge ? 1 : Math.min(window.devicePixelRatio || 1, 2));
-      graph.refresh();
       if (data.nodes.length > 0) scheduleNodeData();
+      else enterIdle();
     },
     setFocus: (nextFocusId) => {
+      if (nextFocusId === focusId) return;
       focusId = nextFocusId;
       focusIds = sphereFocusIds(data, focusId);
       graph.refresh();
+      if (animationPaused) renderStaticFrame();
+    },
+    setCallbacks: (nextCallbacks) => {
+      callbacks = nextCallbacks;
+      canvas.setAttribute("aria-label", callbacks.canvasLabel);
+    },
+    setTheme: (nextTheme, nextNodeColors) => {
+      if (nextTheme === theme && nextNodeColors === nodeColors) return;
+      theme = nextTheme;
+      nodeColors = nextNodeColors;
+      graph.backgroundColor(theme.background);
+      guides?.setColor(theme.accent);
+      graph.refresh();
+      if (animationPaused) renderStaticFrame();
+    },
+    suspend: () => {
+      if (disposed) return;
+      interactionActive = false;
+      clearIdleTimers();
+      pauseAnimation();
+      resizeObserver?.unobserve(currentHost);
+      const parkingHost = document.createElement("div");
+      parkingHost.append(...currentHost.childNodes);
+      currentHost = parkingHost;
+      lastWidth = 0;
+      lastHeight = 0;
     }
   };
 }

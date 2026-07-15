@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
 import type { WorkspaceGraph } from "../../shared/ipc";
-import { createSphereData, type SphereData } from "../sphere/sphereModel";
+import { loadSphereWorkspaceGraph } from "../sphere/sphereGraphLoader";
+import { createSphereData, sphereNodeColors } from "../sphere/sphereModel";
 import { createSphereRuntime, type SphereRuntime } from "../sphere/sphereRuntime";
 import { deriveVisibleGraph } from "../graph/graphDisplayModel";
 import { graphNodePrimaryAction } from "../graph/graphSearchModel";
-import { defaultGraphDrawTheme, type GraphDrawTheme } from "../graph/graphTypes";
+import { defaultGraphDrawTheme, type GraphDrawTheme, type GraphOptions } from "../graph/graphTypes";
 import { loadGraphColorGroups, loadGraphOptions, readGraphDrawTheme } from "../graph/graphViewRuntime";
 import { useLatest } from "../hooks/useLatest";
 import { useT } from "../i18n";
@@ -15,14 +16,94 @@ interface SphereViewProps {
   onOpenFile: (path: string) => void;
   onOpenTagSearch: (tag: string) => void;
   refreshRevision?: number;
+  workspaceCacheKey?: string;
 }
 
-export function SphereView({ onOpenFile, onOpenTagSearch, refreshRevision = 0 }: SphereViewProps): ReactElement {
+const parkedRuntimeLifetimeMs = 2_000;
+let parkedRuntime: {
+  disposeTimer: number;
+  runtime: SphereRuntime;
+} | null = null;
+
+function acquireSphereRuntime(
+  host: HTMLElement,
+  callbacks: Parameters<typeof createSphereRuntime>[1]
+): SphereRuntime {
+  if (!parkedRuntime) return createSphereRuntime(host, callbacks);
+  window.clearTimeout(parkedRuntime.disposeTimer);
+  const runtime = parkedRuntime.runtime;
+  parkedRuntime = null;
+  runtime.setCallbacks(callbacks);
+  runtime.attach(host);
+  return runtime;
+}
+
+function releaseSphereRuntime(runtime: SphereRuntime): void {
+  runtime.suspend();
+  if (parkedRuntime) {
+    runtime.dispose();
+    return;
+  }
+  const disposeTimer = window.setTimeout(() => {
+    if (parkedRuntime?.runtime !== runtime) return;
+    parkedRuntime = null;
+    runtime.dispose();
+  }, parkedRuntimeLifetimeMs);
+  parkedRuntime = { disposeTimer, runtime };
+}
+
+export function disposeParkedSphereRuntime(): void {
+  if (!parkedRuntime) return;
+  window.clearTimeout(parkedRuntime.disposeTimer);
+  parkedRuntime.runtime.dispose();
+  parkedRuntime = null;
+}
+
+let cachedSphereModel: {
+  cacheKey: string;
+  graph: WorkspaceGraph;
+  optionsSignature: string;
+  sphereData: ReturnType<typeof createSphereData>;
+  visibleGraph: ReturnType<typeof deriveVisibleGraph>;
+} | null = null;
+
+function sphereModelFor(
+  graph: WorkspaceGraph | null,
+  options: GraphOptions,
+  cacheKey: string
+): Pick<NonNullable<typeof cachedSphereModel>, "sphereData" | "visibleGraph"> {
+  if (!graph) {
+    const visibleGraph = deriveVisibleGraph(null, options);
+    return { sphereData: createSphereData(visibleGraph), visibleGraph };
+  }
+  const optionsSignature = JSON.stringify(options);
+  if (
+    cachedSphereModel?.cacheKey === cacheKey &&
+    cachedSphereModel.graph === graph &&
+    cachedSphereModel.optionsSignature === optionsSignature
+  ) {
+    return cachedSphereModel;
+  }
+  const visibleGraph = deriveVisibleGraph(graph, options);
+  cachedSphereModel = {
+    cacheKey,
+    graph,
+    optionsSignature,
+    sphereData: createSphereData(visibleGraph),
+    visibleGraph
+  };
+  return cachedSphereModel;
+}
+
+export function SphereView({
+  onOpenFile,
+  onOpenTagSearch,
+  refreshRevision = 0,
+  workspaceCacheKey = "current"
+}: SphereViewProps): ReactElement {
   const t = useT();
   const hostRef = useRef<HTMLDivElement | null>(null);
   const runtimeRef = useRef<SphereRuntime | null>(null);
-  const dataRef = useRef<SphereData>({ links: [], nodes: [] });
-  const themeRef = useRef<GraphDrawTheme>(defaultGraphDrawTheme);
   const openFileRef = useLatest(onOpenFile);
   const openTagSearchRef = useLatest(onOpenTagSearch);
   const [graphState, setGraphState] = useState<{
@@ -38,21 +119,23 @@ export function SphereView({ onOpenFile, onOpenTagSearch, refreshRevision = 0 }:
   const [theme, setTheme] = useState<GraphDrawTheme>(defaultGraphDrawTheme);
   const options = useMemo(loadGraphOptions, []);
   const colorGroups = useMemo(loadGraphColorGroups, []);
-  const filteredGraph = useMemo(
-    () => deriveVisibleGraph(graphState.graph, options),
-    [graphState.graph, options]
+  const sphereModel = useMemo(
+    () => sphereModelFor(
+      graphState.graph,
+      options,
+      `${workspaceCacheKey}:${refreshRevision}`
+    ),
+    [graphState.graph, options, refreshRevision, workspaceCacheKey]
   );
-  const sphereData = useMemo(
-    () => createSphereData(filteredGraph, colorGroups, theme),
+  const { sphereData, visibleGraph: filteredGraph } = sphereModel;
+  const nodeColors = useMemo(
+    () => sphereNodeColors(filteredGraph, colorGroups, theme),
     [colorGroups, filteredGraph, theme]
   );
   const focusId = pinnedNodeId ?? hoveredNodeId;
   const focusedNode = focusId
     ? filteredGraph.nodes.find((node) => node.id === focusId) ?? null
     : null;
-
-  dataRef.current = sphereData;
-  themeRef.current = theme;
 
   useEffect(() => {
     const updateTheme = () => setTheme(readGraphDrawTheme(document.documentElement));
@@ -79,7 +162,7 @@ export function SphereView({ onOpenFile, onOpenTagSearch, refreshRevision = 0 }:
       active = false;
     };
 
-    void relicClient.current.getWorkspaceGraph().then((result) => {
+    void loadSphereWorkspaceGraph(`${workspaceCacheKey}:${refreshRevision}`).then((result) => {
       if (!active) return;
       if (result.ok) {
         setGraphState({ error: null, graph: result.value, loading: false });
@@ -93,14 +176,15 @@ export function SphereView({ onOpenFile, onOpenTagSearch, refreshRevision = 0 }:
     return () => {
       active = false;
     };
-  }, [refreshRevision, t]);
+  }, [refreshRevision, t, workspaceCacheKey]);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
+    const shell = host.parentElement;
 
     try {
-      const runtime = createSphereRuntime(host, {
+      const runtime = acquireSphereRuntime(host, {
         canvasLabel: t("sphere.canvasLabel"),
         onBackgroundFocusClear: () => setPinnedNodeId(null),
         onContextLost: () => {
@@ -117,21 +201,30 @@ export function SphereView({ onOpenFile, onOpenTagSearch, refreshRevision = 0 }:
         onNodeHover: (node) => setHoveredNodeId(node?.id ? String(node.id) : null)
       });
       runtimeRef.current = runtime;
-      runtime.setData(dataRef.current, themeRef.current);
     } catch {
       host.replaceChildren();
       setRuntimeError(t("sphere.unavailable"));
     }
 
     return () => {
-      runtimeRef.current?.dispose();
-      runtimeRef.current = null;
+      const runtime = runtimeRef.current;
+      if (runtime) {
+        releaseSphereRuntime(runtime);
+        runtimeRef.current = null;
+      }
+      queueMicrotask(() => {
+        if (shell && !shell.isConnected) shell.replaceChildren();
+      });
     };
   }, [openFileRef, openTagSearchRef, t]);
 
   useEffect(() => {
-    runtimeRef.current?.setData(sphereData, theme);
-  }, [sphereData, theme]);
+    runtimeRef.current?.setData(sphereData);
+  }, [sphereData]);
+
+  useEffect(() => {
+    runtimeRef.current?.setTheme(theme, nodeColors);
+  }, [nodeColors, theme]);
 
   useEffect(() => {
     runtimeRef.current?.setFocus(focusId);

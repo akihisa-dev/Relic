@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { defaultGraphDrawTheme } from "../graph/graphTypes";
 import type { SphereData } from "./sphereModel";
@@ -21,11 +21,16 @@ type SphereBoundaryForceMock = ((alpha: number) => void) & {
 
 function sphereData(): SphereData {
   return {
+    focusIdsByNode: new Map([
+      ["A.md", new Set(["A.md", "B.md"])],
+      ["B.md", new Set(["A.md", "B.md"])],
+      ["C.md", new Set(["C.md"])]
+    ]),
     links: [{ count: 1, source: "A.md", sourceId: "A.md", target: "B.md", targetId: "B.md", type: "link" }],
     nodes: [
-      { backlinkCount: 0, baseColor: "#111111", exists: true, id: "A.md", label: "A", linkCount: 1, path: "A.md", type: "file", val: 4 },
-      { backlinkCount: 1, baseColor: "#222222", exists: true, id: "B.md", label: "B", linkCount: 0, path: "B.md", type: "file", val: 4 },
-      { backlinkCount: 0, baseColor: "#333333", exists: true, id: "C.md", label: "C", linkCount: 0, path: "C.md", type: "file", val: 4 }
+      { backlinkCount: 0, exists: true, id: "A.md", label: "A", linkCount: 1, path: "A.md", type: "file", val: 4 },
+      { backlinkCount: 1, exists: true, id: "B.md", label: "B", linkCount: 0, path: "B.md", type: "file", val: 4 },
+      { backlinkCount: 0, exists: true, id: "C.md", label: "C", linkCount: 0, path: "C.md", type: "file", val: 4 }
     ]
   };
 }
@@ -37,6 +42,8 @@ describe("sphereRuntime", () => {
   let controls: Record<string, unknown>;
   let linkForce: { distance: ReturnType<typeof vi.fn> };
   let observerDisconnect: ReturnType<typeof vi.fn>;
+  let observerUnobserve: ReturnType<typeof vi.fn>;
+  let rendererRender: ReturnType<typeof vi.fn>;
   let scene: { add: ReturnType<typeof vi.fn>; remove: ReturnType<typeof vi.fn> };
 
   const runAnimationFrame = () => {
@@ -48,9 +55,11 @@ describe("sphereRuntime", () => {
     animationFrames = [];
     canvas = document.createElement("canvas");
     chargeForce = { strength: vi.fn() };
-    controls = {};
+    controls = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
     linkForce = { distance: vi.fn() };
     observerDisconnect = vi.fn();
+    observerUnobserve = vi.fn();
+    rendererRender = vi.fn();
     scene = { add: vi.fn(), remove: vi.fn() };
     vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => {
       const id = animationFrames.length + 1;
@@ -62,13 +71,19 @@ describe("sphereRuntime", () => {
     }));
     vi.stubGlobal("ResizeObserver", vi.fn(function (callback: () => void) {
       callback();
-      return { disconnect: observerDisconnect, observe: vi.fn() };
+      return { disconnect: observerDisconnect, observe: vi.fn(), unobserve: observerUnobserve };
     }));
 
     const graph: Record<string, any> = {
+      camera: vi.fn(() => ({})),
       controls: vi.fn(() => controls),
       scene: vi.fn(() => scene),
-      renderer: vi.fn(() => ({ domElement: canvas, setPixelRatio: vi.fn() }))
+      renderer: vi.fn(() => ({
+        domElement: canvas,
+        forceContextLoss: vi.fn(),
+        render: rendererRender,
+        setPixelRatio: vi.fn()
+      }))
     };
     for (const method of [
       "showNavInfo", "enableNodeDrag", "nodeId", "nodeLabel", "nodeVal", "nodeOpacity", "linkOpacity",
@@ -86,6 +101,10 @@ describe("sphereRuntime", () => {
       return undefined;
     });
     forceGraphMocks.graph = graph;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("球状表示の操作制限・描画品質・強調をruntime内へ閉じ込める", () => {
@@ -106,7 +125,10 @@ describe("sphereRuntime", () => {
     Object.assign(data.nodes[0], { x: 10, y: 20, z: 30 });
     Object.assign(data.nodes[1], { x: -20, y: 10, z: 5 });
     Object.assign(data.nodes[2], { x: 5, y: -15, z: -10 });
-    runtime.setData(data, defaultGraphDrawTheme);
+    runtime.setTheme(defaultGraphDrawTheme, new Map([
+      ["A.md", "#111111"], ["B.md", "#222222"], ["C.md", "#333333"]
+    ]));
+    runtime.setData(data);
     runtime.setFocus("A.md");
     runAnimationFrame();
     runAnimationFrame();
@@ -144,11 +166,11 @@ describe("sphereRuntime", () => {
       .toBeLessThanOrEqual(3);
     expect(data.nodes[0]).toMatchObject({ x: pulseX, y: pulseY, z: pulseZ });
     expect(forceGraphMocks.graph.zoomToFit).toHaveBeenCalledWith(420, 72);
-    runtime.setData(sphereData(), defaultGraphDrawTheme);
+    runtime.setData(sphereData());
     runAnimationFrame();
     runAnimationFrame();
     forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
-    expect(forceGraphMocks.graph.zoomToFit).toHaveBeenCalledTimes(1);
+    expect(forceGraphMocks.graph.zoomToFit).toHaveBeenCalledTimes(2);
     expect(scene.add).toHaveBeenCalledTimes(2);
     const colorAccessor = forceGraphMocks.graph.nodeColor.mock.calls[0][0];
     const linkColorAccessor = forceGraphMocks.graph.linkColor.mock.calls[0][0];
@@ -165,7 +187,7 @@ describe("sphereRuntime", () => {
       targetId: "C.md",
       type: "link"
     } as const;
-    expect(linkWidthAccessor(unfocusedLink)).toBe(1);
+    expect(linkWidthAccessor(unfocusedLink)).toBe(0);
     expect(linkColorAccessor(sphereData().links[0])).toBe(defaultGraphDrawTheme.accent);
     expect(linkColorAccessor(unfocusedLink)).toBe(defaultGraphDrawTheme.textSecondary);
 
@@ -176,7 +198,9 @@ describe("sphereRuntime", () => {
     runtime.dispose();
     expect(forceGraphMocks.graph.pauseAnimation).toHaveBeenCalledOnce();
     expect(forceGraphMocks.graph._destructor).toHaveBeenCalledOnce();
+    expect(forceGraphMocks.graph.renderer.mock.results[0].value.forceContextLoss).toHaveBeenCalledOnce();
     expect(observerDisconnect).toHaveBeenCalledOnce();
+    expect(observerUnobserve).toHaveBeenCalledOnce();
     expect(scene.remove).toHaveBeenCalledTimes(2);
   });
 
@@ -192,11 +216,10 @@ describe("sphereRuntime", () => {
     });
     const data = sphereData();
 
-    runtime.setData(data, defaultGraphDrawTheme);
+    runtime.setData(data);
 
     expect(scene.add).toHaveBeenCalledOnce();
-    expect(forceGraphMocks.graph.graphData).toHaveBeenLastCalledWith({ links: [], nodes: [] });
-    expect(forceGraphMocks.graph.graphData).not.toHaveBeenCalledWith(data);
+    expect(forceGraphMocks.graph.graphData).not.toHaveBeenCalled();
 
     runAnimationFrame();
 
@@ -220,7 +243,7 @@ describe("sphereRuntime", () => {
     });
     const data = sphereData();
 
-    runtime.setData(data, defaultGraphDrawTheme);
+    runtime.setData(data);
     const guideGroup = scene.add.mock.calls[0][0];
     const ring = guideGroup.getObjectByName("sphere-equator-ring") as { geometry: { getAttribute: (name: string) => { getX: (index: number) => number } } };
     const initialRadius = ring.geometry.getAttribute("position").getX(0);
@@ -253,7 +276,7 @@ describe("sphereRuntime", () => {
     });
     const data = sphereData();
 
-    runtime.setData(data, defaultGraphDrawTheme);
+    runtime.setData(data);
     runtime.dispose();
     runAnimationFrame();
     runAnimationFrame();
@@ -280,5 +303,50 @@ describe("sphereRuntime", () => {
     expect(position.set).not.toHaveBeenCalled();
 
     runtime.dispose();
+  });
+
+  it("同一更新を無視し、配置停止後は低頻度描画へ移行して操作時に再開する", () => {
+    const host = document.createElement("div");
+    const runtime = createSphereRuntime(host, {
+      canvasLabel: "スフィア",
+      onBackgroundFocusClear: vi.fn(),
+      onContextLost: vi.fn(),
+      onNodeActivate: vi.fn(),
+      onNodeFocus: vi.fn(),
+      onNodeHover: vi.fn()
+    });
+    const data = sphereData();
+    runtime.setData(data);
+    runtime.setData(data);
+    runAnimationFrame();
+    runAnimationFrame();
+    vi.useFakeTimers();
+
+    expect(forceGraphMocks.graph.graphData.mock.calls.filter(([value]: [unknown]) => value === data)).toHaveLength(1);
+    const graphDataCallCount = forceGraphMocks.graph.graphData.mock.calls.length;
+    runtime.setTheme(defaultGraphDrawTheme, new Map([["A.md", "#111111"]]));
+    expect(forceGraphMocks.graph.graphData).toHaveBeenCalledTimes(graphDataCallCount);
+
+    runtime.setFocus("A.md");
+    const refreshCallCount = forceGraphMocks.graph.refresh.mock.calls.length;
+    runtime.setFocus("A.md");
+    expect(forceGraphMocks.graph.refresh).toHaveBeenCalledTimes(refreshCallCount);
+
+    forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
+    vi.advanceTimersByTime(500);
+    expect(forceGraphMocks.graph.pauseAnimation).toHaveBeenCalledOnce();
+    vi.advanceTimersByTime(100);
+    runAnimationFrame();
+    expect(rendererRender).toHaveBeenCalled();
+
+    const startListener = (controls.addEventListener as ReturnType<typeof vi.fn>).mock.calls
+      .find(([type]) => type === "start")?.[1];
+    startListener();
+    expect(forceGraphMocks.graph.resumeAnimation).toHaveBeenCalledOnce();
+    const positionAccessor = forceGraphMocks.graph.nodePositionUpdate.mock.calls[0][0];
+    expect(positionAccessor({ position: { set: vi.fn() } }, {}, data.nodes[0])).toBe(false);
+
+    runtime.dispose();
+    expect(controls.removeEventListener).toHaveBeenCalledTimes(2);
   });
 });

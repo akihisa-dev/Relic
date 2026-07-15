@@ -6,7 +6,6 @@ import type { VisibleGraph } from "../graph/graphDisplayModel";
 import type { GraphColorGroup, GraphDrawTheme } from "../graph/graphTypes";
 
 export type SphereNode = WorkspaceGraphNode & NodeObject & {
-  baseColor: string;
   val: number;
 };
 
@@ -20,6 +19,7 @@ export interface SphereLink extends LinkObject<SphereNode> {
 }
 
 export interface SphereData {
+  focusIdsByNode: ReadonlyMap<string, ReadonlySet<string>>;
   links: SphereLink[];
   nodes: SphereNode[];
 }
@@ -91,22 +91,39 @@ export function sphereCoreRadius(nodes: Array<Partial<SphereCoordinates>>): numb
 }
 
 export function createSphereData(
-  graph: VisibleGraph,
-  colorGroups: GraphColorGroup[],
-  theme: GraphDrawTheme
+  graph: VisibleGraph
 ): SphereData {
-  return {
-    links: graph.links.map((link) => ({
+  const focusIdsByNode = new Map<string, Set<string>>(
+    graph.nodes.map((node) => [node.id, new Set([node.id])])
+  );
+  const links = graph.links.map((link) => {
+    focusIdsByNode.get(link.source)?.add(link.target);
+    focusIdsByNode.get(link.target)?.add(link.source);
+    return {
       ...link,
       sourceId: link.source,
       targetId: link.target
-    })),
+    };
+  });
+  return {
+    focusIdsByNode,
+    links,
     nodes: graph.nodes.map((node) => ({
       ...node,
-      baseColor: nodeColor(node, colorGroups, graph.tagsByNode.get(node.id) ?? [], theme),
       val: sphereNodeValue(node)
     }))
   };
+}
+
+export function sphereNodeColors(
+  graph: VisibleGraph,
+  colorGroups: GraphColorGroup[],
+  theme: GraphDrawTheme
+): ReadonlyMap<string, string> {
+  return new Map(graph.nodes.map((node) => [
+    node.id,
+    nodeColor(node, colorGroups, graph.tagsByNode.get(node.id) ?? [], theme)
+  ]));
 }
 
 export function sphereNodeValue(node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">): number {
@@ -146,13 +163,7 @@ export function sphereNodePulsePosition(
 
 export function sphereFocusIds(data: SphereData, focusId: string | null): Set<string> {
   if (!focusId) return new Set();
-
-  const ids = new Set([focusId]);
-  for (const link of data.links) {
-    if (link.sourceId === focusId) ids.add(link.targetId);
-    if (link.targetId === focusId) ids.add(link.sourceId);
-  }
-  return ids;
+  return new Set(data.focusIdsByNode.get(focusId) ?? [focusId]);
 }
 
 export function sphereLinkTouchesFocus(link: SphereLink, focusId: string | null): boolean {

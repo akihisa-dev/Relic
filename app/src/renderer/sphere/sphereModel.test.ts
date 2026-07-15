@@ -15,6 +15,7 @@ import {
   sphereNodeChargeStrength,
   sphereNodePulsePhase,
   sphereNodePulsePosition,
+  sphereNodeColors,
   sphereNodeValue
 } from "./sphereModel";
 
@@ -29,7 +30,7 @@ describe("sphereModel", () => {
   };
 
   it("共有グラフを変更しない3D専用データを生成する", () => {
-    const data = createSphereData(visibleGraph, [], defaultGraphDrawTheme);
+    const data = createSphereData(visibleGraph);
 
     expect(data.nodes).not.toBe(visibleGraph.nodes);
     expect(data.links).not.toBe(visibleGraph.links);
@@ -41,11 +42,19 @@ describe("sphereModel", () => {
   });
 
   it("注目ノードと接続先を強調対象にする", () => {
-    const data = createSphereData(visibleGraph, [], defaultGraphDrawTheme);
+    const data = createSphereData(visibleGraph);
 
     expect(sphereFocusIds(data, "A.md")).toEqual(new Set(["A.md", "B.md"]));
     expect(sphereLinkTouchesFocus(data.links[0]!, "A.md")).toBe(true);
     expect(sphereLinkTouchesFocus(data.links[0]!, null)).toBe(false);
+  });
+
+  it("テーマ色をトポロジーと別に生成する", () => {
+    const data = createSphereData(visibleGraph);
+    const colors = sphereNodeColors(visibleGraph, [], defaultGraphDrawTheme);
+
+    expect(colors.get("A.md")).toBeTruthy();
+    expect(data.nodes[0]).not.toHaveProperty("baseColor");
   });
 
   it("関連数に応じてノード体積を増やし上限を設ける", () => {

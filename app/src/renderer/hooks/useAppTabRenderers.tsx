@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback } from "react";
+import { lazy, Suspense, useCallback, useEffect } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import type {
@@ -10,6 +10,7 @@ import type {
   WorkspaceState
 } from "../../shared/ipc";
 import { useT } from "../i18n";
+import { preloadSphereWorkspaceGraph } from "../sphere/sphereGraphLoader";
 import type { PanelTabKind } from "../store/editorStore";
 
 const LazyChartView = lazy(async () => ({
@@ -72,6 +73,16 @@ export function useAppTabRenderers({
   renderChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
 } {
+  const sphereWorkspaceCacheKey = workspaceState?.activeWorkspace?.id ?? "none";
+  useEffect(() => {
+    if (!featureToggles.sphere || sphereWorkspaceCacheKey === "none") return;
+    const timer = window.setTimeout(() => {
+      void import("../components/SphereView");
+      preloadSphereWorkspaceGraph(`${sphereWorkspaceCacheKey}:${workspaceDataRevision}`);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [featureToggles.sphere, sphereWorkspaceCacheKey, workspaceDataRevision]);
+
   const renderChartTab = useCallback((chartId: string): ReactNode => {
     if (chartId === "graph") {
       return (
@@ -92,6 +103,7 @@ export function useAppTabRenderers({
             onOpenFile={handleOpenFile}
             onOpenTagSearch={handleOpenTagSearch}
             refreshRevision={workspaceDataRevision}
+            workspaceCacheKey={sphereWorkspaceCacheKey}
           />
         </Suspense>
       );
@@ -106,7 +118,7 @@ export function useAppTabRenderers({
         />
       </Suspense>
     );
-  }, [charts, handleOpenFile, handleOpenTagSearch, workspaceDataRevision]);
+  }, [charts, handleOpenFile, handleOpenTagSearch, sphereWorkspaceCacheKey, workspaceDataRevision]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {

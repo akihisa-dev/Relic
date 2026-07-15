@@ -14,6 +14,7 @@ const GUIDE_RENDER_ORDER = -1;
 export interface SphereGuides {
   dispose: () => void;
   group: Group;
+  setColor: (color: ColorRepresentation) => void;
   setRadius: (radius: number) => void;
 }
 
@@ -72,6 +73,10 @@ export function createSphereGuides(radius: number, color: ColorRepresentation): 
       group.clear();
     },
     group,
+    setColor: (nextColor) => {
+      axisMaterial.color.set(nextColor);
+      ringMaterial.color.set(nextColor);
+    },
     setRadius: (nextRadius) => {
       if (!Number.isFinite(nextRadius) || Math.abs(nextRadius - currentRadius) < 0.5) return;
       currentRadius = nextRadius;
