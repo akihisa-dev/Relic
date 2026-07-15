@@ -120,5 +120,10 @@ describe("appShellModel", () => {
     expect(split.panelRailViews.map((view) => view.id)).toEqual(["settings"]);
     expect(chartIdForRailView("graph")).toBe("graph");
     expect(chartIdForRailView("chronicle")).toBe("chronicle");
+
+    expect(enabledRailViewsForFeatures(railViews, {
+      ...defaultFeatureToggles,
+      graph: false
+    }).map((view) => view.id)).toEqual(["files", "settings"]);
   });
 });

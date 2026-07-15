@@ -117,6 +117,7 @@ describe("workspaceHandlerValidators", () => {
       chronicle: false,
       chronicleSettings: false,
       frontmatter: true,
+      graph: true,
       rightPanelLinks: true,
       rightPanelOutline: true,
       tools: false
@@ -125,6 +126,7 @@ describe("workspaceHandlerValidators", () => {
       chronicle: false,
       chronicleSettings: false,
       frontmatter: true,
+      graph: true,
       rightPanelLinks: true,
       rightPanelOutline: true,
       tools: "false"
@@ -132,6 +134,7 @@ describe("workspaceHandlerValidators", () => {
     expect(isFeatureTogglesInput({
       chronicle: false,
       frontmatter: true,
+      graph: true,
       rightPanelLinks: true,
       rightPanelOutline: true,
       tools: false

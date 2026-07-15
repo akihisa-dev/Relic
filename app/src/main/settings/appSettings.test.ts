@@ -47,7 +47,7 @@ describe("appSettings", () => {
       workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
     });
     const raw = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(1);
+    expect(raw.schemaVersion).toBe(2);
     await expect(readdir(userDataPath)).resolves.toEqual([path.basename(getAppSettingsPath(userDataPath))]);
     if (process.platform !== "win32") {
       expect((await stat(userDataPath)).mode & 0o777).toBe(0o700);
@@ -83,7 +83,7 @@ describe("appSettings", () => {
 
     await readAppSettings(userDataPath);
     const afterFirstRead = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(afterFirstRead.schemaVersion).toBe(1);
+    expect(afterFirstRead.schemaVersion).toBe(2);
 
     await delay(1100);
     const firstMtime = (await stat(getAppSettingsPath(userDataPath))).mtimeMs;
@@ -206,7 +206,7 @@ describe("appSettings", () => {
     await Promise.all([update, readWhileUpdating]);
 
     const raw = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(1);
+    expect(raw.schemaVersion).toBe(2);
     expect((raw.featureToggles as Record<string, unknown>)?.tools).toBe(true);
   });
 
@@ -229,6 +229,29 @@ describe("appSettings", () => {
         rightPanelOutline: false
       })
     });
+  });
+
+  it("v1設定ではグラフを有効のまま現行形式へ移行する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      schemaVersion: 1,
+      featureToggles: {
+        chronicle: false,
+        chronicleSettings: false,
+        frontmatter: false,
+        rightPanelLinks: true,
+        rightPanelOutline: true,
+        tools: false
+      },
+      workspaces: []
+    }), "utf8");
+
+    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+      featureToggles: expect.objectContaining({ graph: true })
+    });
+    const migrated = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
+    expect(migrated.schemaVersion).toBe(2);
   });
 
   it("未知の将来schemaVersionは旧形式として誤読しない", async () => {
@@ -364,6 +387,7 @@ describe("appSettings", () => {
         chronicle: "yes",
         chronicleSettings: "yes",
         frontmatter: "yes",
+        graph: "yes",
         rightPanelLinks: "yes",
         rightPanelOutline: "yes",
         tools: "yes"

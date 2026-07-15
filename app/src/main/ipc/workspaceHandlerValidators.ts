@@ -157,6 +157,7 @@ export function isFeatureTogglesInput(input: unknown): input is FeatureToggles {
   return (
     typeof candidate.chronicle === "boolean" &&
     typeof candidate.chronicleSettings === "boolean" &&
+    typeof candidate.graph === "boolean" &&
     typeof candidate.tools === "boolean" &&
     typeof candidate.frontmatter === "boolean" &&
     typeof candidate.rightPanelLinks === "boolean" &&

@@ -150,6 +150,8 @@ describe("SettingsPanel", () => {
     expect(screen.getByText("Appearance")).toBeInTheDocument();
     expect(screen.getByText("Editor")).toBeInTheDocument();
     expect(screen.getByText("Features")).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Graph" })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Calendar settings" })).toBeInTheDocument();
     expect(screen.getByText("App Info")).toBeInTheDocument();
     expect(screen.getByText("Relic 1.2.3")).toBeInTheDocument();
     expect(screen.getByText("macOS")).toBeInTheDocument();
@@ -231,5 +233,8 @@ describe("SettingsPanel", () => {
     fireEvent.click(screen.getByLabelText("Right panel: Links"));
 
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ rightPanelLinks: false }));
+
+    fireEvent.click(screen.getByLabelText("Graph"));
+    expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ graph: false }));
   });
 });
