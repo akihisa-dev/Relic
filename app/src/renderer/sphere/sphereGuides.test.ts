@@ -40,6 +40,21 @@ describe("sphereGuides", () => {
     expect(ring.renderOrder).toBeLessThan(0);
   });
 
+  it("同じガイドを維持したまま半径と点線間隔を更新する", () => {
+    const guides = createSphereGuides(100, "#8899aa");
+    const axis = guides.group.getObjectByName("sphere-center-axis") as Line;
+    const ring = guides.group.getObjectByName("sphere-equator-ring") as LineLoop;
+    const initialRingRadius = ring.geometry.getAttribute("position").getX(0);
+    const initialDashSize = (ring.material as LineDashedMaterial).dashSize;
+
+    guides.setRadius(200);
+
+    expect(guides.group.getObjectByName("sphere-center-axis")).toBe(axis);
+    expect(guides.group.getObjectByName("sphere-equator-ring")).toBe(ring);
+    expect(ring.geometry.getAttribute("position").getX(0)).toBeGreaterThan(initialRingRadius);
+    expect((ring.material as LineDashedMaterial).dashSize).toBeGreaterThan(initialDashSize);
+  });
+
   it("生成したgeometryとmaterialを破棄する", () => {
     const guides = createSphereGuides(100, "#8899aa");
     const axis = guides.group.getObjectByName("sphere-center-axis") as Line;

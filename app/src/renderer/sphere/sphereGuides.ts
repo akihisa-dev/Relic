@@ -15,6 +15,7 @@ const INITIAL_RADIUS_PER_NODE_SCALE = 32;
 export interface SphereGuides {
   dispose: () => void;
   group: Group;
+  setRadius: (radius: number) => void;
 }
 
 function guideMaterial(color: ColorRepresentation, opacity: number, dashSize: number, gapSize: number) {
@@ -66,6 +67,7 @@ export function createSphereGuides(radius: number, color: ColorRepresentation): 
   ring.raycast = () => undefined;
 
   group.add(axis, ring);
+  let currentRadius = radius;
   return {
     dispose: () => {
       axisGeometry.dispose();
@@ -74,6 +76,37 @@ export function createSphereGuides(radius: number, color: ColorRepresentation): 
       ringMaterial.dispose();
       group.clear();
     },
-    group
+    group,
+    setRadius: (nextRadius) => {
+      if (!Number.isFinite(nextRadius) || Math.abs(nextRadius - currentRadius) < 0.5) return;
+      currentRadius = nextRadius;
+      const nextGuideRadius = Math.max(80, nextRadius * 1.08);
+      const nextAxisHalfLength = nextGuideRadius * 1.12;
+      const nextDashSize = Math.max(3, nextGuideRadius * 0.018);
+      const axisPositions = axisGeometry.getAttribute("position");
+      axisPositions.setXYZ(0, 0, -nextAxisHalfLength, 0);
+      axisPositions.setXYZ(1, 0, nextAxisHalfLength, 0);
+      axisPositions.needsUpdate = true;
+      axisMaterial.dashSize = nextDashSize;
+      axisMaterial.gapSize = nextDashSize * 1.3;
+      axisGeometry.computeBoundingSphere();
+      axis.computeLineDistances();
+
+      const ringPositions = ringGeometry.getAttribute("position");
+      for (let index = 0; index < ringPositions.count; index += 1) {
+        const angle = (index / RING_SEGMENTS) * Math.PI * 2;
+        ringPositions.setXYZ(
+          index,
+          Math.cos(angle) * nextGuideRadius,
+          0,
+          Math.sin(angle) * nextGuideRadius
+        );
+      }
+      ringPositions.needsUpdate = true;
+      ringMaterial.dashSize = nextDashSize;
+      ringMaterial.gapSize = nextDashSize * 1.3;
+      ringGeometry.computeBoundingSphere();
+      ring.computeLineDistances();
+    }
   };
 }

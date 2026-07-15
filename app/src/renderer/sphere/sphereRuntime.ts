@@ -52,6 +52,7 @@ export function createSphereRuntime(
   let hasFittedData = false;
   let disposed = false;
   let guides: SphereGuides | null = null;
+  let guideRadiusFloor = 0;
   let nodeDataFrame: number | null = null;
   let pulseActive = false;
   let pulseBasePositions = new WeakMap<SphereNode, { x: number; y: number; z: number }>();
@@ -76,8 +77,18 @@ export function createSphereRuntime(
   };
   const showGuidesBeforeNodes = () => {
     if (data.nodes.length === 0) return;
-    guides = createSphereGuides(estimateSphereGuideRadius(data.nodes.length), theme.accent);
+    guideRadiusFloor = estimateSphereGuideRadius(data.nodes.length);
+    guides = createSphereGuides(guideRadiusFloor, theme.accent);
     scene.add(guides.group);
+  };
+  const currentLayoutRadius = () => {
+    let radius = 0;
+    for (const node of data.nodes) {
+      if (Number.isFinite(node.x) && Number.isFinite(node.y) && Number.isFinite(node.z)) {
+        radius = Math.max(radius, Math.hypot(node.x!, node.y!, node.z!));
+      }
+    }
+    return radius;
   };
   const scheduleNodeData = () => {
     nodeDataFrame = requestAnimationFrame(() => {
@@ -136,6 +147,10 @@ export function createSphereRuntime(
       event.preventDefault();
       callbacks.onBackgroundFocusClear();
     })
+    .onEngineTick(() => {
+      if (!layoutPending || !guides) return;
+      guides.setRadius(Math.max(guideRadiusFloor, currentLayoutRadius()));
+    })
     .onEngineStop(() => {
       if (!layoutPending || data.nodes.length === 0) return;
       layoutPending = false;
@@ -150,9 +165,7 @@ export function createSphereRuntime(
           radius = Math.max(radius, Math.hypot(position.x, position.y, position.z));
         }
       }
-      clearGuides();
-      guides = createSphereGuides(radius, theme.accent);
-      scene.add(guides.group);
+      guides?.setRadius(Math.max(guideRadiusFloor, radius));
       pulseActive = true;
       if (shouldFit) {
         hasFittedData = true;

@@ -65,7 +65,7 @@ describe("sphereRuntime", () => {
     for (const method of [
       "showNavInfo", "enableNodeDrag", "nodeId", "nodeLabel", "nodeVal", "nodeOpacity", "linkOpacity",
       "nodePositionUpdate", "linkVisibility", "linkWidth", "nodeColor", "linkColor", "onNodeHover", "onNodeClick", "onNodeRightClick",
-      "onBackgroundRightClick", "onEngineStop", "width", "height", "backgroundColor", "nodeResolution",
+      "onBackgroundRightClick", "onEngineTick", "onEngineStop", "width", "height", "backgroundColor", "nodeResolution",
       "cooldownTicks", "cooldownTime", "graphData", "refresh", "zoomToFit", "pauseAnimation",
       "resumeAnimation", "_destructor"
     ]) {
@@ -96,6 +96,7 @@ describe("sphereRuntime", () => {
     runtime.setFocus("A.md");
     runAnimationFrame();
     runAnimationFrame();
+    forceGraphMocks.graph.onEngineTick.mock.calls[0][0]();
 
     expect(canvas).toHaveAttribute("aria-label", "スフィア");
     expect(controls).toMatchObject({ enablePan: false, minDistance: 48, maxDistance: 4_800 });
@@ -120,7 +121,7 @@ describe("sphereRuntime", () => {
     runAnimationFrame();
     forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
     expect(forceGraphMocks.graph.zoomToFit).toHaveBeenCalledTimes(1);
-    expect(scene.add).toHaveBeenCalledTimes(4);
+    expect(scene.add).toHaveBeenCalledTimes(2);
     const colorAccessor = forceGraphMocks.graph.nodeColor.mock.calls[0][0];
     const linkColorAccessor = forceGraphMocks.graph.linkColor.mock.calls[0][0];
     const linkWidthAccessor = forceGraphMocks.graph.linkWidth.mock.calls[0][0];
@@ -148,7 +149,7 @@ describe("sphereRuntime", () => {
     expect(forceGraphMocks.graph.pauseAnimation).toHaveBeenCalledOnce();
     expect(forceGraphMocks.graph._destructor).toHaveBeenCalledOnce();
     expect(observerDisconnect).toHaveBeenCalledOnce();
-    expect(scene.remove).toHaveBeenCalledTimes(4);
+    expect(scene.remove).toHaveBeenCalledTimes(2);
   });
 
   it("中心ガイドを1画面分先に表示してからノード配置を始める", () => {
@@ -176,6 +177,39 @@ describe("sphereRuntime", () => {
     runAnimationFrame();
 
     expect(forceGraphMocks.graph.graphData).toHaveBeenLastCalledWith(data);
+    runtime.dispose();
+  });
+
+  it("ノードの膨張中に同じ中心ガイドを連続して広げる", () => {
+    const host = document.createElement("div");
+    const runtime = createSphereRuntime(host, {
+      canvasLabel: "スフィア",
+      onBackgroundFocusClear: vi.fn(),
+      onContextLost: vi.fn(),
+      onNodeActivate: vi.fn(),
+      onNodeFocus: vi.fn(),
+      onNodeHover: vi.fn()
+    });
+    const data = sphereData();
+
+    runtime.setData(data, defaultGraphDrawTheme);
+    const guideGroup = scene.add.mock.calls[0][0];
+    const ring = guideGroup.getObjectByName("sphere-equator-ring") as { geometry: { getAttribute: (name: string) => { getX: (index: number) => number } } };
+    const initialRadius = ring.geometry.getAttribute("position").getX(0);
+    runAnimationFrame();
+    runAnimationFrame();
+    Object.assign(data.nodes[0], { x: 240, y: 0, z: 0 });
+
+    forceGraphMocks.graph.onEngineTick.mock.calls[0][0]();
+
+    expect(scene.add).toHaveBeenCalledOnce();
+    expect(scene.remove).not.toHaveBeenCalled();
+    expect(ring.geometry.getAttribute("position").getX(0)).toBeGreaterThan(initialRadius);
+
+    forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
+
+    expect(scene.add).toHaveBeenCalledOnce();
+    expect(scene.remove).not.toHaveBeenCalled();
     runtime.dispose();
   });
 
