@@ -10,6 +10,11 @@ import { registerToolHandlers } from "./ipc/toolHandlers";
 import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
 import { devServerLoadUrls, loadDevServerUrlWithRetry } from "./devServerLoader";
 import { configureDevelopmentUserDataPath } from "./developmentUserData";
+import {
+  attachElectronSmoke,
+  configureElectronSmokeUserDataPath,
+  resolveElectronSmokeConfig
+} from "./electronSmoke";
 import { getMainTranslator } from "./i18n";
 import { configureWindowCloseProtection } from "./windowCloseProtection";
 import { stopWorkspaceWatcher } from "./workspace/workspaceWatcher";
@@ -23,9 +28,11 @@ const APP_ID = "app.relic.desktop";
 const APP_NAME = "Relic";
 let isDevelopmentQuitInProgress = false;
 let mainWindow: BrowserWindow | null = null;
+const electronSmokeConfig = resolveElectronSmokeConfig();
 
 app.setName(APP_NAME);
 configureDevelopmentUserDataPath(app, MAIN_WINDOW_VITE_DEV_SERVER_URL, process.env.RELIC_DEV_USER_DATA_DIR);
+configureElectronSmokeUserDataPath(app, electronSmokeConfig);
 
 if (process.platform === "win32") {
   app.setAppUserModelId(APP_ID);
@@ -45,6 +52,7 @@ function createWindow(): void {
   configureWindowSecurity(window, rendererIndexUrl);
   configureEditorContextMenu(window);
   configureWindowCloseProtection(window, () => isDevelopmentQuitInProgress);
+  attachElectronSmoke(app, window, electronSmokeConfig);
 
   window.on("closed", () => {
     if (mainWindow === window) {
@@ -135,6 +143,6 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
-  isDevelopmentQuitInProgress = Boolean(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+  isDevelopmentQuitInProgress = Boolean(MAIN_WINDOW_VITE_DEV_SERVER_URL || electronSmokeConfig);
   stopWorkspaceWatcher();
 });

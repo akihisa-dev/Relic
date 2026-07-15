@@ -90,12 +90,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: ${command}
 `);
-    const codeCi = workflow("Code CI", "push", "pnpm verify:ci");
+    const codeCi = workflow("Code CI", "push", "pnpm verify:ci && pnpm smoke:electron");
     codeCi.on.push = { branches: ["main"] };
     const workflows = new Map([
       [".github/workflows/ci.yml", codeCi],
-      [".github/workflows/pre-release-verification.yml", workflow("Pre-release", "workflow_dispatch", "pnpm build:mac:safe && pnpm build:win:safe")],
-      [".github/workflows/draft-release.yml", workflow("Draft", "push", "pnpm build:mac:safe && pnpm build:win:safe")]
+      [".github/workflows/pre-release-verification.yml", workflow("Pre-release", "workflow_dispatch", "pnpm build:mac:safe && pnpm build:win:safe && pnpm smoke:package")],
+      [".github/workflows/draft-release.yml", workflow("Draft", "push", "pnpm build:mac:safe && pnpm build:win:safe && pnpm smoke:package")]
     ]);
 
     expect(validateRepositoryWorkflowPolicy(workflows, {
@@ -134,5 +134,37 @@ jobs:
     expect(errors).toContain(".github/workflows/ci.yml: job verify Node.js 20 is outside app/package.json engines.node.");
     expect(errors).toContain(".github/workflows/ci.yml: job verify must install with --frozen-lockfile.");
     expect(errors).toContain(".github/workflows/ci.yml: job verify must enable Corepack before pnpm install.");
+  });
+
+  it("packageを作るjobに起動スモークがない場合は報告する", () => {
+    const packageWorkflow = parseWorkflow(`
+name: Package
+on: workflow_dispatch
+permissions:
+  contents: read
+concurrency:
+  group: package
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: pnpm build:mac:safe
+`);
+    const errors = validateRepositoryWorkflowPolicy(new Map([
+      [".github/workflows/ci.yml", packageWorkflow],
+      [".github/workflows/pre-release-verification.yml", packageWorkflow],
+      [".github/workflows/draft-release.yml", packageWorkflow]
+    ]), {
+      engines: { node: ">=22 <27" },
+      packageManager: "pnpm@10.10.0"
+    });
+
+    expect(errors).toContain(
+      ".github/workflows/pre-release-verification.yml: package build job build must run the package Electron smoke."
+    );
+    expect(errors).toContain(
+      ".github/workflows/draft-release.yml: package build job build must run the package Electron smoke."
+    );
   });
 });

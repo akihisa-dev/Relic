@@ -80,6 +80,18 @@ jobs:
         working-directory: app
         run: pnpm build:mac:safe
 
+      - name: Run macOS package startup smoke
+        working-directory: app
+        run: pnpm smoke:package -- --artifacts-dir artifacts/electron-smoke
+
+      - name: Upload macOS smoke evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: electron-smoke-macos
+          path: app/artifacts/electron-smoke
+          if-no-files-found: ignore
+
       - name: Check macOS runner architecture
         shell: bash
         run: |
@@ -146,6 +158,18 @@ jobs:
       - name: Build Windows app
         working-directory: app
         run: pnpm build:win:safe
+
+      - name: Run Windows package startup smoke
+        working-directory: app
+        run: pnpm smoke:package -- --artifacts-dir artifacts/electron-smoke
+
+      - name: Upload Windows smoke evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: electron-smoke-windows
+          path: app/artifacts/electron-smoke
+          if-no-files-found: ignore
 
       - name: Create Windows release ZIP
         working-directory: app

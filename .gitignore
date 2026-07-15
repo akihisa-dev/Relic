@@ -39,6 +39,7 @@ out/
 # テスト
 coverage/
 test-workspaces/
+artifacts/
 
 # webpack
 .webpack/

@@ -42,7 +42,7 @@ export function renderTestInventory(inventory) {
     "Test role inventory",
     ...Object.entries(inventory.counts).map(([category, count]) => `${category}: ${count}`),
     `total: ${inventory.total}`,
-    "electron-smoke and os-package are workflow/manual verification roles, not Vitest files."
+    "electron-smoke and os-package are dedicated process/workflow roles, not Vitest files."
   ].join("\n");
 }
 

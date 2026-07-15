@@ -1,6 +1,6 @@
 {
   "name": "relic",
-  "version": "0.6.15",
+  "version": "0.6.16",
   "description": "Relic is a local app that extends Markdown files with editing, search, browsing, visualization, and export while keeping the information as Markdown.",
   "license": "AGPL-3.0-or-later",
   "main": ".vite/build/main.js",
@@ -37,6 +37,8 @@
     "test:renderer": "vitest run --project renderer",
     "test:coverage": "vitest run --coverage",
     "test:inventory": "node scripts/test-inventory.mjs",
+    "smoke:electron": "node scripts/electron-smoke.mjs development",
+    "smoke:package": "node scripts/electron-smoke.mjs package",
     "test:mac": "vitest run",
     "test:win": "vitest run",
     "test:watch": "vitest",

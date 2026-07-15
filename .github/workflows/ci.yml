@@ -41,6 +41,18 @@ jobs:
         working-directory: app
         run: pnpm verify:ci
 
+      - name: Run isolated Electron startup smoke
+        working-directory: app
+        run: xvfb-run --auto-servernum pnpm smoke:electron -- --artifacts-dir artifacts/electron-smoke
+
+      - name: Upload Electron smoke evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: electron-smoke-linux
+          path: app/artifacts/electron-smoke
+          if-no-files-found: ignore
+
       - name: Check version policy
         if: github.event_name == 'pull_request'
         working-directory: app

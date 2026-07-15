@@ -168,6 +168,8 @@ export function validateRepositoryWorkflowPolicy(workflows, packageJson) {
     errors.push(".github/workflows/ci.yml: Code CI must run for pushes to main.");
   } else if (!workflowCommands(codeCi).some((command) => command.includes("pnpm verify:ci"))) {
     errors.push(".github/workflows/ci.yml: Code CI must run pnpm verify:ci.");
+  } else if (!workflowCommands(codeCi).some((command) => command.includes("pnpm smoke:electron"))) {
+    errors.push(".github/workflows/ci.yml: Code CI must run the development Electron smoke.");
   }
 
   const preRelease = workflows.get(".github/workflows/pre-release-verification.yml");
@@ -182,6 +184,20 @@ export function validateRepositoryWorkflowPolicy(workflows, packageJson) {
     }
     if (!draftRelease || !workflowCommands(draftRelease).some((entry) => entry.includes(command))) {
       errors.push(`.github/workflows/draft-release.yml: missing shared safe build command ${command}.`);
+    }
+  }
+  for (const [source, workflow] of [
+    [".github/workflows/pre-release-verification.yml", preRelease],
+    [".github/workflows/draft-release.yml", draftRelease]
+  ]) {
+    for (const [jobName, job] of Object.entries(workflow?.jobs ?? {})) {
+      const commands = Array.isArray(job?.steps)
+        ? job.steps.map((step) => typeof step?.run === "string" ? step.run : "")
+        : [];
+      if (commands.some((command) => command.includes("pnpm build:") && command.includes(":safe"))
+        && !commands.some((command) => command.includes("pnpm smoke:package"))) {
+        errors.push(`${source}: package build job ${jobName} must run the package Electron smoke.`);
+      }
     }
   }
   return errors;

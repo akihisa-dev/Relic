@@ -166,6 +166,7 @@ pnpm test:node
 pnpm test:renderer
 pnpm test:coverage
 pnpm test:inventory
+pnpm smoke:electron
 pnpm architecture:check
 pnpm ci:workflows:check
 pnpm skills:check
@@ -178,14 +179,15 @@ Node APIを使うmain・preload・shared・scriptsのテストはNode環境、re
 `test:coverage` は全テストと製品コードのカバレッジ下限を確認する。測定用・診断用の `scripts/` はテスト対象に含めるが、製品コードのカバレッジ集計からは除外する。
 `architecture:check` はプロセス境界、循環依存、未解決相対import、module alias禁止方針を確認する。保証範囲は [engineering/architecture.md](engineering/architecture.md) を正とする。
 `test:inventory` は全テストファイルを失敗責務の層へ分類し、Electron実行とOS別packageがVitest外の責務であることも表示する。
+`smoke:electron` は一時ユーザーデータを使って開発版Electronを起動し、メインウインドウ、Renderer、Preload API、初期IPC接続を確認して自動終了する。macOSまたはWindowsで安全ビルド済みの配布版を確認する場合は `pnpm smoke:package` を使う。どちらも必要に応じて `-- --artifacts-dir <path>` でJSON reportとプロセスログの保存先を指定できる。
 `verify` は日常変更向けにNode.js環境、型、全テストを確認する。
 `verify:full` はローカルで再現可能な包括確認として、Node.js環境、型、全テストとカバレッジ、アーキテクチャ境界、文書索引、workflow安全条件、Skill構造・routing台帳、差分の空白・改行を確認する。
 `verify:ci` は `verify:full` に依存通知・SBOM整合とrenderer bundle基準を追加し、Code CIの再現可能部分をまとめる。Pull Requestのbase/headを使うバージョン検査はGitHubイベント固有のため別stepで実行する。
 変更に対して `verify` が過剰な場合も検証自体は省略せず、対象テスト、型チェック、文書確認、差分確認などへ絞る。
 E2E、配布ビルド、実アプリ操作は通常の変更の必須確認にはしない。
 macOS／Windowsのsafe checkは、配布用ASARの許可内容と必須entry、`LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOM、およびElectron本体を除くアプリ固有resourcesの容量とファイル数を確認する。
-GitHubのCode CIはPull Request、`main`へのpush、手動実行で `pnpm verify:ci` を実行する。Pull Requestだけは追加でコミット範囲のバージョン規則を確認する。
-タグ作成前のOS別配布確認は、GitHub ActionsのPre-release Verificationを手動実行する。macOSとWindowsのrunnerでRelease workflowと同じ `build:mac:safe`／`build:win:safe` を使い、タグ、Release、push、repository内容を変更しない。
+GitHubのCode CIはPull Request、`main`へのpush、手動実行で `pnpm verify:ci` と仮想表示server上の `pnpm smoke:electron` を実行する。Pull Requestだけは追加でコミット範囲のバージョン規則を確認する。
+タグ作成前のOS別配布確認は、GitHub ActionsのPre-release Verificationを手動実行する。macOSとWindowsのrunnerでRelease workflowと同じ `build:mac:safe`／`build:win:safe` と `pnpm smoke:package` を使い、タグ、Release、push、repository内容を変更しない。Draft Release workflowもZIP作成前に同じ配布版スモークを実行する。
 開発版を一時データだけで実アプリ確認する場合は、`pnpm start:isolated -- --user-data-dir <absolute-temp-path>` で起動する。起動元のterminalに出る `RELIC_DEV_APP_IDENTITY` のPIDと完全な実行pathを操作対象の確認に使い、表示名だけで既存ウインドウを選ばない。この切り替えはVite開発server起動時だけ有効で、package版では既定のユーザーデータ保存先を変更しない。
 
 ### 優先してテストする領域
