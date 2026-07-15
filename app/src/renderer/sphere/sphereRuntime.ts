@@ -121,7 +121,7 @@ export function createSphereRuntime(
         }
       }
       clearGuides();
-      guides = createSphereGuides(radius, theme.textSecondary);
+      guides = createSphereGuides(radius, theme.accent);
       scene.add(guides.group);
       pulseActive = true;
       graph.zoomToFit(420, 72);

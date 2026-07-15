@@ -23,6 +23,7 @@ function guideMaterial(color: ColorRepresentation, opacity: number, dashSize: nu
     depthWrite: false,
     gapSize,
     opacity,
+    toneMapped: false,
     transparent: true
   });
 }
@@ -39,7 +40,7 @@ export function createSphereGuides(radius: number, color: ColorRepresentation): 
     new Vector3(0, -axisHalfLength, 0),
     new Vector3(0, axisHalfLength, 0)
   ]);
-  const axisMaterial = guideMaterial(color, 0.32, dashSize, gapSize);
+  const axisMaterial = guideMaterial(color, 1, dashSize, gapSize);
   const axis = new Line(axisGeometry, axisMaterial);
   axis.name = "sphere-center-axis";
   axis.computeLineDistances();
@@ -50,7 +51,7 @@ export function createSphereGuides(radius: number, color: ColorRepresentation): 
     return new Vector3(Math.cos(angle) * guideRadius, 0, Math.sin(angle) * guideRadius);
   });
   const ringGeometry = new BufferGeometry().setFromPoints(ringPoints);
-  const ringMaterial = guideMaterial(color, 0.24, dashSize, gapSize);
+  const ringMaterial = guideMaterial(color, 0.9, dashSize, gapSize);
   const ring = new LineLoop(ringGeometry, ringMaterial);
   ring.name = "sphere-equator-ring";
   ring.computeLineDistances();

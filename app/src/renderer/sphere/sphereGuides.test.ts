@@ -18,8 +18,18 @@ describe("sphereGuides", () => {
     expect(axisPositions.getY(1)).toBeGreaterThan(0);
     expect(Array.from({ length: ringPositions.count }, (_, index) => ringPositions.getY(index))
       .every((value) => value === 0)).toBe(true);
-    expect(axis.material).toMatchObject({ isLineDashedMaterial: true, opacity: 0.32, transparent: true });
-    expect(ring.material).toMatchObject({ isLineDashedMaterial: true, opacity: 0.24, transparent: true });
+    expect(axis.material).toMatchObject({
+      isLineDashedMaterial: true,
+      opacity: 1,
+      toneMapped: false,
+      transparent: true
+    });
+    expect(ring.material).toMatchObject({
+      isLineDashedMaterial: true,
+      opacity: 0.9,
+      toneMapped: false,
+      transparent: true
+    });
   });
 
   it("生成したgeometryとmaterialを破棄する", () => {
