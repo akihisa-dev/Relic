@@ -3,7 +3,6 @@ import ForceGraph3D, { type ForceGraph3DInstance } from "3d-force-graph";
 import { defaultGraphDrawTheme, type GraphDrawTheme } from "../graph/graphTypes";
 import {
   sphereFocusIds,
-  sphereLabelNodes,
   sphereLinkTouchesFocus,
   type SphereData,
   type SphereLink,
@@ -26,13 +25,11 @@ export interface SphereRuntime {
 }
 
 type OrbitControlLimits = {
-  addEventListener?: (type: "change", listener: () => void) => void;
   enablePan?: boolean;
   maxDistance?: number;
   maxPolarAngle?: number;
   minDistance?: number;
   minPolarAngle?: number;
-  removeEventListener?: (type: "change", listener: () => void) => void;
 };
 
 export function createSphereRuntime(
@@ -50,59 +47,6 @@ export function createSphereRuntime(
     controlType: "orbit",
     rendererConfig: { alpha: true, antialias: true, powerPreference: "high-performance" }
   }) as unknown as ForceGraph3DInstance<SphereNode, SphereLink>;
-  const labelLayer = document.createElement("div");
-  labelLayer.className = "sphere-node-label-layer";
-  labelLayer.setAttribute("aria-hidden", "true");
-  host.append(labelLayer);
-  const labelElements = new Map<string, HTMLSpanElement>();
-  let labelNodes: SphereNode[] = [];
-
-  function updateLabelFocus(): void {
-    for (const [nodeId, label] of labelElements) {
-      label.classList.toggle("sphere-node-label--focus", nodeId === focusId);
-      label.classList.toggle(
-        "sphere-node-label--neighbor",
-        nodeId !== focusId && focusIds.has(nodeId)
-      );
-    }
-  }
-
-  function updateLabelPositions(): void {
-    const rect = host.getBoundingClientRect();
-    for (const node of labelNodes) {
-      const label = labelElements.get(node.id);
-      if (!label) continue;
-      if (![node.x, node.y, node.z].every((value) => typeof value === "number" && Number.isFinite(value))) {
-        label.hidden = true;
-        continue;
-      }
-
-      const screen = graph.graph2ScreenCoords(node.x!, node.y!, node.z!);
-      const visible = screen.x >= -80 && screen.x <= rect.width + 80 &&
-        screen.y >= -40 && screen.y <= rect.height + 40;
-      label.hidden = !visible;
-      if (visible) {
-        label.style.transform = `translate3d(${Math.round(screen.x)}px, ${Math.round(screen.y)}px, 0) translate(-50%, calc(-100% - 8px))`;
-      }
-    }
-  }
-
-  function rebuildLabels(): void {
-    labelNodes = sphereLabelNodes(data);
-    labelElements.clear();
-    const fragment = document.createDocumentFragment();
-    for (const node of labelNodes) {
-      const label = document.createElement("span");
-      label.className = "sphere-node-label";
-      label.textContent = node.label;
-      labelElements.set(node.id, label);
-      fragment.append(label);
-    }
-    labelLayer.replaceChildren(fragment);
-    updateLabelFocus();
-    updateLabelPositions();
-  }
-
   graph
     .showNavInfo(false)
     .enableNodeDrag(false)
@@ -133,7 +77,6 @@ export function createSphereRuntime(
       event.preventDefault();
       callbacks.onBackgroundFocusClear();
     })
-    .onEngineTick(updateLabelPositions)
     .onEngineStop(() => {
       if (!fitPending || data.nodes.length === 0) return;
       fitPending = false;
@@ -146,8 +89,6 @@ export function createSphereRuntime(
   controls.maxDistance = 4_800;
   controls.minPolarAngle = 0.04;
   controls.maxPolarAngle = Math.PI - 0.04;
-  const handleControlsChange = () => updateLabelPositions();
-  controls.addEventListener?.("change", handleControlsChange);
 
   const renderer = graph.renderer();
   const canvas = renderer.domElement;
@@ -156,7 +97,6 @@ export function createSphereRuntime(
   const resize = () => {
     const rect = host.getBoundingClientRect();
     graph.width(Math.max(1, Math.floor(rect.width))).height(Math.max(1, Math.floor(rect.height)));
-    updateLabelPositions();
   };
   const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(resize);
   resizeObserver?.observe(host);
@@ -180,7 +120,6 @@ export function createSphereRuntime(
       disposed = true;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       canvas.removeEventListener("webglcontextlost", handleContextLost);
-      controls.removeEventListener?.("change", handleControlsChange);
       resizeObserver?.disconnect();
       graph.pauseAnimation();
       graph._destructor();
@@ -198,14 +137,12 @@ export function createSphereRuntime(
         .cooldownTicks(isLarge ? 90 : 180)
         .cooldownTime(isLarge ? 4_000 : 8_000)
         .graphData(data);
-      rebuildLabels();
       renderer.setPixelRatio(isLarge ? 1 : Math.min(window.devicePixelRatio || 1, 2));
       graph.refresh();
     },
     setFocus: (nextFocusId) => {
       focusId = nextFocusId;
       focusIds = sphereFocusIds(data, focusId);
-      updateLabelFocus();
       graph.refresh();
     }
   };

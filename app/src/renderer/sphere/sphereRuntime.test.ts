@@ -19,9 +19,9 @@ function sphereData(): SphereData {
   return {
     links: [{ count: 1, source: "A.md", sourceId: "A.md", target: "B.md", targetId: "B.md", type: "link" }],
     nodes: [
-      { backlinkCount: 0, baseColor: "#111111", exists: true, id: "A.md", label: "A", linkCount: 1, path: "A.md", type: "file", val: 4, x: 0, y: 0, z: 0 },
-      { backlinkCount: 1, baseColor: "#222222", exists: true, id: "B.md", label: "B", linkCount: 0, path: "B.md", type: "file", val: 4, x: 10, y: 10, z: 10 },
-      { backlinkCount: 0, baseColor: "#333333", exists: true, id: "C.md", label: "C", linkCount: 0, path: "C.md", type: "file", val: 4, x: 20, y: 20, z: 20 }
+      { backlinkCount: 0, baseColor: "#111111", exists: true, id: "A.md", label: "A", linkCount: 1, path: "A.md", type: "file", val: 4 },
+      { backlinkCount: 1, baseColor: "#222222", exists: true, id: "B.md", label: "B", linkCount: 0, path: "B.md", type: "file", val: 4 },
+      { backlinkCount: 0, baseColor: "#333333", exists: true, id: "C.md", label: "C", linkCount: 0, path: "C.md", type: "file", val: 4 }
     ]
   };
 }
@@ -33,7 +33,7 @@ describe("sphereRuntime", () => {
 
   beforeEach(() => {
     canvas = document.createElement("canvas");
-    controls = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    controls = {};
     observerDisconnect = vi.fn();
     vi.stubGlobal("ResizeObserver", vi.fn(function (callback: () => void) {
       callback();
@@ -42,13 +42,12 @@ describe("sphereRuntime", () => {
 
     const graph: Record<string, any> = {
       controls: vi.fn(() => controls),
-      graph2ScreenCoords: vi.fn(() => ({ x: 120, y: 140, z: 0 })),
       renderer: vi.fn(() => ({ domElement: canvas, setPixelRatio: vi.fn() }))
     };
     for (const method of [
       "showNavInfo", "enableNodeDrag", "nodeId", "nodeLabel", "nodeVal", "nodeOpacity", "linkOpacity",
       "linkVisibility", "linkWidth", "nodeColor", "linkColor", "onNodeHover", "onNodeClick", "onNodeRightClick",
-      "onBackgroundRightClick", "onEngineTick", "onEngineStop", "width", "height", "backgroundColor", "nodeResolution",
+      "onBackgroundRightClick", "onEngineStop", "width", "height", "backgroundColor", "nodeResolution",
       "cooldownTicks", "cooldownTime", "graphData", "refresh", "zoomToFit", "pauseAnimation",
       "resumeAnimation", "_destructor"
     ]) {
@@ -97,11 +96,6 @@ describe("sphereRuntime", () => {
     expect(linkWidthAccessor(unfocusedLink)).toBe(1);
     expect(linkColorAccessor(sphereData().links[0])).toBe(defaultGraphDrawTheme.accent);
     expect(linkColorAccessor(unfocusedLink)).toBe(defaultGraphDrawTheme.textSecondary);
-    expect(Array.from(host.querySelectorAll(".sphere-node-label")).map((label) => label.textContent)).toEqual([
-      "A", "B", "C"
-    ]);
-    expect(host.querySelector(".sphere-node-label--focus")).toHaveTextContent("A");
-    expect(host.querySelector(".sphere-node-label")?.getAttribute("style")).toContain("translate3d(120px, 140px, 0)");
 
     canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
     expect(callbacks.onContextLost).toHaveBeenCalled();
@@ -111,6 +105,5 @@ describe("sphereRuntime", () => {
     expect(forceGraphMocks.graph.pauseAnimation).toHaveBeenCalledOnce();
     expect(forceGraphMocks.graph._destructor).toHaveBeenCalledOnce();
     expect(observerDisconnect).toHaveBeenCalledOnce();
-    expect(controls.removeEventListener).toHaveBeenCalledWith("change", expect.any(Function));
   });
 });
