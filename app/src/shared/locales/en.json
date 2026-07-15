@@ -374,6 +374,8 @@
   "settings.showLineNumbers": "Show line numbers",
   "settings.spellCheck": "Spell check",
   "settings.theme": "Theme",
+  "settings.switchToDark": "Switch to dark theme",
+  "settings.switchToLight": "Switch to light theme",
   "settings.themeSystem": "Follow system",
   "settings.removeChoice": "Remove {{choice}}",
   "tools.actionsLabel": "File tool actions",

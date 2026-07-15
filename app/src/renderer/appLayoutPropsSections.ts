@@ -206,6 +206,10 @@ export function createStatusBarProps(input: AppLayoutStatusBarInput): StatusBarP
   };
 }
 
-export function createTitleBarProps(_input: AppLayoutPropsInput): TitleBarProps {
-  return {};
+export function createTitleBarProps(input: AppLayoutPropsInput): TitleBarProps {
+  return {
+    isDarkTheme: input.shell.isDarkTheme,
+    onThemeChange: (theme) => input.shell.handleSaveSettings({ ...input.shell.editorSettings, theme }),
+    showThemeSwitch: input.shell.showThemeSwitch
+  };
 }

@@ -1,12 +1,23 @@
 import { readFileSync } from "node:fs";
 
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { I18nProvider } from "../i18n";
 import { AppTitleBar } from "./AppTitleBar";
 
-function renderTitleBar(): void {
-  render(<AppTitleBar />);
+function renderTitleBar({ isDarkTheme = false, showThemeSwitch = true } = {}) {
+  const onThemeChange = vi.fn();
+  render(
+    <I18nProvider language="ja">
+      <AppTitleBar
+        isDarkTheme={isDarkTheme}
+        onThemeChange={onThemeChange}
+        showThemeSwitch={showThemeSwitch}
+      />
+    </I18nProvider>
+  );
+  return onThemeChange;
 }
 
 afterEach(() => {
@@ -14,23 +25,44 @@ afterEach(() => {
 });
 
 describe("AppTitleBar", () => {
-  it("keeps the title bar as an OS-style drag region without app controls", () => {
+  it("shows the light theme state beside the macOS window controls", () => {
     renderTitleBar();
 
     expect(document.querySelector(".title-bar")).toBeInTheDocument();
     expect(document.querySelector(".title-bar-drag-area")).toBeInTheDocument();
     expect(document.querySelector(".title-bar .pane-tab")).toBeNull();
     expect(document.querySelector(".title-bar .main-area-actions")).toBeNull();
-    expect(screen.queryByRole("button")).toBeNull();
+    const toggle = screen.getByRole("checkbox", { name: "ダークテーマに切り替える" });
+    expect(toggle).not.toBeChecked();
+    expect(document.querySelector(".title-bar-theme-switch .track .thumb")).toBeInTheDocument();
+  });
+
+  it("switches from the current theme to the other fixed theme", () => {
+    const onThemeChange = renderTitleBar({ isDarkTheme: true });
+
+    const toggle = screen.getByRole("checkbox", { name: "ライトテーマに切り替える" });
+    expect(toggle).toBeChecked();
+
+    fireEvent.click(toggle);
+
+    expect(onThemeChange).toHaveBeenCalledWith("light");
+  });
+
+  it("does not show the macOS-only switch on other platforms", () => {
+    renderTitleBar({ showThemeSwitch: false });
+
+    expect(screen.queryByRole("checkbox")).toBeNull();
   });
 
   it("can host header actions without making them part of the drag area", () => {
     render(
-      <AppTitleBar>
-        <div className="main-area-actions">
-          <button type="button">Action</button>
-        </div>
-      </AppTitleBar>
+      <I18nProvider language="ja">
+        <AppTitleBar isDarkTheme={false} onThemeChange={vi.fn()} showThemeSwitch>
+          <div className="main-area-actions">
+            <button type="button">Action</button>
+          </div>
+        </AppTitleBar>
+      </I18nProvider>
     );
 
     expect(document.querySelector(".title-bar .main-area-actions")).toBeInTheDocument();

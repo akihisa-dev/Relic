@@ -18,6 +18,9 @@ export interface AppLayoutPropsInput {
 
 export interface AppLayoutShellInput {
   editorSettings: EditorWorkspaceProps["editorSettings"];
+  handleSaveSettings: (settings: EditorWorkspaceProps["editorSettings"]) => void;
+  isDarkTheme: boolean;
+  showThemeSwitch: boolean;
 }
 
 export interface AppLayoutEditorWorkspaceInput {

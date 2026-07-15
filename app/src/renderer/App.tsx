@@ -9,6 +9,7 @@ import { createAppLayoutProps } from "./appLayoutProps";
 import { selectAppEditorStoreState, selectAppUiStoreState } from "./appStoreSelectors";
 import { AppLayout } from "./components/AppLayout";
 import { createTranslator } from "./i18nModel";
+import { isMacPlatform } from "./keyboardShortcuts";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
 import { useAppCloseGuards } from "./hooks/useAppCloseGuards";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
@@ -348,7 +349,7 @@ export function App(): ReactElement {
   });
   useWindowCloseRequest(ensureCanCloseAllTabs);
 
-  useAppTheme(editorSettings.theme);
+  const isDarkTheme = useAppTheme(editorSettings.theme);
 
   useAppKeyboardShortcuts({
     closeTab: closeTabWithMotion,
@@ -671,7 +672,10 @@ export function App(): ReactElement {
       workspaceState
     },
     shell: {
-      editorSettings
+      editorSettings,
+      handleSaveSettings,
+      isDarkTheme,
+      showThemeSwitch: isMacPlatform()
     },
     statusBar: {
       activeFileTab: activeFileTabInFocusedPane,

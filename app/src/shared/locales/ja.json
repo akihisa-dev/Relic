@@ -374,6 +374,8 @@
   "settings.showLineNumbers": "行番号を表示",
   "settings.spellCheck": "スペルチェック",
   "settings.theme": "テーマ",
+  "settings.switchToDark": "ダークテーマに切り替える",
+  "settings.switchToLight": "ライトテーマに切り替える",
   "settings.themeSystem": "システム設定に合わせる",
   "settings.removeChoice": "{{choice}} を削除",
   "tools.actionsLabel": "ファイル加工アクション",

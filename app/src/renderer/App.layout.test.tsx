@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import {
   afterEach,
   beforeAll,
@@ -41,5 +41,19 @@ describe("App layout", () => {
     expect(screen.getByRole("navigation")).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
     expect(await screen.findByText("書く場所を選ぶ")).toBeInTheDocument();
+  });
+
+  it("タイトルバーからテーマを切り替えて保存する", async () => {
+    const saveEditorSettings = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    window.relic = makeRelicApi({ saveEditorSettings });
+
+    await renderApp();
+
+    const toggle = await screen.findByRole("checkbox", { name: "ダークテーマに切り替える" });
+    fireEvent.click(toggle);
+
+    expect(saveEditorSettings).toHaveBeenCalledWith(expect.objectContaining({ theme: "dark" }));
+    await waitFor(() => expect(toggle).toBeChecked());
+    expect(toggle).toHaveAccessibleName("ライトテーマに切り替える");
   });
 });

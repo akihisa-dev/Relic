@@ -238,6 +238,8 @@
   .settings-segmented-button,
   .settings-toggle-switch,
   .settings-toggle-switch .switch-knob,
+  .title-bar-theme-switch .track,
+  .title-bar-theme-switch .thumb,
   .frontmatter-field-collapse-summary::before {
     transition-duration: 1ms;
   }

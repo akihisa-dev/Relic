@@ -32,6 +32,98 @@
   min-width: 0;
 }
 
+.switch {
+  --primary: var(--color-accent-strong);
+  --secondary: var(--color-primary);
+  --surface: var(--color-surface);
+  --on: var(--secondary);
+  --off: color-mix(in srgb, var(--color-border-strong) 70%, var(--surface));
+  --thumb: var(--surface);
+  -webkit-app-region: no-drag;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  position: relative;
+}
+
+.switch input {
+  height: 0;
+  opacity: 0;
+  position: absolute;
+  width: 0;
+}
+
+.switch .track {
+  background: var(--off);
+  border-radius: 9999px;
+  height: 28px;
+  position: relative;
+  transition: background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  width: 52px;
+}
+
+.switch .thumb {
+  background: var(--thumb);
+  border-radius: 50%;
+  height: 22px;
+  left: 3px;
+  position: absolute;
+  top: 3px;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease, box-shadow 0.3s ease;
+  width: 22px;
+}
+
+.switch input:checked + .track {
+  background: var(--on);
+}
+
+.switch input:checked + .track .thumb {
+  transform: translateX(24px);
+}
+
+.switch input:focus-visible + .track {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.sw-7 .track {
+  background: color-mix(in srgb, var(--color-border-strong) 70%, var(--surface));
+}
+
+.sw-7 .thumb {
+  background: var(--color-accent);
+}
+
+.sw-7 .thumb::after {
+  color: var(--color-on-accent);
+  content: "\2600";
+  display: grid;
+  font-size: 12px;
+  inset: 0;
+  place-items: center;
+  position: absolute;
+}
+
+.sw-7 input:checked + .track {
+  background: var(--secondary);
+}
+
+.sw-7 input:checked + .track .thumb {
+  background: var(--surface);
+}
+
+.sw-7 input:checked + .track .thumb::after {
+  color: var(--secondary);
+  content: "\263E";
+}
+
+.title-bar-theme-switch {
+  left: 88px;
+  position: absolute;
+  top: 7px;
+  z-index: 1;
+}
+
 .workspace {
   display: flex;
   gap: 0;
