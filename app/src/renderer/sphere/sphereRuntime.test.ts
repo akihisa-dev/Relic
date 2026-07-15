@@ -81,9 +81,12 @@ describe("sphereRuntime", () => {
     const positionAccessor = forceGraphMocks.graph.nodePositionUpdate.mock.calls[0][0];
     const position = { set: vi.fn() };
     expect(positionAccessor({ position }, { x: 10, y: 20, z: 30 }, sphereData().nodes[0])).toBe(true);
-    expect(position.set).toHaveBeenCalledWith(10, expect.any(Number), 30);
-    const floatedY = position.set.mock.calls[0][1];
-    expect(Math.abs(floatedY - 20)).toBeLessThanOrEqual(0.7);
+    expect(position.set).toHaveBeenCalledWith(expect.any(Number), expect.any(Number), expect.any(Number));
+    const [pulseX, pulseY, pulseZ] = position.set.mock.calls[0];
+    expect(pulseX / pulseY).toBeCloseTo(10 / 20);
+    expect(pulseZ / pulseY).toBeCloseTo(30 / 20);
+    expect(Math.abs(Math.hypot(pulseX, pulseY, pulseZ) - Math.hypot(10, 20, 30)))
+      .toBeLessThanOrEqual(3.6);
     const colorAccessor = forceGraphMocks.graph.nodeColor.mock.calls[0][0];
     const linkColorAccessor = forceGraphMocks.graph.linkColor.mock.calls[0][0];
     const linkWidthAccessor = forceGraphMocks.graph.linkWidth.mock.calls[0][0];

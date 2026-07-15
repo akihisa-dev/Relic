@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import { defaultGraphDrawTheme } from "../graph/graphTypes";
-import { createSphereData, sphereFocusIds, sphereLinkTouchesFocus, sphereNodeValue } from "./sphereModel";
+import {
+  createSphereData,
+  SPHERE_NODE_PULSE_AMPLITUDE,
+  SPHERE_NODE_PULSE_PERIOD_MS,
+  sphereFocusIds,
+  sphereLinkTouchesFocus,
+  sphereNodePulsePhase,
+  sphereNodePulsePosition,
+  sphereNodeValue
+} from "./sphereModel";
 
 describe("sphereModel", () => {
   const visibleGraph = {
@@ -36,5 +45,19 @@ describe("sphereModel", () => {
   it("関連数に応じてノード体積を増やし上限を設ける", () => {
     expect(sphereNodeValue({ backlinkCount: 0, linkCount: 0 })).toBeCloseTo(4.2);
     expect(sphereNodeValue({ backlinkCount: 10_000, linkCount: 10_000 })).toBe(18);
+  });
+
+  it("ノードを球の中心からの放射方向へ接近・離脱させる", () => {
+    const coordinates = { x: 30, y: 40, z: 0 };
+    const outward = sphereNodePulsePosition(coordinates, SPHERE_NODE_PULSE_PERIOD_MS / 4, 0);
+    const inward = sphereNodePulsePosition(coordinates, SPHERE_NODE_PULSE_PERIOD_MS * 0.75, 0);
+
+    expect(Math.hypot(outward.x, outward.y, outward.z)).toBeCloseTo(50 + SPHERE_NODE_PULSE_AMPLITUDE);
+    expect(Math.hypot(inward.x, inward.y, inward.z)).toBeCloseTo(50 - SPHERE_NODE_PULSE_AMPLITUDE);
+    expect(outward.x / outward.y).toBeCloseTo(coordinates.x / coordinates.y);
+    expect(inward.x / inward.y).toBeCloseTo(coordinates.x / coordinates.y);
+    expect(sphereNodePulsePosition({ x: 0, y: 0, z: 0 }, 1_000, 0)).toEqual({ x: 0, y: 0, z: 0 });
+    expect(sphereNodePulsePhase("A.md")).toBe(sphereNodePulsePhase("A.md"));
+    expect(sphereNodePulsePhase("A.md")).not.toBe(sphereNodePulsePhase("B.md"));
   });
 });
