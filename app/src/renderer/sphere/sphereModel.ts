@@ -30,8 +30,9 @@ export interface SphereCoordinates {
   z: number;
 }
 
-export const SPHERE_NODE_PULSE_AMPLITUDE = 3.6;
-export const SPHERE_NODE_PULSE_PERIOD_MS = 5_600;
+export const SPHERE_NODE_PULSE_MIN_AMPLITUDE = 3;
+export const SPHERE_NODE_PULSE_MAX_AMPLITUDE = 18;
+export const SPHERE_NODE_PULSE_PERIOD_MS = 4_800;
 
 export function createSphereData(
   graph: VisibleGraph,
@@ -72,7 +73,11 @@ export function sphereNodePulsePosition(
   const distance = Math.hypot(coordinates.x, coordinates.y, coordinates.z);
   if (!Number.isFinite(distance) || distance === 0) return coordinates;
 
-  const amplitude = Math.min(SPHERE_NODE_PULSE_AMPLITUDE, distance * 0.25);
+  const amplitude = Math.min(
+    SPHERE_NODE_PULSE_MAX_AMPLITUDE,
+    Math.max(SPHERE_NODE_PULSE_MIN_AMPLITUDE, distance * 0.04),
+    distance * 0.25
+  );
   const elapsed = elapsedMs % SPHERE_NODE_PULSE_PERIOD_MS;
   const offset = Math.sin((elapsed / SPHERE_NODE_PULSE_PERIOD_MS) * Math.PI * 2 + phase) * amplitude;
   const scale = (distance + offset) / distance;

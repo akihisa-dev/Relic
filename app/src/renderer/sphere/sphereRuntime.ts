@@ -44,6 +44,8 @@ export function createSphereRuntime(
   let theme: GraphDrawTheme = defaultGraphDrawTheme;
   let fitPending = false;
   let disposed = false;
+  let pulseActive = false;
+  let pulseBasePositions = new WeakMap<SphereNode, { x: number; y: number; z: number }>();
   const nodePulsePhases = new WeakMap<SphereNode, number>();
   const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? null;
 
@@ -58,14 +60,19 @@ export function createSphereRuntime(
     .nodeLabel((node) => node.label)
     .nodeVal((node) => node.val)
     .nodeOpacity(0.9)
-    .nodePositionUpdate((nodeObject, coordinates, node) => {
-      if (reducedMotion?.matches) return false;
+    .nodePositionUpdate((nodeObject, _coordinates, node) => {
+      if (reducedMotion?.matches || !pulseActive) return false;
+      const basePosition = pulseBasePositions.get(node);
+      if (!basePosition) return false;
       let phase = nodePulsePhases.get(node);
       if (phase === undefined) {
         phase = sphereNodePulsePhase(node.id);
         nodePulsePhases.set(node, phase);
       }
-      const position = sphereNodePulsePosition(coordinates, performance.now(), phase);
+      const position = sphereNodePulsePosition(basePosition, performance.now(), phase);
+      node.x = position.x;
+      node.y = position.y;
+      node.z = position.z;
       nodeObject.position.set(position.x, position.y, position.z);
       return true;
     })
@@ -95,6 +102,13 @@ export function createSphereRuntime(
     .onEngineStop(() => {
       if (!fitPending || data.nodes.length === 0) return;
       fitPending = false;
+      pulseBasePositions = new WeakMap();
+      for (const node of data.nodes) {
+        if (Number.isFinite(node.x) && Number.isFinite(node.y) && Number.isFinite(node.z)) {
+          pulseBasePositions.set(node, { x: node.x!, y: node.y!, z: node.z! });
+        }
+      }
+      pulseActive = true;
       graph.zoomToFit(420, 72);
     });
 
@@ -144,6 +158,8 @@ export function createSphereRuntime(
       data = nextData;
       theme = nextTheme;
       fitPending = data.nodes.length > 0;
+      pulseActive = false;
+      pulseBasePositions = new WeakMap();
       focusIds = sphereFocusIds(data, focusId);
       const isLarge = data.nodes.length >= 1_500 || data.links.length >= 3_000;
       graph

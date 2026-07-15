@@ -70,7 +70,11 @@ describe("sphereRuntime", () => {
       onNodeHover: vi.fn()
     };
     const runtime = createSphereRuntime(host, callbacks);
-    runtime.setData(sphereData(), defaultGraphDrawTheme);
+    const data = sphereData();
+    Object.assign(data.nodes[0], { x: 10, y: 20, z: 30 });
+    Object.assign(data.nodes[1], { x: -20, y: 10, z: 5 });
+    Object.assign(data.nodes[2], { x: 5, y: -15, z: -10 });
+    runtime.setData(data, defaultGraphDrawTheme);
     runtime.setFocus("A.md");
 
     expect(canvas).toHaveAttribute("aria-label", "スフィア");
@@ -80,13 +84,17 @@ describe("sphereRuntime", () => {
     expect(forceGraphMocks.graph.linkOpacity).toHaveBeenCalledWith(0.72);
     const positionAccessor = forceGraphMocks.graph.nodePositionUpdate.mock.calls[0][0];
     const position = { set: vi.fn() };
-    expect(positionAccessor({ position }, { x: 10, y: 20, z: 30 }, sphereData().nodes[0])).toBe(true);
+    expect(positionAccessor({ position }, { x: 10, y: 20, z: 30 }, data.nodes[0])).toBe(false);
+    forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
+    expect(positionAccessor({ position }, { x: 10, y: 20, z: 30 }, data.nodes[0])).toBe(true);
     expect(position.set).toHaveBeenCalledWith(expect.any(Number), expect.any(Number), expect.any(Number));
     const [pulseX, pulseY, pulseZ] = position.set.mock.calls[0];
     expect(pulseX / pulseY).toBeCloseTo(10 / 20);
     expect(pulseZ / pulseY).toBeCloseTo(30 / 20);
     expect(Math.abs(Math.hypot(pulseX, pulseY, pulseZ) - Math.hypot(10, 20, 30)))
-      .toBeLessThanOrEqual(3.6);
+      .toBeLessThanOrEqual(3);
+    expect(data.nodes[0]).toMatchObject({ x: pulseX, y: pulseY, z: pulseZ });
+    expect(forceGraphMocks.graph.zoomToFit).toHaveBeenCalledWith(420, 72);
     const colorAccessor = forceGraphMocks.graph.nodeColor.mock.calls[0][0];
     const linkColorAccessor = forceGraphMocks.graph.linkColor.mock.calls[0][0];
     const linkWidthAccessor = forceGraphMocks.graph.linkWidth.mock.calls[0][0];
