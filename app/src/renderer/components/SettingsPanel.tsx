@@ -194,6 +194,7 @@ export function SettingsPanel({
               { key: "tools", label: t("settings.featureTools") },
               { key: "frontmatter", label: t("settings.featureFrontmatter") },
               { key: "graph", label: t("settings.featureGraph") },
+              { key: "sphere", label: t("settings.featureSphere") },
               { key: "chronicle", label: t("settings.featureChronicle") },
               { key: "rightPanelOutline", label: t("settings.featureRightPanelOutline") },
               { key: "rightPanelLinks", label: t("settings.featureRightPanelLinks") }

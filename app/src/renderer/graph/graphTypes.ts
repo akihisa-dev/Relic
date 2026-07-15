@@ -34,6 +34,7 @@ export const defaultGraphOptions: GraphOptions = {
 
 export interface GraphDrawTheme {
   accent: string;
+  background: string;
   border: string;
   borderStrong: string;
   primary: string;
@@ -44,6 +45,7 @@ export interface GraphDrawTheme {
 
 export const defaultGraphDrawTheme: GraphDrawTheme = {
   accent: "#f2691b",
+  background: "#ffffff",
   border: "#3b3c33",
   borderStrong: "#5b5d52",
   primary: "#1a1b17",

@@ -55,6 +55,10 @@ import {
 import { useEditorStore } from "./store/editorStore";
 import { useUiStore } from "./store/uiStore";
 
+vi.mock("./components/SphereView", () => ({
+  SphereView: () => <div aria-label="スフィア表示" />
+}));
+
 function kamakuraEntry() {
   return {
     chronicleEntryIndex: 0,
@@ -172,6 +176,27 @@ describe("App charts", () => {
       "second",
       "first"
     ]);
+  });
+
+  it("レールのスフィアボタンから独立したスフィアビューを表示できる", async () => {
+    window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+    await screen.findByText("Notes");
+    fireEvent.click(screen.getByRole("button", { name: "スフィア" }));
+
+    await screen.findByLabelText("スフィア表示");
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+    expect(activeTabId).toBe("chart-sphere");
+    expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
+      chartId: "sphere",
+      kind: "chart",
+      name: "スフィア"
+    });
+    expect(useUiStore.getState().isSidebarOpen).toBe(false);
   });
 
   it("グラフビューのタグノードクリックはタグ検索アクションになる", () => {

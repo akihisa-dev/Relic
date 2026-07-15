@@ -32,6 +32,7 @@ export function readGraphDrawTheme(element: Element = document.documentElement):
   const token = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
   return {
     accent: token("--color-accent", defaultGraphDrawTheme.accent),
+    background: token("--color-bg", defaultGraphDrawTheme.background),
     border: token("--color-border", defaultGraphDrawTheme.border),
     borderStrong: token("--color-border-strong", defaultGraphDrawTheme.borderStrong),
     primary: token("--color-primary", defaultGraphDrawTheme.primary),

@@ -123,6 +123,7 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
   return {
     chronicle: typeof s.chronicle === "boolean" ? s.chronicle : false,
     graph: typeof s.graph === "boolean" ? s.graph : true,
+    sphere: typeof s.sphere === "boolean" ? s.sphere : false,
     tools: typeof s.tools === "boolean" ? s.tools : false,
     frontmatter: typeof s.frontmatter === "boolean" ? s.frontmatter : false,
     rightPanelLinks: typeof s.rightPanelLinks === "boolean" ? s.rightPanelLinks : true,

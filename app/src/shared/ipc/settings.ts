@@ -18,6 +18,7 @@ export interface AppInfo {
 export interface FeatureToggles {
   chronicle: boolean;
   graph: boolean;
+  sphere: boolean;
   tools: boolean;
   frontmatter: boolean;
   rightPanelLinks: boolean;
@@ -52,6 +53,7 @@ export const defaultFrontmatterTemplates: FrontmatterTemplate[] = [];
 export const defaultFeatureToggles: FeatureToggles = {
   chronicle: false,
   graph: true,
+  sphere: false,
   tools: false,
   frontmatter: false,
   rightPanelLinks: true,

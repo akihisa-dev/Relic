@@ -1,6 +1,6 @@
 {
   "name": "relic",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Relic is a local app that extends Markdown files with editing, search, browsing, visualization, and export while keeping the information as Markdown.",
   "license": "AGPL-3.0-or-later",
   "main": ".vite/build/main.js",
@@ -77,6 +77,7 @@
     }
   },
   "dependencies": {
+    "3d-force-graph": "^1.80.0",
     "@codemirror/autocomplete": "^6.20.1",
     "@codemirror/commands": "^6.10.4",
     "@codemirror/lang-markdown": "^6.5.0",

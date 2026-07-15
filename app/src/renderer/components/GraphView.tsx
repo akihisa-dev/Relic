@@ -4,6 +4,7 @@ import type React from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactElement } from "react";
 
 import type { WorkspaceGraph } from "../../shared/ipc";
+import { deriveVisibleGraph } from "../graph/graphDisplayModel";
 import {
   applyGraphSimulationPositions,
   graphSimulationLinks,
@@ -30,11 +31,9 @@ import {
   applyGraphPanInertia,
   applyGraphZoomTransition,
   clampGraphScale,
-  collectGraphNodeTags,
   drawGraph,
   finishGraphPanVelocity,
   graphNodeAtCanvasPoint,
-  graphNodeMatchesQuery,
   graphNodePrimaryAction,
   graphPointerMovedBeyondClickThreshold,
   graphWheelZoomPoint,
@@ -198,44 +197,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
   }, [t]);
 
   const filteredGraph = useMemo(() => {
-    const graph = graphState.graph ?? { links: [], nodes: [] };
-    const tagsByNode = collectGraphNodeTags(graph.nodes, graph.links);
-    const linkedIds = new Set<string>();
-
-    for (const link of graph.links) {
-      linkedIds.add(link.source);
-      linkedIds.add(link.target);
-    }
-
-    const nodeIds = new Set<string>();
-    for (const node of graph.nodes) {
-      if (!options.showTags && node.type === "tag") continue;
-      if (!options.showAttachments && node.type === "attachment") continue;
-      if (options.hideUnresolved && node.type === "unresolved") continue;
-      if (!options.showOrphans && !linkedIds.has(node.id)) continue;
-      if (!graphNodeMatchesQuery(node, options.search, tagsByNode.get(node.id) ?? [])) continue;
-
-      nodeIds.add(node.id);
-    }
-    const links = graph.links.filter((link) =>
-      nodeIds.has(link.source) &&
-      nodeIds.has(link.target) &&
-      (options.showTags || link.type !== "tag")
-    );
-    const connectedIds = new Set<string>();
-    for (const link of links) {
-      connectedIds.add(link.source);
-      connectedIds.add(link.target);
-    }
-
-    return {
-      links,
-      nodes: graph.nodes.filter((node) =>
-        nodeIds.has(node.id) &&
-        (options.showOrphans || connectedIds.has(node.id))
-      ),
-      tagsByNode
-    };
+    return deriveVisibleGraph(graphState.graph, options);
   }, [graphState.graph, options.hideUnresolved, options.search, options.showAttachments, options.showOrphans, options.showTags]);
 
   useEffect(() => {

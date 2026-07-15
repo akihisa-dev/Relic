@@ -42,6 +42,7 @@ const featureToggles = {
   chronicle: true,
   frontmatter: true,
   graph: true,
+  sphere: true,
   rightPanelLinks: false,
   rightPanelOutline: true,
   tools: true,

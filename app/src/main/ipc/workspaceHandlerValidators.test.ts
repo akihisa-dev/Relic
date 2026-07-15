@@ -116,6 +116,7 @@ describe("workspaceHandlerValidators", () => {
       chronicle: false,
       frontmatter: true,
       graph: true,
+      sphere: false,
       rightPanelLinks: true,
       rightPanelOutline: true,
       tools: false
@@ -124,6 +125,7 @@ describe("workspaceHandlerValidators", () => {
       chronicle: false,
       frontmatter: true,
       graph: true,
+      sphere: false,
       rightPanelLinks: true,
       rightPanelOutline: true,
       tools: "false"
@@ -133,6 +135,7 @@ describe("workspaceHandlerValidators", () => {
       frontmatter: true,
       rightPanelLinks: true,
       rightPanelOutline: true,
+      sphere: false,
       tools: false
     })).toBe(false);
   });

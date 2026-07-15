@@ -52,6 +52,7 @@ describe("graphViewRuntime", () => {
   it("描画用のCSS変数を1回のスタイル取得で読み込む", () => {
     const getPropertyValue = vi.fn((name: string) => ({
       "--color-accent": " #111111 ",
+      "--color-bg": "#101010",
       "--color-border": "#222222",
       "--color-border-strong": "#333333",
       "--color-primary": "#444444",
@@ -66,6 +67,7 @@ describe("graphViewRuntime", () => {
 
     expect(readGraphDrawTheme(canvas)).toEqual({
       accent: "#111111",
+      background: "#101010",
       border: "#222222",
       borderStrong: "#333333",
       primary: "#444444",
@@ -75,7 +77,7 @@ describe("graphViewRuntime", () => {
     });
     expect(computedStyle).toHaveBeenCalledOnce();
     expect(computedStyle).toHaveBeenCalledWith(canvas);
-    expect(getPropertyValue).toHaveBeenCalledTimes(7);
+    expect(getPropertyValue).toHaveBeenCalledTimes(8);
   });
 
   it("描画フレームを重複予約せず、実行後は再予約できる", () => {

@@ -1,6 +1,6 @@
 import type { SettingsMigrationResult } from "../settings/secureVersionedJsonStore";
 
-export const currentAppSettingsSchemaVersion = 3;
+export const currentAppSettingsSchemaVersion = 4;
 export const currentWorkspaceSettingsSchemaVersion = 2;
 
 export type WorkspaceSettingsMigrationRecord = {
@@ -25,7 +25,7 @@ export function migrateAppSettings(
     return { didMigrate: false, settings: raw };
   }
 
-  if (schemaVersion === 0 || schemaVersion === 1 || schemaVersion === 2) {
+  if (schemaVersion === 0 || schemaVersion === 1 || schemaVersion === 2 || schemaVersion === 3) {
     return {
       didMigrate: true,
       settings: {
@@ -79,7 +79,7 @@ export function migrateWorkspaceSettings<T extends WorkspaceSettingsMigrationRec
   );
 }
 
-function migrateFeatureToggles(raw: unknown, schemaVersion: 0 | 1 | 2): unknown {
+function migrateFeatureToggles(raw: unknown, schemaVersion: 0 | 1 | 2 | 3): unknown {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return raw;
 
   const toggles = raw as Record<string, unknown>;
@@ -88,6 +88,7 @@ function migrateFeatureToggles(raw: unknown, schemaVersion: 0 | 1 | 2): unknown 
   return {
     ...toggles,
     graph: typeof toggles.graph === "boolean" ? toggles.graph : true,
+    sphere: typeof toggles.sphere === "boolean" ? toggles.sphere : false,
     rightPanelLinks: schemaVersion === 0 && typeof toggles.rightPanelLinks !== "boolean" ? legacyRightPanel : toggles.rightPanelLinks,
     rightPanelOutline: schemaVersion === 0 && typeof toggles.rightPanelOutline !== "boolean" ? legacyRightPanel : toggles.rightPanelOutline
   };

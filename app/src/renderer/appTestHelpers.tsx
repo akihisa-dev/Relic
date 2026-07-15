@@ -33,5 +33,6 @@ export const allRailFeatureToggles = {
   ...defaultFeatureToggles,
   chronicle: true,
   frontmatter: true,
+  sphere: true,
   tools: true
 };

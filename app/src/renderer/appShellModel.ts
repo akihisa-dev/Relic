@@ -3,7 +3,7 @@ import type { Translator } from "./i18nModel";
 import type { PaneState, PanelTabKind, Tab } from "./store/editorStore";
 import type { SidebarView } from "./store/uiStore";
 
-export type AppRailViewId = SidebarView | PanelTabKind | "graph";
+export type AppRailViewId = SidebarView | PanelTabKind | "graph" | "sphere";
 
 export interface AppRailView<TIcon = unknown> {
   icon: TIcon;
@@ -13,6 +13,7 @@ export interface AppRailView<TIcon = unknown> {
 
 export function chartIdForRailView(id: AppRailViewId): string | null {
   if (id === "graph") return "graph";
+  if (id === "sphere") return "sphere";
   if (id === "chronicle") return "chronicle";
 
   return null;
@@ -102,12 +103,13 @@ export function activeChartIdsForPanes(
 
 export function enabledRailViewsForFeatures<TView extends Pick<AppRailView, "id">>(
   views: TView[],
-  featureToggles: Pick<FeatureToggles, "chronicle" | "frontmatter" | "graph" | "tools">
+  featureToggles: Pick<FeatureToggles, "chronicle" | "frontmatter" | "graph" | "sphere" | "tools">
 ): TView[] {
   return views.filter((view) => {
     if (view.id === "tools" && !featureToggles.tools) return false;
     if (view.id === "frontmatter" && !featureToggles.frontmatter) return false;
     if (view.id === "graph" && !featureToggles.graph) return false;
+    if (view.id === "sphere" && !featureToggles.sphere) return false;
     if (view.id === "chronicle" && !featureToggles.chronicle) return false;
 
     return true;
