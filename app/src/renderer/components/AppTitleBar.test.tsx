@@ -70,7 +70,7 @@ describe("AppTitleBar", () => {
   });
 
   it("keeps the title bar draggable and visually separate from the workspace", () => {
-    const css = readFileSync("src/renderer/styles/shell-sidebar.css", "utf8");
+    const css = readFileSync("src/renderer/styles/shell-layout.css", "utf8");
     const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
 
     expect(css).toMatch(/\.title-bar\s*\{[^}]*-webkit-app-region:\s*drag;/s);

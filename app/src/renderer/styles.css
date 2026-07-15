@@ -1,5 +1,6 @@
 @import "./styles/base.css";
 @import "./styles/delayed-tooltip.css";
+@import "./styles/shell-layout.css";
 @import "./styles/shell-sidebar.css";
 @import "./styles/file-tree-search.css";
 @import "./styles/workspace-editor.css";

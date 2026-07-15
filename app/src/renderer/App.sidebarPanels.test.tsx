@@ -43,7 +43,7 @@ describe("App sidebar panels", () => {
   });
 
   it("サイド境界を透明なレイアウト境界としてドラッグ可能にする", () => {
-    const css = readFileSync("src/renderer/styles/shell-sidebar.css", "utf8");
+    const css = readFileSync("src/renderer/styles/shell-layout.css", "utf8");
 
     expect(css).toMatch(/\.layout-resize-boundary\s*\{[^}]*cursor:\s*col-resize;[^}]*flex:\s*0 0 8px;/s);
     expect(css).toMatch(/\.layout-resize-boundary\s*\{[^}]*margin-left:\s*-4px;[^}]*margin-right:\s*-4px;/s);
