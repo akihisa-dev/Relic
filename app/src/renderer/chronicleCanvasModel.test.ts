@@ -26,7 +26,6 @@ import {
 
 function entry(fileName: string, path: string, startYear: number, endYear = startYear): ChartEntry {
   return {
-    chronicleCalendarName: "",
     chronicleEntryIndex: 0,
     endLabel: String(endYear),
     endPoint: { month: null, year: endYear },
@@ -65,15 +64,6 @@ describe("chronicleCanvasModel", () => {
     expect(scene.items[2].rangeLabel).toBe("100 〜 300");
     expect(Math.abs(scene.items[0].y - scene.items[1].y)).toBeGreaterThan(10);
     expect(scene.items.every((item) => item.vx === 0 && item.vy === 0)).toBe(true);
-  });
-
-  it("表示範囲から暦名だけを取り除く", () => {
-    const calendarEntry = entry("Calendar", "calendar.md", 100, 200);
-    calendarEntry.chronicleCalendarName = "メイン暦";
-    calendarEntry.startLabel = "メイン暦 100";
-    calendarEntry.endLabel = "メイン暦 200";
-
-    expect(createChronicleCanvasScene([calendarEntry], () => 0.5).items[0].rangeLabel).toBe("100 〜 200");
   });
 
   it("一時移動した項目を対応年へ戻し、近傍項目にも反発を伝える", () => {

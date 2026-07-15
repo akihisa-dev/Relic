@@ -1,7 +1,7 @@
 import type { SettingsMigrationResult } from "../settings/secureVersionedJsonStore";
 
-export const currentAppSettingsSchemaVersion = 2;
-export const currentWorkspaceSettingsSchemaVersion = 1;
+export const currentAppSettingsSchemaVersion = 3;
+export const currentWorkspaceSettingsSchemaVersion = 2;
 
 export type WorkspaceSettingsMigrationRecord = {
   charts?: unknown;
@@ -25,7 +25,7 @@ export function migrateAppSettings(
     return { didMigrate: false, settings: raw };
   }
 
-  if (schemaVersion === 0 || schemaVersion === 1) {
+  if (schemaVersion === 0 || schemaVersion === 1 || schemaVersion === 2) {
     return {
       didMigrate: true,
       settings: {
@@ -60,7 +60,7 @@ export function migrateWorkspaceSettings<T extends WorkspaceSettingsMigrationRec
     return { didMigrate: false, settings: raw };
   }
 
-  if (schemaVersion === 0) {
+  if (schemaVersion === 0 || schemaVersion === 1) {
     return {
       didMigrate: true,
       settings: {
@@ -79,7 +79,7 @@ export function migrateWorkspaceSettings<T extends WorkspaceSettingsMigrationRec
   );
 }
 
-function migrateFeatureToggles(raw: unknown, schemaVersion: 0 | 1): unknown {
+function migrateFeatureToggles(raw: unknown, schemaVersion: 0 | 1 | 2): unknown {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return raw;
 
   const toggles = raw as Record<string, unknown>;

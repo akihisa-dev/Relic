@@ -1,11 +1,7 @@
 import * as yaml from "js-yaml";
 
-import { monthAxisToPoint } from "./chartTime";
-import {
-  defaultChronicleCalendars,
-  type ChronicleCalendarSettings,
-  type UpdateChartEntryInput
-} from "./ipc/workspace";
+import { monthAxisToYear } from "./chartTime";
+import type { UpdateChartEntryInput } from "./ipc/workspace";
 import { fail, ok, type RelicResult } from "./result";
 
 interface FrontmatterBlock {
@@ -17,8 +13,7 @@ interface FrontmatterBlock {
 
 export function updateChartFrontmatterContent(
   content: string,
-  input: UpdateChartEntryInput,
-  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
+  input: UpdateChartEntryInput
 ): RelicResult<string> {
   const frontmatter = splitFrontmatterBlock(content);
 
@@ -32,7 +27,7 @@ export function updateChartFrontmatterContent(
   const data = parseYamlObject(frontmatter.yaml);
   if (!data.ok) return data;
 
-  const nextData = chartFrontmatterUpdates(data.value, input, calendars);
+  const nextData = chartFrontmatterUpdates(data.value, input);
   if (!nextData.ok) return nextData;
 
   const nextYaml = setYamlField(frontmatter.yaml, "chronicle", nextData.value.chronicle);
@@ -82,44 +77,27 @@ function parseYamlObject(yamlText: string): RelicResult<Record<string, unknown>>
 
 function chartFrontmatterUpdates(
   data: Record<string, unknown>,
-  input: UpdateChartEntryInput,
-  calendars: ChronicleCalendarSettings[]
+  input: UpdateChartEntryInput
 ): RelicResult<Record<string, unknown>> {
-  const start = Math.min(input.startValue, input.endValue);
-  const end = Math.max(input.startValue, input.endValue);
-  const chronicle = Array.isArray(data.chronicle) ? [...data.chronicle] : [];
-  const currentEntry = chronicle[input.chronicleEntryIndex];
-
-  if (!Array.isArray(currentEntry) || typeof currentEntry[0] !== "string") {
+  if (input.chronicleEntryIndex !== 0 || !isCurrentChronicleValue(data.chronicle)) {
     return fail(
       "CHART_CHRONICLE_ENTRY_MISSING",
       "対象の年表項目が見つからないため、チャートの変更を保存できませんでした。"
     );
   }
 
-  const calendarName = currentEntry[0].trim();
-  const calendar = calendars.find((item) => item.name.trim() === calendarName);
-  if (!calendar) {
-    return fail(
-      "CHART_CHRONICLE_CALENDAR_MISSING",
-      "対象の暦設定が見つからないため、チャートの変更を保存できませんでした。"
-    );
-  }
+  const start = monthAxisToYear(Math.min(input.startValue, input.endValue));
+  const end = monthAxisToYear(Math.max(input.startValue, input.endValue));
+  return ok({ ...data, chronicle: start === end ? start : { end, start } });
+}
 
-  const startPoint = monthAxisToPoint(start);
-  const endPoint = monthAxisToPoint(end);
-  const startYear = mainYearToCalendarYear(calendar, startPoint.year);
-  const endYear = mainYearToCalendarYear(calendar, endPoint.year);
-
-  chronicle[input.chronicleEntryIndex] = [
-    calendarName,
-    [
-      [startYear, startPoint.month],
-      [endYear, endPoint.month]
-    ]
-  ];
-
-  return ok({ ...data, chronicle });
+function isCurrentChronicleValue(value: unknown): boolean {
+  if (Number.isInteger(value) && value !== 0) return true;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const range = value as Record<string, unknown>;
+  if (!Number.isInteger(range.start) || range.start === 0) return false;
+  const end = range.end === undefined ? range.start : range.end;
+  return Number.isInteger(end) && end !== 0 && Number(range.start) <= Number(end);
 }
 
 function setYamlField(yamlText: string, field: string, value: unknown): string {
@@ -162,10 +140,6 @@ function findTopLevelFieldRange(
 function nextLineEnd(text: string, from: number): number {
   const nextNewline = text.indexOf("\n", from);
   return nextNewline === -1 ? text.length : nextNewline + 1;
-}
-
-function mainYearToCalendarYear(calendar: { startYear?: number }, mainYear: number): number {
-  return mainYear - (calendar.startYear ?? 1) + 1;
 }
 
 function escapeRegExp(value: string): string {

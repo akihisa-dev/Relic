@@ -1,7 +1,6 @@
 import type {
   Backlink,
   ChartEntry,
-  ChronicleCalendarSettings,
   WorkspaceTreeNode
 } from "../../shared/ipc";
 import { parseMarkdownTags } from "../../shared/tags";
@@ -167,17 +166,15 @@ export function aliasesForRecord(
 
 export function chartEntriesForRecord(
   record: WorkspaceFileIndexRecord,
-  calendars: ChronicleCalendarSettings[],
   cache: WorkspaceDerivedDataCache = createWorkspaceDerivedDataCache()
 ): Record<"chronicle", ChartEntry[]> {
-  const key = `${cacheKeyForRecord(record)}\0${calendarCacheKey(calendars)}`;
+  const key = cacheKeyForRecord(record);
   const cached = cache.chartEntries.get(key);
   if (cached) return cached;
 
   const entries = collectChartEntriesForFrontmatterData(
     record.path,
-    frontmatterForRecord(record, cache).data,
-    calendars
+    frontmatterForRecord(record, cache).data
   );
   cache.chartEntries.set(key, entries);
   return entries;
@@ -204,8 +201,4 @@ function cacheKeyForRecord(record: WorkspaceFileIndexRecord): string {
     record.mtimeMs,
     record.contentHash ?? ""
   ].join("\0");
-}
-
-function calendarCacheKey(calendars: ChronicleCalendarSettings[]): string {
-  return JSON.stringify(calendars.map((calendar) => [calendar.name, calendar.startYear ?? null]));
 }

@@ -84,7 +84,6 @@ describe("appShellModel", () => {
     const labels = panelLabelsForTranslator(createTranslator("en"));
 
     expect(labels).toEqual({
-      chronicleSettings: "Calendar Settings",
       frontmatter: "Frontmatter",
       settings: "Settings",
       tools: "Tools"
@@ -98,7 +97,6 @@ describe("appShellModel", () => {
       { icon: null, id: "frontmatter", label: "Frontmatter" },
       { icon: null, id: "graph", label: "Graph" },
       { icon: null, id: "chronicle", label: "Chronicle" },
-      { icon: null, id: "chronicleSettings", label: "Calendar Settings" },
       { icon: null, id: "settings", label: "Settings" }
     ];
 
@@ -108,7 +106,6 @@ describe("appShellModel", () => {
     const enabled = enabledRailViewsForFeatures(railViews, {
       ...defaultFeatureToggles,
       chronicle: false,
-      chronicleSettings: false,
       frontmatter: false,
       tools: false
     });

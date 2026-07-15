@@ -10,7 +10,6 @@ import { drawChronicleCanvas } from "./chronicleCanvasRenderer";
 
 function entry(fileName: string, path: string, year: number): ChartEntry {
   return {
-    chronicleCalendarName: "",
     chronicleEntryIndex: 0,
     endLabel: String(year),
     endPoint: { month: null, year },

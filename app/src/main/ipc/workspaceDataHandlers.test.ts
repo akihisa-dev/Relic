@@ -75,12 +75,10 @@ import {
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChartsChannel,
-  getWorkspaceChronicleCalendarsChannel,
   getWorkspaceFrontmatterCategoryChoicesChannel,
   getWorkspaceGraphChannel,
   getWorkspaceTagsChannel,
   saveWorkspaceChartsChannel,
-  saveWorkspaceChronicleCalendarsChannel,
   saveWorkspaceFrontmatterCategoryChoicesChannel,
   updateChartEntryChannel,
 } from "../../shared/ipc";
@@ -102,7 +100,6 @@ const workspaceSettings = {
       source: "chronicle" as const,
     },
   ],
-  chronicleCalendars: [{ name: "標準暦", startYear: 1 }],
   frontmatterCategoryChoices: ["人物"],
 };
 
@@ -245,17 +242,11 @@ describe("registerWorkspaceDataHandlers", () => {
     expect(dependencies.readWorkspaceCharts).toHaveBeenCalledWith(
       workspace.path,
       workspaceSettings.charts,
-      undefined,
       providerOptions,
     );
   });
 
   it.each([
-    {
-      channel: getWorkspaceChronicleCalendarsChannel,
-      label: "暦設定",
-      value: workspaceSettings.chronicleCalendars,
-    },
     {
       channel: getWorkspaceFrontmatterCategoryChoicesChannel,
       label: "カテゴリ候補",
@@ -279,11 +270,6 @@ describe("registerWorkspaceDataHandlers", () => {
       label: "空のチャート設定",
     },
     {
-      channel: saveWorkspaceChronicleCalendarsChannel,
-      input: [],
-      label: "空の暦設定",
-    },
-    {
       channel: saveWorkspaceFrontmatterCategoryChoicesChannel,
       input: ["人物", "人物"],
       label: "重複したカテゴリ候補",
@@ -302,29 +288,6 @@ describe("registerWorkspaceDataHandlers", () => {
     expect(dependencies.updateWorkspaceChartEntry).not.toHaveBeenCalled();
     expect(dependencies.providerGet).not.toHaveBeenCalled();
     expect(dependencies.invalidateWorkspaceData).not.toHaveBeenCalled();
-  });
-
-  it("暦設定の保存後に派生データを無効化し、保存値を返す", async () => {
-    const calendars = [
-      { name: "標準暦", startYear: 1 },
-      { name: "第二暦", startYear: 100 },
-    ];
-
-    const result = await handlerFor(saveWorkspaceChronicleCalendarsChannel)(
-      {},
-      calendars,
-    );
-
-    expect(result).toEqual({ ok: true, value: calendars });
-    expect(dependencies.updateWorkspaceSettings).toHaveBeenCalledWith(
-      "/user-data",
-      workspace.id,
-      expect.any(Function),
-    );
-    expect(dependencies.invalidateWorkspaceData).toHaveBeenCalledOnce();
-    expect(dependencies.invalidateWorkspaceData).toHaveBeenCalledWith(
-      workspace.id,
-    );
   });
 
   it("チャート設定を正規化して保存し、その設定で派生チャートを読み直す", async () => {
@@ -364,7 +327,6 @@ describe("registerWorkspaceDataHandlers", () => {
     expect(dependencies.readWorkspaceCharts).toHaveBeenCalledWith(
       workspace.path,
       savedCharts,
-      undefined,
       providerOptions,
     );
   });
@@ -382,27 +344,6 @@ describe("registerWorkspaceDataHandlers", () => {
       workspace.id,
       expect.any(Function),
     );
-    expect(dependencies.invalidateWorkspaceData).not.toHaveBeenCalled();
-  });
-
-  it("暦設定の保存に失敗した場合は派生データを無効化しない", async () => {
-    dependencies.updateWorkspaceSettings.mockRejectedValueOnce(
-      new Error("settings write unavailable"),
-    );
-
-    const result = await handlerFor(saveWorkspaceChronicleCalendarsChannel)(
-      {},
-      [{ name: "標準暦", startYear: 1 }],
-    );
-
-    expect(result).toEqual({
-      ok: false,
-      error: {
-        code: "WORKSPACE_CHRONICLE_CALENDARS_SAVE_FAILED",
-        details: "settings write unavailable",
-        message: "暦設定を保存できませんでした。",
-      },
-    });
     expect(dependencies.invalidateWorkspaceData).not.toHaveBeenCalled();
   });
 
@@ -439,7 +380,6 @@ describe("registerWorkspaceDataHandlers", () => {
       workspace.path,
       workspaceSettings.charts,
       input,
-      workspaceSettings.chronicleCalendars,
     );
     expect(dependencies.invalidateWorkspaceData).toHaveBeenCalledWith(
       workspace.id,

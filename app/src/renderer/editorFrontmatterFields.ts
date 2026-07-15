@@ -82,29 +82,11 @@ export function parseScalarValue(value: string, field?: UserDefinedField): unkno
   return value;
 }
 
-export function parseChronicleYearInput(value: string, allowZeroOrNegative = false): number | null {
+export function parseChronicleYearInput(value: string): number | null {
   const trimmed = value.trim();
-  if (!(allowZeroOrNegative ? /^-?\d+$/.test(trimmed) : /^\d+$/.test(trimmed))) return null;
+  if (!/^-?\d+$/.test(trimmed)) return null;
   const year = Number(trimmed);
-  return Number.isInteger(year) && (allowZeroOrNegative || year >= 1) ? year : null;
-}
-
-export function chronicleInputValue(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  if (typeof value === "number") return Number.isInteger(value) ? String(value) : "";
-  if (typeof value === "string") return value;
-  const legacyYear = legacyChronicleYear(value);
-  if (legacyYear !== null) return String(legacyYear);
-  return "";
-}
-
-export function legacyChronicleYear(value: unknown): number | null {
-  if (!Array.isArray(value)) return null;
-  const firstEntry = value[0];
-  if (!Array.isArray(firstEntry) || !Array.isArray(firstEntry[1])) return null;
-  const start = firstEntry[1][0];
-  if (!Array.isArray(start) || !Number.isInteger(start[0]) || start[0] === 0) return null;
-  return Number(start[0]);
+  return Number.isInteger(year) && year !== 0 ? year : null;
 }
 
 export function chronicleYearRangeInput(value: unknown): { end: string; start: string } {
@@ -117,13 +99,7 @@ export function chronicleYearRangeInput(value: unknown): { end: string; start: s
     const end = Number.isInteger(range.end) && range.end !== 0 ? String(range.end) : "";
     return { end, start };
   }
-  const legacyStart = legacyChronicleYear(value);
-  if (legacyStart === null) return { end: "", start: "" };
-  const legacyEntry = Array.isArray(value) ? value[0] : null;
-  const legacyEnd = Array.isArray(legacyEntry) && Array.isArray(legacyEntry[1]) && Array.isArray(legacyEntry[1][1]) && Number.isInteger(legacyEntry[1][1][0])
-    ? Number(legacyEntry[1][1][0])
-    : legacyStart;
-  return { end: legacyEnd === legacyStart ? "" : String(legacyEnd), start: String(legacyStart) };
+  return { end: "", start: "" };
 }
 
 export function parseDateInput(value: string): string | null {

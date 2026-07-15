@@ -25,7 +25,6 @@ import {
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChartsChannel,
-  getWorkspaceChronicleCalendarsChannel,
   getWorkspaceFrontmatterCategoryChoicesChannel,
   getWorkspaceGraphChannel,
   getLinkUpdateImpactChannel,
@@ -50,7 +49,6 @@ import {
   revealWorkspaceItemChannel,
   startWorkspaceFileDragChannel,
   saveWorkspaceChartsChannel,
-  saveWorkspaceChronicleCalendarsChannel,
   saveWorkspaceFrontmatterCategoryChoicesChannel,
   updateChartEntryChannel,
   saveEditorSettingsChannel,
@@ -91,7 +89,6 @@ import {
   type DuplicateMarkdownFileInput,
   type EditorSettings,
   type Backlink,
-  type ChronicleCalendarSettings,
   type FrontmatterCategoryChoice,
   type GetBacklinksInput,
   type GetUnlinkedReferencesInput,
@@ -190,8 +187,6 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getWorkspaceAliasesChannel) as Promise<RelicResult<AliasIndex>>,
   getWorkspaceCharts: () =>
     ipcRenderer.invoke(getWorkspaceChartsChannel) as Promise<RelicResult<WorkspaceChart[]>>,
-  getWorkspaceChronicleCalendars: () =>
-    ipcRenderer.invoke(getWorkspaceChronicleCalendarsChannel) as Promise<RelicResult<ChronicleCalendarSettings[]>>,
   getWorkspaceFrontmatterCategoryChoices: () =>
     ipcRenderer.invoke(getWorkspaceFrontmatterCategoryChoicesChannel) as Promise<RelicResult<FrontmatterCategoryChoice[]>>,
   getWorkspaceGraph: () =>
@@ -259,8 +254,6 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(copyEditorTextToClipboardChannel, input) as Promise<RelicResult<void>>,
   readEditorTextFromClipboard: () =>
     ipcRenderer.invoke(readEditorTextFromClipboardChannel) as Promise<RelicResult<string>>,
-  saveWorkspaceChronicleCalendars: (input: ChronicleCalendarSettings[]) =>
-    ipcRenderer.invoke(saveWorkspaceChronicleCalendarsChannel, input) as Promise<RelicResult<ChronicleCalendarSettings[]>>,
   saveWorkspaceFrontmatterCategoryChoices: (input: FrontmatterCategoryChoice[]) =>
     ipcRenderer.invoke(saveWorkspaceFrontmatterCategoryChoicesChannel, input) as Promise<RelicResult<FrontmatterCategoryChoice[]>>,
   saveWorkspaceCharts: (input: ChartSettings[]) =>

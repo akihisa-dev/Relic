@@ -13,8 +13,7 @@ describe("Editor frontmatter fields", () => {
     const { container } = render(
       <I18nProvider language="ja">
         <Editor
-          content={"---\nchronicle:\n  - [メイン暦, [[1185, null], [1185, null]]]\n---\n# 本文"}
-          frontmatterCandidates={{ chronicle: ["メイン暦", "帝国暦"] }}
+          content={"---\nchronicle: 1185\n---\n# 本文"}
           onChange={vi.fn()}
           settings={settings}
           viewRef={viewRef}
@@ -37,32 +36,12 @@ describe("Editor frontmatter fields", () => {
     ].join("\n"));
   });
 
-  it("chronicleプロパティは暦候補を表示しない", async () => {
-    const viewRef = createRef<EditorView | null>();
-    const content = "---\nchronicle:\n  - [メイン暦, [[1185, null], [1185, null]]]\n---\n# 本文";
-    const { container } = render(
-      <I18nProvider language="ja">
-        <Editor
-          content={content}
-          frontmatterCandidates={{ chronicle: ["メイン暦"] }}
-          onChange={vi.fn()}
-          settings={settings}
-          viewRef={viewRef}
-        />
-      </I18nProvider>
-    );
-
-    await expandFrontmatter(container);
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
-    expect(container.querySelector(".cm-frontmatter-chronicle select")).toBeNull();
-  });
-
   it("chronicleプロパティは逆順の期間を書き戻さない", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <I18nProvider language="ja">
         <Editor
-          content={"---\nchronicle:\n  - [メイン暦, [[1185, null], [1185, null]]]\n---\n# 本文"}
+          content={"---\nchronicle: 1185\n---\n# 本文"}
           onChange={vi.fn()}
           settings={settings}
           viewRef={viewRef}
@@ -75,7 +54,7 @@ describe("Editor frontmatter fields", () => {
     const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle input.cm-frontmatter-input")) as HTMLInputElement[];
     fireEvent.input(inputs[1], { target: { value: "1000" } });
 
-    expect(viewRef.current?.state.doc.toString()).toContain("[メイン暦, [[1185, null], [1185, null]]]");
+    expect(viewRef.current?.state.doc.toString()).toContain("chronicle: 1185");
     expect(inputs[0].getAttribute("aria-invalid")).toBe("true");
   });
 

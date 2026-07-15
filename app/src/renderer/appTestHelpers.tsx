@@ -32,7 +32,6 @@ export function restoreNavigatorPlatform(): void {
 export const allRailFeatureToggles = {
   ...defaultFeatureToggles,
   chronicle: true,
-  chronicleSettings: true,
   frontmatter: true,
   tools: true
 };

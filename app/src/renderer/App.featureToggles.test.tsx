@@ -55,7 +55,6 @@ describe("App feature toggles", () => {
 
     await screen.findByRole("button", { name: "ファイル" });
     expect(screen.queryByRole("button", { name: "クロニクル" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "暦設定" })).toBeNull();
   });
 
   it("機能トグルでグラフのナビを非表示にし、ファイルと設定は残す", async () => {

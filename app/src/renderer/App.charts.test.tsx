@@ -57,14 +57,13 @@ import { useUiStore } from "./store/uiStore";
 
 function kamakuraEntry() {
   return {
-    chronicleCalendarName: "メイン暦",
     chronicleEntryIndex: 0,
-    endLabel: "メイン暦 1333",
+    endLabel: "1333",
     endPoint: { month: null, year: 1333 },
     endValue: 15984,
     fileName: "鎌倉時代",
     path: "history/kamakura.md",
-    startLabel: "メイン暦 1185",
+    startLabel: "1185",
     startPoint: { month: null, year: 1185 },
     startValue: 14208
   };
@@ -520,7 +519,7 @@ describe("App charts", () => {
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          content: "---\nchronicle:\n  - [メイン暦, [[1186, null], [1334, null]]]\n---\n# 鎌倉時代",
+          content: "---\nchronicle: { start: 1186, end: 1334 }\n---\n# 鎌倉時代",
           name: "鎌倉時代",
           path: "history/kamakura.md"
         }
@@ -587,7 +586,7 @@ describe("App charts", () => {
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          content: "---\nchronicle:\n  - [メイン暦, [[1210, null], [1358, null]]]\n---\n# 鎌倉時代",
+          content: "---\nchronicle: { start: 1210, end: 1358 }\n---\n# 鎌倉時代",
           name: "鎌倉時代",
           path: "history/kamakura.md"
         }

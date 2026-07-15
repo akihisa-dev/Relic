@@ -1,4 +1,4 @@
-export type PanelTabKind = "tools" | "frontmatter" | "chronicleSettings" | "settings";
+export type PanelTabKind = "tools" | "frontmatter" | "settings";
 
 export interface FileTab {
   content: string;

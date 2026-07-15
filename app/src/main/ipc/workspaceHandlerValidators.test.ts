@@ -4,7 +4,6 @@ import {
   isFeatureTogglesInput,
   isFrontmatterCategoryChoicesInput,
   isFrontmatterTemplatesInput,
-  isChronicleCalendarsInput,
   isChartsInput,
   isRenameWorkspaceInput,
   isSwitchWorkspaceInput,
@@ -115,7 +114,6 @@ describe("workspaceHandlerValidators", () => {
   it("validates feature toggles before saving", () => {
     expect(isFeatureTogglesInput({
       chronicle: false,
-      chronicleSettings: false,
       frontmatter: true,
       graph: true,
       rightPanelLinks: true,
@@ -124,7 +122,6 @@ describe("workspaceHandlerValidators", () => {
     })).toBe(true);
     expect(isFeatureTogglesInput({
       chronicle: false,
-      chronicleSettings: false,
       frontmatter: true,
       graph: true,
       rightPanelLinks: true,
@@ -134,30 +131,10 @@ describe("workspaceHandlerValidators", () => {
     expect(isFeatureTogglesInput({
       chronicle: false,
       frontmatter: true,
-      graph: true,
       rightPanelLinks: true,
       rightPanelOutline: true,
       tools: false
     })).toBe(false);
-  });
-
-  it("validates chronicle calendar settings", () => {
-    expect(isChronicleCalendarsInput([
-      { name: "Main" },
-      { name: "Sub", startYear: 100 }
-    ])).toBe(true);
-    expect(isChronicleCalendarsInput([
-      { name: "Main" },
-      { name: "Sub" },
-      { name: "", startYear: 100 }
-    ])).toBe(false);
-    expect(isChronicleCalendarsInput([{ name: "Sub", startYear: 100 }])).toBe(true);
-    expect(isChronicleCalendarsInput([{ name: "" }])).toBe(false);
-    expect(isChronicleCalendarsInput([{ name: "Main" }, { name: "Main", startYear: 100 }])).toBe(false);
-    expect(isChronicleCalendarsInput([
-      { name: "Main" },
-      { name: "Sub", startYear: 0 }
-    ])).toBe(false);
   });
 
   it("validates workspace rename input", () => {

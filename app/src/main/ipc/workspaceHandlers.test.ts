@@ -25,11 +25,9 @@ vi.mock("electron", () => ({
 import {
   defaultEditorSettings,
   defaultFeatureToggles,
-  defaultChronicleCalendars,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields,
   saveWorkspaceChartsChannel,
-  saveWorkspaceChronicleCalendarsChannel,
   renameWorkspaceChannel,
   togglePinChannel,
   getWorkspaceStateChannel
@@ -79,7 +77,6 @@ describe("workspaceHandlers", () => {
     );
     await writeAppSettings(userDataPath, settings);
     await workspaceSettings.writeWorkspaceSettings(userDataPath, workspace.id, {
-      chronicleCalendars: defaultChronicleCalendars,
       charts: workspaceSettings.defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: ["読書メモ.md"],
@@ -291,47 +288,6 @@ describe("workspaceHandlers", () => {
     });
   });
 
-  it("暦設定保存後は永続化した正規化済み設定を返す", async () => {
-    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
-    temporaryPaths.push(userDataPath, workspacePath);
-
-    const workspace = createWorkspaceSummary(workspacePath);
-    const settings = addOrActivateWorkspace(
-      {
-        editorSettings: defaultEditorSettings,
-        featureToggles: defaultFeatureToggles,
-        frontmatterTemplates: defaultFrontmatterTemplates,
-        lastWorkspaceId: null,
-        userDefinedFields: defaultUserDefinedFields,
-        workspaces: []
-      },
-      workspace
-    );
-    await writeAppSettings(userDataPath, settings);
-
-    electronMock.getPath.mockReturnValue(userDataPath);
-    registerWorkspaceHandlers();
-    const saveCalendarsHandler = electronMock.handle.mock.calls.find(
-      ([channel]) => channel === saveWorkspaceChronicleCalendarsChannel
-    )?.[1];
-
-    if (!saveCalendarsHandler) throw new Error("saveWorkspaceChronicleCalendars handler was not registered");
-
-    const result = await saveCalendarsHandler(undefined, [
-      { name: "主暦" },
-      { name: "王国暦", startYear: 1200 }
-    ]);
-
-    expect(result).toEqual({
-      ok: true,
-      value: [
-        { name: "主暦" },
-        { name: "王国暦", startYear: 1200 }
-      ]
-    });
-  });
-
   it("ワークスペースID変更時はworkspace settingsを新IDに移行して旧IDを削除する", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
     const workspaceParentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
@@ -353,7 +309,6 @@ describe("workspaceHandlers", () => {
     );
     await writeAppSettings(userDataPath, settings);
     await workspaceSettings.writeWorkspaceSettings(userDataPath, workspace.id, {
-      chronicleCalendars: defaultChronicleCalendars,
       charts: workspaceSettings.defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: ["memo.md"],
@@ -418,7 +373,6 @@ describe("workspaceHandlers", () => {
     );
     await writeAppSettings(userDataPath, settings);
     await workspaceSettings.writeWorkspaceSettings(userDataPath, workspace.id, {
-      chronicleCalendars: defaultChronicleCalendars,
       charts: workspaceSettings.defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: ["memo.md"],

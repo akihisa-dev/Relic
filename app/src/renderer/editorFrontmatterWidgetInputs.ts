@@ -211,8 +211,8 @@ function chronicleInput(
       updateField(view, "chronicle", undefined);
       return;
     }
-    const start = parseChronicleYearInput(startRaw, true);
-    const end = endRaw ? parseChronicleYearInput(endRaw, true) : start;
+    const start = parseChronicleYearInput(startRaw);
+    const end = endRaw ? parseChronicleYearInput(endRaw) : start;
     const invalid = start === null || end === null || start === 0 || end === 0 || start > end;
     if (invalid) {
       startInput.setAttribute("aria-invalid", "true");

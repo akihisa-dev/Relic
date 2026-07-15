@@ -1,15 +1,13 @@
 import { ipcMain } from "electron";
 
-import type { ChartSettings, ChronicleCalendarSettings } from "../../shared/ipc";
+import type { ChartSettings } from "../../shared/ipc";
 import {
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChartsChannel,
-  getWorkspaceChronicleCalendarsChannel,
   getWorkspaceFrontmatterCategoryChoicesChannel,
   getWorkspaceGraphChannel,
   getWorkspaceTagsChannel,
-  saveWorkspaceChronicleCalendarsChannel,
   saveWorkspaceFrontmatterCategoryChoicesChannel,
   saveWorkspaceChartsChannel,
   updateChartEntryChannel
@@ -29,7 +27,6 @@ import {
 } from "../settings/workspaceSettings";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
-  isChronicleCalendarsInput,
   isChartsInput,
   isFrontmatterCategoryChoicesInput,
   isUpdateChartEntryInput
@@ -130,7 +127,7 @@ export function registerWorkspaceDataHandlers(): void {
         workspaceId: context.value.activeWorkspace.id,
         workspacePath: context.value.activeWorkspace.path
       });
-      return readWorkspaceCharts(data.workspacePath, workspaceSettings.charts, undefined, data.options);
+      return readWorkspaceCharts(data.workspacePath, workspaceSettings.charts, data.options);
     } catch (error) {
       return fail(
         "WORKSPACE_CHARTS_FAILED",
@@ -164,60 +161,11 @@ export function registerWorkspaceDataHandlers(): void {
         workspacePath: context.value.activeWorkspace.path
       });
 
-      return readWorkspaceCharts(data.workspacePath, savedCharts, undefined, data.options);
+      return readWorkspaceCharts(data.workspacePath, savedCharts, data.options);
     } catch (error) {
       return fail(
         "WORKSPACE_CHARTS_SAVE_FAILED",
         "チャート設定を保存できませんでした。",
-        ipcErrorDetails(error)
-      );
-    }
-  });
-
-  ipcMain.handle(getWorkspaceChronicleCalendarsChannel, async () => {
-    try {
-      const context = await getActiveWorkspaceContext();
-      if (!context.ok) return context;
-
-      const workspaceSettings = await readWorkspaceSettings(
-        context.value.userDataPath,
-        context.value.activeWorkspace.id
-      );
-      return { ok: true as const, value: workspaceSettings.chronicleCalendars };
-    } catch (error) {
-      return fail(
-        "WORKSPACE_CHRONICLE_CALENDARS_FAILED",
-        "暦設定を読み込めませんでした。",
-        ipcErrorDetails(error)
-      );
-    }
-  });
-
-  ipcMain.handle(saveWorkspaceChronicleCalendarsChannel, async (_event, input: unknown) => {
-    try {
-      if (!isChronicleCalendarsInput(input)) {
-        return fail("INVALID_CHRONICLE_CALENDARS", "暦設定が正しくありません。");
-      }
-
-      const context = await getActiveWorkspaceContext();
-      if (!context.ok) return context;
-
-      const savedCalendars = normalizeChronicleCalendarsForSave(input);
-      await updateWorkspaceSettings(
-        context.value.userDataPath,
-        context.value.activeWorkspace.id,
-        (workspaceSettings) => ({
-          ...workspaceSettings,
-          chronicleCalendars: savedCalendars
-        })
-      );
-      invalidateWorkspaceData(context.value.activeWorkspace.id);
-
-      return { ok: true as const, value: savedCalendars };
-    } catch (error) {
-      return fail(
-        "WORKSPACE_CHRONICLE_CALENDARS_SAVE_FAILED",
-        "暦設定を保存できませんでした。",
         ipcErrorDetails(error)
       );
     }
@@ -287,8 +235,7 @@ export function registerWorkspaceDataHandlers(): void {
       const result = await updateWorkspaceChartEntry(
         context.value.activeWorkspace.path,
         workspaceSettings.charts,
-        input,
-        workspaceSettings.chronicleCalendars
+        input
       );
       if (result.ok) {
         invalidateWorkspaceData(context.value.activeWorkspace.id);
@@ -313,14 +260,5 @@ function normalizeChartSettingsForSave(charts: ChartSettings[]): ChartSettings[]
     id: chart.id.trim(),
     name: chart.name.trim(),
     source: chart.source
-  }));
-}
-
-function normalizeChronicleCalendarsForSave(
-  calendars: ChronicleCalendarSettings[]
-): ChronicleCalendarSettings[] {
-  return calendars.map((calendar) => ({
-    name: calendar.name.trim(),
-    ...(calendar.startYear === undefined ? {} : { startYear: calendar.startYear })
   }));
 }

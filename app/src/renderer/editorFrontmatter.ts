@@ -4,7 +4,6 @@ import { findFrontmatterBlock, findFrontmatterLineRange, findTopLevelYamlFieldEn
 
 export {
   choicesFor,
-  chronicleInputValue,
   dateInputValue,
   fieldFor,
   findFrontmatterBlock,

@@ -139,30 +139,4 @@ describe("App rail panels", () => {
     expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeDefined();
   });
 
-  it("有効な暦設定をレールから開ける", async () => {
-    window.relic = makeRelicApi({
-      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
-      getWorkspaceChronicleCalendars: vi.fn().mockResolvedValue({
-        ok: true,
-        value: [
-          { name: "王国暦" },
-          { name: "帝国暦", startYear: 100 }
-        ]
-      }),
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
-    });
-
-    const { container } = await renderApp();
-
-    await screen.findByText("Notes");
-
-    const rail = container.querySelector(".rail");
-    if (!(rail instanceof HTMLElement)) throw new Error("rail was not rendered");
-    const chronicleSettingsButton = within(rail).getByRole("button", { name: "暦設定" });
-
-    fireEvent.click(chronicleSettingsButton);
-
-    expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-chronicleSettings");
-    expect(await screen.findByRole("heading", { name: "暦設定" })).toBeInTheDocument();
-  });
 });

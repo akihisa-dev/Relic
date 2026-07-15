@@ -47,7 +47,7 @@ describe("appSettings", () => {
       workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
     });
     const raw = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(2);
+    expect(raw.schemaVersion).toBe(3);
     await expect(readdir(userDataPath)).resolves.toEqual([path.basename(getAppSettingsPath(userDataPath))]);
     if (process.platform !== "win32") {
       expect((await stat(userDataPath)).mode & 0o777).toBe(0o700);
@@ -73,7 +73,6 @@ describe("appSettings", () => {
       schemaVersion: 0,
       featureToggles: {
         chronicle: false,
-        chronicleSettings: false,
         frontmatter: false,
         rightPanel: false,
         tools: false
@@ -83,7 +82,7 @@ describe("appSettings", () => {
 
     await readAppSettings(userDataPath);
     const afterFirstRead = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(afterFirstRead.schemaVersion).toBe(2);
+    expect(afterFirstRead.schemaVersion).toBe(3);
 
     await delay(1100);
     const firstMtime = (await stat(getAppSettingsPath(userDataPath))).mtimeMs;
@@ -182,7 +181,6 @@ describe("appSettings", () => {
       schemaVersion: 0,
       featureToggles: {
         chronicle: false,
-        chronicleSettings: false,
         tools: false,
         frontmatter: false
       }
@@ -206,7 +204,7 @@ describe("appSettings", () => {
     await Promise.all([update, readWhileUpdating]);
 
     const raw = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(2);
+    expect(raw.schemaVersion).toBe(3);
     expect((raw.featureToggles as Record<string, unknown>)?.tools).toBe(true);
   });
 
@@ -216,7 +214,6 @@ describe("appSettings", () => {
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
       featureToggles: {
         chronicle: false,
-        chronicleSettings: false,
         frontmatter: false,
         rightPanel: false,
         tools: false
@@ -238,7 +235,6 @@ describe("appSettings", () => {
       schemaVersion: 1,
       featureToggles: {
         chronicle: false,
-        chronicleSettings: false,
         frontmatter: false,
         rightPanelLinks: true,
         rightPanelOutline: true,
@@ -251,7 +247,7 @@ describe("appSettings", () => {
       featureToggles: expect.objectContaining({ graph: true })
     });
     const migrated = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(migrated.schemaVersion).toBe(2);
+    expect(migrated.schemaVersion).toBe(3);
   });
 
   it("未知の将来schemaVersionは旧形式として誤読しない", async () => {
@@ -385,7 +381,6 @@ describe("appSettings", () => {
       },
       featureToggles: {
         chronicle: "yes",
-        chronicleSettings: "yes",
         frontmatter: "yes",
         graph: "yes",
         rightPanelLinks: "yes",

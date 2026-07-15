@@ -40,7 +40,6 @@ type RegisteredHandler = (...args: unknown[]) => Promise<unknown>;
 
 const featureToggles = {
   chronicle: true,
-  chronicleSettings: true,
   frontmatter: true,
   graph: true,
   rightPanelLinks: false,

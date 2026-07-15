@@ -1,8 +1,6 @@
 import { readFile } from "node:fs/promises";
 
 import {
-  defaultChronicleCalendars,
-  type ChronicleCalendarSettings,
   type ChartEntry,
   type ChartSettings,
   type UpdateChartEntryInput,
@@ -46,7 +44,6 @@ const defaultChartOperations: ChartWriteOperations = {
 export async function readWorkspaceCharts(
   workspacePath: string,
   charts: ChartSettings[],
-  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars,
   optionsOrOperations: WorkspaceDerivedDataOptions | WorkspaceMarkdownReadOperations = {}
 ): Promise<RelicResult<WorkspaceChart[]>> {
   const startedAt = startPerformanceMeasure();
@@ -57,7 +54,7 @@ export async function readWorkspaceCharts(
     const entriesBySource: Record<ChartSettings["source"], ChartEntry[]> = { chronicle: [] };
 
     for (const record of readableWorkspaceMarkdownRecords(fileIndex)) {
-      const fileEntries = chartEntriesForRecord(record, calendars, parseCache);
+      const fileEntries = chartEntriesForRecord(record, parseCache);
       entriesBySource.chronicle.push(...fileEntries.chronicle);
     }
 
@@ -89,7 +86,6 @@ export async function updateWorkspaceChartEntry(
   workspacePath: string,
   charts: ChartSettings[],
   input: UpdateChartEntryInput,
-  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars,
   operations: ChartWriteOperations = defaultChartOperations
 ): Promise<RelicResult<WorkspaceChart[]>> {
   try {
@@ -104,7 +100,7 @@ export async function updateWorkspaceChartEntry(
     }
 
     const content = await operations.readFile(absolutePath.value, "utf8");
-    const nextContent = updateChartFrontmatterContent(content, input, calendars);
+    const nextContent = updateChartFrontmatterContent(content, input);
 
     if (!nextContent.ok) return nextContent;
 
@@ -119,7 +115,7 @@ export async function updateWorkspaceChartEntry(
 
     await operations.writeTextFile(absolutePath.value, nextContent.value);
 
-    return readWorkspaceCharts(workspacePath, charts, calendars, { operations });
+    return readWorkspaceCharts(workspacePath, charts, { operations });
   } catch (error) {
     return fail(
       "CHART_ENTRY_UPDATE_FAILED",

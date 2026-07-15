@@ -1,67 +1,47 @@
 import path from "node:path";
 
-import { monthAxisToPoint, pointToMonthAxis } from "../../shared/chartTime";
+import { monthAxisToYear, pointToMonthAxis } from "../../shared/chartTime";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
-import {
-  defaultChronicleCalendars,
-  type ChronicleCalendarSettings,
-  type ChartEntry,
-  type UpdateChartEntryInput
-} from "../../shared/ipc";
+import type { ChartEntry, UpdateChartEntryInput } from "../../shared/ipc";
 import { parseFrontmatter } from "./frontmatter";
 import {
-  calendarMainStartYear,
-  calendarYearToMainYear,
   extractChronicleRangesFromData,
-  formatCalendarPoint,
-  mainYearToCalendarYear
+  formatPoint,
+  parseChronicleRange
 } from "./chronicleModel";
 
 export function collectChartEntriesForMarkdown(
   relativePath: string,
-  content: string,
-  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
+  content: string
 ): Record<"chronicle", ChartEntry[]> {
   return collectChartEntriesForFrontmatterData(
     relativePath,
-    parseFrontmatter(content).data,
-    calendars
+    parseFrontmatter(content).data
   );
 }
 
 export function collectChartEntriesForFrontmatterData(
   relativePath: string,
-  data: Record<string, unknown>,
-  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
+  data: Record<string, unknown>
 ): Record<"chronicle", ChartEntry[]> {
   const entriesBySource: Record<"chronicle", ChartEntry[]> = { chronicle: [] };
   const fileName = stripMarkdownExtension(path.basename(relativePath));
-  const ranges = extractChronicleRangesFromData(data, calendars);
+  const ranges = extractChronicleRangesFromData(data);
   const category = extractFrontmatterCategory(data);
 
   for (const range of ranges) {
-    const startPoint = {
-      month: range.start.month,
-      year: calendarYearToMainYear(range.calendar, range.start.year)
-    };
-    const endPoint = {
-      month: range.end.month,
-      year: calendarYearToMainYear(range.calendar, range.end.year)
-    };
-    const startValue = pointToMonthAxis(startPoint.year, startPoint.month);
-    const endValue = pointToMonthAxis(endPoint.year, endPoint.month);
+    const startValue = pointToMonthAxis(range.start.year, null);
+    const endValue = pointToMonthAxis(range.end.year, null);
     entriesBySource.chronicle.push({
       ...(category ? { category } : {}),
-      chronicleCalendarName: range.calendarName,
-      chronicleCalendarStartYear: calendarMainStartYear(range.calendar),
       chronicleEntryIndex: range.entryIndex,
       endValue,
       endPoint: range.end,
       fileName,
       path: relativePath,
       startPoint: range.start,
-      endLabel: formatCalendarPoint(range.calendarName, range.end),
-      startLabel: formatCalendarPoint(range.calendarName, range.start),
+      endLabel: formatPoint(range.end),
+      startLabel: formatPoint(range.start),
       startValue
     });
   }
@@ -87,44 +67,23 @@ export function sortChronicleEntries(entries: ChartEntry[]): ChartEntry[] {
 
 export function updateChronicleDataForChartEdit(
   data: Record<string, unknown>,
-  input: UpdateChartEntryInput,
-  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
+  input: UpdateChartEntryInput
 ): Record<string, unknown> {
-  const start = Math.min(input.startValue, input.endValue);
-  const end = Math.max(input.startValue, input.endValue);
-  const chronicle = Array.isArray(data.chronicle) ? [...data.chronicle] : [];
-  const existing = chronicle[input.chronicleEntryIndex];
-  const calendarName = Array.isArray(existing) && typeof existing[0] === "string" ? existing[0] : calendars[0]?.name ?? "メイン暦";
-  const calendar = calendars.find((item) => item.name.trim() === calendarName.trim()) ?? calendars[0];
-  const startPoint = monthAxisToPoint(start);
-  const endPoint = monthAxisToPoint(end);
-  const nextStart = {
-    month: startPoint.month,
-    year: calendar ? mainYearToCalendarYear(calendar, startPoint.year) : startPoint.year
-  };
-  const nextEnd = {
-    month: endPoint.month,
-    year: calendar ? mainYearToCalendarYear(calendar, endPoint.year) : endPoint.year
-  };
+  const start = monthAxisToYear(Math.min(input.startValue, input.endValue));
+  const end = monthAxisToYear(Math.max(input.startValue, input.endValue));
 
-  chronicle[input.chronicleEntryIndex] = [
-    calendarName.trim(),
-    [
-      [nextStart.year, nextStart.month],
-      [nextEnd.year, nextEnd.month]
-    ]
-  ];
-
-  return { ...data, chronicle };
+  return {
+    ...data,
+    chronicle: start === end ? start : { end, start }
+  };
 }
 
 export function extractChronicleRange(
-  markdown: string,
-  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
+  markdown: string
 ): { endYear: number; startYear: number } | null {
   const { data } = parseFrontmatter(markdown);
-  const range = extractChronicleRangesFromData(data, calendars)[0];
+  const range = parseChronicleRange(data.chronicle);
   if (!range) return null;
 
-  return { endYear: range.end.year, startYear: range.start.year };
+  return { endYear: range.end, startYear: range.start };
 }

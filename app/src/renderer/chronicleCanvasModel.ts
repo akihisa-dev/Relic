@@ -415,17 +415,9 @@ function smoothstep(value: number): number {
 }
 
 function formatRange(entry: ChartEntry): string {
-  const startLabel = chronicleLabelWithoutCalendarName(entry.startLabel, entry.chronicleCalendarName);
-  const endLabel = chronicleLabelWithoutCalendarName(entry.endLabel, entry.chronicleCalendarName);
-  return entry.startValue === entry.endValue ? startLabel : `${startLabel} 〜 ${endLabel}`;
-}
-
-function chronicleLabelWithoutCalendarName(label: string, calendarName: string | undefined): string {
-  const name = calendarName?.trim();
-  if (!name) return label;
-
-  const trimmed = label.trim();
-  return trimmed.startsWith(`${name} `) ? trimmed.slice(name.length + 1) : trimmed;
+  return entry.startValue === entry.endValue
+    ? entry.startLabel
+    : `${entry.startLabel} 〜 ${entry.endLabel}`;
 }
 
 function entryKey(entry: ChartEntry): string {

@@ -3,7 +3,6 @@ import type { ReactElement, ReactNode } from "react";
 
 import type {
   AppInfo,
-  ChronicleCalendarSettings,
   EditorSettings,
   FeatureToggles,
   FrontmatterCategoryChoice,
@@ -18,9 +17,6 @@ const LazyChartView = lazy(async () => ({
 }));
 const LazyGraphView = lazy(async () => ({
   default: (await import("../components/GraphView")).GraphView
-}));
-const LazyChronicleSettingsPanel = lazy(async () => ({
-  default: (await import("../components/ChronicleSettingsPanel")).ChronicleSettingsPanel
 }));
 const LazyFrontmatterPanel = lazy(async () => ({
   default: (await import("../components/FrontmatterPanel")).FrontmatterPanel
@@ -43,7 +39,6 @@ function LazyTabFallback({ graph = false }: { graph?: boolean }): ReactElement {
 
 interface UseAppTabRenderersInput {
   appInfo: AppInfo | null;
-  chronicleCalendars: ChronicleCalendarSettings[];
   categoryChoices: FrontmatterCategoryChoice[];
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
@@ -51,7 +46,6 @@ interface UseAppTabRenderersInput {
   handleOpenFile: (path: string) => void;
   handleOpenTagSearch: (tag: string) => void;
   handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
-  handleSaveChronicleCalendars: (calendars: ChronicleCalendarSettings[]) => void;
   handleSaveCategoryChoices: (choices: FrontmatterCategoryChoice[]) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
   workspaceState: WorkspaceState | null;
@@ -59,7 +53,6 @@ interface UseAppTabRenderersInput {
 
 export function useAppTabRenderers({
   appInfo,
-  chronicleCalendars,
   categoryChoices,
   editorSettings,
   featureToggles,
@@ -67,7 +60,6 @@ export function useAppTabRenderers({
   handleOpenFile,
   handleOpenTagSearch,
   handleSaveFeatureToggles,
-  handleSaveChronicleCalendars,
   handleSaveCategoryChoices,
   handleSaveSettings,
   workspaceState
@@ -115,17 +107,6 @@ export function useAppTabRenderers({
       );
     }
 
-    if (panel === "chronicleSettings") {
-      return (
-        <Suspense fallback={<LazyTabFallback />}>
-          <LazyChronicleSettingsPanel
-            calendars={chronicleCalendars}
-            onSave={handleSaveChronicleCalendars}
-          />
-        </Suspense>
-      );
-    }
-
     return (
       <Suspense fallback={<LazyTabFallback />}>
         <LazySettingsPanel
@@ -140,12 +121,10 @@ export function useAppTabRenderers({
   }, [
     appInfo,
     categoryChoices,
-    chronicleCalendars,
     editorSettings,
     featureToggles,
     handleOpenFile,
     handleSaveFeatureToggles,
-    handleSaveChronicleCalendars,
     handleSaveCategoryChoices,
     handleSaveSettings,
     workspaceState

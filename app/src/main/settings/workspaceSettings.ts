@@ -2,8 +2,6 @@ import { rm } from "node:fs/promises";
 import path from "node:path";
 
 import {
-  defaultChronicleCalendars,
-  type ChronicleCalendarSettings,
   type ChartSettings,
   type FrontmatterCategoryChoice,
   type ChartSource
@@ -17,7 +15,6 @@ import {
 import { SecureVersionedJsonStore } from "./secureVersionedJsonStore";
 
 export interface WorkspaceSettings {
-  chronicleCalendars: ChronicleCalendarSettings[];
   charts: ChartSettings[];
   frontmatterCategoryChoices: FrontmatterCategoryChoice[];
   pinnedPaths: string[];
@@ -33,7 +30,6 @@ export const defaultCharts: ChartSettings[] = [
 ];
 
 const defaultWorkspaceSettings: WorkspaceSettings = {
-  chronicleCalendars: defaultChronicleCalendars,
   charts: defaultCharts,
   frontmatterCategoryChoices: [],
   pinnedPaths: [],
@@ -71,35 +67,11 @@ export async function readWorkspaceSettings(
 
 function parseWorkspaceSettings(raw: PersistedWorkspaceSettings): WorkspaceSettings {
   return {
-    chronicleCalendars: parseChronicleCalendars(raw.chronicleCalendars),
     charts: parseCharts(raw.charts),
     frontmatterCategoryChoices: parseFrontmatterCategoryChoices(raw.frontmatterCategoryChoices),
     pinnedPaths: parsePinnedPaths(raw.pinnedPaths),
     workspacePath: typeof raw.workspacePath === "string" ? raw.workspacePath : ""
   };
-}
-
-export function parseChronicleCalendars(raw: unknown): ChronicleCalendarSettings[] {
-  if (!Array.isArray(raw)) return defaultChronicleCalendars;
-
-  const usedNames = new Set<string>();
-  const parsed = raw.flatMap((item): ChronicleCalendarSettings[] => {
-    if (typeof item !== "object" || item === null) return [];
-
-    const candidate = item as Record<string, unknown>;
-    const name = typeof candidate.name === "string" ? candidate.name.trim() : "";
-
-    if (!name || usedNames.has(name) || typeof candidate.name !== "string") return [];
-    usedNames.add(name);
-
-    if (!("startYear" in candidate)) return [{ name }];
-
-    return Number.isInteger(candidate.startYear) && Number(candidate.startYear) >= 1
-      ? [{ name, startYear: Number(candidate.startYear) }]
-      : [{ name }];
-  });
-
-  return parsed.length > 0 ? parsed : defaultChronicleCalendars;
 }
 
 export function parseCharts(raw: unknown): ChartSettings[] {

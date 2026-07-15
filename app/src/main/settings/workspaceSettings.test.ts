@@ -4,7 +4,6 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { defaultChronicleCalendars } from "../../shared/ipc";
 import {
   defaultCharts,
   getWorkspaceSettingsPath,
@@ -30,7 +29,6 @@ describe("workspaceSettings", () => {
     const settings = await readWorkspaceSettings(userDataPath, "workspace-id");
 
     expect(settings.pinnedPaths).toEqual([]);
-    expect(settings.chronicleCalendars).toEqual(defaultChronicleCalendars);
     expect(settings.charts).toEqual(defaultCharts);
     expect(settings.workspacePath).toBe("");
   });
@@ -40,12 +38,6 @@ describe("workspaceSettings", () => {
     temporaryPaths.push(userDataPath);
 
     await writeWorkspaceSettings(userDataPath, "ws-1", {
-      chronicleCalendars: [
-        { name: "王国暦" },
-        { name: "帝国暦", startYear: 100 },
-        { name: "未開始暦" },
-        { name: "", startYear: 200 }
-      ],
       charts: [
         { filePaths: ["history/kamakura.md"], id: "chronicle", name: "歴史", source: "chronicle" }
       ],
@@ -55,11 +47,6 @@ describe("workspaceSettings", () => {
     });
 
     const settings = await readWorkspaceSettings(userDataPath, "ws-1");
-    expect(settings.chronicleCalendars).toEqual([
-      { name: "王国暦" },
-      { name: "帝国暦", startYear: 100 },
-      { name: "未開始暦" }
-    ]);
     expect(settings.charts).toEqual([
       { filePaths: ["history/kamakura.md"], id: "chronicle", name: "chronicle", source: "chronicle" }
     ]);
@@ -80,7 +67,6 @@ describe("workspaceSettings", () => {
     await mkdir(path.dirname(settingsPath), { recursive: true });
 
     await writeFile(settingsPath, JSON.stringify({
-      chronicleCalendars: defaultChronicleCalendars,
       charts: defaultCharts,
       frontmatterCategoryChoices: [
         " 政治 ",
@@ -107,7 +93,6 @@ describe("workspaceSettings", () => {
     await mkdir(path.dirname(settingsPath), { recursive: true });
 
     await writeFile(settingsPath, JSON.stringify({
-      chronicleCalendars: defaultChronicleCalendars,
       charts: defaultCharts,
       pinnedPaths: [
         " notes/readme.md ",
@@ -134,7 +119,6 @@ describe("workspaceSettings", () => {
     await mkdir(path.dirname(settingsPath), { recursive: true });
 
     await writeFile(settingsPath, JSON.stringify({
-      chronicleCalendars: defaultChronicleCalendars,
       charts: [
         {
           filePaths: [
@@ -170,7 +154,6 @@ describe("workspaceSettings", () => {
 
     await mkdir(path.dirname(settingsPath), { recursive: true });
     await writeFile(settingsPath, JSON.stringify({
-      chronicleCalendars: defaultChronicleCalendars,
       ganttCharts: [
         { filePaths: ["history.md"], id: "chronicle", name: "歴史", source: "chronicle" }
       ],
@@ -193,7 +176,6 @@ describe("workspaceSettings", () => {
     await mkdir(path.dirname(settingsPath), { recursive: true });
     await writeFile(settingsPath, JSON.stringify({
       schemaVersion: 0,
-      chronicleCalendars: defaultChronicleCalendars,
       charts: defaultCharts,
       pinnedPaths: ["notes.md"],
       workspacePath: "/Users/test/workspace"
@@ -201,7 +183,7 @@ describe("workspaceSettings", () => {
 
     await readWorkspaceSettings(userDataPath, "ws-legacy-v0");
     const afterFirstRead = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
-    expect(afterFirstRead.schemaVersion).toBe(1);
+    expect(afterFirstRead.schemaVersion).toBe(2);
 
     await delay(1100);
     const firstMtime = (await stat(settingsPath)).mtimeMs;
@@ -216,7 +198,6 @@ describe("workspaceSettings", () => {
     temporaryPaths.push(userDataPath);
 
     await writeWorkspaceSettings(userDataPath, "ws-new", {
-      chronicleCalendars: defaultChronicleCalendars,
       charts: defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
@@ -225,7 +206,7 @@ describe("workspaceSettings", () => {
 
     const raw = JSON.parse(await readFile(getWorkspaceSettingsPath(userDataPath, "ws-new"), "utf8")) as Record<string, unknown>;
 
-    expect(raw.schemaVersion).toBe(1);
+    expect(raw.schemaVersion).toBe(2);
     expect(raw.charts).toEqual(defaultCharts);
     expect(raw.ganttCharts).toBeUndefined();
     await expect(readdir(path.dirname(getWorkspaceSettingsPath(userDataPath, "ws-new")))).resolves.toEqual([
@@ -292,14 +273,12 @@ describe("workspaceSettings", () => {
     expect(() => getWorkspaceSettingsPath(userDataPath, "../outside")).toThrow("Invalid workspace settings id.");
     expect(() => getWorkspaceSettingsPath(userDataPath, "folder/ws")).toThrow("Invalid workspace settings id.");
     await expect(readWorkspaceSettings(userDataPath, "../outside")).resolves.toEqual({
-      chronicleCalendars: defaultChronicleCalendars,
       charts: defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
       workspacePath: ""
     });
     await expect(writeWorkspaceSettings(userDataPath, "../outside", {
-      chronicleCalendars: defaultChronicleCalendars,
       charts: defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
@@ -311,7 +290,6 @@ describe("workspaceSettings", () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
     temporaryPaths.push(userDataPath);
     await writeWorkspaceSettings(userDataPath, "ws-race", {
-      chronicleCalendars: defaultChronicleCalendars,
       charts: defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
@@ -390,7 +368,6 @@ describe("workspaceSettings", () => {
     await mkdir(path.dirname(settingsPath), { recursive: true });
     await writeFile(settingsPath, JSON.stringify({
       schemaVersion: 0,
-      chronicleCalendars: defaultChronicleCalendars,
       charts: defaultCharts,
       pinnedPaths: [],
       workspacePath: "/Users/test/legacy"
@@ -411,7 +388,7 @@ describe("workspaceSettings", () => {
     await Promise.all([update, readWhileUpdating]);
 
     const raw = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(1);
+    expect(raw.schemaVersion).toBe(2);
     expect(raw.workspacePath).toBe("/Users/test/new");
   });
 });

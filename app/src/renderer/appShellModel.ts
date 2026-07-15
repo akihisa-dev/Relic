@@ -36,7 +36,6 @@ export function openFilePathsForTabs(tabs: Record<string, Tab>): Set<string> {
 
 export function panelLabelsForTranslator(t: Translator): Record<PanelTabKind, string> {
   return {
-    chronicleSettings: t("nav.chronicleSettings"),
     frontmatter: t("nav.frontmatter"),
     settings: t("nav.settings"),
     tools: t("nav.tools")
@@ -103,12 +102,11 @@ export function activeChartIdsForPanes(
 
 export function enabledRailViewsForFeatures<TView extends Pick<AppRailView, "id">>(
   views: TView[],
-  featureToggles: Pick<FeatureToggles, "chronicle" | "chronicleSettings" | "frontmatter" | "graph" | "tools">
+  featureToggles: Pick<FeatureToggles, "chronicle" | "frontmatter" | "graph" | "tools">
 ): TView[] {
   return views.filter((view) => {
     if (view.id === "tools" && !featureToggles.tools) return false;
     if (view.id === "frontmatter" && !featureToggles.frontmatter) return false;
-    if (view.id === "chronicleSettings" && !featureToggles.chronicleSettings) return false;
     if (view.id === "graph" && !featureToggles.graph) return false;
     if (view.id === "chronicle" && !featureToggles.chronicle) return false;
 

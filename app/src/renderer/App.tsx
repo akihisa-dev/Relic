@@ -34,7 +34,6 @@ import { useSplitCloseMotion } from "./hooks/useSplitCloseMotion";
 import { useWindowCloseRequest } from "./hooks/useWindowCloseRequest";
 import { useWorkspaceAliases } from "./hooks/useWorkspaceAliases";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
-import { useWorkspaceChronicleCalendars } from "./hooks/useWorkspaceChronicleCalendars";
 import { useWorkspaceFrontmatterCategoryChoices } from "./hooks/useWorkspaceFrontmatterCategoryChoices";
 import { useWorkspaceCharts } from "./hooks/useWorkspaceCharts";
 import { useWorkspaceExternalRefresh } from "./hooks/useWorkspaceExternalRefresh";
@@ -194,21 +193,13 @@ export function App(): ReactElement {
     setWorkspaceError,
     workspaceState
   });
-  const { chronicleCalendars, handleSaveChronicleCalendars } = useWorkspaceChronicleCalendars({
-    onSaved: () => {
-      if (hasOpenChart) void reloadCharts();
-    },
-    setWorkspaceError,
-    workspaceState
-  });
   const { categoryChoices, handleSaveCategoryChoices } = useWorkspaceFrontmatterCategoryChoices({
     setWorkspaceError,
     workspaceState
   });
-  const frontmatterCandidatesWithChronicle = useMemo(() => ({
+  const frontmatterCandidatesWithCategory = useMemo(() => ({
     ...frontmatterCandidates,
-    category: categoryChoices,
-    chronicle: ["メイン暦"]
+    category: categoryChoices
   }), [categoryChoices, frontmatterCandidates]);
 
   const handleFileSaved = useCallback((path?: string): void => {
@@ -505,14 +496,12 @@ export function App(): ReactElement {
   const { renderChartTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
     categoryChoices,
-    chronicleCalendars,
     editorSettings,
     featureToggles,
     charts,
     handleOpenFile,
     handleOpenTagSearch: handleOpenGraphTagSearch,
     handleSaveCategoryChoices,
-    handleSaveChronicleCalendars,
     handleSaveFeatureToggles,
     handleSaveSettings,
     workspaceState
@@ -531,7 +520,7 @@ export function App(): ReactElement {
       editorActionPulse,
       editorSettings,
       focusedPane,
-      frontmatterCandidates: frontmatterCandidatesWithChronicle,
+      frontmatterCandidates: frontmatterCandidatesWithCategory,
       handleCreateNoteFromPane,
       handleDuplicateTabFile,
       handleFileSaved,

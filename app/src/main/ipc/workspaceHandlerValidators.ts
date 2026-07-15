@@ -1,5 +1,4 @@
 import type {
-  ChronicleCalendarSettings,
   FeatureToggles,
   FrontmatterCategoryChoice,
   FrontmatterTemplate,
@@ -96,25 +95,6 @@ export function isUpdateChartEntryInput(input: unknown): input is UpdateChartEnt
   );
 }
 
-export function isChronicleCalendarsInput(input: unknown): input is ChronicleCalendarSettings[] {
-  if (!Array.isArray(input)) return false;
-
-  const names = new Set<string>();
-
-  return input.every((calendar) => {
-    if (typeof calendar !== "object" || calendar === null) return false;
-
-    const candidate = calendar as Record<string, unknown>;
-    if (typeof candidate.name !== "string" || candidate.name.trim() === "") return false;
-    if (candidate.name.trim() !== candidate.name) return false;
-    if (names.has(candidate.name)) return false;
-    names.add(candidate.name);
-
-    return !("startYear" in candidate) ||
-      (Number.isInteger(candidate.startYear) && Number(candidate.startYear) >= 1);
-  }) && input.length > 0;
-}
-
 export function isFrontmatterCategoryChoicesInput(input: unknown): input is FrontmatterCategoryChoice[] {
   if (!Array.isArray(input)) return false;
 
@@ -156,7 +136,6 @@ export function isFeatureTogglesInput(input: unknown): input is FeatureToggles {
   const candidate = input as Record<string, unknown>;
   return (
     typeof candidate.chronicle === "boolean" &&
-    typeof candidate.chronicleSettings === "boolean" &&
     typeof candidate.graph === "boolean" &&
     typeof candidate.tools === "boolean" &&
     typeof candidate.frontmatter === "boolean" &&

@@ -9,11 +9,11 @@ import { readWorkspaceFileIndex } from "./workspaceFileIndex";
 
 describe("extractChronicleRange", () => {
   it("単年と期間を読む", () => {
-    expect(extractChronicleRange("---\nchronicle:\n  - [メイン暦, [[1185, null], [1185, null]]]\n---\n# A")).toEqual({
+    expect(extractChronicleRange("---\nchronicle: 1185\n---\n# A")).toEqual({
       endYear: 1185,
       startYear: 1185
     });
-    expect(extractChronicleRange("---\nchronicle:\n  - [メイン暦, [[1185, 5], [1333, 8]]]\n---\n# A")).toEqual({
+    expect(extractChronicleRange("---\nchronicle: { start: 1185, end: 1333 }\n---\n# A")).toEqual({
       endYear: 1333,
       startYear: 1185
     });
@@ -21,8 +21,8 @@ describe("extractChronicleRange", () => {
 
   it("旧chronicleN、0年、逆順、短縮chronicleは読まない", () => {
     expect(extractChronicleRange("---\nchronicle0: [1185]\n---\n# A")).toBeNull();
-    expect(extractChronicleRange("---\nchronicle:\n  - [メイン暦, [[0, null], [1, null]]]\n---\n# A")).toBeNull();
-    expect(extractChronicleRange("---\nchronicle:\n  - [メイン暦, [[1333, null], [1185, null]]]\n---\n# A")).toBeNull();
+    expect(extractChronicleRange("---\nchronicle:\n  - [old, [[0, null], [1, null]]]\n---\n# A")).toBeNull();
+    expect(extractChronicleRange("---\nchronicle:\n  - [old, [[1333, null], [1185, null]]]\n---\n# A")).toBeNull();
     expect(extractChronicleRange("---\nchronicle: [1185]\n---\n# A")).toBeNull();
   });
 });
@@ -30,16 +30,12 @@ describe("extractChronicleRange", () => {
 describe("readWorkspaceCharts", () => {
   it("Markdownファイルから年表entryを読む", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-chart-"));
-    await writeFile(path.join(workspacePath, "main.MD"), "---\nchronicle:\n  - [主暦, [[10, null], [10, null]]]\n---\n# Main\n", "utf8");
-    await writeFile(path.join(workspacePath, "sub.md"), "---\nchronicle:\n  - [副暦, [[3, 5], [3, 8]]]\n---\n# Sub\n", "utf8");
+    await writeFile(path.join(workspacePath, "main.MD"), "---\nchronicle: 10\n---\n# Main\n", "utf8");
+    await writeFile(path.join(workspacePath, "sub.md"), "---\nchronicle: { start: 100, end: 103 }\n---\n# Sub\n", "utf8");
 
     const result = await readWorkspaceCharts(
       workspacePath,
-      [{ filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" }],
-      [
-        { name: "主暦" },
-        { name: "副暦", startYear: 100 }
-      ]
+      [{ filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" }]
     );
 
     expect(result).toMatchObject({
@@ -47,8 +43,8 @@ describe("readWorkspaceCharts", () => {
       value: [
         {
           entries: [
-            { chronicleCalendarName: "主暦", fileName: "main", path: "main.MD" },
-            { chronicleCalendarName: "副暦", fileName: "sub", path: "sub.md", startValue: 1216 }
+            { fileName: "main", path: "main.MD" },
+            { fileName: "sub", path: "sub.md", startPoint: { year: 100 } }
           ],
           id: "chronicle"
         }
@@ -58,13 +54,12 @@ describe("readWorkspaceCharts", () => {
 
   it("既に読み取ったWorkspaceFileIndexから年表entryを読む", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-chart-index-"));
-    await writeFile(path.join(workspacePath, "main.md"), "---\nchronicle:\n  - [メイン暦, [[10, null], [10, null]]]\n---\n# Main\n", "utf8");
+    await writeFile(path.join(workspacePath, "main.md"), "---\nchronicle: 10\n---\n# Main\n", "utf8");
     const fileIndex = await readWorkspaceFileIndex(workspacePath);
 
     await expect(readWorkspaceCharts(
       workspacePath,
       [{ filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" }],
-      [{ name: "メイン暦" }],
       {
         fileIndex,
         operations: {
@@ -78,7 +73,7 @@ describe("readWorkspaceCharts", () => {
       value: [
         {
           entries: [
-            { chronicleCalendarName: "メイン暦", fileName: "main", path: "main.md" }
+            { fileName: "main", path: "main.md" }
           ],
           id: "chronicle"
         }
@@ -91,7 +86,7 @@ describe("updateWorkspaceChartEntry", () => {
   it("年表entryの範囲をMarkdownフロントマターへ書き戻す", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-chart-update-"));
     const filePath = path.join(workspacePath, "main.md");
-    await writeFile(filePath, "---\nchronicle:\n  - [メイン暦, [[10, null], [10, null]]]\n---\n# Main\n", "utf8");
+    await writeFile(filePath, "---\nchronicle: 10\n---\n# Main\n", "utf8");
 
     const result = await updateWorkspaceChartEntry(
       workspacePath,
@@ -109,6 +104,6 @@ describe("updateWorkspaceChartEntry", () => {
     );
 
     expect(result.ok).toBe(true);
-    expect(await readFile(filePath, "utf8")).toContain("[メイン暦, [[12, 1], [13, 2]]]");
+    expect(await readFile(filePath, "utf8")).toContain("chronicle:\n  end: 13\n  start: 12");
   });
 });

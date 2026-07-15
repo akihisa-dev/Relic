@@ -37,7 +37,7 @@ describe("generate-large-workspace", () => {
     const note = renderLargeWorkspaceNote(0, 10);
     expect(note).toContain("  - tag-0");
     expect(note).toContain("[[note-00008]]");
-    expect(note).toContain("  - [メイン暦, [[2000, null], [2000, null]]]");
+    expect(note).toContain("chronicle: 2000");
   });
 
   it("正の整数だけを受け付ける", () => {

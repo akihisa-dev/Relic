@@ -11,9 +11,7 @@ export const removeWorkspaceChannel = "workspace:remove";
 export const renameWorkspaceChannel = "workspace:rename";
 export const switchWorkspaceChannel = "workspace:switch";
 export const getWorkspaceChartsChannel = "workspace:getCharts";
-export const getWorkspaceChronicleCalendarsChannel = "workspace:getChronicleCalendars";
 export const getWorkspaceFrontmatterCategoryChoicesChannel = "workspace:getFrontmatterCategoryChoices";
-export const saveWorkspaceChronicleCalendarsChannel = "workspace:saveChronicleCalendars";
 export const saveWorkspaceFrontmatterCategoryChoicesChannel = "workspace:saveFrontmatterCategoryChoices";
 export const saveWorkspaceChartsChannel = "workspace:saveCharts";
 export const updateChartEntryChannel = "workspace:updateChartEntry";
@@ -87,16 +85,7 @@ export interface RenameWorkspaceInput {
 
 export type ChartSource = "chronicle";
 
-export interface ChronicleCalendarSettings {
-  name: string;
-  startYear?: number;
-}
-
 export type FrontmatterCategoryChoice = string;
-
-export const defaultChronicleCalendars: ChronicleCalendarSettings[] = [
-  { name: "メイン暦" }
-];
 
 export interface ChroniclePoint {
   month: number | null;
@@ -112,8 +101,6 @@ export interface ChartSettings {
 
 export interface ChartEntry {
   category?: string;
-  chronicleCalendarName: string;
-  chronicleCalendarStartYear?: number;
   chronicleEntryIndex: number;
   endLabel: string;
   endValue: number;
@@ -151,9 +138,7 @@ export interface WorkspaceApi {
   renameWorkspace: (input: RenameWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   getWorkspaceCharts: () => Promise<RelicResult<WorkspaceChart[]>>;
-  getWorkspaceChronicleCalendars: () => Promise<RelicResult<ChronicleCalendarSettings[]>>;
   getWorkspaceFrontmatterCategoryChoices: () => Promise<RelicResult<FrontmatterCategoryChoice[]>>;
-  saveWorkspaceChronicleCalendars: (input: ChronicleCalendarSettings[]) => Promise<RelicResult<ChronicleCalendarSettings[]>>;
   saveWorkspaceFrontmatterCategoryChoices: (input: FrontmatterCategoryChoice[]) => Promise<RelicResult<FrontmatterCategoryChoice[]>>;
   saveWorkspaceCharts: (input: ChartSettings[]) => Promise<RelicResult<WorkspaceChart[]>>;
   updateChartEntry: (input: UpdateChartEntryInput) => Promise<RelicResult<WorkspaceChart[]>>;
@@ -170,9 +155,7 @@ export const workspaceIpcContract = {
   renameWorkspace: { channel: renameWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: true },
   switchWorkspace: { channel: switchWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: true },
   getWorkspaceCharts: { channel: getWorkspaceChartsChannel, main: "handle", transport: "invoke", validatesInput: false },
-  getWorkspaceChronicleCalendars: { channel: getWorkspaceChronicleCalendarsChannel, main: "handle", transport: "invoke", validatesInput: false },
   getWorkspaceFrontmatterCategoryChoices: { channel: getWorkspaceFrontmatterCategoryChoicesChannel, main: "handle", transport: "invoke", validatesInput: false },
-  saveWorkspaceChronicleCalendars: { channel: saveWorkspaceChronicleCalendarsChannel, main: "handle", transport: "invoke", validatesInput: true },
   saveWorkspaceFrontmatterCategoryChoices: { channel: saveWorkspaceFrontmatterCategoryChoicesChannel, main: "handle", transport: "invoke", validatesInput: true },
   saveWorkspaceCharts: { channel: saveWorkspaceChartsChannel, main: "handle", transport: "invoke", validatesInput: true },
   updateChartEntry: { channel: updateChartEntryChannel, main: "handle", transport: "invoke", validatesInput: true },
