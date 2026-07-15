@@ -38,13 +38,11 @@ export interface SphereRuntime {
 }
 
 type OrbitControlLimits = {
-  addEventListener?: (type: "end" | "start", listener: () => void) => void;
   enablePan?: boolean;
   maxDistance?: number;
   maxPolarAngle?: number;
   minDistance?: number;
   minPolarAngle?: number;
-  removeEventListener?: (type: "end" | "start", listener: () => void) => void;
 };
 
 type ConfigurableChargeForce = {
@@ -98,8 +96,6 @@ export function createSphereRuntime(
   let guideRadius = SPHERE_MIN_GUIDE_RADIUS;
   let nodeDataFrame: number | null = null;
   let resizeFrame: number | null = null;
-  let idleTransitionTimer: number | null = null;
-  let interactionActive = false;
   let animationPaused = false;
 
   const graph = new ForceGraph3D(host, {
@@ -118,17 +114,12 @@ export function createSphereRuntime(
     cancelAnimationFrame(nodeDataFrame);
     nodeDataFrame = null;
   };
-  const clearIdleTimers = () => {
-    if (idleTransitionTimer !== null) window.clearTimeout(idleTransitionTimer);
-    idleTransitionTimer = null;
-  };
   const pauseAnimation = () => {
     if (animationPaused) return;
     graph.pauseAnimation();
     animationPaused = true;
   };
   const resumeAnimation = () => {
-    clearIdleTimers();
     if (!animationPaused) return;
     graph.resumeAnimation();
     animationPaused = false;
@@ -136,18 +127,6 @@ export function createSphereRuntime(
   const renderStaticFrame = () => {
     if (disposed || document.hidden) return;
     renderer.render(scene, graph.camera());
-  };
-  const enterIdle = () => {
-    if (disposed || interactionActive || layoutPending || document.hidden) return;
-    pauseAnimation();
-    renderStaticFrame();
-  };
-  const scheduleIdle = (delayMs: number) => {
-    if (idleTransitionTimer !== null) window.clearTimeout(idleTransitionTimer);
-    idleTransitionTimer = window.setTimeout(() => {
-      idleTransitionTimer = null;
-      enterIdle();
-    }, delayMs);
   };
   const showGuidesBeforeNodes = () => {
     if (data.nodes.length === 0) return;
@@ -217,7 +196,6 @@ export function createSphereRuntime(
         hasFittedData = true;
         graph.zoomToFit(420, 72);
       }
-      scheduleIdle(shouldFit ? 500 : 0);
     });
 
   const controls = graph.controls() as OrbitControlLimits;
@@ -226,17 +204,6 @@ export function createSphereRuntime(
   controls.maxDistance = 4_800;
   controls.minPolarAngle = 0.04;
   controls.maxPolarAngle = Math.PI - 0.04;
-  const handleControlStart = () => {
-    interactionActive = true;
-    resumeAnimation();
-  };
-  const handleControlEnd = () => {
-    interactionActive = false;
-    if (!layoutPending) scheduleIdle(120);
-  };
-  controls.addEventListener?.("start", handleControlStart);
-  controls.addEventListener?.("end", handleControlEnd);
-
   const renderer = graph.renderer();
   const canvas = renderer.domElement;
   canvas.setAttribute("aria-label", callbacks.canvasLabel);
@@ -270,12 +237,9 @@ export function createSphereRuntime(
 
   const handleVisibilityChange = () => {
     if (document.hidden) {
-      clearIdleTimers();
       pauseAnimation();
-    } else if (layoutPending || interactionActive) {
-      resumeAnimation();
     } else {
-      enterIdle();
+      resumeAnimation();
     }
   };
   document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -290,21 +254,17 @@ export function createSphereRuntime(
       lastHeight = 0;
       resizeObserver?.observe(currentHost);
       resize();
-      if (layoutPending || interactionActive) resumeAnimation();
-      else enterIdle();
+      resumeAnimation();
     },
     dispose: () => {
       if (disposed) return;
       disposed = true;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       canvas.removeEventListener("webglcontextlost", handleContextLost);
-      controls.removeEventListener?.("start", handleControlStart);
-      controls.removeEventListener?.("end", handleControlEnd);
       resizeObserver?.unobserve(currentHost);
       resizeObserver?.disconnect();
       cancelNodeDataFrame();
       if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
-      clearIdleTimers();
       clearGuides();
       pauseAnimation();
       graph
@@ -365,7 +325,6 @@ export function createSphereRuntime(
         .cooldownTime(isLarge ? 4_000 : 8_000);
       renderer.setPixelRatio(isLarge ? 1 : Math.min(window.devicePixelRatio || 1, 2));
       if (data.nodes.length > 0) scheduleNodeData();
-      else enterIdle();
     },
     setFocus: (nextFocusId) => {
       if (nextFocusId === focusId) return;
@@ -389,8 +348,6 @@ export function createSphereRuntime(
     },
     suspend: () => {
       if (disposed) return;
-      interactionActive = false;
-      clearIdleTimers();
       pauseAnimation();
       resizeObserver?.unobserve(currentHost);
       const parkingHost = document.createElement("div");

@@ -55,7 +55,7 @@ describe("sphereRuntime", () => {
     animationFrames = [];
     canvas = document.createElement("canvas");
     chargeForce = { strength: vi.fn() };
-    controls = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    controls = {};
     linkForce = { distance: vi.fn() };
     observerDisconnect = vi.fn();
     observerUnobserve = vi.fn();
@@ -275,7 +275,7 @@ describe("sphereRuntime", () => {
     expect(forceGraphMocks.graph.graphData).not.toHaveBeenCalledWith(data);
   });
 
-  it("同一更新を無視し、配置停止後は描画を止めて操作時に再開する", () => {
+  it("同一更新を無視し、配置停止後もクリック判定の描画を維持する", () => {
     const host = document.createElement("div");
     const runtime = createSphereRuntime(host, {
       canvasLabel: "スフィア",
@@ -304,18 +304,8 @@ describe("sphereRuntime", () => {
 
     forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
     vi.advanceTimersByTime(500);
-    expect(forceGraphMocks.graph.pauseAnimation).toHaveBeenCalledOnce();
-    const renderCallCount = rendererRender.mock.calls.length;
-    vi.advanceTimersByTime(100);
-    runAnimationFrame();
-    expect(rendererRender).toHaveBeenCalledTimes(renderCallCount);
-
-    const startListener = (controls.addEventListener as ReturnType<typeof vi.fn>).mock.calls
-      .find(([type]) => type === "start")?.[1];
-    startListener();
-    expect(forceGraphMocks.graph.resumeAnimation).toHaveBeenCalledOnce();
+    expect(forceGraphMocks.graph.pauseAnimation).not.toHaveBeenCalled();
 
     runtime.dispose();
-    expect(controls.removeEventListener).toHaveBeenCalledTimes(2);
   });
 });
