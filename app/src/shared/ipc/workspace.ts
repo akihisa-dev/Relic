@@ -4,6 +4,7 @@ import type { IpcFeatureContract } from "./contract";
 export const createNewWorkspaceChannel = "workspace:createNew";
 export const togglePinChannel = "workspace:togglePin";
 export const getWorkspaceStateChannel = "workspace:getState";
+export const refreshWorkspaceChannel = "workspace:refresh";
 export const workspaceChangedChannel = "workspace:changed";
 export const workspaceWatcherStatusChannel = "workspace:watcherStatus";
 export const openWorkspaceChannel = "workspace:open";
@@ -74,6 +75,10 @@ export interface SwitchWorkspaceInput {
   workspaceId: string;
 }
 
+export interface RefreshWorkspaceInput {
+  workspaceId: string;
+}
+
 export interface RemoveWorkspaceInput {
   workspaceId: string;
 }
@@ -133,6 +138,7 @@ export interface WorkspaceApi {
   createNewWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   togglePin: (path: string) => Promise<RelicResult<WorkspaceState>>;
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;
+  refreshWorkspace: (input: RefreshWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   openWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   removeWorkspace: (input: RemoveWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   renameWorkspace: (input: RenameWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
@@ -150,6 +156,7 @@ export const workspaceIpcContract = {
   createNewWorkspace: { channel: createNewWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: false },
   togglePin: { channel: togglePinChannel, main: "handle", transport: "invoke", validatesInput: true },
   getWorkspaceState: { channel: getWorkspaceStateChannel, main: "handle", transport: "invoke", validatesInput: false },
+  refreshWorkspace: { channel: refreshWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: true },
   openWorkspace: { channel: openWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: false },
   removeWorkspace: { channel: removeWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: true },
   renameWorkspace: { channel: renameWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: true },

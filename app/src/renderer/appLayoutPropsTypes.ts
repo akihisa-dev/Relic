@@ -93,6 +93,7 @@ export interface AppLayoutEditorWorkspaceInput {
   unlinkedReferences: EditorWorkspaceProps["unlinkedReferences"];
   userDefinedFields: EditorWorkspaceProps["userDefinedFields"];
   workspaceState: FilesSidebarProps["workspaceState"];
+  workspaceDataRevision: EditorWorkspaceProps["workspaceDataRevision"];
 }
 
 export interface AppLayoutFilesSidebarInput {
@@ -179,6 +180,7 @@ export interface AppLayoutRailInput {
   handleSwitchWorkspace: RailProps["onSwitchWorkspace"];
   holdWorkspaceRailAfterRename: RailProps["onRenameComplete"];
   isSidebarOpen: RailProps["isSidebarOpen"];
+  isRefreshingWorkspace: RailProps["isRefreshingWorkspace"];
   isWorkspaceRenameActive: RailProps["isWorkspaceRenameActive"];
   isWorkspaceRenameHoldingRail: RailProps["isWorkspaceRenameHoldingRail"];
   openChartIds: RailProps["openChartIds"];
@@ -187,6 +189,7 @@ export interface AppLayoutRailInput {
   primaryRailViews: RailProps["primaryRailViews"];
   registeredWorkspaces: RailProps["registeredWorkspaces"];
   removeWorkspaceLabel: RailProps["removeWorkspaceLabel"];
+  refreshWorkspace: RailProps["onRefreshWorkspace"];
   setIsWorkspaceRenameActive: RailProps["onRenameActiveChange"];
   setRailSidebarView: RailProps["onSetSidebarView"];
   t: Translator;

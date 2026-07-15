@@ -25,6 +25,7 @@ interface PaneContentSurfaceProps {
   userDefinedFields: UserDefinedField[];
   viewRef: MutableRefObject<EditorView | null>;
   workspacePath?: string | null;
+  workspaceDataRevision?: number;
   onCreateFile: (name: string) => void;
   onEditorAction?: () => void;
   onLoadExternalVersion: () => void;
@@ -50,6 +51,7 @@ export function PaneContentSurface({
   userDefinedFields,
   viewRef,
   workspacePath,
+  workspaceDataRevision = 0,
   onCreateFile,
   onEditorAction,
   onLargeMarkdownFallback,
@@ -185,11 +187,11 @@ export function PaneContentSurface({
   }
 
   if (activeTab?.kind === "image") {
-    return <ImageTabSurface name={activeTab.name} path={activeTab.path} />;
+    return <ImageTabSurface name={activeTab.name} path={activeTab.path} refreshRevision={workspaceDataRevision} />;
   }
 
   if (activeTab?.kind === "pdf") {
-    return <PdfTabSurface name={activeTab.name} path={activeTab.path} />;
+    return <PdfTabSurface name={activeTab.name} path={activeTab.path} refreshRevision={workspaceDataRevision} />;
   }
 
   if (activeTab?.kind === "chart") {
@@ -222,9 +224,10 @@ export function PaneContentSurface({
 interface PdfTabSurfaceProps {
   name: string;
   path: string;
+  refreshRevision: number;
 }
 
-function PdfTabSurface({ name, path }: PdfTabSurfaceProps): ReactElement {
+function PdfTabSurface({ name, path, refreshRevision }: PdfTabSurfaceProps): ReactElement {
   const t = useT();
   const [pdfState, setPdfState] = useState<{ error: string | null; path: string; src: string | null } | null>(null);
   const pdfSrc = pdfState?.path === path ? pdfState.src : null;
@@ -250,7 +253,7 @@ function PdfTabSurface({ name, path }: PdfTabSurfaceProps): ReactElement {
     return () => {
       active = false;
     };
-  }, [path, t]);
+  }, [path, refreshRevision, t]);
 
   return (
     <div className="editor-surface pdf-tab-surface">
@@ -280,9 +283,10 @@ function PdfTabSurface({ name, path }: PdfTabSurfaceProps): ReactElement {
 interface ImageTabSurfaceProps {
   name: string;
   path: string;
+  refreshRevision: number;
 }
 
-function ImageTabSurface({ name, path }: ImageTabSurfaceProps): ReactElement {
+function ImageTabSurface({ name, path, refreshRevision }: ImageTabSurfaceProps): ReactElement {
   const t = useT();
   const [imageState, setImageState] = useState<{ error: string | null; path: string; src: string | null } | null>(null);
   const imageSrc = imageState?.path === path ? imageState.src : null;
@@ -308,7 +312,7 @@ function ImageTabSurface({ name, path }: ImageTabSurfaceProps): ReactElement {
     return () => {
       active = false;
     };
-  }, [path, t]);
+  }, [path, refreshRevision, t]);
 
   return (
     <div className="editor-surface image-tab-surface">

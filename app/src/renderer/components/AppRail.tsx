@@ -4,7 +4,7 @@ import type { WorkspaceState } from "../../shared/ipc";
 import { chartIdForRailView, type AppRailView, type AppRailViewId } from "../appShellModel";
 import type { PanelTabKind } from "../store/editorStore";
 import type { SidebarView } from "../store/uiStore";
-import { IconFiles } from "./RailNavigationIcons";
+import { IconFiles, IconRefresh } from "./RailNavigationIcons";
 import { RailWorkspaceSwitcher } from "./RailWorkspaceSwitcher";
 
 interface AppRailProps {
@@ -15,12 +15,14 @@ interface AppRailProps {
   chartRailViews: Array<AppRailView<ReactElement>>;
   copyWorkspacePathLabel: string;
   isSidebarOpen: boolean;
+  isRefreshingWorkspace: boolean;
   isWorkspaceRenameActive: boolean;
   isWorkspaceRenameHoldingRail: boolean;
   onChartButton: (view: AppRailViewId, label: string, event: MouseEvent<HTMLButtonElement>) => void;
   onCloseSidebar: () => void;
   onPanelButton: (panel: PanelTabKind, label: string, event: MouseEvent<HTMLButtonElement>) => void;
   onRemoveWorkspace: (id: string) => void;
+  onRefreshWorkspace: () => void;
   onRenameActiveChange: (isActive: boolean) => void;
   onRenameComplete: () => void;
   onRenameWorkspace: (id: string, currentName: string) => Promise<boolean>;
@@ -35,6 +37,7 @@ interface AppRailProps {
   registeredWorkspaces: WorkspaceState["workspaces"];
   renameLabel: string;
   removeWorkspaceLabel: (name: string) => string;
+  refreshLabel: string;
   viewSwitcherLabel: string;
   workspacesLabel: string;
 }
@@ -47,12 +50,14 @@ export const AppRail = memo(function AppRail({
   chartRailViews,
   copyWorkspacePathLabel,
   isSidebarOpen,
+  isRefreshingWorkspace,
   isWorkspaceRenameActive,
   isWorkspaceRenameHoldingRail,
   onChartButton,
   onCloseSidebar,
   onPanelButton,
   onRemoveWorkspace,
+  onRefreshWorkspace,
   onRenameActiveChange,
   onRenameComplete,
   onRenameWorkspace,
@@ -67,6 +72,7 @@ export const AppRail = memo(function AppRail({
   registeredWorkspaces,
   renameLabel,
   removeWorkspaceLabel,
+  refreshLabel,
   viewSwitcherLabel,
   workspacesLabel
 }: AppRailProps): ReactElement {
@@ -122,6 +128,20 @@ export const AppRail = memo(function AppRail({
           <span className="rail-button-label">{view.label}</span>
         </button>
       ))}
+      <button
+        aria-busy={isRefreshingWorkspace}
+        aria-label={refreshLabel}
+        className="rail-button rail-button--refresh"
+        disabled={activeWorkspaceId === null || isRefreshingWorkspace}
+        onClick={onRefreshWorkspace}
+        title={refreshLabel}
+        type="button"
+      >
+        <span className={isRefreshingWorkspace ? "rail-refresh-icon rail-refresh-icon--spinning" : "rail-refresh-icon"}>
+          <IconRefresh />
+        </span>
+        <span className="rail-button-label">{refreshLabel}</span>
+      </button>
       {registeredWorkspaces.length > 0 ? (
         <>
           <div className="rail-spacer" />

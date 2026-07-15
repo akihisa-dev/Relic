@@ -50,6 +50,7 @@ describe("IPC public contract", () => {
       readImageFile: "workspace:readImageFile",
       readMarkdownFile: "workspace:readMarkdownFile",
       readPdfFile: "workspace:readPdfFile",
+      refreshWorkspace: "workspace:refresh",
       removeWorkspace: "workspace:remove",
       renameFolder: "workspace:renameFolder",
       renameMarkdownFile: "workspace:renameMarkdownFile",

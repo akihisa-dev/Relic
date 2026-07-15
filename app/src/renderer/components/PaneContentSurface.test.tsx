@@ -15,7 +15,11 @@ vi.mock("./Editor", () => ({
   Editor: () => <div>Editor</div>
 }));
 
-const buildSurfaceElement = (activeTab: Tab, sourceMode = false): ReactElement => (
+const buildSurfaceElement = (
+  activeTab: Tab,
+  sourceMode = false,
+  workspaceDataRevision = 0
+): ReactElement => (
   <I18nProvider language="en">
     <PaneContentSurface
       activeTab={activeTab}
@@ -30,6 +34,7 @@ const buildSurfaceElement = (activeTab: Tab, sourceMode = false): ReactElement =
       userDefinedFields={[]}
       viewRef={{ current: null } as React.MutableRefObject<EditorView | null>}
       workspacePath="/workspace"
+      workspaceDataRevision={workspaceDataRevision}
       onCreateFile={vi.fn()}
       onLoadExternalVersion={vi.fn()}
       onRenameFile={vi.fn()}
@@ -71,6 +76,40 @@ describe("PaneContentSurface", () => {
     );
     expect(readImageFile).toHaveBeenCalledWith({ path: "assets/map.jpg" });
     expect(screen.queryByText(/characters/)).not.toBeInTheDocument();
+  });
+
+  it("ワークスペース再同期後は開いている画像を再取得する", async () => {
+    const readImageFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { dataUrl: "data:image/jpeg;base64,b2xk" }
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { dataUrl: "data:image/jpeg;base64,bmV3" }
+      });
+    window.relic = makeRelicApi({ readImageFile });
+    const imageTab: Tab = {
+      id: "image-tab",
+      kind: "image",
+      name: "map.jpg",
+      path: "assets/map.jpg"
+    };
+
+    const { rerender } = render(buildSurfaceElement(imageTab));
+    expect(await screen.findByRole("img", { name: "map.jpg" })).toHaveAttribute(
+      "src",
+      "data:image/jpeg;base64,b2xk"
+    );
+
+    rerender(buildSurfaceElement(imageTab, false, 1));
+
+    expect(await screen.findByRole("img", { name: "map.jpg" })).toHaveAttribute(
+      "src",
+      "data:image/jpeg;base64,bmV3"
+    );
+    expect(readImageFile).toHaveBeenCalledTimes(2);
   });
 
   it("reuses text count result while file content stays unchanged", () => {

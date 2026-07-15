@@ -98,7 +98,10 @@ describe("sphereRuntime", () => {
       .toBeLessThanOrEqual(3);
     expect(data.nodes[0]).toMatchObject({ x: pulseX, y: pulseY, z: pulseZ });
     expect(forceGraphMocks.graph.zoomToFit).toHaveBeenCalledWith(420, 72);
-    expect(scene.add).toHaveBeenCalledOnce();
+    runtime.setData(sphereData(), defaultGraphDrawTheme);
+    forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
+    expect(forceGraphMocks.graph.zoomToFit).toHaveBeenCalledTimes(1);
+    expect(scene.add).toHaveBeenCalledTimes(2);
     const colorAccessor = forceGraphMocks.graph.nodeColor.mock.calls[0][0];
     const linkColorAccessor = forceGraphMocks.graph.linkColor.mock.calls[0][0];
     const linkWidthAccessor = forceGraphMocks.graph.linkWidth.mock.calls[0][0];
@@ -126,7 +129,7 @@ describe("sphereRuntime", () => {
     expect(forceGraphMocks.graph.pauseAnimation).toHaveBeenCalledOnce();
     expect(forceGraphMocks.graph._destructor).toHaveBeenCalledOnce();
     expect(observerDisconnect).toHaveBeenCalledOnce();
-    expect(scene.remove).toHaveBeenCalledOnce();
+    expect(scene.remove).toHaveBeenCalledTimes(2);
   });
 
   it("アニメーションを減らす設定ではノードを揺らさない", () => {

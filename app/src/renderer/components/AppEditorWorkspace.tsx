@@ -80,6 +80,7 @@ interface AppEditorWorkspaceProps {
   showRightPanelRecoveryControl: boolean;
   userDefinedFields: UserDefinedField[];
   workspacePath?: string | null;
+  workspaceDataRevision: number;
 }
 
 type CommonPaneViewProps = Omit<
@@ -187,6 +188,7 @@ export function AppEditorWorkspace({
   showRightPanelRecoveryControl,
   unlinkedReferences,
   userDefinedFields,
+  workspaceDataRevision,
   workspacePath
 }: AppEditorWorkspaceProps): ReactElement {
   const t = useT();
@@ -222,6 +224,7 @@ export function AppEditorWorkspace({
     renderPanelTabIcon,
     typewriterMode: isTypewriterMode,
     userDefinedFields,
+    workspaceDataRevision,
     workspacePath
   };
   const leftPaneViewProps = paneViewProps(commonPaneViewProps, {

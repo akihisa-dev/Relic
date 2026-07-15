@@ -5,6 +5,7 @@ import type {
   ChartSettings,
   ChartSource,
   RenameWorkspaceInput,
+  RefreshWorkspaceInput,
   SwitchWorkspaceInput,
   UpdateChartEntryInput,
   UserDefinedField,
@@ -159,6 +160,10 @@ export function isWorkspaceIdInput(input: unknown): input is { workspaceId: stri
 }
 
 export function isSwitchWorkspaceInput(input: unknown): input is SwitchWorkspaceInput {
+  return isWorkspaceIdInput(input);
+}
+
+export function isRefreshWorkspaceInput(input: unknown): input is RefreshWorkspaceInput {
   return isWorkspaceIdInput(input);
 }
 

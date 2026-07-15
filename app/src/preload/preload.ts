@@ -31,6 +31,7 @@ import {
   listFileRecoverySnapshotsChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
+  refreshWorkspaceChannel,
   workspaceChangedChannel,
   workspaceWatcherStatusChannel,
   windowCloseRequestedChannel,
@@ -75,6 +76,7 @@ import {
   type SavePreviewAsPdfInput,
   type OutputCopyResult,
   type OutputSavedResult,
+  type RefreshWorkspaceInput,
   searchAndReplaceChannel,
   searchWorkspaceChannel,
   switchWorkspaceChannel,
@@ -197,6 +199,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getWorkspaceTagsChannel) as Promise<RelicResult<WorkspaceTagSummary[]>>,
   getWorkspaceState: () =>
     ipcRenderer.invoke(getWorkspaceStateChannel) as Promise<RelicResult<WorkspaceState>>,
+  refreshWorkspace: (input: RefreshWorkspaceInput) =>
+    ipcRenderer.invoke(refreshWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   getLinkUpdateImpact: (input: LinkUpdateImpactInput) =>
     ipcRenderer.invoke(getLinkUpdateImpactChannel, input) as Promise<RelicResult<LinkUpdateImpact>>,
   moveFolder: (input: MoveFolderInput) =>

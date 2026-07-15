@@ -14,9 +14,10 @@ import { relicClient } from "../relicClient";
 interface SphereViewProps {
   onOpenFile: (path: string) => void;
   onOpenTagSearch: (tag: string) => void;
+  refreshRevision?: number;
 }
 
-export function SphereView({ onOpenFile, onOpenTagSearch }: SphereViewProps): ReactElement {
+export function SphereView({ onOpenFile, onOpenTagSearch, refreshRevision = 0 }: SphereViewProps): ReactElement {
   const t = useT();
   const hostRef = useRef<HTMLDivElement | null>(null);
   const runtimeRef = useRef<SphereRuntime | null>(null);
@@ -92,7 +93,7 @@ export function SphereView({ onOpenFile, onOpenTagSearch }: SphereViewProps): Re
     return () => {
       active = false;
     };
-  }, [t]);
+  }, [refreshRevision, t]);
 
   useEffect(() => {
     const host = hostRef.current;

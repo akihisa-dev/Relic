@@ -24,6 +24,7 @@ export interface PaneViewProps {
   typewriterMode: boolean;
   userDefinedFields: UserDefinedField[];
   workspacePath?: string | null;
+  workspaceDataRevision?: number;
   viewRef: MutableRefObject<EditorView | null>;
   renderChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
@@ -66,6 +67,7 @@ export function PaneView({
   typewriterMode,
   userDefinedFields,
   workspacePath,
+  workspaceDataRevision = 0,
   viewRef,
   renderChartTab,
   renderPanelTab,
@@ -181,6 +183,7 @@ export function PaneView({
         userDefinedFields={userDefinedFields}
         viewRef={viewRef}
         workspacePath={workspacePath}
+        workspaceDataRevision={workspaceDataRevision}
         onCreateFile={onCreateFile}
         onEditorAction={onEditorAction}
         onLargeMarkdownFallback={onLargeMarkdownFallback}

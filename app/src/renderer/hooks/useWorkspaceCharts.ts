@@ -21,28 +21,30 @@ export function useWorkspaceCharts({
   workspaceState
 }: UseWorkspaceChartsInput): {
   charts: WorkspaceChart[];
-  reloadCharts: () => Promise<void>;
+  reloadCharts: () => Promise<boolean>;
 } {
   const [charts, setCharts] = useState<WorkspaceChart[]>([]);
 
-  const reloadCharts = useCallback(async (): Promise<void> => {
+  const reloadCharts = useCallback(async (): Promise<boolean> => {
     if (!workspaceState?.activeWorkspace || !relicClient.current) {
       setCharts([]);
-      return;
+      return true;
     }
     if (!isRelicApiContractCompatible(relicClient.current)) {
       setCharts([]);
       setWorkspaceError(apiContractMismatchMessage());
-      return;
+      return false;
     }
 
     const result = await relicClient.current.getWorkspaceCharts();
 
     if (result.ok) {
       setCharts(normalizeWorkspaceCharts(result.value));
+      return true;
     } else {
       setCharts([]);
       setWorkspaceError(result.error.message);
+      return false;
     }
   }, [setWorkspaceError, workspaceState?.activeWorkspace?.id]);
 

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rename, rm, stat, utimes, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -13,7 +13,7 @@ const electronMock = vi.hoisted(() => ({
 }));
 
 vi.mock("electron", () => ({
-  app: { getPath: electronMock.getPath },
+  app: { getLocale: vi.fn().mockReturnValue("ja"), getPath: electronMock.getPath },
   BrowserWindow: { getAllWindows: electronMock.getAllWindows },
   dialog: {
     showOpenDialog: electronMock.showOpenDialog,
@@ -27,14 +27,20 @@ import {
   defaultFeatureToggles,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields,
-  saveWorkspaceChartsChannel,
+  getBacklinksChannel,
+  getWorkspaceChartsChannel,
+  getWorkspaceGraphChannel,
+  getWorkspaceStateChannel,
+  refreshWorkspaceChannel,
   renameWorkspaceChannel,
-  togglePinChannel,
-  getWorkspaceStateChannel
+  saveWorkspaceChartsChannel,
+  searchWorkspaceChannel,
+  togglePinChannel
 } from "../../shared/ipc";
 import { writeAppSettings } from "../settings/appSettings";
 import * as workspaceSettings from "../settings/workspaceSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
+import { registerFileSearchHandlers } from "./fileSearchHandlers";
 import { registerWorkspaceHandlers } from "./workspaceHandlers";
 
 describe("workspaceHandlers", () => {
@@ -118,6 +124,100 @@ describe("workspaceHandlers", () => {
       expect.objectContaining({ kind: "markdown", name: "保管メモ", path: "資料/保管メモ.md", readStatus: "ok" }),
       expect.objectContaining({ kind: "markdown", name: "読書メモ", path: "読書メモ.md", readStatus: "ok" })
     ]));
+  });
+
+  it("リフレッシュで追加・削除・名称変更とグラフ・年表の派生データをディスクから再構築する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
+    temporaryPaths.push(userDataPath, workspacePath);
+    const sourcePath = path.join(workspacePath, "source.md");
+    await writeFile(sourcePath, "---\nchronicle: 100\n---\n[[oldname]]\n", "utf8");
+    await writeFile(path.join(workspacePath, "oldname.md"), "# Old\n", "utf8");
+    const originalSourceStat = await stat(sourcePath);
+
+    const workspace = createWorkspaceSummary(workspacePath);
+    const settings = addOrActivateWorkspace({
+      editorSettings: defaultEditorSettings,
+      featureToggles: defaultFeatureToggles,
+      frontmatterTemplates: defaultFrontmatterTemplates,
+      lastWorkspaceId: null,
+      userDefinedFields: defaultUserDefinedFields,
+      workspaces: []
+    }, workspace);
+    await writeAppSettings(userDataPath, settings);
+    await workspaceSettings.writeWorkspaceSettings(userDataPath, workspace.id, {
+      charts: workspaceSettings.defaultCharts,
+      frontmatterCategoryChoices: [],
+      pinnedPaths: [],
+      workspacePath
+    });
+
+    electronMock.getPath.mockReturnValue(userDataPath);
+    registerWorkspaceHandlers();
+    registerFileSearchHandlers();
+    const handlerFor = (channel: string) => {
+      const handler = electronMock.handle.mock.calls.find(([registered]) => registered === channel)?.[1];
+      if (!handler) throw new Error(`Handler was not registered: ${channel}`);
+      return handler;
+    };
+
+    await handlerFor(getWorkspaceStateChannel)();
+    const initialGraph = await handlerFor(getWorkspaceGraphChannel)();
+    expect(initialGraph.ok ? initialGraph.value.nodes.map((node: { id: string }) => node.id) : [])
+      .toContain("oldname.md");
+    const initialSearch = await handlerFor(searchWorkspaceChannel)(undefined, {
+      mode: "fullText",
+      query: "oldname"
+    });
+    expect(initialSearch.ok ? initialSearch.value.results.map((entry: { path: string }) => entry.path) : [])
+      .toContain("source.md");
+    await rename(path.join(workspacePath, "oldname.md"), path.join(workspacePath, "renamed.md"));
+    await writeFile(sourcePath, "---\nchronicle: 200\n---\n[[renamed]]\n", "utf8");
+    await utimes(sourcePath, originalSourceStat.atime, originalSourceStat.mtime);
+    await writeFile(path.join(workspacePath, "added.md"), "# Added\n", "utf8");
+    await writeFile(path.join(workspacePath, "cover.png"), "test image", "utf8");
+
+    const refreshed = await handlerFor(refreshWorkspaceChannel)(undefined, { workspaceId: workspace.id });
+    expect(refreshed).toMatchObject({ ok: true });
+    expect(refreshed.ok ? refreshed.value.fileIndex?.map((entry: { path: string }) => entry.path) : []).toEqual([
+      "added.md",
+      "renamed.md",
+      "source.md"
+    ]);
+    expect(refreshed.ok ? refreshed.value.fileTree : []).toEqual(expect.arrayContaining([
+      { kind: "image", name: "cover.png", path: "cover.png", type: "file" }
+    ]));
+
+    const graph = await handlerFor(getWorkspaceGraphChannel)();
+    expect(graph.ok ? graph.value.nodes.map((node: { id: string }) => node.id) : []).toEqual(expect.arrayContaining([
+      "added.md",
+      "renamed.md",
+      "source.md"
+    ]));
+    expect(graph.ok ? graph.value.nodes.map((node: { id: string }) => node.id) : []).not.toContain("oldname.md");
+
+    const refreshedSearch = await handlerFor(searchWorkspaceChannel)(undefined, {
+      mode: "fullText",
+      query: "renamed"
+    });
+    expect(refreshedSearch.ok
+      ? refreshedSearch.value.results.map((entry: { path: string }) => entry.path)
+      : []).toContain("source.md");
+    const staleSearch = await handlerFor(searchWorkspaceChannel)(undefined, {
+      mode: "fullText",
+      query: "oldname"
+    });
+    expect(staleSearch.ok ? staleSearch.value.results : []).toEqual([]);
+
+    const backlinks = await handlerFor(getBacklinksChannel)(undefined, { path: "renamed.md" });
+    expect(backlinks.ok ? backlinks.value : []).toEqual([
+      expect.objectContaining({ sourcePath: "source.md" })
+    ]);
+
+    const charts = await handlerFor(getWorkspaceChartsChannel)();
+    expect(charts.ok ? charts.value[0]?.entries : []).toEqual([
+      expect.objectContaining({ path: "source.md", startPoint: { month: null, year: 200 } })
+    ]);
   });
 
   it("起動時にアクティブワークスペースのフォルダがなくても状態を返す", async () => {

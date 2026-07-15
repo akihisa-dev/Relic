@@ -51,6 +51,7 @@ interface UseAppTabRenderersInput {
   handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
   handleSaveCategoryChoices: (choices: FrontmatterCategoryChoice[]) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
+  workspaceDataRevision: number;
   workspaceState: WorkspaceState | null;
 }
 
@@ -65,6 +66,7 @@ export function useAppTabRenderers({
   handleSaveFeatureToggles,
   handleSaveCategoryChoices,
   handleSaveSettings,
+  workspaceDataRevision,
   workspaceState
 }: UseAppTabRenderersInput): {
   renderChartTab: (chartId: string) => ReactNode;
@@ -74,7 +76,11 @@ export function useAppTabRenderers({
     if (chartId === "graph") {
       return (
         <Suspense fallback={<LazyTabFallback graph />}>
-          <LazyGraphView onOpenFile={handleOpenFile} onOpenTagSearch={handleOpenTagSearch} />
+          <LazyGraphView
+            onOpenFile={handleOpenFile}
+            onOpenTagSearch={handleOpenTagSearch}
+            refreshRevision={workspaceDataRevision}
+          />
         </Suspense>
       );
     }
@@ -82,7 +88,11 @@ export function useAppTabRenderers({
     if (chartId === "sphere") {
       return (
         <Suspense fallback={<LazyTabFallback graph />}>
-          <LazySphereView onOpenFile={handleOpenFile} onOpenTagSearch={handleOpenTagSearch} />
+          <LazySphereView
+            onOpenFile={handleOpenFile}
+            onOpenTagSearch={handleOpenTagSearch}
+            refreshRevision={workspaceDataRevision}
+          />
         </Suspense>
       );
     }
@@ -96,7 +106,7 @@ export function useAppTabRenderers({
         />
       </Suspense>
     );
-  }, [charts, handleOpenFile, handleOpenTagSearch]);
+  }, [charts, handleOpenFile, handleOpenTagSearch, workspaceDataRevision]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {

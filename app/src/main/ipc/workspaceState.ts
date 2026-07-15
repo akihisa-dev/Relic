@@ -8,7 +8,14 @@ import { type AppSettings } from "../settings/appSettings";
 import { readWorkspaceSettings } from "../settings/workspaceSettings";
 import { toWorkspaceState } from "../workspace/workspaceService";
 
-export async function buildWorkspaceState(settings: AppSettings): Promise<WorkspaceState> {
+interface BuildWorkspaceStateOptions {
+  strict?: boolean;
+}
+
+export async function buildWorkspaceState(
+  settings: AppSettings,
+  options: BuildWorkspaceStateOptions = {}
+): Promise<WorkspaceState> {
   const startedAt = startPerformanceMeasure();
   const activeWorkspace =
     settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId) ?? null;
@@ -19,14 +26,18 @@ export async function buildWorkspaceState(settings: AppSettings): Promise<Worksp
   }
 
   const userDataPath = app.getPath("userData");
-  const fileTreePromise = readWorkspaceFileTree(activeWorkspace.path).catch(() => []);
+  const fileTreePromise = options.strict
+    ? readWorkspaceFileTree(activeWorkspace.path)
+    : readWorkspaceFileTree(activeWorkspace.path).catch(() => []);
   const fileIndexPromise = fileTreePromise
-    .then((fileTree) =>
-      readWorkspaceFileIndex(activeWorkspace.path, {
+    .then(async (fileTree) => {
+      const readIndex = readWorkspaceFileIndex(activeWorkspace.path, {
         cachePath: getWorkspaceFileIndexCachePath(userDataPath, activeWorkspace.id),
         fileTree,
         includeSearchContent: false
-      }).catch(() => ({
+      });
+      if (options.strict) return readIndex;
+      return readIndex.catch(() => ({
         entries: [],
         records: [],
         stats: {
@@ -39,13 +50,15 @@ export async function buildWorkspaceState(settings: AppSettings): Promise<Worksp
           targetPathCount: 0,
           unreadableCount: 0
         }
-      }))
-    );
+      }));
+    });
+
+  const workspaceSettingsPromise = readWorkspaceSettings(userDataPath, activeWorkspace.id);
 
   const [fileTree, fileIndex, wsSettings] = await Promise.all([
     fileTreePromise,
     fileIndexPromise,
-    readWorkspaceSettings(userDataPath, activeWorkspace.id).catch(() => null)
+    options.strict ? workspaceSettingsPromise : workspaceSettingsPromise.catch(() => null)
   ]);
 
   const workspaceState = toWorkspaceState(settings, fileTree, wsSettings?.pinnedPaths ?? [], fileIndex.entries);

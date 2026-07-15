@@ -53,6 +53,7 @@ export function App(): ReactElement {
   const [editorActionPulse, setEditorActionPulse] = useState(0);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
+  const [workspaceDataRevision, setWorkspaceDataRevision] = useState(0);
   const {
     clearRailTabFlight,
     railTabFlight,
@@ -74,10 +75,8 @@ export function App(): ReactElement {
     focusedPane,
     isSplit,
     leftPane,
-    markTabSaved,
     rightPane,
     tabs,
-    setTabExternalConflict,
     closeAllTabs,
     closeTab,
     closeOtherTabs,
@@ -95,7 +94,6 @@ export function App(): ReactElement {
     toggleTabPinned,
     toggleSplit,
     updateTabContent,
-    updateTabFromExternal,
     updateTabMeta
   } = useEditorStore(useShallow(selectAppEditorStoreState));
 
@@ -334,17 +332,17 @@ export function App(): ReactElement {
     tabs
   });
 
-  useWorkspaceExternalRefresh({
-    closeTab,
-    leftPane,
-    markTabSaved,
-    rightPane,
-    setTabExternalConflict,
+  const handleWorkspaceDataChanged = useCallback(async (): Promise<boolean> => {
+    setWorkspaceDataRevision((revision) => revision + 1);
+    return hasOpenChart ? reloadCharts() : true;
+  }, [hasOpenChart, reloadCharts]);
+  const { isRefreshingWorkspace, refreshWorkspace } = useWorkspaceExternalRefresh({
+    flushTabsBeforeClose,
+    onWorkspaceDataChanged: handleWorkspaceDataChanged,
     setWorkspaceError,
     setWorkspaceState,
+    showToast,
     t,
-    tabs,
-    updateTabFromExternal,
     workspaceState
   });
   useWindowCloseRequest(ensureCanCloseAllTabs);
@@ -505,6 +503,7 @@ export function App(): ReactElement {
     handleSaveCategoryChoices,
     handleSaveFeatureToggles,
     handleSaveSettings,
+    workspaceDataRevision,
     workspaceState
   });
   const appLayoutProps = createAppLayoutProps({
@@ -574,6 +573,7 @@ export function App(): ReactElement {
       updateTabContent,
       unlinkedReferences,
       userDefinedFields,
+      workspaceDataRevision,
       workspaceState
     },
     filesSidebar: {
@@ -655,6 +655,7 @@ export function App(): ReactElement {
       handleRemoveWorkspace,
       handleRenameWorkspace,
       handleRevealWorkspace,
+      isRefreshingWorkspace,
       handleSwitchWorkspace,
       holdWorkspaceRailAfterRename,
       isSidebarOpen,
@@ -666,6 +667,7 @@ export function App(): ReactElement {
       primaryRailViews,
       registeredWorkspaces,
       removeWorkspaceLabel,
+      refreshWorkspace,
       setIsWorkspaceRenameActive,
       setRailSidebarView,
       t,

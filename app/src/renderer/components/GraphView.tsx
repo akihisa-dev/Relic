@@ -69,10 +69,11 @@ import {
 interface GraphViewProps {
   onOpenFile: (path: string) => void;
   onOpenTagSearch: (tag: string) => void;
+  refreshRevision?: number;
 }
 
 const graphCanvasSizeFallback = { height: 600, width: 900 };
-export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): ReactElement {
+export function GraphView({ onOpenFile, onOpenTagSearch, refreshRevision = 0 }: GraphViewProps): ReactElement {
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -194,7 +195,7 @@ export function GraphView({ onOpenFile, onOpenTagSearch }: GraphViewProps): Reac
     return () => {
       active = false;
     };
-  }, [t]);
+  }, [refreshRevision, t]);
 
   const filteredGraph = useMemo(() => {
     return deriveVisibleGraph(graphState.graph, options);

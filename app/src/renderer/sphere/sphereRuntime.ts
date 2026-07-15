@@ -43,7 +43,9 @@ export function createSphereRuntime(
   let focusId: string | null = null;
   let focusIds = new Set<string>();
   let theme: GraphDrawTheme = defaultGraphDrawTheme;
+  let layoutPending = false;
   let fitPending = false;
+  let hasFittedData = false;
   let disposed = false;
   let guides: SphereGuides | null = null;
   let pulseActive = false;
@@ -109,7 +111,9 @@ export function createSphereRuntime(
       callbacks.onBackgroundFocusClear();
     })
     .onEngineStop(() => {
-      if (!fitPending || data.nodes.length === 0) return;
+      if (!layoutPending || data.nodes.length === 0) return;
+      layoutPending = false;
+      const shouldFit = fitPending;
       fitPending = false;
       pulseBasePositions = new WeakMap();
       let radius = 0;
@@ -124,7 +128,10 @@ export function createSphereRuntime(
       guides = createSphereGuides(radius, theme.accent);
       scene.add(guides.group);
       pulseActive = true;
-      graph.zoomToFit(420, 72);
+      if (shouldFit) {
+        hasFittedData = true;
+        graph.zoomToFit(420, 72);
+      }
     });
 
   const controls = graph.controls() as OrbitControlLimits;
@@ -173,7 +180,8 @@ export function createSphereRuntime(
     setData: (nextData, nextTheme) => {
       data = nextData;
       theme = nextTheme;
-      fitPending = data.nodes.length > 0;
+      layoutPending = data.nodes.length > 0;
+      fitPending = data.nodes.length > 0 && !hasFittedData;
       pulseActive = false;
       pulseBasePositions = new WeakMap();
       clearGuides();

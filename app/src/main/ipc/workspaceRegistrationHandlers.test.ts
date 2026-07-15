@@ -13,6 +13,7 @@ const dependencies = vi.hoisted(() => ({
   buildWorkspaceState: vi.fn(),
   createWorkspaceSummary: vi.fn(),
   getMainTranslator: vi.fn(),
+  invalidateWorkspaceData: vi.fn(),
   mkdir: vi.fn(),
   parsePinnedPaths: vi.fn(),
   prepareWorkspace: vi.fn(),
@@ -21,6 +22,7 @@ const dependencies = vi.hoisted(() => ({
   removeWorkspaceRegistration: vi.fn(),
   removeWorkspaceSettings: vi.fn(),
   renameWorkspaceRegistration: vi.fn(),
+  rm: vi.fn(),
   syncWorkspaceWatcher: vi.fn(),
   updateAppSettings: vi.fn(),
   updateWorkspaceSettings: vi.fn(),
@@ -38,10 +40,15 @@ vi.mock("electron", () => ({
 vi.mock("node:fs/promises", async (importOriginal) => ({
   ...(await importOriginal<typeof import("node:fs/promises")>()),
   mkdir: dependencies.mkdir,
+  rm: dependencies.rm,
 }));
 
 vi.mock("../i18n", () => ({
   getMainTranslator: dependencies.getMainTranslator,
+}));
+
+vi.mock("../files/workspaceDataInvalidation", () => ({
+  invalidateWorkspaceData: dependencies.invalidateWorkspaceData,
 }));
 
 vi.mock("../settings/appSettings", () => ({
@@ -82,6 +89,7 @@ import {
   createNewWorkspaceChannel,
   getWorkspaceStateChannel,
   openWorkspaceChannel,
+  refreshWorkspaceChannel,
   removeWorkspaceChannel,
   renameWorkspaceChannel,
   switchWorkspaceChannel,
@@ -193,6 +201,7 @@ describe("registerWorkspaceRegistrationHandlers", () => {
     dependencies.prepareWorkspace.mockResolvedValue(undefined);
     dependencies.mkdir.mockResolvedValue(undefined);
     dependencies.removeWorkspaceSettings.mockResolvedValue(undefined);
+    dependencies.rm.mockResolvedValue(undefined);
 
     registerWorkspaceRegistrationHandlers();
   });
@@ -203,6 +212,52 @@ describe("registerWorkspaceRegistrationHandlers", () => {
     expect(result).toEqual({ ok: true, value: stateFor() });
     expect(dependencies.syncWorkspaceWatcher).toHaveBeenCalledWith(baseSettings);
     expect(dependencies.buildWorkspaceState).toHaveBeenCalledWith(baseSettings);
+  });
+
+  it("リフレッシュ中にワークスペースが切り替わった場合は古い状態を返さない", async () => {
+    dependencies.readAppSettings
+      .mockResolvedValueOnce(baseSettings)
+      .mockResolvedValueOnce({ ...baseSettings, lastWorkspaceId: workspaceTwo.id });
+
+    const result = await handlerFor(refreshWorkspaceChannel)({}, { workspaceId: workspaceOne.id });
+
+    expect(dependencies.invalidateWorkspaceData).toHaveBeenCalledWith(workspaceOne.id);
+    expect(dependencies.buildWorkspaceState).toHaveBeenCalledWith(baseSettings, { strict: true });
+    expect(result).toMatchObject({
+      error: { code: "WORKSPACE_REFRESH_STALE" },
+      ok: false
+    });
+    expect(dependencies.syncWorkspaceWatcher).not.toHaveBeenCalled();
+  });
+
+  it("同じワークスペースの同時リフレッシュを一つの再同期処理へまとめる", async () => {
+    let resolveBuild!: (value: ReturnType<typeof stateFor>) => void;
+    dependencies.buildWorkspaceState.mockReturnValueOnce(new Promise((resolve) => {
+      resolveBuild = resolve;
+    }));
+
+    const first = handlerFor(refreshWorkspaceChannel)({}, { workspaceId: workspaceOne.id });
+    const second = handlerFor(refreshWorkspaceChannel)({}, { workspaceId: workspaceOne.id });
+    await vi.waitFor(() => expect(dependencies.buildWorkspaceState).toHaveBeenCalledTimes(1));
+    resolveBuild(stateFor());
+
+    await expect(first).resolves.toEqual({ ok: true, value: stateFor() });
+    await expect(second).resolves.toEqual({ ok: true, value: stateFor() });
+    expect(dependencies.invalidateWorkspaceData).toHaveBeenCalledTimes(1);
+    expect(dependencies.rm).toHaveBeenCalledTimes(1);
+  });
+
+  it("再走査に失敗した場合は監視対象や画面用状態を更新しない", async () => {
+    dependencies.buildWorkspaceState.mockRejectedValueOnce(new Error("scan failed"));
+
+    const result = await handlerFor(refreshWorkspaceChannel)({}, { workspaceId: workspaceOne.id });
+
+    expect(result).toMatchObject({
+      error: { code: "WORKSPACE_REFRESH_FAILED" },
+      ok: false
+    });
+    expect(dependencies.syncWorkspaceWatcher).not.toHaveBeenCalled();
+    expect(dependencies.readAppSettings).toHaveBeenCalledTimes(1);
   });
 
   it.each([

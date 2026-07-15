@@ -88,6 +88,7 @@ export function createEditorWorkspaceProps(input: AppLayoutEditorWorkspaceInput)
     showRightPanelOutlineControl: input.showRightPanelOutlineControl,
     showRightPanelRecoveryControl: input.showRightPanelRecoveryControl,
     userDefinedFields: input.userDefinedFields,
+    workspaceDataRevision: input.workspaceDataRevision,
     workspacePath: input.workspaceState?.activeWorkspace?.path
   };
 }
@@ -173,12 +174,14 @@ export function createRailProps(input: AppLayoutRailInput): RailProps {
     activeWorkspaceId: input.workspaceState?.activeWorkspace?.id ?? null,
     chartRailViews: input.chartRailViews,
     isSidebarOpen: input.isSidebarOpen,
+    isRefreshingWorkspace: input.isRefreshingWorkspace,
     isWorkspaceRenameActive: input.isWorkspaceRenameActive,
     isWorkspaceRenameHoldingRail: input.isWorkspaceRenameHoldingRail,
     onChartButton: input.handleRailChartButton,
     onCloseSidebar: input.closeSidebar,
     onPanelButton: input.handleRailPanelButton,
     onRemoveWorkspace: input.handleRemoveWorkspace,
+    onRefreshWorkspace: input.refreshWorkspace,
     onRevealWorkspace: input.handleRevealWorkspace,
     onRenameActiveChange: input.setIsWorkspaceRenameActive,
     onRenameComplete: input.holdWorkspaceRailAfterRename,
@@ -192,6 +195,7 @@ export function createRailProps(input: AppLayoutRailInput): RailProps {
     registeredWorkspaces: input.registeredWorkspaces,
     copyWorkspacePathLabel: input.t("files.copyWorkspacePath"),
     removeWorkspaceLabel: input.removeWorkspaceLabel,
+    refreshLabel: input.t("refresh.label"),
     renameLabel: input.t("files.rename"),
     revealWorkspaceLabel: input.t("files.revealInFinder"),
     viewSwitcherLabel: input.t("nav.viewSwitcher"),
