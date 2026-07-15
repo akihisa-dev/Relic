@@ -1,6 +1,7 @@
 import ForceGraph3D, { type ForceGraph3DInstance } from "3d-force-graph";
 
 import { defaultGraphDrawTheme, type GraphDrawTheme } from "../graph/graphTypes";
+import { createSphereGuides, type SphereGuides } from "./sphereGuides";
 import {
   sphereFocusIds,
   sphereLinkTouchesFocus,
@@ -44,6 +45,7 @@ export function createSphereRuntime(
   let theme: GraphDrawTheme = defaultGraphDrawTheme;
   let fitPending = false;
   let disposed = false;
+  let guides: SphereGuides | null = null;
   let pulseActive = false;
   let pulseBasePositions = new WeakMap<SphereNode, { x: number; y: number; z: number }>();
   const nodePulsePhases = new WeakMap<SphereNode, number>();
@@ -53,6 +55,13 @@ export function createSphereRuntime(
     controlType: "orbit",
     rendererConfig: { alpha: true, antialias: true, powerPreference: "high-performance" }
   }) as unknown as ForceGraph3DInstance<SphereNode, SphereLink>;
+  const scene = graph.scene();
+  const clearGuides = () => {
+    if (!guides) return;
+    scene.remove(guides.group);
+    guides.dispose();
+    guides = null;
+  };
   graph
     .showNavInfo(false)
     .enableNodeDrag(false)
@@ -103,11 +112,17 @@ export function createSphereRuntime(
       if (!fitPending || data.nodes.length === 0) return;
       fitPending = false;
       pulseBasePositions = new WeakMap();
+      let radius = 0;
       for (const node of data.nodes) {
         if (Number.isFinite(node.x) && Number.isFinite(node.y) && Number.isFinite(node.z)) {
-          pulseBasePositions.set(node, { x: node.x!, y: node.y!, z: node.z! });
+          const position = { x: node.x!, y: node.y!, z: node.z! };
+          pulseBasePositions.set(node, position);
+          radius = Math.max(radius, Math.hypot(position.x, position.y, position.z));
         }
       }
+      clearGuides();
+      guides = createSphereGuides(radius, theme.textSecondary);
+      scene.add(guides.group);
       pulseActive = true;
       graph.zoomToFit(420, 72);
     });
@@ -150,6 +165,7 @@ export function createSphereRuntime(
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       canvas.removeEventListener("webglcontextlost", handleContextLost);
       resizeObserver?.disconnect();
+      clearGuides();
       graph.pauseAnimation();
       graph._destructor();
       host.replaceChildren();
@@ -160,6 +176,7 @@ export function createSphereRuntime(
       fitPending = data.nodes.length > 0;
       pulseActive = false;
       pulseBasePositions = new WeakMap();
+      clearGuides();
       focusIds = sphereFocusIds(data, focusId);
       const isLarge = data.nodes.length >= 1_500 || data.links.length >= 3_000;
       graph

@@ -6,7 +6,7 @@
     "component": {
       "type": "application",
       "name": "relic",
-      "version": "0.8.0",
+      "version": "0.11.0",
       "licenses": [
         {
           "license": {
@@ -356,6 +356,25 @@
         {
           "type": "vcs",
           "url": "https://github.com/facebook/react"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "three",
+      "version": "0.185.1",
+      "purl": "pkg:npm/three@0.185.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/mrdoob/three.js"
         }
       ]
     },

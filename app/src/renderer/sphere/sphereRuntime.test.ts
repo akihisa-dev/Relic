@@ -30,11 +30,13 @@ describe("sphereRuntime", () => {
   let canvas: HTMLCanvasElement;
   let controls: Record<string, unknown>;
   let observerDisconnect: ReturnType<typeof vi.fn>;
+  let scene: { add: ReturnType<typeof vi.fn>; remove: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     canvas = document.createElement("canvas");
     controls = {};
     observerDisconnect = vi.fn();
+    scene = { add: vi.fn(), remove: vi.fn() };
     vi.stubGlobal("ResizeObserver", vi.fn(function (callback: () => void) {
       callback();
       return { disconnect: observerDisconnect, observe: vi.fn() };
@@ -42,6 +44,7 @@ describe("sphereRuntime", () => {
 
     const graph: Record<string, any> = {
       controls: vi.fn(() => controls),
+      scene: vi.fn(() => scene),
       renderer: vi.fn(() => ({ domElement: canvas, setPixelRatio: vi.fn() }))
     };
     for (const method of [
@@ -95,6 +98,7 @@ describe("sphereRuntime", () => {
       .toBeLessThanOrEqual(3);
     expect(data.nodes[0]).toMatchObject({ x: pulseX, y: pulseY, z: pulseZ });
     expect(forceGraphMocks.graph.zoomToFit).toHaveBeenCalledWith(420, 72);
+    expect(scene.add).toHaveBeenCalledOnce();
     const colorAccessor = forceGraphMocks.graph.nodeColor.mock.calls[0][0];
     const linkColorAccessor = forceGraphMocks.graph.linkColor.mock.calls[0][0];
     const linkWidthAccessor = forceGraphMocks.graph.linkWidth.mock.calls[0][0];
@@ -122,6 +126,7 @@ describe("sphereRuntime", () => {
     expect(forceGraphMocks.graph.pauseAnimation).toHaveBeenCalledOnce();
     expect(forceGraphMocks.graph._destructor).toHaveBeenCalledOnce();
     expect(observerDisconnect).toHaveBeenCalledOnce();
+    expect(scene.remove).toHaveBeenCalledOnce();
   });
 
   it("アニメーションを減らす設定ではノードを揺らさない", () => {

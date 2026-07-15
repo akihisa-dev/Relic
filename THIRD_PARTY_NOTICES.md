@@ -26,4 +26,5 @@ Relic 本体は AGPL-3.0-or-later で公開されています。
 | `mermaid` | `11.16.0` | MIT | [link](https://github.com/mermaid-js/mermaid) |
 | `react` | `19.2.7` | MIT | [link](https://github.com/facebook/react) |
 | `react-dom` | `19.2.7` | MIT | [link](https://github.com/facebook/react) |
+| `three` | `0.185.1` | MIT | [link](https://github.com/mrdoob/three.js) |
 | `zustand` | `5.0.14` | MIT | [link](https://github.com/pmndrs/zustand) |
