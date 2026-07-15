@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { defaultGraphDrawTheme } from "../graph/graphTypes";
-import { createSphereData, sphereFocusIds, sphereLinkTouchesFocus, sphereNodeValue } from "./sphereModel";
+import {
+  createSphereData,
+  sphereFocusIds,
+  sphereLabelLimit,
+  sphereLabelNodes,
+  sphereLinkTouchesFocus,
+  sphereNodeValue,
+  type SphereData
+} from "./sphereModel";
 
 describe("sphereModel", () => {
   const visibleGraph = {
@@ -36,5 +44,29 @@ describe("sphereModel", () => {
   it("関連数に応じてノード体積を増やし上限を設ける", () => {
     expect(sphereNodeValue({ backlinkCount: 0, linkCount: 0 })).toBeCloseTo(4.2);
     expect(sphereNodeValue({ backlinkCount: 10_000, linkCount: 10_000 })).toBe(18);
+  });
+
+  it("通常は全名称を表示し、大規模時は関係数の多い名称を優先する", () => {
+    const normalData = createSphereData(visibleGraph, [], defaultGraphDrawTheme);
+    expect(sphereLabelNodes(normalData)).toBe(normalData.nodes);
+
+    const largeData: SphereData = {
+      links: [],
+      nodes: Array.from({ length: sphereLabelLimit + 1 }, (_, index) => ({
+        backlinkCount: index,
+        baseColor: "#111111",
+        exists: true,
+        id: `${index}.md`,
+        label: String(index),
+        linkCount: 0,
+        path: `${index}.md`,
+        type: "file" as const,
+        val: 4
+      }))
+    };
+    const labels = sphereLabelNodes(largeData);
+    expect(labels).toHaveLength(sphereLabelLimit);
+    expect(labels[0]?.id).toBe(`${sphereLabelLimit}.md`);
+    expect(labels.some((node) => node.id === "0.md")).toBe(false);
   });
 });

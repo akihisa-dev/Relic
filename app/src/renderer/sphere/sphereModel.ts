@@ -24,6 +24,8 @@ export interface SphereData {
   nodes: SphereNode[];
 }
 
+export const sphereLabelLimit = 320;
+
 export function createSphereData(
   graph: VisibleGraph,
   colorGroups: GraphColorGroup[],
@@ -60,4 +62,18 @@ export function sphereFocusIds(data: SphereData, focusId: string | null): Set<st
 
 export function sphereLinkTouchesFocus(link: SphereLink, focusId: string | null): boolean {
   return focusId !== null && (link.sourceId === focusId || link.targetId === focusId);
+}
+
+export function sphereLabelNodes(data: SphereData): SphereNode[] {
+  if (data.nodes.length <= sphereLabelLimit) return data.nodes;
+
+  return data.nodes
+    .map((node, index) => ({ index, node }))
+    .sort((left, right) => {
+      const leftRelations = left.node.backlinkCount + left.node.linkCount;
+      const rightRelations = right.node.backlinkCount + right.node.linkCount;
+      return rightRelations - leftRelations || left.index - right.index;
+    })
+    .slice(0, sphereLabelLimit)
+    .map(({ node }) => node);
 }
