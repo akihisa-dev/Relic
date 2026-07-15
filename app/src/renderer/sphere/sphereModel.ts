@@ -46,12 +46,12 @@ export function sphereLayoutSettings(nodeCount: number, linkCount: number): Sphe
   const safeNodeCount = Math.max(1, nodeCount);
   const averageDegree = (Math.max(0, linkCount) * 2) / safeNodeCount;
   const linkPressure = Math.max(0, averageDegree - 1);
-  const countPressure = Math.min(0.7, Math.max(0, nodeCount - 300) / 1_000);
+  const countPressure = Math.min(0.5, Math.max(0, nodeCount - 300) / 1_200);
   return {
     boundaryRadius: Math.max(180, Math.cbrt(safeNodeCount) * 55),
     chargeStrength: -Math.min(360, 60 + linkPressure * 28),
     linkDistance: Math.min(160, 30 + linkPressure * 16),
-    nodeRelSize: Math.max(2.2, 4 - Math.min(1.2, linkPressure * 0.2) - countPressure)
+    nodeRelSize: Math.max(2.7, 4.2 - Math.min(1, linkPressure * 0.16) - countPressure)
   };
 }
 

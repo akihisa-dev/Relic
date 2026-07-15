@@ -60,6 +60,7 @@ describe("sphereModel", () => {
     expect(dense.chargeStrength).toBeLessThan(sparse.chargeStrength);
     expect(dense.linkDistance).toBeGreaterThan(sparse.linkDistance);
     expect(dense.nodeRelSize).toBeLessThan(sparse.nodeRelSize);
+    expect(dense.nodeRelSize).toBeGreaterThanOrEqual(2.7);
     expect(dense.boundaryRadius).toBe(sparse.boundaryRadius);
   });
 

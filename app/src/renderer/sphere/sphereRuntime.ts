@@ -157,7 +157,7 @@ export function createSphereRuntime(
       return true;
     })
     .linkVisibility(true)
-    .linkOpacity(0.72)
+    .linkOpacity(0.48)
     .linkWidth((link) => {
       return sphereLinkTouchesFocus(link, focusId) ? 2.4 : 1;
     })
