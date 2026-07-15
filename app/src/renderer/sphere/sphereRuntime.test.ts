@@ -46,7 +46,7 @@ describe("sphereRuntime", () => {
     };
     for (const method of [
       "showNavInfo", "enableNodeDrag", "nodeId", "nodeLabel", "nodeVal", "nodeOpacity", "linkOpacity",
-      "linkVisibility", "linkWidth", "nodeColor", "linkColor", "onNodeHover", "onNodeClick", "onNodeRightClick",
+      "nodePositionUpdate", "linkVisibility", "linkWidth", "nodeColor", "linkColor", "onNodeHover", "onNodeClick", "onNodeRightClick",
       "onBackgroundRightClick", "onEngineStop", "width", "height", "backgroundColor", "nodeResolution",
       "cooldownTicks", "cooldownTime", "graphData", "refresh", "zoomToFit", "pauseAnimation",
       "resumeAnimation", "_destructor"
@@ -78,6 +78,12 @@ describe("sphereRuntime", () => {
     expect(forceGraphMocks.graph.graphData).toHaveBeenCalled();
     expect(forceGraphMocks.graph.linkVisibility).toHaveBeenCalledWith(true);
     expect(forceGraphMocks.graph.linkOpacity).toHaveBeenCalledWith(0.72);
+    const positionAccessor = forceGraphMocks.graph.nodePositionUpdate.mock.calls[0][0];
+    const position = { set: vi.fn() };
+    expect(positionAccessor({ position }, { x: 10, y: 20, z: 30 }, sphereData().nodes[0])).toBe(true);
+    expect(position.set).toHaveBeenCalledWith(10, expect.any(Number), 30);
+    const floatedY = position.set.mock.calls[0][1];
+    expect(Math.abs(floatedY - 20)).toBeLessThanOrEqual(0.7);
     const colorAccessor = forceGraphMocks.graph.nodeColor.mock.calls[0][0];
     const linkColorAccessor = forceGraphMocks.graph.linkColor.mock.calls[0][0];
     const linkWidthAccessor = forceGraphMocks.graph.linkWidth.mock.calls[0][0];
@@ -105,5 +111,25 @@ describe("sphereRuntime", () => {
     expect(forceGraphMocks.graph.pauseAnimation).toHaveBeenCalledOnce();
     expect(forceGraphMocks.graph._destructor).toHaveBeenCalledOnce();
     expect(observerDisconnect).toHaveBeenCalledOnce();
+  });
+
+  it("アニメーションを減らす設定ではノードを揺らさない", () => {
+    vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+    const host = document.createElement("div");
+    const runtime = createSphereRuntime(host, {
+      canvasLabel: "スフィア",
+      onBackgroundFocusClear: vi.fn(),
+      onContextLost: vi.fn(),
+      onNodeActivate: vi.fn(),
+      onNodeFocus: vi.fn(),
+      onNodeHover: vi.fn()
+    });
+    const positionAccessor = forceGraphMocks.graph.nodePositionUpdate.mock.calls[0][0];
+    const position = { set: vi.fn() };
+
+    expect(positionAccessor({ position }, { x: 10, y: 20, z: 30 }, sphereData().nodes[0])).toBe(false);
+    expect(position.set).not.toHaveBeenCalled();
+
+    runtime.dispose();
   });
 });

@@ -32,6 +32,17 @@ type OrbitControlLimits = {
   minPolarAngle?: number;
 };
 
+const NODE_FLOAT_AMPLITUDE = 0.7;
+const NODE_FLOAT_PERIOD_MS = 8_400;
+
+function nodeFloatPhase(nodeId: string): number {
+  let hash = 0;
+  for (let index = 0; index < nodeId.length; index += 1) {
+    hash = (hash * 31 + nodeId.charCodeAt(index)) >>> 0;
+  }
+  return (hash / 0xffffffff) * Math.PI * 2;
+}
+
 export function createSphereRuntime(
   host: HTMLElement,
   callbacks: SphereRuntimeCallbacks
@@ -42,6 +53,8 @@ export function createSphereRuntime(
   let theme: GraphDrawTheme = defaultGraphDrawTheme;
   let fitPending = false;
   let disposed = false;
+  const nodeFloatPhases = new WeakMap<SphereNode, number>();
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? null;
 
   const graph = new ForceGraph3D(host, {
     controlType: "orbit",
@@ -54,6 +67,19 @@ export function createSphereRuntime(
     .nodeLabel((node) => node.label)
     .nodeVal((node) => node.val)
     .nodeOpacity(0.9)
+    .nodePositionUpdate((nodeObject, coordinates, node) => {
+      if (reducedMotion?.matches) return false;
+      let phase = nodeFloatPhases.get(node);
+      if (phase === undefined) {
+        phase = nodeFloatPhase(node.id);
+        nodeFloatPhases.set(node, phase);
+      }
+      const elapsed = performance.now() % NODE_FLOAT_PERIOD_MS;
+      const offset = Math.sin((elapsed / NODE_FLOAT_PERIOD_MS) * Math.PI * 2 + phase)
+        * NODE_FLOAT_AMPLITUDE;
+      nodeObject.position.set(coordinates.x, coordinates.y + offset, coordinates.z);
+      return true;
+    })
     .linkVisibility(true)
     .linkOpacity(0.72)
     .linkWidth((link) => {
