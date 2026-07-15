@@ -65,6 +65,8 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 
 - Optional Chronicle view that places Markdown files on a timeline from `chronicle` front matter values.
 
+![Relic Chronicle view screenshot](assets/relic-timeline-screenshot.png)
+
 ### File Processing Tools
 
 - Optional file processing tools are available from feature toggles.
@@ -339,6 +341,8 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 ### クロニクルビュー
 
 - `chronicle` フロントマター値からMarkdownファイルを時間軸上の年表へ配置する、任意で有効化できるクロニクルビュー
+
+![Relicクロニクルビューのスクリーンショット](assets/relic-timeline-screenshot.png)
 
 ### ファイル加工ツール
 
