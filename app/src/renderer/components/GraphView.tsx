@@ -15,14 +15,13 @@ import {
 import { createGraphSimulationClient, type GraphSimulationClient } from "../graph/graphSimulationClient";
 import {
   defaultGraphDrawTheme,
-  defaultGraphOptions,
-  type GraphColorGroup,
   type GraphKeyboardState,
   type GraphSimLink,
   type GraphSimNode,
   type GraphViewTransform
 } from "../graph/graphTypes";
 import { useT } from "../i18n";
+import { useGraphControlsState } from "../hooks/useGraphControlsState";
 import { useLatest } from "../hooks/useLatest";
 import { GraphControls } from "./GraphControls";
 import {
@@ -40,7 +39,6 @@ import {
   graphWheelZoomPoint,
   initialGraphViewTransform,
   isGraphNodePrimaryPointerButton,
-  moveGraphColorGroup,
   nextGraphPanSampleMs,
   nextGraphPanVelocity,
   requestGraphZoom,
@@ -53,18 +51,8 @@ import {
 import {
   cancelGraphFrame,
   getCanvas2dContext,
-  graphColorGroupsStorageKey,
-  graphControlsStorageKey,
-  graphOptionsStorageKey,
-  graphSectionCollapsedStorageKey,
-  loadGraphColorGroups,
-  loadGraphControlsOpen,
-  loadGraphOptions,
-  loadGraphSectionCollapsed,
-  nextGroupColor,
   readGraphDrawTheme,
-  requestGraphFrameOnce,
-  saveJson
+  requestGraphFrameOnce
 } from "../graph/graphViewRuntime";
 
 interface GraphViewProps {
@@ -120,7 +108,23 @@ export function GraphView({
   } | null>(null);
   const openFileRef = useLatest(onOpenFile);
   const openTagSearchRef = useLatest(onOpenTagSearch);
-  const [controlsOpen, setControlsOpen] = useState(loadGraphControlsOpen);
+  const {
+    addColorGroup,
+    changeColorGroup,
+    changeOptions,
+    changeSectionCollapsed,
+    colorGroups,
+    controlsOpen,
+    deleteColorGroup,
+    draggingColorGroupId,
+    endColorGroupDrag,
+    moveColorGroup,
+    options,
+    resetControls,
+    sectionCollapsed,
+    startColorGroupDrag,
+    toggleControls
+  } = useGraphControlsState();
   const [graphState, setGraphState] = useState<{
     error: string | null;
     graph: WorkspaceGraph | null;
@@ -128,10 +132,6 @@ export function GraphView({
   }>(() => relicClient.current
     ? { error: null, graph: null, loading: true }
     : { error: t("graph.loadFailed"), graph: null, loading: false });
-  const [options, setOptions] = useState(loadGraphOptions);
-  const [colorGroups, setColorGroups] = useState<GraphColorGroup[]>(loadGraphColorGroups);
-  const [draggingColorGroupId, setDraggingColorGroupId] = useState<string | null>(null);
-  const [sectionCollapsed, setSectionCollapsed] = useState(loadGraphSectionCollapsed);
   const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
   const latestOptionsRef = useLatest(options);
   const colorGroupsRef = useLatest(colorGroups);
@@ -207,22 +207,6 @@ export function GraphView({
   const filteredGraph = useMemo(() => {
     return deriveVisibleGraph(graphState.graph, options);
   }, [graphState.graph, options.hideUnresolved, options.search, options.showAttachments, options.showOrphans, options.showTags]);
-
-  useEffect(() => {
-    saveJson(graphOptionsStorageKey, options);
-  }, [options]);
-
-  useEffect(() => {
-    saveJson(graphColorGroupsStorageKey, colorGroups);
-  }, [colorGroups]);
-
-  useEffect(() => {
-    saveJson(graphControlsStorageKey, controlsOpen);
-  }, [controlsOpen]);
-
-  useEffect(() => {
-    saveJson(graphSectionCollapsedStorageKey, sectionCollapsed);
-  }, [sectionCollapsed]);
 
   useEffect(() => {
     const links = syncGraphLayout(filteredGraph, nodesRef.current);
@@ -608,11 +592,10 @@ export function GraphView({
       zoomIn: false,
       zoomOut: false
     };
-    setOptions(defaultGraphOptions);
-    setColorGroups([]);
+    resetControls();
     setPinnedNodeId(null);
     requestDraw();
-  }, [requestDraw]);
+  }, [requestDraw, resetControls]);
 
   return (
     <div className="graph-view-shell">
@@ -643,30 +626,20 @@ export function GraphView({
         colorGroups={colorGroups}
         controlsOpen={controlsOpen}
         nodeCount={filteredGraph.nodes.length}
-        onAddColorGroup={() => setColorGroups((current) => [
-          ...current,
-          { color: nextGroupColor(current.length), id: `group-${Date.now()}-${current.length}`, query: "" }
-        ])}
-        onColorGroupChange={(groupId, patch) => setColorGroups((current) =>
-          current.map((group) => group.id === groupId ? { ...group, ...patch } : group)
-        )}
-        onColorGroupDelete={(groupId) => setColorGroups((current) => current.filter((group) => group.id !== groupId))}
-        onColorGroupDragEnd={() => setDraggingColorGroupId(null)}
-        onColorGroupDragStart={(groupId) => setDraggingColorGroupId(groupId)}
-        onColorGroupMove={(targetGroupId) => setColorGroups((current) =>
-          draggingColorGroupId ? moveGraphColorGroup(current, draggingColorGroupId, targetGroupId) : current
-        )}
+        onAddColorGroup={addColorGroup}
+        onColorGroupChange={changeColorGroup}
+        onColorGroupDelete={deleteColorGroup}
+        onColorGroupDragEnd={endColorGroupDrag}
+        onColorGroupDragStart={startColorGroupDrag}
+        onColorGroupMove={moveColorGroup}
         onAnimate={() => {
           animateGraph(nodesRef.current, linksRef.current, viewRef, simulationClientRef.current, latestOptionsRef.current);
           requestDraw();
         }}
-        onOptionsChange={(patch) => setOptions((current) => ({ ...current, ...patch }))}
+        onOptionsChange={changeOptions}
         onReset={resetView}
-        onSectionCollapsedChange={(sectionId, collapsed) => setSectionCollapsed((current) => ({
-          ...current,
-          [sectionId]: collapsed
-        }))}
-        onToggleControls={() => setControlsOpen((current) => !current)}
+        onSectionCollapsedChange={changeSectionCollapsed}
+        onToggleControls={toggleControls}
         options={options}
         draggingColorGroupId={draggingColorGroupId}
         sectionCollapsed={sectionCollapsed}
