@@ -77,9 +77,19 @@ describe("sphereRuntime", () => {
     expect(controls).toMatchObject({ enablePan: false, minDistance: 48, maxDistance: 4_800 });
     expect(forceGraphMocks.graph.graphData).toHaveBeenCalled();
     const colorAccessor = forceGraphMocks.graph.nodeColor.mock.calls[0][0];
+    const linkWidthAccessor = forceGraphMocks.graph.linkWidth.mock.calls[0][0];
     expect(colorAccessor(sphereData().nodes[0])).toBe(defaultGraphDrawTheme.accent);
     expect(colorAccessor(sphereData().nodes[1])).toBe("#222222");
     expect(colorAccessor(sphereData().nodes[2])).toBe(defaultGraphDrawTheme.border);
+    expect(linkWidthAccessor(sphereData().links[0])).toBe(1.3);
+    expect(linkWidthAccessor({
+      count: 1,
+      source: "B.md",
+      sourceId: "B.md",
+      target: "C.md",
+      targetId: "C.md",
+      type: "link"
+    })).toBe(0.4);
 
     canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
     expect(callbacks.onContextLost).toHaveBeenCalled();

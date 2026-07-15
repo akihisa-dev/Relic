@@ -56,8 +56,7 @@ export function createSphereRuntime(
     .nodeOpacity(0.9)
     .linkOpacity(0.34)
     .linkWidth((link) => {
-      if (!focusId) return 0.4;
-      return sphereLinkTouchesFocus(link, focusId) ? 1.3 : 0.08;
+      return sphereLinkTouchesFocus(link, focusId) ? 1.3 : 0.4;
     })
     .nodeColor((node) => {
       if (!focusId) return node.baseColor;
