@@ -273,6 +273,7 @@ export function createSphereRuntime(
       graph.d3Force("sphere-boundary", createSphereBoundaryForce(layoutSettings.boundaryRadius));
       graph
         .backgroundColor(theme.background)
+        .linkOpacity(layoutSettings.linkOpacity)
         .nodeRelSize(layoutSettings.nodeRelSize)
         .nodeResolution(isLarge ? 4 : 8)
         .cooldownTicks(isLarge ? 90 : 180)

@@ -117,6 +117,7 @@ describe("sphereRuntime", () => {
     expect(forceGraphMocks.graph.graphData).toHaveBeenCalled();
     expect(forceGraphMocks.graph.linkVisibility).toHaveBeenCalledWith(true);
     expect(forceGraphMocks.graph.linkOpacity).toHaveBeenCalledWith(0.48);
+    expect(forceGraphMocks.graph.linkOpacity).toHaveBeenLastCalledWith(0.48);
     const chargeAccessor = chargeForce.strength.mock.calls[0][0];
     const distanceAccessor = linkForce.distance.mock.calls[0][0];
     expect(chargeAccessor(data.nodes[0])).toBe(-60);

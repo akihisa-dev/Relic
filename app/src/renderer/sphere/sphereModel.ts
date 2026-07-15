@@ -34,6 +34,7 @@ export interface SphereLayoutSettings {
   boundaryRadius: number;
   chargeStrength: number;
   linkDistance: number;
+  linkOpacity: number;
   nodeRelSize: number;
 }
 
@@ -47,10 +48,15 @@ export function sphereLayoutSettings(nodeCount: number, linkCount: number): Sphe
   const averageDegree = (Math.max(0, linkCount) * 2) / safeNodeCount;
   const linkPressure = Math.max(0, averageDegree - 1);
   const countPressure = Math.min(0.5, Math.max(0, nodeCount - 300) / 1_200);
+  const linkOpacityPressure = Math.min(
+    0.3,
+    Math.max(0, averageDegree - 2) * 0.04 + Math.max(0, nodeCount - 300) / 2_000
+  );
   return {
     boundaryRadius: Math.max(180, Math.cbrt(safeNodeCount) * 55),
     chargeStrength: -Math.min(360, 60 + linkPressure * 28),
     linkDistance: Math.min(160, 30 + linkPressure * 16),
+    linkOpacity: 0.48 - linkOpacityPressure,
     nodeRelSize: Math.max(2.7, 4.2 - Math.min(1, linkPressure * 0.16) - countPressure)
   };
 }
