@@ -30,6 +30,7 @@ describe("IPC public contract", () => {
       getUserDefinedFields: "app:getUserDefinedFields",
       getWorkspaceAliases: "workspace:getAliases",
       getWorkspaceCharts: "workspace:getCharts",
+      getWorkspaceCards: "workspace:getCards",
       getWorkspaceFrontmatterCategoryChoices: "workspace:getFrontmatterCategoryChoices",
       getWorkspaceGraph: "workspace:getGraph",
       getWorkspaceState: "workspace:getState",

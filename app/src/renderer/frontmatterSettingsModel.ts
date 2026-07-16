@@ -20,6 +20,11 @@ export const STANDARD_FIXED_FIELDS: FixedFieldDefinition[] = [
     examples: ["settings.fixedFieldAliasesSingleExample", "settings.fixedFieldAliasesMultipleExample"]
   },
   {
+    name: "card",
+    descriptionKey: "settings.fixedFieldCardDescription",
+    examples: ["settings.fixedFieldCardExample"]
+  },
+  {
     name: "tags",
     descriptionKey: "settings.fixedFieldTagsDescription",
     examples: ["settings.fixedFieldTagsSingleExample", "settings.fixedFieldTagsMultipleExample"]

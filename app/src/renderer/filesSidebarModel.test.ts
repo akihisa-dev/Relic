@@ -16,6 +16,7 @@ describe("filesSidebarModel", () => {
       { name: "date", type: "date" }
     ])).toEqual([
       "aliases",
+      "card",
       "category",
       "chronicle",
       "custom",

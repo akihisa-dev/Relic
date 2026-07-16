@@ -3,7 +3,7 @@ import type { Translator } from "./i18nModel";
 import type { PaneState, PanelTabKind, Tab } from "./store/editorStore";
 import type { SidebarView } from "./store/uiStore";
 
-export type AppRailViewId = SidebarView | PanelTabKind | "graph" | "sphere";
+export type AppRailViewId = SidebarView | PanelTabKind | "cards" | "graph" | "sphere";
 
 export interface AppRailView<TIcon = unknown> {
   icon: TIcon;
@@ -12,6 +12,7 @@ export interface AppRailView<TIcon = unknown> {
 }
 
 export function chartIdForRailView(id: AppRailViewId): string | null {
+  if (id === "cards") return "cards";
   if (id === "graph") return "graph";
   if (id === "sphere") return "sphere";
   if (id === "chronicle") return "chronicle";

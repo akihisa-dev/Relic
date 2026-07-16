@@ -95,6 +95,7 @@ describe("appShellModel", () => {
       { icon: null, id: "files", label: "Files" },
       { icon: null, id: "tools", label: "Tools" },
       { icon: null, id: "frontmatter", label: "Frontmatter" },
+      { icon: null, id: "cards", label: "Cards" },
       { icon: null, id: "graph", label: "Graph" },
       { icon: null, id: "sphere", label: "Sphere" },
       { icon: null, id: "chronicle", label: "Chronicle" },
@@ -102,7 +103,7 @@ describe("appShellModel", () => {
     ];
 
     const defaultEnabled = enabledRailViewsForFeatures(railViews, defaultFeatureToggles);
-    expect(defaultEnabled.map((view) => view.id)).toEqual(["files", "graph", "settings"]);
+    expect(defaultEnabled.map((view) => view.id)).toEqual(["files", "cards", "graph", "settings"]);
 
     const enabled = enabledRailViewsForFeatures(railViews, {
       ...defaultFeatureToggles,
@@ -113,17 +114,18 @@ describe("appShellModel", () => {
     });
     const split = splitRailViews(enabled);
 
-    expect(enabled.map((view) => view.id)).toEqual(["files", "graph", "sphere", "settings"]);
+    expect(enabled.map((view) => view.id)).toEqual(["files", "cards", "graph", "sphere", "settings"]);
     expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files"]);
-    expect(split.chartRailViews.map((view) => view.id)).toEqual(["graph", "sphere"]);
+    expect(split.chartRailViews.map((view) => view.id)).toEqual(["cards", "graph", "sphere"]);
     expect(split.panelRailViews.map((view) => view.id)).toEqual(["settings"]);
     expect(chartIdForRailView("graph")).toBe("graph");
+    expect(chartIdForRailView("cards")).toBe("cards");
     expect(chartIdForRailView("sphere")).toBe("sphere");
     expect(chartIdForRailView("chronicle")).toBe("chronicle");
 
     expect(enabledRailViewsForFeatures(railViews, {
       ...defaultFeatureToggles,
       graph: false
-    }).map((view) => view.id)).toEqual(["files", "settings"]);
+    }).map((view) => view.id)).toEqual(["files", "cards", "settings"]);
   });
 });

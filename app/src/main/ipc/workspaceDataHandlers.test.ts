@@ -13,6 +13,7 @@ const dependencies = vi.hoisted(() => ({
   providerGet: vi.fn(),
   readWorkspaceAliases: vi.fn(),
   readWorkspaceCharts: vi.fn(),
+  readWorkspaceCards: vi.fn(),
   readWorkspaceGraph: vi.fn(),
   readWorkspaceSettings: vi.fn(),
   readWorkspaceTags: vi.fn(),
@@ -64,6 +65,10 @@ vi.mock("../files/charts", () => ({
   updateWorkspaceChartEntry: dependencies.updateWorkspaceChartEntry,
 }));
 
+vi.mock("../files/cards", () => ({
+  readWorkspaceCards: dependencies.readWorkspaceCards,
+}));
+
 vi.mock("../settings/workspaceSettings", () => ({
   normalizeWorkspaceRelativeSettingPath:
     dependencies.normalizeWorkspaceRelativeSettingPath,
@@ -75,6 +80,7 @@ import {
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChartsChannel,
+  getWorkspaceCardsChannel,
   getWorkspaceFrontmatterCategoryChoicesChannel,
   getWorkspaceGraphChannel,
   getWorkspaceTagsChannel,
@@ -157,6 +163,7 @@ describe("registerWorkspaceDataHandlers", () => {
       value: { edges: [], nodes: [] },
     });
     dependencies.readWorkspaceCharts.mockResolvedValue({ ok: true, value: [] });
+    dependencies.readWorkspaceCards.mockResolvedValue({ ok: true, value: [] });
     dependencies.updateWorkspaceChartEntry.mockResolvedValue({
       ok: true,
       value: [],
@@ -183,6 +190,12 @@ describe("registerWorkspaceDataHandlers", () => {
       label: "エイリアス",
       reader: dependencies.readWorkspaceAliases,
       value: { Home: ["index.md"] },
+    },
+    {
+      channel: getWorkspaceCardsChannel,
+      label: "カード",
+      reader: dependencies.readWorkspaceCards,
+      value: [{ imagePath: "images/card.webp", name: "Card", path: "card.md" }],
     },
     {
       channel: getWorkspaceGraphChannel,

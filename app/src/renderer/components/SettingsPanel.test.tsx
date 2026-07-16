@@ -41,7 +41,7 @@ describe("FrontmatterPanel", () => {
     expect(screen.getByRole("button", { name: "category Fixed" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "chronicle Fixed" })).toBeInTheDocument();
     expect(screen.getAllByText("2").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("4").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("5").length).toBeGreaterThan(0);
   });
 
   it("固定プロパティは名前を常時表示し、説明と書き方だけを展開する", () => {

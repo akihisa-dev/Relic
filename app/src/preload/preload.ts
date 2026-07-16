@@ -25,6 +25,7 @@ import {
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChartsChannel,
+  getWorkspaceCardsChannel,
   getWorkspaceFrontmatterCategoryChoicesChannel,
   getWorkspaceGraphChannel,
   getLinkUpdateImpactChannel,
@@ -137,6 +138,7 @@ import {
   type UnlinkedReferencesResult,
   type WorkspaceState,
   type WorkspaceChart,
+  type WorkspaceCard,
   type WorkspaceGraph,
   type WorkspaceSearchResultSet,
   type WorkspaceTagSummary,
@@ -189,6 +191,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getWorkspaceAliasesChannel) as Promise<RelicResult<AliasIndex>>,
   getWorkspaceCharts: () =>
     ipcRenderer.invoke(getWorkspaceChartsChannel) as Promise<RelicResult<WorkspaceChart[]>>,
+  getWorkspaceCards: () =>
+    ipcRenderer.invoke(getWorkspaceCardsChannel) as Promise<RelicResult<WorkspaceCard[]>>,
   getWorkspaceFrontmatterCategoryChoices: () =>
     ipcRenderer.invoke(getWorkspaceFrontmatterCategoryChoicesChannel) as Promise<RelicResult<FrontmatterCategoryChoice[]>>,
   getWorkspaceGraph: () =>

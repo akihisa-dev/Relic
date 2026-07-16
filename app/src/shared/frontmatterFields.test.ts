@@ -14,6 +14,7 @@ describe("frontmatterFields", () => {
     expect(reservedFrontmatterFieldNames).toEqual([
       "aliases",
       "category",
+      "card",
       "tags",
       "chronicle"
     ]);
@@ -24,6 +25,7 @@ describe("frontmatterFields", () => {
     expect(isReservedFrontmatterFieldName("plannedDate")).toBe(false);
     expect(isReservedFrontmatterFieldName("actualDate")).toBe(false);
     expect(isReservedFrontmatterFieldName("category")).toBe(true);
+    expect(isReservedFrontmatterFieldName("card")).toBe(true);
     expect(isReservedFrontmatterFieldName("chronicle")).toBe(true);
     expect(isReservedFrontmatterFieldName("chronicle0")).toBe(false);
     expect(isReservedFrontmatterFieldName("custom")).toBe(false);

@@ -5,6 +5,7 @@ import {
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChartsChannel,
+  getWorkspaceCardsChannel,
   getWorkspaceFrontmatterCategoryChoicesChannel,
   getWorkspaceGraphChannel,
   getWorkspaceTagsChannel,
@@ -15,6 +16,7 @@ import {
 import { fail } from "../../shared/result";
 import { readWorkspaceAliases } from "../files/aliases";
 import { readWorkspaceCharts, updateWorkspaceChartEntry } from "../files/charts";
+import { readWorkspaceCards } from "../files/cards";
 import { readFrontmatterValueCandidates } from "../files/frontmatterCandidates";
 import { readWorkspaceGraph } from "../files/workspaceGraph";
 import { readWorkspaceTags } from "../files/tags";
@@ -132,6 +134,26 @@ export function registerWorkspaceDataHandlers(): void {
       return fail(
         "WORKSPACE_CHARTS_FAILED",
         "チャートを読み込めませんでした。",
+        ipcErrorDetails(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getWorkspaceCardsChannel, async () => {
+    try {
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
+      const data = await workspaceDataProvider.get({
+        userDataPath: context.value.userDataPath,
+        workspaceId: context.value.activeWorkspace.id,
+        workspacePath: context.value.activeWorkspace.path
+      });
+
+      return readWorkspaceCards(data.workspacePath, data.options);
+    } catch (error) {
+      return fail(
+        "WORKSPACE_CARDS_FAILED",
+        "カードを読み込めませんでした。",
         ipcErrorDetails(error)
       );
     }

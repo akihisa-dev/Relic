@@ -12,6 +12,7 @@ export const removeWorkspaceChannel = "workspace:remove";
 export const renameWorkspaceChannel = "workspace:rename";
 export const switchWorkspaceChannel = "workspace:switch";
 export const getWorkspaceChartsChannel = "workspace:getCharts";
+export const getWorkspaceCardsChannel = "workspace:getCards";
 export const getWorkspaceFrontmatterCategoryChoicesChannel = "workspace:getFrontmatterCategoryChoices";
 export const saveWorkspaceFrontmatterCategoryChoicesChannel = "workspace:saveFrontmatterCategoryChoices";
 export const saveWorkspaceChartsChannel = "workspace:saveCharts";
@@ -121,6 +122,12 @@ export interface WorkspaceChart extends ChartSettings {
   entries: ChartEntry[];
 }
 
+export interface WorkspaceCard {
+  imagePath: string;
+  name: string;
+  path: string;
+}
+
 export type ChartEntryEditKind = "move" | "resize-start" | "resize-end";
 
 export interface UpdateChartEntryInput {
@@ -144,6 +151,7 @@ export interface WorkspaceApi {
   renameWorkspace: (input: RenameWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   getWorkspaceCharts: () => Promise<RelicResult<WorkspaceChart[]>>;
+  getWorkspaceCards: () => Promise<RelicResult<WorkspaceCard[]>>;
   getWorkspaceFrontmatterCategoryChoices: () => Promise<RelicResult<FrontmatterCategoryChoice[]>>;
   saveWorkspaceFrontmatterCategoryChoices: (input: FrontmatterCategoryChoice[]) => Promise<RelicResult<FrontmatterCategoryChoice[]>>;
   saveWorkspaceCharts: (input: ChartSettings[]) => Promise<RelicResult<WorkspaceChart[]>>;
@@ -162,6 +170,7 @@ export const workspaceIpcContract = {
   renameWorkspace: { channel: renameWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: true },
   switchWorkspace: { channel: switchWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: true },
   getWorkspaceCharts: { channel: getWorkspaceChartsChannel, main: "handle", transport: "invoke", validatesInput: false },
+  getWorkspaceCards: { channel: getWorkspaceCardsChannel, main: "handle", transport: "invoke", validatesInput: false },
   getWorkspaceFrontmatterCategoryChoices: { channel: getWorkspaceFrontmatterCategoryChoicesChannel, main: "handle", transport: "invoke", validatesInput: false },
   saveWorkspaceFrontmatterCategoryChoices: { channel: saveWorkspaceFrontmatterCategoryChoicesChannel, main: "handle", transport: "invoke", validatesInput: true },
   saveWorkspaceCharts: { channel: saveWorkspaceChartsChannel, main: "handle", transport: "invoke", validatesInput: true },

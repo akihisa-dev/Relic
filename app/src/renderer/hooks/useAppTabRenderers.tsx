@@ -16,6 +16,9 @@ import type { PanelTabKind } from "../store/editorStore";
 const LazyChartView = lazy(async () => ({
   default: (await import("../components/ChartPanel")).ChartView
 }));
+const LazyCardView = lazy(async () => ({
+  default: (await import("../components/CardView")).CardView
+}));
 const LazyGraphView = lazy(async () => ({
   default: (await import("../components/GraphView")).GraphView
 }));
@@ -73,20 +76,32 @@ export function useAppTabRenderers({
   renderChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
 } {
-  const sphereWorkspaceCacheKey = workspaceState?.activeWorkspace?.id ?? "none";
+  const workspaceCacheKey = workspaceState?.activeWorkspace?.id ?? "none";
   useEffect(() => {
-    if (!featureToggles.sphere || sphereWorkspaceCacheKey === "none") return;
+    if (!featureToggles.sphere || workspaceCacheKey === "none") return;
     const timer = window.setTimeout(() => {
       void import("../components/SphereView");
       preloadWorkspaceGraph({
         revision: workspaceDataRevision,
-        workspaceId: sphereWorkspaceCacheKey
+        workspaceId: workspaceCacheKey
       });
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [featureToggles.sphere, sphereWorkspaceCacheKey, workspaceDataRevision]);
+  }, [featureToggles.sphere, workspaceCacheKey, workspaceDataRevision]);
 
   const renderChartTab = useCallback((chartId: string): ReactNode => {
+    if (chartId === "cards") {
+      return (
+        <Suspense fallback={<LazyTabFallback />}>
+          <LazyCardView
+            onOpenFile={handleOpenFile}
+            refreshRevision={workspaceDataRevision}
+            workspaceId={workspaceCacheKey}
+          />
+        </Suspense>
+      );
+    }
+
     if (chartId === "graph") {
       return (
         <Suspense fallback={<LazyTabFallback graph />}>
@@ -94,7 +109,7 @@ export function useAppTabRenderers({
             onOpenFile={handleOpenFile}
             onOpenTagSearch={handleOpenTagSearch}
             refreshRevision={workspaceDataRevision}
-            workspaceCacheKey={sphereWorkspaceCacheKey}
+            workspaceCacheKey={workspaceCacheKey}
           />
         </Suspense>
       );
@@ -107,7 +122,7 @@ export function useAppTabRenderers({
             onOpenFile={handleOpenFile}
             onOpenTagSearch={handleOpenTagSearch}
             refreshRevision={workspaceDataRevision}
-            workspaceCacheKey={sphereWorkspaceCacheKey}
+            workspaceCacheKey={workspaceCacheKey}
           />
         </Suspense>
       );
@@ -122,7 +137,7 @@ export function useAppTabRenderers({
         />
       </Suspense>
     );
-  }, [charts, handleOpenFile, handleOpenTagSearch, sphereWorkspaceCacheKey, workspaceDataRevision]);
+  }, [charts, handleOpenFile, handleOpenTagSearch, workspaceCacheKey, workspaceDataRevision]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {

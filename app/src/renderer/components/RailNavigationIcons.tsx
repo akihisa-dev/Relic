@@ -39,6 +39,14 @@ export const IconChronicle = (): ReactElement => (
   </svg>
 );
 
+export const IconCards = (): ReactElement => (
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
+    <rect height="16" rx="2" width="14" x="5" y="4" />
+    <path d="m8 15 3-3 2 2 3-4 3 4" />
+    <path d="M8 8h.01" />
+  </svg>
+);
+
 export const IconGraph = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
     <circle cx="6" cy="6" r="2.5" />

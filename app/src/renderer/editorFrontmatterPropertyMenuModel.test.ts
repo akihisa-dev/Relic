@@ -18,7 +18,7 @@ describe("editorFrontmatterPropertyMenuModel", () => {
 
     expect(state.unavailable).toBe(false);
     expect(state.groups.map((group) => group.id)).toEqual(["basic"]);
-    expect(state.groups.find((group) => group.id === "basic")?.options.map((option) => option.key)).toEqual(["category", "tags"]);
+    expect(state.groups.find((group) => group.id === "basic")?.options.map((option) => option.key)).toEqual(["card", "category", "tags"]);
   });
 
   it("基本・chronicle系フィールドの表示名を維持する", () => {
@@ -32,5 +32,6 @@ describe("editorFrontmatterPropertyMenuModel", () => {
     expect(labelsByKey.has("plannedDate")).toBe(false);
     expect(labelsByKey.has("actualDate")).toBe(false);
     expect(labelsByKey.get("chronicle")).toBe("chronicle");
+    expect(labelsByKey.get("card")).toBe("card");
   });
 });

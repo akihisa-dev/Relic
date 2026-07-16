@@ -13,6 +13,6 @@ describe("frontmatterSettingsModel", () => {
   });
 
   it("keeps all fixed properties visible in a stable order", () => {
-    expect(FIXED_FIELDS.map((field) => field.name)).toEqual(["aliases", "tags", "category", "chronicle"]);
+    expect(FIXED_FIELDS.map((field) => field.name)).toEqual(["aliases", "card", "tags", "category", "chronicle"]);
   });
 });
