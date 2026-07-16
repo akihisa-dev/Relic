@@ -2,6 +2,8 @@
 
 [日本語はこちら](#日本語)
 
+![Relic cover](assets/relic-github-cover.png)
+
 Relic is a local app for keeping information as plain Markdown files while extending how that information can be edited, viewed, searched, visualized, and exported.
 
 Relic treats Markdown text as the source of truth: body text, headings, lists, tables, links, tags, front matter, and code blocks remain readable and portable as Markdown. Mermaid and D2 diagrams are also handled as Markdown code blocks, not as Relic-only diagram data.
@@ -278,6 +280,8 @@ Relic uses AGPL-3.0-or-later to allow forks and commercial use while keeping cor
 ---
 
 ## 日本語
+
+![Relic カバー画像](assets/relic-github-cover.png)
 
 Relicは、Markdownに書ける情報をMarkdownファイルのまま保ち、その情報をもとに編集・閲覧・検索・可視化・出力を拡張するローカルアプリです。
 
