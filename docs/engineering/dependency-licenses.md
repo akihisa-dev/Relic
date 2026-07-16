@@ -48,6 +48,7 @@ git -C .. diff --check
 
 `pnpm licenses:generate` は `THIRD_PARTY_NOTICES.md` と `sbom/relic-dependencies.cdx.json` を更新する。
 `pnpm licenses:check` は生成結果がGit管理中のファイルと一致しているか確認する。
+`pnpm verify` と `pnpm verify:full` も同じ整合確認を含み、通常の変更やバージョン更新で生成漏れをpush前に検出する。
 更新候補とproduction dependenciesの既知リスクを確認する場合は、`app/` で `pnpm outdated` と `pnpm audit --prod` を実行する。
 
 ---

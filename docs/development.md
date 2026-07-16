@@ -180,9 +180,9 @@ Node APIを使うmain・preload・shared・scriptsのテストはNode環境、re
 `architecture:check` はプロセス境界、循環依存、未解決相対import、module alias禁止方針を確認する。保証範囲は [engineering/architecture.md](engineering/architecture.md) を正とする。
 `test:inventory` は全テストファイルを失敗責務の層へ分類し、Electron実行とOS別packageがVitest外の責務であることも表示する。
 `smoke:electron` は一時ユーザーデータを使って開発版Electronを起動し、メインウインドウ、Renderer、Preload API、初期IPC接続を確認して自動終了する。macOSまたはWindowsで安全ビルド済みの配布版を確認する場合は `pnpm smoke:package` を使う。どちらも必要に応じて `-- --artifacts-dir <path>` でJSON reportとプロセスログの保存先を指定できる。
-`verify` は日常変更向けにNode.js環境、型、全テストを確認する。
-`verify:full` はローカルで再現可能な包括確認として、Node.js環境、型、全テストとカバレッジ、アーキテクチャ境界、文書索引、workflow安全条件、Skill構造・routing台帳、差分の空白・改行を確認する。
-`verify:ci` は `verify:full` に依存通知・SBOM整合とrenderer bundle基準を追加し、Code CIの再現可能部分をまとめる。Pull Requestのbase/headを使うバージョン検査はGitHubイベント固有のため別stepで実行する。
+`verify` は日常変更向けにNode.js環境、型、全テスト、依存通知・SBOM整合を確認する。
+`verify:full` はローカルで再現可能な包括確認として、Node.js環境、型、全テストとカバレッジ、アーキテクチャ境界、文書索引、workflow安全条件、Skill構造・routing台帳、依存通知・SBOM整合、差分の空白・改行を確認する。
+`verify:ci` は `verify:full` にrenderer bundle基準を追加し、Code CIの再現可能部分をまとめる。Pull Requestのbase/headを使うバージョン検査はGitHubイベント固有のため別stepで実行する。
 変更に対して `verify` が過剰な場合も検証自体は省略せず、対象テスト、型チェック、文書確認、差分確認などへ絞る。
 E2E、配布ビルド、実アプリ操作は通常の変更の必須確認にはしない。
 macOS／Windowsのsafe checkは、配布用ASARの許可内容と必須entry、`LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOM、およびElectron本体を除くアプリ固有resourcesの容量とファイル数を確認する。
