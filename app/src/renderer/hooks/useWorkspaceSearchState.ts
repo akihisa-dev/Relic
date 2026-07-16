@@ -30,6 +30,11 @@ interface DebouncedSearchSnapshot {
   query: string;
 }
 
+interface FrontmatterCandidateSnapshot {
+  candidates: Record<string, string[]>;
+  workspaceId: string;
+}
+
 const emptySearchSnapshot: SearchSnapshot = {
   error: null,
   key: null,
@@ -53,7 +58,7 @@ export function useWorkspaceSearchState({
   const [searchMode, setSearchMode] = useState<SearchMode>("fullText");
   const [searchFrontmatterField, setSearchFrontmatterField] = useState("");
   const [searchSnapshot, setSearchSnapshot] = useState<SearchSnapshot>(emptySearchSnapshot);
-  const [workspaceFrontmatterCandidates, setWorkspaceFrontmatterCandidates] = useState<Record<string, string[]>>({});
+  const [frontmatterCandidateSnapshot, setFrontmatterCandidateSnapshot] = useState<FrontmatterCandidateSnapshot | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState<DebouncedSearchSnapshot>(emptyDebouncedSearchSnapshot);
   const lastRequestedSearchKey = useRef<string | null>(null);
   const frontmatterSearchFields = useMemo(
@@ -67,6 +72,10 @@ export function useWorkspaceSearchState({
       ? ""
       : searchFrontmatterField;
   const hasActiveWorkspace = Boolean(workspaceState?.activeWorkspace);
+  const workspaceId = workspaceState?.activeWorkspace?.id ?? null;
+  const workspaceFrontmatterCandidates = workspaceId !== null && frontmatterCandidateSnapshot?.workspaceId === workspaceId
+    ? frontmatterCandidateSnapshot.candidates
+    : {};
   const searchKey = hasActiveWorkspace && searchQuery.trim() !== ""
     ? `${workspaceState?.activeWorkspace?.id ?? ""}:${searchMode}:${effectiveSearchFrontmatterField}:${searchQuery}`
     : null;
@@ -84,19 +93,26 @@ export function useWorkspaceSearchState({
   }, [hasActiveWorkspace, userDefinedFields, workspaceFrontmatterCandidates]);
 
   useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !relicClient.current) {
+    if (workspaceId === null || !relicClient.current) {
       return;
     }
 
     let canceled = false;
+    const requestedWorkspaceId = workspaceId;
 
     void relicClient.current.getFrontmatterValueCandidates().then((result) => {
       if (canceled) return;
 
       if (result.ok) {
-        setWorkspaceFrontmatterCandidates(result.value);
+        setFrontmatterCandidateSnapshot({
+          candidates: result.value,
+          workspaceId: requestedWorkspaceId
+        });
       } else {
-        setWorkspaceFrontmatterCandidates({});
+        setFrontmatterCandidateSnapshot({
+          candidates: {},
+          workspaceId: requestedWorkspaceId
+        });
         setWorkspaceError(result.error.message);
       }
     });
@@ -104,7 +120,7 @@ export function useWorkspaceSearchState({
     return () => {
       canceled = true;
     };
-  }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+  }, [setWorkspaceError, workspaceId, workspaceState?.fileTree]);
 
   useEffect(() => {
     if (!hasActiveWorkspace || searchQuery.trim() === "") {

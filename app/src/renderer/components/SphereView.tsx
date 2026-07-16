@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
 import type { WorkspaceGraph } from "../../shared/ipc";
-import { loadWorkspaceGraph } from "../graph/workspaceGraphLoader";
 import { createSphereData, sphereNodeColors } from "../sphere/sphereModel";
 import { createSphereRuntime, type SphereRuntime } from "../sphere/sphereRuntime";
 import { deriveVisibleGraph } from "../graph/graphDisplayModel";
@@ -9,8 +8,8 @@ import { graphNodePrimaryAction } from "../graph/graphSearchModel";
 import { defaultGraphDrawTheme, type GraphDrawTheme, type GraphOptions } from "../graph/graphTypes";
 import { loadGraphColorGroups, loadGraphOptions, readGraphDrawTheme } from "../graph/graphViewRuntime";
 import { useLatest } from "../hooks/useLatest";
+import { useWorkspaceGraphState } from "../hooks/useWorkspaceGraphState";
 import { useT } from "../i18n";
-import { relicClient } from "../relicClient";
 
 interface SphereViewProps {
   onOpenFile: (path: string) => void;
@@ -106,13 +105,11 @@ export function SphereView({
   const runtimeRef = useRef<SphereRuntime | null>(null);
   const openFileRef = useLatest(onOpenFile);
   const openTagSearchRef = useLatest(onOpenTagSearch);
-  const [graphState, setGraphState] = useState<{
-    error: string | null;
-    graph: WorkspaceGraph | null;
-    loading: boolean;
-  }>(() => relicClient.current
-    ? { error: null, graph: null, loading: true }
-    : { error: t("sphere.loadFailed"), graph: null, loading: false });
+  const graphState = useWorkspaceGraphState({
+    loadFailedMessage: t("sphere.loadFailed"),
+    refreshRevision,
+    workspaceCacheKey
+  });
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
@@ -155,28 +152,6 @@ export function SphereView({
       colorScheme?.removeEventListener("change", handleColorSchemeChange);
     };
   }, []);
-
-  useEffect(() => {
-    let active = true;
-    if (!relicClient.current) return () => {
-      active = false;
-    };
-
-    void loadWorkspaceGraph({ revision: refreshRevision, workspaceId: workspaceCacheKey }).then((result) => {
-      if (!active) return;
-      if (result.ok) {
-        setGraphState({ error: null, graph: result.value, loading: false });
-        return;
-      }
-      setGraphState({ error: result.error.message, graph: null, loading: false });
-    }).catch(() => {
-      if (active) setGraphState({ error: t("sphere.loadFailed"), graph: null, loading: false });
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [refreshRevision, t, workspaceCacheKey]);
 
   useEffect(() => {
     const host = hostRef.current;

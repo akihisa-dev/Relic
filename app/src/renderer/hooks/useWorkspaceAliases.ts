@@ -13,22 +13,24 @@ export function useWorkspaceAliases({
   setWorkspaceError,
   workspaceState
 }: UseWorkspaceAliasesInput): AliasIndex {
-  const [aliasesByPath, setAliasesByPath] = useState<AliasIndex>({});
+  const workspaceId = workspaceState?.activeWorkspace?.id ?? null;
+  const [snapshot, setSnapshot] = useState<{ aliasesByPath: AliasIndex; workspaceId: string } | null>(null);
 
   useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !relicClient.current) {
+    const client = relicClient.current;
+    if (!workspaceId || !client) {
       return;
     }
 
     let canceled = false;
 
-    void relicClient.current.getWorkspaceAliases().then((result) => {
+    void client.getWorkspaceAliases().then((result) => {
       if (canceled) return;
 
       if (result.ok) {
-        setAliasesByPath(result.value);
+        setSnapshot({ aliasesByPath: result.value, workspaceId });
       } else {
-        setAliasesByPath({});
+        setSnapshot({ aliasesByPath: {}, workspaceId });
         setWorkspaceError(result.error.message);
       }
     });
@@ -36,7 +38,7 @@ export function useWorkspaceAliases({
     return () => {
       canceled = true;
     };
-  }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+  }, [setWorkspaceError, workspaceId, workspaceState?.fileTree]);
 
-  return workspaceState?.activeWorkspace ? aliasesByPath : {};
+  return workspaceId && snapshot?.workspaceId === workspaceId ? snapshot.aliasesByPath : {};
 }

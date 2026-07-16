@@ -35,7 +35,7 @@ describe("App workspace refresh", () => {
     });
 
     await renderApp();
-    const rail = screen.getByRole("navigation", { name: "ビュー切り替え" });
+    const rail = await screen.findByRole("navigation", { name: "ビュー切り替え" });
     const settingsButton = within(rail).getByRole("button", { name: "設定" });
     const refreshButton = within(rail).getByRole("button", { name: "リフレッシュ" });
 
@@ -122,6 +122,7 @@ describe("App workspace refresh", () => {
     });
 
     await renderApp();
+    await screen.findByRole("button", { name: "· Note" });
     fireEvent.click(screen.getByRole("button", { name: "リフレッシュ" }));
 
     expect(await screen.findByText("ファイル一覧と派生データを更新できませんでした。"))
@@ -173,6 +174,7 @@ describe("App workspace refresh", () => {
     });
 
     await renderApp();
+    await screen.findByRole("button", { name: "· Note" });
     fireEvent.click(screen.getByRole("button", { name: "リフレッシュ" }));
     await waitFor(() => expect(window.relic?.refreshWorkspace).toHaveBeenCalledTimes(1));
 

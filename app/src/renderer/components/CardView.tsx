@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactElement } from "react";
 
 import type { WorkspaceCard } from "../../shared/ipc";
 import { resolveCardImagePath } from "../cards/cardViewModel";
-import { loadWorkspaceCards } from "../cards/workspaceCardsLoader";
+import { useWorkspaceCardsState } from "../cards/useWorkspaceCardsState";
 import { useT } from "../i18n";
 import { relicClient } from "../relicClient";
 
@@ -24,29 +24,11 @@ export function CardView({
   workspaceId
 }: CardViewProps): ReactElement {
   const t = useT();
-  const [state, setState] = useState<
-    | { status: "loading" }
-    | { status: "error"; message: string }
-    | { status: "ready"; cards: WorkspaceCard[] }
-  >({ status: "loading" });
-
-  useEffect(() => {
-    let active = true;
-    setState({ status: "loading" });
-
-    void loadWorkspaceCards({ revision: refreshRevision, workspaceId }).then((result) => {
-      if (!active) return;
-      setState(result.ok
-        ? { status: "ready", cards: result.value }
-        : { status: "error", message: result.error.message });
-    }).catch(() => {
-      if (active) setState({ status: "error", message: t("cards.loadFailed") });
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [refreshRevision, t, workspaceId]);
+  const state = useWorkspaceCardsState({
+    loadFailedMessage: t("cards.loadFailed"),
+    refreshRevision,
+    workspaceId
+  });
 
   const selectedCard = state.status === "ready"
     ? state.cards.find((card) => card.path === selectedPath)

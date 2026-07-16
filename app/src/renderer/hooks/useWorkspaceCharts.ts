@@ -8,6 +8,7 @@ import type {
 } from "../../shared/ipc";
 import { relicApiContractVersion } from "../../shared/ipc";
 import { normalizeWorkspaceCharts } from "../chartData";
+import { useAsyncRequestGuard } from "./useAsyncRequestGuard";
 
 interface UseWorkspaceChartsInput {
   hasOpenChart: boolean;
@@ -23,30 +24,35 @@ export function useWorkspaceCharts({
   charts: WorkspaceChart[];
   reloadCharts: () => Promise<boolean>;
 } {
-  const [charts, setCharts] = useState<WorkspaceChart[]>([]);
+  const workspaceId = workspaceState?.activeWorkspace?.id ?? null;
+  const [snapshot, setSnapshot] = useState<{ charts: WorkspaceChart[]; workspaceId: string } | null>(null);
+  const beginRequest = useAsyncRequestGuard([workspaceId]);
 
   const reloadCharts = useCallback(async (): Promise<boolean> => {
-    if (!workspaceState?.activeWorkspace || !relicClient.current) {
-      setCharts([]);
+    const client = relicClient.current;
+    if (!workspaceId || !client) {
       return true;
     }
-    if (!isRelicApiContractCompatible(relicClient.current)) {
-      setCharts([]);
+    const isCurrentRequest = beginRequest();
+    if (!isRelicApiContractCompatible(client)) {
+      if (!isCurrentRequest()) return false;
+      setSnapshot({ charts: [], workspaceId });
       setWorkspaceError(apiContractMismatchMessage());
       return false;
     }
 
-    const result = await relicClient.current.getWorkspaceCharts();
+    const result = await client.getWorkspaceCharts();
+    if (!isCurrentRequest()) return false;
 
     if (result.ok) {
-      setCharts(normalizeWorkspaceCharts(result.value));
+      setSnapshot({ charts: normalizeWorkspaceCharts(result.value), workspaceId });
       return true;
     } else {
-      setCharts([]);
+      setSnapshot({ charts: [], workspaceId });
       setWorkspaceError(result.error.message);
       return false;
     }
-  }, [setWorkspaceError, workspaceState?.activeWorkspace?.id]);
+  }, [beginRequest, setWorkspaceError, workspaceId]);
 
   useEffect(() => {
     if (!hasOpenChart) return;
@@ -55,7 +61,7 @@ export function useWorkspaceCharts({
   }, [hasOpenChart, reloadCharts]);
 
   return {
-    charts: workspaceState?.activeWorkspace && hasOpenChart ? charts : [],
+    charts: workspaceId && hasOpenChart && snapshot?.workspaceId === workspaceId ? snapshot.charts : [],
     reloadCharts
   };
 }

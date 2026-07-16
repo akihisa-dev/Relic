@@ -10,6 +10,10 @@ interface WorkspaceGraphState {
   loading: boolean;
 }
 
+interface WorkspaceGraphSnapshot extends WorkspaceGraphState {
+  requestKey: string;
+}
+
 interface UseWorkspaceGraphStateOptions {
   loadFailedMessage: string;
   refreshRevision: number;
@@ -21,9 +25,10 @@ export function useWorkspaceGraphState({
   refreshRevision,
   workspaceCacheKey
 }: UseWorkspaceGraphStateOptions): WorkspaceGraphState {
-  const [graphState, setGraphState] = useState<WorkspaceGraphState>(() => relicClient.current
-    ? { error: null, graph: null, loading: true }
-    : { error: loadFailedMessage, graph: null, loading: false });
+  const requestKey = JSON.stringify([workspaceCacheKey, refreshRevision]);
+  const [snapshot, setSnapshot] = useState<WorkspaceGraphSnapshot>(() => relicClient.current
+    ? { error: null, graph: null, loading: true, requestKey }
+    : { error: loadFailedMessage, graph: null, loading: false, requestKey });
 
   useEffect(() => {
     let active = true;
@@ -38,20 +43,26 @@ export function useWorkspaceGraphState({
       if (!active) return;
 
       if (result.ok) {
-        setGraphState({ error: null, graph: result.value, loading: false });
+        setSnapshot({ error: null, graph: result.value, loading: false, requestKey });
         return;
       }
 
-      setGraphState({ error: result.error.message, graph: null, loading: false });
+      setSnapshot({ error: result.error.message, graph: null, loading: false, requestKey });
     }).catch(() => {
       if (!active) return;
-      setGraphState({ error: loadFailedMessage, graph: null, loading: false });
+      setSnapshot({ error: loadFailedMessage, graph: null, loading: false, requestKey });
     });
 
     return () => {
       active = false;
     };
-  }, [loadFailedMessage, refreshRevision, workspaceCacheKey]);
+  }, [loadFailedMessage, refreshRevision, requestKey, workspaceCacheKey]);
 
-  return graphState;
+  if (snapshot.requestKey === requestKey) {
+    return snapshot;
+  }
+
+  return relicClient.current
+    ? { error: null, graph: null, loading: true }
+    : { error: loadFailedMessage, graph: null, loading: false };
 }
