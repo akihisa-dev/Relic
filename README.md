@@ -36,6 +36,13 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 
 ![Relic file view screenshot](assets/relic-workspace-screenshot.png)
 
+### Card View
+
+- Optional Card view presents Markdown files with a `card` front matter image as visual cards.
+- Selecting an item in the list previews its card; selecting the large card opens the source Markdown file.
+
+![Relic Card view screenshot](assets/relic-card-view-screenshot.png)
+
 ### Linking, Search, and Structure
 
 - Internal links using `[[...]]`.
@@ -54,7 +61,7 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 ### Front Matter and Tags
 
 - YAML front matter editing support.
-- Optional front matter settings for fixed properties (`aliases`, `tags`, `chronicle`) and custom property input.
+- Optional front matter settings for fixed properties (`aliases`, `tags`, `card`, `chronicle`) and custom property input.
 - Tags from front matter `tags:`.
 
 ### Diagrams and Export
@@ -77,7 +84,7 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 - Generate tables of contents.
 - Generate tag indexes.
 
-Front matter settings, calendar settings, Sphere view, Chronicle view, and file processing tools are implemented but hidden by default. They can be enabled from Settings feature toggles.
+Front matter settings, calendar settings, Card view, Sphere view, Chronicle view, and file processing tools are implemented but hidden by default. They can be enabled from Settings feature toggles.
 
 ---
 
@@ -315,6 +322,13 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 
 ![Relicファイルビューのスクリーンショット](assets/relic-workspace-screenshot.png)
 
+### カードビュー
+
+- フロントマターの `card` で画像を指定したMarkdownファイルを、任意で有効化できるカードビューに表示します
+- 一覧ではカードを切り替えて確認でき、大きなカードを選択すると元のMarkdownファイルを開きます
+
+![Relicカードビューのスクリーンショット](assets/relic-card-view-screenshot.png)
+
 ### リンク・検索・構造表示
 
 - 内部リンク `[[...]]`
@@ -333,7 +347,7 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 ### フロントマターとタグ
 
 - フロントマター（YAML）編集補助
-- 任意で有効化できるフロントマター設定（`aliases`、`tags`、`chronicle` の固定プロパティ確認・カスタムプロパティ入力能力）
+- 任意で有効化できるフロントマター設定（`aliases`、`tags`、`card`、`chronicle` の固定プロパティ確認・カスタムプロパティ入力能力）
 - フロントマター `tags:` によるタグ扱い
 
 ### 図表と出力
@@ -356,7 +370,7 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 - 目次生成
 - タグ別索引生成
 
-フロントマター設定、スフィアビュー、クロニクルビュー、ファイル加工ツールは実装済みですが、初期状態では非表示です。設定の機能トグルから有効化できます。
+フロントマター設定、カードビュー、スフィアビュー、クロニクルビュー、ファイル加工ツールは実装済みですが、初期状態では非表示です。設定の機能トグルから有効化できます。
 
 ---
 
