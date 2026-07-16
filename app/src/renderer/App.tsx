@@ -498,6 +498,7 @@ export function App(): ReactElement {
     editorSettings,
     featureToggles,
     charts,
+    currentFilePath: activeFileTabInFocusedPane?.path ?? null,
     handleOpenFile,
     handleOpenTagSearch: handleOpenGraphTagSearch,
     handleSaveCategoryChoices,

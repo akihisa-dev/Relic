@@ -603,7 +603,7 @@ describe("App charts", () => {
     expect(updateChartEntry).not.toHaveBeenCalled();
   });
 
-  it("カードから開いたファイルをカードビューへ戻ったときに選択表示する", async () => {
+  it("カードを開いて戻ったときに一覧の選択状態を維持する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceCards: vi.fn().mockResolvedValue({
         ok: true,
@@ -621,7 +621,7 @@ describe("App charts", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "カード" }));
     const card = await screen.findByRole("button", { name: "Moonを開く" });
-    expect(card).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("button", { name: "Moon" })).toHaveAttribute("aria-current", "true");
 
     fireEvent.click(card);
     await waitFor(() => expect(window.relic!.readMarkdownFile).toHaveBeenCalledWith({ path: "notes/moon.md" }));
@@ -634,7 +634,7 @@ describe("App charts", () => {
     });
     fireEvent.click(screen.getByRole("tab", { name: "カード" }));
 
-    expect(await screen.findByRole("button", { name: "Moonを開く" })).toHaveAttribute("aria-current", "page");
+    expect(await screen.findByRole("button", { name: "Moon" })).toHaveAttribute("aria-current", "true");
   });
 
   it("chronicleのCanvas操作はMarkdownを書き換えない", async () => {

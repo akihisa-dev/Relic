@@ -2,8 +2,10 @@
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, var(--bg)) 0, var(--surface) 220px);
   color: var(--text);
+  display: flex;
+  flex-direction: column;
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
   padding: 28px clamp(20px, 4vw, 52px) 44px;
 }
 
@@ -13,6 +15,7 @@
   justify-content: space-between;
   margin: 0 auto 26px;
   max-width: 1180px;
+  width: 100%;
 }
 
 .card-view-header h2 {
@@ -36,13 +39,74 @@
   text-transform: uppercase;
 }
 
-.card-view-grid {
+.card-view-body {
   display: grid;
-  gap: clamp(16px, 2vw, 22px);
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 240px));
-  justify-content: start;
+  flex: 1;
+  gap: clamp(18px, 3vw, 34px);
+  grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
   margin: 0 auto;
   max-width: 1180px;
+  min-height: 0;
+  width: 100%;
+}
+
+.card-view-list {
+  align-content: start;
+  background: color-mix(in srgb, var(--surface-raised) 88%, var(--bg));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 3px;
+  min-height: 0;
+  overflow: auto;
+  padding: 7px;
+}
+
+.card-view-list-item {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  cursor: default;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 9px 10px;
+  text-align: left;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard);
+  width: 100%;
+}
+
+.card-view-list-item:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.card-view-list-item:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-ring);
+  outline: none;
+}
+
+.card-view-list-item[aria-current="true"] {
+  background: color-mix(in srgb, var(--selection) 72%, var(--surface-raised));
+  border-color: color-mix(in srgb, var(--color-accent) 42%, var(--border-soft));
+  color: var(--text);
+  font-weight: 650;
+}
+
+.card-view-stage {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 0;
+  min-width: 0;
+  padding: clamp(4px, 1.5vw, 18px);
 }
 
 .card-view-item {
@@ -52,6 +116,11 @@
   box-shadow: 0 8px 22px color-mix(in srgb, var(--shadow) 48%, transparent);
   color: inherit;
   cursor: default;
+  display: flex;
+  flex-direction: column;
+  height: min(100%, 720px);
+  max-width: 720px;
+  min-height: 280px;
   min-width: 0;
   overflow: hidden;
   padding: 0;
@@ -61,6 +130,7 @@
     border-color var(--motion-fast) var(--ease-standard),
     box-shadow var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
+  width: 100%;
 }
 
 .card-view-item:hover {
@@ -75,30 +145,14 @@
   outline: none;
 }
 
-.card-view-item[aria-current="page"] {
-  background: color-mix(in srgb, var(--surface-raised) 88%, var(--selection));
-  border-color: var(--color-accent);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 28%, transparent),
-    0 8px 22px color-mix(in srgb, var(--shadow) 52%, transparent);
-}
-
-.card-view-item[aria-current="page"] .card-view-name-row::before {
-  background: var(--color-accent);
-  border-radius: 999px;
-  content: "";
-  flex: 0 0 auto;
-  height: 6px;
-  width: 6px;
-}
-
 .card-view-image {
   align-items: center;
-  aspect-ratio: 4 / 3;
   background: color-mix(in srgb, var(--surface-subtle) 74%, var(--bg));
   border-bottom: 1px solid var(--border-soft);
   display: flex;
+  flex: 1;
   justify-content: center;
+  min-height: 0;
   overflow: hidden;
   width: 100%;
 }
@@ -106,7 +160,7 @@
 .card-view-image img {
   animation: card-view-image-in var(--motion-normal) var(--ease-enter);
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   width: 100%;
 }
 
@@ -139,8 +193,9 @@
   align-items: center;
   display: flex;
   gap: 8px;
-  min-height: 52px;
-  padding: 11px 13px 12px;
+  flex: 0 0 auto;
+  min-height: 60px;
+  padding: 14px 17px 15px;
 }
 
 .card-view-name {
@@ -201,8 +256,17 @@
     padding-inline: 16px;
   }
 
-  .card-view-grid {
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+  .card-view-body {
+    gap: 14px;
+    grid-template-columns: minmax(135px, 36%) minmax(0, 1fr);
+  }
+
+  .card-view-stage {
+    padding: 0;
+  }
+
+  .card-view-item {
+    min-height: 240px;
   }
 }
 
@@ -212,7 +276,8 @@
     animation: none;
   }
 
-  .card-view-item {
+  .card-view-item,
+  .card-view-list-item {
     transition-duration: 1ms;
   }
 }

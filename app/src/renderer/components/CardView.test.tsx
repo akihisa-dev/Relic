@@ -1,75 +1,158 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState, type ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { WorkspaceCard } from "../../shared/ipc";
 import { makeRelicApi } from "../../test/rendererTestUtils";
 import { resetWorkspaceCardsCache } from "../cards/workspaceCardsLoader";
 import { I18nProvider } from "../i18n";
 import { CardView } from "./CardView";
 
-let intersectionCallback: IntersectionObserverCallback | null = null;
-
-class IntersectionObserverMock {
-  constructor(callback: IntersectionObserverCallback) {
-    intersectionCallback = callback;
-  }
-  disconnect = vi.fn();
-  observe = vi.fn();
-  unobserve = vi.fn();
-  takeRecords = vi.fn(() => []);
-  root = null;
-  rootMargin = "";
-  thresholds = [];
-}
-
 afterEach(() => {
   cleanup();
   resetWorkspaceCardsCache();
-  intersectionCallback = null;
-  vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
 
+const cards: WorkspaceCard[] = [
+  { imagePath: "./images/moon.webp", name: "Moon", path: "notes/moon.md" },
+  { imagePath: "./images/sun.webp", name: "Sun", path: "notes/sun.md" }
+];
+
+function StatefulCardView({
+  currentPath = null,
+  initialPath = null,
+  onOpenFile
+}: {
+  currentPath?: string | null;
+  initialPath?: string | null;
+  onOpenFile: (path: string) => void;
+}): ReactElement {
+  const [selectedPath, setSelectedPath] = useState(initialPath);
+  return (
+    <CardView
+      currentPath={currentPath}
+      onOpenFile={onOpenFile}
+      onSelectPath={setSelectedPath}
+      refreshRevision={0}
+      selectedPath={selectedPath}
+      workspaceId="workspace-1"
+    />
+  );
+}
+
 describe("CardView", () => {
-  it("索引の対象だけを表示し、画面付近へ来た画像だけを読み込んで元ファイルを開く", async () => {
+  it("一覧選択とファイルを開く操作を分離し、選択中の画像だけを読み込む", async () => {
     const onOpenFile = vi.fn();
-    const readImageFile = vi.fn().mockResolvedValue({
+    const readImageFile = vi.fn().mockImplementation(({ path }: { path: string }) => Promise.resolve({
       ok: true,
-      value: { dataUrl: "data:image/webp;base64,Y2FyZA==" }
-    });
+      value: { dataUrl: `data:image/webp;base64,${path.includes("moon") ? "bW9vbg==" : "c3Vu"}` }
+    }));
     window.relic = makeRelicApi({
-      getWorkspaceCards: vi.fn().mockResolvedValue({
-        ok: true,
-        value: [{ imagePath: "./images/moon.webp", name: "Moon", path: "notes/moon.md" }]
-      }),
+      getWorkspaceCards: vi.fn().mockResolvedValue({ ok: true, value: cards }),
       readImageFile
     });
-    vi.stubGlobal("IntersectionObserver", IntersectionObserverMock);
 
     const view = render(
       <I18nProvider language="ja">
+        <StatefulCardView initialPath="notes/moon.md" onOpenFile={onOpenFile} />
+      </I18nProvider>
+    );
+
+    expect(await screen.findByRole("button", { name: "Moonを開く" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Moon" })).toHaveAttribute("aria-current", "true");
+    await waitFor(() => expect(readImageFile).toHaveBeenCalledTimes(1));
+    expect(readImageFile).toHaveBeenLastCalledWith({ path: "notes/images/moon.webp" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Sun" }));
+    expect(onOpenFile).not.toHaveBeenCalled();
+    expect(await screen.findByRole("button", { name: "Sunを開く" })).toBeInTheDocument();
+    await waitFor(() => expect(readImageFile).toHaveBeenCalledTimes(2));
+    expect(readImageFile).toHaveBeenLastCalledWith({ path: "notes/images/sun.webp" });
+    expect(view.container.querySelectorAll("img")).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Sunを開く" }));
+    expect(onOpenFile).toHaveBeenCalledWith("notes/sun.md");
+  });
+
+  it("前回選択がなければ現在のファイルを選び、どちらもなければ先頭を選ぶ", async () => {
+    const onSelectPath = vi.fn();
+    const readImageFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { dataUrl: "data:image/webp;base64,c3Vu" }
+    });
+    window.relic = makeRelicApi({
+      getWorkspaceCards: vi.fn().mockResolvedValue({ ok: true, value: cards }),
+      readImageFile
+    });
+
+    const { rerender } = render(
+      <I18nProvider language="ja">
         <CardView
-          onOpenFile={onOpenFile}
+          currentPath="notes/sun.md"
+          onOpenFile={vi.fn()}
+          onSelectPath={onSelectPath}
           refreshRevision={0}
-          selectedPath="notes/moon.md"
+          selectedPath="removed.md"
           workspaceId="workspace-1"
         />
       </I18nProvider>
     );
 
-    expect(await screen.findByRole("button", { name: "Moonを開く" })).toHaveAttribute("aria-current", "page");
-    expect(readImageFile).not.toHaveBeenCalled();
+    expect(await screen.findByRole("button", { name: "Sunを開く" })).toBeInTheDocument();
+    await waitFor(() => expect(onSelectPath).toHaveBeenCalledWith("notes/sun.md"));
 
-    act(() => {
-      intersectionCallback?.([
-        { isIntersecting: true } as IntersectionObserverEntry
-      ], {} as IntersectionObserver);
+    onSelectPath.mockClear();
+    rerender(
+      <I18nProvider language="ja">
+        <CardView
+          onOpenFile={vi.fn()}
+          onSelectPath={onSelectPath}
+          refreshRevision={0}
+          selectedPath="removed.md"
+          workspaceId="workspace-1"
+        />
+      </I18nProvider>
+    );
+
+    expect(await screen.findByRole("button", { name: "Moonを開く" })).toBeInTheDocument();
+    await waitFor(() => expect(onSelectPath).toHaveBeenCalledWith("notes/moon.md"));
+  });
+
+  it("切替前の画像読込が遅れて完了しても現在のカードへ混入させない", async () => {
+    type ImageResult = { ok: true; value: { dataUrl: string } };
+    let resolveMoon: ((result: ImageResult) => void) | null = null;
+    const readImageFile = vi.fn().mockImplementation(({ path }: { path: string }) => {
+      if (path.includes("moon")) {
+        return new Promise<ImageResult>((resolve) => {
+          resolveMoon = resolve;
+        });
+      }
+      return Promise.resolve<ImageResult>({
+        ok: true,
+        value: { dataUrl: "data:image/webp;base64,c3Vu" }
+      });
+    });
+    window.relic = makeRelicApi({
+      getWorkspaceCards: vi.fn().mockResolvedValue({ ok: true, value: cards }),
+      readImageFile
     });
 
-    await waitFor(() => expect(readImageFile).toHaveBeenCalledWith({ path: "notes/images/moon.webp" }));
-    await waitFor(() => expect(view.container.querySelector("img")).toHaveAttribute("src", "data:image/webp;base64,Y2FyZA=="));
+    const view = render(
+      <I18nProvider language="ja">
+        <StatefulCardView initialPath="notes/moon.md" onOpenFile={vi.fn()} />
+      </I18nProvider>
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "Moonを開く" }));
-    expect(onOpenFile).toHaveBeenCalledWith("notes/moon.md");
+    await screen.findByRole("button", { name: "Moonを開く" });
+    await waitFor(() => expect(readImageFile).toHaveBeenCalledWith({ path: "notes/images/moon.webp" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sun" }));
+    await waitFor(() => expect(view.container.querySelector("img")).toHaveAttribute("src", "data:image/webp;base64,c3Vu"));
+
+    act(() => {
+      resolveMoon?.({ ok: true, value: { dataUrl: "data:image/webp;base64,bW9vbg==" } });
+    });
+    await waitFor(() => expect(view.container.querySelector("img")).toHaveAttribute("src", "data:image/webp;base64,c3Vu"));
   });
 
   it("無効な画像パスでもカード名と操作を残して代替表示にする", async () => {
@@ -81,11 +164,15 @@ describe("CardView", () => {
       }),
       readImageFile
     });
-    vi.stubGlobal("IntersectionObserver", undefined);
 
     render(
       <I18nProvider language="ja">
-        <CardView onOpenFile={vi.fn()} refreshRevision={0} workspaceId="workspace-1" />
+        <CardView
+          onOpenFile={vi.fn()}
+          onSelectPath={vi.fn()}
+          refreshRevision={0}
+          workspaceId="workspace-1"
+        />
       </I18nProvider>
     );
 
@@ -101,7 +188,12 @@ describe("CardView", () => {
 
     render(
       <I18nProvider language="ja">
-        <CardView onOpenFile={vi.fn()} refreshRevision={0} workspaceId="workspace-1" />
+        <CardView
+          onOpenFile={vi.fn()}
+          onSelectPath={vi.fn()}
+          refreshRevision={0}
+          workspaceId="workspace-1"
+        />
       </I18nProvider>
     );
 

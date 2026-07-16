@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import type {
@@ -50,6 +50,7 @@ interface UseAppTabRenderersInput {
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
   charts: WorkspaceChart[];
+  currentFilePath: string | null;
   handleOpenFile: (path: string) => void;
   handleOpenTagSearch: (tag: string) => void;
   handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
@@ -65,6 +66,7 @@ export function useAppTabRenderers({
   editorSettings,
   featureToggles,
   charts,
+  currentFilePath,
   handleOpenFile,
   handleOpenTagSearch,
   handleSaveFeatureToggles,
@@ -77,15 +79,24 @@ export function useAppTabRenderers({
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
 } {
   const workspaceCacheKey = workspaceState?.activeWorkspace?.id ?? "none";
-  const [selectedCardPath, setSelectedCardPath] = useState<string | null>(null);
-  useEffect(() => {
-    setSelectedCardPath(null);
+  const [cardSelection, setCardSelection] = useState<{ path: string; workspaceId: string } | null>(null);
+  const currentFileRef = useRef<{ path: string; workspaceId: string } | null>(null);
+  if (currentFilePath) {
+    currentFileRef.current = { path: currentFilePath, workspaceId: workspaceCacheKey };
+  }
+  const selectedCardPath = cardSelection?.workspaceId === workspaceCacheKey ? cardSelection.path : null;
+  const currentCardPath = currentFileRef.current?.workspaceId === workspaceCacheKey
+    ? currentFileRef.current.path
+    : null;
+
+  const handleSelectCard = useCallback((path: string): void => {
+    setCardSelection({ path, workspaceId: workspaceCacheKey });
   }, [workspaceCacheKey]);
 
   const handleOpenCardFile = useCallback((path: string): void => {
-    setSelectedCardPath(path);
+    setCardSelection({ path, workspaceId: workspaceCacheKey });
     handleOpenFile(path);
-  }, [handleOpenFile]);
+  }, [handleOpenFile, workspaceCacheKey]);
 
   useEffect(() => {
     if (!featureToggles.sphere || workspaceCacheKey === "none") return;
@@ -104,7 +115,9 @@ export function useAppTabRenderers({
       return (
         <Suspense fallback={<LazyTabFallback />}>
           <LazyCardView
+            currentPath={currentCardPath}
             onOpenFile={handleOpenCardFile}
+            onSelectPath={handleSelectCard}
             refreshRevision={workspaceDataRevision}
             selectedPath={selectedCardPath}
             workspaceId={workspaceCacheKey}
@@ -148,7 +161,7 @@ export function useAppTabRenderers({
         />
       </Suspense>
     );
-  }, [charts, handleOpenCardFile, handleOpenFile, handleOpenTagSearch, selectedCardPath, workspaceCacheKey, workspaceDataRevision]);
+  }, [charts, currentCardPath, handleOpenCardFile, handleOpenFile, handleOpenTagSearch, handleSelectCard, selectedCardPath, workspaceCacheKey, workspaceDataRevision]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {

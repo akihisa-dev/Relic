@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 
 import type { WorkspaceCard } from "../../shared/ipc";
 import { resolveCardImagePath } from "../cards/cardViewModel";
@@ -7,14 +7,18 @@ import { useT } from "../i18n";
 import { relicClient } from "../relicClient";
 
 interface CardViewProps {
+  currentPath?: string | null;
   onOpenFile: (path: string) => void;
+  onSelectPath: (path: string) => void;
   refreshRevision: number;
   selectedPath?: string | null;
   workspaceId: string;
 }
 
 export function CardView({
+  currentPath = null,
   onOpenFile,
+  onSelectPath,
   refreshRevision,
   selectedPath = null,
   workspaceId
@@ -44,6 +48,18 @@ export function CardView({
     };
   }, [refreshRevision, t, workspaceId]);
 
+  const selectedCard = state.status === "ready"
+    ? state.cards.find((card) => card.path === selectedPath)
+      ?? state.cards.find((card) => card.path === currentPath)
+      ?? state.cards[0]
+    : undefined;
+
+  useEffect(() => {
+    if (selectedCard && selectedCard.path !== selectedPath) {
+      onSelectPath(selectedCard.path);
+    }
+  }, [onSelectPath, selectedCard, selectedPath]);
+
   return (
     <section aria-label={t("cards.title")} className="card-view">
       <header className="card-view-header">
@@ -62,23 +78,38 @@ export function CardView({
         </div>
       ) : null}
       {state.status === "ready" && state.cards.length > 0 ? (
-        <div className="card-view-grid">
-          {state.cards.map((card) => (
-            <button
-              aria-current={card.path === selectedPath ? "page" : undefined}
-              aria-label={t("cards.openFile", { name: card.name })}
-              className="card-view-item"
-              key={card.path}
-              onClick={() => onOpenFile(card.path)}
-              title={card.path}
-              type="button"
-            >
-              <CardImage card={card} />
-              <span className="card-view-name-row">
-                <span className="card-view-name">{card.name}</span>
-              </span>
-            </button>
-          ))}
+        <div className="card-view-body">
+          <div aria-label={t("cards.title")} className="card-view-list" role="list">
+            {state.cards.map((card) => (
+              <div key={card.path} role="listitem">
+                <button
+                  aria-current={card.path === selectedCard?.path ? "true" : undefined}
+                  className="card-view-list-item"
+                  onClick={() => onSelectPath(card.path)}
+                  title={card.path}
+                  type="button"
+                >
+                  {card.name}
+                </button>
+              </div>
+            ))}
+          </div>
+          {selectedCard ? (
+            <div className="card-view-stage">
+              <button
+                aria-label={t("cards.openFile", { name: selectedCard.name })}
+                className="card-view-item"
+                onClick={() => onOpenFile(selectedCard.path)}
+                title={selectedCard.path}
+                type="button"
+              >
+                <CardImage card={selectedCard} key={selectedCard.path} />
+                <span className="card-view-name-row">
+                  <span className="card-view-name">{selectedCard.name}</span>
+                </span>
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>
@@ -87,32 +118,14 @@ export function CardView({
 
 function CardImage({ card }: { card: WorkspaceCard }): ReactElement {
   const t = useT();
-  const hostRef = useRef<HTMLSpanElement | null>(null);
-  const [visible, setVisible] = useState(false);
-  const [state, setState] = useState<"idle" | "loading" | "failed" | { src: string }>("idle");
+  const [state, setState] = useState<"loading" | "failed" | { src: string }>("loading");
   const resolvedPath = resolveCardImagePath(card.path, card.imagePath);
 
   useEffect(() => {
-    const host = hostRef.current;
-    if (!host || visible) return undefined;
-    if (typeof IntersectionObserver === "undefined") {
-      setVisible(true);
-      return undefined;
-    }
-
-    const observer = new IntersectionObserver((entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return;
-      setVisible(true);
-      observer.disconnect();
-    }, { rootMargin: "160px" });
-    observer.observe(host);
-    return () => observer.disconnect();
-  }, [visible]);
-
-  useEffect(() => {
     let active = true;
-    if (!visible || !resolvedPath || !relicClient.current) {
-      if (visible && !resolvedPath) setState("failed");
+    setState("loading");
+    if (!resolvedPath || !relicClient.current) {
+      setState("failed");
       return () => {
         active = false;
       };
@@ -129,13 +142,12 @@ function CardImage({ card }: { card: WorkspaceCard }): ReactElement {
     return () => {
       active = false;
     };
-  }, [resolvedPath, visible]);
+  }, [resolvedPath]);
 
   return (
     <span
       className="card-view-image"
       data-image-state={typeof state === "object" ? "ready" : state}
-      ref={hostRef}
     >
       {typeof state === "object" ? (
         <img
