@@ -1,11 +1,7 @@
-import { relicClient } from "../relicClient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type React from "react";
-import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactElement } from "react";
+import type { ReactElement } from "react";
 
-import type { WorkspaceGraph } from "../../shared/ipc";
 import { deriveVisibleGraph } from "../graph/graphDisplayModel";
-import { loadWorkspaceGraph } from "../graph/workspaceGraphLoader";
 import {
   applyGraphSimulationPositions,
   graphSimulationLinks,
@@ -15,14 +11,15 @@ import {
 import { createGraphSimulationClient, type GraphSimulationClient } from "../graph/graphSimulationClient";
 import {
   defaultGraphDrawTheme,
-  type GraphKeyboardState,
   type GraphSimLink,
   type GraphSimNode,
   type GraphViewTransform
 } from "../graph/graphTypes";
 import { useT } from "../i18n";
+import { graphCanvasSizeFallback, useGraphCanvasInteractions } from "../hooks/useGraphCanvasInteractions";
 import { useGraphControlsState } from "../hooks/useGraphControlsState";
 import { useLatest } from "../hooks/useLatest";
+import { useWorkspaceGraphState } from "../hooks/useWorkspaceGraphState";
 import { GraphControls } from "./GraphControls";
 import {
   animateGraph,
@@ -30,23 +27,11 @@ import {
   applyGraphKeyboardZoom,
   applyGraphPanInertia,
   applyGraphZoomTransition,
-  clampGraphScale,
   drawGraph,
-  finishGraphPanVelocity,
-  graphNodeAtCanvasPoint,
-  graphNodePrimaryAction,
-  graphPointerMovedBeyondClickThreshold,
-  graphWheelZoomPoint,
   initialGraphViewTransform,
-  isGraphNodePrimaryPointerButton,
-  nextGraphPanSampleMs,
-  nextGraphPanVelocity,
-  requestGraphZoom,
   resolveGraphHoverFocusId,
   shouldContinueGraphFrame,
-  stepGraphHighlightState,
-  type GraphHighlightState,
-  type GraphHoverFocusState
+  stepGraphHighlightState
 } from "../graph/graphViewModel";
 import {
   cancelGraphFrame,
@@ -62,7 +47,6 @@ interface GraphViewProps {
   workspaceCacheKey?: string;
 }
 
-const graphCanvasSizeFallback = { height: 600, width: 900 };
 export function GraphView({
   onOpenFile,
   onOpenTagSearch,
@@ -81,33 +65,6 @@ export function GraphView({
   const linksRef = useRef<GraphSimLink[]>(initialLinks);
   const viewRef = useRef<GraphViewTransform>(initialView);
   const simulationClientRef = useRef<GraphSimulationClient | null>(null);
-  const panVelocityRef = useRef({ x: 0, y: 0 });
-  const panSampleMsRef = useRef(0);
-  const hoverPointRef = useRef<{ x: number; y: number } | null>(null);
-  const hoverFocusRef = useRef<GraphHoverFocusState>({ id: null, releaseAt: 0 });
-  const highlightRef = useRef<GraphHighlightState>({ id: null, strength: 0 });
-  const keyboardRef = useRef<GraphKeyboardState>({
-    down: false,
-    left: false,
-    right: false,
-    shift: false,
-    up: false,
-    zoomIn: false,
-    zoomOut: false
-  });
-  const pointerRef = useRef<{
-    dragNode: GraphSimNode | null;
-    lastX: number;
-    lastY: number;
-    moved: boolean;
-    pointerId: number;
-    startX: number;
-    startY: number;
-    time: number;
-    type: "node" | "pan";
-  } | null>(null);
-  const openFileRef = useLatest(onOpenFile);
-  const openTagSearchRef = useLatest(onOpenTagSearch);
   const {
     addColorGroup,
     changeColorGroup,
@@ -125,13 +82,11 @@ export function GraphView({
     startColorGroupDrag,
     toggleControls
   } = useGraphControlsState();
-  const [graphState, setGraphState] = useState<{
-    error: string | null;
-    graph: WorkspaceGraph | null;
-    loading: boolean;
-  }>(() => relicClient.current
-    ? { error: null, graph: null, loading: true }
-    : { error: t("graph.loadFailed"), graph: null, loading: false });
+  const graphState = useWorkspaceGraphState({
+    loadFailedMessage: t("graph.loadFailed"),
+    refreshRevision,
+    workspaceCacheKey
+  });
   const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
   const latestOptionsRef = useLatest(options);
   const colorGroupsRef = useLatest(colorGroups);
@@ -139,6 +94,34 @@ export function GraphView({
   const requestDraw = useCallback(() => {
     requestGraphFrameOnce(frameRef, () => drawRef.current());
   }, []);
+  const {
+    handleContextMenu,
+    handleKeyDown,
+    handleKeyUp,
+    handlePointerCancel,
+    handlePointerDown,
+    handlePointerLeave,
+    handlePointerMove,
+    handlePointerUp,
+    handleWheel,
+    highlightRef,
+    hoverFocusRef,
+    hoverPointRef,
+    keyboardRef,
+    panVelocityRef,
+    pointerRef,
+    resetInteractionState
+  } = useGraphCanvasInteractions({
+    canvasRef,
+    latestOptionsRef,
+    nodesRef,
+    onOpenFile,
+    onOpenTagSearch,
+    requestDraw,
+    setPinnedNodeId,
+    simulationClientRef,
+    viewRef
+  });
 
   const updateTheme = useCallback(() => {
     themeRef.current = readGraphDrawTheme(canvasRef.current ?? document.documentElement);
@@ -175,34 +158,6 @@ export function GraphView({
       simulationClientRef.current = null;
     };
   }, [requestDraw]);
-
-  useEffect(() => {
-    let active = true;
-
-    if (!relicClient.current) {
-      return () => {
-        active = false;
-      };
-    }
-
-    void loadWorkspaceGraph({ revision: refreshRevision, workspaceId: workspaceCacheKey }).then((result) => {
-      if (!active) return;
-
-      if (result.ok) {
-        setGraphState({ error: null, graph: result.value, loading: false });
-        return;
-      }
-
-      setGraphState({ error: result.error.message, graph: null, loading: false });
-    }).catch(() => {
-      if (!active) return;
-      setGraphState({ error: t("graph.loadFailed"), graph: null, loading: false });
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [refreshRevision, t, workspaceCacheKey]);
 
   const filteredGraph = useMemo(() => {
     return deriveVisibleGraph(graphState.graph, options);
@@ -316,286 +271,10 @@ export function GraphView({
     frameRef.current = null;
   }, []);
 
-  const nodeAtPoint = useCallback((clientX: number, clientY: number): GraphSimNode | null => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-
-    const rect = canvas.getBoundingClientRect();
-    const point = {
-      x: clientX - rect.left,
-      y: clientY - rect.top
-    };
-    return graphNodeAtCanvasPoint(
-      nodesRef.current.values(),
-      point,
-      viewRef.current,
-      latestOptionsRef.current,
-      rect.width || graphCanvasSizeFallback.width,
-      rect.height || graphCanvasSizeFallback.height
-    );
-  }, []);
-
-  const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
-    event.currentTarget.focus();
-    panVelocityRef.current = { x: 0, y: 0 };
-    panSampleMsRef.current = 0;
-
-    const node = nodeAtPoint(event.clientX, event.clientY);
-    if (!node && event.button !== 0) return;
-    if (node && !isGraphNodePrimaryPointerButton(event.button)) return;
-
-    const canvas = event.currentTarget;
-    canvas.setPointerCapture(event.pointerId);
-    canvas.style.cursor = "grabbing";
-    requestDraw();
-
-    if (node) {
-      node.fx = node.x;
-      node.fy = node.y;
-      simulationClientRef.current?.setNodeFixed(node.id, node.x, node.y);
-      pointerRef.current = {
-        dragNode: node,
-        lastX: event.clientX,
-        lastY: event.clientY,
-        moved: false,
-        pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
-        time: performance.now(),
-        type: "node"
-      };
-      return;
-    }
-
-    pointerRef.current = {
-      dragNode: null,
-      lastX: event.clientX,
-      lastY: event.clientY,
-      moved: false,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      time: performance.now(),
-      type: "pan"
-    };
-  }, [nodeAtPoint, requestDraw]);
-
-  const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    hoverPointRef.current = {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top
-    };
-
-    const pointer = pointerRef.current;
-    if (!pointer) {
-      event.currentTarget.style.cursor = "grab";
-      requestDraw();
-      return;
-    }
-    event.currentTarget.style.cursor = "grabbing";
-
-    const dx = event.clientX - pointer.lastX;
-    const dy = event.clientY - pointer.lastY;
-    const now = performance.now();
-    const elapsed = Math.max(1, now - pointer.time);
-    pointer.time = now;
-    pointer.lastX = event.clientX;
-    pointer.lastY = event.clientY;
-    pointer.moved ||= graphPointerMovedBeyondClickThreshold(
-      event.clientX - pointer.startX,
-      event.clientY - pointer.startY
-    );
-
-    if (pointer.dragNode) {
-      pointer.dragNode.fx = (pointer.dragNode.fx ?? pointer.dragNode.x) + dx / viewRef.current.scale;
-      pointer.dragNode.fy = (pointer.dragNode.fy ?? pointer.dragNode.y) + dy / viewRef.current.scale;
-      pointer.dragNode.x = pointer.dragNode.fx;
-      pointer.dragNode.y = pointer.dragNode.fy;
-      simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, pointer.dragNode.x, pointer.dragNode.y);
-      requestDraw();
-      return;
-    }
-
-    viewRef.current.panX += dx;
-    viewRef.current.panY += dy;
-    panSampleMsRef.current = nextGraphPanSampleMs(panSampleMsRef.current, elapsed);
-    panVelocityRef.current = nextGraphPanVelocity(panVelocityRef.current, dx, dy);
-    requestDraw();
-  }, [requestDraw]);
-
-  const handlePointerUp = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
-    const pointer = pointerRef.current;
-    if (!pointer) return;
-
-    if (event.currentTarget.hasPointerCapture(pointer.pointerId)) {
-      event.currentTarget.releasePointerCapture(pointer.pointerId);
-    }
-    if (pointer.dragNode) {
-      pointer.dragNode.fx = null;
-      pointer.dragNode.fy = null;
-      simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, null, null, 0.08);
-      if (!pointer.moved) {
-        const action = graphNodePrimaryAction(pointer.dragNode);
-        if (action?.type === "file") openFileRef.current(action.path);
-        if (action?.type === "tagSearch") openTagSearchRef.current(action.tag);
-      }
-    }
-
-    if (pointer.type === "pan") {
-      panVelocityRef.current = finishGraphPanVelocity(panVelocityRef.current, panSampleMsRef.current, performance.now() - pointer.time);
-      panSampleMsRef.current = 0;
-    }
-    pointerRef.current = null;
-    event.currentTarget.style.cursor = "grab";
-    requestDraw();
-  }, [requestDraw]);
-
-  const handlePointerCancel = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
-    const pointer = pointerRef.current;
-    if (!pointer) return;
-
-    if (event.currentTarget.hasPointerCapture(pointer.pointerId)) {
-      event.currentTarget.releasePointerCapture(pointer.pointerId);
-    }
-    if (pointer.dragNode) {
-      pointer.dragNode.fx = null;
-      pointer.dragNode.fy = null;
-      simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, null, null, 0.08);
-    }
-
-    pointerRef.current = null;
-    panVelocityRef.current = { x: 0, y: 0 };
-    panSampleMsRef.current = 0;
-    event.currentTarget.style.cursor = "grab";
-    requestDraw();
-  }, [requestDraw]);
-
-  const handleContextMenu = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-    event.preventDefault();
-    event.currentTarget.focus();
-    const node = nodeAtPoint(event.clientX, event.clientY);
-    setPinnedNodeId(node?.id ?? null);
-    requestDraw();
-  }, [nodeAtPoint, requestDraw]);
-
-  const handleWheel = useCallback((event: React.WheelEvent<HTMLCanvasElement>) => {
-    event.preventDefault();
-    const rect = event.currentTarget.getBoundingClientRect();
-    const delta = event.deltaMode === 1 ? event.deltaY * 40 : event.deltaY;
-    const nextScale = clampGraphScale(viewRef.current.targetScale * Math.pow(1.5, -delta / 120));
-    const zoomPoint = graphWheelZoomPoint(
-      viewRef.current.scale,
-      nextScale,
-      event.clientX - rect.left,
-      event.clientY - rect.top,
-      rect.width || graphCanvasSizeFallback.width,
-      rect.height || graphCanvasSizeFallback.height
-    );
-
-    requestGraphZoom(
-      viewRef.current,
-      zoomPoint.x,
-      zoomPoint.y,
-      nextScale
-    );
-    requestDraw();
-  }, [requestDraw]);
-
-  const handleKeyDown = useCallback((event: ReactKeyboardEvent<HTMLCanvasElement>) => {
-    if (event.altKey || event.ctrlKey || event.metaKey) return;
-
-    const keyboard = keyboardRef.current;
-    keyboard.shift = event.shiftKey;
-    requestDraw();
-
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      keyboard.left = true;
-      return;
-    }
-    if (event.key === "ArrowRight") {
-      event.preventDefault();
-      keyboard.right = true;
-      return;
-    }
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
-      keyboard.up = true;
-      return;
-    }
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      keyboard.down = true;
-      return;
-    }
-    if (event.key === "+" || event.key === "=") {
-      event.preventDefault();
-      keyboard.zoomIn = true;
-      return;
-    }
-    if (event.key === "-" || event.key === "_") {
-      event.preventDefault();
-      keyboard.zoomOut = true;
-    }
-  }, [requestDraw]);
-
-  const handleKeyUp = useCallback((event: ReactKeyboardEvent<HTMLCanvasElement>) => {
-    const keyboard = keyboardRef.current;
-    keyboard.shift = event.shiftKey;
-    requestDraw();
-
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      keyboard.left = false;
-      return;
-    }
-    if (event.key === "ArrowRight") {
-      event.preventDefault();
-      keyboard.right = false;
-      return;
-    }
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
-      keyboard.up = false;
-      return;
-    }
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      keyboard.down = false;
-      return;
-    }
-    if (event.key === "+" || event.key === "=") {
-      event.preventDefault();
-      keyboard.zoomIn = false;
-      return;
-    }
-    if (event.key === "-" || event.key === "_") {
-      event.preventDefault();
-      keyboard.zoomOut = false;
-    }
-  }, [requestDraw]);
-
   const resetView = useCallback(() => {
-    viewRef.current = initialGraphViewTransform();
-    panVelocityRef.current = { x: 0, y: 0 };
-    panSampleMsRef.current = 0;
-    hoverPointRef.current = null;
-    hoverFocusRef.current = { id: null, releaseAt: 0 };
-    highlightRef.current = { id: null, strength: 0 };
-    keyboardRef.current = {
-      down: false,
-      left: false,
-      right: false,
-      shift: false,
-      up: false,
-      zoomIn: false,
-      zoomOut: false
-    };
     resetControls();
-    setPinnedNodeId(null);
-    requestDraw();
-  }, [requestDraw, resetControls]);
+    resetInteractionState();
+  }, [resetControls, resetInteractionState]);
 
   return (
     <div className="graph-view-shell">
@@ -606,11 +285,7 @@ export function GraphView({
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
         onPointerDown={handlePointerDown}
-        onPointerLeave={() => {
-          hoverPointRef.current = null;
-          if (!pointerRef.current && canvasRef.current) canvasRef.current.style.cursor = "grab";
-          requestDraw();
-        }}
+        onPointerLeave={handlePointerLeave}
         onPointerMove={handlePointerMove}
         onPointerCancel={handlePointerCancel}
         onPointerUp={handlePointerUp}
