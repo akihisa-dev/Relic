@@ -72,4 +72,19 @@ describe("App feature toggles", () => {
     expect(screen.queryByRole("button", { name: "グラフ" })).toBeNull();
     expect(screen.getByRole("button", { name: "設定" })).toBeInTheDocument();
   });
+
+  it("機能トグルでカードのナビを非表示にする", async () => {
+    window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { ...defaultFeatureToggles, cards: false }
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    await screen.findByRole("button", { name: "ファイル" });
+    expect(screen.queryByRole("button", { name: "カード" })).toBeNull();
+  });
 });

@@ -35,12 +35,9 @@ describe("App rail panels", () => {
     resetRendererStores();
   });
 
-  it("機能トグルで右パネル項目を個別にOFFにできる", async () => {
-    const saveFeatureToggles = vi.fn().mockResolvedValue({ ok: true, value: undefined });
-
+  it("右パネルのアウトラインとリンクを常に利用できる", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      saveFeatureToggles
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
     const { container } = await renderApp();
@@ -49,11 +46,7 @@ describe("App rail panels", () => {
 
     expect(container.querySelector(".right-panel")).not.toHaveClass("right-panel--closed");
 
-    fireEvent.click(screen.getByRole("button", { name: "設定" }));
-    fireEvent.click(await screen.findByLabelText("右パネル: アウトライン"));
-
-    expect(saveFeatureToggles).toHaveBeenCalledWith(expect.objectContaining({ rightPanelOutline: false }));
-    expect(screen.queryByRole("button", { name: "アウトライン" })).toBeNull();
+    expect(screen.getByRole("button", { name: "アウトライン" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "リンク" })).toBeInTheDocument();
     expect(container.querySelector(".title-bar .main-area-actions")).toBeInTheDocument();
     expect(container.querySelector(".main-area > .main-area-actions")).not.toBeInTheDocument();

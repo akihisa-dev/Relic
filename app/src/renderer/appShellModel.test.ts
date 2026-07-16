@@ -103,12 +103,14 @@ describe("appShellModel", () => {
     ];
 
     const defaultEnabled = enabledRailViewsForFeatures(railViews, defaultFeatureToggles);
-    expect(defaultEnabled.map((view) => view.id)).toEqual(["files", "cards", "graph", "settings"]);
+    expect(defaultEnabled.map((view) => view.id)).toEqual(["files", "settings"]);
 
     const enabled = enabledRailViewsForFeatures(railViews, {
       ...defaultFeatureToggles,
+      cards: true,
       chronicle: false,
       frontmatter: false,
+      graph: true,
       sphere: true,
       tools: false
     });
@@ -125,6 +127,7 @@ describe("appShellModel", () => {
 
     expect(enabledRailViewsForFeatures(railViews, {
       ...defaultFeatureToggles,
+      cards: true,
       graph: false
     }).map((view) => view.id)).toEqual(["files", "cards", "settings"]);
   });

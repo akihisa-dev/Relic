@@ -9,7 +9,7 @@ import {
   resetRendererStores,
   testWorkspaceState
 } from "../test/rendererTestUtils";
-import { renderApp } from "./appTestHelpers";
+import { allRailFeatureToggles, renderApp } from "./appTestHelpers";
 import { useEditorStore } from "./store/editorStore";
 
 const noteWorkspace: WorkspaceState = {
@@ -189,6 +189,10 @@ describe("App workspace refresh", () => {
       value: { links: [], nodes: [] }
     });
     window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { ...allRailFeatureToggles, sphere: false }
+      }),
       getWorkspaceGraph,
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: noteWorkspace }),
       refreshWorkspace: vi.fn().mockResolvedValue({ ok: true, value: noteWorkspace })

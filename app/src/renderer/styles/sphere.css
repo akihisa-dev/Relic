@@ -43,14 +43,6 @@
   pointer-events: none;
 }
 
-.sphere-view-badge {
-  padding: 2px 5px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
-  color: var(--color-accent);
-  font-weight: 650;
-}
-
 .sphere-view-focus {
   position: absolute;
   z-index: 2;

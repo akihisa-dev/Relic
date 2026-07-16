@@ -113,28 +113,25 @@ describe("workspaceHandlerValidators", () => {
 
   it("validates feature toggles before saving", () => {
     expect(isFeatureTogglesInput({
+      cards: true,
       chronicle: false,
       frontmatter: true,
       graph: true,
       sphere: false,
-      rightPanelLinks: true,
-      rightPanelOutline: true,
       tools: false
     })).toBe(true);
     expect(isFeatureTogglesInput({
+      cards: true,
       chronicle: false,
       frontmatter: true,
       graph: true,
       sphere: false,
-      rightPanelLinks: true,
-      rightPanelOutline: true,
       tools: "false"
     })).toBe(false);
     expect(isFeatureTogglesInput({
+      cards: true,
       chronicle: false,
       frontmatter: true,
-      rightPanelLinks: true,
-      rightPanelOutline: true,
       sphere: false,
       tools: false
     })).toBe(false);

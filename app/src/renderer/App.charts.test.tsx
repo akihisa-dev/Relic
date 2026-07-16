@@ -119,6 +119,10 @@ describe("App charts", () => {
     });
 
     window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { ...allRailFeatureToggles, sphere: false }
+      }),
       getWorkspaceGraph,
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
@@ -605,6 +609,7 @@ describe("App charts", () => {
 
   it("カードを開いて戻ったときに一覧の選択状態を維持する", async () => {
     window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceCards: vi.fn().mockResolvedValue({
         ok: true,
         value: [{ imagePath: "images/moon.webp", name: "Moon", path: "notes/moon.md" }]

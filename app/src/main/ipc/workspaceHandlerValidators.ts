@@ -136,13 +136,12 @@ export function isFeatureTogglesInput(input: unknown): input is FeatureToggles {
 
   const candidate = input as Record<string, unknown>;
   return (
+    typeof candidate.cards === "boolean" &&
     typeof candidate.chronicle === "boolean" &&
     typeof candidate.graph === "boolean" &&
     typeof candidate.sphere === "boolean" &&
     typeof candidate.tools === "boolean" &&
-    typeof candidate.frontmatter === "boolean" &&
-    typeof candidate.rightPanelLinks === "boolean" &&
-    typeof candidate.rightPanelOutline === "boolean"
+    typeof candidate.frontmatter === "boolean"
   );
 }
 

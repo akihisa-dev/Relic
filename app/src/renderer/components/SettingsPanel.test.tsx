@@ -227,13 +227,12 @@ describe("SettingsPanel", () => {
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ tools: false }));
 
     expect(screen.getByRole("switch", { name: "File tools" })).toHaveClass("switch", "settings-toggle-switch", "on");
-    expect(screen.getByRole("switch", { name: "Right panel: Links" })).toHaveClass("on");
-
-    fireEvent.click(screen.getByLabelText("Right panel: Links"));
-
-    expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ rightPanelLinks: false }));
+    expect(screen.queryByRole("switch", { name: "Right panel: Links" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("Graph"));
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ graph: false }));
+
+    fireEvent.click(screen.getByLabelText("Cards"));
+    expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ cards: true }));
   });
 });

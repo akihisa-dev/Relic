@@ -47,7 +47,7 @@ describe("appSettings", () => {
       workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
     });
     const raw = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(4);
+    expect(raw.schemaVersion).toBe(5);
     await expect(readdir(userDataPath)).resolves.toEqual([path.basename(getAppSettingsPath(userDataPath))]);
     if (process.platform !== "win32") {
       expect((await stat(userDataPath)).mode & 0o777).toBe(0o700);
@@ -82,7 +82,7 @@ describe("appSettings", () => {
 
     await readAppSettings(userDataPath);
     const afterFirstRead = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(afterFirstRead.schemaVersion).toBe(4);
+    expect(afterFirstRead.schemaVersion).toBe(5);
 
     await delay(1100);
     const firstMtime = (await stat(getAppSettingsPath(userDataPath))).mtimeMs;
@@ -204,11 +204,11 @@ describe("appSettings", () => {
     await Promise.all([update, readWhileUpdating]);
 
     const raw = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(4);
+    expect(raw.schemaVersion).toBe(5);
     expect((raw.featureToggles as Record<string, unknown>)?.tools).toBe(true);
   });
 
-  it("旧rightPanel機能設定を右パネル個別設定へ引き継ぐ", async () => {
+  it("旧rightPanel機能設定は現行の機能設定から除外する", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
@@ -220,15 +220,18 @@ describe("appSettings", () => {
       }
     }), "utf8");
 
-    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      featureToggles: expect.objectContaining({
-        rightPanelLinks: false,
-        rightPanelOutline: false
-      })
-    });
+    const settings = await readAppSettings(userDataPath);
+    expect(settings.featureToggles).not.toHaveProperty("rightPanelLinks");
+    expect(settings.featureToggles).not.toHaveProperty("rightPanelOutline");
+    const migrated = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as {
+      featureToggles?: Record<string, unknown>;
+    };
+    expect(migrated.featureToggles).not.toHaveProperty("rightPanel");
+    expect(migrated.featureToggles).not.toHaveProperty("rightPanelLinks");
+    expect(migrated.featureToggles).not.toHaveProperty("rightPanelOutline");
   });
 
-  it("v1設定ではグラフを有効のまま現行形式へ移行する", async () => {
+  it("旧設定にない主要ビューは無効のまま現行形式へ移行する", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
@@ -236,18 +239,16 @@ describe("appSettings", () => {
       featureToggles: {
         chronicle: false,
         frontmatter: false,
-        rightPanelLinks: true,
-        rightPanelOutline: true,
         tools: false
       },
       workspaces: []
     }), "utf8");
 
     await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      featureToggles: expect.objectContaining({ graph: true, sphere: false })
+      featureToggles: expect.objectContaining({ cards: false, graph: false, sphere: false })
     });
     const migrated = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(migrated.schemaVersion).toBe(4);
+    expect(migrated.schemaVersion).toBe(5);
   });
 
   it("未知の将来schemaVersionは旧形式として誤読しない", async () => {
@@ -255,7 +256,7 @@ describe("appSettings", () => {
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
       schemaVersion: 999,
-      featureToggles: { rightPanelLinks: false, rightPanelOutline: false }
+      featureToggles: { graph: false }
     }), "utf8");
 
     await expect(readAppSettings(userDataPath)).rejects.toHaveProperty("name", "UnsupportedSettingsVersionError");
@@ -383,8 +384,6 @@ describe("appSettings", () => {
         chronicle: "yes",
         frontmatter: "yes",
         graph: "yes",
-        rightPanelLinks: "yes",
-        rightPanelOutline: "yes",
         tools: "yes"
       },
       workspaces: []

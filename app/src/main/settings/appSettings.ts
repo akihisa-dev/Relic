@@ -121,13 +121,12 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
   const s = raw as Record<string, unknown>;
 
   return {
+    cards: typeof s.cards === "boolean" ? s.cards : false,
     chronicle: typeof s.chronicle === "boolean" ? s.chronicle : false,
-    graph: typeof s.graph === "boolean" ? s.graph : true,
+    graph: typeof s.graph === "boolean" ? s.graph : false,
     sphere: typeof s.sphere === "boolean" ? s.sphere : false,
     tools: typeof s.tools === "boolean" ? s.tools : false,
-    frontmatter: typeof s.frontmatter === "boolean" ? s.frontmatter : false,
-    rightPanelLinks: typeof s.rightPanelLinks === "boolean" ? s.rightPanelLinks : true,
-    rightPanelOutline: typeof s.rightPanelOutline === "boolean" ? s.rightPanelOutline : true
+    frontmatter: typeof s.frontmatter === "boolean" ? s.frontmatter : false
   };
 }
 

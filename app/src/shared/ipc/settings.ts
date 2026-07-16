@@ -16,13 +16,12 @@ export interface AppInfo {
 }
 
 export interface FeatureToggles {
+  cards: boolean;
   chronicle: boolean;
   graph: boolean;
   sphere: boolean;
   tools: boolean;
   frontmatter: boolean;
-  rightPanelLinks: boolean;
-  rightPanelOutline: boolean;
 }
 
 export type UserDefinedFieldType =
@@ -51,13 +50,12 @@ export const defaultUserDefinedFields: UserDefinedField[] = [];
 export const defaultFrontmatterTemplates: FrontmatterTemplate[] = [];
 
 export const defaultFeatureToggles: FeatureToggles = {
+  cards: false,
   chronicle: false,
-  graph: true,
+  graph: false,
   sphere: false,
   tools: false,
-  frontmatter: false,
-  rightPanelLinks: true,
-  rightPanelOutline: true
+  frontmatter: false
 };
 
 export interface SettingsApi {

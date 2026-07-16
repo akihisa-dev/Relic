@@ -140,8 +140,8 @@ export function App(): ReactElement {
     setWorkspaceError,
     setWorkspaceState
   });
-  const isRightPanelOutlineAvailable = featureToggles.rightPanelOutline;
-  const isRightPanelLinksAvailable = featureToggles.rightPanelLinks;
+  const isRightPanelOutlineAvailable = true;
+  const isRightPanelLinksAvailable = true;
   const isRightPanelRecoveryAvailable = true;
   const {
     effectiveRightPanelView,

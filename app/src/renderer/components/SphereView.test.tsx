@@ -68,7 +68,7 @@ describe("SphereView", () => {
   it("独立したスフィアビューへ共有グラフのノードとリンクを渡す", async () => {
     renderSphereView();
 
-    expect(screen.getByText("試験機能")).toBeInTheDocument();
+    expect(screen.queryByText("試験機能")).not.toBeInTheDocument();
     await waitFor(() => expect(runtimeMocks.setData.mock.calls.at(-1)?.[0].nodes).toHaveLength(2));
     const latestData = runtimeMocks.setData.mock.calls.at(-1)?.[0];
     expect(latestData.nodes.map((node: { id: string }) => node.id)).toEqual(["A.md", "B.md"]);

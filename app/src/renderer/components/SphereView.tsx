@@ -234,7 +234,6 @@ export function SphereView({
     <div className="sphere-view-shell">
       <div className="sphere-view-canvas" ref={hostRef} />
       <div className="sphere-view-meta">
-        <span className="sphere-view-badge">{t("sphere.experimental")}</span>
         <span>{t("graph.nodeCount", { count: filteredGraph.nodes.length })}</span>
         <span>{t("sphere.instructions")}</span>
       </div>

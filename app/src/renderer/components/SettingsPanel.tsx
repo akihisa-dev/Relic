@@ -193,11 +193,10 @@ export function SettingsPanel({
             [
               { key: "tools", label: t("settings.featureTools") },
               { key: "frontmatter", label: t("settings.featureFrontmatter") },
+              { key: "cards", label: t("settings.featureCards") },
               { key: "graph", label: t("settings.featureGraph") },
               { key: "sphere", label: t("settings.featureSphere") },
-              { key: "chronicle", label: t("settings.featureChronicle") },
-              { key: "rightPanelOutline", label: t("settings.featureRightPanelOutline") },
-              { key: "rightPanelLinks", label: t("settings.featureRightPanelLinks") }
+              { key: "chronicle", label: t("settings.featureChronicle") }
             ] as { key: keyof FeatureToggles; label: string }[]
           ).map(({ key, label }) => (
             <div className="setting-row" key={key}>

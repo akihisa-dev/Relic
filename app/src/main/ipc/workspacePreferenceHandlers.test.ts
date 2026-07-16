@@ -39,12 +39,11 @@ import { registerWorkspacePreferenceHandlers } from "./workspacePreferenceHandle
 type RegisteredHandler = (...args: unknown[]) => Promise<unknown>;
 
 const featureToggles = {
+  cards: true,
   chronicle: true,
   frontmatter: true,
   graph: true,
   sphere: true,
-  rightPanelLinks: false,
-  rightPanelOutline: true,
   tools: true,
 };
 const userDefinedFields = [

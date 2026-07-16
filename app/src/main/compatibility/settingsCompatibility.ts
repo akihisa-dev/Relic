@@ -1,6 +1,6 @@
 import type { SettingsMigrationResult } from "../settings/secureVersionedJsonStore";
 
-export const currentAppSettingsSchemaVersion = 4;
+export const currentAppSettingsSchemaVersion = 5;
 export const currentWorkspaceSettingsSchemaVersion = 2;
 
 export type WorkspaceSettingsMigrationRecord = {
@@ -25,12 +25,12 @@ export function migrateAppSettings(
     return { didMigrate: false, settings: raw };
   }
 
-  if (schemaVersion === 0 || schemaVersion === 1 || schemaVersion === 2 || schemaVersion === 3) {
+  if (schemaVersion === 0 || schemaVersion === 1 || schemaVersion === 2 || schemaVersion === 3 || schemaVersion === 4) {
     return {
       didMigrate: true,
       settings: {
         ...raw,
-        featureToggles: migrateFeatureToggles(raw.featureToggles, schemaVersion),
+        featureToggles: migrateFeatureToggles(raw.featureToggles),
         schemaVersion: currentAppSettingsSchemaVersion
       }
     };
@@ -79,18 +79,18 @@ export function migrateWorkspaceSettings<T extends WorkspaceSettingsMigrationRec
   );
 }
 
-function migrateFeatureToggles(raw: unknown, schemaVersion: 0 | 1 | 2 | 3): unknown {
+function migrateFeatureToggles(raw: unknown): unknown {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return raw;
 
-  const toggles = raw as Record<string, unknown>;
-  const legacyRightPanel = typeof toggles.rightPanel === "boolean" ? toggles.rightPanel : true;
-
+  const toggles = { ...(raw as Record<string, unknown>) };
+  delete toggles.rightPanel;
+  delete toggles.rightPanelLinks;
+  delete toggles.rightPanelOutline;
   return {
     ...toggles,
-    graph: typeof toggles.graph === "boolean" ? toggles.graph : true,
-    sphere: typeof toggles.sphere === "boolean" ? toggles.sphere : false,
-    rightPanelLinks: schemaVersion === 0 && typeof toggles.rightPanelLinks !== "boolean" ? legacyRightPanel : toggles.rightPanelLinks,
-    rightPanelOutline: schemaVersion === 0 && typeof toggles.rightPanelOutline !== "boolean" ? legacyRightPanel : toggles.rightPanelOutline
+    cards: typeof toggles.cards === "boolean" ? toggles.cards : false,
+    graph: typeof toggles.graph === "boolean" ? toggles.graph : false,
+    sphere: typeof toggles.sphere === "boolean" ? toggles.sphere : false
   };
 }
 
