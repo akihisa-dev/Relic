@@ -60,6 +60,8 @@ describe("CardView", () => {
     );
 
     expect(await screen.findByRole("button", { name: "Moonを開く" })).toBeInTheDocument();
+    expect(screen.queryByText("カード")).not.toBeInTheDocument();
+    expect(screen.queryByText("カードビュー")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Moon" })).toHaveAttribute("aria-current", "true");
     await waitFor(() => expect(readImageFile).toHaveBeenCalledTimes(1));
     expect(readImageFile).toHaveBeenLastCalledWith({ path: "notes/images/moon.webp" });
