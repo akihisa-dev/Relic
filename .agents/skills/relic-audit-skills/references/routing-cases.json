@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "skillDescriptionDigest": "9797b531ccb8ed33463b8193094276bcf9aa38a56f57e1af08c14c92e98b2ec2",
+  "skillDescriptionDigest": "577dcf62d5c6f46423f3e88144800c84dfee46dd17c4c8a539debf179030b529",
   "cases": [
     {
       "id": "issue-all-open",
@@ -10,8 +10,8 @@
       "forbiddenSkills": ["relic-publish-github", "relic-release"],
       "requiredDocs": ["AGENTS.md", "docs/INDEX.md", "docs/development.md"],
       "permissionMode": "local-change-no-push",
-      "expectedEndState": "ローカル修正・検証・コミット後、remote反映待ちとしてIssueをOpenのまま残す",
-      "misrouteImpact": "一次情報未確認、無断push、未完了Issueのcloseにつながる"
+      "expectedEndState": "ローカル修正・検証・完了コミット後、pushせずIssueへ完了コメントしてcloseする",
+      "misrouteImpact": "一次情報未確認、無断push、完了コミット前のIssue closeにつながる"
     },
     {
       "id": "code-health-vs-refactor",
