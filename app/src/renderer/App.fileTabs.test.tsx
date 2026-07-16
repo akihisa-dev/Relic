@@ -6,6 +6,7 @@ import {
   within
 } from "@testing-library/react";
 import { EditorView } from "@codemirror/view";
+import { Transaction } from "@codemirror/state";
 import {
   afterEach,
   beforeAll,
@@ -484,6 +485,7 @@ describe("App file tabs", () => {
 
     act(() => {
       view!.dispatch({
+        annotations: Transaction.userEvent.of("input.type"),
         changes: { from: view!.state.doc.length, insert: "\n入力直後の本文" }
       });
     });
@@ -532,6 +534,7 @@ describe("App file tabs", () => {
 
     act(() => {
       view!.dispatch({
+        annotations: Transaction.userEvent.of("input.type"),
         changes: { from: view!.state.doc.length, insert: "\n切替直前の本文" }
       });
     });
@@ -592,6 +595,7 @@ describe("App file tabs", () => {
 
     act(() => {
       view!.dispatch({
+        annotations: Transaction.userEvent.of("input.type"),
         changes: { from: view!.state.doc.length, insert: "\n終了直前の本文" }
       });
     });

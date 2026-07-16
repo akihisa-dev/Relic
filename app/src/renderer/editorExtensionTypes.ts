@@ -13,6 +13,7 @@ export interface EditorExtensionConfig {
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>;
   onOpenWikiLinkRef: RefObject<((target: string, heading?: string) => void) | undefined>;
   onSelectionChange: (state: EditorState) => void;
+  onTypingChangeRef: RefObject<(content: string) => void>;
   settings: EditorSettings;
   sourcePath?: string;
   sourceMode: boolean;

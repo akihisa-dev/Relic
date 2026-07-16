@@ -1,11 +1,12 @@
 import { relicClient } from "../relicClient";
-import { EditorState } from "@codemirror/state";
+import { isolateHistory } from "@codemirror/commands";
+import { EditorSelection, EditorState, Transaction } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { useEffect, useRef } from "react";
 import type { MutableRefObject, ReactElement } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
-import { buildEditorReconfigureEffects, buildExtensions, destroyEditorView } from "../editorExtensions";
+import { buildEditorReconfigureEffects, buildExtensions, destroyEditorView, isEditorComposing } from "../editorExtensions";
 import { setEditorEditable } from "../editorEditable";
 import { droppedImageSourcePaths, importDroppedImagesAsMarkdown } from "../editorImageDrop";
 import { captureEditorScrollAnchor, restoreEditorScrollAnchor } from "../editorScrollAnchor";
@@ -29,6 +30,7 @@ interface EditorProps {
   filePath?: string;
   frontmatterCandidates?: Record<string, string[]>;
   onChange: (content: string) => void;
+  onTypingChange?: (content: string) => void;
   onEditorAction?: () => void;
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
@@ -51,6 +53,7 @@ export function Editor({
   filePath,
   frontmatterCandidates = defaultFrontmatterCandidates,
   onChange,
+  onTypingChange,
   onEditorAction,
   onOpenLink,
   onOpenWikiLink,
@@ -66,6 +69,8 @@ export function Editor({
   const containerRef = useRef<HTMLDivElement>(null);
   const internalViewRef = useRef<EditorView | null>(null);
   const onChangeRef = useLatest(onChange);
+  const onTypingChangeRef = useLatest(onTypingChange ?? onChange);
+  const pendingExternalContentRef = useRef<string | null>(null);
   const onOpenLinkRef = useLatest(onOpenLink);
   const onOpenWikiLinkRef = useLatest(onOpenWikiLink);
   const allFilePathsRef = useLatest(allFilePaths);
@@ -164,6 +169,18 @@ export function Editor({
       event.stopPropagation();
       void importDroppedImagesAsMarkdown(view, event, filePath, sourcePaths);
     };
+    let compositionFlushTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleCompositionEnd = (): void => {
+      if (compositionFlushTimer) clearTimeout(compositionFlushTimer);
+      compositionFlushTimer = setTimeout(() => {
+        compositionFlushTimer = null;
+        const view = internalViewRef.current;
+        const pendingContent = pendingExternalContentRef.current;
+        if (!view || pendingContent === null || view.state.doc.toString() === pendingContent) return;
+        pendingExternalContentRef.current = null;
+        replaceExternalEditorContent(view, pendingContent);
+      }, 0);
+    };
 
     container.addEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
     container.addEventListener("dragover", handleDragOver, true);
@@ -175,6 +192,7 @@ export function Editor({
     container.addEventListener("mouseup", handleRightButtonDown, true);
     container.addEventListener("auxclick", handleRightButtonDown, true);
     container.addEventListener("contextmenu", handleContextMenu, true);
+    container.addEventListener("compositionend", handleCompositionEnd, true);
 
     return () => {
       container.removeEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
@@ -187,6 +205,8 @@ export function Editor({
       container.removeEventListener("mouseup", handleRightButtonDown, true);
       container.removeEventListener("auxclick", handleRightButtonDown, true);
       container.removeEventListener("contextmenu", handleContextMenu, true);
+      container.removeEventListener("compositionend", handleCompositionEnd, true);
+      if (compositionFlushTimer) clearTimeout(compositionFlushTimer);
     };
   }, [filePath, openContextMenu, openFrontmatterDialog]);
 
@@ -199,6 +219,7 @@ export function Editor({
       typewriterMode,
       sourceMode,
       onChangeRef,
+      onTypingChangeRef,
       allFilePathsRef.current,
       userDefinedFieldsRef.current,
       frontmatterCandidatesRef.current,
@@ -232,14 +253,13 @@ export function Editor({
 
     const currentContent = view.state.doc.toString();
     if (currentContent === content) return;
+    if (isEditorComposing(view)) {
+      pendingExternalContentRef.current = content;
+      return;
+    }
 
-    view.dispatch({
-      changes: {
-        from: 0,
-        insert: content,
-        to: view.state.doc.length
-      }
-    });
+    pendingExternalContentRef.current = null;
+    replaceExternalEditorContent(view, content);
   }, [content]);
 
   // 設定・タイプライターモード変更時はEditorViewを保ったまま拡張だけ差し替える
@@ -263,6 +283,7 @@ export function Editor({
         onOpenLinkRef,
         onOpenWikiLinkRef,
         onSelectionChange: rememberSelection,
+        onTypingChangeRef,
         settings,
         sourcePath: filePath,
         sourceMode,
@@ -312,4 +333,26 @@ export function Editor({
       />
     </>
   );
+}
+
+function replaceExternalEditorContent(view: EditorView, content: string): void {
+  const scrollLeft = view.scrollDOM.scrollLeft;
+  const scrollTop = view.scrollDOM.scrollTop;
+  const hadFocus = view.hasFocus;
+  const selection = EditorSelection.create(
+    view.state.selection.ranges.map((range) => EditorSelection.range(
+      Math.min(range.anchor, content.length),
+      Math.min(range.head, content.length)
+    )),
+    view.state.selection.mainIndex
+  );
+
+  view.dispatch({
+    annotations: [Transaction.addToHistory.of(false), isolateHistory.of("full")],
+    changes: { from: 0, insert: content, to: view.state.doc.length },
+    selection
+  });
+  view.scrollDOM.scrollLeft = scrollLeft;
+  view.scrollDOM.scrollTop = scrollTop;
+  if (hadFocus) view.focus();
 }

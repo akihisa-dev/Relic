@@ -6,6 +6,7 @@ import { useShallow } from "zustand/react/shallow";
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import type { FileTab } from "../store/editorStore";
 import type { HeadingScrollTarget } from "../editorDerivedState";
+import { flushPendingEditorChanges } from "../editorInputBuffer";
 import { usePaneHeadingScroll } from "../hooks/usePaneHeadingScroll";
 import { useEditorStore, type PaneId, type PanelTabKind } from "../store/editorStore";
 import { PaneContentSurface } from "./PaneContentSurface";
@@ -121,12 +122,15 @@ export function PaneView({
 
   const saveRelicVersion = (): void => {
     if (activeTab?.kind !== "file" || !relicClient.current) return;
+    flushPendingEditorChanges([activeTab.id]);
+    const latestTab = useEditorStore.getState().tabs[activeTab.id];
+    if (latestTab?.kind !== "file") return;
 
-    void relicClient.current.writeMarkdownFile({ content: activeTab.content, path: activeTab.path }).then((result) => {
+    void relicClient.current.writeMarkdownFile({ content: latestTab.content, path: latestTab.path }).then((result) => {
       if (result.ok) {
-        resolveTabExternalConflict(activeTab.id, "relic");
-        markTabSaved(activeTab.id, activeTab.content);
-        onFileSaved?.(activeTab.path);
+        resolveTabExternalConflict(latestTab.id, "relic");
+        markTabSaved(latestTab.id, latestTab.content);
+        onFileSaved?.(latestTab.path);
         return;
       }
 

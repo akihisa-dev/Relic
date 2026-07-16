@@ -2,6 +2,7 @@ import { relicClient } from "../relicClient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { FileTab, Tab } from "../store/editorStore";
+import { flushPendingEditorChanges } from "../editorInputBuffer";
 import { useEditorStore } from "../store/editorStore";
 import { useLatest } from "./useLatest";
 
@@ -220,6 +221,7 @@ export function useEditorAutoSave({
   }, [queues]);
 
   const flushTabsBeforeClose = useCallback(async (tabIds: string[]): Promise<SaveBeforeCloseResult> => {
+    flushPendingEditorChanges(tabIds);
     const state = useEditorStore.getState();
     const targets = Array.from(new Set(tabIds))
       .map((tabId) => state.tabs[tabId])

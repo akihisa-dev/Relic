@@ -1,12 +1,71 @@
 import { redo, undo } from "@codemirror/commands";
+import { Transaction } from "@codemirror/state";
 import { BlockType } from "@codemirror/view";
-import { waitFor } from "@testing-library/react";
+import { fireEvent, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { renderEditorWithView, settings } from "./editorTestHelpers";
 import { Editor } from "./Editor";
+import {
+  __markEditorCompositionEndedForTests,
+  __markEditorCompositionStartedForTests
+} from "../editorExtensions";
 
 describe("Editor view state", () => {
+  it("連続入力とMarkdown操作の更新元を区別する", async () => {
+    const onChange = vi.fn();
+    const onTypingChange = vi.fn();
+    const { view } = await renderEditorWithView({ content: "本文", onChange, onTypingChange });
+
+    view.dispatch({
+      annotations: Transaction.userEvent.of("input.type"),
+      changes: { from: view.state.doc.length, insert: "追記" }
+    });
+    expect(onTypingChange).toHaveBeenLastCalledWith("本文追記");
+    expect(onChange).not.toHaveBeenCalled();
+
+    view.dispatch({
+      changes: { from: view.state.doc.length, insert: "**操作**" }
+    });
+    expect(onChange).toHaveBeenLastCalledWith("本文追記**操作**");
+  });
+
+  it("外部本文の反映で選択範囲とスクロールを保ち通常入力のUndo履歴から分離する", async () => {
+    const { rerender, view, viewRef } = await renderEditorWithView({ content: "base text" });
+    view.dispatch({
+      annotations: Transaction.userEvent.of("input.type"),
+      changes: { from: view.state.doc.length, insert: " local" },
+      selection: { anchor: 4, head: 9 }
+    });
+    view.scrollDOM.scrollTop = 120;
+    view.scrollDOM.scrollLeft = 9;
+
+    rerender(
+      <Editor content="external text" onChange={() => undefined} settings={settings} viewRef={viewRef} />
+    );
+
+    await waitFor(() => expect(view.state.doc.toString()).toBe("external text"));
+    expect(view.state.selection.main.from).toBe(4);
+    expect(view.state.selection.main.to).toBe(9);
+    expect(view.scrollDOM.scrollTop).toBe(120);
+    expect(view.scrollDOM.scrollLeft).toBe(9);
+    expect(undo(view)).toBe(false);
+  });
+
+  it("IME変換中の外部本文を変換終了まで反映しない", async () => {
+    const { rerender, view, viewRef } = await renderEditorWithView({ content: "変換中" });
+    __markEditorCompositionStartedForTests(view);
+
+    rerender(
+      <Editor content="外部本文" onChange={() => undefined} settings={settings} viewRef={viewRef} />
+    );
+    expect(view.state.doc.toString()).toBe("変換中");
+
+    __markEditorCompositionEndedForTests(view);
+    fireEvent.compositionEnd(view.contentDOM);
+    await waitFor(() => expect(view.state.doc.toString()).toBe("外部本文"));
+  });
+
   it("通常入力後もEditorView identityとカーソルとスクロール位置を維持する", async () => {
     const { view, viewRef } = await renderEditorWithView({
       content: "alpha\nbeta\ngamma"

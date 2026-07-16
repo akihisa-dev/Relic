@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 
 import { useEditorStore, type PaneId } from "../store/editorStore";
+import { flushPendingEditorChanges } from "../editorInputBuffer";
 import { matchesAnyTreeItemPath } from "./workspaceFileActionHelpers";
 
 interface UseAppCloseGuardsInput {
@@ -21,6 +22,7 @@ export function useAppCloseGuards({
   ensureCanMutateWorkspaceItems: (items: Array<{ path: string; type: "file" | "folder" }>) => Promise<boolean> | boolean;
 } {
   const ensureCanCloseTabs = useCallback((_pane: PaneId, tabIds: string[]): Promise<boolean> | boolean => {
+    flushPendingEditorChanges(tabIds);
     const currentTabs = useEditorStore.getState().tabs;
     const needsSaveCheck = tabIds.some((tabId) => {
       const tab = currentTabs[tabId];
@@ -41,6 +43,7 @@ export function useAppCloseGuards({
   }, [flushTabsBeforeClose, saveFailedMessage, setWorkspaceError]);
 
   const ensureCanCloseAllTabs = useCallback((): Promise<boolean> | boolean => {
+    flushPendingEditorChanges();
     const currentTabs = useEditorStore.getState().tabs;
     const tabIds = Object.keys(currentTabs);
     const needsSaveCheck = Object.values(currentTabs).some((tab) => {

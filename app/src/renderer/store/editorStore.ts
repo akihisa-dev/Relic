@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { defaultEditorSettings, type EditorSettings, type MarkdownFileContent } from "../../shared/ipc";
+import { flushPendingEditorChanges } from "../editorInputBuffer";
 import {
   closeAllTabsInPaneState,
   closeAllTabsState,
@@ -112,12 +113,14 @@ export const useEditorStore = create<EditorStore>((set) => ({
   },
 
   closeTab: (pane, tabId) => {
+    flushPendingEditorChanges([tabId]);
     set((state) => {
       return closeTabState(state, pane, tabId);
     });
   },
 
   setTabActive: (pane, tabId) => {
+    flushPendingEditorChanges();
     set((state) => {
       return setTabActiveState(state, pane, tabId);
     });
@@ -136,6 +139,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
   },
 
   updateTabMeta: (tabId, meta) => {
+    flushPendingEditorChanges([tabId]);
     set((state) => {
       return updateFileTabMetaState(state, tabId, meta);
     });
@@ -150,24 +154,28 @@ export const useEditorStore = create<EditorStore>((set) => ({
   setFocusedPane: (pane) => set({ focusedPane: pane }),
 
   closeOtherTabs: (pane, tabId) => {
+    flushPendingEditorChanges();
     set((state) => {
       return closeOtherTabsState(state, pane, tabId);
     });
   },
 
   closeTabsToRight: (pane, tabId) => {
+    flushPendingEditorChanges();
     set((state) => {
       return closeTabsToRightState(state, pane, tabId);
     });
   },
 
   closeAllTabsInPane: (pane) => {
+    flushPendingEditorChanges();
     set((state) => {
       return closeAllTabsInPaneState(state, pane);
     });
   },
 
   moveTab: (fromPane, toPane, tabId, targetTabId = null, position = "after") => {
+    flushPendingEditorChanges([tabId]);
     set((state) => {
       return moveTabState(state, fromPane, toPane, tabId, targetTabId, position);
     });
@@ -180,18 +188,21 @@ export const useEditorStore = create<EditorStore>((set) => ({
   },
 
   setTabExternalConflict: (tabId, content) => {
+    flushPendingEditorChanges([tabId]);
     set((state) => {
       return setFileTabExternalConflictState(state, tabId, content);
     });
   },
 
   resolveTabExternalConflict: (tabId, choice) => {
+    flushPendingEditorChanges([tabId]);
     set((state) => {
       return resolveFileTabExternalConflictState(state, tabId, choice);
     });
   },
 
   updateTabFromExternal: (tabId, content) => {
+    flushPendingEditorChanges([tabId]);
     set((state) => {
       return updateFileTabFromExternalState(state, tabId, content);
     });
@@ -200,6 +211,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
   setEditorSettings: (settings) => set({ editorSettings: settings }),
 
   closeAllTabs: () => {
+    flushPendingEditorChanges();
     set(closeAllTabsState());
   }
 }));

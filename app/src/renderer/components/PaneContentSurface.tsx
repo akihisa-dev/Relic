@@ -5,9 +5,15 @@ import type { CSSProperties, FormEvent, KeyboardEvent, MutableRefObject, ReactEl
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import { hasInvalidFrontmatterYaml } from "../editorFrontmatter";
+import {
+  bufferEditorChange,
+  discardPendingEditorChanges,
+  flushPendingEditorChanges,
+  type BufferedEditorChange
+} from "../editorInputBuffer";
 import { isLargeMarkdownContent } from "../largeMarkdown";
 import { textCount } from "../paneViewModel";
-import type { PanelTabKind, Tab } from "../store/editorStore";
+import { useEditorStore, type PanelTabKind, type Tab } from "../store/editorStore";
 import { useT } from "../i18n";
 import { SourceModeButton } from "./AppMainActions";
 import { Editor } from "./Editor";
@@ -77,6 +83,12 @@ export function PaneContentSurface({
     return textCount(activeFileTab.content);
   }, [activeFileTab?.content]);
   const [frontmatterAddButtonHost, setFrontmatterAddButtonHost] = useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!activeFileTab) return;
+    const tabId = activeFileTab.id;
+    return () => flushPendingEditorChanges([tabId]);
+  }, [activeFileTab?.id]);
 
   useEffect(() => {
     if (!activeFileTab || !isLargeMarkdown) return;
@@ -154,7 +166,18 @@ export function PaneContentSurface({
             filePath={activeFileTab.path}
             frontmatterCandidates={frontmatterCandidates}
             key={activeFileTab.id}
-            onChange={(content) => onUpdateTabContent(activeFileTab.id, content)}
+            onChange={(content) => {
+              discardPendingEditorChanges([activeFileTab.id]);
+              onUpdateTabContent(activeFileTab.id, content);
+            }}
+            onTypingChange={(content) => {
+              bufferEditorChange({
+                content,
+                filePath: activeFileTab.path,
+                tabId: activeFileTab.id,
+                commit: commitBufferedEditorChange
+              });
+            }}
             onOpenLink={onOpenLink}
             onOpenWikiLink={onOpenWikiLink}
             settings={editorSettings}
@@ -219,6 +242,12 @@ export function PaneContentSurface({
       ) : null}
     </div>
   );
+}
+
+function commitBufferedEditorChange(change: BufferedEditorChange): void {
+  const tab = useEditorStore.getState().tabs[change.tabId];
+  if (tab?.kind !== "file" || tab.path !== change.filePath) return;
+  useEditorStore.getState().updateTabContent(change.tabId, change.content);
 }
 
 interface PdfTabSurfaceProps {

@@ -10,5 +10,6 @@ export {
 } from "./editorExtensionAssembly";
 export {
   __markEditorCompositionEndedForTests,
-  __markEditorCompositionStartedForTests
+  __markEditorCompositionStartedForTests,
+  isEditorComposing
 } from "./editorEventExtensions";

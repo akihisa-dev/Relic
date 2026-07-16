@@ -3,6 +3,7 @@ import type { Translator } from "./i18nModel";
 import { relicClient } from "./relicClient";
 import { useEditorStore } from "./store/editorStore";
 import { collectMarkdownPaths } from "./workspacePaths";
+import { flushPendingEditorChanges } from "./editorInputBuffer";
 
 export interface ApplyWorkspaceSnapshotResult {
   applied: boolean;
@@ -35,6 +36,8 @@ export async function applyWorkspaceSnapshot({
   if (!relic || nextState.activeWorkspace?.id !== workspaceId) {
     return { applied: false, derivedDataUpdated: true, failedFileCount: 0 };
   }
+
+  flushPendingEditorChanges();
 
   const nextFilePathSet = new Set(collectMarkdownPaths(nextState.fileTree));
   const protectedMissingTabIds = new Set<string>();

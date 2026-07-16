@@ -1,4 +1,4 @@
-import { Prec, type Extension } from "@codemirror/state";
+import { Prec, Transaction, type Extension } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 
 import type { EditorExtensionConfig } from "./editorExtensionTypes";
@@ -20,6 +20,21 @@ function markEditorCompositionEnded(view: EditorView): void {
   compositionEndedViews.add(view);
 }
 
+export function isEditorComposing(view: EditorView): boolean {
+  return composingViews.has(view) || (view.compositionStarted && !compositionEndedViews.has(view));
+}
+
+function isContinuousTypingTransaction(transaction: Transaction): boolean {
+  if (!transaction.docChanged) return true;
+
+  const userEvent = transaction.annotation(Transaction.userEvent);
+  return userEvent === "input.type" ||
+    userEvent?.startsWith("input.type.") === true ||
+    userEvent === "delete.backward" ||
+    userEvent === "delete.forward" ||
+    userEvent === "delete.selection";
+}
+
 /** @internal Test-only hook for IME composition quality gates. */
 export const __markEditorCompositionStartedForTests = markEditorCompositionStarted;
 
@@ -31,8 +46,7 @@ export function buildEventHandlersExtension(config: EditorExtensionConfig): Exte
     Prec.highest(EditorView.domEventHandlers({
       keydown: (event, view) => {
         if (
-          composingViews.has(view) ||
-          (view.compositionStarted && !compositionEndedViews.has(view)) ||
+          isEditorComposing(view) ||
           event.isComposing ||
           event.keyCode === 229
         ) {
@@ -96,7 +110,12 @@ export function buildEventHandlersExtension(config: EditorExtensionConfig): Exte
       contextmenu: config.onContextMenu
     })),
     EditorView.updateListener.of((update) => {
-      if (update.docChanged) config.onChangeRef.current!(update.state.doc.toString());
+      if (update.docChanged) {
+        const callback = update.transactions.every(isContinuousTypingTransaction)
+          ? config.onTypingChangeRef.current
+          : config.onChangeRef.current;
+        callback!(update.state.doc.toString());
+      }
       if (update.selectionSet || update.docChanged) config.onSelectionChange(update.state);
     })
   ];

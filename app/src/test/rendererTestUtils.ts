@@ -7,6 +7,7 @@ import {
   type WorkspaceState
 } from "../shared/ipc";
 import { useEditorStore } from "../renderer/store/editorStore";
+import { __resetEditorInputBufferForTests } from "../renderer/editorInputBuffer";
 import { useUiStore } from "../renderer/store/uiStore";
 
 export const testWorkspaceState: WorkspaceState = {
@@ -29,6 +30,7 @@ export function installMatchMediaMock(): void {
 }
 
 export function resetRendererStores(): void {
+  __resetEditorInputBufferForTests();
   useEditorStore.setState({
     focusedPane: "left",
     isSplit: false,
