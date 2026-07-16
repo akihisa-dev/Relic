@@ -47,11 +47,16 @@ describe("CardView", () => {
 
     const view = render(
       <I18nProvider language="ja">
-        <CardView onOpenFile={onOpenFile} refreshRevision={0} workspaceId="workspace-1" />
+        <CardView
+          onOpenFile={onOpenFile}
+          refreshRevision={0}
+          selectedPath="notes/moon.md"
+          workspaceId="workspace-1"
+        />
       </I18nProvider>
     );
 
-    expect(await screen.findByRole("button", { name: "Moonを開く" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Moonを開く" })).toHaveAttribute("aria-current", "page");
     expect(readImageFile).not.toHaveBeenCalled();
 
     act(() => {
@@ -87,5 +92,20 @@ describe("CardView", () => {
     expect(await screen.findByText("画像を表示できません")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Brokenを開く" })).toBeInTheDocument();
     expect(readImageFile).not.toHaveBeenCalled();
+  });
+
+  it("対象がない場合は表示条件を案内する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceCards: vi.fn().mockResolvedValue({ ok: true, value: [] })
+    });
+
+    render(
+      <I18nProvider language="ja">
+        <CardView onOpenFile={vi.fn()} refreshRevision={0} workspaceId="workspace-1" />
+      </I18nProvider>
+    );
+
+    expect(await screen.findByRole("heading", { name: "表示できるカードはまだありません" })).toBeInTheDocument();
+    expect(screen.getByText(/cardプロパティに/)).toBeInTheDocument();
   });
 });

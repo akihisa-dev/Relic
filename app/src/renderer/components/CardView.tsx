@@ -9,10 +9,16 @@ import { relicClient } from "../relicClient";
 interface CardViewProps {
   onOpenFile: (path: string) => void;
   refreshRevision: number;
+  selectedPath?: string | null;
   workspaceId: string;
 }
 
-export function CardView({ onOpenFile, refreshRevision, workspaceId }: CardViewProps): ReactElement {
+export function CardView({
+  onOpenFile,
+  refreshRevision,
+  selectedPath = null,
+  workspaceId
+}: CardViewProps): ReactElement {
   const t = useT();
   const [state, setState] = useState<
     | { status: "loading" }
@@ -50,12 +56,16 @@ export function CardView({ onOpenFile, refreshRevision, workspaceId }: CardViewP
       {state.status === "loading" ? <p className="card-view-status">{t("common.loading")}</p> : null}
       {state.status === "error" ? <p className="card-view-status card-view-status--error">{state.message}</p> : null}
       {state.status === "ready" && state.cards.length === 0 ? (
-        <p className="card-view-status">{t("cards.empty")}</p>
+        <div className="card-view-empty">
+          <h3>{t("cards.emptyTitle")}</h3>
+          <p>{t("cards.emptyDescription")}</p>
+        </div>
       ) : null}
       {state.status === "ready" && state.cards.length > 0 ? (
         <div className="card-view-grid">
           {state.cards.map((card) => (
             <button
+              aria-current={card.path === selectedPath ? "page" : undefined}
               aria-label={t("cards.openFile", { name: card.name })}
               className="card-view-item"
               key={card.path}
@@ -64,7 +74,9 @@ export function CardView({ onOpenFile, refreshRevision, workspaceId }: CardViewP
               type="button"
             >
               <CardImage card={card} />
-              <span className="card-view-name">{card.name}</span>
+              <span className="card-view-name-row">
+                <span className="card-view-name">{card.name}</span>
+              </span>
             </button>
           ))}
         </div>
@@ -120,7 +132,11 @@ function CardImage({ card }: { card: WorkspaceCard }): ReactElement {
   }, [resolvedPath, visible]);
 
   return (
-    <span className="card-view-image" ref={hostRef}>
+    <span
+      className="card-view-image"
+      data-image-state={typeof state === "object" ? "ready" : state}
+      ref={hostRef}
+    >
       {typeof state === "object" ? (
         <img
           alt=""

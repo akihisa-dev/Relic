@@ -603,6 +603,40 @@ describe("App charts", () => {
     expect(updateChartEntry).not.toHaveBeenCalled();
   });
 
+  it("カードから開いたファイルをカードビューへ戻ったときに選択表示する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceCards: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{ imagePath: "images/moon.webp", name: "Moon", path: "notes/moon.md" }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "# Moon", name: "Moon", path: "notes/moon.md" }
+      })
+    });
+
+    await renderApp();
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "カード" }));
+    const card = await screen.findByRole("button", { name: "Moonを開く" });
+    expect(card).not.toHaveAttribute("aria-current");
+
+    fireEvent.click(card);
+    await waitFor(() => expect(window.relic!.readMarkdownFile).toHaveBeenCalledWith({ path: "notes/moon.md" }));
+    await waitFor(() => {
+      const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+      expect(activeTabId ? useEditorStore.getState().tabs[activeTabId] : null).toMatchObject({
+        kind: "file",
+        path: "notes/moon.md"
+      });
+    });
+    fireEvent.click(screen.getByRole("tab", { name: "カード" }));
+
+    expect(await screen.findByRole("button", { name: "Moonを開く" })).toHaveAttribute("aria-current", "page");
+  });
+
   it("chronicleのCanvas操作はMarkdownを書き換えない", async () => {
     const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 

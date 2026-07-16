@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import type {
@@ -77,6 +77,16 @@ export function useAppTabRenderers({
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
 } {
   const workspaceCacheKey = workspaceState?.activeWorkspace?.id ?? "none";
+  const [selectedCardPath, setSelectedCardPath] = useState<string | null>(null);
+  useEffect(() => {
+    setSelectedCardPath(null);
+  }, [workspaceCacheKey]);
+
+  const handleOpenCardFile = useCallback((path: string): void => {
+    setSelectedCardPath(path);
+    handleOpenFile(path);
+  }, [handleOpenFile]);
+
   useEffect(() => {
     if (!featureToggles.sphere || workspaceCacheKey === "none") return;
     const timer = window.setTimeout(() => {
@@ -94,8 +104,9 @@ export function useAppTabRenderers({
       return (
         <Suspense fallback={<LazyTabFallback />}>
           <LazyCardView
-            onOpenFile={handleOpenFile}
+            onOpenFile={handleOpenCardFile}
             refreshRevision={workspaceDataRevision}
+            selectedPath={selectedCardPath}
             workspaceId={workspaceCacheKey}
           />
         </Suspense>
@@ -137,7 +148,7 @@ export function useAppTabRenderers({
         />
       </Suspense>
     );
-  }, [charts, handleOpenFile, handleOpenTagSearch, workspaceCacheKey, workspaceDataRevision]);
+  }, [charts, handleOpenCardFile, handleOpenFile, handleOpenTagSearch, selectedCardPath, workspaceCacheKey, workspaceDataRevision]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {
