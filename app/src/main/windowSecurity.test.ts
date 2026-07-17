@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { isAllowedExternalUrl, isAllowedPackagedAppNavigation } from "./windowSecurity";
+import {
+  isAllowedDevelopmentNavigation,
+  isAllowedExternalUrl,
+  isAllowedPackagedAppNavigation
+} from "./windowSecurity";
 
 describe("isAllowedExternalUrl", () => {
   it("allows only explicit https external link destinations", () => {
@@ -32,5 +36,33 @@ describe("isAllowedPackagedAppNavigation", () => {
     expect(isAllowedPackagedAppNavigation("https://github.com/akihisa-dev/Relic", indexUrl)).toBe(false);
     expect(isAllowedPackagedAppNavigation(`${indexUrl}.evil`, indexUrl)).toBe(false);
     expect(isAllowedPackagedAppNavigation(`${indexUrl}?next=file:///etc/passwd`, indexUrl)).toBe(false);
+  });
+});
+
+describe("isAllowedDevelopmentNavigation", () => {
+  const allowedUrls = [
+    "http://localhost:5173/",
+    "http://127.0.0.1:5173/",
+    "http://[::1]:5173/"
+  ];
+
+  it.each(allowedUrls)("許可したループバックoriginを許可する: %s", (url) => {
+    expect(isAllowedDevelopmentNavigation(`${url}notes?view=preview#top`, allowedUrls)).toBe(true);
+  });
+
+  it.each([
+    "http://localhost:5173@evil.example/",
+    "http://localhost.evil.example:5173/",
+    "https://localhost:5173/",
+    "http://localhost:4173/",
+    "http:\\\\localhost:5173\\evil",
+    "http://user@localhost:5173/",
+    "http://user%40name@localhost:5173/",
+    "javascript:alert(1)",
+    "data:text/html,hello",
+    "file:///tmp/index.html",
+    "not a url"
+  ])("許可originに見せかけた遷移を拒否する: %s", (url) => {
+    expect(isAllowedDevelopmentNavigation(url, allowedUrls)).toBe(false);
   });
 });

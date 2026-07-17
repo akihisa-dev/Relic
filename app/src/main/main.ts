@@ -19,7 +19,11 @@ import { getMainTranslator } from "./i18n";
 import { configureWindowCloseProtection } from "./windowCloseProtection";
 import { stopWorkspaceWatcher } from "./workspace/workspaceWatcher";
 import { createMainWindowOptions } from "./windowOptions";
-import { isAllowedExternalUrl, isAllowedPackagedAppNavigation } from "./windowSecurity";
+import {
+  isAllowedDevelopmentNavigation,
+  isAllowedExternalUrl,
+  isAllowedPackagedAppNavigation
+} from "./windowSecurity";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -113,7 +117,7 @@ function configureWindowSecurity(window: BrowserWindow, rendererIndexUrl: string
 
 function isAllowedAppNavigation(url: string, rendererIndexUrl: string): boolean {
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    return devServerLoadUrls(MAIN_WINDOW_VITE_DEV_SERVER_URL).some((devServerUrl) => url.startsWith(devServerUrl));
+    return isAllowedDevelopmentNavigation(url, devServerLoadUrls(MAIN_WINDOW_VITE_DEV_SERVER_URL));
   }
 
   return isAllowedPackagedAppNavigation(url, rendererIndexUrl);

@@ -14,3 +14,25 @@ export function isAllowedExternalUrl(url: string): boolean {
 export function isAllowedPackagedAppNavigation(url: string, rendererIndexUrl: string): boolean {
   return url === rendererIndexUrl || url.startsWith(`${rendererIndexUrl}#`);
 }
+
+export function isAllowedDevelopmentNavigation(url: string, allowedUrls: string[]): boolean {
+  if (url.includes("\\")) return false;
+
+  try {
+    const target = new URL(url);
+    if (target.username !== "" || target.password !== "") return false;
+
+    return allowedUrls.some((allowedUrl) => {
+      try {
+        const allowed = new URL(allowedUrl);
+        return target.protocol === allowed.protocol &&
+          target.hostname === allowed.hostname &&
+          target.port === allowed.port;
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return false;
+  }
+}
