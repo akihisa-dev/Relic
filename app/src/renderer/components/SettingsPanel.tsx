@@ -71,19 +71,6 @@ export function SettingsPanel({
         <div className="links-panel-subheading">{t("settings.sectionAppearance")}</div>
         <div className="settings-stack">
           <div className="setting-row">
-            <span>{t("settings.theme")}</span>
-            <SettingsSegmentedControl
-              ariaLabel={t("settings.theme")}
-              onChange={(value) => update("theme", value)}
-              options={[
-                { label: t("settings.themeSystem"), value: "system" },
-                { icon: <LightModeIcon />, label: t("settings.light"), value: "light" },
-                { icon: <DarkModeIcon />, label: t("settings.dark"), value: "dark" }
-              ]}
-              value={settings.theme}
-            />
-          </div>
-          <div className="setting-row">
             <span>{t("settings.language")}</span>
             <SettingsSegmentedControl
               ariaLabel={t("settings.language")}
@@ -227,29 +214,5 @@ export function SettingsPanel({
         </div>
       </section>
     </div>
-  );
-}
-
-function LightModeIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="14">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2" />
-      <path d="M12 20v2" />
-      <path d="m4.93 4.93 1.41 1.41" />
-      <path d="m17.66 17.66 1.41 1.41" />
-      <path d="M2 12h2" />
-      <path d="M20 12h2" />
-      <path d="m6.34 17.66-1.41 1.41" />
-      <path d="m19.07 4.93-1.41 1.41" />
-    </svg>
-  );
-}
-
-function DarkModeIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="14">
-      <path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" />
-    </svg>
   );
 }

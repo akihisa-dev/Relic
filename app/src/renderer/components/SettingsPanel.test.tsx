@@ -148,6 +148,8 @@ describe("SettingsPanel", () => {
 
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
     expect(screen.getByText("Appearance")).toBeInTheDocument();
+    expect(screen.queryByText("Theme")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Dark" })).not.toBeInTheDocument();
     expect(screen.getByText("Editor")).toBeInTheDocument();
     expect(screen.getByText("Features")).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "Graph" })).toBeInTheDocument();
@@ -198,9 +200,6 @@ describe("SettingsPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Hiragino Sans" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ font: "gothic" }));
-
-    fireEvent.click(screen.getByRole("button", { name: "Dark" }));
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ theme: "dark" }));
 
     fireEvent.change(screen.getByDisplayValue("16"), { target: { value: "18" } });
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ fontSize: 18 }));
