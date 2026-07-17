@@ -1,8 +1,9 @@
-import { open, rename, unlink, writeFile } from "node:fs/promises";
+import { open, rename, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 interface AtomicWriteOperations {
   rename: (oldPath: string, newPath: string) => Promise<void>;
+  stat?: (filePath: string) => Promise<{ mode: number }>;
   unlink: (filePath: string) => Promise<void>;
   writeFile: (
     filePath: string,
@@ -19,6 +20,7 @@ const atomicWriteTemporaryFileNamePattern = /^\..*\.\d+\.\d+\.[a-z0-9]+\.tmp$/;
 
 const defaultOperations: AtomicWriteOperations = {
   rename,
+  stat,
   unlink,
   writeFile
 };
@@ -61,10 +63,23 @@ export async function atomicWriteFile(
   const temporaryPath = createTemporaryPath(filePath);
 
   try {
-    await operations.writeFile(temporaryPath, content, options.mode === undefined ? encoding : { encoding, mode: options.mode });
+    const mode = options.mode ?? await existingFileMode(filePath, operations);
+    await operations.writeFile(temporaryPath, content, mode === undefined ? encoding : { encoding, mode });
     await operations.rename(temporaryPath, filePath);
   } catch (error) {
     await operations.unlink(temporaryPath).catch(() => undefined);
+    throw error;
+  }
+}
+
+async function existingFileMode(filePath: string, operations: AtomicWriteOperations): Promise<number | undefined> {
+  try {
+    const existing = await (operations.stat ?? stat)(filePath);
+    return existing.mode & 0o7777;
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return undefined;
+    }
     throw error;
   }
 }

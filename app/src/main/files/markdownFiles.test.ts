@@ -1,4 +1,4 @@
-import { link, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, link, mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -372,6 +372,18 @@ describe("writeMarkdownFileContent", () => {
         })
       )
     );
+  });
+
+  it.runIf(process.platform !== "win32")("既存Markdownのmodeを保存後も保持する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-write-markdown-mode-"));
+    temporaryPaths.push(workspacePath);
+    const filePath = path.join(workspacePath, "private.md");
+
+    await writeFile(filePath, "old", "utf8");
+    await chmod(filePath, 0o600);
+
+    await expect(writeMarkdownFileContent(workspacePath, "private.md", "new")).resolves.toMatchObject({ ok: true });
+    expect((await stat(filePath)).mode & 0o777).toBe(0o600);
   });
 
   it("Markdownファイルを安全書き込み経由で更新する", async () => {

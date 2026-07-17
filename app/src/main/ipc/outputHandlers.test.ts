@@ -57,16 +57,18 @@ const fsMock = vi.hoisted(() => ({
   open: vi.fn(),
   rename: vi.fn(),
   rm: vi.fn(),
+  stat: vi.fn(),
   unlink: vi.fn(),
   writeFile: vi.fn()
 }));
 
 vi.mock("node:fs/promises", () => ({
-  default: { mkdir: fsMock.mkdir, open: fsMock.open, rename: fsMock.rename, rm: fsMock.rm, unlink: fsMock.unlink, writeFile: fsMock.writeFile },
+  default: { mkdir: fsMock.mkdir, open: fsMock.open, rename: fsMock.rename, rm: fsMock.rm, stat: fsMock.stat, unlink: fsMock.unlink, writeFile: fsMock.writeFile },
   mkdir: fsMock.mkdir,
   open: fsMock.open,
   rename: fsMock.rename,
   rm: fsMock.rm,
+  stat: fsMock.stat,
   unlink: fsMock.unlink,
   writeFile: fsMock.writeFile
 }));
@@ -127,6 +129,7 @@ describe("outputHandlers", () => {
     electronMock.printToPDF.mockResolvedValue(Buffer.from("pdf"));
     fsMock.mkdir.mockResolvedValue(undefined);
     fsMock.rename.mockResolvedValue(undefined);
+    fsMock.stat.mockRejectedValue(Object.assign(new Error("not found"), { code: "ENOENT" }));
     fsMock.writeFile.mockResolvedValue(undefined);
   });
 

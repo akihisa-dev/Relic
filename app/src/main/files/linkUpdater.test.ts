@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -25,6 +25,20 @@ describe("updateLinksForFileRename", () => {
     await updateLinksForFileRename(ws, "old.md", "new.md");
 
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("[[new]]");
+  });
+
+  it.runIf(process.platform !== "win32")("内部リンク更新後も既存Markdownのmodeを保持する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-mode-"));
+    temporaryPaths.push(ws);
+    const sourcePath = path.join(ws, "source.md");
+
+    await writeFile(sourcePath, "[[old]]", "utf8");
+    await chmod(sourcePath, 0o600);
+    await writeFile(path.join(ws, "new.md"), "# new", "utf8");
+
+    await updateLinksForFileRename(ws, "old.md", "new.md");
+
+    expect((await stat(sourcePath)).mode & 0o777).toBe(0o600);
   });
 
   it("パス付きリンクを更新する", async () => {

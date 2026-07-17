@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -32,6 +32,18 @@ describe("replaceInFile", () => {
     expect(result).toEqual({ ok: true, value: { count: 2 } });
     await expect(readFile(path.join(ws, "note.md"), "utf8")).resolves.toBe("baz bar baz");
     await expect(readdir(ws)).resolves.toEqual(["note.md"]);
+  });
+
+  it.runIf(process.platform !== "win32")("単一置換後も既存Markdownのmodeを保持する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-mode-"));
+    temporaryPaths.push(ws);
+    const notePath = path.join(ws, "note.md");
+
+    await writeFile(notePath, "foo", "utf8");
+    await chmod(notePath, 0o600);
+    await replaceInFile(ws, "note.md", "foo", "bar", false);
+
+    expect((await stat(notePath)).mode & 0o777).toBe(0o600);
   });
 
   it("一致なしの場合はファイルを変更せず件数0を返す", async () => {

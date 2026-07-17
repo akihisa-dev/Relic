@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -74,6 +74,43 @@ describe("atomicWriteTextFile", () => {
     if (process.platform !== "win32") {
       expect((await stat(filePath)).mode & 0o777).toBe(0o600);
     }
+  });
+
+  it.runIf(process.platform !== "win32")("既存ファイルのmodeを安全書き込み後も保持する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-atomic-write-existing-mode-"));
+    temporaryPaths.push(workspacePath);
+    const filePath = path.join(workspacePath, "note.md");
+
+    await writeFile(filePath, "original", "utf8");
+    await chmod(filePath, 0o600);
+    await atomicWriteTextFile(filePath, "updated");
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe("updated");
+    expect((await stat(filePath)).mode & 0o777).toBe(0o600);
+    await expect(readdir(workspacePath)).resolves.toEqual(["note.md"]);
+  });
+
+  it.runIf(process.platform !== "win32")("置換失敗時は元内容と元modeを保持して一時ファイルを残さない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-atomic-write-failed-mode-"));
+    temporaryPaths.push(workspacePath);
+    const filePath = path.join(workspacePath, "note.md");
+
+    await writeFile(filePath, "original", "utf8");
+    await chmod(filePath, 0o600);
+
+    await expect(atomicWriteTextFile(filePath, "updated", {
+      rename: vi.fn().mockRejectedValue(new Error("rename failed")),
+      unlink: async (targetPath) => {
+        await import("node:fs/promises").then((fs) => fs.unlink(targetPath));
+      },
+      writeFile: async (targetPath, content, options) => {
+        await import("node:fs/promises").then((fs) => fs.writeFile(targetPath, content, options));
+      }
+    })).rejects.toThrow("rename failed");
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe("original");
+    expect((await stat(filePath)).mode & 0o777).toBe(0o600);
+    await expect(readdir(workspacePath)).resolves.toEqual(["note.md"]);
   });
 
   it("新規作成時に同名ファイルがある場合は元ファイル内容を残す", async () => {
