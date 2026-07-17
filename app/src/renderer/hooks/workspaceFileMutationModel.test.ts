@@ -16,7 +16,9 @@ const rightPane: PaneState = { activeTabId: "tab-c", history: ["tab-c"], tabIds:
 const tabs: Record<string, Tab> = {
   "tab-a": { content: "", id: "tab-a", kind: "file", name: "A", path: "docs/A.md", savedContent: "" },
   "tab-b": { content: "", id: "tab-b", kind: "file", name: "B", path: "docs/nested/B.md", savedContent: "" },
-  "tab-c": { id: "tab-c", kind: "panel", name: "設定", panel: "settings" }
+  "tab-c": { id: "tab-c", kind: "panel", name: "設定", panel: "settings" },
+  "tab-image": { id: "tab-image", kind: "image", name: "図", path: "docs/図.png" },
+  "tab-pdf": { id: "tab-pdf", kind: "pdf", name: "資料", path: "docs/資料.pdf" }
 };
 const t = createTranslator("ja");
 
@@ -56,5 +58,23 @@ describe("workspaceFileMutationModel", () => {
       rightPane,
       tabs
     })).toEqual([{ pane: "left", tabId: "tab-b" }]);
+  });
+
+  it("添付ファイルを削除すると対応する画像・PDFタブを閉じる", () => {
+    const attachmentPane: PaneState = {
+      activeTabId: "tab-image",
+      history: ["tab-image", "tab-pdf"],
+      tabIds: ["tab-image", "tab-pdf"]
+    };
+
+    expect(tabCloseTargetsForTreeItems({
+      items: [{ path: "docs", type: "folder" }],
+      leftPane: attachmentPane,
+      rightPane,
+      tabs
+    })).toEqual([
+      { pane: "left", tabId: "tab-image" },
+      { pane: "left", tabId: "tab-pdf" }
+    ]);
   });
 });

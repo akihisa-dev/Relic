@@ -8,6 +8,7 @@ import {
   serializePaneTabDragPayload,
   PANE_TAB_DRAG_MIME
 } from "../paneViewModel";
+import { contextMenuPosition } from "../fileTreeUi";
 import type { PaneId } from "../store/editorStore";
 
 export interface PaneTabDropTarget {
@@ -45,14 +46,21 @@ export function usePaneTabInteractions({
   useEffect(() => {
     if (!contextMenu) return;
     const close = () => setContextMenu(null);
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") close();
+    };
     window.addEventListener("click", close);
-    return () => window.removeEventListener("click", close);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
   }, [contextMenu]);
 
   const closeContextMenu = (): void => setContextMenu(null);
 
   const openContextMenu = (tabId: string, x: number, y: number): void => {
-    setContextMenu({ tabId, x, y });
+    setContextMenu({ tabId, ...contextMenuPosition(x, y) });
   };
 
   const handleTabDrop = (e: DragEvent<HTMLElement>, targetTabId?: string | null): void => {

@@ -478,10 +478,12 @@ describe("Editor table preview", () => {
     expect(viewRef.current?.state.doc.toString()).toBe("| B | A |\n| --- | --- |\n| y | x |\n| w | z |");
 
     await waitFor(() => expect(container.querySelector('td[data-row="1"][data-column="0"]')).not.toBeNull());
+    const editedCell = container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="0"]') as HTMLTextAreaElement;
+    fireEvent.input(editedCell, { target: { value: "最新値" } });
     fireEvent.contextMenu(container.querySelector('td[data-row="1"][data-column="0"]') as HTMLTableCellElement);
     fireEvent.click(getByText("行を下へ移動"));
 
-    expect(viewRef.current?.state.doc.toString()).toBe("| B | A |\n| --- | --- |\n| w | z |\n| y | x |");
+    expect(viewRef.current?.state.doc.toString()).toBe("| B | A |\n| --- | --- |\n| w | z |\n| 最新値 | x |");
   });
 
   it("ライブプレビューの表メニューは画面に固定表示して切れにくくする", async () => {

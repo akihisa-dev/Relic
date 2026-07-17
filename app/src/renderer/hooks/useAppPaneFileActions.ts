@@ -6,7 +6,6 @@ import { isSupportedPdfPath } from "../../shared/pdfFiles";
 import type { MarkdownFileContent, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
 import { ensureMarkdownExtension } from "../../shared/markdownExtension";
 import type { HeadingScrollTarget } from "../editorDerivedState";
-import type { Translator } from "../i18nModel";
 import type { PaneId, PanelTabKind, Tab } from "../store/editorStore";
 import { joinWorkspacePath } from "../workspacePaths";
 
@@ -23,7 +22,6 @@ interface UseAppPaneFileActionsInput {
   setRightPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
   setWorkspaceError: (message: string | null) => void;
   setWorkspaceState: (state: WorkspaceState) => void;
-  t: Translator;
   tabs: Record<string, Tab>;
 }
 
@@ -40,11 +38,10 @@ export function useAppPaneFileActions({
   setRightPaneScrollHeading,
   setWorkspaceError,
   setWorkspaceState,
-  t,
   tabs
 }: UseAppPaneFileActionsInput): {
-  handleCreateFileInFolder: (folderPath: string) => void;
-  handleCreateFolderInFolder: (folderPath: string) => void;
+  handleCreateFileInFolder: (folderPath: string, name: string) => void;
+  handleCreateFolderInFolder: (folderPath: string, name: string) => void;
   handleDuplicateTabFile: (tabId: string) => void;
   handleRevealTabFile: (tabId: string) => void;
   handleRevealWorkspaceItem: (path: string) => void;
@@ -125,11 +122,9 @@ export function useAppPaneFileActions({
     setWorkspaceState
   ]);
 
-  const handleCreateFileInFolder = useCallback((folderPath: string): void => {
+  const handleCreateFileInFolder = useCallback((folderPath: string, name: string): void => {
     if (!relicClient.current) return;
-    const fileName = window.prompt(t("files.newNoteName"), t("files.defaultNewNoteName"));
-    if (fileName === null) return;
-    const trimmedFileName = fileName.trim();
+    const trimmedFileName = name.trim();
     if (!trimmedFileName) return;
 
     const nextPath = joinWorkspacePath(folderPath, ensureMarkdownExtension(trimmedFileName));
@@ -143,13 +138,11 @@ export function useAppPaneFileActions({
         setWorkspaceError(result.error.message);
       }
     });
-  }, [focusedPane, openFileInPane, setWorkspaceError, setWorkspaceState, t]);
+  }, [focusedPane, openFileInPane, setWorkspaceError, setWorkspaceState]);
 
-  const handleCreateFolderInFolder = useCallback((folderPath: string): void => {
+  const handleCreateFolderInFolder = useCallback((folderPath: string, name: string): void => {
     if (!relicClient.current) return;
-    const folderName = window.prompt(t("files.newFolderName"), t("files.defaultNewFolderName"));
-    if (folderName === null) return;
-    const trimmedFolderName = folderName.trim();
+    const trimmedFolderName = name.trim();
     if (!trimmedFolderName) return;
 
     setWorkspaceError(null);
@@ -160,7 +153,7 @@ export function useAppPaneFileActions({
         setWorkspaceError(result.error.message);
       }
     });
-  }, [setWorkspaceError, setWorkspaceState, t]);
+  }, [setWorkspaceError, setWorkspaceState]);
 
   const handleRevealWorkspaceItem = useCallback((path: string): void => {
     if (!relicClient.current) return;

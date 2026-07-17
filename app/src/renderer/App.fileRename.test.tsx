@@ -546,13 +546,10 @@ describe("App file rename and context menu", () => {
         pinnedPaths: ["読書メモ.md"]
       }
     });
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText }
-    });
+    const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
 
     window.relic = makeRelicApi({
+      copyEditorTextToClipboard,
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
@@ -575,7 +572,9 @@ describe("App file rename and context menu", () => {
 
     fireEvent.click(screen.getByRole("menuitem", { name: "パスをコピー" }));
 
-    expect(writeText).toHaveBeenCalledWith("読書メモ.md");
+    await waitFor(() => {
+      expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "読書メモ.md" });
+    });
 
     fireEvent.contextMenu(fileRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "ピン留め" }));
@@ -635,14 +634,10 @@ describe("App file rename and context menu", () => {
       }
     });
     const revealWorkspaceItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    const promptSpy = vi.spyOn(window, "prompt");
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText }
-    });
+    const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
 
     window.relic = makeRelicApi({
+      copyEditorTextToClipboard,
       createFolder,
       createLinkedMarkdownFile,
       getWorkspaceState: vi.fn().mockResolvedValue({
@@ -666,16 +661,18 @@ describe("App file rename and context menu", () => {
     await renderApp();
 
     const folderRow = await screen.findByRole("button", { name: /資料/ });
-    promptSpy.mockReturnValueOnce("新規メモ");
     fireEvent.contextMenu(folderRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "ここに新規ファイル" }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "新規ファイル名" }), { target: { value: "新規メモ" } });
+    fireEvent.click(screen.getByRole("button", { name: "作成" }));
     await waitFor(() => {
       expect(createLinkedMarkdownFile).toHaveBeenCalledWith({ path: "資料/新規メモ.md" });
     });
 
-    promptSpy.mockReturnValueOnce("下書き");
-    fireEvent.contextMenu(folderRow);
+    fireEvent.contextMenu(await screen.findByRole("button", { name: /資料/ }));
     fireEvent.click(await screen.findByRole("menuitem", { name: "ここにフォルダ作成" }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "新規フォルダ名" }), { target: { value: "下書き" } });
+    fireEvent.click(screen.getByRole("button", { name: "作成" }));
     await waitFor(() => {
       expect(createFolder).toHaveBeenCalledWith({ name: "下書き", parentFolder: "資料" });
     });
@@ -683,7 +680,7 @@ describe("App file rename and context menu", () => {
     const fileRow = await screen.findByRole("button", { name: /読書メモ/ });
     fireEvent.contextMenu(fileRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "Markdownリンクをコピー" }));
-    expect(writeText).toHaveBeenCalledWith("[[資料/読書メモ]]");
+    expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "[[資料/読書メモ]]" });
 
     fireEvent.contextMenu(fileRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "ファイルの場所を表示" }));
@@ -691,17 +688,16 @@ describe("App file rename and context menu", () => {
       expect(revealWorkspaceItem).toHaveBeenCalledWith({ path: "資料/読書メモ.md" });
     });
 
-    promptSpy.mockReturnValueOnce("archive");
     fireEvent.contextMenu(fileRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "移動…" }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "移動先フォルダ" }), { target: { value: "archive" } });
+    fireEvent.click(screen.getByRole("button", { name: "適用" }));
     await waitFor(() => {
       expect(moveMarkdownFile).toHaveBeenCalledWith({
         destinationFolder: "archive",
         path: "資料/読書メモ.md"
       });
     });
-
-    promptSpy.mockRestore();
   });
 
   it("ファイルツリーの右クリックメニューを画面基準で表示する", async () => {

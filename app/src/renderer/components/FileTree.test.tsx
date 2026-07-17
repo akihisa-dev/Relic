@@ -1,7 +1,8 @@
-import { cleanup, createEvent, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, createEvent, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
+import { makeRelicApi } from "../../test/rendererTestUtils";
 import { clearOutboundFileTreeDrag, FILE_TREE_OUTBOUND_FILE_DRAG_EVENT } from "../fileTreeModel";
 import { I18nProvider } from "../i18n";
 import { FileTree, FileTreeItem, type FileTreeProps } from "./FileTree";
@@ -269,19 +270,15 @@ describe("FileTree", () => {
     expect(screen.queryByLabelText("Rename")).not.toBeInTheDocument();
   });
 
-  it("runs file context menu actions", () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText }
-    });
+  it("runs file context menu actions", async () => {
+    const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    window.relic = makeRelicApi({ copyEditorTextToClipboard });
     const onDuplicateFile = vi.fn();
     const onMoveFile = vi.fn();
     const onOpenInOtherPane = vi.fn();
     const onRevealItem = vi.fn();
     const onTogglePin = vi.fn();
     const onDeleteItem = vi.fn();
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("Archive");
     const props = renderFileTree({
       onDeleteItem,
       onDuplicateFile,
@@ -306,11 +303,15 @@ describe("FileTree", () => {
 
     openContextMenu("Root");
     fireEvent.click(screen.getByRole("menuitem", { name: "Copy path" }));
-    expect(writeText).toHaveBeenCalledWith("Root.md");
+    await waitFor(() => {
+      expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "Root.md" });
+    });
 
     openContextMenu("Root");
     fireEvent.click(screen.getByRole("menuitem", { name: "Copy Markdown link" }));
-    expect(writeText).toHaveBeenCalledWith("[[Root]]");
+    await waitFor(() => {
+      expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "[[Root]]" });
+    });
 
     openContextMenu("Root");
     fireEvent.click(screen.getByRole("menuitem", { name: "Show in folder" }));
@@ -322,7 +323,18 @@ describe("FileTree", () => {
 
     openContextMenu("Root");
     fireEvent.click(screen.getByRole("menuitem", { name: "Move..." }));
-    expect(promptSpy).toHaveBeenCalledWith("Destination folder", "");
+    const destinationInput = screen.getByRole("textbox", { name: "Destination folder" });
+    fireEvent.change(destinationInput, { target: { value: "" } });
+    expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    expect(screen.queryByRole("textbox", { name: "Destination folder" })).not.toBeInTheDocument();
+    expect(onMoveFile).not.toHaveBeenCalled();
+
+    openContextMenu("Root");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Move..." }));
+    const archiveDestinationInput = screen.getByRole("textbox", { name: "Destination folder" });
+    fireEvent.change(archiveDestinationInput, { target: { value: "Archive" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
     expect(onMoveFile).toHaveBeenCalledWith("Root.md", "Archive");
 
     openContextMenu("Root");
@@ -343,11 +355,15 @@ describe("FileTree", () => {
 
     openContextMenu("Folder");
     fireEvent.click(screen.getByRole("menuitem", { name: "New file here" }));
-    expect(onCreateFileInFolder).toHaveBeenCalledWith("Folder");
+    fireEvent.change(screen.getByRole("textbox", { name: "New file name" }), { target: { value: "Draft" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    expect(onCreateFileInFolder).toHaveBeenCalledWith("Folder", "Draft");
 
     openContextMenu("Folder");
     fireEvent.click(screen.getByRole("menuitem", { name: "Create folder here" }));
-    expect(onCreateFolderInFolder).toHaveBeenCalledWith("Folder");
+    fireEvent.change(screen.getByRole("textbox", { name: "New folder name" }), { target: { value: "Archive" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    expect(onCreateFolderInFolder).toHaveBeenCalledWith("Folder", "Archive");
 
     openContextMenu("Folder");
     fireEvent.click(screen.getByRole("menuitem", { name: "Expand this folder" }));
@@ -365,7 +381,6 @@ describe("FileTree", () => {
     ];
     const onDeleteSelectedItems = vi.fn();
     const onMoveItems = vi.fn();
-    vi.spyOn(window, "prompt").mockReturnValue("Archive");
 
     render(
       <I18nProvider language="en">
@@ -388,11 +403,64 @@ describe("FileTree", () => {
     expect(screen.getByRole("menuitem", { name: "Move Selected Items to Trash" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("menuitem", { name: "Move Selected Items..." }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Destination folder" }), { target: { value: "Archive" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
     expect(onMoveItems).toHaveBeenCalledWith(selectedItems, "Archive");
 
     openContextMenu("Root");
     fireEvent.click(screen.getByRole("menuitem", { name: "Move Selected Items to Trash" }));
     expect(onDeleteSelectedItems).toHaveBeenCalled();
+  });
+
+  it.each([
+    [{ kind: "image" as const, name: "Image", path: "Image.png", type: "file" as const }],
+    [{ kind: "pdf" as const, name: "Document", path: "Document.pdf", type: "file" as const }]
+  ])("添付ファイルにはMarkdown専用操作を表示しない", (node) => {
+    render(
+      <I18nProvider language="en">
+        <FileTreeItem
+          node={node}
+          onDeleteItem={vi.fn()}
+          onDuplicateFile={vi.fn()}
+          onMoveFile={vi.fn()}
+          onOpenFile={vi.fn()}
+          onRenameItem={vi.fn()}
+          onSelectFolder={vi.fn()}
+        />
+      </I18nProvider>
+    );
+
+    openContextMenu(node.name);
+    expect(screen.queryByRole("menuitem", { name: "Copy Markdown link" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Rename" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Duplicate" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Move..." })).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Move to Trash" })).toBeInTheDocument();
+  });
+
+  it("添付ファイルを含む複数選択では移動を表示せず一括削除だけを表示する", () => {
+    const selectedItems = [
+      { kind: "markdown" as const, path: "Root.md", type: "file" as const },
+      { kind: "image" as const, path: "Image.png", type: "file" as const }
+    ];
+
+    render(
+      <I18nProvider language="en">
+        <FileTreeItem
+          node={tree[1]!}
+          onDeleteSelectedItems={vi.fn()}
+          onMoveItems={vi.fn()}
+          onOpenFile={vi.fn()}
+          onSelectFolder={vi.fn()}
+          selectedItems={selectedItems}
+          selectedPaths={new Set(["Root.md", "Image.png"])}
+        />
+      </I18nProvider>
+    );
+
+    openContextMenu("Root");
+    expect(screen.queryByRole("menuitem", { name: "Move Selected Items..." })).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Move Selected Items to Trash" })).toBeInTheDocument();
   });
 
   it("drags a file into a folder when external attachment drag is unavailable", () => {

@@ -78,7 +78,7 @@ export function buildFolderTabPathUpdates(
 ): TabPathUpdate[] {
   return Object.entries(tabs)
     .flatMap(([tabId, tab]) => {
-      if (tab.kind !== "file" || !tab.path.startsWith(`${previousFolderPath}/`)) return [];
+      if (!isWorkspacePathTab(tab) || !tab.path.startsWith(`${previousFolderPath}/`)) return [];
 
       const nextPath = `${nextFolderPath}/${tab.path.slice(previousFolderPath.length + 1)}`;
       return [{
@@ -95,6 +95,10 @@ export function matchesTreeItemPath(tabPath: string, item: WorkspaceTreeItem): b
 
 export function matchesAnyTreeItemPath(tabPath: string, items: WorkspaceTreeItem[]): boolean {
   return items.some((item) => matchesTreeItemPath(tabPath, item));
+}
+
+export function isWorkspacePathTab(tab: Tab | null | undefined): tab is Extract<Tab, { kind: "file" | "image" | "pdf" }> {
+  return tab?.kind === "file" || tab?.kind === "image" || tab?.kind === "pdf";
 }
 
 function walkWorkspaceTree(nodes: WorkspaceTreeNode[], visit: (node: WorkspaceTreeNode) => void): void {

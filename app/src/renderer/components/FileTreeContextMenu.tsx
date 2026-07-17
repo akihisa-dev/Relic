@@ -1,9 +1,13 @@
+import { useState } from "react";
 import type { ReactElement, RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
+import { workspaceFileKindForPath } from "../../shared/workspaceFileKinds";
+import { writeEditorClipboardText } from "../editorClipboard";
 import type { FileTreeActions } from "../fileTreeTypes";
 import {
+  canMoveAllFileTreeItems,
   fileTreeMarkdownLinkForPath,
   fileTreeOperationItems,
   moveItemsToDestination,
@@ -12,6 +16,14 @@ import {
 } from "../fileTreeModel";
 import { useT } from "../i18n";
 import { parentFolderOf } from "../workspacePaths";
+import { WorkspaceInputDialog } from "./WorkspaceInputDialog";
+
+type FileTreeInputDialogKind = "create-file" | "create-folder" | "move";
+
+interface FileTreeInputDialogState {
+  kind: FileTreeInputDialogKind;
+  value: string;
+}
 
 interface FileTreeContextMenuProps {
   actions: FileTreeActions;
@@ -41,35 +53,53 @@ export function FileTreeContextMenu({
   useSelectedItems
 }: FileTreeContextMenuProps): ReactElement | null {
   const t = useT();
+  const [inputDialog, setInputDialog] = useState<FileTreeInputDialogState | null>(null);
 
-  if (!contextMenu) return null;
+  if (!contextMenu && !inputDialog) return null;
 
-  const isMarkdownFile = node.type === "file" && node.kind !== "image";
-  const isImageFile = node.type === "file" && node.kind === "image";
+  const fileKind = node.type === "file" ? node.kind ?? workspaceFileKindForPath(node.path) : null;
+  const isMarkdownFile = node.type === "file" && fileKind === "markdown";
+  const operationItems = fileTreeOperationItems(node, selectedItems, useSelectedItems);
+  const canMove = canMoveAllFileTreeItems(operationItems);
 
   const copyPath = (): void => {
     onClose();
-    void navigator.clipboard?.writeText(node.path);
+    void writeEditorClipboardText(node.path).catch(() => undefined);
   };
 
   const copyMarkdownLink = (): void => {
     onClose();
-    void navigator.clipboard?.writeText(fileTreeMarkdownLinkForPath(node.path));
+    void writeEditorClipboardText(fileTreeMarkdownLinkForPath(node.path)).catch(() => undefined);
   };
 
-  const moveNode = (): void => {
+  const openInputDialog = (kind: FileTreeInputDialogKind): void => {
     onClose();
-    const defaultFolder = parentFolderOf(node.path);
-    const destination = window.prompt(t("files.moveDestinationPrompt"), defaultFolder);
-    if (destination === null) return;
-    moveItemsToDestination(
-      fileTreeOperationItems(node, selectedItems, useSelectedItems),
-      normalizeDestinationFolder(destination),
-      actions
-    );
+    setInputDialog({
+      kind,
+      value: kind === "move"
+        ? parentFolderOf(node.path)
+        : kind === "create-file"
+          ? t("files.defaultNewNoteName")
+          : t("files.defaultNewFolderName")
+    });
   };
 
-  return createPortal(
+  const submitInputDialog = (): void => {
+    if (!inputDialog) return;
+    const value = inputDialog.value.trim();
+    if (!value && inputDialog.kind !== "move") return;
+
+    if (inputDialog.kind === "create-file") {
+      actions.onCreateFileInFolder?.(node.path, value);
+    } else if (inputDialog.kind === "create-folder") {
+      actions.onCreateFolderInFolder?.(node.path, value);
+    } else {
+      moveItemsToDestination(operationItems, normalizeDestinationFolder(value), actions);
+    }
+    setInputDialog(null);
+  };
+
+  const menu = contextMenu ? createPortal(
     <div
       className="tab-context-menu file-tree-context-menu"
       ref={menuRef}
@@ -82,8 +112,7 @@ export function FileTreeContextMenu({
             <button
               className="tab-context-menu-item"
               onClick={() => {
-                onClose();
-                actions.onCreateFileInFolder?.(node.path);
+                openInputDialog("create-file");
               }}
               role="menuitem"
               type="button"
@@ -95,8 +124,7 @@ export function FileTreeContextMenu({
             <button
               className="tab-context-menu-item"
               onClick={() => {
-                onClose();
-                actions.onCreateFolderInFolder?.(node.path);
+                openInputDialog("create-folder");
               }}
               role="menuitem"
               type="button"
@@ -209,7 +237,7 @@ export function FileTreeContextMenu({
           <div className="tab-context-menu-separator" />
         </>
       )}
-      {useSelectedItems || isImageFile ? null : (
+      {useSelectedItems || (node.type === "file" && !isMarkdownFile) ? null : (
         <button className="tab-context-menu-item" onClick={onStartRename} role="menuitem" type="button">
           {t("files.rename")}
         </button>
@@ -227,14 +255,14 @@ export function FileTreeContextMenu({
           {t("files.duplicate")}
         </button>
       ) : null}
-      {isImageFile && !useSelectedItems ? null : (
+      {canMove ? (
         <>
-          <button className="tab-context-menu-item" onClick={moveNode} role="menuitem" type="button">
+          <button className="tab-context-menu-item" onClick={() => openInputDialog("move")} role="menuitem" type="button">
             {useSelectedItems ? t("files.moveSelected") : t("files.move")}
           </button>
           <div className="tab-context-menu-separator" />
         </>
-      )}
+      ) : null}
       <button
         className="tab-context-menu-item tab-context-menu-item--icon danger"
         onClick={() => {
@@ -251,6 +279,28 @@ export function FileTreeContextMenu({
       </button>
     </div>,
     document.body
+  ) : null;
+
+  return (
+    <>
+      {menu}
+      {inputDialog ? (
+        <WorkspaceInputDialog
+          allowEmpty={inputDialog.kind === "move"}
+          cancelLabel={t("common.cancel")}
+          onCancel={() => setInputDialog(null)}
+          onSubmit={submitInputDialog}
+          onValueChange={(value) => setInputDialog((current) => current ? { ...current, value } : null)}
+          submitLabel={inputDialog.kind === "move" ? t("common.apply") : t("common.create")}
+          title={inputDialog.kind === "move"
+            ? t("files.moveDestinationPrompt")
+            : inputDialog.kind === "create-file"
+              ? t("files.newNoteName")
+              : t("files.newFolderName")}
+          value={inputDialog.value}
+        />
+      ) : null}
+    </>
   );
 }
 

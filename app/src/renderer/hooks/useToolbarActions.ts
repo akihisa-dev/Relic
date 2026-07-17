@@ -1,5 +1,5 @@
 import type { EditorView } from "@codemirror/view";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent, RefObject } from "react";
 
 import {
@@ -54,6 +54,7 @@ export interface UseToolbarActionsResult {
   handleToolbarMouseDownCapture: (event: MouseEvent<HTMLDivElement>) => void;
   handleUnderline: () => void;
   linkUrl: string;
+  resetTransientState: () => void;
   setLinkUrl: (value: string) => void;
   setTargetView: (view: EditorView | null) => void;
   setTableCols: (value: string) => void;
@@ -121,6 +122,19 @@ export function useToolbarActions({
   const clearLinkUrl = (): void => setLinkUrl("");
   const closeLinkDialog = (afterClose?: () => void): void => closePanel("link", () => setShowLinkDialog(false), afterClose);
   const closeTableDialog = (): void => closePanel("table", () => setShowTableDialog(false));
+
+  const resetTransientState = useCallback((): void => {
+    if (closePanelTimerRef.current) clearTimeout(closePanelTimerRef.current);
+    closePanelTimerRef.current = null;
+    lastTargetViewRef.current = null;
+    setClosingPanel(null);
+    setLinkUrl("");
+    setShowHeadingMenu(false);
+    setShowLinkDialog(false);
+    setShowTableDialog(false);
+    setTableCols("3");
+    setTableRows("3");
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -248,6 +262,7 @@ export function useToolbarActions({
     handleToolbarMouseDownCapture,
     handleUnderline,
     linkUrl,
+    resetTransientState,
     setLinkUrl,
     setTargetView,
     setTableCols,

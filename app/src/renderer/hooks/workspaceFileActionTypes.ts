@@ -1,7 +1,9 @@
 import type { MarkdownFileContent, WorkspaceState } from "../../shared/ipc";
 import type { AliasIndex } from "../../shared/links";
 import type { HeadingScrollTarget } from "../editorDerivedState";
-import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
+import type { PaneId, PaneState, Tab } from "../store/editorStore";
+
+type WorkspacePathTab = Extract<Tab, { kind: "file" | "image" | "pdf" }>;
 
 export interface WorkspaceFileActionsContext {
   aliasesByPath: AliasIndex;
@@ -20,6 +22,6 @@ export interface WorkspaceFileActionsContext {
   setWorkspaceError: (message: string | null) => void;
   setWorkspaceState: (state: WorkspaceState) => void;
   tabs: Record<string, Tab>;
-  updateTabMeta: (tabId: string, meta: Pick<FileTab, "name" | "path">) => void;
+  updateTabMeta: (tabId: string, meta: Pick<WorkspacePathTab, "name" | "path">) => void;
   workspaceState: WorkspaceState | null;
 }

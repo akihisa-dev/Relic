@@ -98,6 +98,9 @@ export function Editor({
     tableColumnLabel: (index) => t("toolbar.tableColumn", { index }),
     viewRef: internalViewRef
   });
+  useEffect(() => {
+    if (!contextMenu) markdownActions.resetTransientState();
+  }, [contextMenu, markdownActions.resetTransientState]);
   const {
     closeFrontmatterDialog,
     frontmatterDialog,

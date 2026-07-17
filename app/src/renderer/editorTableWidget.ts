@@ -182,8 +182,9 @@ export class TableWidget extends WidgetType {
           event.preventDefault();
           event.stopPropagation();
           state.markActive("cell", rowIndex, colIndex);
+          const rows = withTableCellValue(this.block.rows, rowIndex, colIndex, input.value);
           showLiveTableMenu({
-            block: this.block,
+            block: { ...this.block, rows },
             colIndex,
             event,
             focusCell,

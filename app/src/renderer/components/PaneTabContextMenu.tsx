@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { createPortal } from "react-dom";
 
+import { writeEditorClipboardText } from "../editorClipboard";
 import { markdownLinkForPaneTabPath } from "../paneViewModel";
 import type { FileTab, Tab } from "../store/editorStore";
 import { useT } from "../i18n";
@@ -49,6 +50,7 @@ export function PaneTabContextMenu({
     <div
       className="tab-context-menu"
       onClick={(e) => e.stopPropagation()}
+      role="menu"
       style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 10000 }}
     >
       {contextTab ? (
@@ -83,7 +85,7 @@ export function PaneTabContextMenu({
               <button
                 className="tab-context-menu-item"
                 onClick={() => {
-                  void navigator.clipboard?.writeText(contextTab.path);
+                  void writeEditorClipboardText(contextTab.path).catch(() => undefined);
                   onClose();
                 }}
                 type="button"
@@ -93,7 +95,7 @@ export function PaneTabContextMenu({
               <button
                 className="tab-context-menu-item"
                 onClick={() => {
-                  void navigator.clipboard?.writeText(markdownLinkForPaneTabPath(contextTab.path));
+                  void writeEditorClipboardText(markdownLinkForPaneTabPath(contextTab.path)).catch(() => undefined);
                   onClose();
                 }}
                 type="button"

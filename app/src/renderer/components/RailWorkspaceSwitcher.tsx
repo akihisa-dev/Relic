@@ -93,7 +93,11 @@ export function RailWorkspaceSwitcher({
       return;
     }
 
-    await onRenameWorkspace(workspaceId, nextName);
+    const renamed = await onRenameWorkspace(workspaceId, nextName);
+    if (!renamed) {
+      isCommittingRenameRef.current = false;
+      return;
+    }
     onRenameComplete?.();
     setRenamingWorkspace(null);
     onRenameActiveChange?.(false);

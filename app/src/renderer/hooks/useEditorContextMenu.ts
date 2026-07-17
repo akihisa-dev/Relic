@@ -77,7 +77,10 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     const selection = view.state.selection.main;
     let clickedPosition: number | null = null;
     try {
-      clickedPosition = view.posAtCoords({ x: event.clientX, y: event.clientY });
+      const positionAtClick = view.posAtCoords({ x: event.clientX, y: event.clientY });
+      clickedPosition = typeof positionAtClick === "number" && Number.isFinite(positionAtClick)
+        ? Math.max(0, Math.min(positionAtClick, view.state.doc.length))
+        : null;
     } catch {
       clickedPosition = null;
     }
@@ -85,7 +88,19 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     let selectionTo = selection.empty ? selectionFrom : selection.to;
     let selectionText = "";
 
-    if (selection.empty) {
+    const clickedInsideCurrentSelection = clickedPosition !== null
+      && !selection.empty
+      && clickedPosition >= selection.from
+      && clickedPosition < selection.to;
+
+    if (!selection.empty && clickedInsideCurrentSelection) {
+      selectionText = view.state.sliceDoc(selection.from, selection.to);
+      lastSelectionRef.current = {
+        from: selection.from,
+        text: selectionText,
+        to: selection.to
+      };
+    } else if (selection.empty) {
       const lastSelection = lastSelectionRef.current
         ? selectionForCurrentDocument(view.state, lastSelectionRef.current)
         : null;
@@ -94,19 +109,18 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
         lastSelection &&
         clickedPosition !== null &&
         clickedPosition >= lastSelection.from &&
-        clickedPosition <= lastSelection.to
+        clickedPosition < lastSelection.to
       ) {
         selectionFrom = lastSelection.from;
         selectionTo = lastSelection.to;
         selectionText = lastSelection.text;
+      } else if (clickedPosition !== null) {
+        selectionFrom = clickedPosition;
+        selectionTo = clickedPosition;
       }
-    } else {
-      selectionText = view.state.sliceDoc(selection.from, selection.to);
-      lastSelectionRef.current = {
-        from: selection.from,
-        text: selectionText,
-        to: selection.to
-      };
+    } else if (clickedPosition !== null) {
+      selectionFrom = clickedPosition;
+      selectionTo = clickedPosition;
     }
 
     if (selectionFrom !== selectionTo) {
@@ -119,7 +133,11 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
       });
       view.focus();
     } else {
-      view.dispatch({ effects: setContextSelectionHighlightEffect.of(null) });
+      view.dispatch({
+        effects: setContextSelectionHighlightEffect.of(null),
+        selection: { anchor: selectionFrom }
+      });
+      view.focus();
     }
 
     setContextMenu({

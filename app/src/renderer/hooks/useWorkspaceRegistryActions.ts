@@ -7,10 +7,12 @@ type WorkspaceRegistryInput = Pick<
   WorkspaceFileActionsContext,
   "closeAllTabs" | "setWorkspaceError" | "setWorkspaceState"
 > & {
+  activeWorkspaceId?: string | null;
   beforeCloseAllTabs?: () => Promise<boolean> | boolean;
 };
 
 export function useWorkspaceRegistryActions({
+  activeWorkspaceId,
   beforeCloseAllTabs,
   closeAllTabs,
   setWorkspaceError,
@@ -83,17 +85,20 @@ export function useWorkspaceRegistryActions({
     const relic = relicClient.current;
     if (!relic) return;
 
-    runAfterCloseCheck(beforeCloseAllTabs, () => {
+    const removeWorkspace = (): void => {
       void relic.removeWorkspace({ workspaceId }).then((result) => {
         if (result.ok) {
           setWorkspaceState(result.value);
-          closeAllTabs();
+          if (workspaceId === activeWorkspaceId) closeAllTabs();
         } else {
           setWorkspaceError(result.error.message);
         }
       });
-    });
-  }, [beforeCloseAllTabs, closeAllTabs, setWorkspaceError, setWorkspaceState]);
+    };
+
+    if (workspaceId === activeWorkspaceId) runAfterCloseCheck(beforeCloseAllTabs, removeWorkspace);
+    else removeWorkspace();
+  }, [activeWorkspaceId, beforeCloseAllTabs, closeAllTabs, setWorkspaceError, setWorkspaceState]);
 
   const handleRenameWorkspace = useCallback(async (workspaceId: string, name: string): Promise<boolean> => {
     if (!relicClient.current) return false;

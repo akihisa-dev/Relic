@@ -37,6 +37,7 @@ describe("Editor selection commands", () => {
     });
     const contentElement = view.dom.querySelector(".cm-content")!;
     view.dispatch({ selection: { anchor: 0, head: 5 } });
+    vi.spyOn(view, "posAtCoords").mockReturnValue(2);
 
     fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
     expect(view.state.selection.main.empty).toBe(false);
@@ -51,6 +52,22 @@ describe("Editor selection commands", () => {
     expect(viewRef.current!.state.doc.toString()).toBe("**hello** world");
   });
 
+  it("選択範囲外を右クリックしたら操作位置をクリック地点へ移す", async () => {
+    const { view } = await renderEditorWithView({
+      content: "hello world",
+      settings: { ...settings, language: "ja" }
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    view.dispatch({ selection: { anchor: 0, head: 5 } });
+    vi.spyOn(view, "posAtCoords").mockReturnValue(8);
+
+    fireEvent.contextMenu(contentElement, { clientX: 96, clientY: 32 });
+
+    expect(view.state.selection.main.empty).toBe(true);
+    expect(view.state.selection.main.head).toBe(8);
+    expect(await screen.findByRole("menuitem", { name: "Bold" })).toBeInTheDocument();
+  });
+
   it("本文の右クリック中に選択が動いても最初の選択範囲へMarkdown操作を適用する", async () => {
     const onChange = vi.fn();
     const { view, viewRef } = await renderEditorWithView({
@@ -60,6 +77,7 @@ describe("Editor selection commands", () => {
     });
     const contentElement = view.dom.querySelector(".cm-content")!;
     view.dispatch({ selection: { anchor: 6, head: 11 } });
+    vi.spyOn(view, "posAtCoords").mockReturnValue(8);
 
     fireEvent.mouseDown(contentElement, { button: 2, clientX: 32, clientY: 32 });
     expect(await screen.findByRole("menuitem", { name: "Bold" })).toBeInTheDocument();
@@ -81,6 +99,7 @@ describe("Editor selection commands", () => {
     });
     const contentElement = view.dom.querySelector(".cm-content")!;
     view.dispatch({ selection: { anchor: 0, head: "one\ntwo".length } });
+    vi.spyOn(view, "posAtCoords").mockReturnValue(2);
 
     fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Code block" }));
@@ -98,6 +117,7 @@ describe("Editor selection commands", () => {
     });
     const contentElement = view.dom.querySelector(".cm-content")!;
     view.dispatch({ selection: { anchor: 0, head: 5 } });
+    vi.spyOn(view, "posAtCoords").mockReturnValue(2);
 
     fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
     const boldButton = await screen.findByRole("menuitem", { name: "Bold" });

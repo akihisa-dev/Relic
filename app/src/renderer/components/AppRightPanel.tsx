@@ -122,6 +122,7 @@ export function AppRightPanel({
                         event.preventDefault();
                         event.stopPropagation();
                         setLinkContextMenu({
+                          exists: link.exists,
                           heading: link.wikiLink.heading ?? undefined,
                           markdownLink: link.wikiLink.raw,
                           openKind: "wiki",
@@ -169,6 +170,7 @@ export function AppRightPanel({
                         event.preventDefault();
                         event.stopPropagation();
                         setLinkContextMenu({
+                          exists: true,
                           markdownLink: markdownLinkForPath(backlink.sourcePath),
                           openKind: "file",
                           path: backlink.sourcePath,

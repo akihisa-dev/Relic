@@ -54,19 +54,33 @@ describe("moveWorkspaceItemToTrash", () => {
     expect(trashItem).toHaveBeenCalledWith(path.join(workspacePath, "資料"));
   });
 
-  it("ワークスペース外・Markdown以外・種別違いを拒否する", async () => {
+  it.each(["image.png", "document.pdf"])("%s をゴミ箱へ移動する境界を呼び出す", async (fileName) => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-trash-"));
     temporaryPaths.push(workspacePath);
     const trashItem = vi.fn().mockResolvedValue(undefined);
 
-    await writeFile(path.join(workspacePath, "image.png"), "", "utf8");
+    await writeFile(path.join(workspacePath, fileName), "", "utf8");
+
+    await expect(moveWorkspaceItemToTrash(workspacePath, fileName, "file", trashItem)).resolves.toEqual({
+      ok: true,
+      value: { path: fileName }
+    });
+    expect(trashItem).toHaveBeenCalledWith(path.join(workspacePath, fileName));
+  });
+
+  it("ワークスペース外・未対応ファイル・種別違いを拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-trash-"));
+    temporaryPaths.push(workspacePath);
+    const trashItem = vi.fn().mockResolvedValue(undefined);
+
+    await writeFile(path.join(workspacePath, "archive.zip"), "", "utf8");
     await writeFile(path.join(workspacePath, "note.md"), "", "utf8");
 
     await expect(
       moveWorkspaceItemToTrash(workspacePath, "../outside.md", "file", trashItem)
     ).resolves.toMatchObject({ ok: false });
     await expect(
-      moveWorkspaceItemToTrash(workspacePath, "image.png", "file", trashItem)
+      moveWorkspaceItemToTrash(workspacePath, "archive.zip", "file", trashItem)
     ).resolves.toMatchObject({ ok: false });
     await expect(
       moveWorkspaceItemToTrash(workspacePath, "note.md", "folder", trashItem)

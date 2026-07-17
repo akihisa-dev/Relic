@@ -3,9 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { makeRelicApi } from "../../test/rendererTestUtils";
 import { I18nProvider } from "../i18n";
+import type { AppLinkContextMenu } from "../appLinks";
 import { AppOverlays } from "./AppOverlays";
 
-function renderOverlays(): void {
+function renderOverlays(linkContextMenu: AppLinkContextMenu | null = null): void {
   render(
     <I18nProvider language="ja">
       <div>
@@ -23,7 +24,7 @@ function renderOverlays(): void {
           handleRevealWorkspaceItem={vi.fn()}
           isSplit={false}
           isToastClosing={false}
-          linkContextMenu={null}
+          linkContextMenu={linkContextMenu}
           openWorkspacePathInOtherPane={vi.fn()}
           railTabFlight={null}
           setLinkContextMenu={vi.fn()}
@@ -78,5 +79,20 @@ describe("AppOverlays", () => {
     fireEvent.contextMenu(editorText, { clientX: 24, clientY: 24 });
 
     expect(screen.queryByRole("menuitem", { name: "コピー" })).not.toBeInTheDocument();
+  });
+
+  it("存在しないリンクではファイルの場所を表示しない", () => {
+    renderOverlays({
+      exists: false,
+      markdownLink: "[[Missing]]",
+      openKind: "wiki",
+      path: "Missing.md",
+      target: "Missing",
+      x: 24,
+      y: 24
+    });
+
+    expect(screen.getByRole("menuitem", { name: "開く" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "ファイルの場所を表示" })).not.toBeInTheDocument();
   });
 });

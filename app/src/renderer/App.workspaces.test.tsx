@@ -555,7 +555,7 @@ describe("App workspaces", () => {
     });
   });
 
-  it("左レールのワークスペース名変更が失敗してもリネーム状態を終了する", async () => {
+  it("左レールのワークスペース名変更が失敗したら入力状態を保って再試行できる", async () => {
     const renameWorkspace = vi.fn().mockResolvedValue({
       ok: false,
       error: { code: "WORKSPACE_RENAME_FAILED", message: "ワークスペース名を変更できませんでした。" }
@@ -581,9 +581,8 @@ describe("App workspaces", () => {
     fireEvent.change(input, { target: { value: "Renamed" } });
     fireEvent.keyDown(input, { key: "Enter" });
 
-    await waitFor(() => {
-      expect(screen.queryByLabelText("名前を変更")).not.toBeInTheDocument();
-    });
+    await waitFor(() => expect(renameWorkspace).toHaveBeenCalledTimes(1));
+    expect(screen.getByLabelText("名前を変更")).toHaveValue("Renamed");
   });
 
   it("左レールのワークスペース右クリックメニューから一覧削除する", async () => {

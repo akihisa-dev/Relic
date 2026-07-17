@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
 
-import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { isSupportedWorkspaceFilePath } from "../../shared/workspaceFileKinds";
 import { errorDetails } from "./fileSystem";
 import { resolveExistingWorkspacePath, verifyExistingWorkspacePath } from "./paths";
 
@@ -13,8 +13,8 @@ export async function moveWorkspaceItemToTrash(
   type: "file" | "folder",
   trashItem: TrashItem
 ): Promise<RelicResult<{ path: string }>> {
-  if (type === "file" && !hasMarkdownExtension(relativePath)) {
-    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけをゴミ箱に移動できます。");
+  if (type === "file" && !isSupportedWorkspaceFilePath(relativePath)) {
+    return fail("FILE_TYPE_UNSUPPORTED", "対応しているファイルだけをゴミ箱に移動できます。");
   }
 
   const absolutePath = await resolveExistingWorkspacePath(workspacePath, relativePath);

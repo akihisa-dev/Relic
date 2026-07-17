@@ -59,6 +59,36 @@ describe("App file tabs", () => {
     expect(await screen.findByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
+  it("開いているファイルを右クリックメニューから再度開いてもタブを閉じない", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文", name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    await renderApp();
+    const row = await screen.findByRole("button", { name: /読書メモ/ });
+    fireEvent.click(row);
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+
+    fireEvent.contextMenu(row);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "開く" }));
+
+    await waitFor(() => {
+      expect(useEditorStore.getState().leftPane.activeTabId).toBe(activeTabId);
+      expect(useEditorStore.getState().leftPane.tabIds).toEqual([activeTabId]);
+    });
+  });
+
   it("Mermaid/D2図ブロックは表示され、図編集入口は出さない", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
@@ -297,13 +327,10 @@ describe("App file tabs", () => {
       }
     });
     const revealWorkspaceItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText }
-    });
+    const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
 
     window.relic = makeRelicApi({
+      copyEditorTextToClipboard,
       duplicateMarkdownFile,
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -326,8 +353,16 @@ describe("App file tabs", () => {
     expect(tab).not.toBeNull();
 
     fireEvent.contextMenu(tab!);
+    const firstMenu = await screen.findByRole("menu");
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(firstMenu).not.toBeInTheDocument();
+
+    fireEvent.contextMenu(tab!, { clientX: 9999, clientY: 9999 });
+    const clampedMenu = await screen.findByRole("menu");
+    expect(Number.parseFloat(clampedMenu.style.left)).toBeGreaterThanOrEqual(8);
+    expect(Number.parseFloat(clampedMenu.style.top)).toBeGreaterThanOrEqual(8);
     fireEvent.click(await screen.findByRole("button", { name: "Markdownリンクをコピー" }));
-    expect(writeText).toHaveBeenCalledWith("[[読書メモ]]");
+    expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "[[読書メモ]]" });
 
     fireEvent.contextMenu(tab!);
     fireEvent.click(await screen.findByRole("button", { name: "複製" }));

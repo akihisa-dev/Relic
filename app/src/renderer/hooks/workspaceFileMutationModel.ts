@@ -3,7 +3,7 @@ import { ensureMarkdownExtension } from "../../shared/markdownExtension";
 import type { Translator } from "../i18nModel";
 import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 import { displayNameFromPath, joinWorkspacePath, parentFolderOf } from "../workspacePaths";
-import { matchesAnyTreeItemPath, matchesTreeItemPath } from "./workspaceFileActionHelpers";
+import { isWorkspacePathTab, matchesAnyTreeItemPath, matchesTreeItemPath } from "./workspaceFileActionHelpers";
 
 export interface ActiveFileTab {
   tab: FileTab;
@@ -77,12 +77,12 @@ export function tabCloseTargetsForTreeItem({
 
   for (const tabId of leftPane.tabIds) {
     const tab = tabs[tabId];
-    if (tab?.kind === "file" && matchesTreeItemPath(tab.path, item)) targets.push({ pane: "left", tabId });
+    if (isWorkspacePathTab(tab) && matchesTreeItemPath(tab.path, item)) targets.push({ pane: "left", tabId });
   }
 
   for (const tabId of rightPane.tabIds) {
     const tab = tabs[tabId];
-    if (tab?.kind === "file" && matchesTreeItemPath(tab.path, item)) targets.push({ pane: "right", tabId });
+    if (isWorkspacePathTab(tab) && matchesTreeItemPath(tab.path, item)) targets.push({ pane: "right", tabId });
   }
 
   return targets;
@@ -103,12 +103,12 @@ export function tabCloseTargetsForTreeItems({
 
   for (const tabId of leftPane.tabIds) {
     const tab = tabs[tabId];
-    if (tab?.kind === "file" && matchesAnyTreeItemPath(tab.path, items)) targets.push({ pane: "left", tabId });
+    if (isWorkspacePathTab(tab) && matchesAnyTreeItemPath(tab.path, items)) targets.push({ pane: "left", tabId });
   }
 
   for (const tabId of rightPane.tabIds) {
     const tab = tabs[tabId];
-    if (tab?.kind === "file" && matchesAnyTreeItemPath(tab.path, items)) targets.push({ pane: "right", tabId });
+    if (isWorkspacePathTab(tab) && matchesAnyTreeItemPath(tab.path, items)) targets.push({ pane: "right", tabId });
   }
 
   return targets;

@@ -10,8 +10,8 @@ import type {
 export interface FileTreeActions {
   onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
   onDeleteSelectedItems?: () => void;
-  onCreateFileInFolder?: (folderPath: string) => void;
-  onCreateFolderInFolder?: (folderPath: string) => void;
+  onCreateFileInFolder?: (folderPath: string, name: string) => void;
+  onCreateFolderInFolder?: (folderPath: string, name: string) => void;
   onDuplicateFile?: (path: string) => void;
   onImportMarkdownFiles?: (sourcePaths: string[], destFolder: string) => void;
   onMoveFile?: (path: string, destFolder: string) => void;
@@ -36,8 +36,8 @@ export interface FileTreeProps {
   suppressOpeningAnimation?: boolean;
   onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
   onDeleteSelectedItems?: () => void;
-  onCreateFileInFolder?: (folderPath: string) => void;
-  onCreateFolderInFolder?: (folderPath: string) => void;
+  onCreateFileInFolder?: (folderPath: string, name: string) => void;
+  onCreateFolderInFolder?: (folderPath: string, name: string) => void;
   onDuplicateFile?: (path: string) => void;
   onImportMarkdownFiles?: (sourcePaths: string[], destFolder: string) => void;
   onMoveFile?: (path: string, destFolder: string) => void;

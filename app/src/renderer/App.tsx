@@ -404,7 +404,6 @@ export function App(): ReactElement {
     setRightPaneScrollHeading,
     setWorkspaceError,
     setWorkspaceState,
-    t,
     tabs
   });
 

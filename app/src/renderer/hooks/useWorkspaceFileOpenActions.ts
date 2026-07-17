@@ -9,7 +9,6 @@ import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 type WorkspaceFileOpenInput = Pick<
   WorkspaceFileActionsContext,
   | "aliasesByPath"
-  | "closeTab"
   | "existingMarkdownPaths"
   | "focusedPane"
   | "leftPane"
@@ -26,7 +25,6 @@ type WorkspaceFileOpenInput = Pick<
 
 export function useWorkspaceFileOpenActions({
   aliasesByPath,
-  closeTab,
   existingMarkdownPaths,
   focusedPane,
   leftPane,
@@ -53,7 +51,6 @@ export function useWorkspaceFileOpenActions({
         (activeTab?.kind === "file" || activeTab?.kind === "image" || activeTab?.kind === "pdf") &&
         activeTab.path === path
       ) {
-        closeTab(focusedPane, activeTabId);
         return;
       }
 
@@ -75,7 +72,7 @@ export function useWorkspaceFileOpenActions({
         }
       });
     },
-    [closeTab, focusedPane, leftPane, openFileInPane, openImageInPane, openPdfInPane, rightPane, setWorkspaceError, tabs]
+    [focusedPane, leftPane, openFileInPane, openImageInPane, openPdfInPane, rightPane, setWorkspaceError, tabs]
   );
 
   const handleOpenWikiLink = useCallback(

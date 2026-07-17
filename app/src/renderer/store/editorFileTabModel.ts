@@ -1,5 +1,7 @@
-import type { FileTab } from "./editorStoreTypes";
+import type { Tab } from "./editorStoreTypes";
 import type { EditorStoreModelState } from "./editorStoreModelTypes";
+
+type WorkspacePathTab = Extract<Tab, { kind: "file" | "image" | "pdf" }>;
 
 export function updateFileTabContentState(
   state: EditorStoreModelState,
@@ -76,10 +78,10 @@ export function resolveFileTabExternalConflictState(
 export function updateFileTabMetaState(
   state: EditorStoreModelState,
   tabId: string,
-  meta: Pick<FileTab, "name" | "path">
+  meta: Pick<WorkspacePathTab, "name" | "path">
 ): Partial<EditorStoreModelState> | EditorStoreModelState {
   const tab = state.tabs[tabId];
-  if (tab?.kind !== "file") return state;
+  if (tab?.kind !== "file" && tab?.kind !== "image" && tab?.kind !== "pdf") return state;
 
   return { tabs: { ...state.tabs, [tabId]: { ...tab, ...meta } } };
 }

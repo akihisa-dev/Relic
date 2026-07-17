@@ -43,7 +43,6 @@ export function useWorkspaceFileActions({
   });
   const openActions = useWorkspaceFileOpenActions({
     aliasesByPath,
-    closeTab,
     existingMarkdownPaths,
     focusedPane,
     leftPane,
@@ -58,6 +57,7 @@ export function useWorkspaceFileActions({
     tabs
   });
   const registryActions = useWorkspaceRegistryActions({
+    activeWorkspaceId: workspaceState?.activeWorkspace?.id,
     beforeCloseAllTabs,
     closeAllTabs,
     setWorkspaceError,

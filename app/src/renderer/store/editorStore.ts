@@ -31,7 +31,9 @@ import {
   updateFileTabFromExternalState,
   updateFileTabMetaState
 } from "./editorStoreModel";
-import type { FileTab, PaneId, PaneState, PanelTabKind, Tab } from "./editorStoreTypes";
+import type { PaneId, PaneState, PanelTabKind, Tab } from "./editorStoreTypes";
+
+type WorkspacePathTab = Extract<Tab, { kind: "file" | "image" | "pdf" }>;
 
 export type {
   ChartTab,
@@ -77,7 +79,7 @@ interface EditorStore {
   toggleSplit: () => void;
   updateTabContent: (tabId: string, content: string) => void;
   updateTabFromExternal: (tabId: string, content: string) => void;
-  updateTabMeta: (tabId: string, meta: Pick<FileTab, "name" | "path">) => void;
+  updateTabMeta: (tabId: string, meta: Pick<WorkspacePathTab, "name" | "path">) => void;
   closeAllTabs: () => void;
 }
 

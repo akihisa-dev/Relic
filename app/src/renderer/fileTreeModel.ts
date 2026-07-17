@@ -1,4 +1,5 @@
 import type { WorkspaceTreeFileKind, WorkspaceTreeNode } from "../shared/ipc";
+import { hasMarkdownExtension } from "../shared/markdownExtension";
 import { parentFolderOf } from "./workspacePaths";
 
 export type FileTreeExpansionAction = "expand" | "collapse";
@@ -195,7 +196,7 @@ export function movableItemsForDestination(
   return items.filter((item) => {
     if (item.path === destinationFolder) return false;
     if (parentFolderOf(item.path) === destinationFolder) return false;
-    if (item.type === "file" && item.kind === "image") return false;
+    if (!isMovableFileTreeItem(item)) return false;
     if (item.type === "folder" && destinationFolder.startsWith(`${item.path}/`)) return false;
     return true;
   });
@@ -207,7 +208,7 @@ export function moveItemsToDestination(
   handlers: FileTreeMoveHandlers
 ): void {
   const movableItems = movableItemsForDestination(items, destinationFolder);
-  if (movableItems.length === 0) return;
+  if (movableItems.length === 0 || movableItems.length !== items.length) return;
   if (movableItems.length > 1) {
     handlers.onMoveItems?.(movableItems, destinationFolder);
     return;
@@ -218,6 +219,16 @@ export function moveItemsToDestination(
   else handlers.onMoveFolder?.(item.path, destinationFolder);
 }
 
+export function isMovableFileTreeItem(item: FileTreeMoveItem): boolean {
+  return item.type === "folder"
+    || item.kind === "markdown"
+    || (item.kind === undefined && hasMarkdownExtension(item.path));
+}
+
+export function canMoveAllFileTreeItems(items: FileTreeMoveItem[]): boolean {
+  return items.length > 0 && items.every(isMovableFileTreeItem);
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -226,7 +237,7 @@ function isFileTreeMoveItem(value: unknown): value is FileTreeMoveItem {
   return isRecord(value)
     && typeof value.path === "string"
     && (value.type === "file" || value.type === "folder")
-    && (value.kind === undefined || value.kind === "image" || value.kind === "markdown");
+    && (value.kind === undefined || value.kind === "image" || value.kind === "markdown" || value.kind === "pdf");
 }
 
 export function expansionRequestAppliesTo(path: string, request?: FileTreeExpansionRequest): boolean {

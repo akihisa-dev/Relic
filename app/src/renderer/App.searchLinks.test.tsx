@@ -148,13 +148,10 @@ describe("App search and links", () => {
 
   it("右パネルのリンクを右クリックしてコピーと場所表示を実行する", async () => {
     const revealWorkspaceItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText }
-    });
+    const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
 
     window.relic = makeRelicApi({
+      copyEditorTextToClipboard,
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
@@ -179,11 +176,11 @@ describe("App search and links", () => {
 
     fireEvent.contextMenu(await screen.findByRole("button", { name: "表示名" }));
     fireEvent.click(await screen.findByRole("menuitem", { name: "Markdownリンクをコピー" }));
-    expect(writeText).toHaveBeenCalledWith("[[参照先|表示名]]");
+    expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "[[参照先|表示名]]" });
 
     fireEvent.contextMenu(screen.getByRole("button", { name: "表示名" }));
     fireEvent.click(await screen.findByRole("menuitem", { name: "パスをコピー" }));
-    expect(writeText).toHaveBeenCalledWith("参照先.md");
+    expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "参照先.md" });
 
     fireEvent.contextMenu(screen.getByRole("button", { name: "表示名" }));
     fireEvent.click(await screen.findByRole("menuitem", { name: "ファイルの場所を表示" }));

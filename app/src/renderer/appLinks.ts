@@ -1,4 +1,5 @@
 export interface AppLinkContextMenu {
+  exists: boolean;
   heading?: string;
   markdownLink: string;
   openKind: "file" | "wiki";

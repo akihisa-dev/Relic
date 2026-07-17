@@ -172,6 +172,13 @@ describe("fileTreeModel", () => {
     });
     expect(onMoveFile).toHaveBeenCalledWith("Root.md", "Archive");
 
+    moveItemsToDestination([{ path: "Folder/Child.md", type: "file" }], "", {
+      onMoveFile,
+      onMoveFolder,
+      onMoveItems
+    });
+    expect(onMoveFile).toHaveBeenCalledWith("Folder/Child.md", "");
+
     moveItemsToDestination([
       { path: "Root.md", type: "file" },
       { path: "Folder", type: "folder" }
@@ -184,6 +191,16 @@ describe("fileTreeModel", () => {
       { path: "Root.md", type: "file" },
       { path: "Folder", type: "folder" }
     ], "Archive");
+
+    moveItemsToDestination([
+      { path: "Root.md", type: "file" },
+      { path: "Image.png", type: "file" }
+    ], "Archive", {
+      onMoveFile,
+      onMoveFolder,
+      onMoveItems
+    });
+    expect(onMoveItems).toHaveBeenCalledTimes(1);
   });
 
   it("clamps context menus to the viewport", () => {

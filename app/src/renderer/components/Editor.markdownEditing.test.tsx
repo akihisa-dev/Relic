@@ -51,6 +51,7 @@ describe("Editor markdown editing", () => {
     });
     const contentElement = view.dom.querySelector(".cm-content")!;
     view.dispatch({ selection: { anchor: 0, head: 5 } });
+    vi.spyOn(view, "posAtCoords").mockReturnValue(2);
 
     fireEvent.mouseDown(contentElement, { button: 2, clientX: 32, clientY: 32 });
     fireEvent.keyDown(window, { key: "Escape" });
@@ -62,6 +63,7 @@ describe("Editor markdown editing", () => {
     });
 
     view.dispatch({ selection: { anchor: 5, head: 5 } });
+    vi.mocked(view.posAtCoords).mockReturnValue(5);
     fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Paste" }));
     await waitFor(() => {
@@ -98,6 +100,7 @@ describe("Editor markdown editing", () => {
     });
     const contentElement = view.dom.querySelector(".cm-content")!;
     view.dispatch({ selection: { anchor: 0, head: 5 } });
+    vi.spyOn(view, "posAtCoords").mockReturnValue(2);
 
     fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Cut" }));
@@ -121,6 +124,7 @@ describe("Editor markdown editing", () => {
     });
     const contentElement = view.dom.querySelector(".cm-content")!;
     view.dispatch({ selection: { anchor: 0, head: 5 } });
+    vi.spyOn(view, "posAtCoords").mockReturnValue(2);
 
     fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Cut" }));

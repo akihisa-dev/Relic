@@ -16,9 +16,9 @@ export interface FilesSidebarProps {
   isSearching: boolean;
   isOpeningWorkspace: boolean;
   onCreateFile: (event?: React.MouseEvent<HTMLButtonElement>) => void;
-  onCreateFileInFolder?: (folderPath: string) => void;
+  onCreateFileInFolder?: (folderPath: string, name: string) => void;
   onCreateFolder: (event?: React.MouseEvent<HTMLButtonElement>) => void;
-  onCreateFolderInFolder?: (folderPath: string) => void;
+  onCreateFolderInFolder?: (folderPath: string, name: string) => void;
   onCreateWorkspace: () => void;
   onDeleteItem: (path: string, type: WorkspaceTreeNode["type"]) => void;
   onDeleteItems: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>) => void;

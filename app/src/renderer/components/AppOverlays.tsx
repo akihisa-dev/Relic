@@ -204,7 +204,7 @@ export function AppOverlays({
           <button
             className="tab-context-menu-item"
             onClick={() => {
-              void navigator.clipboard?.writeText(linkContextMenu.markdownLink);
+              void writeEditorClipboardText(linkContextMenu.markdownLink).catch(() => undefined);
               setLinkContextMenu(null);
             }}
             role="menuitem"
@@ -215,7 +215,7 @@ export function AppOverlays({
           <button
             className="tab-context-menu-item"
             onClick={() => {
-              void navigator.clipboard?.writeText(linkContextMenu.path);
+              void writeEditorClipboardText(linkContextMenu.path).catch(() => undefined);
               setLinkContextMenu(null);
             }}
             role="menuitem"
@@ -223,17 +223,19 @@ export function AppOverlays({
           >
             {t("files.copyPath")}
           </button>
-          <button
-            className="tab-context-menu-item"
-            onClick={() => {
-              handleRevealWorkspaceItem(linkContextMenu.path);
-              setLinkContextMenu(null);
-            }}
-            role="menuitem"
-            type="button"
-          >
-            {t("files.revealInFinder")}
-          </button>
+          {linkContextMenu.exists ? (
+            <button
+              className="tab-context-menu-item"
+              onClick={() => {
+                handleRevealWorkspaceItem(linkContextMenu.path);
+                setLinkContextMenu(null);
+              }}
+              role="menuitem"
+              type="button"
+            >
+              {t("files.revealInFinder")}
+            </button>
+          ) : null}
         </div>
       ) : null}
 

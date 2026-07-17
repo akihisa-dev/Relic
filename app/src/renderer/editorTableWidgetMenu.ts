@@ -17,6 +17,7 @@ type LiveTableClipboard =
   | null;
 
 let liveTableClipboard: LiveTableClipboard = null;
+let removeActiveLiveTableMenu: (() => void) | null = null;
 
 export function showLiveTableMenu({
   block,
@@ -35,7 +36,7 @@ export function showLiveTableMenu({
   t: Translator;
   updateRows: (rows: string[][]) => void;
 }): void {
-  document.querySelectorAll(".cm-live-table-menu").forEach((element) => element.remove());
+  removeActiveLiveTableMenu?.();
 
   const menu = document.createElement("div");
   menu.className = "cm-live-table-menu";
@@ -52,6 +53,7 @@ export function showLiveTableMenu({
     button.type = "button";
     button.textContent = label;
     button.disabled = disabled;
+    button.addEventListener("mousedown", (mouseDownEvent) => mouseDownEvent.preventDefault());
     button.addEventListener("click", (clickEvent) => {
       clickEvent.preventDefault();
       clickEvent.stopPropagation();
@@ -149,6 +151,7 @@ export function showLiveTableMenu({
     menu.remove();
     document.removeEventListener("mousedown", dismiss);
     document.removeEventListener("keydown", dismissOnEscape);
+    if (removeActiveLiveTableMenu === removeMenu) removeActiveLiveTableMenu = null;
   };
   const dismiss = (dismissEvent: MouseEvent): void => {
     if (!menu.contains(dismissEvent.target as Node)) {
@@ -160,8 +163,10 @@ export function showLiveTableMenu({
   };
 
   document.body.append(menu);
+  removeActiveLiveTableMenu = removeMenu;
   clampMenuToViewport(menu, event.clientX, event.clientY);
   requestAnimationFrame(() => {
+    if (!menu.isConnected) return;
     document.addEventListener("mousedown", dismiss);
     document.addEventListener("keydown", dismissOnEscape);
   });

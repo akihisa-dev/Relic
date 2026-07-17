@@ -181,7 +181,7 @@ export function useWorkspaceFileMutationActions({
 
       const movableItems = getMovableTreeItems(items, destFolder);
 
-      if (movableItems.length === 0) return;
+      if (movableItems.length === 0 || movableItems.length !== removeCoveredItems(items).length) return;
 
       void (async () => {
         if (!await ensureCanMutateItems(movableItems)) return;
@@ -387,13 +387,20 @@ export function useWorkspaceFileMutationActions({
         if (!await ensureCanMutateItems(deletableItems)) return;
 
         let nextWorkspaceState: WorkspaceState | null = null;
+        const deletedItems: typeof deletableItems = [];
 
         for (const item of deletableItems) {
           const result = await relicClient.current!.moveItemToTrash({ path: item.path, type: item.type });
           if (!result.ok) {
+            if (nextWorkspaceState) {
+              tabCloseTargetsForTreeItems({ items: deletedItems, leftPane, rightPane, tabs })
+                .forEach((target) => closeTab(target.pane, target.tabId));
+              setWorkspaceState(nextWorkspaceState);
+            }
             setWorkspaceError(result.error.message);
             return;
           }
+          deletedItems.push(item);
           nextWorkspaceState = result.value;
         }
 
