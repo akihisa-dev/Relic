@@ -11,6 +11,7 @@ import {
   removeCoveredItems
 } from "./workspaceFileActionHelpers";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
+import { workspaceFileErrorMessage } from "./workspaceFileError";
 import { useWorkspaceMutationRunner } from "./useWorkspaceMutationRunner";
 import {
   deleteTreeItemMessage,
@@ -130,7 +131,7 @@ export function useWorkspaceFileMutationActions({
           sourcePaths: markdownSourcePaths
         });
         if (!result.ok) {
-          setWorkspaceError(result.error.message);
+          setWorkspaceError(workspaceFileErrorMessage(result.error, t));
           return;
         }
         setWorkspaceState(result.value);
@@ -140,7 +141,7 @@ export function useWorkspaceFileMutationActions({
       for (const sourcePath of imageSourcePaths) {
         const result = await relicClient.current!.importImageFile({ destinationFolder, sourcePath });
         if (!result.ok) {
-          setWorkspaceError(result.error.message);
+          setWorkspaceError(workspaceFileErrorMessage(result.error, t));
           return;
         }
         importedImagePaths.push(result.value.path);
@@ -155,7 +156,7 @@ export function useWorkspaceFileMutationActions({
         openImageInPane(focusedPane, { name: imagePath.split("/").at(-1) ?? imagePath, path: imagePath });
       }
     })();
-  }, [focusedPane, openImageInPane, setWorkspaceError, setWorkspaceState]);
+  }, [focusedPane, openImageInPane, setWorkspaceError, setWorkspaceState, t]);
 
   const handleMoveFolder = useCallback((path: string, destFolder: string): void => {
     if (!relicClient.current) return;

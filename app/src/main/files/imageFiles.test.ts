@@ -70,6 +70,21 @@ describe("importImageFile", () => {
       ok: false
     });
   });
+
+  it("外部の隠し画像を副作用なく拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-workspace-"));
+    const sourceFolder = await mkdtemp(path.join(os.tmpdir(), "relic-image-source-"));
+    temporaryPaths.push(workspacePath, sourceFolder);
+    const sourcePath = path.join(sourceFolder, ".hidden.png");
+    await writeFile(sourcePath, "png-data");
+
+    await expect(importImageFile(workspacePath, sourcePath, "")).resolves.toMatchObject({
+      error: { code: "FILE_NAME_HIDDEN" },
+      ok: false
+    });
+    await expect(readFile(sourcePath, "utf8")).resolves.toBe("png-data");
+    await expect(stat(path.join(workspacePath, ".hidden.png"))).rejects.toMatchObject({ code: "ENOENT" });
+  });
 });
 
 describe("readImageFile", () => {

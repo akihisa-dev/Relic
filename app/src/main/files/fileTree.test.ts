@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import type { Dirent } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -78,6 +78,23 @@ describe("readWorkspaceFileTree", () => {
         type: "file"
       }
     ]);
+  });
+
+  it("既存の隠しファイルと隠しフォルダを列挙せず内容も変更しない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-tree-"));
+    temporaryPaths.push(workspacePath);
+    await mkdir(path.join(workspacePath, ".private"));
+    await writeFile(path.join(workspacePath, ".note.md"), "hidden root", "utf8");
+    await writeFile(path.join(workspacePath, ".private", "note.md"), "hidden folder", "utf8");
+    await writeFile(path.join(workspacePath, "visible.md"), "visible", "utf8");
+
+    await expect(readWorkspaceFileTree(workspacePath)).resolves.toEqual([{
+      name: "visible",
+      path: "visible.md",
+      type: "file"
+    }]);
+    await expect(readFile(path.join(workspacePath, ".note.md"), "utf8")).resolves.toBe("hidden root");
+    await expect(readFile(path.join(workspacePath, ".private", "note.md"), "utf8")).resolves.toBe("hidden folder");
   });
 
   it("既定除外ディレクトリ配下のMarkdownは返さない", async () => {

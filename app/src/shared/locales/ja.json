@@ -79,6 +79,7 @@
   "files.createNoteShort": "作成",
   "files.noFiles": "ファイルはまだありません。",
   "files.folderFileCount": "{{count}}件",
+  "files.hiddenNameError": "名前が . で始まるファイルやフォルダは使用できません。",
   "files.showRemaining": "残り{{count}}件を表示",
   "files.createNewWorkspace": "新規ワークスペース",
   "files.creatingWorkspace": "作成中…",

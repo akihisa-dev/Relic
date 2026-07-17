@@ -79,6 +79,7 @@
   "files.createNoteShort": "Create",
   "files.noFiles": "No files.",
   "files.folderFileCount": "{{count}} files",
+  "files.hiddenNameError": "Files and folders whose names begin with . cannot be used.",
   "files.showRemaining": "Show {{count}} remaining",
   "files.createNewWorkspace": "New Workspace",
   "files.creatingWorkspace": "Creating...",

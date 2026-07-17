@@ -69,6 +69,13 @@ describe("normalizeMarkdownFileName", () => {
       ok: false
     });
   });
+
+  it("隠しMarkdown名を拒否する", () => {
+    expect(normalizeMarkdownFileName(".note.md")).toMatchObject({
+      error: { code: "FILE_NAME_HIDDEN" },
+      ok: false
+    });
+  });
 });
 
 describe("createMarkdownFile", () => {
@@ -242,6 +249,21 @@ describe("importMarkdownFiles", () => {
     });
     await expect(readFile(path.join(workspacePath, "読書メモ.md"), "utf8")).resolves.toBe("# 読書メモ");
     await expect(readFile(markdownPath, "utf8")).resolves.toBe("# 読書メモ");
+  });
+
+  it("外部の隠しMarkdownを副作用なく拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-workspace-"));
+    const sourcePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-source-"));
+    temporaryPaths.push(workspacePath, sourcePath);
+    const markdownPath = path.join(sourcePath, ".note.md");
+    await writeFile(markdownPath, "hidden", "utf8");
+
+    await expect(importMarkdownFiles(workspacePath, [markdownPath], "")).resolves.toMatchObject({
+      error: { code: "FILE_NAME_HIDDEN" },
+      ok: false
+    });
+    await expect(readdir(workspacePath)).resolves.toEqual([]);
+    await expect(readFile(markdownPath, "utf8")).resolves.toBe("hidden");
   });
 
   it("外部Markdownファイルを指定フォルダにコピーする", async () => {
@@ -471,6 +493,20 @@ describe("renameMarkdownFile", () => {
         })
       )
     );
+  });
+
+  it("隠しMarkdown名へのリネームを副作用なく拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-file-"));
+    temporaryPaths.push(workspacePath);
+    const beforePath = path.join(workspacePath, "before.md");
+    await writeFile(beforePath, "content", "utf8");
+
+    await expect(renameMarkdownFile(workspacePath, "before.md", ".note.md")).resolves.toMatchObject({
+      error: { code: "FILE_NAME_HIDDEN" },
+      ok: false
+    });
+    await expect(readFile(beforePath, "utf8")).resolves.toBe("content");
+    await expect(readFile(path.join(workspacePath, ".note.md"), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("Markdownファイル名を変更する", async () => {

@@ -62,6 +62,17 @@ describe("resolveWorkspaceRelativePath", () => {
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "../other.md").ok).toBe(false);
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "note.md\0outside").ok).toBe(false);
   });
+
+  it("隠し項目を含むパスを管理対象外として拒否する", () => {
+    expect(resolveWorkspaceRelativePath("/tmp/relic-notes", ".note.md")).toMatchObject({
+      error: { code: "FILE_NAME_HIDDEN" },
+      ok: false
+    });
+    expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "notes/.private/note.md")).toMatchObject({
+      error: { code: "FILE_NAME_HIDDEN" },
+      ok: false
+    });
+  });
 });
 
 describe("resolveWorkspaceRelativePathOrRoot", () => {

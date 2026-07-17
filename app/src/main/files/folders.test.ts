@@ -56,6 +56,17 @@ describe("createFolder", () => {
     });
   });
 
+  it("隠しフォルダ名を副作用なく拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-folder-"));
+    temporaryPaths.push(workspacePath);
+
+    await expect(createFolder(workspacePath, ".folder")).resolves.toMatchObject({
+      error: { code: "FILE_NAME_HIDDEN" },
+      ok: false
+    });
+    await expect(stat(path.join(workspacePath, ".folder"))).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("親フォルダを指定して配下にフォルダを作成する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-folder-"));
     temporaryPaths.push(workspacePath);
@@ -120,6 +131,19 @@ describe("renameFolder", () => {
         })
       )
     );
+  });
+
+  it("隠しフォルダ名へのリネームを副作用なく拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
+    temporaryPaths.push(workspacePath);
+    await mkdir(path.join(workspacePath, "visible"));
+
+    await expect(renameFolder(workspacePath, "visible", ".folder")).resolves.toMatchObject({
+      error: { code: "FILE_NAME_HIDDEN" },
+      ok: false
+    });
+    expect((await stat(path.join(workspacePath, "visible"))).isDirectory()).toBe(true);
+    await expect(stat(path.join(workspacePath, ".folder"))).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("フォルダ名を変更する", async () => {

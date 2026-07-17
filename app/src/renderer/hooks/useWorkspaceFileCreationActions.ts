@@ -9,6 +9,7 @@ import {
 } from "./workspaceFileActionHelpers";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 import type { Translator } from "../i18nModel";
+import { workspaceFileErrorMessage } from "./workspaceFileError";
 
 type WorkspaceFileCreationInput = Pick<
   WorkspaceFileActionsContext,
@@ -51,7 +52,7 @@ export function useWorkspaceFileCreationActions({
             }
           });
         } else {
-          setWorkspaceError(result.error.message);
+          setWorkspaceError(workspaceFileErrorMessage(result.error, t));
         }
       })
       .finally(() => setIsCreatingFile(false));
@@ -84,7 +85,7 @@ export function useWorkspaceFileCreationActions({
             });
           }
         } else {
-          setWorkspaceError(result.error.message);
+          setWorkspaceError(workspaceFileErrorMessage(result.error, t));
         }
       });
   }, [
@@ -109,7 +110,7 @@ export function useWorkspaceFileCreationActions({
           setWorkspaceState(result.value);
           setFolderNameDraft("");
         } else {
-          setWorkspaceError(result.error.message);
+          setWorkspaceError(workspaceFileErrorMessage(result.error, t));
         }
       })
       .finally(() => setIsCreatingFolder(false));

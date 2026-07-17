@@ -5,11 +5,21 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 const windowsReservedBaseNames = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i;
 const windowsInvalidNameCharacters = /[<>:"/\\|?*\x00-\x1F]/;
 
+export function hasHiddenPathSegment(filePath: string): boolean {
+  return filePath.replace(/\\/g, "/").split("/").some((segment) => (
+    segment !== "." && segment !== ".." && segment.startsWith(".")
+  ));
+}
+
 export function validateBaseName(name: string, emptyMessage: string): RelicResult<string> {
   const trimmedName = name.trim();
 
   if (trimmedName.length === 0) {
     return fail("FILE_NAME_EMPTY", emptyMessage);
+  }
+
+  if (hasHiddenPathSegment(trimmedName)) {
+    return fail("FILE_NAME_HIDDEN", "名前が . で始まる項目はRelicでは使用できません。");
   }
 
   if (/[. ]$/.test(name)) {

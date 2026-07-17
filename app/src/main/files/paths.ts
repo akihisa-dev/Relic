@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { isMissingFileError } from "./fileSystem";
+import { hasHiddenPathSegment } from "./names";
 
 export interface RealpathOperations {
   realpath(filePath: string): Promise<string>;
@@ -57,6 +58,10 @@ export function resolveWorkspaceRelativePath(
   relativePath: string
 ): RelicResult<string> {
   const normalizedInput = relativePath.replace(/\\/g, "/");
+
+  if (hasHiddenPathSegment(normalizedInput)) {
+    return fail("FILE_NAME_HIDDEN", "名前が . で始まる項目はRelicでは使用できません。");
+  }
 
   if (
     normalizedInput.includes("\0") ||

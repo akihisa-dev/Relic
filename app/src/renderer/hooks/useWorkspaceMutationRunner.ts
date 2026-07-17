@@ -5,6 +5,7 @@ import type { RelicResult } from "../../shared/result";
 import type { Translator } from "../i18nModel";
 import { relicClient } from "../relicClient";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
+import { workspaceFileErrorMessage } from "./workspaceFileError";
 
 export type WorkspaceMutationItem = { path: string; type: "file" | "folder" };
 
@@ -81,10 +82,10 @@ export function useWorkspaceMutationRunner({
         return true;
       }
 
-      setWorkspaceError(result.error.message);
+      setWorkspaceError(workspaceFileErrorMessage(result.error, t));
       return false;
     },
-    [confirmLinkUpdateImpact, ensureCanMutateItems, setWorkspaceError]
+    [confirmLinkUpdateImpact, ensureCanMutateItems, setWorkspaceError, t]
   );
 
   return { ensureCanMutateItems, runWorkspaceMutation };

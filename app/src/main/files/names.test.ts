@@ -30,6 +30,13 @@ describe("validateBaseName", () => {
     }
   });
 
+  it.each([".note", ".note.md", ".folder"])("隠し項目名を拒否する: %s", (name) => {
+    expect(validateBaseName(name, "名前を入力してください。")).toMatchObject({
+      error: { code: "FILE_NAME_HIDDEN" },
+      ok: false
+    });
+  });
+
   it("通常の日本語名、英数字名、途中スペースを許可する", () => {
     expect(validateBaseName("読書メモ", "名前を入力してください。")).toEqual({
       ok: true,
