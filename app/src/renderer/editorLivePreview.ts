@@ -41,7 +41,8 @@ import {
 } from "./editorLivePreviewWidgets";
 import { diagramLanguageFor } from "./diagramLanguage";
 import { createTranslator, type Translator } from "./i18nModel";
-import { resolveWorkspaceImageSrc } from "./previewMarkdown";
+import { resolveWorkspaceImagePath } from "./previewMarkdown";
+import { previewImageContextKey } from "./previewImageLoader";
 
 export { findClickableLinkAtPosition, type ClickableLinkAtPosition } from "./editorLivePreviewModel";
 
@@ -370,7 +371,8 @@ export function buildLivePreviewDecorations(
   onOpenClickableLink?: (link: ClickableLinkAtPosition) => void,
   t: Translator = createTranslator("system"),
   workspacePath?: string | null,
-  sourcePath?: string
+  sourcePath?: string,
+  workspaceRevision = 0
 ): DecorationSet {
   const { state } = view;
   const doc = state.doc;
@@ -437,9 +439,13 @@ export function buildLivePreviewDecorations(
       }
 
       if (match.className === "cm-live-image") {
-        const src = resolveWorkspaceImageSrc(match.href, workspacePath);
-        if (src) {
-          addWidget(match.from, match.to, new ImageWidget(src, match.content ?? ""));
+        const imagePath = resolveWorkspaceImagePath(match.href);
+        if (imagePath && workspacePath) {
+          addWidget(
+            match.from,
+            match.to,
+            new ImageWidget(imagePath, match.content ?? "", previewImageContextKey(workspacePath, workspaceRevision))
+          );
         } else {
           addWidget(
             match.from,

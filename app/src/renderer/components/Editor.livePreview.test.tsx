@@ -12,6 +12,9 @@ import {
   findClickableLinkAtPosition
 } from "../editorLivePreview";
 import { Editor } from "./Editor";
+import { __resetPreviewImageLoaderForTests } from "../previewImageLoader";
+import { previewImageContextKey } from "../previewImageLoader";
+import { ImageWidget } from "../editorLivePreviewWidgets";
 import {
   collectInlineLivePreviewWidgetClasses,
   collectInlineLivePreviewWidgets,
@@ -142,6 +145,31 @@ describe("Editor live preview", () => {
 
     expect(widgets).toContain("ImageWidget");
     expect(widgetClasses).toContain("cm-live-image");
+  });
+
+  it("ライブプレビュー画像をMain経由で読み込む", async () => {
+    const readImageFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { dataUrl: "data:image/png;base64,aW1hZ2U=" }
+    });
+    window.relic = makeRelicApi({ readImageFile });
+    const container = document.createElement("div");
+    container.append(new ImageWidget(
+      "assets/diagram.png",
+      "diagram",
+      previewImageContextKey("/tmp/Notes", 1)
+    ).toDOM());
+    document.body.append(container);
+
+    await waitFor(() => expect(container.querySelector("img.cm-live-image")).not.toBeNull());
+    expect(readImageFile).toHaveBeenCalledWith({ path: "assets/diagram.png" });
+    expect(container.querySelector("img.cm-live-image")).toHaveAttribute(
+      "src",
+      "data:image/png;base64,aW1hZ2U="
+    );
+
+    window.relic = undefined;
+    __resetPreviewImageLoaderForTests();
   });
 
   it("ライブプレビューでカーソルが画像記法に触れたらMarkdownソースを表示する", async () => {

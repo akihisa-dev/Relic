@@ -21,4 +21,5 @@ export interface EditorExtensionConfig {
   typewriterMode: boolean;
   userDefinedFields: UserDefinedField[];
   workspacePath?: string | null;
+  workspaceRevision?: number;
 }

@@ -41,6 +41,7 @@ interface EditorProps {
   userDefinedFields?: UserDefinedField[];
   viewRef?: MutableRefObject<EditorView | null>;
   workspacePath?: string | null;
+  workspaceRevision?: number;
 }
 
 const defaultAllFilePaths: string[] = [];
@@ -63,7 +64,8 @@ export function Editor({
   typewriterMode = false,
   userDefinedFields = defaultUserDefinedFields,
   viewRef,
-  workspacePath
+  workspacePath,
+  workspaceRevision = 0
 }: EditorProps): ReactElement {
   const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -229,7 +231,8 @@ export function Editor({
       onOpenLinkRef,
       onOpenWikiLinkRef,
       workspacePath,
-      filePath
+      filePath,
+      workspaceRevision
     );
     const state = EditorState.create({ doc: content, extensions });
     const view = new EditorView({ state, parent: container });
@@ -290,7 +293,8 @@ export function Editor({
         t,
         typewriterMode,
         userDefinedFields: userDefinedFieldsRef.current,
-        workspacePath
+        workspacePath,
+        workspaceRevision
       })
     });
     sourceModeRef.current = sourceMode;
@@ -302,7 +306,7 @@ export function Editor({
     }
     if (hadFocus) view.focus();
     if (viewRef) viewRef.current = view;
-  }, [allFilePaths, frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef, openContextMenu, workspacePath]);
+  }, [allFilePaths, frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef, openContextMenu, workspacePath, workspaceRevision]);
 
   return (
     <>

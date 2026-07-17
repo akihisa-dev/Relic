@@ -7,7 +7,7 @@ import {
   extractEmbedTargets,
   normalizeEmbedTarget,
   renderMarkdown,
-  resolveWorkspaceImageSrc,
+  resolveWorkspaceImagePath,
   toggleNthCheckbox
 } from "./previewMarkdown";
 import { enhancePreviewTableColorSwatches } from "./colorSwatches";
@@ -130,14 +130,15 @@ describe("previewMarkdown", () => {
     expect(html).not.toContain("//example.com");
   });
 
-  it("ワークスペース内の相対パス画像だけ実画像として表示する", () => {
+  it("ワークスペース内の相対パス画像をIPC読込用プレースホルダーにする", () => {
     const html = renderMarkdown("![図](attachments/diagram.png)", "/tmp/relic workspace", new Map(), true, t);
     const document = new DOMParser().parseFromString(html, "text/html");
-    const image = document.querySelector("img.preview-image");
+    const placeholder = document.querySelector(".preview-image-placeholder");
 
-    expect(image).not.toBeNull();
-    expect(image?.getAttribute("alt")).toBe("図");
-    expect(image?.getAttribute("src")).toBe("file:///tmp/relic%20workspace/attachments/diagram.png");
+    expect(document.querySelector("img")).toBeNull();
+    expect(placeholder?.getAttribute("data-relic-image-alt")).toBe("図");
+    expect(placeholder?.getAttribute("data-relic-image-path")).toBe("attachments/diagram.png");
+    expect(html).not.toContain("file://");
   });
 
   it("外部URL画像とワークスペース外参照はプレースホルダーとして表示する", () => {
@@ -167,12 +168,12 @@ describe("previewMarkdown", () => {
     expect(html).not.toContain("file:///etc/passwd");
   });
 
-  it("画像パスをワークスペース内file URLへ解決する", () => {
-    expect(resolveWorkspaceImageSrc("images/a b.png", "/tmp/relic workspace")).toBe("file:///tmp/relic%20workspace/images/a%20b.png");
-    expect(resolveWorkspaceImageSrc("images/a.txt", "/tmp/relic")).toBeNull();
-    expect(resolveWorkspaceImageSrc("../secret.png", "/tmp/relic")).toBeNull();
-    expect(resolveWorkspaceImageSrc("https://example.com/a.png", "/tmp/relic")).toBeNull();
-    expect(resolveWorkspaceImageSrc("/tmp/a.png", "/tmp/relic")).toBeNull();
+  it("画像参照を安全なワークスペース相対パスへ正規化する", () => {
+    expect(resolveWorkspaceImagePath("images/a b.png")).toBe("images/a b.png");
+    expect(resolveWorkspaceImagePath("images/a.txt")).toBeNull();
+    expect(resolveWorkspaceImagePath("../secret.png")).toBeNull();
+    expect(resolveWorkspaceImagePath("https://example.com/a.png")).toBeNull();
+    expect(resolveWorkspaceImagePath("/tmp/a.png")).toBeNull();
   });
 
   it("mermaidコードブロックをDiagram表示用HTMLとして残す", () => {

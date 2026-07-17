@@ -187,6 +187,7 @@ export function PaneContentSurface({
             userDefinedFields={userDefinedFields}
             viewRef={viewRef}
             workspacePath={workspacePath}
+            workspaceRevision={workspaceDataRevision}
             onEditorAction={onEditorAction}
           />
         </div>

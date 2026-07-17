@@ -112,6 +112,22 @@ describe("readImageFile", () => {
     });
   });
 
+  it("ワークスペース外を指す画像シンボリックリンクは読まない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-workspace-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-outside-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+    const outsideImagePath = path.join(outsidePath, "outside.png");
+    await writeFile(outsideImagePath, "outside");
+    await symlink(outsideImagePath, path.join(workspacePath, "linked.png"));
+
+    const result = await readImageFile(workspacePath, "linked.png");
+
+    expect(result).toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+  });
+
   it("読み取り直前にワークスペース外へ差し替えられた画像は読まない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-workspace-"));
     const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-outside-"));

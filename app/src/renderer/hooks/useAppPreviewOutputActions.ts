@@ -11,6 +11,7 @@ interface UseAppPreviewOutputActionsInput {
   showToast: (text: string, type?: "error" | "info") => void;
   t: Translator;
   workspacePath?: string | null;
+  workspaceRevision?: number;
 }
 
 export function useAppPreviewOutputActions({
@@ -18,7 +19,8 @@ export function useAppPreviewOutputActions({
   setWorkspaceError,
   showToast,
   t,
-  workspacePath
+  workspacePath,
+  workspaceRevision = 0
 }: UseAppPreviewOutputActionsInput): {
   handleSavePreviewAsPdf: (tab?: FileTab) => void;
 } {
@@ -32,9 +34,10 @@ export function useAppPreviewOutputActions({
       path: outputTab.path,
       t,
       title: outputTab.name,
-      workspacePath
+      workspacePath,
+      workspaceRevision
     });
-  }, [activeFileTab, t, workspacePath]);
+  }, [activeFileTab, t, workspacePath, workspaceRevision]);
 
   const handleSavePreviewAsPdf = useCallback((tab?: FileTab): void => {
     if (!relicClient.current) return;

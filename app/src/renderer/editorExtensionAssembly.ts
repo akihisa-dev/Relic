@@ -35,7 +35,8 @@ function createLivePreviewPlugin(
   onOpenWikiLinkRef: RefObject<((target: string, heading?: string) => void) | undefined>,
   t: Translator,
   workspacePath?: string | null,
-  sourcePath?: string
+  sourcePath?: string,
+  workspaceRevision = 0
 ) {
   return EditorView.decorations.of((view) => buildLivePreviewDecorations(view, (link) => {
     if (link.type === "markdown" && link.href) {
@@ -46,7 +47,7 @@ function createLivePreviewPlugin(
     if (link.type === "wiki" && link.target) {
       onOpenWikiLinkRef.current?.(link.target, link.heading ?? undefined);
     }
-  }, t, workspacePath, sourcePath));
+  }, t, workspacePath, sourcePath, workspaceRevision));
 }
 
 const autocompleteCompartment = new Compartment();
@@ -69,7 +70,14 @@ function buildLivePreviewExtensions(config: EditorExtensionConfig): Extension {
     diagramEditRangeField,
     createLivePreviewTableField(config.t),
     createLivePreviewCodeBlockField(config.t),
-    createLivePreviewPlugin(config.onOpenLinkRef, config.onOpenWikiLinkRef, config.t, config.workspacePath, config.sourcePath)
+    createLivePreviewPlugin(
+      config.onOpenLinkRef,
+      config.onOpenWikiLinkRef,
+      config.t,
+      config.workspacePath,
+      config.sourcePath,
+      config.workspaceRevision
+    )
   ];
 }
 
@@ -101,7 +109,8 @@ export function buildExtensions(
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>,
   onOpenWikiLinkRef: RefObject<((target: string, heading?: string) => void) | undefined>,
   workspacePath?: string | null,
-  sourcePath?: string
+  sourcePath?: string,
+  workspaceRevision = 0
 ) {
   const config: EditorExtensionConfig = {
     allFilePaths,
@@ -118,7 +127,8 @@ export function buildExtensions(
     t,
     typewriterMode,
     userDefinedFields,
-    workspacePath
+    workspacePath,
+    workspaceRevision
   };
 
   return [

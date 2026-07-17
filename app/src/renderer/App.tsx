@@ -435,7 +435,8 @@ export function App(): ReactElement {
     setWorkspaceError,
     showToast,
     t,
-    workspacePath: workspaceState?.activeWorkspace?.path
+    workspacePath: workspaceState?.activeWorkspace?.path,
+    workspaceRevision: workspaceDataRevision
   });
   const commands = useCommandPaletteCommands({
     activeFileName: activeFileTabInFocusedPane?.name ?? null,

@@ -2,8 +2,8 @@ import DOMPurify from "dompurify";
 
 // Markdown preview keeps normal http links as text navigation targets, but window-level opening is separately restricted to an https allowlist.
 const allowedPreviewUriPattern = /^(?!\/\/)(?:(?:https?|mailto):|#|\/|\.{0,2}\/|(?![a-z][a-z0-9+.-]*:)[^\s]*)/i;
-const allowedPreviewImageUriPattern = /^file:\/\/\//i;
-const allowedSanitizedPreviewUriPattern = /^(?:file:\/\/\/|(?!\/\/)(?:(?:https?|mailto):|#|\/|\.{0,2}\/|(?![a-z][a-z0-9+.-]*:)[^\s]*))/i;
+const allowedPreviewImageUriPattern = /^data:image\/(?:avif|bmp|gif|jpeg|png|svg\+xml|webp);base64,/i;
+const allowedSanitizedPreviewUriPattern = /^(?:data:image\/(?:avif|bmp|gif|jpeg|png|svg\+xml|webp);base64,|(?!\/\/)(?:(?:https?|mailto):|#|\/|\.{0,2}\/|(?![a-z][a-z0-9+.-]*:)[^\s]*))/i;
 
 const forbiddenEventAttributes = [
   "onabort",
@@ -34,13 +34,19 @@ const forbiddenPreviewAttributes = [
 ];
 
 export function sanitizePreviewHtml(html: string, allowedImageSrcs: ReadonlySet<string> = new Set()): string {
-  return DOMPurify.sanitize(stripUnsafePreviewLinks(stripUnsafePreviewImages(stripUnsafeMarkdownLinkText(html), allowedImageSrcs)), {
+  return DOMPurify.sanitize(stripUnsafePreviewDataUris(
+    stripUnsafePreviewLinks(stripUnsafePreviewImages(stripUnsafeMarkdownLinkText(html), allowedImageSrcs)),
+    allowedImageSrcs
+  ), {
     ADD_ATTR: [
       "alt",
       "checked",
       "class",
       "data-diagram-language",
       "data-diagram-source",
+      "data-relic-image-alt",
+      "data-relic-image-class",
+      "data-relic-image-path",
       "data-target",
       "id",
       "src",
@@ -132,8 +138,27 @@ function stripUnsafePreviewLinks(html: string): string {
   for (const link of Array.from(template.content.querySelectorAll("a"))) {
     const href = link.getAttribute("href") ?? "";
 
-    if (/^(?:file|javascript):/i.test(href.trim())) {
+    if (/^(?:data|file|javascript):/i.test(href.trim())) {
       link.replaceWith(...Array.from(link.childNodes));
+    }
+  }
+
+  return template.innerHTML;
+}
+
+function stripUnsafePreviewDataUris(html: string, allowedImageSrcs: ReadonlySet<string>): string {
+  if (typeof document === "undefined") return html;
+
+  const template = document.createElement("template");
+  template.innerHTML = html;
+
+  for (const element of Array.from(template.content.querySelectorAll<HTMLElement>("*"))) {
+    for (const attribute of Array.from(element.attributes)) {
+      if (!/^(?:href|src|xlink:href)$/i.test(attribute.name) || !/^data:/i.test(attribute.value.trim())) continue;
+      const isAllowedPreviewImage = element instanceof HTMLImageElement &&
+        element.classList.contains("preview-image") &&
+        allowedImageSrcs.has(attribute.value);
+      if (!isAllowedPreviewImage) element.removeAttribute(attribute.name);
     }
   }
 

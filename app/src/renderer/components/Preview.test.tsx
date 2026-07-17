@@ -5,6 +5,7 @@ import { defaultEditorSettings } from "../../shared/ipc";
 import { makeRelicApi } from "../../test/rendererTestUtils";
 import { I18nProvider } from "../i18n";
 import { normalizeEmbedTarget } from "../previewMarkdown";
+import { __resetPreviewImageLoaderForTests } from "../previewImageLoader";
 import { Preview } from "./Preview";
 
 const settings = { ...defaultEditorSettings, language: "ja" as const };
@@ -12,6 +13,7 @@ const settings = { ...defaultEditorSettings, language: "ja" as const };
 describe("Preview", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    __resetPreviewImageLoaderForTests();
     window.relic = undefined;
   });
 
@@ -89,7 +91,13 @@ describe("Preview", () => {
     expect(document.querySelector(".hashtag")).toBeNull();
   });
 
-  it("ワークスペース内の相対パスMarkdown画像を画像として表示する", () => {
+  it("ワークスペース内の相対パスMarkdown画像をMain経由で表示する", async () => {
+    const readImageFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { dataUrl: "data:image/png;base64,aW1hZ2U=" }
+    });
+    window.relic = makeRelicApi({ readImageFile });
+
     render(
       <Preview
         content="![図](attachments/diagram.png)"
@@ -98,9 +106,10 @@ describe("Preview", () => {
       />
     );
 
-    const image = screen.getByRole("img", { name: "図" });
+    const image = await screen.findByRole("img", { name: "図" });
 
-    expect(image).toHaveAttribute("src", "file:///tmp/relic%20workspace/attachments/diagram.png");
+    expect(readImageFile).toHaveBeenCalledWith({ path: "attachments/diagram.png" });
+    expect(image).toHaveAttribute("src", "data:image/png;base64,aW1hZ2U=");
   });
 
   it("Obsidian形式の画像埋め込みをファイル埋め込みとして扱わない", () => {

@@ -198,11 +198,9 @@ export function normalizeEmbedTarget(target: string): string | null {
   return ensureMarkdownExtension(normalized);
 }
 
-export function resolveWorkspaceImageSrc(href: string | null | undefined, workspacePath: string | null | undefined): string | null {
+export function resolveWorkspaceImagePath(href: string | null | undefined): string | null {
   const trimmedHref = href?.trim() ?? "";
-  const trimmedWorkspacePath = workspacePath?.trim() ?? "";
-
-  if (trimmedHref === "" || trimmedWorkspacePath === "") return null;
+  if (trimmedHref === "") return null;
 
   const normalizedHref = trimmedHref.replace(/\\/g, "/");
 
@@ -230,35 +228,25 @@ export function resolveWorkspaceImageSrc(href: string | null | undefined, worksp
     return null;
   }
 
-  const workspaceUrl = localPathToFileUrl(trimmedWorkspacePath);
-  if (!workspaceUrl) return null;
-
-  return `${workspaceUrl.replace(/\/?$/, "/")}${segments.map(encodeURIComponent).join("/")}`;
+  return segments.join("/");
 }
 
-function localPathToFileUrl(path: string): string | null {
-  const normalized = path.replace(/\\/g, "/").replace(/\/+$/, "");
-
-  if (/^[a-zA-Z]:\//.test(normalized)) {
-    const [drive = "", ...rest] = normalized.split("/");
-    return `file:///${drive}/${rest.map(encodeURIComponent).join("/")}`;
-  }
-
-  if (normalized.startsWith("/")) {
-    return `file://${normalized.split("/").map(encodeURIComponent).join("/")}`;
-  }
-
-  return null;
-}
-
-function renderImagePlaceholder(href: string | null | undefined, title: string | null | undefined, text: string | null | undefined): string {
+function renderImagePlaceholder(
+  href: string | null | undefined,
+  title: string | null | undefined,
+  text: string | null | undefined,
+  imagePath?: string
+): string {
   const alt = escapeHtml(text ?? "");
   const titleAttribute = title ? ` title="${escapeHtmlAttribute(title)}"` : "";
+  const pathAttributes = imagePath
+    ? ` data-relic-image-alt="${escapeHtmlAttribute(text ?? "")}" data-relic-image-class="preview-image" data-relic-image-path="${escapeHtmlAttribute(imagePath)}"`
+    : "";
 
-  return `<span class="preview-image-placeholder"${titleAttribute}>${alt || escapeHtml(href ?? "")}</span>`;
+  return `<span class="preview-image-placeholder"${pathAttributes}${titleAttribute}>${alt || escapeHtml(href ?? "")}</span>`;
 }
 
-function buildRenderer(workspacePath: string | null | undefined, allowedImageSrcs: Set<string>): Renderer {
+function buildRenderer(canLoadWorkspaceImages: boolean): Renderer {
   const renderer = new marked.Renderer();
 
   renderer.code = ({ lang, text }) => {
@@ -284,16 +272,8 @@ function buildRenderer(workspacePath: string | null | undefined, allowedImageSrc
   };
 
   renderer.image = ({ href, title, text }) => {
-    const src = resolveWorkspaceImageSrc(href, workspacePath);
-
-    if (!src) return renderImagePlaceholder(href, title, text);
-
-    allowedImageSrcs.add(src);
-
-    const altAttribute = ` alt="${escapeHtmlAttribute(text ?? "")}"`;
-    const titleAttribute = title ? ` title="${escapeHtmlAttribute(title)}"` : "";
-
-    return `<img class="preview-image" src="${escapeHtmlAttribute(src)}"${altAttribute}${titleAttribute}>`;
+    const imagePath = canLoadWorkspaceImages ? resolveWorkspaceImagePath(href) : null;
+    return renderImagePlaceholder(href, title, text, imagePath ?? undefined);
   };
 
   renderer.link = ({ href, title, text }) => {
@@ -346,8 +326,7 @@ export function renderMarkdown(
   if (cached) return cached;
 
   registerMarkedExtensions();
-  const allowedImageSrcs = new Set<string>();
-  const renderer = buildRenderer(workspacePath, allowedImageSrcs);
+  const renderer = buildRenderer(Boolean(workspacePath?.trim()));
   const withEmbedPlaceholders = renderEmbeds
     ? content.replace(/!\[\[([^\]\n]+)\]\]/g, (match, rawTarget: string) => {
         const target = normalizeEmbedTarget(rawTarget);
@@ -368,7 +347,7 @@ export function renderMarkdown(
     /<input checked="" disabled="" type="checkbox">/g,
     '<input checked type="checkbox" class="preview-checkbox">'
   );
-  const sanitized = sanitizePreviewHtml(withCheckboxes, allowedImageSrcs);
+  const sanitized = sanitizePreviewHtml(withCheckboxes);
 
   rememberCacheEntry(previewRenderCache, cacheKey, sanitized, maxPreviewCacheEntries);
   return sanitized;

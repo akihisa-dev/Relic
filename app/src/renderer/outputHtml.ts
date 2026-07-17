@@ -5,6 +5,7 @@ import { getRenderedDiagramSvgText } from "./diagramSvg";
 import { sanitizePreviewHtml, sanitizeSvgHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
 import { escapeHtml, renderMarkdown } from "./previewMarkdown";
+import { previewImageContextKey, resolvePreviewImages } from "./previewImageLoader";
 import type { OutputPdfOptions } from "../shared/ipc/output";
 import { runWithConcurrency } from "./concurrency";
 import { outputCss } from "./outputCss";
@@ -16,6 +17,7 @@ export interface BuildPreviewOutputHtmlInput {
   t: Translator;
   title?: string | null;
   workspacePath?: string | null;
+  workspaceRevision?: number;
 }
 
 export async function buildPreviewOutputHtml({
@@ -24,7 +26,8 @@ export async function buildPreviewOutputHtml({
   path,
   t,
   title,
-  workspacePath
+  workspacePath,
+  workspaceRevision = 0
 }: BuildPreviewOutputHtmlInput): Promise<{ defaultFileName: string; html: string; pdfOptions?: OutputPdfOptions; title: string }> {
   const documentTitle = title?.trim() ||
     firstH1(content) ||
@@ -43,9 +46,10 @@ export async function buildPreviewOutputHtml({
   document.body.append(root);
 
   try {
+    await resolvePreviewImages(root, previewImageContextKey(workspacePath, workspaceRevision));
     await renderOutputDiagrams(root, t);
     normalizeOutputDiagramDom(root);
-    const sanitizedBody = sanitizePreviewHtml(root.innerHTML);
+    const sanitizedBody = sanitizePreviewHtml(root.innerHTML, outputImageSrcs(root));
 
     return {
       defaultFileName,
@@ -55,6 +59,14 @@ export async function buildPreviewOutputHtml({
   } finally {
     root.remove();
   }
+}
+
+function outputImageSrcs(root: ParentNode): Set<string> {
+  return new Set(
+    Array.from(root.querySelectorAll<HTMLImageElement>("img.preview-image"))
+      .map((image) => image.getAttribute("src"))
+      .filter((src): src is string => Boolean(src))
+  );
 }
 
 export function safeOutputFileName(value: string): string {

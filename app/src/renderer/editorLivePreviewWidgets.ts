@@ -5,6 +5,7 @@ import katex from "katex";
 import { writeEditorClipboardText } from "./editorClipboard";
 import { sanitizeTrustedMathHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
+import { loadPreviewImage } from "./previewImageLoader";
 
 export const codeBlockSourceInteractionEffect = StateEffect.define<{ from: number; to: number }>();
 export const clearCodeBlockSourceInteractionEffect = StateEffect.define<{ from: number; to: number }>();
@@ -112,22 +113,32 @@ export class ImageWidget extends WidgetType {
   readonly className = "cm-live-image";
 
   constructor(
-    private readonly src: string,
-    private readonly alt: string
+    private readonly path: string,
+    private readonly alt: string,
+    private readonly contextKey: string
   ) {
     super();
   }
 
   override eq(other: ImageWidget): boolean {
-    return this.src === other.src && this.alt === other.alt;
+    return this.path === other.path && this.alt === other.alt && this.contextKey === other.contextKey;
   }
 
   override toDOM(): HTMLElement {
-    const image = document.createElement("img");
-    image.alt = this.alt;
-    image.className = this.className;
-    image.src = this.src;
-    return image;
+    const placeholder = document.createElement("span");
+    placeholder.className = "preview-image-placeholder";
+    placeholder.textContent = this.alt || this.path;
+
+    void loadPreviewImage(this.path, this.contextKey).then((dataUrl) => {
+      if (!dataUrl || !placeholder.isConnected) return;
+      const image = document.createElement("img");
+      image.alt = this.alt;
+      image.className = this.className;
+      image.src = dataUrl;
+      placeholder.replaceWith(image);
+    });
+
+    return placeholder;
   }
 }
 

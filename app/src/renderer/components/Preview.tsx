@@ -9,6 +9,7 @@ import { useT } from "../i18n";
 import { renderDiagramElements } from "../diagramPreview";
 import { sanitizePreviewHtml } from "../htmlSanitizer";
 import { renderMarkdown, slugifyHeading, toggleNthCheckbox } from "../previewMarkdown";
+import { hydratePreviewImages, previewImageContextKey } from "../previewImageLoader";
 import { previewUpdateDelayMs } from "../previewUpdateScheduling";
 
 interface PreviewProps {
@@ -19,6 +20,7 @@ interface PreviewProps {
   scrollTargetHeading?: string;
   settings: EditorSettings;
   workspacePath?: string | null;
+  workspaceRevision?: number;
 }
 
 export function Preview({
@@ -28,7 +30,8 @@ export function Preview({
   onScrollTargetHandled,
   scrollTargetHeading,
   settings,
-  workspacePath
+  workspacePath,
+  workspaceRevision = 0
 }: PreviewProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
   const handlePreviewActivationRef = useRef<(event: MouseEvent | KeyboardEvent) => void>(() => {});
@@ -58,10 +61,15 @@ export function Preview({
     if (!container) return;
 
     // Markdown HTML is always sanitized immediately before it enters the preview DOM.
-    container.innerHTML = sanitizePreviewHtml(html, previewImageSrcs(html));
+    container.innerHTML = sanitizePreviewHtml(html);
     enhancePreviewTableColorSwatches(container);
-    return renderDiagramElements(container, t);
-  }, [html, settings.theme, t]);
+    const disposeImages = hydratePreviewImages(container, previewImageContextKey(workspacePath, workspaceRevision));
+    const disposeDiagrams = renderDiagramElements(container, t);
+    return () => {
+      disposeImages();
+      disposeDiagrams?.();
+    };
+  }, [html, settings.theme, t, workspacePath, workspaceRevision]);
 
   useEffect(() => {
     onScrollTargetHandledRef.current = onScrollTargetHandled;
@@ -163,18 +171,4 @@ export function Preview({
       style={style}
     />
   );
-}
-
-function previewImageSrcs(html: string): Set<string> {
-  const srcs = new Set<string>();
-  const template = document.createElement("template");
-  // This detached template is used only to collect image src values before sanitization.
-  template.innerHTML = html;
-
-  for (const image of Array.from(template.content.querySelectorAll("img.preview-image"))) {
-    const src = image.getAttribute("src");
-    if (src) srcs.add(src);
-  }
-
-  return srcs;
 }
