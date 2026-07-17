@@ -20,6 +20,7 @@ export interface FeatureToggles {
   chronicle: boolean;
   graph: boolean;
   sphere: boolean;
+  table: boolean;
   tools: boolean;
   frontmatter: boolean;
 }
@@ -54,6 +55,7 @@ export const defaultFeatureToggles: FeatureToggles = {
   chronicle: false,
   graph: false,
   sphere: false,
+  table: false,
   tools: false,
   frontmatter: false
 };

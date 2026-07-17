@@ -28,6 +28,7 @@ import {
   getWorkspaceCardsChannel,
   getWorkspaceFrontmatterCategoryChoicesChannel,
   getWorkspaceGraphChannel,
+  getWorkspaceTableChannel,
   getLinkUpdateImpactChannel,
   listFileRecoverySnapshotsChannel,
   getWorkspaceTagsChannel,
@@ -51,6 +52,7 @@ import {
   revealWorkspaceItemChannel,
   startWorkspaceFileDragChannel,
   saveWorkspaceChartsChannel,
+  saveWorkspaceTablePropertiesChannel,
   saveWorkspaceFrontmatterCategoryChoicesChannel,
   updateChartEntryChannel,
   saveEditorSettingsChannel,
@@ -140,6 +142,7 @@ import {
   type WorkspaceChart,
   type WorkspaceCard,
   type WorkspaceGraph,
+  type WorkspaceTable,
   type WorkspaceSearchResultSet,
   type WorkspaceTagSummary,
   type WriteMarkdownFileInput
@@ -197,6 +200,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getWorkspaceFrontmatterCategoryChoicesChannel) as Promise<RelicResult<FrontmatterCategoryChoice[]>>,
   getWorkspaceGraph: () =>
     ipcRenderer.invoke(getWorkspaceGraphChannel) as Promise<RelicResult<WorkspaceGraph>>,
+  getWorkspaceTable: () =>
+    ipcRenderer.invoke(getWorkspaceTableChannel) as Promise<RelicResult<WorkspaceTable>>,
   getFrontmatterValueCandidates: () =>
     ipcRenderer.invoke(getFrontmatterValueCandidatesChannel) as Promise<RelicResult<Record<string, string[]>>>,
   getWorkspaceTags: () =>
@@ -266,6 +271,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(saveWorkspaceFrontmatterCategoryChoicesChannel, input) as Promise<RelicResult<FrontmatterCategoryChoice[]>>,
   saveWorkspaceCharts: (input: ChartSettings[]) =>
     ipcRenderer.invoke(saveWorkspaceChartsChannel, input) as Promise<RelicResult<WorkspaceChart[]>>,
+  saveWorkspaceTableProperties: (input: string[]) =>
+    ipcRenderer.invoke(saveWorkspaceTablePropertiesChannel, input) as Promise<RelicResult<string[]>>,
   updateChartEntry: (input: UpdateChartEntryInput) =>
     ipcRenderer.invoke(updateChartEntryChannel, input) as Promise<RelicResult<WorkspaceChart[]>>,
   generateTitleList: (input: GenerateTitleListInput) =>

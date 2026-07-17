@@ -7,11 +7,19 @@ import {
   isChartsInput,
   isRenameWorkspaceInput,
   isSwitchWorkspaceInput,
+  isTablePropertiesInput,
   isUpdateChartEntryInput,
   isUserDefinedFieldsInput
 } from "./workspaceHandlerValidators";
 
 describe("workspaceHandlerValidators", () => {
+  it("テーブル列は重複、空白、過大入力を拒否する", () => {
+    expect(isTablePropertiesInput(["status", "tags"])).toBe(true);
+    expect(isTablePropertiesInput(["status", "status"])).toBe(false);
+    expect(isTablePropertiesInput([" status"])).toBe(false);
+    expect(isTablePropertiesInput([""])).toBe(false);
+    expect(isTablePropertiesInput(["a".repeat(1025)])).toBe(false);
+  });
   it("validates user defined fields and rejects duplicates or reserved names", () => {
     expect(isUserDefinedFieldsInput([{ name: "rating", type: "number" }])).toBe(true);
     expect(isUserDefinedFieldsInput([{ name: "date", type: "date" }])).toBe(true);
@@ -118,6 +126,7 @@ describe("workspaceHandlerValidators", () => {
       frontmatter: true,
       graph: true,
       sphere: false,
+      table: false,
       tools: false
     })).toBe(true);
     expect(isFeatureTogglesInput({
@@ -126,6 +135,7 @@ describe("workspaceHandlerValidators", () => {
       frontmatter: true,
       graph: true,
       sphere: false,
+      table: false,
       tools: "false"
     })).toBe(false);
     expect(isFeatureTogglesInput({
@@ -133,6 +143,7 @@ describe("workspaceHandlerValidators", () => {
       chronicle: false,
       frontmatter: true,
       sphere: false,
+      table: false,
       tools: false
     })).toBe(false);
   });

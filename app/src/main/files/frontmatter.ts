@@ -5,43 +5,52 @@ export interface ParsedFrontmatter {
   body: string;
 }
 
+export interface InspectedFrontmatter extends ParsedFrontmatter {
+  status: "invalid" | "none" | "valid";
+}
+
 const DELIMITER = "---";
 
 export function parseFrontmatter(content: string): ParsedFrontmatter {
+  const { data, body } = inspectFrontmatter(content);
+  return { data, body };
+}
+
+export function inspectFrontmatter(content: string): InspectedFrontmatter {
   const openDelimiter = /^---\r?\n/.exec(content);
 
   if (!openDelimiter) {
-    return { data: {}, body: content };
+    return { data: {}, body: content, status: "none" };
   }
 
   const rest = content.slice(openDelimiter[0].length);
   const closeDelimiter = /^---(?:\r?\n|$)/m.exec(rest);
 
   if (!closeDelimiter || closeDelimiter.index === undefined) {
-    return { data: {}, body: content };
+    return { data: {}, body: content, status: "invalid" };
   }
 
   const yamlText = rest.slice(0, closeDelimiter.index);
   const body = rest.slice(closeDelimiter.index + closeDelimiter[0].length);
 
   if (yamlText.trim() === "") {
-    return { data: {}, body };
+    return { data: {}, body, status: "valid" };
   }
 
   try {
     const parsed = yaml.load(yamlText);
 
     if (parsed === null || parsed === undefined) {
-      return { data: {}, body };
+      return { data: {}, body, status: "valid" };
     }
 
     if (typeof parsed !== "object" || Array.isArray(parsed)) {
-      return { data: {}, body: content };
+      return { data: {}, body: content, status: "invalid" };
     }
 
-    return { data: parsed as Record<string, unknown>, body };
+    return { data: parsed as Record<string, unknown>, body, status: "valid" };
   } catch {
-    return { data: {}, body: content };
+    return { data: {}, body: content, status: "invalid" };
   }
 }
 

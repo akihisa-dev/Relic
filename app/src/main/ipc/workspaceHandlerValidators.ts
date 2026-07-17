@@ -109,6 +109,25 @@ export function isFrontmatterCategoryChoicesInput(input: unknown): input is Fron
   });
 }
 
+export function isTablePropertiesInput(input: unknown): input is string[] {
+  if (!Array.isArray(input) || input.length > 1000) return false;
+
+  const properties = new Set<string>();
+  return input.every((property) => {
+    if (
+      typeof property !== "string" ||
+      property.length === 0 ||
+      property.length > 1024 ||
+      property.trim() !== property ||
+      property.includes("\0") ||
+      properties.has(property)
+    ) return false;
+
+    properties.add(property);
+    return true;
+  });
+}
+
 export function isFrontmatterTemplatesInput(input: unknown): input is FrontmatterTemplate[] {
   if (!Array.isArray(input)) return false;
 
@@ -140,6 +159,7 @@ export function isFeatureTogglesInput(input: unknown): input is FeatureToggles {
     typeof candidate.chronicle === "boolean" &&
     typeof candidate.graph === "boolean" &&
     typeof candidate.sphere === "boolean" &&
+    typeof candidate.table === "boolean" &&
     typeof candidate.tools === "boolean" &&
     typeof candidate.frontmatter === "boolean"
   );

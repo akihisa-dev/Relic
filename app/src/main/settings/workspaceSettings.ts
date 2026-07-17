@@ -18,6 +18,7 @@ export interface WorkspaceSettings {
   charts: ChartSettings[];
   frontmatterCategoryChoices: FrontmatterCategoryChoice[];
   pinnedPaths: string[];
+  tableProperties: string[];
   workspacePath: string;
 }
 
@@ -33,6 +34,7 @@ const defaultWorkspaceSettings: WorkspaceSettings = {
   charts: defaultCharts,
   frontmatterCategoryChoices: [],
   pinnedPaths: [],
+  tableProperties: [],
   workspacePath: ""
 };
 
@@ -70,6 +72,7 @@ function parseWorkspaceSettings(raw: PersistedWorkspaceSettings): WorkspaceSetti
     charts: parseCharts(raw.charts),
     frontmatterCategoryChoices: parseFrontmatterCategoryChoices(raw.frontmatterCategoryChoices),
     pinnedPaths: parsePinnedPaths(raw.pinnedPaths),
+    tableProperties: parseTableProperties(raw.tableProperties),
     workspacePath: typeof raw.workspacePath === "string" ? raw.workspacePath : ""
   };
 }
@@ -129,6 +132,19 @@ export function parseFrontmatterCategoryChoices(raw: unknown): FrontmatterCatego
   });
 
   return Array.from(new Set(choices));
+}
+
+export function parseTableProperties(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+
+  const properties = raw.flatMap((item): string[] => {
+    if (typeof item !== "string" || item.length === 0 || item.length > 1024 || item.trim() !== item || item.includes("\0")) {
+      return [];
+    }
+    return [item];
+  });
+
+  return Array.from(new Set(properties)).slice(0, 1000);
 }
 
 function normalizePinnedPath(raw: string): string | null {

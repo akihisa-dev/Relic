@@ -29,6 +29,7 @@ describe("workspaceSettings", () => {
     const settings = await readWorkspaceSettings(userDataPath, "workspace-id");
 
     expect(settings.pinnedPaths).toEqual([]);
+    expect(settings.tableProperties).toEqual([]);
     expect(settings.charts).toEqual(defaultCharts);
     expect(settings.workspacePath).toBe("");
   });
@@ -43,6 +44,7 @@ describe("workspaceSettings", () => {
       ],
       frontmatterCategoryChoices: ["政治", "戦争"],
       pinnedPaths: ["notes/readme.md", "docs"],
+      tableProperties: ["status", "tags"],
       workspacePath: "/Users/test/notes"
     });
 
@@ -52,6 +54,7 @@ describe("workspaceSettings", () => {
     ]);
     expect(settings.frontmatterCategoryChoices).toEqual(["政治", "戦争"]);
     expect(settings.pinnedPaths).toEqual(["notes/readme.md", "docs"]);
+    expect(settings.tableProperties).toEqual(["status", "tags"]);
     expect(settings.workspacePath).toBe("/Users/test/notes");
     if (process.platform !== "win32") {
       const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-1");
@@ -110,6 +113,21 @@ describe("workspaceSettings", () => {
     const settings = await readWorkspaceSettings(userDataPath, "ws-pinned");
 
     expect(settings.pinnedPaths).toEqual(["notes/readme.md", "folder/note.md"]);
+  });
+
+  it("読み込み時にテーブル列の空文字、重複、危険な値を除外する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-table");
+    await mkdir(path.dirname(settingsPath), { recursive: true });
+    await writeFile(settingsPath, JSON.stringify({
+      schemaVersion: 3,
+      tableProperties: ["status", "status", " tags", "", 123, "tags"]
+    }), "utf8");
+
+    const settings = await readWorkspaceSettings(userDataPath, "ws-table");
+
+    expect(settings.tableProperties).toEqual(["status", "tags"]);
   });
 
   it("読み込み時にチャート対象パスをワークスペース相対パスだけに正規化する", async () => {
@@ -183,7 +201,7 @@ describe("workspaceSettings", () => {
 
     await readWorkspaceSettings(userDataPath, "ws-legacy-v0");
     const afterFirstRead = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
-    expect(afterFirstRead.schemaVersion).toBe(2);
+    expect(afterFirstRead.schemaVersion).toBe(3);
 
     await delay(1100);
     const firstMtime = (await stat(settingsPath)).mtimeMs;
@@ -201,12 +219,13 @@ describe("workspaceSettings", () => {
       charts: defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
+      tableProperties: [],
       workspacePath: "/Users/test/new"
     });
 
     const raw = JSON.parse(await readFile(getWorkspaceSettingsPath(userDataPath, "ws-new"), "utf8")) as Record<string, unknown>;
 
-    expect(raw.schemaVersion).toBe(2);
+    expect(raw.schemaVersion).toBe(3);
     expect(raw.charts).toEqual(defaultCharts);
     expect(raw.ganttCharts).toBeUndefined();
     await expect(readdir(path.dirname(getWorkspaceSettingsPath(userDataPath, "ws-new")))).resolves.toEqual([
@@ -276,12 +295,14 @@ describe("workspaceSettings", () => {
       charts: defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
+      tableProperties: [],
       workspacePath: ""
     });
     await expect(writeWorkspaceSettings(userDataPath, "../outside", {
       charts: defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
+      tableProperties: [],
       workspacePath: "/tmp/workspace"
     })).rejects.toThrow("Invalid workspace settings id.");
   });
@@ -293,6 +314,7 @@ describe("workspaceSettings", () => {
       charts: defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
+      tableProperties: [],
       workspacePath: ""
     });
 
@@ -388,7 +410,7 @@ describe("workspaceSettings", () => {
     await Promise.all([update, readWhileUpdating]);
 
     const raw = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(2);
+    expect(raw.schemaVersion).toBe(3);
     expect(raw.workspacePath).toBe("/Users/test/new");
   });
 });

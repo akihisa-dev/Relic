@@ -15,6 +15,7 @@ const dependencies = vi.hoisted(() => ({
   readWorkspaceCharts: vi.fn(),
   readWorkspaceCards: vi.fn(),
   readWorkspaceGraph: vi.fn(),
+  readWorkspaceTable: vi.fn(),
   readWorkspaceSettings: vi.fn(),
   readWorkspaceTags: vi.fn(),
   readFrontmatterValueCandidates: vi.fn(),
@@ -69,6 +70,10 @@ vi.mock("../files/cards", () => ({
   readWorkspaceCards: dependencies.readWorkspaceCards,
 }));
 
+vi.mock("../files/workspaceTable", () => ({
+  readWorkspaceTable: dependencies.readWorkspaceTable,
+}));
+
 vi.mock("../settings/workspaceSettings", () => ({
   normalizeWorkspaceRelativeSettingPath:
     dependencies.normalizeWorkspaceRelativeSettingPath,
@@ -83,9 +88,11 @@ import {
   getWorkspaceCardsChannel,
   getWorkspaceFrontmatterCategoryChoicesChannel,
   getWorkspaceGraphChannel,
+  getWorkspaceTableChannel,
   getWorkspaceTagsChannel,
   saveWorkspaceChartsChannel,
   saveWorkspaceFrontmatterCategoryChoicesChannel,
+  saveWorkspaceTablePropertiesChannel,
   updateChartEntryChannel,
 } from "../../shared/ipc";
 import { registerWorkspaceDataHandlers } from "./workspaceDataHandlers";
@@ -107,6 +114,7 @@ const workspaceSettings = {
     },
   ],
   frontmatterCategoryChoices: ["人物"],
+  tableProperties: ["status", "removed"],
 };
 
 const providerOptions = {
@@ -164,6 +172,10 @@ describe("registerWorkspaceDataHandlers", () => {
     });
     dependencies.readWorkspaceCharts.mockResolvedValue({ ok: true, value: [] });
     dependencies.readWorkspaceCards.mockResolvedValue({ ok: true, value: [] });
+    dependencies.readWorkspaceTable.mockResolvedValue({
+      ok: true,
+      value: { availableProperties: [], rows: [], selectedProperties: [] },
+    });
     dependencies.updateWorkspaceChartEntry.mockResolvedValue({
       ok: true,
       value: [],
@@ -259,6 +271,29 @@ describe("registerWorkspaceDataHandlers", () => {
     );
   });
 
+  it("テーブル読取で保存列と共有snapshotを使い、消滅した列を設定から外す", async () => {
+    const table = {
+      availableProperties: ["status"],
+      rows: [],
+      selectedProperties: ["status"],
+    };
+    dependencies.readWorkspaceTable.mockResolvedValueOnce({ ok: true, value: table });
+
+    const result = await handlerFor(getWorkspaceTableChannel)();
+
+    expect(result).toEqual({ ok: true, value: table });
+    expect(dependencies.readWorkspaceTable).toHaveBeenCalledWith(
+      workspace.path,
+      workspaceSettings.tableProperties,
+      providerOptions,
+    );
+    expect(dependencies.updateWorkspaceSettings).toHaveBeenCalledWith(
+      "/user-data",
+      workspace.id,
+      expect.any(Function),
+    );
+  });
+
   it.each([
     {
       channel: getWorkspaceFrontmatterCategoryChoicesChannel,
@@ -291,6 +326,11 @@ describe("registerWorkspaceDataHandlers", () => {
       channel: updateChartEntryChannel,
       input: {},
       label: "項目を欠いたチャート更新",
+    },
+    {
+      channel: saveWorkspaceTablePropertiesChannel,
+      input: ["status", "status"],
+      label: "重複したテーブル列",
     },
   ])("$label は状態を読む前に拒否する", async ({ channel, input }) => {
     const result = await handlerFor(channel)({}, input);
@@ -358,6 +398,19 @@ describe("registerWorkspaceDataHandlers", () => {
       expect.any(Function),
     );
     expect(dependencies.invalidateWorkspaceData).not.toHaveBeenCalled();
+  });
+
+  it("テーブル列をワークスペース設定へ保存する", async () => {
+    const properties = ["status", "tags"];
+
+    const result = await handlerFor(saveWorkspaceTablePropertiesChannel)({}, properties);
+
+    expect(result).toEqual({ ok: true, value: properties });
+    expect(dependencies.updateWorkspaceSettings).toHaveBeenCalledWith(
+      "/user-data",
+      workspace.id,
+      expect.any(Function),
+    );
   });
 
   it("チャート項目更新が成功した時だけ派生データを無効化する", async () => {

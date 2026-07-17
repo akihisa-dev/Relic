@@ -13,9 +13,11 @@ export const renameWorkspaceChannel = "workspace:rename";
 export const switchWorkspaceChannel = "workspace:switch";
 export const getWorkspaceChartsChannel = "workspace:getCharts";
 export const getWorkspaceCardsChannel = "workspace:getCards";
+export const getWorkspaceTableChannel = "workspace:getTable";
 export const getWorkspaceFrontmatterCategoryChoicesChannel = "workspace:getFrontmatterCategoryChoices";
 export const saveWorkspaceFrontmatterCategoryChoicesChannel = "workspace:saveFrontmatterCategoryChoices";
 export const saveWorkspaceChartsChannel = "workspace:saveCharts";
+export const saveWorkspaceTablePropertiesChannel = "workspace:saveTableProperties";
 export const updateChartEntryChannel = "workspace:updateChartEntry";
 
 export interface WorkspaceSummary {
@@ -128,6 +130,37 @@ export interface WorkspaceCard {
   path: string;
 }
 
+export type WorkspaceTableValueKind =
+  | "array"
+  | "boolean"
+  | "date"
+  | "empty-array"
+  | "empty-string"
+  | "null"
+  | "number"
+  | "object"
+  | "string";
+
+export interface WorkspaceTableValue {
+  booleanValue?: boolean;
+  kind: WorkspaceTableValueKind;
+  numberValue?: number;
+  text: string;
+}
+
+export interface WorkspaceTableRow {
+  frontmatterStatus: "invalid" | "none" | "valid";
+  name: string;
+  path: string;
+  properties: Record<string, WorkspaceTableValue>;
+}
+
+export interface WorkspaceTable {
+  availableProperties: string[];
+  rows: WorkspaceTableRow[];
+  selectedProperties: string[];
+}
+
 export type ChartEntryEditKind = "move" | "resize-start" | "resize-end";
 
 export interface UpdateChartEntryInput {
@@ -152,9 +185,11 @@ export interface WorkspaceApi {
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   getWorkspaceCharts: () => Promise<RelicResult<WorkspaceChart[]>>;
   getWorkspaceCards: () => Promise<RelicResult<WorkspaceCard[]>>;
+  getWorkspaceTable: () => Promise<RelicResult<WorkspaceTable>>;
   getWorkspaceFrontmatterCategoryChoices: () => Promise<RelicResult<FrontmatterCategoryChoice[]>>;
   saveWorkspaceFrontmatterCategoryChoices: (input: FrontmatterCategoryChoice[]) => Promise<RelicResult<FrontmatterCategoryChoice[]>>;
   saveWorkspaceCharts: (input: ChartSettings[]) => Promise<RelicResult<WorkspaceChart[]>>;
+  saveWorkspaceTableProperties: (input: string[]) => Promise<RelicResult<string[]>>;
   updateChartEntry: (input: UpdateChartEntryInput) => Promise<RelicResult<WorkspaceChart[]>>;
   onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => () => void;
   onWorkspaceWatcherStatus: (callback: (event: WorkspaceWatcherStatusEvent) => void) => () => void;
@@ -171,9 +206,11 @@ export const workspaceIpcContract = {
   switchWorkspace: { channel: switchWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: true },
   getWorkspaceCharts: { channel: getWorkspaceChartsChannel, main: "handle", transport: "invoke", validatesInput: false },
   getWorkspaceCards: { channel: getWorkspaceCardsChannel, main: "handle", transport: "invoke", validatesInput: false },
+  getWorkspaceTable: { channel: getWorkspaceTableChannel, main: "handle", transport: "invoke", validatesInput: false },
   getWorkspaceFrontmatterCategoryChoices: { channel: getWorkspaceFrontmatterCategoryChoicesChannel, main: "handle", transport: "invoke", validatesInput: false },
   saveWorkspaceFrontmatterCategoryChoices: { channel: saveWorkspaceFrontmatterCategoryChoicesChannel, main: "handle", transport: "invoke", validatesInput: true },
   saveWorkspaceCharts: { channel: saveWorkspaceChartsChannel, main: "handle", transport: "invoke", validatesInput: true },
+  saveWorkspaceTableProperties: { channel: saveWorkspaceTablePropertiesChannel, main: "handle", transport: "invoke", validatesInput: true },
   updateChartEntry: { channel: updateChartEntryChannel, main: "handle", transport: "invoke", validatesInput: true },
   onWorkspaceChanged: { channel: workspaceChangedChannel, main: "sender", transport: "subscribe", validatesInput: false },
   onWorkspaceWatcherStatus: { channel: workspaceWatcherStatusChannel, main: "sender", transport: "subscribe", validatesInput: false }

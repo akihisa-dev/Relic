@@ -44,6 +44,7 @@ const featureToggles = {
   frontmatter: true,
   graph: true,
   sphere: true,
+  table: true,
   tools: true,
 };
 const userDefinedFields = [

@@ -8,9 +8,11 @@ import {
   getWorkspaceCardsChannel,
   getWorkspaceFrontmatterCategoryChoicesChannel,
   getWorkspaceGraphChannel,
+  getWorkspaceTableChannel,
   getWorkspaceTagsChannel,
   saveWorkspaceFrontmatterCategoryChoicesChannel,
   saveWorkspaceChartsChannel,
+  saveWorkspaceTablePropertiesChannel,
   updateChartEntryChannel
 } from "../../shared/ipc";
 import { fail } from "../../shared/result";
@@ -19,6 +21,7 @@ import { readWorkspaceCharts, updateWorkspaceChartEntry } from "../files/charts"
 import { readWorkspaceCards } from "../files/cards";
 import { readFrontmatterValueCandidates } from "../files/frontmatterCandidates";
 import { readWorkspaceGraph } from "../files/workspaceGraph";
+import { readWorkspaceTable } from "../files/workspaceTable";
 import { readWorkspaceTags } from "../files/tags";
 import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
 import { workspaceDataProvider } from "../files/workspaceDataProvider";
@@ -31,6 +34,7 @@ import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
   isChartsInput,
   isFrontmatterCategoryChoicesInput,
+  isTablePropertiesInput,
   isUpdateChartEntryInput
 } from "./workspaceHandlerValidators";
 
@@ -159,6 +163,42 @@ export function registerWorkspaceDataHandlers(): void {
     }
   });
 
+  ipcMain.handle(getWorkspaceTableChannel, async () => {
+    try {
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
+      const workspaceSettings = await readWorkspaceSettings(
+        context.value.userDataPath,
+        context.value.activeWorkspace.id
+      );
+      const data = await workspaceDataProvider.get({
+        userDataPath: context.value.userDataPath,
+        workspaceId: context.value.activeWorkspace.id,
+        workspacePath: context.value.activeWorkspace.path
+      });
+      const result = await readWorkspaceTable(
+        data.workspacePath,
+        workspaceSettings.tableProperties ?? [],
+        data.options
+      );
+
+      if (result.ok && !sameStrings(result.value.selectedProperties, workspaceSettings.tableProperties ?? [])) {
+        await updateWorkspaceSettings(
+          context.value.userDataPath,
+          context.value.activeWorkspace.id,
+          (settings) => ({ ...settings, tableProperties: result.value.selectedProperties })
+        );
+      }
+      return result;
+    } catch (error) {
+      return fail(
+        "WORKSPACE_TABLE_FAILED",
+        "テーブルを読み込めませんでした。",
+        ipcErrorDetails(error)
+      );
+    }
+  });
+
   ipcMain.handle(saveWorkspaceChartsChannel, async (_event, input: unknown) => {
     try {
       if (!isChartsInput(input)) {
@@ -241,6 +281,29 @@ export function registerWorkspaceDataHandlers(): void {
     }
   });
 
+  ipcMain.handle(saveWorkspaceTablePropertiesChannel, async (_event, input: unknown) => {
+    try {
+      if (!isTablePropertiesInput(input)) {
+        return fail("INVALID_TABLE_PROPERTIES", "テーブルの列設定が正しくありません。");
+      }
+
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
+      const workspaceSettings = await updateWorkspaceSettings(
+        context.value.userDataPath,
+        context.value.activeWorkspace.id,
+        (settings) => ({ ...settings, tableProperties: input })
+      );
+      return { ok: true as const, value: workspaceSettings.tableProperties };
+    } catch (error) {
+      return fail(
+        "WORKSPACE_TABLE_PROPERTIES_SAVE_FAILED",
+        "テーブルの列設定を保存できませんでした。",
+        ipcErrorDetails(error)
+      );
+    }
+  });
+
   ipcMain.handle(updateChartEntryChannel, async (_event, input: unknown) => {
     try {
       if (!isUpdateChartEntryInput(input)) {
@@ -271,6 +334,10 @@ export function registerWorkspaceDataHandlers(): void {
       );
     }
   });
+}
+
+function sameStrings(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 function normalizeChartSettingsForSave(charts: ChartSettings[]): ChartSettings[] {

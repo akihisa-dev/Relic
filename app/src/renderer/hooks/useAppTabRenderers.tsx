@@ -25,6 +25,9 @@ const LazyGraphView = lazy(async () => ({
 const LazySphereView = lazy(async () => ({
   default: (await import("../components/SphereView")).SphereView
 }));
+const LazyTableView = lazy(async () => ({
+  default: (await import("../components/TableView")).TableView
+}));
 const LazyFrontmatterPanel = lazy(async () => ({
   default: (await import("../components/FrontmatterPanel")).FrontmatterPanel
 }));
@@ -134,6 +137,18 @@ export function useAppTabRenderers({
             onOpenTagSearch={handleOpenTagSearch}
             refreshRevision={workspaceDataRevision}
             workspaceCacheKey={workspaceCacheKey}
+          />
+        </Suspense>
+      );
+    }
+
+    if (chartId === "table") {
+      return (
+        <Suspense fallback={<LazyTabFallback />}>
+          <LazyTableView
+            onOpenFile={handleOpenFile}
+            refreshRevision={workspaceDataRevision}
+            workspaceId={workspaceCacheKey}
           />
         </Suspense>
       );

@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { defaultFeatureToggles } from "../shared/ipc";
@@ -86,5 +86,31 @@ describe("App feature toggles", () => {
 
     await screen.findByRole("button", { name: "ファイル" });
     expect(screen.queryByRole("button", { name: "カード" })).toBeNull();
+  });
+
+  it("テーブル機能を有効にした場合だけ左レールからテーブルタブを開く", async () => {
+    const getWorkspaceTable = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        availableProperties: [],
+        rows: [{ frontmatterStatus: "none", name: "メモ", path: "メモ.md", properties: {} }],
+        selectedProperties: []
+      }
+    });
+    window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { ...defaultFeatureToggles, table: true }
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      getWorkspaceTable
+    });
+
+    await renderApp();
+
+    const tableButton = await screen.findByRole("button", { name: "テーブル" });
+    fireEvent.click(tableButton);
+    expect(await screen.findByText("1件のファイル")).toBeInTheDocument();
+    expect(getWorkspaceTable).toHaveBeenCalledOnce();
   });
 });

@@ -3,7 +3,7 @@ import type { Translator } from "./i18nModel";
 import type { PaneState, PanelTabKind, Tab } from "./store/editorStore";
 import type { SidebarView } from "./store/uiStore";
 
-export type AppRailViewId = SidebarView | PanelTabKind | "cards" | "graph" | "sphere";
+export type AppRailViewId = SidebarView | PanelTabKind | "cards" | "graph" | "sphere" | "table";
 
 export interface AppRailView<TIcon = unknown> {
   icon: TIcon;
@@ -15,6 +15,7 @@ export function chartIdForRailView(id: AppRailViewId): string | null {
   if (id === "cards") return "cards";
   if (id === "graph") return "graph";
   if (id === "sphere") return "sphere";
+  if (id === "table") return "table";
   if (id === "chronicle") return "chronicle";
 
   return null;
@@ -104,7 +105,7 @@ export function activeChartIdsForPanes(
 
 export function enabledRailViewsForFeatures<TView extends Pick<AppRailView, "id">>(
   views: TView[],
-  featureToggles: Pick<FeatureToggles, "cards" | "chronicle" | "frontmatter" | "graph" | "sphere" | "tools">
+  featureToggles: Pick<FeatureToggles, "cards" | "chronicle" | "frontmatter" | "graph" | "sphere" | "table" | "tools">
 ): TView[] {
   return views.filter((view) => {
     if (view.id === "tools" && !featureToggles.tools) return false;
@@ -112,6 +113,7 @@ export function enabledRailViewsForFeatures<TView extends Pick<AppRailView, "id"
     if (view.id === "cards" && !featureToggles.cards) return false;
     if (view.id === "graph" && !featureToggles.graph) return false;
     if (view.id === "sphere" && !featureToggles.sphere) return false;
+    if (view.id === "table" && !featureToggles.table) return false;
     if (view.id === "chronicle" && !featureToggles.chronicle) return false;
 
     return true;

@@ -47,6 +47,13 @@ export const IconCards = (): ReactElement => (
   </svg>
 );
 
+export const IconTable = (): ReactElement => (
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
+    <rect height="16" rx="2" width="18" x="3" y="4" />
+    <path d="M3 9h18M9 4v16M15 4v16M3 14h18" />
+  </svg>
+);
+
 export const IconGraph = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
     <circle cx="6" cy="6" r="2.5" />

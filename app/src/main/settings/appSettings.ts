@@ -125,6 +125,7 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
     chronicle: typeof s.chronicle === "boolean" ? s.chronicle : false,
     graph: typeof s.graph === "boolean" ? s.graph : false,
     sphere: typeof s.sphere === "boolean" ? s.sphere : false,
+    table: typeof s.table === "boolean" ? s.table : false,
     tools: typeof s.tools === "boolean" ? s.tools : false,
     frontmatter: typeof s.frontmatter === "boolean" ? s.frontmatter : false
   };

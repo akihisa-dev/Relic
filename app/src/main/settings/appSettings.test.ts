@@ -47,7 +47,7 @@ describe("appSettings", () => {
       workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
     });
     const raw = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(5);
+    expect(raw.schemaVersion).toBe(6);
     await expect(readdir(userDataPath)).resolves.toEqual([path.basename(getAppSettingsPath(userDataPath))]);
     if (process.platform !== "win32") {
       expect((await stat(userDataPath)).mode & 0o777).toBe(0o700);
@@ -82,7 +82,7 @@ describe("appSettings", () => {
 
     await readAppSettings(userDataPath);
     const afterFirstRead = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(afterFirstRead.schemaVersion).toBe(5);
+    expect(afterFirstRead.schemaVersion).toBe(6);
 
     await delay(1100);
     const firstMtime = (await stat(getAppSettingsPath(userDataPath))).mtimeMs;
@@ -204,7 +204,7 @@ describe("appSettings", () => {
     await Promise.all([update, readWhileUpdating]);
 
     const raw = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(5);
+    expect(raw.schemaVersion).toBe(6);
     expect((raw.featureToggles as Record<string, unknown>)?.tools).toBe(true);
   });
 
@@ -248,7 +248,7 @@ describe("appSettings", () => {
       featureToggles: expect.objectContaining({ cards: false, graph: false, sphere: false })
     });
     const migrated = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(migrated.schemaVersion).toBe(5);
+    expect(migrated.schemaVersion).toBe(6);
   });
 
   it("未知の将来schemaVersionは旧形式として誤読しない", async () => {

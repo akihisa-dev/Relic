@@ -6,7 +6,11 @@ import type {
 import { parseMarkdownTags } from "../../shared/tags";
 import { extractAliasesFromFrontmatterData } from "./aliasesModel";
 import { collectChartEntriesForFrontmatterData } from "./chronicleData";
-import { parseFrontmatter, type ParsedFrontmatter } from "./frontmatter";
+import {
+  inspectFrontmatter,
+  type InspectedFrontmatter,
+  type ParsedFrontmatter
+} from "./frontmatter";
 import {
   readWorkspaceFileIndex,
   type WorkspaceFileIndex,
@@ -36,6 +40,7 @@ export interface WorkspaceDerivedDataCache {
   chartEntries: Map<string, Record<"chronicle", ChartEntry[]>>;
   content: Map<string, string>;
   frontmatter: Map<string, ParsedFrontmatter>;
+  frontmatterInspection: Map<string, InspectedFrontmatter>;
   tags: Map<string, string[]>;
 }
 
@@ -46,6 +51,7 @@ export function createWorkspaceDerivedDataCache(): WorkspaceDerivedDataCache {
     chartEntries: new Map(),
     content: new Map(),
     frontmatter: new Map(),
+    frontmatterInspection: new Map(),
     tags: new Map()
   };
 }
@@ -133,9 +139,23 @@ export function frontmatterForRecord(
   const cached = cache.frontmatter.get(key);
   if (cached) return cached;
 
-  const parsed = parseFrontmatter(markdownContentForRecord(record, cache));
+  const inspected = inspectedFrontmatterForRecord(record, cache);
+  const parsed = { body: inspected.body, data: inspected.data };
   cache.frontmatter.set(key, parsed);
   return parsed;
+}
+
+export function inspectedFrontmatterForRecord(
+  record: WorkspaceFileIndexRecord,
+  cache: WorkspaceDerivedDataCache = createWorkspaceDerivedDataCache()
+): InspectedFrontmatter {
+  const key = cacheKeyForRecord(record);
+  const cached = cache.frontmatterInspection.get(key);
+  if (cached) return cached;
+
+  const inspected = inspectFrontmatter(markdownContentForRecord(record, cache));
+  cache.frontmatterInspection.set(key, inspected);
+  return inspected;
 }
 
 export function tagsForRecord(
