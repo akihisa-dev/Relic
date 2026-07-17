@@ -339,6 +339,77 @@ describe("searchAndReplace", () => {
     expect(result.value.skippedUnreadableFiles).toEqual([]);
   });
 
+  it("表示上限後も全一致ファイルのスナップショットを集めて一括置換できる", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(
+      path.join(ws, "a.md"),
+      Array.from({ length: searchAndReplacePreviewMaxResults }, () => "hello").join("\n"),
+      "utf8"
+    );
+    await writeFile(path.join(ws, "b.md"), "hello after limit", "utf8");
+
+    const preview = await searchAndReplace(ws, "hello", "hi", false);
+    expect(preview.ok).toBe(true);
+    if (!preview.ok) return;
+
+    expect(preview.value.matches).toHaveLength(searchAndReplacePreviewMaxResults);
+    expect(preview.value.truncated).toBe(true);
+    expect(preview.value.fileSnapshots).toEqual([
+      { contentHash: expect.any(String), path: "a.md" },
+      { contentHash: expect.any(String), path: "b.md" }
+    ]);
+
+    const result = await applySearchAndReplace(
+      ws,
+      "hello",
+      "hi",
+      false,
+      undefined,
+      preview.value.fileSnapshots
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      value: { count: searchAndReplacePreviewMaxResults + 1, skippedUnreadableFiles: [] }
+    });
+    await expect(readFile(path.join(ws, "b.md"), "utf8")).resolves.toBe("hi after limit");
+  });
+
+  it("表示上限後の一致ファイルが変更された場合も一括置換を止める", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+    const afterLimitPath = path.join(ws, "b.md");
+
+    await writeFile(
+      path.join(ws, "a.md"),
+      Array.from({ length: searchAndReplacePreviewMaxResults }, () => "hello").join("\n"),
+      "utf8"
+    );
+    await writeFile(afterLimitPath, "hello before", "utf8");
+
+    const preview = await searchAndReplace(ws, "hello", "hi", false);
+    expect(preview.ok).toBe(true);
+    if (!preview.ok) return;
+
+    await writeFile(afterLimitPath, "hello changed", "utf8");
+    const result = await applySearchAndReplace(
+      ws,
+      "hello",
+      "hi",
+      false,
+      undefined,
+      preview.value.fileSnapshots
+    );
+
+    expect(result).toMatchObject({
+      error: { code: "REPLACE_PREVIEW_STALE" },
+      ok: false
+    });
+    await expect(readFile(afterLimitPath, "utf8")).resolves.toBe("hello changed");
+  });
+
   it("置換プレビューの本文読み込みを並列数制限付きで行う", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
     temporaryPaths.push(ws);

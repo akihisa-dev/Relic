@@ -144,15 +144,15 @@ export async function searchAndReplace(
           hasMatchInFile = true;
           regex.value.lastIndex = 0;
           const newLineText = buildReplacementPreviewLine(line, regex.value, replacement, isRegex);
-          matches.push({
-            lineNumber: index + 1,
-            lineText: line.trim() === "" ? "(空行)" : line.trim(),
-            newLineText: newLineText.trim() === "" ? "(空行)" : newLineText.trim(),
-            path: relativePath
-          });
-          if (matches.length >= searchAndReplacePreviewMaxResults) {
+          if (matches.length < searchAndReplacePreviewMaxResults) {
+            matches.push({
+              lineNumber: index + 1,
+              lineText: line.trim() === "" ? "(空行)" : line.trim(),
+              newLineText: newLineText.trim() === "" ? "(空行)" : newLineText.trim(),
+              path: relativePath
+            });
+          } else {
             truncated = true;
-            break;
           }
         }
 
@@ -165,8 +165,6 @@ export async function searchAndReplace(
           path: relativePath
         });
       }
-
-      if (truncated) break;
     }
 
     return ok({
