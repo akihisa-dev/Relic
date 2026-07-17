@@ -60,9 +60,9 @@ async function createBundleFixture() {
       isEntry: true,
       name: "index"
     },
-    "node_modules/katex/dist/fonts/KaTeX_Main-Regular.woff2": {
+    "node_modules/.pnpm/katex@0.17.0/node_modules/katex/dist/fonts/KaTeX_Main-Regular.woff2": {
       file: "assets/KaTeX_Main-Regular-12345678.woff2",
-      src: "node_modules/katex/dist/fonts/KaTeX_Main-Regular.woff2"
+      src: "node_modules/.pnpm/katex@0.17.0/node_modules/katex/dist/fonts/KaTeX_Main-Regular.woff2"
     }
   }));
   return root;
@@ -93,6 +93,21 @@ describe("renderer-size-report", () => {
       "Renderer dependency is loaded initially: node_modules/mermaid/dist/mermaid.core.mjs",
       "Renderer dependency is not a direct lazy entry: node_modules/mermaid/dist/mermaid.core.mjs"
     ]);
+  });
+
+  it("pnpm仮想ストアの依存パスでも遅延読込の入口を検出する", () => {
+    const d2 = "node_modules/.pnpm/@terrastruct+d2@0.1.33/node_modules/@terrastruct/d2/dist/browser/index.js";
+    const mermaid = "node_modules/.pnpm/mermaid@11.16.0/node_modules/mermaid/dist/mermaid.core.mjs";
+    const manifest = {
+      [d2]: { src: d2 },
+      entry: { dynamicImports: [d2, mermaid], isEntry: true },
+      [mermaid]: { src: mermaid }
+    };
+
+    expect(rendererLazyEntryViolations(manifest, [
+      "node_modules/@terrastruct/d2/dist/browser/index.js",
+      "node_modules/mermaid/dist/mermaid.core.mjs"
+    ])).toEqual([]);
   });
 
   it("JavaScriptとCSSを初期・遅延へ分類し、その他のassetを分離する", async () => {

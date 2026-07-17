@@ -1,5 +1,24 @@
 packages:
   - "."
 
+nodeLinker: hoisted
+
+allowBuilds:
+  electron: true
+  esbuild: true
+  fs-xattr: true
+  macos-alias: true
+
 minimumReleaseAge: 10080
 trustPolicy: no-downgrade
+trustPolicyExclude:
+  - semver@5.7.2
+  - semver@6.3.1
+  - undici-types@6.21.0
+
+overrides:
+  '@electron/node-gyp': 10.2.0-electron.1
+  esbuild: ^0.28.1
+  tar: ^7.5.11
+  tmp: ^0.2.6
+  ws: ^8.20.1

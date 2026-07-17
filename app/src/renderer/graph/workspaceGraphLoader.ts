@@ -40,7 +40,7 @@ function touch(key: string, entry: WorkspaceGraphCacheEntry): void {
 
 function enforceCacheLimit(): void {
   while (cache.size > maximumCachedWorkspaceGraphs) {
-    const oldestKey = cache.entries().find(([, entry]) => entry.status === "success")?.[0];
+    const oldestKey = Array.from(cache.entries()).find(([, entry]) => entry.status === "success")?.[0];
     if (oldestKey === undefined) return;
     cache.delete(oldestKey);
   }

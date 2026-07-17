@@ -6,7 +6,7 @@
 
 ## 確定スタック
 
-アプリ本体とNode依存関係は `app/` 配下で管理する。`app/package.json` の `packageManager` は `pnpm@10.10.0`。
+アプリ本体とNode依存関係は `app/` 配下で管理する。`app/package.json` の `packageManager` は `pnpm@11.13.1`。
 
 | カテゴリ | 技術 | 備考 |
 |---------|------|------|

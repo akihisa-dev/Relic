@@ -6,7 +6,7 @@
     "component": {
       "type": "application",
       "name": "relic",
-      "version": "0.18.3",
+      "version": "0.18.4",
       "licenses": [
         {
           "license": {
@@ -128,6 +128,25 @@
         {
           "type": "vcs",
           "url": "https://code.haverbeke.berlin/codemirror/view"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "@lezer/markdown",
+      "version": "1.6.3",
+      "purl": "pkg:npm/%40lezer/markdown@1.6.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/lezer-parser/markdown"
         }
       ]
     },

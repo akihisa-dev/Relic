@@ -66,7 +66,7 @@ function touch(key: string, entry: CacheEntry): void {
 
 function enforceLimit(): void {
   while (cache.size > maximumCachedWorkspaceCardLists) {
-    const oldest = cache.entries().find(([, entry]) => entry.status === "success")?.[0];
+    const oldest = Array.from(cache.entries()).find(([, entry]) => entry.status === "success")?.[0];
     if (oldest === undefined) return;
     cache.delete(oldest);
   }

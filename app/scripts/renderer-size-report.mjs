@@ -128,7 +128,9 @@ export function rendererLazyEntryViolations(manifest, requiredSources) {
   const violations = [];
 
   for (const requiredSource of requiredSources) {
-    const match = Object.entries(manifest).find(([, entry]) => entry.src === requiredSource);
+    const match = Object.entries(manifest).find(([, entry]) =>
+      canonicalRendererSource(entry.src) === requiredSource
+    );
     if (!match) {
       violations.push(`Missing renderer dependency entry: ${requiredSource}`);
       continue;
@@ -144,6 +146,13 @@ export function rendererLazyEntryViolations(manifest, requiredSources) {
   }
 
   return violations;
+}
+
+function canonicalRendererSource(source) {
+  return source?.replace(
+    /^node_modules\/\.pnpm\/[^/]+\/node_modules\//u,
+    "node_modules/"
+  );
 }
 
 export function rendererKatexFontAssetViolations(files) {
@@ -227,7 +236,9 @@ function findManifestLogicalName(manifest, file) {
 
 function manifestEntryLogicalName(entry) {
   if (entry.name) return entry.name;
-  if (entry.src && !path.basename(entry.src).startsWith("_")) return entry.src;
+  if (entry.src && !path.basename(entry.src).startsWith("_")) {
+    return canonicalRendererSource(entry.src);
+  }
   return stableAssetName(entry.file);
 }
 

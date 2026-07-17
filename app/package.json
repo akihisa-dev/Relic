@@ -1,11 +1,11 @@
 {
   "name": "relic",
-  "version": "0.18.3",
+  "version": "0.18.4",
   "description": "Relic is a local app that extends Markdown files with editing, search, browsing, visualization, and export while keeping the information as Markdown.",
   "license": "AGPL-3.0-or-later",
   "main": ".vite/build/main.js",
   "private": true,
-  "packageManager": "pnpm@10.10.0",
+  "packageManager": "pnpm@11.13.1",
   "engines": {
     "node": ">=22 <27"
   },
@@ -63,20 +63,6 @@
     "build:mac:safe": "node scripts/build-platform.mjs darwin",
     "build:win:safe": "node scripts/build-platform.mjs win32"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "electron",
-      "esbuild",
-      "fs-xattr",
-      "macos-alias"
-    ],
-    "overrides": {
-      "esbuild": "^0.28.1",
-      "tar": "^7.5.11",
-      "tmp": "^0.2.6",
-      "ws": "^8.20.1"
-    }
-  },
   "dependencies": {
     "3d-force-graph": "^1.80.0",
     "@codemirror/autocomplete": "^6.20.1",
@@ -85,6 +71,7 @@
     "@codemirror/language": "^6.12.4",
     "@codemirror/state": "^6.7.0",
     "@codemirror/view": "^6.43.4",
+    "@lezer/markdown": "^1.6.3",
     "@terrastruct/d2": "^0.1.33",
     "d3-force": "^3.0.0",
     "dompurify": "^3.4.11",
@@ -104,6 +91,7 @@
     "@electron-forge/maker-dmg": "^7.11.2",
     "@electron-forge/maker-zip": "^7.11.2",
     "@electron-forge/plugin-vite": "^7.11.2",
+    "@electron/asar": "^3.4.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@types/d3-force": "^3.0.10",

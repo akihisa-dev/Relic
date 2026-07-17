@@ -14,6 +14,7 @@ Relic 本体は AGPL-3.0-or-later で公開されています。
 | `@codemirror/language` | `6.12.4` | MIT | [link](https://code.haverbeke.berlin/codemirror/language) |
 | `@codemirror/state` | `6.7.0` | MIT | [link](https://code.haverbeke.berlin/codemirror/state) |
 | `@codemirror/view` | `6.43.4` | MIT | [link](https://code.haverbeke.berlin/codemirror/view) |
+| `@lezer/markdown` | `1.6.3` | MIT | [link](https://github.com/lezer-parser/markdown) |
 | `@terrastruct/d2` | `0.1.33` | MPL-2.0 | [link](https://github.com/terrastruct/d2) |
 | `3d-force-graph` | `1.80.0` | MIT | [link](https://github.com/vasturiano/3d-force-graph) |
 | `d3-force` | `3.0.0` | ISC | [link](https://github.com/d3/d3-force) |
