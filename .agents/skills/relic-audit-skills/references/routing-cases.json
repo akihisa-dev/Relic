@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "skillDescriptionDigest": "577dcf62d5c6f46423f3e88144800c84dfee46dd17c4c8a539debf179030b529",
+  "skillDescriptionDigest": "ab033a74e8c7b179c6c922587a01180b257a371763f843d5a096476d31d6ade0",
   "cases": [
     {
       "id": "issue-all-open",
@@ -23,6 +23,28 @@
       "permissionMode": "local-change",
       "expectedEndState": "単一領域の測定、局所改善、比較検証",
       "misrouteImpact": "依頼範囲を越えた包括的変更になる"
+    },
+    {
+      "id": "task-target-mismatch",
+      "request": "Relicを作業中です。添付したCI画像には別リポジトリ名が表示されていますが、調べて修正しpushしてください",
+      "expectedEntrySkill": "relic-guard-task",
+      "expectedSpecialistSkills": [],
+      "forbiddenSkills": ["relic-change-ci", "relic-publish-github"],
+      "requiredDocs": ["AGENTS.md"],
+      "permissionMode": "read-only-stop-on-target-mismatch",
+      "expectedEndState": "別リポジトリを作業対象へ推定せず、確認済みの不一致と必要な判断を報告して書き込まない",
+      "misrouteImpact": "無関係なリポジトリの変更と無断pushにつながる"
+    },
+    {
+      "id": "reference-first-ui",
+      "request": "このコードと画像の動きをRelicの設定トグルに使いたいです。まず単独見本だけを見せてください",
+      "expectedEntrySkill": "relic-change-ui",
+      "expectedSpecialistSkills": ["relic-guard-task"],
+      "forbiddenSkills": ["relic-commit", "relic-publish-github"],
+      "requiredDocs": ["docs/design/DESIGN.md"],
+      "permissionMode": "sample-only-no-product-change",
+      "expectedEndState": "見本の構造と動きを保つ単独サンプルを実表示確認し、製品コードは変更しない",
+      "misrouteImpact": "見本の意図を外した独自デザイン実装と不要なコミットにつながる"
     },
     {
       "id": "full-refactor",

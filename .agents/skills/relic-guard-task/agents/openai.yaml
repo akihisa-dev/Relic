@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic作業ガード"
+  short_description: "対象・意図・外部操作・完了証拠の取り違えを変更前後で防止"
+  default_prompt: "$relic-guard-task を使い、Relicの対象・意図・外部操作・完了証拠を変更前後に検証してください。"

@@ -81,6 +81,7 @@
 
 ## オンデマンド手順
 
+- Relicを起点とするローカル変更、コミット、外部書き込みでは `.agents/skills/relic-guard-task/SKILL.md` を各専門Skillと併用し、作業対象、根拠、提示見本の意図、許可範囲、完了証拠を変更前後に照合する
 - UI、デザイン、画面構成、操作感、表示状態の変更では `.agents/skills/relic-change-ui/SKILL.md` に従う
 - 実アプリの起動、GUI操作、実画面確認、スクリーンショットでは `.agents/skills/relic-test-development-app/SKILL.md` に従う
 - 自動テストの追加・修正、ローカルのテスト失敗、flaky test、coverage不足の切り分けでは `.agents/skills/relic-test-code/SKILL.md` に従う
