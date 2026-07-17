@@ -59,7 +59,9 @@ describe("CardView", () => {
       </I18nProvider>
     );
 
-    expect(await screen.findByRole("button", { name: "Moonを開く" })).toBeInTheDocument();
+    const cardButton = await screen.findByRole("button", { name: "Moonを開く" });
+    expect(cardButton).toBeInTheDocument();
+    expect(cardButton.parentElement).toHaveClass("card-view-body");
     expect(screen.queryByText("カード")).not.toBeInTheDocument();
     expect(screen.queryByText("カードビュー")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Moon" })).toHaveAttribute("aria-current", "true");
@@ -148,8 +150,14 @@ describe("CardView", () => {
 
     await screen.findByRole("button", { name: "Moonを開く" });
     await waitFor(() => expect(readImageFile).toHaveBeenCalledWith({ path: "notes/images/moon.webp" }));
+    const imageFrame = view.container.querySelector<HTMLElement>(".card-view-image-frame");
+    const loadingImage = view.container.querySelector<HTMLElement>('.card-view-image[data-image-state="loading"]');
+    expect(imageFrame).toContainElement(loadingImage);
+    expect(loadingImage?.querySelector(".card-view-image-placeholder")).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("button", { name: "Sun" }));
     await waitFor(() => expect(view.container.querySelector("img")).toHaveAttribute("src", "data:image/webp;base64,c3Vu"));
+    expect(view.container.querySelector(".card-view-image-frame")).toBe(imageFrame);
 
     act(() => {
       resolveMoon?.({ ok: true, value: { dataUrl: "data:image/webp;base64,bW9vbg==" } });
