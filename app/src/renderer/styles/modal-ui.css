@@ -99,3 +99,42 @@
   font-size: 13px;
   padding: 12px 16px;
 }
+
+/* Keep the quick switcher as a flat file list instead of inheriting button chrome. */
+.modal-overlay .quick-switcher {
+  border-radius: 8px;
+}
+
+.quick-switcher .command-palette-input:focus-visible {
+  border-bottom-color: var(--border-medium);
+  outline: none;
+}
+
+.quick-switcher .command-list {
+  padding: 4px;
+}
+
+.quick-switcher .command-item {
+  border-radius: 2px;
+  min-height: 40px;
+  padding: 0 16px;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard);
+  width: 100%;
+}
+
+.quick-switcher .command-item:hover,
+.quick-switcher .command-item:active {
+  transform: none;
+}
+
+.quick-switcher .command-item--selected {
+  animation: none;
+  background: var(--material-concrete);
+  background-size: var(--material-size-concrete);
+}
+
+.quick-switcher .command-item--selected::before {
+  content: none;
+}
