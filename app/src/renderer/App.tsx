@@ -71,6 +71,8 @@ export function App(): ReactElement {
   } = useWorkspaceRenameRailHold();
 
   const {
+    canNavigateBack,
+    canNavigateForward,
     editorSettings,
     focusedPane,
     isSplit,
@@ -83,6 +85,8 @@ export function App(): ReactElement {
     closeTabsToRight,
     closeAllTabsInPane,
     moveTab,
+    navigateBack,
+    navigateForward,
     openFileInPane,
     openImageInPane,
     openPdfInPane,
@@ -676,9 +680,13 @@ export function App(): ReactElement {
       workspaceState
     },
     shell: {
+      canNavigateBack,
+      canNavigateForward,
       editorSettings,
       handleSaveSettings,
       isDarkTheme,
+      navigateBack,
+      navigateForward,
       showThemeSwitch: isMacPlatform()
     },
     statusBar: {

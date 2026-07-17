@@ -6,6 +6,8 @@ type UiStoreState = ReturnType<typeof useUiStore.getState>;
 
 export function selectAppEditorStoreState(state: EditorStoreState) {
   return {
+    canNavigateBack: state.navigationIndex > 0,
+    canNavigateForward: state.navigationIndex < state.navigationHistory.length - 1,
     closeAllTabs: state.closeAllTabs,
     closeAllTabsInPane: state.closeAllTabsInPane,
     closeOtherTabs: state.closeOtherTabs,
@@ -17,6 +19,8 @@ export function selectAppEditorStoreState(state: EditorStoreState) {
     leftPane: state.leftPane,
     markTabSaved: state.markTabSaved,
     moveTab: state.moveTab,
+    navigateBack: state.navigateBack,
+    navigateForward: state.navigateForward,
     openChartInPane: state.openChartInPane,
     openFileInPane: state.openFileInPane,
     openImageInPane: state.openImageInPane,

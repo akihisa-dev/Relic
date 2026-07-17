@@ -2,17 +2,26 @@ import type { ReactElement, ReactNode } from "react";
 
 import type { AppTheme } from "../../shared/ipc";
 import { useT } from "../i18n";
+import { DelayedTooltip } from "./DelayedTooltip";
 
 export interface AppTitleBarProps {
+  canNavigateBack: boolean;
+  canNavigateForward: boolean;
   children?: ReactNode;
   isDarkTheme: boolean;
+  onNavigateBack: () => void;
+  onNavigateForward: () => void;
   onThemeChange: (theme: Exclude<AppTheme, "system">) => void;
   showThemeSwitch: boolean;
 }
 
 export function AppTitleBar({
+  canNavigateBack,
+  canNavigateForward,
   children,
   isDarkTheme,
+  onNavigateBack,
+  onNavigateForward,
   onThemeChange,
   showThemeSwitch
 }: AppTitleBarProps): ReactElement {
@@ -34,8 +43,54 @@ export function AppTitleBar({
           </span>
         </label>
       ) : null}
+      <div
+        aria-label={t("nav.history")}
+        className={`title-bar-navigation${showThemeSwitch ? " title-bar-navigation--after-theme" : ""}`}
+        role="group"
+      >
+        <DelayedTooltip className="delayed-tooltip--below" label={t("nav.back")}>
+          <button
+            aria-label={t("nav.back")}
+            className="title-bar-navigation-button"
+            disabled={!canNavigateBack}
+            onClick={onNavigateBack}
+            type="button"
+          >
+            <NavigationChevron direction="back" />
+          </button>
+        </DelayedTooltip>
+        <DelayedTooltip className="delayed-tooltip--below" label={t("nav.forward")}>
+          <button
+            aria-label={t("nav.forward")}
+            className="title-bar-navigation-button"
+            disabled={!canNavigateForward}
+            onClick={onNavigateForward}
+            type="button"
+          >
+            <NavigationChevron direction="forward" />
+          </button>
+        </DelayedTooltip>
+      </div>
       <div className="title-bar-drag-area" />
       {children}
     </div>
+  );
+}
+
+function NavigationChevron({ direction }: { direction: "back" | "forward" }): ReactElement {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="18"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.7"
+      viewBox="0 0 24 24"
+      width="18"
+    >
+      <path d={direction === "back" ? "m15 18-6-6 6-6" : "m9 18 6-6-6-6"} />
+    </svg>
   );
 }

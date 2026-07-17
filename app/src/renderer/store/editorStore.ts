@@ -3,6 +3,12 @@ import { create } from "zustand";
 import { defaultEditorSettings, type EditorSettings, type MarkdownFileContent } from "../../shared/ipc";
 import { flushPendingEditorChanges } from "../editorInputBuffer";
 import {
+  moveEditorNavigationState,
+  pruneEditorNavigationState,
+  recordEditorNavigationState,
+  type EditorNavigationEntry
+} from "./editorNavigationHistoryModel";
+import {
   closeAllTabsInPaneState,
   closeAllTabsState,
   closeOtherTabsState,
@@ -44,6 +50,8 @@ interface EditorStore {
   focusedPane: PaneId;
   isSplit: boolean;
   leftPane: PaneState;
+  navigationHistory: EditorNavigationEntry[];
+  navigationIndex: number;
   rightPane: PaneState;
   tabs: Record<string, Tab>;
 
@@ -53,6 +61,8 @@ interface EditorStore {
   closeAllTabsInPane: (pane: PaneId) => void;
   moveTab: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
   markTabSaved: (tabId: string, content: string) => void;
+  navigateBack: () => void;
+  navigateForward: () => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
   openImageInPane: (pane: PaneId, image: { name: string; path: string }) => void;
   openPdfInPane: (pane: PaneId, pdf: { name: string; path: string }) => void;
@@ -76,54 +86,66 @@ export const useEditorStore = create<EditorStore>((set) => ({
   focusedPane: "left",
   isSplit: false,
   leftPane: emptyPane(),
+  navigationHistory: [],
+  navigationIndex: -1,
   rightPane: emptyPane(),
   tabs: {},
 
   openFileInPane: (pane, file) => {
     const id = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     set((state) => {
-      return openFileTabState(state, pane, file, id);
+      return recordEditorNavigationState(state, openFileTabState(state, pane, file, id));
     });
   },
 
   openImageInPane: (pane, image) => {
     const id = `image-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     set((state) => {
-      return openImageTabState(state, pane, image, id);
+      return recordEditorNavigationState(state, openImageTabState(state, pane, image, id));
     });
   },
 
   openPdfInPane: (pane, pdf) => {
     const id = `pdf-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     set((state) => {
-      return openPdfTabState(state, pane, pdf, id);
+      return recordEditorNavigationState(state, openPdfTabState(state, pane, pdf, id));
     });
   },
 
   openPanelInPane: (pane, panel, name) => {
     set((state) => {
-      return openPanelTabState(state, pane, panel, name);
+      return recordEditorNavigationState(state, openPanelTabState(state, pane, panel, name));
     });
   },
 
   openChartInPane: (pane, chart) => {
     set((state) => {
-      return openChartTabState(state, pane, chart);
+      return recordEditorNavigationState(state, openChartTabState(state, pane, chart));
     });
   },
 
   closeTab: (pane, tabId) => {
     flushPendingEditorChanges([tabId]);
     set((state) => {
-      return closeTabState(state, pane, tabId);
+      return pruneEditorNavigationState(state, closeTabState(state, pane, tabId));
     });
   },
 
   setTabActive: (pane, tabId) => {
     flushPendingEditorChanges();
     set((state) => {
-      return setTabActiveState(state, pane, tabId);
+      return recordEditorNavigationState(state, setTabActiveState(state, pane, tabId));
     });
+  },
+
+  navigateBack: () => {
+    flushPendingEditorChanges();
+    set((state) => moveEditorNavigationState(state, -1));
+  },
+
+  navigateForward: () => {
+    flushPendingEditorChanges();
+    set((state) => moveEditorNavigationState(state, 1));
   },
 
   toggleTabPinned: (tabId) => {
@@ -147,37 +169,42 @@ export const useEditorStore = create<EditorStore>((set) => ({
 
   toggleSplit: () => {
     set((state) => {
-      return toggleSplitState(state);
+      return recordEditorNavigationState(state, toggleSplitState(state));
     });
   },
 
-  setFocusedPane: (pane) => set({ focusedPane: pane }),
+  setFocusedPane: (pane) => {
+    set((state) => recordEditorNavigationState(state, { focusedPane: pane }));
+  },
 
   closeOtherTabs: (pane, tabId) => {
     flushPendingEditorChanges();
     set((state) => {
-      return closeOtherTabsState(state, pane, tabId);
+      return pruneEditorNavigationState(state, closeOtherTabsState(state, pane, tabId));
     });
   },
 
   closeTabsToRight: (pane, tabId) => {
     flushPendingEditorChanges();
     set((state) => {
-      return closeTabsToRightState(state, pane, tabId);
+      return pruneEditorNavigationState(state, closeTabsToRightState(state, pane, tabId));
     });
   },
 
   closeAllTabsInPane: (pane) => {
     flushPendingEditorChanges();
     set((state) => {
-      return closeAllTabsInPaneState(state, pane);
+      return pruneEditorNavigationState(state, closeAllTabsInPaneState(state, pane));
     });
   },
 
   moveTab: (fromPane, toPane, tabId, targetTabId = null, position = "after") => {
     flushPendingEditorChanges([tabId]);
     set((state) => {
-      return moveTabState(state, fromPane, toPane, tabId, targetTabId, position);
+      return recordEditorNavigationState(
+        state,
+        moveTabState(state, fromPane, toPane, tabId, targetTabId, position)
+      );
     });
   },
 
@@ -212,6 +239,10 @@ export const useEditorStore = create<EditorStore>((set) => ({
 
   closeAllTabs: () => {
     flushPendingEditorChanges();
-    set(closeAllTabsState());
+    set({
+      ...closeAllTabsState(),
+      navigationHistory: [],
+      navigationIndex: -1
+    });
   }
 }));

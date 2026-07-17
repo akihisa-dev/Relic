@@ -17,9 +17,13 @@ export interface AppLayoutPropsInput {
 }
 
 export interface AppLayoutShellInput {
+  canNavigateBack: boolean;
+  canNavigateForward: boolean;
   editorSettings: EditorWorkspaceProps["editorSettings"];
   handleSaveSettings: (settings: EditorWorkspaceProps["editorSettings"]) => void;
   isDarkTheme: boolean;
+  navigateBack: () => void;
+  navigateForward: () => void;
   showThemeSwitch: boolean;
 }
 

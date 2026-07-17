@@ -35,6 +35,8 @@ export function resetRendererStores(): void {
     focusedPane: "left",
     isSplit: false,
     leftPane: { activeTabId: null, history: [], tabIds: [] },
+    navigationHistory: [],
+    navigationIndex: -1,
     rightPane: { activeTabId: null, history: [], tabIds: [] },
     tabs: {}
   });

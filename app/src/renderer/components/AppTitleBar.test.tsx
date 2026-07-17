@@ -6,18 +6,29 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "../i18n";
 import { AppTitleBar } from "./AppTitleBar";
 
-function renderTitleBar({ isDarkTheme = false, showThemeSwitch = true } = {}) {
+function renderTitleBar({
+  canNavigateBack = false,
+  canNavigateForward = false,
+  isDarkTheme = false,
+  showThemeSwitch = true
+} = {}) {
+  const onNavigateBack = vi.fn();
+  const onNavigateForward = vi.fn();
   const onThemeChange = vi.fn();
   render(
     <I18nProvider language="ja">
       <AppTitleBar
+        canNavigateBack={canNavigateBack}
+        canNavigateForward={canNavigateForward}
         isDarkTheme={isDarkTheme}
+        onNavigateBack={onNavigateBack}
+        onNavigateForward={onNavigateForward}
         onThemeChange={onThemeChange}
         showThemeSwitch={showThemeSwitch}
       />
     </I18nProvider>
   );
-  return onThemeChange;
+  return { onNavigateBack, onNavigateForward, onThemeChange };
 }
 
 afterEach(() => {
@@ -35,10 +46,14 @@ describe("AppTitleBar", () => {
     const toggle = screen.getByRole("checkbox", { name: "ダークテーマに切り替える" });
     expect(toggle).not.toBeChecked();
     expect(document.querySelector(".title-bar-theme-switch .track .thumb")).toBeInTheDocument();
+    const historyControls = screen.getByRole("group", { name: "閲覧履歴" });
+    expect(toggle.closest("label")?.nextElementSibling).toBe(historyControls);
+    expect(screen.getByRole("button", { name: "戻る" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "進む" })).toBeDisabled();
   });
 
   it("switches from the current theme to the other fixed theme", () => {
-    const onThemeChange = renderTitleBar({ isDarkTheme: true });
+    const { onThemeChange } = renderTitleBar({ isDarkTheme: true });
 
     const toggle = screen.getByRole("checkbox", { name: "ライトテーマに切り替える" });
     expect(toggle).toBeChecked();
@@ -52,12 +67,34 @@ describe("AppTitleBar", () => {
     renderTitleBar({ showThemeSwitch: false });
 
     expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.getByRole("group", { name: "閲覧履歴" })).toBeInTheDocument();
+  });
+
+  it("moves backward and forward when the corresponding history exists", () => {
+    const { onNavigateBack, onNavigateForward } = renderTitleBar({
+      canNavigateBack: true,
+      canNavigateForward: true
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "戻る" }));
+    fireEvent.click(screen.getByRole("button", { name: "進む" }));
+
+    expect(onNavigateBack).toHaveBeenCalledTimes(1);
+    expect(onNavigateForward).toHaveBeenCalledTimes(1);
   });
 
   it("can host header actions without making them part of the drag area", () => {
     render(
       <I18nProvider language="ja">
-        <AppTitleBar isDarkTheme={false} onThemeChange={vi.fn()} showThemeSwitch>
+        <AppTitleBar
+          canNavigateBack={false}
+          canNavigateForward={false}
+          isDarkTheme={false}
+          onNavigateBack={vi.fn()}
+          onNavigateForward={vi.fn()}
+          onThemeChange={vi.fn()}
+          showThemeSwitch
+        >
           <div className="main-area-actions">
             <button type="button">Action</button>
           </div>
@@ -78,6 +115,7 @@ describe("AppTitleBar", () => {
     expect(designCss).toMatch(/\.app-shell\s*\{[^}]*grid-template-rows:\s*42px minmax\(0, 1fr\) 32px;/s);
     expect(css).toMatch(/\.title-bar\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/s);
     expect(css).toMatch(/\.title-bar-drag-area\s*\{[^}]*grid-column:\s*1;/s);
+    expect(css).toMatch(/\.title-bar-navigation--after-theme\s*\{[^}]*left:\s*150px;/s);
     expect(css).toMatch(/\.title-bar\s*\{[^}]*z-index:\s*40;/s);
     expect(designCss).toMatch(/--chrome-top-bg:\s*var\(--title-bar-bg\);/);
     expect(designCss).toMatch(/\.title-bar\s*\{[^}]*box-shadow:\s*inset 0 -1px 0 var\(--chrome-top-border, var\(--border\)\);/s);

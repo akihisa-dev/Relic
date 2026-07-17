@@ -212,7 +212,11 @@ export function createStatusBarProps(input: AppLayoutStatusBarInput): StatusBarP
 
 export function createTitleBarProps(input: AppLayoutPropsInput): TitleBarProps {
   return {
+    canNavigateBack: input.shell.canNavigateBack,
+    canNavigateForward: input.shell.canNavigateForward,
     isDarkTheme: input.shell.isDarkTheme,
+    onNavigateBack: input.shell.navigateBack,
+    onNavigateForward: input.shell.navigateForward,
     onThemeChange: (theme) => input.shell.handleSaveSettings({ ...input.shell.editorSettings, theme }),
     showThemeSwitch: input.shell.showThemeSwitch
   };

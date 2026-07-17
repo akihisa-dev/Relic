@@ -27,6 +27,8 @@ function resetStore(): void {
     focusedPane: "left",
     isSplit: false,
     leftPane: { activeTabId: null, history: [], tabIds: [] },
+    navigationHistory: [],
+    navigationIndex: -1,
     rightPane: { activeTabId: null, history: [], tabIds: [] },
     tabs: {}
   });
@@ -140,6 +142,94 @@ describe("editorStore", () => {
       "panel-settings",
       secondTabId
     ]);
+  });
+
+  it("開いたファイルの履歴を戻り、同じ履歴を進める", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    const firstTabId = useEditorStore.getState().leftPane.activeTabId!;
+    useEditorStore.getState().openFileInPane("left", sampleFile2);
+    const secondTabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    expect(useEditorStore.getState().navigationHistory.map((entry) => entry.tabId)).toEqual([
+      firstTabId,
+      secondTabId
+    ]);
+
+    useEditorStore.getState().navigateBack();
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe(firstTabId);
+    expect(useEditorStore.getState().navigationIndex).toBe(0);
+
+    useEditorStore.getState().navigateForward();
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe(secondTabId);
+    expect(useEditorStore.getState().navigationIndex).toBe(1);
+  });
+
+  it("戻った後に別のタブを選ぶと進む履歴を破棄する", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    const firstTabId = useEditorStore.getState().leftPane.activeTabId!;
+    useEditorStore.getState().openFileInPane("left", sampleFile2);
+    const secondTabId = useEditorStore.getState().leftPane.activeTabId!;
+    useEditorStore.getState().openFileInPane("left", sampleFile3);
+
+    useEditorStore.getState().navigateBack();
+    useEditorStore.getState().setTabActive("left", firstTabId);
+    const selectedState = useEditorStore.getState();
+
+    expect(selectedState.navigationHistory.map((entry) => entry.tabId)).toEqual([
+      firstTabId,
+      secondTabId,
+      firstTabId
+    ]);
+    expect(selectedState.navigationIndex).toBe(selectedState.navigationHistory.length - 1);
+
+    useEditorStore.getState().navigateForward();
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe(firstTabId);
+  });
+
+  it("パネルタブも前後の閲覧履歴に含める", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    const fileTabId = useEditorStore.getState().leftPane.activeTabId!;
+    useEditorStore.getState().openPanelInPane("left", "settings", "設定");
+
+    useEditorStore.getState().navigateBack();
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe(fileTabId);
+
+    useEditorStore.getState().navigateForward();
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-settings");
+  });
+
+  it("分割ペインをまたいで履歴のタブとペインを復元する", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    const leftTabId = useEditorStore.getState().leftPane.activeTabId!;
+    useEditorStore.getState().toggleSplit();
+    useEditorStore.getState().openFileInPane("right", sampleFile2);
+    const rightTabId = useEditorStore.getState().rightPane.activeTabId!;
+
+    useEditorStore.getState().navigateBack();
+    expect(useEditorStore.getState()).toMatchObject({
+      focusedPane: "left",
+      leftPane: { activeTabId: leftTabId }
+    });
+
+    useEditorStore.getState().navigateForward();
+    expect(useEditorStore.getState()).toMatchObject({
+      focusedPane: "right",
+      rightPane: { activeTabId: rightTabId }
+    });
+  });
+
+  it("閉じたタブを閲覧履歴から除外する", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    const firstTabId = useEditorStore.getState().leftPane.activeTabId!;
+    useEditorStore.getState().openFileInPane("left", sampleFile2);
+    const secondTabId = useEditorStore.getState().leftPane.activeTabId!;
+    useEditorStore.getState().setTabActive("left", firstTabId);
+
+    useEditorStore.getState().closeTab("left", secondTabId);
+    const state = useEditorStore.getState();
+
+    expect(state.navigationHistory).toEqual([{ pane: "left", tabId: firstTabId }]);
+    expect(state.navigationIndex).toBe(0);
   });
 
   it("タブを閉じると履歴ベースで直前のタブがアクティブになる", () => {
@@ -428,5 +518,7 @@ describe("editorStore", () => {
 
     expect(state.leftPane.tabIds).toHaveLength(0);
     expect(Object.keys(state.tabs)).toHaveLength(0);
+    expect(state.navigationHistory).toEqual([]);
+    expect(state.navigationIndex).toBe(-1);
   });
 });

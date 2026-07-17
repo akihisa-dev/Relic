@@ -122,6 +122,50 @@ describe("App file tabs", () => {
     expect(await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).toBeInTheDocument();
   });
 
+  it("タイトルバーの戻る・進むで直前のファイルタブを行き来する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "前のファイル", path: "前のファイル.md", type: "file" },
+            { name: "次のファイル", path: "次のファイル.md", type: "file" }
+          ]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockImplementation(({ path }: { path: string }) => Promise.resolve({
+        ok: true,
+        value: { content: `${path} の本文`, name: path.replace(/\.md$/, ""), path }
+      }))
+    });
+
+    const { container } = await renderApp();
+    const backButton = screen.getByRole("button", { name: "戻る" });
+    const forwardButton = screen.getByRole("button", { name: "進む" });
+    expect(backButton).toBeDisabled();
+    expect(forwardButton).toBeDisabled();
+
+    await screen.findByText("前のファイル", { selector: ".file-tree-name" });
+    fireEvent.click(container.querySelector('[data-node-path="前のファイル.md"]') as Element);
+    await screen.findByText("前のファイル", { selector: ".pane-tab-name" });
+    expect(backButton).toBeDisabled();
+
+    fireEvent.click(container.querySelector('[data-node-path="次のファイル.md"]') as Element);
+    const nextTab = (await screen.findByText("次のファイル", { selector: ".pane-tab-name" })).closest(".pane-tab");
+    await waitFor(() => expect(nextTab).toHaveClass("pane-tab--active"));
+    expect(backButton).toBeEnabled();
+    expect(forwardButton).toBeDisabled();
+
+    fireEvent.click(backButton);
+    const previousTab = screen.getByText("前のファイル", { selector: ".pane-tab-name" }).closest(".pane-tab");
+    await waitFor(() => expect(previousTab).toHaveClass("pane-tab--active"));
+    expect(forwardButton).toBeEnabled();
+
+    fireEvent.click(forwardButton);
+    await waitFor(() => expect(nextTab).toHaveClass("pane-tab--active"));
+  });
+
   it("ファイルツリーの対応画像をクリックすると画像タブで表示する", async () => {
     const readMarkdownFile = vi.fn();
     const readImageFile = vi.fn().mockResolvedValue({
