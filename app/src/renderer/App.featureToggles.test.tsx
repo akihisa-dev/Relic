@@ -88,7 +88,7 @@ describe("App feature toggles", () => {
     expect(screen.queryByRole("button", { name: "カード" })).toBeNull();
   });
 
-  it("テーブル機能を有効にした場合だけ左レールからテーブルタブを開く", async () => {
+  it("旧テーブル機能が有効な場合も統合フロントマタータブを開く", async () => {
     const getWorkspaceTable = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -108,8 +108,9 @@ describe("App feature toggles", () => {
 
     await renderApp();
 
-    const tableButton = await screen.findByRole("button", { name: "テーブル" });
-    fireEvent.click(tableButton);
+    const frontmatterButton = await screen.findByRole("button", { name: "フロントマター" });
+    expect(screen.queryByRole("button", { name: "テーブル" })).not.toBeInTheDocument();
+    fireEvent.click(frontmatterButton);
     expect(await screen.findByText("1件のファイル")).toBeInTheDocument();
     expect(getWorkspaceTable).toHaveBeenCalledOnce();
   });

@@ -77,6 +77,57 @@ describe("TableView", () => {
     expect(tableElement.querySelector<HTMLElement>(".table-view-header")?.style.minWidth).toBe("450px");
   });
 
+  it("固定プロパティの列から説明とcategory候補を管理する", async () => {
+    const onCategoryChoicesSave = vi.fn();
+    const categoryTable: WorkspaceTable = {
+      ...table,
+      availableProperties: ["category"],
+      selectedProperties: ["category"],
+      rows: table.rows.map((row, index) => ({
+        ...row,
+        properties: {
+          category: { kind: "string", text: index === 0 ? "War" : "Politics" }
+        }
+      }))
+    };
+    window.relic = makeRelicApi({
+      getWorkspaceTable: vi.fn().mockResolvedValue({ ok: true, value: categoryTable })
+    });
+    render(
+      <I18nProvider language="en">
+        <TableView
+          categoryChoices={["War"]}
+          onCategoryChoicesSave={onCategoryChoicesSave}
+          onOpenFile={vi.fn()}
+          refreshRevision={0}
+          workspaceId="workspace-1"
+        />
+      </I18nProvider>
+    );
+
+    await screen.findByText("2 files");
+    fireEvent.click(screen.getByRole("button", { name: "category settings" }));
+
+    expect(screen.getByRole("dialog", { name: "category settings" })).toBeInTheDocument();
+    expect(screen.getByText("Fixed")).toBeInTheDocument();
+    expect(screen.getByText("A single value used to classify a file. Choose from workspace category choices or keep an existing value.")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Enter a choice" }), { target: { value: "Archive" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add choice" }));
+    expect(onCategoryChoicesSave).toHaveBeenCalledWith(["War", "Archive"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "YAML writing guide" }));
+    expect(screen.getByText("category: War")).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "category settings" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Columns" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open aliases reference" }));
+    expect(screen.getByText("Alternative names that can link to this file. Used for link resolution and file name search. Write values as a standard YAML list.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Back to columns/ })).toBeInTheDocument();
+  });
+
   it("更新番号が変わると再取得し、表示列と並べ替え条件を維持する", async () => {
     const updatedTable: WorkspaceTable = {
       ...table,

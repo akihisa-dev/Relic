@@ -182,6 +182,9 @@ export function useAppTabRenderers({
           <LazyFrontmatterPanel
             categoryChoices={categoryChoices}
             onCategoryChoicesSave={handleSaveCategoryChoices}
+            onOpenFile={handleOpenFile}
+            refreshRevision={workspaceDataRevision}
+            workspaceId={workspaceCacheKey}
           />
         </Suspense>
       );
@@ -207,6 +210,8 @@ export function useAppTabRenderers({
     handleSaveFeatureToggles,
     handleSaveCategoryChoices,
     handleSaveSettings,
+    workspaceCacheKey,
+    workspaceDataRevision,
     workspaceState
   ]);
 

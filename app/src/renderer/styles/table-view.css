@@ -87,6 +87,45 @@
   overflow: auto;
 }
 
+.table-fixed-property-reference {
+  border-top: 1px solid var(--border-soft);
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+  padding-top: 10px;
+}
+
+.table-fixed-property-reference > .frontmatter-field-group-label {
+  padding: 0 8px 4px;
+}
+
+.table-fixed-property-reference > button,
+.table-column-reference-back {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  display: flex;
+  font: inherit;
+  justify-content: space-between;
+  padding: 7px 8px;
+  text-align: left;
+  width: 100%;
+}
+
+.table-fixed-property-reference > button:hover,
+.table-column-reference-back:hover {
+  background: var(--hover);
+}
+
+.table-column-reference-back {
+  color: var(--text-2);
+  font-size: 12px;
+  margin-bottom: 8px;
+  width: auto;
+}
+
 .table-column-option {
   align-items: center;
   border-radius: var(--radius-sm);
@@ -174,7 +213,7 @@
   z-index: 7;
 }
 
-.table-view-cell[role="columnheader"] button {
+.table-view-cell[role="columnheader"] .table-sort-button {
   align-items: center;
   background: transparent;
   border: 0;
@@ -189,7 +228,8 @@
   min-width: 0;
   padding: 0;
   text-align: left;
-  width: 100%;
+  flex: 1;
+  width: auto;
 }
 
 .table-view-cell[role="columnheader"] button:focus-visible,
@@ -203,6 +243,108 @@
 .table-sort-indicator {
   color: var(--text-3);
   flex: 0 0 auto;
+}
+
+.table-property-settings-trigger {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  display: inline-flex;
+  flex: 0 0 24px;
+  font: inherit;
+  height: 26px;
+  justify-content: center;
+  padding: 0;
+}
+
+.table-property-settings-trigger:hover,
+.table-property-settings-trigger[aria-expanded="true"] {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.table-property-popover {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 32px var(--shadow);
+  color: var(--text);
+  left: 8px;
+  min-width: 280px;
+  padding: 12px;
+  position: absolute;
+  top: calc(100% + 6px);
+  width: min(340px, calc(100vw - 40px));
+  z-index: 30;
+}
+
+.table-property-popover-content {
+  display: grid;
+  gap: 12px;
+}
+
+.table-property-popover-heading {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.table-property-popover-heading strong {
+  font-size: 14px;
+}
+
+.table-property-popover-content > p,
+.table-property-reference > p {
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.table-property-category {
+  border-top: 1px solid var(--border-soft);
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.table-property-popover .frontmatter-choice-editor {
+  gap: 8px;
+}
+
+.table-property-popover .frontmatter-choice-add {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.table-property-reference-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--border-soft);
+  color: var(--text);
+  display: flex;
+  font: inherit;
+  font-size: 12px;
+  justify-content: space-between;
+  margin: 0 -12px -12px;
+  padding: 11px 12px;
+  text-align: left;
+}
+
+.table-property-reference-toggle:hover {
+  background: var(--hover);
+}
+
+.table-property-reference {
+  display: grid;
+  gap: 8px;
+}
+
+.table-property-reference .frontmatter-field-examples {
+  margin: 0;
 }
 
 .table-view-cell--file {

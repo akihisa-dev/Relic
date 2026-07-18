@@ -9,7 +9,13 @@ import {
   type SetStateAction
 } from "react";
 
-import type { WorkspaceTable, WorkspaceTableRow, WorkspaceTableValue } from "../../shared/ipc";
+import type {
+  FrontmatterCategoryChoice,
+  WorkspaceTable,
+  WorkspaceTableRow,
+  WorkspaceTableValue
+} from "../../shared/ipc";
+import { FIXED_FIELDS } from "../frontmatterSettingsModel";
 import { useT } from "../i18n";
 import { relicClient } from "../relicClient";
 import {
@@ -22,14 +28,19 @@ import {
 } from "../table/tableViewModel";
 import { resetWorkspaceTableCache } from "../table/workspaceTableLoader";
 import { useWorkspaceTableState } from "../table/useWorkspaceTableState";
+import { TableFixedPropertyReferenceList, TablePropertyPopover } from "./TablePropertyPopover";
 
 const rowHeight = 48;
 
 export function TableView({
+  categoryChoices = [],
+  onCategoryChoicesSave = () => undefined,
   onOpenFile,
   refreshRevision,
   workspaceId
 }: {
+  categoryChoices?: FrontmatterCategoryChoice[];
+  onCategoryChoicesSave?: (choices: FrontmatterCategoryChoice[]) => void;
   onOpenFile: (path: string) => void;
   refreshRevision: number;
   workspaceId: string;
@@ -72,7 +83,9 @@ export function TableView({
 
   return (
     <ReadyTable
+      categoryChoices={categoryChoices}
       key={workspaceId}
+      onCategoryChoicesSave={onCategoryChoicesSave}
       onOpenFile={onOpenFile}
       setSort={setSort}
       sort={sort}
@@ -81,7 +94,9 @@ export function TableView({
   );
 }
 
-function ReadyTable({ onOpenFile, setSort, sort, table }: {
+function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, setSort, sort, table }: {
+  categoryChoices: FrontmatterCategoryChoice[];
+  onCategoryChoicesSave: (choices: FrontmatterCategoryChoice[]) => void;
   onOpenFile: (path: string) => void;
   setSort: Dispatch<SetStateAction<TableSort>>;
   sort: TableSort;
@@ -92,6 +107,8 @@ function ReadyTable({ onOpenFile, setSort, sort, table }: {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [columnReferenceProperty, setColumnReferenceProperty] = useState<string | null>(null);
+  const [openProperty, setOpenProperty] = useState<string | null>(null);
   const [propertySearch, setPropertySearch] = useState("");
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(600);
@@ -120,6 +137,7 @@ function ReadyTable({ onOpenFile, setSort, sort, table }: {
 
   useEffect(() => {
     setSelectedProperties(table.selectedProperties);
+    setOpenProperty((current) => current && table.availableProperties.includes(current) ? current : null);
     setSort((current) => current.property !== null && !table.availableProperties.includes(current.property)
       ? { direction: "asc", property: null }
       : current);
@@ -128,10 +146,16 @@ function ReadyTable({ onOpenFile, setSort, sort, table }: {
   useEffect(() => {
     if (!menuOpen) return;
     const close = (event: PointerEvent): void => {
-      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+        setColumnReferenceProperty(null);
+      }
     };
     const escape = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        setColumnReferenceProperty(null);
+      }
     };
     document.addEventListener("pointerdown", close);
     document.addEventListener("keydown", escape);
@@ -167,6 +191,11 @@ function ReadyTable({ onOpenFile, setSort, sort, table }: {
     }
   };
 
+  const toggleColumnMenu = (): void => {
+    if (menuOpen) setColumnReferenceProperty(null);
+    setMenuOpen(!menuOpen);
+  };
+
   return (
     <section aria-label={t("table.title")} className="table-view">
       <header className="table-view-toolbar">
@@ -176,38 +205,58 @@ function ReadyTable({ onOpenFile, setSort, sort, table }: {
             aria-expanded={menuOpen}
             aria-haspopup="dialog"
             className="table-column-menu-trigger"
-            onClick={() => setMenuOpen((open) => !open)}
+            onClick={toggleColumnMenu}
             type="button"
           >
             {t("table.columns")}
           </button>
           {menuOpen ? (
             <div aria-label={t("table.columns")} className="table-column-popover" role="dialog">
-              {table.availableProperties.length > 0 ? (
+              {columnReferenceProperty ? (
                 <>
-                  <input
-                    aria-label={t("table.searchProperties")}
-                    onChange={(event) => setPropertySearch(event.target.value)}
-                    placeholder={t("table.searchProperties")}
-                    type="search"
-                    value={propertySearch}
+                  <button
+                    className="table-column-reference-back"
+                    onClick={() => setColumnReferenceProperty(null)}
+                    type="button"
+                  >
+                    ← {t("table.backToColumns")}
+                  </button>
+                  <TablePropertyPopover
+                    categoryChoices={categoryChoices}
+                    onCategoryChoicesSave={onCategoryChoicesSave}
+                    property={columnReferenceProperty}
                   />
-                  <div className="table-column-options">
-                    {filteredProperties.map((property) => (
-                      <label className="table-column-option" key={property}>
-                        <input
-                          checked={selectedProperties.includes(property)}
-                          disabled={saving}
-                          onChange={() => void toggleProperty(property)}
-                          type="checkbox"
-                        />
-                        <span>{property}</span>
-                      </label>
-                    ))}
-                    {filteredProperties.length === 0 ? <p>{t("table.noMatchingProperties")}</p> : null}
-                  </div>
                 </>
-              ) : <p>{t("table.noProperties")}</p>}
+              ) : (
+                <>
+                  {table.availableProperties.length > 0 ? (
+                    <>
+                      <input
+                        aria-label={t("table.searchProperties")}
+                        onChange={(event) => setPropertySearch(event.target.value)}
+                        placeholder={t("table.searchProperties")}
+                        type="search"
+                        value={propertySearch}
+                      />
+                      <div className="table-column-options">
+                        {filteredProperties.map((property) => (
+                          <label className="table-column-option" key={property}>
+                            <input
+                              checked={selectedProperties.includes(property)}
+                              disabled={saving}
+                              onChange={() => void toggleProperty(property)}
+                              type="checkbox"
+                            />
+                            <span>{property}</span>
+                          </label>
+                        ))}
+                        {filteredProperties.length === 0 ? <p>{t("table.noMatchingProperties")}</p> : null}
+                      </div>
+                    </>
+                  ) : <p>{t("table.noProperties")}</p>}
+                  <TableFixedPropertyReferenceList onSelect={setColumnReferenceProperty} />
+                </>
+              )}
             </div>
           ) : null}
         </div>
@@ -236,6 +285,18 @@ function ReadyTable({ onOpenFile, setSort, sort, table }: {
               key={property}
               label={property}
               onClick={() => setSort((current) => nextTableSort(current, property))}
+              onPropertySettings={FIXED_FIELDS.some((field) => field.name === property)
+                ? () => setOpenProperty((current) => current === property ? null : property)
+                : undefined}
+              propertySettings={openProperty === property ? (
+                <TablePropertyPopover
+                  categoryChoices={categoryChoices}
+                  onCategoryChoicesSave={onCategoryChoicesSave}
+                  property={property}
+                />
+              ) : null}
+              propertySettingsOpen={openProperty === property}
+              setPropertySettingsOpen={(open) => setOpenProperty(open ? property : null)}
             />
           ))}
         </div>
@@ -257,20 +318,77 @@ function ReadyTable({ onOpenFile, setSort, sort, table }: {
   );
 }
 
-function SortableHeader({ active, direction, label, onClick, sticky = false }: {
+function SortableHeader({
+  active,
+  direction,
+  label,
+  onClick,
+  onPropertySettings,
+  propertySettings,
+  propertySettingsOpen = false,
+  setPropertySettingsOpen,
+  sticky = false
+}: {
   active: boolean;
   direction: "asc" | "desc";
   label: string;
   onClick: () => void;
+  onPropertySettings?: () => void;
+  propertySettings?: ReactElement | null;
+  propertySettingsOpen?: boolean;
+  setPropertySettingsOpen?: (open: boolean) => void;
   sticky?: boolean;
 }): ReactElement {
   const t = useT();
+  const propertyMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!propertySettingsOpen) return;
+    const close = (event: PointerEvent): void => {
+      if (!propertyMenuRef.current?.contains(event.target as Node)) setPropertySettingsOpen?.(false);
+    };
+    const escape = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") setPropertySettingsOpen?.(false);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [propertySettingsOpen, setPropertySettingsOpen]);
+
   return (
-    <div aria-sort={active ? (direction === "asc" ? "ascending" : "descending") : "none"} className={sticky ? "table-view-cell table-view-cell--sticky" : "table-view-cell"} role="columnheader">
-      <button aria-label={t("table.sortBy", { name: label })} onClick={onClick} type="button">
+    <div
+      aria-sort={active ? (direction === "asc" ? "ascending" : "descending") : "none"}
+      className={sticky ? "table-view-cell table-view-cell--sticky" : "table-view-cell"}
+      ref={propertyMenuRef}
+      role="columnheader"
+    >
+      <button className="table-sort-button" aria-label={t("table.sortBy", { name: label })} onClick={onClick} type="button">
         <span>{label}</span>
         <span aria-hidden="true" className="table-sort-indicator">{active ? (direction === "asc" ? "↑" : "↓") : "↕"}</span>
       </button>
+      {onPropertySettings ? (
+        <button
+          aria-expanded={propertySettingsOpen}
+          aria-label={t("table.propertySettings", { name: label })}
+          className="table-property-settings-trigger"
+          onClick={onPropertySettings}
+          type="button"
+        >
+          <span aria-hidden="true">⋮</span>
+        </button>
+      ) : null}
+      {propertySettingsOpen && propertySettings ? (
+        <div
+          aria-label={t("table.propertySettings", { name: label })}
+          className="table-property-popover"
+          role="dialog"
+        >
+          {propertySettings}
+        </div>
+      ) : null}
     </div>
   );
 }

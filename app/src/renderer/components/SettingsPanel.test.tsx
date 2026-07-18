@@ -6,115 +6,7 @@ import {
   defaultFeatureToggles
 } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
-import { FrontmatterPanel } from "./FrontmatterPanel";
 import { SettingsPanel } from "./SettingsPanel";
-
-function renderFrontmatterPanel({
-  categoryChoices = [],
-  onCategoryChoicesSave = vi.fn()
-}: {
-  categoryChoices?: string[];
-  onCategoryChoicesSave?: (choices: string[]) => void;
-} = {}) {
-  render(
-    <I18nProvider language="en">
-      <FrontmatterPanel
-        categoryChoices={categoryChoices}
-        onCategoryChoicesSave={onCategoryChoicesSave}
-      />
-    </I18nProvider>
-  );
-}
-
-describe("FrontmatterPanel", () => {
-  it("固定プロパティとcategory候補を先に表示する", () => {
-    renderFrontmatterPanel({
-      categoryChoices: ["War", "Politics"]
-    });
-
-    expect(screen.getByText("Review fixed properties and manage category choices.")).toBeInTheDocument();
-    expect(screen.getByLabelText("Frontmatter settings counts")).toBeInTheDocument();
-    expect(screen.getByText("Review fixed properties")).toBeInTheDocument();
-    expect(screen.getByText("Manage category choices")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "aliases Fixed" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "tags Fixed" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "category Fixed" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "chronicle Fixed" })).toBeInTheDocument();
-    expect(screen.getAllByText("2").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("5").length).toBeGreaterThan(0);
-  });
-
-  it("固定プロパティは名前を常時表示し、説明と書き方だけを展開する", () => {
-    renderFrontmatterPanel();
-
-    expect(screen.getByRole("button", { name: "aliases Fixed" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: "tags Fixed" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: "category Fixed" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: "chronicle Fixed" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText("Alternative names that can link to this file. Used for link resolution and file name search. Write values as a standard YAML list.")).toBeNull();
-    expect(screen.queryByText("aliases: - Capital")).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: "aliases Fixed" }));
-
-    expect(screen.getByRole("button", { name: "aliases Fixed" })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("Alternative names that can link to this file. Used for link resolution and file name search. Write values as a standard YAML list.")).toBeInTheDocument();
-    expect(screen.getByText("aliases: - Capital")).toBeInTheDocument();
-    expect(screen.getByText("aliases: - Capital - Old Capital")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "chronicle Fixed" }));
-
-    expect(screen.getByRole("button", { name: "chronicle Fixed" })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.queryByText("Alternative names that can link to this file. Used for link resolution and file name search. Write values as a standard YAML list.")).toBeNull();
-    expect(screen.getByText("Places this file on the timeline by year. Use an integer for one year, or start and end for a range.")).toBeInTheDocument();
-    expect(screen.getByText("chronicle: 1185")).toBeInTheDocument();
-    expect(screen.getByText("chronicle: start: 1185 end: 1333")).toBeInTheDocument();
-  });
-
-  it("YAML書式ガイドは補助情報として必要な時だけ開く", () => {
-    renderFrontmatterPanel();
-
-    expect(screen.queryByText("At the very top of the Markdown file, make a settings block that starts with --- and ends with ---. Write each property inside that block on its own line.")).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: "YAML writing guide Reference" }));
-
-    expect(screen.getByText("At the very top of the Markdown file, make a settings block that starts with --- and ends with ---. Write each property inside that block on its own line.")).toBeInTheDocument();
-    expect(screen.getByText((_, element) => element?.tagName === "CODE" && element.textContent === "---\nproperty: [value]\n---\nStart writing here")).toBeInTheDocument();
-  });
-
-  it("カスタムプロパティ管理を表示しない", () => {
-    renderFrontmatterPanel();
-
-    expect(screen.queryByText("Add custom properties")).toBeNull();
-    expect(screen.queryByPlaceholderText("Field name")).toBeNull();
-    expect(screen.queryByLabelText("Input type")).toBeNull();
-    expect(screen.queryByText("No custom fields yet.")).toBeNull();
-  });
-
-  it("category候補を追加・削除できる", () => {
-    const onCategoryChoicesSave = vi.fn();
-
-    renderFrontmatterPanel({
-      categoryChoices: ["War"],
-      onCategoryChoicesSave
-    });
-
-    expect(screen.getAllByText("category choices").length).toBeGreaterThan(0);
-    fireEvent.change(screen.getAllByPlaceholderText("Enter a choice")[0], { target: { value: "Politics" } });
-    fireEvent.click(screen.getAllByRole("button", { name: "Add choice" })[0]);
-
-    expect(onCategoryChoicesSave).toHaveBeenCalledWith(["War", "Politics"]);
-
-    fireEvent.click(screen.getByRole("button", { name: "Remove War" }));
-    expect(onCategoryChoicesSave).toHaveBeenCalledWith([]);
-  });
-
-  it("テンプレート管理を表示しない", () => {
-    renderFrontmatterPanel();
-
-    expect(screen.queryByText("Frontmatter templates")).toBeNull();
-    expect(screen.queryByPlaceholderText("Template name")).toBeNull();
-  });
-});
 
 describe("SettingsPanel", () => {
   function renderSettingsPanel({
@@ -230,5 +122,22 @@ describe("SettingsPanel", () => {
 
     fireEvent.click(screen.getByLabelText("Cards"));
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ cards: true }));
+  });
+
+  it("フロントマターとテーブルを一つの機能として切り替える", () => {
+    const onFeatureTogglesSave = vi.fn();
+    renderSettingsPanel({
+      featureToggles: { ...defaultFeatureToggles, table: true },
+      onFeatureTogglesSave
+    });
+
+    expect(screen.getByRole("switch", { name: "Frontmatter" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.queryByRole("switch", { name: "Table" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("switch", { name: "Frontmatter" }));
+    expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({
+      frontmatter: false,
+      table: false
+    }));
   });
 });

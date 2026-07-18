@@ -94,12 +94,25 @@ describe("App rail panels", () => {
     fireEvent.mouseUp(document);
   });
 
-  it("レールのフロントマターボタンから専用設定を開ける", async () => {
+  it("レールのフロントマターボタンから統合テーブルを開ける", async () => {
     window.relic = makeRelicApi({
       getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceFrontmatterCategoryChoices: vi.fn().mockResolvedValue({
         ok: true,
         value: ["draft", "done"]
+      }),
+      getWorkspaceTable: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          availableProperties: ["category"],
+          rows: [{
+            frontmatterStatus: "valid",
+            name: "Note",
+            path: "Note.md",
+            properties: { category: { kind: "string", text: "draft" } }
+          }],
+          selectedProperties: ["category"]
+        }
       }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
@@ -122,8 +135,9 @@ describe("App rail panels", () => {
     });
     expect(document.querySelector('.pane-tab[data-tab-id="panel-frontmatter"] .pane-tab-icon svg')).toBeInTheDocument();
     expect(frontmatterButton).toHaveClass("active");
-    expect(await screen.findByText("フロントマター設定")).toBeInTheDocument();
-    expect(await screen.findByText("draft")).toBeInTheDocument();
+    expect(await screen.findByText("1件のファイル")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "categoryの設定" }));
+    expect((await screen.findAllByText("draft")).length).toBeGreaterThan(1);
 
     fireEvent.click(frontmatterButton);
 
