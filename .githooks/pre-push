@@ -2,4 +2,20 @@
 set -eu
 
 hook_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-exec "$hook_dir/secret-guard.sh" --pre-push
+repository_root=$(git rev-parse --show-toplevel)
+zero=0000000000000000000000000000000000000000
+
+while read local_ref local_sha remote_ref remote_sha; do
+  printf '%s %s %s %s\n' "$local_ref" "$local_sha" "$remote_ref" "$remote_sha" \
+    | "$hook_dir/secret-guard.sh" --pre-push
+
+  if [ "$local_sha" = "$zero" ]; then
+    continue
+  fi
+
+  if [ "$remote_sha" = "$zero" ]; then
+    node "$repository_root/app/scripts/version-policy.mjs" check-ref "$local_sha"
+  else
+    node "$repository_root/app/scripts/version-policy.mjs" check-range "$remote_sha" "$local_sha"
+  fi
+done

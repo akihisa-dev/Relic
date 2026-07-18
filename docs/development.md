@@ -260,7 +260,9 @@ GitHubのCode CIはPull Request、`main`へのpush、手動実行で `pnpm verif
 
 - 次版は `app/` で `pnpm version:next -- <現在値> <type>` を実行して計算する
 - オーナーがMAJORを明示した場合だけ `--major` を追加する
-- Pull Requestでは、基準コミット以降の各コミットについて、type、コミット件名、`app/package.json` のversionを `pnpm version:check -- <base> <head>` で照合する
+- version更新後は `pnpm sbom:generate` でSBOMを同期し、ステージ後は `pnpm version:check-staged` で `app/package.json` とSBOMのapplication versionを照合する
+- `.githooks/pre-commit` はステージしたversionとSBOMが一致しなければコミットを拒否し、`.githooks/pre-push` は送信対象の各コミットを再検査する
+- Pull Requestでは、基準コミット以降の各コミットについて、type、コミット件名、`app/package.json` のversion、SBOM同期を `pnpm version:check -- <base> <head>` で照合する
 - バージョン判断、更新、検証は `.agents/skills/relic-manage-version/SKILL.md`、ステージとコミットは `.agents/skills/relic-commit/SKILL.md` に従う
 
 ---

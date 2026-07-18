@@ -10,3 +10,5 @@
 /.agents/skills/relic-test-development-app/ @akihisa-dev
 /.github/ @akihisa-dev
 /.githooks/ @akihisa-dev
+/app/scripts/version-policy.mjs @akihisa-dev
+/app/scripts/version-policy.test.mjs @akihisa-dev

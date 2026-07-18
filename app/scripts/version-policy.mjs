@@ -77,6 +77,19 @@ export function validateVersionChange({ previous, current, message }) {
   return { expected, type: parsed.type, major: hasMajorApproval };
 }
 
+export function validateVersionArtifacts({ packageVersion, sbomVersion }) {
+  parseVersion(packageVersion);
+  parseVersion(sbomVersion);
+
+  if (packageVersion !== sbomVersion) {
+    throw new Error(
+      `Package version ${packageVersion} does not match SBOM component version ${sbomVersion}.`,
+    );
+  }
+
+  return packageVersion;
+}
+
 function git(args) {
   return execFileSync("git", args, { encoding: "utf8" }).trim();
 }
@@ -84,6 +97,18 @@ function git(args) {
 function packageVersionAt(revision) {
   const content = git(["show", `${revision}:app/package.json`]);
   return JSON.parse(content).version;
+}
+
+function sbomVersionAt(revision) {
+  const content = git(["show", `${revision}:sbom/relic-dependencies.cdx.json`]);
+  return JSON.parse(content).metadata?.component?.version;
+}
+
+function checkVersionArtifactsAt(revision) {
+  return validateVersionArtifacts({
+    packageVersion: packageVersionAt(revision),
+    sbomVersion: sbomVersionAt(revision),
+  });
 }
 
 function checkRange(base, head) {
@@ -96,6 +121,7 @@ function checkRange(base, head) {
     const message = git(["show", "-s", "--format=%B", commit]);
     try {
       validateVersionChange({ previous, current, message });
+      checkVersionArtifactsAt(commit);
     } catch (error) {
       throw new Error(`${commit.slice(0, 12)}: ${error.message}`);
     }
@@ -109,6 +135,8 @@ function printUsage() {
   console.error("  node scripts/version-policy.mjs next <current> <type> [--major]");
   console.error("  node scripts/version-policy.mjs check <previous> <current> <type> [--major]");
   console.error("  node scripts/version-policy.mjs check-range <base> <head>");
+  console.error("  node scripts/version-policy.mjs check-ref <revision>");
+  console.error("  node scripts/version-policy.mjs check-staged");
 }
 
 function main(args) {
@@ -147,6 +175,23 @@ function main(args) {
     }
     const count = checkRange(base, head);
     console.log(`Version policy OK: ${count} commit(s) checked.`);
+    return 0;
+  }
+
+  if (command === "check-ref") {
+    const [revision] = values;
+    if (!revision) {
+      printUsage();
+      return 1;
+    }
+    const version = checkVersionArtifactsAt(revision);
+    console.log(`Version artifacts OK at ${revision}: ${version}`);
+    return 0;
+  }
+
+  if (command === "check-staged") {
+    const version = checkVersionArtifactsAt("");
+    console.log(`Staged version artifacts OK: ${version}`);
     return 0;
   }
 

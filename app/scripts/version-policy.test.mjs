@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { nextVersion, parseCommitSubject, validateVersionChange } from "./version-policy.mjs";
+import {
+  nextVersion,
+  parseCommitSubject,
+  validateVersionArtifacts,
+  validateVersionChange,
+} from "./version-policy.mjs";
 
 describe("version policy", () => {
   it("increments minor for feat and resets patch", () => {
@@ -59,5 +64,17 @@ describe("version policy", () => {
 
   it("rejects commit scopes because Relic subjects do not use them", () => {
     expect(() => parseCommitSubject("feat(editor): 0.6.0 機能を追加")).toThrow("Invalid commit subject");
+  });
+
+  it("accepts matching package and SBOM component versions", () => {
+    expect(
+      validateVersionArtifacts({ packageVersion: "0.21.2", sbomVersion: "0.21.2" }),
+    ).toBe("0.21.2");
+  });
+
+  it("rejects a stale SBOM component version", () => {
+    expect(() =>
+      validateVersionArtifacts({ packageVersion: "0.21.2", sbomVersion: "0.21.1" }),
+    ).toThrow("does not match SBOM component version");
   });
 });
