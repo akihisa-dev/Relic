@@ -40,7 +40,7 @@ describe("App workspace refresh", () => {
     const refreshButton = within(rail).getByRole("button", { name: "リフレッシュ" });
 
     expect(settingsButton.nextElementSibling).toBe(refreshButton);
-    expect(refreshButton).toHaveAttribute("title", "リフレッシュ");
+    expect(refreshButton).not.toHaveAttribute("title");
 
     fireEvent.click(refreshButton);
     await waitFor(() => expect(refreshWorkspace).toHaveBeenCalledTimes(1));

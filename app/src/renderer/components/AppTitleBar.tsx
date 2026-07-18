@@ -2,7 +2,6 @@ import type { ReactElement, ReactNode } from "react";
 
 import type { AppTheme } from "../../shared/ipc";
 import { useT } from "../i18n";
-import { DelayedTooltip } from "./DelayedTooltip";
 
 export interface AppTitleBarProps {
   canNavigateBack: boolean;
@@ -31,7 +30,7 @@ export function AppTitleBar({
   return (
     <div className="title-bar">
       {showThemeSwitch ? (
-        <label className="switch sw-7 title-bar-theme-switch" title={accessibleLabel}>
+        <label className="switch sw-7 title-bar-theme-switch">
           <input
             aria-label={accessibleLabel}
             checked={isDarkTheme}
@@ -48,28 +47,24 @@ export function AppTitleBar({
         className={`title-bar-navigation${showThemeSwitch ? " title-bar-navigation--after-theme" : ""}`}
         role="group"
       >
-        <DelayedTooltip className="delayed-tooltip--below" label={t("nav.back")}>
-          <button
-            aria-label={t("nav.back")}
-            className="title-bar-navigation-button"
-            disabled={!canNavigateBack}
-            onClick={onNavigateBack}
-            type="button"
-          >
-            <NavigationChevron direction="back" />
-          </button>
-        </DelayedTooltip>
-        <DelayedTooltip className="delayed-tooltip--below" label={t("nav.forward")}>
-          <button
-            aria-label={t("nav.forward")}
-            className="title-bar-navigation-button"
-            disabled={!canNavigateForward}
-            onClick={onNavigateForward}
-            type="button"
-          >
-            <NavigationChevron direction="forward" />
-          </button>
-        </DelayedTooltip>
+        <button
+          aria-label={t("nav.back")}
+          className="title-bar-navigation-button"
+          disabled={!canNavigateBack}
+          onClick={onNavigateBack}
+          type="button"
+        >
+          <NavigationChevron direction="back" />
+        </button>
+        <button
+          aria-label={t("nav.forward")}
+          className="title-bar-navigation-button"
+          disabled={!canNavigateForward}
+          onClick={onNavigateForward}
+          type="button"
+        >
+          <NavigationChevron direction="forward" />
+        </button>
       </div>
       <div className="title-bar-drag-area" />
       {children}

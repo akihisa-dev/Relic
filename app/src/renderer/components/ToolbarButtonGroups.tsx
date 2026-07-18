@@ -25,22 +25,18 @@ import {
   TableIcon,
   UnderlineIcon
 } from "./MarkdownActionIcons";
-import { DelayedTooltip } from "./DelayedTooltip";
 
 interface ToolbarButtonProps {
   children: ReactNode;
   label: string;
   onClick: () => void;
-  tooltip?: string;
 }
 
-function ToolbarButton({ children, label, onClick, tooltip = label }: ToolbarButtonProps): ReactElement {
+function ToolbarButton({ children, label, onClick }: ToolbarButtonProps): ReactElement {
   return (
-    <DelayedTooltip label={tooltip}>
-      <button aria-label={label} className="toolbar-btn" onClick={onClick} type="button">
-        {children}
-      </button>
-    </DelayedTooltip>
+    <button aria-label={label} className="toolbar-btn" onClick={onClick} type="button">
+      {children}
+    </button>
   );
 }
 
@@ -117,16 +113,15 @@ export function ToolbarBlockFormattingGroup({
         {showHeadingMenu ? (
           <div className={toolbarPanelClass("toolbar-dropdown-menu", "heading", closingPanel)}>
             {TOOLBAR_HEADING_LEVELS.map((level) => (
-              <DelayedTooltip key={level} label={`H${level}`}>
-                <button
-                  aria-label={`H${level}`}
-                  className="toolbar-dropdown-item"
-                  onClick={() => onHeading(level)}
-                  type="button"
-                >
-                  <HeadingIcon level={level} />
-                </button>
-              </DelayedTooltip>
+              <button
+                aria-label={`H${level}`}
+                className="toolbar-dropdown-item"
+                key={level}
+                onClick={() => onHeading(level)}
+                type="button"
+              >
+                <HeadingIcon level={level} />
+              </button>
             ))}
           </div>
         ) : null}
@@ -212,7 +207,7 @@ export function ToolbarInsertGroup({
   return (
     <div className="toolbar-group">
       <div className="toolbar-inline-dialog-wrap">
-        <ToolbarButton label={t("toolbar.markdownLink")} onClick={onLink} tooltip={t("toolbar.link")}>
+        <ToolbarButton label={t("toolbar.markdownLink")} onClick={onLink}>
           <ExternalLinkIcon />
         </ToolbarButton>
         {showLinkDialog ? (

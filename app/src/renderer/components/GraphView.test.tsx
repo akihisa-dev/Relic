@@ -44,8 +44,8 @@ describe("GraphView", () => {
 
     expect(screen.getByLabelText("Graph")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Close graph settings" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Play graph timelapse" })).toHaveAttribute("title", "Play timelapse");
-    expect(screen.getByRole("button", { name: "Reset graph settings" })).toHaveAttribute("title", "Reset to defaults");
+    expect(screen.getByRole("button", { name: "Play graph timelapse" })).not.toHaveAttribute("title");
+    expect(screen.getByRole("button", { name: "Reset graph settings" })).not.toHaveAttribute("title");
     expect(screen.getByText("0 nodes")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Filters" }));
@@ -58,8 +58,8 @@ describe("GraphView", () => {
 
     expect(screen.getByLabelText("グラフ")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "グラフ設定を閉じる" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "グラフのタイムラプスを再生" })).toHaveAttribute("title", "タイムラプスを再生");
-    expect(screen.getByRole("button", { name: "グラフ設定をリセット" })).toHaveAttribute("title", "初期設定に戻す");
+    expect(screen.getByRole("button", { name: "グラフのタイムラプスを再生" })).not.toHaveAttribute("title");
+    expect(screen.getByRole("button", { name: "グラフ設定をリセット" })).not.toHaveAttribute("title");
     expect(screen.getByText("0件のノード")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "フィルタ" }));

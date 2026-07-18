@@ -50,7 +50,6 @@ export function AppFilesSidebar({
               aria-label={heading}
               className="sidebar-close-button"
               onClick={onCloseSidebar}
-              title={heading}
               type="button"
             >
               ×

@@ -186,7 +186,6 @@ export function RailWorkspaceSwitcher({
                   startRename(ws.id, ws.name);
                 }}
                 onClick={() => onSwitchWorkspace(ws.id)}
-                title={ws.path}
                 type="button"
               >
                 <span className="workspace-switcher-icon">{initial}</span>
@@ -197,7 +196,6 @@ export function RailWorkspaceSwitcher({
               aria-label={removeLabel(ws.name)}
               className="workspace-switcher-remove"
               onClick={() => onRemoveWorkspace(ws.id)}
-              title={removeLabel(ws.name)}
               type="button"
             >
               ×

@@ -523,7 +523,7 @@ describe("App file tabs", () => {
     });
 
     const tab = (await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).closest(".pane-tab");
-    fireEvent.click(within(tab as HTMLElement).getByTitle("タブを閉じる"));
+    fireEvent.click(within(tab as HTMLElement).getByRole("button", { name: "タブを閉じる" }));
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "閉じる前に保存する本文",
@@ -570,7 +570,7 @@ describe("App file tabs", () => {
     });
 
     const tab = (await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).closest(".pane-tab");
-    fireEvent.click(within(tab as HTMLElement).getByTitle("タブを閉じる"));
+    fireEvent.click(within(tab as HTMLElement).getByRole("button", { name: "タブを閉じる" }));
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "本文テスト\n入力直後の本文",
@@ -723,7 +723,7 @@ describe("App file tabs", () => {
     });
 
     const tab = (await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).closest(".pane-tab");
-    fireEvent.click(within(tab as HTMLElement).getByTitle("タブを閉じる"));
+    fireEvent.click(within(tab as HTMLElement).getByRole("button", { name: "タブを閉じる" }));
 
     expect(await screen.findByText("ファイルを保存できませんでした。")).toHaveClass("toast--error");
     expect(useEditorStore.getState().leftPane.activeTabId).toBe(activeTabId);

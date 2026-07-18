@@ -54,7 +54,6 @@ export function FilesSearchResults({
               <button
                 className={`search-result-button${openingFilePath === result.path ? " search-result-button--opening" : ""}`}
                 onClick={(event) => onOpenFile(result.path, event, { lineNumber: result.lineNumber })}
-                title={result.path}
                 type="button"
               >
                 <span className="search-result-title">{result.fileName}</span>

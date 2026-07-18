@@ -1,7 +1,6 @@
 import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 
 import { useT } from "../i18n";
-import { DelayedTooltip } from "./DelayedTooltip";
 
 interface FilesWorkspaceActionProps {
   isCreatingWorkspace: boolean;
@@ -38,31 +37,21 @@ export function FilesCreateActions({
 
   return (
     <div className="files-create-actions">
-      <DelayedTooltip className="delayed-tooltip--file-action" label={searchLabel}>
-        <button aria-label={searchLabel} className="files-create-icon-button" onClick={onOpenQuickSwitcher} type="button">
-          <SearchIcon />
-        </button>
-      </DelayedTooltip>
-      <DelayedTooltip className="delayed-tooltip--file-action" label={createFileLabel}>
-        <button aria-label={createFileLabel} className="files-create-icon-button" disabled={isCreatingFile} onClick={onCreateFile} type="button">
-          <NewFileIcon />
-        </button>
-      </DelayedTooltip>
-      <DelayedTooltip className="delayed-tooltip--file-action" label={createFolderLabel}>
-        <button aria-label={createFolderLabel} className="files-create-icon-button" disabled={isCreatingFolder} onClick={onCreateFolder} type="button">
-          <NewFolderIcon />
-        </button>
-      </DelayedTooltip>
-      <DelayedTooltip className="delayed-tooltip--file-action" label={expandAllLabel}>
-        <button aria-label={expandAllLabel} className="files-create-icon-button" onClick={onExpandAllFolders} type="button">
-          <ExpandAllFoldersIcon />
-        </button>
-      </DelayedTooltip>
-      <DelayedTooltip className="delayed-tooltip--file-action" label={collapseAllLabel}>
-        <button aria-label={collapseAllLabel} className="files-create-icon-button" onClick={onCollapseAllFolders} type="button">
-          <CollapseAllFoldersIcon />
-        </button>
-      </DelayedTooltip>
+      <button aria-label={searchLabel} className="files-create-icon-button" onClick={onOpenQuickSwitcher} type="button">
+        <SearchIcon />
+      </button>
+      <button aria-label={createFileLabel} className="files-create-icon-button" disabled={isCreatingFile} onClick={onCreateFile} type="button">
+        <NewFileIcon />
+      </button>
+      <button aria-label={createFolderLabel} className="files-create-icon-button" disabled={isCreatingFolder} onClick={onCreateFolder} type="button">
+        <NewFolderIcon />
+      </button>
+      <button aria-label={expandAllLabel} className="files-create-icon-button" onClick={onExpandAllFolders} type="button">
+        <ExpandAllFoldersIcon />
+      </button>
+      <button aria-label={collapseAllLabel} className="files-create-icon-button" onClick={onCollapseAllFolders} type="button">
+        <CollapseAllFoldersIcon />
+      </button>
     </div>
   );
 }

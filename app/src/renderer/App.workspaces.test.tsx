@@ -57,7 +57,6 @@ describe("App workspaces", () => {
 
   it("ファイル作成操作は一覧スクロールから外して固定する", () => {
     const css = readFileSync("src/renderer/styles/file-tree-search.css", "utf8");
-    const tooltipCss = readFileSync("src/renderer/styles/delayed-tooltip.css", "utf8");
 
     expect(css).toMatch(/\.sidebar-body:has\(> \.files-sidebar-section\)\s*\{[^}]*overflow:\s*hidden;/s);
     expect(css).toMatch(/\.files-sidebar-section\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\) auto;/s);
@@ -66,8 +65,6 @@ describe("App workspaces", () => {
     expect(css).toMatch(/\.files-sidebar-section\s*\{[^}]*padding:\s*16px 16px 0;/s);
     expect(css).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*position:\s*relative;/s);
     expect(css).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*z-index:\s*6;/s);
-    expect(tooltipCss).toMatch(/\.delayed-tooltip--file-action \.delayed-tooltip-content\s*\{[^}]*bottom:\s*auto;[^}]*top:\s*calc\(100% \+ 11px\);/s);
-    expect(tooltipCss).toMatch(/\.delayed-tooltip--file-action \.delayed-tooltip-content::after\s*\{[^}]*border-bottom:\s*7px solid var\(--color-tooltip-surface\);[^}]*border-top:\s*0;/s);
     expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*min-height:\s*0;/s);
     expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*overflow-y:\s*auto;/s);
   });

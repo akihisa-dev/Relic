@@ -896,15 +896,15 @@ describe("App file actions", () => {
 
     await renderApp();
 
-    fireEvent.click((await screen.findAllByTitle("ピン留め"))[0]);
+    fireEvent.click((await screen.findAllByRole("button", { name: "サイドバーのピン留め" }))[0]);
 
     await waitFor(() => {
       expect(togglePin).toHaveBeenCalledWith("読書メモ.md");
     });
     expect(await screen.findByText("ピン留め")).toBeInTheDocument();
-    expect(screen.getAllByTitle("ピン留めを解除").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByRole("button", { name: "サイドバーのピン留めを解除" }).length).toBeGreaterThanOrEqual(2);
 
-    fireEvent.click(screen.getAllByTitle("ピン留めを解除")[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "サイドバーのピン留めを解除" })[0]);
 
     await waitFor(() => {
       expect(togglePin).toHaveBeenCalledTimes(2);

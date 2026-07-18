@@ -124,7 +124,6 @@ export function EditorFrontmatterPropertyMenu({
       className="editor-frontmatter-add-button"
       onClick={() => toggleMenu()}
       ref={buttonRef}
-      title={t("frontmatter.addProperty")}
       type="button"
     >
       +

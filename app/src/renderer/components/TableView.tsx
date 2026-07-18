@@ -292,7 +292,7 @@ function TableRow({ duplicateName, onOpenFile, row, rowIndex, selectedProperties
       style={{ ...style, height: rowHeight, transform: `translateY(${rowIndex * rowHeight}px)` }}
     >
       <div className="table-view-cell table-view-cell--file table-view-cell--sticky" role="cell">
-        <button className="table-file-link" onClick={() => onOpenFile(row.path)} title={row.path} type="button">
+        <button className="table-file-link" onClick={() => onOpenFile(row.path)} type="button">
           <span className="table-file-name">{row.name}</span>
           {duplicateName ? <span className="table-file-directory">{directoryForPath(row.path)}</span> : null}
         </button>

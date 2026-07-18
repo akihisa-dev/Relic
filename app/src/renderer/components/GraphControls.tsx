@@ -53,7 +53,6 @@ export function GraphControls({
         aria-label={controlsOpen ? t("graph.closeSettings") : t("graph.openSettings")}
         className={`graph-controls-button ${controlsOpen ? "mod-close" : "mod-open"}`}
         onClick={onToggleControls}
-        title={controlsOpen ? t("graph.close") : t("graph.open")}
         type="button"
       >
         {controlsOpen ? <GraphControlIcon name="close" /> : <GraphControlIcon name="settings" />}
@@ -62,7 +61,6 @@ export function GraphControls({
         aria-label={t("graph.playTimelapseAria")}
         className="graph-controls-button mod-animate"
         onClick={onAnimate}
-        title={t("graph.playTimelapse")}
         type="button"
       >
         <GraphControlIcon name="wand" />
@@ -71,7 +69,6 @@ export function GraphControls({
         aria-label={t("graph.resetSettings")}
         className="graph-controls-button mod-reset"
         onClick={onReset}
-        title={t("graph.resetToDefaults")}
         type="button"
       >
         <GraphControlIcon name="reset" />
@@ -129,7 +126,6 @@ export function GraphControls({
                   event.dataTransfer.setData("text/plain", group.id);
                   onColorGroupDragStart(group.id);
                 }}
-                title={t("graph.dragToReorder")}
                 type="button"
               >
                 <GraphControlIcon name="grip" />

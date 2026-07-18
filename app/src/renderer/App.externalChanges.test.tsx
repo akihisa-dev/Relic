@@ -469,7 +469,7 @@ describe("App external file changes", () => {
     const tab = (await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).closest(".pane-tab");
     expect(tab).toBeInstanceOf(HTMLElement);
 
-    fireEvent.click(within(tab as HTMLElement).getByTitle("タブを閉じる"));
+    fireEvent.click(within(tab as HTMLElement).getByRole("button", { name: "タブを閉じる" }));
 
     await waitFor(() => {
       expect(container.querySelector(".pane-tab--closing")).toBeInTheDocument();
@@ -496,7 +496,7 @@ describe("App external file changes", () => {
     const tab = container.querySelector('.pane-tab[data-tab-id="panel-settings"]');
     expect(tab).toBeInstanceOf(HTMLElement);
 
-    fireEvent.click(within(tab as HTMLElement).getByTitle("タブを閉じる"));
+    fireEvent.click(within(tab as HTMLElement).getByRole("button", { name: "タブを閉じる" }));
 
     await waitFor(() => {
       expect(container.querySelector(".pane-tab--closing")).toBeInTheDocument();

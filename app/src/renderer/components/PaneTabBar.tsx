@@ -128,7 +128,6 @@ export function PaneTabBar({
                   e.stopPropagation();
                   onTabClose(tabId);
                 }}
-                title={t("pane.closeTab")}
                 type="button"
               >
                 <CloseIcon />

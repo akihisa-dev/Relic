@@ -94,7 +94,6 @@ export const AppRail = memo(function AppRail({
 
             onSetSidebarView(view.id as SidebarView);
           }}
-          title={view.label}
           type="button"
         >
           {view.id === "files" ? <IconFiles sidebarOpen={isSidebarOpen} /> : view.icon}
@@ -107,7 +106,6 @@ export const AppRail = memo(function AppRail({
           className={chartRailButtonClass(view, activeChartIds, openChartIds)}
           key={view.id}
           onClick={(event) => onChartButton(view.id, view.label, event)}
-          title={view.label}
           type="button"
         >
           {view.icon}
@@ -121,7 +119,6 @@ export const AppRail = memo(function AppRail({
           className={`rail-button${activePanelTabIds.has(view.id as PanelTabKind) ? " active" : openPanelTabIds.has(view.id as PanelTabKind) ? " open" : ""}`}
           key={view.id}
           onClick={(event) => onPanelButton(view.id as PanelTabKind, view.label, event)}
-          title={view.label}
           type="button"
         >
           {view.icon}
@@ -134,7 +131,6 @@ export const AppRail = memo(function AppRail({
         className="rail-button rail-button--refresh"
         disabled={activeWorkspaceId === null || isRefreshingWorkspace}
         onClick={onRefreshWorkspace}
-        title={refreshLabel}
         type="button"
       >
         <span className={isRefreshingWorkspace ? "rail-refresh-icon rail-refresh-icon--spinning" : "rail-refresh-icon"}>

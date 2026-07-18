@@ -144,7 +144,6 @@ export const FileTreeItemRow = memo(function FileTreeItemRow({
           aria-label={isPinned ? t("files.unpinSidebar") : t("files.pinSidebar")}
           className={`file-tree-pin-btn${isPinned ? " pinned" : ""}`}
           onClick={(e) => { e.stopPropagation(); onTogglePin(node.path); }}
-          title={isPinned ? t("files.unpin") : t("files.pin")}
           type="button"
         >
           <PinFileIcon />

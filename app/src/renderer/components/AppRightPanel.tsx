@@ -131,7 +131,6 @@ export function AppRightPanel({
                           ...fixedMenuPosition(event.clientX, event.clientY)
                         });
                       }}
-                      title={link.exists ? link.path : t("links.createAndOpen", { path: link.path })}
                       type="button"
                     >
                       {link.displayName}
@@ -177,7 +176,6 @@ export function AppRightPanel({
                           ...fixedMenuPosition(event.clientX, event.clientY)
                         });
                       }}
-                      title={backlink.sourcePath}
                       type="button"
                     >
                       {backlink.sourceName}
@@ -219,7 +217,6 @@ export function AppRightPanel({
                         <button
                           className="links-list-target"
                           onClick={() => onOpenFile(reference.sourcePath)}
-                          title={reference.sourcePath}
                           type="button"
                         >
                           {reference.sourceName}

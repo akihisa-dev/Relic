@@ -61,7 +61,6 @@ export function CardView({
                   aria-current={card.path === selectedCard?.path ? "true" : undefined}
                   className="card-view-list-item"
                   onClick={() => onSelectPath(card.path)}
-                  title={card.path}
                   type="button"
                 >
                   {card.name}
@@ -74,7 +73,6 @@ export function CardView({
               aria-label={t("cards.openFile", { name: selectedCard.name })}
               className="card-view-item"
               onClick={() => onOpenFile(selectedCard.path)}
-              title={selectedCard.path}
               type="button"
             >
               <span className="card-view-name-row">
