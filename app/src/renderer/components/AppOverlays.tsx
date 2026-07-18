@@ -3,7 +3,7 @@ import type { CSSProperties, Dispatch, ReactElement, SetStateAction } from "reac
 
 import type { AliasIndex } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
-import { writeEditorClipboardText } from "../editorClipboard";
+import { copyWorkspaceItemPathToClipboard, writeEditorClipboardText } from "../editorClipboard";
 import type { RailTabFlight, SidebarCreateFlight } from "../hooks/useRailFlights";
 import { useT } from "../i18n";
 import { selectedUiTextForContextMenu, type UiSelectionContextMenuState } from "../uiSelectionContextMenu";
@@ -215,7 +215,7 @@ export function AppOverlays({
           <button
             className="tab-context-menu-item"
             onClick={() => {
-              void writeEditorClipboardText(linkContextMenu.path).catch(() => undefined);
+              void copyWorkspaceItemPathToClipboard(linkContextMenu.path).catch(() => undefined);
               setLinkContextMenu(null);
             }}
             role="menuitem"

@@ -26,6 +26,7 @@ vi.mock("electron", () => ({
 
 import {
   copyEditorTextToClipboardChannel,
+  copyWorkspaceItemPathChannel,
   copyDiagramSvgChannel,
   readEditorTextFromClipboardChannel,
   readPdfFileChannel,
@@ -62,6 +63,7 @@ describe("preload output API", () => {
     });
     await api.copyDiagramSvg({ language: "d2", svg: "<svg><path /></svg>" });
     await api.copyEditorTextToClipboard({ text: "selected text" });
+    await api.copyWorkspaceItemPath({ path: "Folder/Note.md" });
     await api.readEditorTextFromClipboard();
     await api.readPdfFile({ path: "assets/reference.pdf" });
     api.startWorkspaceFileDrag({ paths: ["Note.md"] });
@@ -83,6 +85,9 @@ describe("preload output API", () => {
     });
     expect(electronMock.invoke).toHaveBeenCalledWith(copyEditorTextToClipboardChannel, {
       text: "selected text"
+    });
+    expect(electronMock.invoke).toHaveBeenCalledWith(copyWorkspaceItemPathChannel, {
+      path: "Folder/Note.md"
     });
     expect(electronMock.invoke).toHaveBeenCalledWith(readEditorTextFromClipboardChannel);
     expect(electronMock.invoke).toHaveBeenCalledWith(readPdfFileChannel, {

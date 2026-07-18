@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const electronMock = vi.hoisted(() => ({
+  clipboardWriteText: vi.fn(),
   getAppPath: vi.fn(),
   getPath: vi.fn(),
   handle: vi.fn(),
@@ -25,6 +26,9 @@ vi.mock("electron", () => ({
     handle: electronMock.handle,
     on: electronMock.on
   },
+  clipboard: {
+    writeText: electronMock.clipboardWriteText
+  },
   nativeImage: {
     createFromDataURL: electronMock.createFromDataURL,
     createFromPath: electronMock.createFromPath
@@ -37,6 +41,7 @@ vi.mock("electron", () => ({
 
 import {
   createLinkedMarkdownFileChannel,
+  copyWorkspaceItemPathChannel,
   createFolderChannel,
   createMarkdownFileChannel,
   defaultEditorSettings,
@@ -378,6 +383,16 @@ describe("markdownFileHandlers", () => {
     expect(missingWorkspaceResult).toMatchObject({ error: { code: "WORKSPACE_NOT_FOUND" }, ok: false });
   });
 
+  it("ワークスペース内の相対パスをOS上の絶対パスとしてコピーする", async () => {
+    const { workspacePath } = await createActiveWorkspace({ "Folder/Note.md": "# Note" });
+    registerMarkdownFileHandlers();
+
+    const result = await handlerFor(copyWorkspaceItemPathChannel)(undefined, { path: "Folder/Note.md" });
+
+    expect(result).toEqual({ ok: true, value: undefined });
+    expect(electronMock.clipboardWriteText).toHaveBeenCalledWith(path.join(workspacePath, "Folder", "Note.md"));
+  });
+
   it("Markdownファイルをゴミ箱へ渡し、成功後だけ派生データを無効化する", async () => {
     const { workspace, workspacePath } = await createActiveWorkspace({ "Trash.md": "# Trash" });
     const invalidateSpy = vi.spyOn(workspaceDerivedDataSession, "invalidate");
@@ -440,6 +455,7 @@ describe("markdownFileHandlers", () => {
     [duplicateMarkdownFileChannel, { path: "../outside.md" }, "FILE_DUPLICATE_INVALID_INPUT"],
     [renameMarkdownFileChannel, { newName: "Renamed", path: "../outside.md" }, "FILE_RENAME_INVALID_INPUT"],
     [moveMarkdownFileChannel, { destinationFolder: "../outside", path: "Note.md" }, "FILE_MOVE_INVALID_INPUT"],
+    [copyWorkspaceItemPathChannel, { path: "../outside.md" }, "COPY_PATH_INVALID_INPUT"],
     [revealWorkspaceItemChannel, { path: "../outside.md" }, "REVEAL_INVALID_INPUT"]
   ])("入力境界で不正なパスを拒否する: %s", async (channel, input, code) => {
     registerMarkdownFileHandlers();

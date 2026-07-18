@@ -1,9 +1,11 @@
-import { app, ipcMain, nativeImage, shell } from "electron";
+import { app, clipboard, ipcMain, nativeImage, shell } from "electron";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 
 import {
   createLinkedMarkdownFileChannel,
+  copyWorkspaceItemPathChannel,
+  type CopyWorkspaceItemPathInput,
   type CreateLinkedMarkdownFileInput,
   createMarkdownFileChannel,
   type CreateMarkdownFileInput,
@@ -43,6 +45,7 @@ import { readPdfFile } from "../files/pdfFiles";
 import { readLinkUpdateImpact } from "../files/linkUpdater";
 import {
   resolveExistingWorkspacePath,
+  resolveNewWorkspacePath,
   resolveExistingWorkspacePathOrRoot,
   verifyExistingWorkspacePath
 } from "../files/paths";
@@ -73,6 +76,35 @@ function workspaceFileDragIcon(): Electron.NativeImage {
 }
 
 export function registerMarkdownFileHandlers(): void {
+  ipcMain.handle(
+    copyWorkspaceItemPathChannel,
+    async (_event, input: CopyWorkspaceItemPathInput): Promise<RelicResult<void>> => {
+      try {
+        if (!isPathInput(input)) {
+          return fail("COPY_PATH_INVALID_INPUT", "コピーする項目を選択してください。");
+        }
+
+        const context = await getActiveWorkspaceContext();
+        if (!context.ok) return context;
+
+        const absolutePath = await resolveNewWorkspacePath(
+          context.value.activeWorkspace.path,
+          input.path
+        );
+        if (!absolutePath.ok) return absolutePath;
+
+        clipboard.writeText(absolutePath.value);
+        return ok(undefined);
+      } catch (error) {
+        return fail(
+          "COPY_PATH_FAILED",
+          "ファイルのパスをコピーできませんでした。",
+          ipcErrorDetails(error)
+        );
+      }
+    }
+  );
+
   ipcMain.handle(getLinkUpdateImpactChannel, async (_event, input: LinkUpdateImpactInput) => {
     try {
       if (!isLinkUpdateImpactInput(input)) {

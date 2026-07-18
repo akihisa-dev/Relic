@@ -56,6 +56,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     applyUnlinkedReference: vi.fn().mockResolvedValue({ ok: true, value: { content: "", sourcePath: "" } }),
     applySearchAndReplace: vi.fn(),
     copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } }),
+    copyWorkspaceItemPath: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     createFolder: vi.fn(),
     createLinkedMarkdownFile: vi.fn(),
     createMarkdownFile: vi.fn(),

@@ -10,6 +10,7 @@ describe("IPC public contract", () => {
       applyUnlinkedReference: "workspace:applyUnlinkedReference",
       copyDiagramSvg: "output:copyDiagramSvg",
       copyEditorTextToClipboard: "editor:copyTextToClipboard",
+      copyWorkspaceItemPath: "workspace:copyItemPath",
       createFolder: "workspace:createFolder",
       createLinkedMarkdownFile: "workspace:createLinkedMarkdownFile",
       createMarkdownFile: "workspace:createMarkdownFile",

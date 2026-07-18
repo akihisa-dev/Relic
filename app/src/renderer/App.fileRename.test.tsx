@@ -547,9 +547,11 @@ describe("App file rename and context menu", () => {
       }
     });
     const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    const copyWorkspaceItemPath = vi.fn().mockResolvedValue({ ok: true, value: undefined });
 
     window.relic = makeRelicApi({
       copyEditorTextToClipboard,
+      copyWorkspaceItemPath,
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
@@ -573,7 +575,7 @@ describe("App file rename and context menu", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "パスをコピー" }));
 
     await waitFor(() => {
-      expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "読書メモ.md" });
+      expect(copyWorkspaceItemPath).toHaveBeenCalledWith({ path: "読書メモ.md" });
     });
 
     fireEvent.contextMenu(fileRow);

@@ -272,7 +272,8 @@ describe("FileTree", () => {
 
   it("runs file context menu actions", async () => {
     const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
-    window.relic = makeRelicApi({ copyEditorTextToClipboard });
+    const copyWorkspaceItemPath = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    window.relic = makeRelicApi({ copyEditorTextToClipboard, copyWorkspaceItemPath });
     const onDuplicateFile = vi.fn();
     const onMoveFile = vi.fn();
     const onOpenInOtherPane = vi.fn();
@@ -304,7 +305,7 @@ describe("FileTree", () => {
     openContextMenu("Root");
     fireEvent.click(screen.getByRole("menuitem", { name: "Copy path" }));
     await waitFor(() => {
-      expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "Root.md" });
+      expect(copyWorkspaceItemPath).toHaveBeenCalledWith({ path: "Root.md" });
     });
 
     openContextMenu("Root");

@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { createPortal } from "react-dom";
 
-import { writeEditorClipboardText } from "../editorClipboard";
+import { copyWorkspaceItemPathToClipboard, writeEditorClipboardText } from "../editorClipboard";
 import { markdownLinkForPaneTabPath } from "../paneViewModel";
 import type { FileTab, Tab } from "../store/editorStore";
 import { useT } from "../i18n";
@@ -85,7 +85,7 @@ export function PaneTabContextMenu({
               <button
                 className="tab-context-menu-item"
                 onClick={() => {
-                  void writeEditorClipboardText(contextTab.path).catch(() => undefined);
+                  void copyWorkspaceItemPathToClipboard(contextTab.path).catch(() => undefined);
                   onClose();
                 }}
                 type="button"

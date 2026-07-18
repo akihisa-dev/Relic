@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import { workspaceFileKindForPath } from "../../shared/workspaceFileKinds";
-import { writeEditorClipboardText } from "../editorClipboard";
+import { copyWorkspaceItemPathToClipboard, writeEditorClipboardText } from "../editorClipboard";
 import type { FileTreeActions } from "../fileTreeTypes";
 import {
   canMoveAllFileTreeItems,
@@ -64,7 +64,7 @@ export function FileTreeContextMenu({
 
   const copyPath = (): void => {
     onClose();
-    void writeEditorClipboardText(node.path).catch(() => undefined);
+    void copyWorkspaceItemPathToClipboard(node.path).catch(() => undefined);
   };
 
   const copyMarkdownLink = (): void => {

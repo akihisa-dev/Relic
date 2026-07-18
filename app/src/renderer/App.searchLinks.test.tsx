@@ -149,9 +149,11 @@ describe("App search and links", () => {
   it("右パネルのリンクを右クリックしてコピーと場所表示を実行する", async () => {
     const revealWorkspaceItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    const copyWorkspaceItemPath = vi.fn().mockResolvedValue({ ok: true, value: undefined });
 
     window.relic = makeRelicApi({
       copyEditorTextToClipboard,
+      copyWorkspaceItemPath,
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
@@ -180,7 +182,7 @@ describe("App search and links", () => {
 
     fireEvent.contextMenu(screen.getByRole("button", { name: "表示名" }));
     fireEvent.click(await screen.findByRole("menuitem", { name: "パスをコピー" }));
-    expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "参照先.md" });
+    expect(copyWorkspaceItemPath).toHaveBeenCalledWith({ path: "参照先.md" });
 
     fireEvent.contextMenu(screen.getByRole("button", { name: "表示名" }));
     fireEvent.click(await screen.findByRole("menuitem", { name: "ファイルの場所を表示" }));

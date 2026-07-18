@@ -4,10 +4,12 @@ import {
   applySearchAndReplaceChannel,
   applyUnlinkedReferenceChannel,
   copyEditorTextToClipboardChannel,
+  copyWorkspaceItemPathChannel,
   readEditorTextFromClipboardChannel,
   createNewWorkspaceChannel,
   copyDiagramSvgChannel,
   type CopyEditorTextToClipboardInput,
+  type CopyWorkspaceItemPathInput,
   type CopyDiagramSvgInput,
   togglePinChannel,
   createFolderChannel,
@@ -152,6 +154,8 @@ import type { AliasIndex } from "../shared/links";
 
 const relicApi: RelicApi = {
   apiContractVersion: relicApiContractVersion,
+  copyWorkspaceItemPath: (input: CopyWorkspaceItemPathInput) =>
+    ipcRenderer.invoke(copyWorkspaceItemPathChannel, input) as Promise<RelicResult<void>>,
   applySearchAndReplace: (input: SearchAndReplaceInput) =>
     ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ApplySearchAndReplaceResult>>,
   copyDiagramSvg: (input: CopyDiagramSvgInput) =>

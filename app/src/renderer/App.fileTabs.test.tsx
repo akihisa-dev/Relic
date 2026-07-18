@@ -328,9 +328,11 @@ describe("App file tabs", () => {
     });
     const revealWorkspaceItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    const copyWorkspaceItemPath = vi.fn().mockResolvedValue({ ok: true, value: undefined });
 
     window.relic = makeRelicApi({
       copyEditorTextToClipboard,
+      copyWorkspaceItemPath,
       duplicateMarkdownFile,
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -361,6 +363,10 @@ describe("App file tabs", () => {
     const clampedMenu = await screen.findByRole("menu");
     expect(Number.parseFloat(clampedMenu.style.left)).toBeGreaterThanOrEqual(8);
     expect(Number.parseFloat(clampedMenu.style.top)).toBeGreaterThanOrEqual(8);
+    fireEvent.click(await screen.findByRole("button", { name: "パスをコピー" }));
+    expect(copyWorkspaceItemPath).toHaveBeenCalledWith({ path: "読書メモ.md" });
+
+    fireEvent.contextMenu(tab!);
     fireEvent.click(await screen.findByRole("button", { name: "Markdownリンクをコピー" }));
     expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "[[読書メモ]]" });
 

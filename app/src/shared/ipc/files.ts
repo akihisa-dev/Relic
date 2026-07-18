@@ -3,6 +3,7 @@ import type { IpcFeatureContract } from "./contract";
 import type { WorkspaceState } from "./workspace";
 
 export const createFolderChannel = "workspace:createFolder";
+export const copyWorkspaceItemPathChannel = "workspace:copyItemPath";
 export const importMarkdownFilesChannel = "workspace:importMarkdownFiles";
 export const importImageFileChannel = "workspace:importImageFile";
 export const readImageFileChannel = "workspace:readImageFile";
@@ -25,6 +26,10 @@ export const maxImportMarkdownFiles = 500;
 
 export interface CreateMarkdownFileInput {
   name: string;
+}
+
+export interface CopyWorkspaceItemPathInput {
+  path: string;
 }
 
 export interface ImportMarkdownFilesInput {
@@ -136,6 +141,7 @@ export interface RenameMarkdownFileResult {
 export type CreateLinkedMarkdownFileResult = RenameMarkdownFileResult;
 
 export interface FilesApi {
+  copyWorkspaceItemPath: (input: CopyWorkspaceItemPathInput) => Promise<RelicResult<void>>;
   createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;
   importMarkdownFiles: (input: ImportMarkdownFilesInput) => Promise<RelicResult<WorkspaceState>>;
   importImageFile: (input: ImportImageFileInput) => Promise<RelicResult<ImportImageFileResult>>;
@@ -157,6 +163,7 @@ export interface FilesApi {
 }
 
 export const filesIpcContract = {
+  copyWorkspaceItemPath: { channel: copyWorkspaceItemPathChannel, main: "handle", transport: "invoke", validatesInput: true },
   createFolder: { channel: createFolderChannel, main: "handle", transport: "invoke", validatesInput: true },
   importMarkdownFiles: { channel: importMarkdownFilesChannel, main: "handle", transport: "invoke", validatesInput: true },
   importImageFile: { channel: importImageFileChannel, main: "handle", transport: "invoke", validatesInput: true },

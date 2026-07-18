@@ -1,4 +1,12 @@
 import { relicClient } from "./relicClient";
+
+export async function copyWorkspaceItemPathToClipboard(path: string): Promise<void> {
+  if (!relicClient.current) throw new Error("Relic API is unavailable");
+
+  const result = await relicClient.current.copyWorkspaceItemPath({ path });
+  if (!result.ok) throw new Error(result.error.message);
+}
+
 export async function writeEditorClipboardText(text: string): Promise<void> {
   if (relicClient.current?.copyEditorTextToClipboard) {
     let receivedIpcResult = false;
