@@ -44,6 +44,57 @@ describe("toolActions", () => {
     );
   });
 
+  it("明示的なワークスペース対象で4機能を実行し入力Markdownを変更しない", async () => {
+    const source = "---\ntags: [project]\n---\n# Note\n";
+
+    const titleWorkspace = await prepareActiveWorkspace();
+    await writeFile(path.join(titleWorkspace.workspacePath, "note.md"), source, "utf8");
+    await expect(generateTitleList({
+      outputFolder: "",
+      outputName: "Titles",
+      sortBy: "name",
+      target: { kind: "workspace" }
+    })).resolves.toMatchObject({ ok: true, value: "Titles.md" });
+    await expect(readFile(path.join(titleWorkspace.workspacePath, "note.md"), "utf8")).resolves.toBe(source);
+
+    const tocWorkspace = await prepareActiveWorkspace();
+    await writeFile(path.join(tocWorkspace.workspacePath, "note.md"), source, "utf8");
+    await expect(generateTableOfContents({
+      includeSubfolders: true,
+      outputFolder: "",
+      outputName: "Toc",
+      target: { kind: "workspace" },
+      targetFolder: ""
+    })).resolves.toMatchObject({ ok: true, value: "Toc.md" });
+    await expect(readFile(path.join(tocWorkspace.workspacePath, "note.md"), "utf8")).resolves.toBe(source);
+
+    const tagWorkspace = await prepareActiveWorkspace();
+    await writeFile(path.join(tagWorkspace.workspacePath, "note.md"), source, "utf8");
+    await expect(generateTagIndex({
+      includeSubfolders: true,
+      includeUntagged: false,
+      outputFolder: "",
+      outputName: "Tags",
+      sortBy: "name",
+      target: { kind: "workspace" },
+      targetFolder: ""
+    })).resolves.toMatchObject({ ok: true, value: "Tags.md" });
+    await expect(readFile(path.join(tagWorkspace.workspacePath, "note.md"), "utf8")).resolves.toBe(source);
+
+    const mergeWorkspace = await prepareActiveWorkspace();
+    await writeFile(path.join(mergeWorkspace.workspacePath, "note.md"), source, "utf8");
+    await expect(mergeFiles({
+      filterType: "all",
+      filterValue: "",
+      insertFilenameHeading: false,
+      outputFolder: "",
+      outputName: "Merged",
+      sortBy: "name",
+      target: { kind: "workspace" }
+    })).resolves.toMatchObject({ ok: true, value: "Merged.md" });
+    await expect(readFile(path.join(mergeWorkspace.workspacePath, "note.md"), "utf8")).resolves.toBe(source);
+  });
+
   it("明示された複数Markdownだけからタイトル一覧を生成する", async () => {
     const { workspacePath } = await prepareActiveWorkspace();
     await mkdir(path.join(workspacePath, "notes"));

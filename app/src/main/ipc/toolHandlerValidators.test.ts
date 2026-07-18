@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { maxToolTargetFiles } from "../../shared/ipc";
 import {
   isGenerateTagIndexInput,
   isGenerateTableOfContentsInput,
@@ -141,6 +142,25 @@ describe("toolHandlerValidators", () => {
     expect(isGenerateTitleListInput({
       ...base,
       target: { kind: "folder", path: "/outside" }
+    })).toBe(false);
+    expect(isGenerateTitleListInput({
+      ...base,
+      target: { kind: "files", paths: ["a.md"] }
+    })).toBe(false);
+    expect(isGenerateTitleListInput({
+      ...base,
+      target: { kind: "files", paths: ["a.md", "image.png"] }
+    })).toBe(false);
+    expect(isGenerateTitleListInput({
+      ...base,
+      target: { kind: "files", paths: ["a.md", "nul\0.md"] }
+    })).toBe(false);
+    expect(isGenerateTitleListInput({
+      ...base,
+      target: {
+        kind: "files",
+        paths: Array.from({ length: maxToolTargetFiles + 1 }, (_, index) => `note-${index}.md`)
+      }
     })).toBe(false);
     expect(isGenerateTitleListInput({ ...base, target: { kind: "workspace" } })).toBe(true);
   });

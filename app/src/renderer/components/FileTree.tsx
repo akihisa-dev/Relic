@@ -1,7 +1,6 @@
 import { relicClient } from "../relicClient";
 import { Fragment, memo, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent, MouseEvent, ReactElement } from "react";
-import { createPortal } from "react-dom";
 
 import {
   clearOutboundFileTreeDrag,
@@ -20,10 +19,8 @@ import { useFileTreeDragDrop } from "../hooks/useFileTreeDragDrop";
 import { useFileTreeItemState } from "../hooks/useFileTreeItemState";
 import { useFileTreeMotion } from "../hooks/useFileTreeMotion";
 import { useT } from "../i18n";
-import { contextMenuPosition } from "../fileTreeUi";
 import { FileTreeContextMenu } from "./FileTreeContextMenu";
 import { FileTreeItemRow } from "./FileTreeItemRow";
-import { FileToolsSubmenu } from "./FileToolsSubmenu";
 
 export type { FileTreeActions, FileTreeItemProps, FileTreeProps } from "../fileTreeTypes";
 
@@ -423,22 +420,6 @@ export const FileTree = memo(function FileTree({
     onSelectItem,
     onTogglePin
   ]);
-  const [rootContextMenu, setRootContextMenu] = useState<{ x: number; y: number } | null>(null);
-
-  useEffect(() => {
-    if (!rootContextMenu) return;
-    const close = (): void => setRootContextMenu(null);
-    const closeOnEscape = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") close();
-    };
-    window.addEventListener("mousedown", close);
-    window.addEventListener("keydown", closeOnEscape);
-    return () => {
-      window.removeEventListener("mousedown", close);
-      window.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [rootContextMenu]);
-
   const canImportDroppedFiles = (event: DragEvent<HTMLElement>): boolean => (
     isRoot &&
     Date.now() > ignoreRootFileDragOverUntilRef.current &&
@@ -518,20 +499,12 @@ export const FileTree = memo(function FileTree({
   };
 
   return (
-    <>
     <ul
       className={`file-tree${animation === "expand" ? " file-tree--expanding" : ""}${isRootFileDragOver ? " file-tree--external-drag-over" : ""}${isLargeTree ? " file-tree--large" : ""}`}
       data-visible-row-count={isRoot ? visibleRows.length : undefined}
       onDragLeave={handleRootDragLeave}
       onDragOver={handleRootDragOver}
       onDrop={handleRootDrop}
-      onContextMenu={(event) => {
-        if (!isRoot) return;
-        const target = event.target as Element;
-        if (target.closest(".file-tree-item")) return;
-        event.preventDefault();
-        setRootContextMenu(contextMenuPosition(event.clientX, event.clientY));
-      }}
     >
       {nodes.length === 0 ? (
         <li><div className="empty-note">{t("files.noFiles")}</div></li>
@@ -564,22 +537,5 @@ export const FileTree = memo(function FileTree({
         </Fragment>
       ))}
     </ul>
-    {rootContextMenu ? createPortal(
-      <div
-        className="tab-context-menu file-tree-context-menu"
-        onMouseDown={(event) => event.stopPropagation()}
-        role="menu"
-        style={{ left: rootContextMenu.x, position: "fixed", top: rootContextMenu.y, zIndex: 40 }}
-      >
-        <FileToolsSubmenu
-          onClose={() => setRootContextMenu(null)}
-          onRun={actions.onRunFileTool}
-          runningTool={runningFileTool}
-          target={{ kind: "workspace" }}
-        />
-      </div>,
-      document.body
-    ) : null}
-    </>
   );
 });

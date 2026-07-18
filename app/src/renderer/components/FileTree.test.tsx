@@ -173,6 +173,24 @@ describe("FileTree", () => {
     });
   });
 
+  it("選択外のフォルダを右クリックした場合は既存の複数選択を加工対象にしない", () => {
+    const onRunFileTool = vi.fn();
+    renderFileTree({
+      onRunFileTool,
+      selectedItems: [
+        { path: "Folder/Child.md", type: "file" },
+        { path: "Root.md", type: "file" }
+      ],
+      selectedPaths: new Set(["Folder/Child.md", "Root.md"])
+    });
+
+    openContextMenu("Folder");
+    fireEvent.mouseEnter(screen.getByRole("menuitem", { name: "File Processing" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Create Title List" }));
+
+    expect(onRunFileTool).toHaveBeenCalledWith("titleList", { kind: "folder", path: "Folder" });
+  });
+
   it("混在する複数選択では理由を示して加工を無効にする", () => {
     renderFileTree({
       onRunFileTool: vi.fn(),
@@ -186,19 +204,6 @@ describe("FileTree", () => {
     openContextMenu("Folder");
     expect(screen.getByRole("menuitem", { name: "File Processing" })).toBeDisabled();
     expect(screen.getByText("Select only Markdown files to process them together.")).toBeInTheDocument();
-  });
-
-  it("ファイルツリーの空き領域ではワークスペース全体を加工対象にする", () => {
-    const onRunFileTool = vi.fn();
-    const { container } = render(
-      <I18nProvider language="en">
-        <FileTree isRoot nodes={tree} onOpenFile={vi.fn()} onRunFileTool={onRunFileTool} onSelectFolder={vi.fn()} />
-      </I18nProvider>
-    );
-    fireEvent.contextMenu(container.querySelector(".file-tree") as HTMLElement, { clientX: 40, clientY: 50 });
-    fireEvent.mouseEnter(screen.getByRole("menuitem", { name: "File Processing" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Create Tag Index" }));
-    expect(onRunFileTool).toHaveBeenCalledWith("tagIndex", { kind: "workspace" });
   });
 
   it("rootに表示行数を保持する", () => {
