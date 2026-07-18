@@ -24,7 +24,6 @@ export interface AppLayoutShellInput {
   isDarkTheme: boolean;
   navigateBack: () => void;
   navigateForward: () => void;
-  showThemeSwitch: boolean;
 }
 
 export interface AppLayoutEditorWorkspaceInput {

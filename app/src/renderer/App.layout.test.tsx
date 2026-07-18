@@ -43,7 +43,8 @@ describe("App layout", () => {
     expect(await screen.findByText("書く場所を選ぶ")).toBeInTheDocument();
   });
 
-  it("タイトルバーからテーマを切り替えて保存する", async () => {
+  it("Windowsでもタイトルバーからテーマを切り替えて保存する", async () => {
+    setNavigatorPlatform("Win32");
     const saveEditorSettings = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     window.relic = makeRelicApi({ saveEditorSettings });
 

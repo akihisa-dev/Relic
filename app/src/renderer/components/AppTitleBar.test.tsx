@@ -9,8 +9,7 @@ import { AppTitleBar } from "./AppTitleBar";
 function renderTitleBar({
   canNavigateBack = false,
   canNavigateForward = false,
-  isDarkTheme = false,
-  showThemeSwitch = true
+  isDarkTheme = false
 } = {}) {
   const onNavigateBack = vi.fn();
   const onNavigateForward = vi.fn();
@@ -24,7 +23,6 @@ function renderTitleBar({
         onNavigateBack={onNavigateBack}
         onNavigateForward={onNavigateForward}
         onThemeChange={onThemeChange}
-        showThemeSwitch={showThemeSwitch}
       />
     </I18nProvider>
   );
@@ -63,13 +61,6 @@ describe("AppTitleBar", () => {
     expect(onThemeChange).toHaveBeenCalledWith("light");
   });
 
-  it("does not show the macOS-only switch on other platforms", () => {
-    renderTitleBar({ showThemeSwitch: false });
-
-    expect(screen.queryByRole("checkbox")).toBeNull();
-    expect(screen.getByRole("group", { name: "閲覧履歴" })).toBeInTheDocument();
-  });
-
   it("moves backward and forward when the corresponding history exists", () => {
     const { onNavigateBack, onNavigateForward } = renderTitleBar({
       canNavigateBack: true,
@@ -93,7 +84,6 @@ describe("AppTitleBar", () => {
           onNavigateBack={vi.fn()}
           onNavigateForward={vi.fn()}
           onThemeChange={vi.fn()}
-          showThemeSwitch
         >
           <div className="main-area-actions">
             <button type="button">Action</button>

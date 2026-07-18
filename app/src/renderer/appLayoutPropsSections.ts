@@ -218,7 +218,6 @@ export function createTitleBarProps(input: AppLayoutPropsInput): TitleBarProps {
     isDarkTheme: input.shell.isDarkTheme,
     onNavigateBack: input.shell.navigateBack,
     onNavigateForward: input.shell.navigateForward,
-    onThemeChange: (theme) => input.shell.handleSaveSettings({ ...input.shell.editorSettings, theme }),
-    showThemeSwitch: input.shell.showThemeSwitch
+    onThemeChange: (theme) => input.shell.handleSaveSettings({ ...input.shell.editorSettings, theme })
   };
 }

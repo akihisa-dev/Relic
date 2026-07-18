@@ -11,7 +11,6 @@ export interface AppTitleBarProps {
   onNavigateBack: () => void;
   onNavigateForward: () => void;
   onThemeChange: (theme: Exclude<AppTheme, "system">) => void;
-  showThemeSwitch: boolean;
 }
 
 export function AppTitleBar({
@@ -21,30 +20,27 @@ export function AppTitleBar({
   isDarkTheme,
   onNavigateBack,
   onNavigateForward,
-  onThemeChange,
-  showThemeSwitch
+  onThemeChange
 }: AppTitleBarProps): ReactElement {
   const t = useT();
   const accessibleLabel = isDarkTheme ? t("settings.switchToLight") : t("settings.switchToDark");
 
   return (
     <div className="title-bar">
-      {showThemeSwitch ? (
-        <label className="switch sw-7 title-bar-theme-switch">
-          <input
-            aria-label={accessibleLabel}
-            checked={isDarkTheme}
-            onChange={(event) => onThemeChange(event.currentTarget.checked ? "dark" : "light")}
-            type="checkbox"
-          />
-          <span aria-hidden="true" className="track">
-            <span className="thumb" />
-          </span>
-        </label>
-      ) : null}
+      <label className="switch sw-7 title-bar-theme-switch">
+        <input
+          aria-label={accessibleLabel}
+          checked={isDarkTheme}
+          onChange={(event) => onThemeChange(event.currentTarget.checked ? "dark" : "light")}
+          type="checkbox"
+        />
+        <span aria-hidden="true" className="track">
+          <span className="thumb" />
+        </span>
+      </label>
       <div
         aria-label={t("nav.history")}
-        className={`title-bar-navigation${showThemeSwitch ? " title-bar-navigation--after-theme" : ""}`}
+        className="title-bar-navigation title-bar-navigation--after-theme"
         role="group"
       >
         <button
