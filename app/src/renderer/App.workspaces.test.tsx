@@ -70,6 +70,13 @@ describe("App workspaces", () => {
     expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*overflow-y:\s*auto;/s);
   });
 
+  it("ファイルツリー行は通常時にクリック可能なカーソルを表示する", () => {
+    const css = readFileSync("src/renderer/styles/file-tree-search.css", "utf8");
+
+    expect(css).toMatch(/\.file-tree-row\s*\{[^}]*cursor:\s*pointer;/s);
+    expect(css).toMatch(/\.file-tree-row\.dragging\s*\{[^}]*cursor:\s*grabbing;/s);
+  });
+
   it("左レールの選択中ワークスペースの右クリックからワークスペース全体のファイル加工を実行する", async () => {
     vi.stubGlobal("innerWidth", 800);
     vi.stubGlobal("innerHeight", 600);

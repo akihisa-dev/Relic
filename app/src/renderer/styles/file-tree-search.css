@@ -46,7 +46,7 @@
   min-height: 28px;
   padding: 0 8px;
   text-align: left;
-  cursor: grab;
+  cursor: pointer;
   transform-origin: left center;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
