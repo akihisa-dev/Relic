@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "skillDescriptionDigest": "06c5eb993a6c0f462084aa0958d5ff8b7b0094e633ccd5056638f96f14a35feb",
+  "skillDescriptionDigest": "1ac250b70d47d00d149b740cabd216fc9ecfd78ae5e89c017c6763c4186832ad",
   "cases": [
     {
       "id": "issue-all-open",
@@ -122,6 +122,17 @@
       "permissionMode": "local-change-no-push",
       "expectedEndState": "安全なworkflow変更とローカル検証",
       "misrouteImpact": "依頼外の外部公開になる"
+    },
+    {
+      "id": "ci-remote-log-diagnosis",
+      "request": "GitHub Actionsの失敗を調査し、詳細ログから原因を説明してください。変更はしないでください",
+      "expectedEntrySkill": "relic-change-ci",
+      "expectedSpecialistSkills": [],
+      "forbiddenSkills": ["relic-commit", "relic-publish-github", "relic-release"],
+      "requiredDocs": ["AGENTS.md"],
+      "permissionMode": "read-only-github-check-diagnosis",
+      "expectedEndState": "利用可能なGitHub連携でrun・job・logを取得し、通信・認証・権限・対象不存在を分けて原因を報告する。連携で不足する場合だけ権限付きのghを補助利用する",
+      "misrouteImpact": "通信制限をトークン失効と誤認し、取得可能なログを確認せず再認証を繰り返す"
     },
     {
       "id": "packaging-vs-release",

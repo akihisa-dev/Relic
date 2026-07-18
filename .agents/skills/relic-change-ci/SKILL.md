@@ -1,6 +1,6 @@
 ---
 name: relic-change-ci
-description: RelicのGitHub Actions workflow、trigger、permissions、concurrency、runner、Action入力、credential保持、秘密情報検査、Git hook、CODEOWNERSを安全に追加・修正する。CI設計、workflow YAML、PR検証、Secret Guard、repository保護経路の変更に使う。Actionのversion更新だけはrelic-update-dependencies、GitHub上の失敗調査はgithub:gh-fix-ci、タグ起点の配布処理はrelic-release、package成果物の内容はrelic-debug-packagingを優先する。
+description: RelicのGitHub Actions workflow、trigger、permissions、concurrency、runner、Action入力、credential保持、秘密情報検査、Git hook、CODEOWNERSを安全に追加・修正し、GitHub上のcheck失敗では利用可能なGitHub連携から実行・job・logを調査する。CI設計、workflow YAML、PR検証、check失敗調査、Secret Guard、repository保護経路の変更に使う。Actionのversion更新だけはrelic-update-dependencies、GitHub連携で不足する失敗調査だけはgithub:gh-fix-ci、タグ起点の配布処理はrelic-release、package成果物の内容はrelic-debug-packagingを優先する。
 ---
 
 # Relic CI Change
@@ -10,8 +10,18 @@ description: RelicのGitHub Actions workflow、trigger、permissions、concurren
 1. 調査、説明、check結果の確認だけでは編集しない。workflow、hook、検査、所有規則の変更が明示されている場合だけ実装する。
 2. `git status --short`、`.github/workflows/`、`.githooks/`、`.github/CODEOWNERS`、`SECURITY.md`、`CONTRIBUTING.md`、`app/package.json` を確認する。
 3. trigger、権限、同時実行、runner、Action、実行script、secret guard、所有者のどこを変えるかを分ける。
-4. GitHub上だけの失敗は `github:gh-fix-ci` でjob・step・logを確認してから、原因を所有するSkillへ渡す。
-5. Action参照のversionだけを変える場合は `$relic-update-dependencies`、配布成果物の構成は `$relic-debug-packaging`、タグとRelease操作は `$relic-release` に委ねる。
+4. GitHub上だけの失敗は、現行ツールカタログで利用できるGitHub連携を使い、Pull Requestまたはcommit、workflow run、job・step、logの順に一次情報を取得してから、原因を所有するSkillへ渡す。
+5. GitHub連携が必要な情報や操作を提供しない場合だけ `github:gh-fix-ci` を補助経路として使う。連携で取得できる情報を、先に `gh` の認証確認へ置き換えない。
+6. Action参照のversionだけを変える場合は `$relic-update-dependencies`、配布成果物の構成は `$relic-debug-packaging`、タグとRelease操作は `$relic-release` に委ねる。
+
+## GitHub上の失敗を切り分ける
+
+1. GitHub連携の認証、`gh` の認証、ネットワーク接続、対象repository・workflowへの権限を別の状態として扱う。
+2. 利用可能なGitHub連携でworkflow run、job、step、logを取得できる場合は、その経路だけで調査を完了し、`gh` の認証を前提条件にしない。
+3. GitHub連携が失敗した場合は、連携自体の認証拒否、repositoryへのアクセス不可、対象不存在、機能不足を区別し、理由を確認できない失敗をトークン失効と表現しない。
+4. `gh` が必要な場合は、通信を必要とする全コマンドを最初から正規の承認経路でネットワーク権限付きで実行する。制限環境内の失敗結果を認証判定へ使わない。
+5. `gh` のトークン無効は、通信可能な環境でGitHubによる認証拒否を確認できた場合だけ確定する。接続失敗は通信問題または判定不能、権限拒否は権限不足、対象を取得できない応答は不存在またはアクセス不可として分け、接続失敗だけを理由に再認証を案内しない。
+6. 認証確認ではトークン値を出力、保存、引用しない。GitHub Actions以外のcheckは提供元とURLを報告し、依頼なしに別サービスへ調査範囲を広げない。
 
 ## workflowの権限と起動条件を守る
 

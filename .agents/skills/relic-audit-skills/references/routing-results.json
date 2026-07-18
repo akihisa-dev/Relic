@@ -22,6 +22,7 @@
     {"caseId":"derived-views","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"search-and-tools","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"ci-vs-publish","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
+    {"caseId":"ci-remote-log-diagnosis","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境は使用していない。GitHub連携によるrun・job・log取得は実接続で確認済み"}},
     {"caseId":"packaging-vs-release","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"dependency-update","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"retire-feature","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
