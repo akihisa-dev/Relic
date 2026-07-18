@@ -1,7 +1,14 @@
-export function contextMenuPosition(x: number, y: number): { x: number; y: number } {
+interface ContextMenuPositionOptions {
+  estimatedHeight?: number;
+  estimatedWidth?: number;
+}
+
+export function contextMenuPosition(
+  x: number,
+  y: number,
+  { estimatedHeight = 460, estimatedWidth = 220 }: ContextMenuPositionOptions = {}
+): { x: number; y: number } {
   const margin = 8;
-  const estimatedWidth = 220;
-  const estimatedHeight = 460;
   const maxX = Math.max(margin, window.innerWidth - estimatedWidth - margin);
   const maxY = Math.max(margin, window.innerHeight - estimatedHeight - margin);
 

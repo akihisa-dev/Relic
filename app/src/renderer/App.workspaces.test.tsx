@@ -37,6 +37,7 @@ describe("App workspaces", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
     restoreNavigatorPlatform();
     resetRendererStores();
   });
@@ -70,6 +71,8 @@ describe("App workspaces", () => {
   });
 
   it("ワークスペースを開く行の右クリックからワークスペース全体のファイル加工を実行する", async () => {
+    vi.stubGlobal("innerWidth", 800);
+    vi.stubGlobal("innerHeight", 600);
     const generateTitleList = vi.fn().mockResolvedValue({ ok: true, value: "タイトル一覧.md" });
     window.relic = makeRelicApi({
       generateTitleList,
@@ -88,12 +91,13 @@ describe("App workspaces", () => {
     fireEvent.contextMenu(workspaceSurface!, { clientX: 40, clientY: 50 });
     expect(screen.queryByRole("menuitem", { name: "ファイル加工" })).not.toBeInTheDocument();
 
-    fireEvent.contextMenu(workspaceButton, { clientX: 40, clientY: 50 });
+    fireEvent.contextMenu(workspaceButton, { clientX: 40, clientY: 580 });
     expect(screen.getByRole("menuitem", { name: "ファイル加工" })).toBeInTheDocument();
+    expect(screen.getByRole("menu")).toHaveStyle({ left: "40px", top: "552px" });
     fireEvent.mouseDown(window);
     expect(screen.queryByRole("menuitem", { name: "ファイル加工" })).not.toBeInTheDocument();
 
-    fireEvent.contextMenu(workspaceButton, { clientX: 40, clientY: 50 });
+    fireEvent.contextMenu(workspaceButton, { clientX: 40, clientY: 580 });
     fireEvent.mouseEnter(screen.getByRole("menuitem", { name: "ファイル加工" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "タイトル一覧を作成" }));
 

@@ -212,7 +212,7 @@ export function FilesSidebar({
             onOpenWorkspace={onOpenWorkspace}
             onWorkspaceContextMenu={(event) => {
               event.preventDefault();
-              setWorkspaceContextMenu(contextMenuPosition(event.clientX, event.clientY));
+              setWorkspaceContextMenu(contextMenuPosition(event.clientX, event.clientY, { estimatedHeight: 40 }));
             }}
           />
         </>

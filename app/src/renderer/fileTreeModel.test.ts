@@ -208,6 +208,7 @@ describe("fileTreeModel", () => {
     vi.stubGlobal("innerHeight", 200);
 
     expect(contextMenuPosition(-10, 999)).toEqual({ x: 8, y: 8 });
+    expect(contextMenuPosition(200, 190, { estimatedHeight: 40 })).toEqual({ x: 12, y: 152 });
 
     vi.unstubAllGlobals();
   });
