@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import tempfile
 from pathlib import Path
 
@@ -17,6 +18,7 @@ REQUIRED_CASE_FIELDS = {
 EXECUTION_STATUSES = {
     "execution-pass", "execution-fail", "not-executed", "environment-mismatch"
 }
+COMMIT_HASH_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
 
 def load_json(path: Path) -> dict:
@@ -83,6 +85,7 @@ def validate(workspace: Path, ledger_path: Path, results_path: Path) -> list[str
     if uncovered:
         errors.append(f"repository-owned skills missing from routing cases: {', '.join(sorted(uncovered))}")
 
+    case_by_id = {case.get("id"): case for case in cases}
     result_by_case = {entry.get("caseId"): entry for entry in results.get("cases", [])}
     if set(result_by_case) != case_ids:
         errors.append("routing result case IDs must exactly match the ledger")
@@ -97,6 +100,29 @@ def validate(workspace: Path, ledger_path: Path, results_path: Path) -> list[str
             errors.append(f"{case_id}: {status} requires a reason")
         if status in {"execution-pass", "execution-fail"} and not execution.get("actualSkills"):
             errors.append(f"{case_id}: {status} requires actualSkills")
+        if status in {"execution-pass", "execution-fail"}:
+            execution_head = execution.get("head")
+            if not isinstance(execution_head, str) or not COMMIT_HASH_PATTERN.fullmatch(execution_head):
+                errors.append(f"{case_id}: {status} requires a full execution head")
+        if status == "execution-pass" and case_id in case_by_id:
+            case = case_by_id[case_id]
+            actual_skills = set(execution.get("actualSkills", []))
+            expected_skills = {
+                case.get("expectedEntrySkill"),
+                *case.get("expectedSpecialistSkills", []),
+            }
+            missing_expected = sorted(skill for skill in expected_skills if skill and skill not in actual_skills)
+            selected_forbidden = sorted(set(case.get("forbiddenSkills", [])) & actual_skills)
+            if missing_expected:
+                errors.append(
+                    f"{case_id}: execution-pass is missing expected skills: "
+                    f"{', '.join(missing_expected)}"
+                )
+            if selected_forbidden:
+                errors.append(
+                    f"{case_id}: execution-pass selected forbidden skills: "
+                    f"{', '.join(selected_forbidden)}"
+                )
 
     environment = results.get("environment", {})
     for field in ["repository", "head", "skillRoot", "externalCatalogs", "historyScope", "executionAvailable"]:
@@ -108,12 +134,16 @@ def validate(workspace: Path, ledger_path: Path, results_path: Path) -> list[str
 def self_test() -> None:
     with tempfile.TemporaryDirectory(prefix="relic-routing-ledger-") as directory:
         workspace = Path(directory)
-        skill_dir = workspace / ".agents/skills/example"
-        skill_dir.mkdir(parents=True)
-        (skill_dir / "SKILL.md").write_text("---\nname: example\ndescription: example\n---\n", encoding="utf-8")
+        for name in ("example", "specialist", "forbidden"):
+            skill_dir = workspace / f".agents/skills/{name}"
+            skill_dir.mkdir(parents=True)
+            (skill_dir / "SKILL.md").write_text(
+                f"---\nname: {name}\ndescription: {name}\n---\n",
+                encoding="utf-8",
+            )
         ledger = {"version": 1, "skillDescriptionDigest": skill_description_digest(workspace / ".agents/skills"), "cases": [{
             "id": "case", "request": "request", "expectedEntrySkill": "example",
-            "expectedSpecialistSkills": [], "forbiddenSkills": [], "requiredDocs": [],
+            "expectedSpecialistSkills": ["specialist"], "forbiddenSkills": ["forbidden"], "requiredDocs": [],
             "permissionMode": "read-only", "expectedEndState": "reported",
             "misrouteImpact": "none"
         }]}
@@ -131,6 +161,24 @@ def self_test() -> None:
         ledger["cases"][0]["expectedEntrySkill"] = "missing"
         ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
         assert any("unknown skills" in error for error in validate(workspace, ledger_path, results_path))
+        ledger["cases"][0]["expectedEntrySkill"] = "example"
+        ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
+        results["cases"][0]["execution"] = {
+            "status": "execution-pass",
+            "actualSkills": ["example", "specialist"],
+            "head": "0" * 40,
+        }
+        results_path.write_text(json.dumps(results), encoding="utf-8")
+        assert validate(workspace, ledger_path, results_path) == []
+        results["cases"][0]["execution"]["actualSkills"] = ["example"]
+        results_path.write_text(json.dumps(results), encoding="utf-8")
+        assert any("missing expected skills" in error for error in validate(workspace, ledger_path, results_path))
+        results["cases"][0]["execution"]["actualSkills"] = ["example", "specialist", "forbidden"]
+        results_path.write_text(json.dumps(results), encoding="utf-8")
+        assert any("selected forbidden skills" in error for error in validate(workspace, ledger_path, results_path))
+        del results["cases"][0]["execution"]["head"]
+        results_path.write_text(json.dumps(results), encoding="utf-8")
+        assert any("requires a full execution head" in error for error in validate(workspace, ledger_path, results_path))
     print("routing-ledger self-test: ok")
 
 

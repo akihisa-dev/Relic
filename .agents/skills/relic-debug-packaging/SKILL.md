@@ -1,6 +1,6 @@
 ---
 name: relic-debug-packaging
-description: RelicのElectron Forge・Viteによるpackage・make、ASAR内容、追加resources、アイコン、OS別成果物の構成変更と障害を扱い、現行のsafe buildで再検証する。配布設定・成果物構成・アイコン・resourcesの変更、配布ビルド失敗、起動ファイル欠落、ASAR検査、不要ファイル混入、macOS・Windows成果物差、ローカルでのCI build原因分析に使う。調査だけでは読み取り専用とし、GitHub上のcheck調査はgh-fix-ci、タグ・push・Draft・Publishはrelic-release、依存更新はrelic-update-dependenciesを優先する。
+description: RelicのElectron Forge・Viteによるpackage・make、ASAR内容、追加resources、アイコン、OS別成果物の構成変更と障害を扱い、現行のsafe buildで再検証する。配布設定・成果物構成・アイコン・resourcesの変更、配布ビルド失敗、起動ファイル欠落、ASAR検査、不要ファイル混入、macOS・Windows成果物差、ローカルでのCI build原因分析に使う。調査だけでは読み取り専用とし、GitHub上のcheck調査はgithub:gh-fix-ci、タグ・push・Draft・Publishはrelic-release、依存更新はrelic-update-dependenciesを優先する。
 ---
 
 # Relic Packaging Debug

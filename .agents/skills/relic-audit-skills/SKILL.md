@@ -50,7 +50,7 @@ description: Relicリポジトリで利用可能なSkill集合を一覧化し、
 2. 行数、類似度、参照数だけで問題を確定しない。具体的な依頼で誤選択、手順停止、安全条件の衝突、保守時の二重更新が起きる証拠を示す。
 3. 現行の機能領域、Git履歴、繰り返し手作業から不足領域を探す。想像上の将来作業だけを新規Skillの根拠にしない。
 4. 代表依頼には、正例、対象外、監査と変更、隣接Skillの境界、入口Skill、出口Skillを含める。期待Skill、実際に選ばれそうなSkill、誤発火、未発火、description改善案を評価する。
-5. repository-owned Skill全体の代表依頼は `references/routing-cases.json` を正本とし、`references/routing-results.json` で静的判定と実行判定を分ける。実行できないcaseは `not-executed` と理由を記録し、成功扱いしない。Skill追加・改名・description変更時は関連caseと結果を更新し、`scripts/validate_routing_ledger.py` で全Skillの網羅と形式を確認する。
+5. repository-owned Skill全体の代表依頼は `references/routing-cases.json` を正本とし、`references/routing-results.json` で静的判定と実行判定を分ける。実行判定には観測時の完全なcommit hashを記録し、`execution-pass` は期待する入口・専門Skillをすべて含み、禁止Skillを含まない場合だけ使う。実行できないcaseは `not-executed` と理由を記録し、成功扱いしない。Skill追加・改名・description変更時は関連caseと結果を更新し、`scripts/validate_routing_ledger.py` で全Skillの網羅と形式を確認する。
 6. `critical`、`high`、`medium`、`low` の重要度と、`keep`、`revise`、`rename`、`merge`、`split`、`deprecate`、`delete`、`create`、`hold` の変更種別を [監査基準](references/audit-criteria.md) に従って使う。不確かな推論は断定しない。
 7. 最後に本Skill自身を一度だけ同じ基準で評価し、責務、description、重複、手順量、現行構成への適合を確認する。
 

@@ -1,6 +1,6 @@
 ---
 name: relic-test-code
-description: RelicのVitest・React Testing Libraryによる自動テストについて、失敗の再現と原因切り分け、回帰テストの追加・修正、Node・jsdom環境の選択、fixture・mock・一時データの安全性、coverage gateまで扱う。ローカルのテスト失敗、flaky test、テスト追加、回帰防止、coverage不足の調査や修正に使う。機能本体の変更は対応するrelic-change系Skill、実画面確認はrelic-test-development-app、GitHub Actions上だけの失敗はgh-fix-ciを優先する。
+description: RelicのVitest・React Testing Libraryによる自動テストについて、失敗の再現と原因切り分け、回帰テストの追加・修正、Node・jsdom環境の選択、fixture・mock・一時データの安全性、coverage gateまで扱う。ローカルのテスト失敗、flaky test、テスト追加、回帰防止、coverage不足の調査や修正に使う。機能本体の変更は対応するrelic-change系Skill、実画面確認はrelic-test-development-app、GitHub Actions上だけの失敗はgithub:gh-fix-ciを優先する。
 ---
 
 # Relic Code Test

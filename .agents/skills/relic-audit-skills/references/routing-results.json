@@ -2,18 +2,18 @@
   "version": 1,
   "environment": {
     "repository": "akihisa-dev/Relic",
-    "head": "17bdf3ffb08a8eb1bb4e8a696f1ca7b7d2035b96",
+    "head": "271c4595c23768e903e265a7f707786fa6873329",
     "skillRoot": ".agents/skills",
     "externalCatalogs": ["openai-system", "openai-bundled", "openai-curated-remote", "workspace-local"],
     "sameNameVariants": false,
     "historyScope": "full",
     "executionAvailable": true,
-    "notes": "Repository-owned 31件は収集済み。外部Skillはカタログ名を記録し、今回使用したskill-creatorだけ内容を確認。"
+    "notes": "headはルーティング台帳を再評価した変更前HEAD。各実行結果はexecution.headで観測時点を記録する。Repository-owned 31件は収集済み。外部Skillはカタログ名を記録し、今回使用したskill-creatorだけ内容を確認。"
   },
   "cases": [
-    {"caseId":"issue-all-open","staticStatus":"static-pass","execution":{"status":"execution-pass","actualSkills":["relic-issue","relic-change-ci","relic-test-code","relic-debug-packaging","relic-audit-code-health","relic-audit-skills","relic-maintain-docs"],"reason":"本Issue対応セッションで選択と手順読込を観測"}},
+    {"caseId":"issue-all-open","staticStatus":"static-pass","execution":{"status":"execution-fail","actualSkills":["relic-issue","relic-change-ci","relic-test-code","relic-debug-packaging","relic-audit-code-health","relic-audit-skills","relic-maintain-docs"],"head":"17bdf3ffb08a8eb1bb4e8a696f1ca7b7d2035b96","reason":"過去の観測では現行ケースが期待するguard・commit・version Skillの選択を確認できない"}},
     {"caseId":"code-health-vs-refactor","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"task-target-mismatch","staticStatus":"static-pass","execution":{"status":"execution-pass","actualSkills":["relic-guard-task"],"reason":"独立した読み取り専用forward-testで対象不一致時の停止を確認"}},
+    {"caseId":"task-target-mismatch","staticStatus":"static-pass","execution":{"status":"execution-pass","actualSkills":["relic-guard-task"],"head":"f59b197d1a710cf2584ee42bba9cfe47cd022cb5","reason":"独立した読み取り専用forward-testで対象不一致時の停止を確認"}},
     {"caseId":"reference-first-ui","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"guardの見本限定判断はforward-test済み。entry Skillの独立routing実行は未実施"}},
     {"caseId":"full-refactor","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"ui-localization-navigation","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
