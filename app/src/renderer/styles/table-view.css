@@ -233,8 +233,7 @@
 }
 
 .table-view-cell[role="columnheader"] button:focus-visible,
-.table-file-link:focus-visible,
-.table-value-tooltip:focus-visible {
+.table-file-link:focus-visible {
   box-shadow: 0 0 0 2px var(--accent-ring);
   outline: 1px solid var(--accent);
   outline-offset: 1px;
@@ -415,31 +414,6 @@
 .table-value--empty-array,
 .table-value--empty-string {
   font-family: var(--font-mono);
-}
-
-.table-value-tooltip::after {
-  background: var(--surface-overlay, var(--surface-raised));
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 8px 22px var(--shadow);
-  color: var(--text);
-  content: attr(data-full-value);
-  display: none;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  left: 6px;
-  max-width: min(440px, 70vw);
-  overflow-wrap: anywhere;
-  padding: 7px 9px;
-  position: absolute;
-  top: calc(100% - 2px);
-  white-space: normal;
-  z-index: 30;
-}
-
-.table-value-tooltip:hover::after,
-.table-value-tooltip:focus-visible::after {
-  display: block;
 }
 
 .table-view-status,

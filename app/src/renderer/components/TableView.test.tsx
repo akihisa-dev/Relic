@@ -40,7 +40,11 @@ describe("TableView", () => {
     expect(screen.getAllByRole("columnheader")).toHaveLength(1);
     expect(screen.getByText("a")).toBeInTheDocument();
     expect(screen.getByText("b")).toBeInTheDocument();
-    expect(screen.getByLabelText(/フロントマターを読み取れません/)).toBeInTheDocument();
+    const warning = screen.getByLabelText(/フロントマターを読み取れません/);
+    expect(warning).toBeInTheDocument();
+    expect(warning).not.toHaveAttribute("data-full-value");
+    expect(warning).not.toHaveAttribute("tabindex");
+    expect(warning).not.toHaveClass("table-value-tooltip");
 
     const fileButtons = screen.getAllByRole("button", { name: /^note2/ });
     fireEvent.click(fileButtons[0]);
@@ -106,6 +110,11 @@ describe("TableView", () => {
     );
 
     await screen.findByText("2 files");
+    const valueCell = screen.getByText("War");
+    expect(valueCell).not.toHaveAttribute("title");
+    expect(valueCell).not.toHaveAttribute("data-full-value");
+    expect(valueCell).not.toHaveAttribute("tabindex");
+    expect(valueCell).not.toHaveClass("table-value-tooltip");
     fireEvent.click(screen.getByRole("button", { name: "category settings" }));
 
     expect(screen.getByRole("dialog", { name: "category settings" })).toBeInTheDocument();

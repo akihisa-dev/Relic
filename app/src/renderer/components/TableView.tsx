@@ -417,9 +417,7 @@ function TableRow({ duplicateName, onOpenFile, row, rowIndex, selectedProperties
         {row.frontmatterStatus === "invalid" ? (
           <span
             aria-label={t("table.invalidFrontmatter")}
-            className="table-frontmatter-warning table-value-tooltip"
-            data-full-value={t("table.invalidFrontmatter")}
-            tabIndex={0}
+            className="table-frontmatter-warning"
           >!
           </span>
         ) : null}
@@ -437,10 +435,7 @@ function ValueCell({ value }: { value?: WorkspaceTableValue }): ReactElement {
     <div className="table-view-cell" role="cell">
       <span
         aria-label={value.text}
-        className={`table-value table-value--${value.kind} table-value-tooltip`}
-        data-full-value={value.text}
-        tabIndex={0}
-        title={value.text}
+        className={`table-value table-value--${value.kind}`}
       >
         {value.kind === "boolean" ? <span aria-hidden="true">{value.booleanValue ? "☑" : "☐"} </span> : null}
         {value.text}
