@@ -12,6 +12,7 @@ const itemHeight = 70;
 const labelCharacterWidth = 7.4;
 const minimumYearGap = 62;
 const yearGapScale = 48;
+const minimumYearTickWorldGap = 64 / CHRONICLE_CANVAS_MAX_SCALE;
 const springStrength = 0.2;
 const damping = 0.72;
 
@@ -129,18 +130,54 @@ export function buildChronicleCanvasYears(entries: ChartEntry[]): ChronicleCanva
   const values = [...new Set(entries.flatMap((entry) => [entry.startPoint.year, entry.endPoint.year]))]
     .sort((a, b) => a - b);
   let x = 0;
-
-  return values.map((value, index) => {
+  const entryYears = values.map((value, index) => {
     if (index > 0) {
       const yearDifference = Math.max(1, value - values[index - 1]);
       x += compressedYearDistance(yearDifference);
     }
     return { value, x };
   });
+
+  const years = [...entryYears];
+  for (let index = 1; index < entryYears.length; index += 1) {
+    const left = entryYears[index - 1];
+    const right = entryYears[index];
+    const yearDifference = right.value - left.value;
+    const worldDistance = right.x - left.x;
+    const maximumIntervals = Math.floor(worldDistance / minimumYearTickWorldGap);
+    if (yearDifference <= 1 || maximumIntervals <= 1) continue;
+
+    const step = niceYearStep(yearDifference / maximumIntervals);
+    let value = Math.ceil(left.value / step) * step;
+    if (value <= left.value) value += step;
+    while (value < right.value) {
+      const progress = (value - left.value) / yearDifference;
+      const tickX = left.x + worldDistance * progress;
+      if (
+        tickX - left.x >= minimumYearTickWorldGap &&
+        right.x - tickX >= minimumYearTickWorldGap
+      ) {
+        years.push({ value, x: tickX });
+      }
+      const nextValue = value + step;
+      if (nextValue <= value) break;
+      value = nextValue;
+    }
+  }
+
+  return years.sort((left, right) => left.value - right.value);
 }
 
 export function compressedYearDistance(yearDifference: number): number {
   return minimumYearGap + Math.log1p(Math.max(0, yearDifference - 1)) * yearGapScale;
+}
+
+function niceYearStep(minimumStep: number): number {
+  if (minimumStep <= 1) return 1;
+  const magnitude = 10 ** Math.floor(Math.log10(minimumStep));
+  const normalized = minimumStep / magnitude;
+  const multiplier = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return multiplier * magnitude;
 }
 
 export function settleChronicleCanvasScene(items: ChronicleCanvasItem[], iterations: number): void {

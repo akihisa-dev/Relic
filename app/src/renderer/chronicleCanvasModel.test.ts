@@ -39,16 +39,31 @@ function entry(fileName: string, path: string, startYear: number, endYear = star
 }
 
 describe("chronicleCanvasModel", () => {
-  it("存在する年だけを過去から未来へ並べ、長い空白を圧縮する", () => {
+  it("値がない年も目盛りへ補いながら過去から未来へ並べ、長い空白を圧縮する", () => {
     const years = buildChronicleCanvasYears([
       entry("A", "a.md", -100, 10),
       entry("B", "b.md", 11, 1000)
     ]);
 
-    expect(years.map((year) => year.value)).toEqual([-100, 10, 11, 1000]);
+    expect(years.map((year) => year.value)).toEqual(expect.arrayContaining([-100, -80, 10, 11, 100, 1000]));
     expect(years.map((year) => year.x)).toEqual([...years.map((year) => year.x)].sort((a, b) => a - b));
+    const xByYear = new Map(years.map((year) => [year.value, year.x]));
+    expect((xByYear.get(10) ?? 0) - (xByYear.get(-100) ?? 0)).toBeCloseTo(compressedYearDistance(110));
+    expect((xByYear.get(11) ?? 0) - (xByYear.get(10) ?? 0)).toBeCloseTo(compressedYearDistance(1));
     expect(compressedYearDistance(1000)).toBeGreaterThan(compressedYearDistance(10));
     expect(compressedYearDistance(1000)).toBeLessThan(compressedYearDistance(10) * 10);
+  });
+
+  it("非常に長い年代でも目盛り候補を必要数だけ生成する", () => {
+    const years = buildChronicleCanvasYears([
+      entry("Past", "past.md", -1_000_000_000),
+      entry("Future", "future.md", 1_000_000_000)
+    ]);
+
+    expect(years.at(0)?.value).toBe(-1_000_000_000);
+    expect(years.at(-1)?.value).toBe(1_000_000_000);
+    expect(years.length).toBeGreaterThan(2);
+    expect(years.length).toBeLessThan(100);
   });
 
   it("単年と期間を独立項目として収束済みの位置へ配置する", () => {
