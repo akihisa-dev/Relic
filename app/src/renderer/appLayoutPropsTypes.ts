@@ -202,5 +202,7 @@ export interface AppLayoutRailInput {
 
 export interface AppLayoutStatusBarInput {
   activeFileTab: StatusBarProps["activeFileTab"];
+  language: StatusBarProps["language"];
+  onLanguageChange: StatusBarProps["onLanguageChange"];
   saveStatusByTabId: Record<string, StatusBarProps["saveStatus"]>;
 }

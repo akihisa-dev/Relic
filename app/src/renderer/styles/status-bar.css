@@ -17,3 +17,32 @@
   min-height: 26px;
   padding: 0 14px;
 }
+
+.status-bar-language-switch {
+  flex: none;
+  margin-left: auto;
+}
+
+.status-bar-language-switch .track {
+  background: color-mix(in srgb, var(--color-border-strong) 70%, var(--surface));
+}
+
+.status-bar-language-switch .thumb {
+  align-items: center;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  display: flex;
+  font-size: 8px;
+  font-weight: 700;
+  justify-content: center;
+  letter-spacing: -0.02em;
+}
+
+.status-bar-language-switch input:checked + .track {
+  background: var(--secondary);
+}
+
+.status-bar-language-switch input:checked + .track .thumb {
+  background: var(--surface);
+  color: var(--secondary);
+}

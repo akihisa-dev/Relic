@@ -68,25 +68,6 @@ export function SettingsPanel({
       </header>
 
       <section className="settings-group">
-        <div className="links-panel-subheading">{t("settings.sectionAppearance")}</div>
-        <div className="settings-stack">
-          <div className="setting-row">
-            <span>{t("settings.language")}</span>
-            <SettingsSegmentedControl
-              ariaLabel={t("settings.language")}
-              onChange={(value) => update("language", value)}
-              options={[
-                { label: t("settings.languageSystem"), value: "system" },
-                { label: t("settings.languageEnglish"), value: "en" },
-                { label: t("settings.languageJapanese"), value: "ja" }
-              ]}
-              value={settings.language}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className="settings-group">
         <div className="links-panel-subheading">{t("settings.sectionEditor")}</div>
         <div className="settings-stack">
           <div className="setting-row">

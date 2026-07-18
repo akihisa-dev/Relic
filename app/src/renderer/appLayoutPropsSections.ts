@@ -207,6 +207,8 @@ export function createRailProps(input: AppLayoutRailInput): RailProps {
 export function createStatusBarProps(input: AppLayoutStatusBarInput): StatusBarProps {
   return {
     activeFileTab: input.activeFileTab,
+    language: input.language,
+    onLanguageChange: input.onLanguageChange,
     saveStatus: input.activeFileTab ? input.saveStatusByTabId[input.activeFileTab.id] : undefined
   };
 }

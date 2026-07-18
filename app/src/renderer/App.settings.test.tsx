@@ -45,6 +45,20 @@ describe("App settings", () => {
     );
   });
 
+  it("ステータスバーで表示言語を切り替えると saveEditorSettings が呼ばれる", async () => {
+    const saveEditorSettings = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({ saveEditorSettings });
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("checkbox", { name: "英語に切り替える" }));
+
+    expect(saveEditorSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ language: "en" })
+    );
+  });
+
   it("設定フォントをアプリ全体の文字用CSS変数へ反映する", async () => {
     window.relic = makeRelicApi({
       getEditorSettings: vi.fn().mockResolvedValue({

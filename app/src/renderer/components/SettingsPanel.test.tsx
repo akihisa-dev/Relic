@@ -147,7 +147,8 @@ describe("SettingsPanel", () => {
     renderSettingsPanel();
 
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
-    expect(screen.getByText("Appearance")).toBeInTheDocument();
+    expect(screen.queryByText("Appearance")).not.toBeInTheDocument();
+    expect(screen.queryByText("Language")).not.toBeInTheDocument();
     expect(screen.queryByText("Theme")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Dark" })).not.toBeInTheDocument();
     expect(screen.getByText("Editor")).toBeInTheDocument();

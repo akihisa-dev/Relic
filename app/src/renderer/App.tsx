@@ -689,6 +689,8 @@ export function App(): ReactElement {
     },
     statusBar: {
       activeFileTab: activeFileTabInFocusedPane,
+      language: editorSettings.language,
+      onLanguageChange: (language) => handleSaveSettings({ ...editorSettings, language }),
       saveStatusByTabId
     }
   });
