@@ -5,6 +5,8 @@ import type { SearchMode, WorkspaceSearchResult, WorkspaceState, WorkspaceTreeNo
 import { type FileTreeExpansionRequest } from "../fileTreeModel";
 import { isFilteringFiles as isFilteringFilesModel } from "../filesSidebarModel";
 import { useFileTreeSelection } from "../hooks/useFileTreeSelection";
+import { useFileToolActions } from "../hooks/useFileToolActions";
+import { useT } from "../i18n";
 import { FilesSearchResults } from "./FilesSearchResults";
 import { FilesSidebarTreeSection } from "./FilesSidebarTreeSection";
 import { FilesCreateActions, FilesWorkspaceActions, FilesWorkspaceEmpty } from "./FilesWorkspaceActions";
@@ -35,6 +37,7 @@ export interface FilesSidebarProps {
   onRenameItem: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onSelectedCountChange?: (count: number) => void;
+  onShowToast: (text: string, type?: "error" | "info") => void;
   onTogglePin: (path: string) => void;
   openingFilePath?: string | null;
   openFilePaths?: Set<string>;
@@ -73,6 +76,7 @@ export function FilesSidebar({
   onRenameItem,
   onSelectFolder,
   onSelectedCountChange,
+  onShowToast,
   onTogglePin,
   openingFilePath,
   openFilePaths,
@@ -84,6 +88,7 @@ export function FilesSidebar({
   searchResults,
   workspaceState
 }: FilesSidebarProps): ReactElement {
+  const t = useT();
   const [expansionRequest, setExpansionRequest] = useState<FileTreeExpansionRequest | undefined>(undefined);
   const activeWorkspace = workspaceState?.activeWorkspace ?? null;
   const pinnedPaths = useMemo(
@@ -94,6 +99,11 @@ export function FilesSidebar({
   const { handleSelectItem, selectedItems, selectedPaths } = useFileTreeSelection({
     nodes: userNodes,
     onSelectedCountChange
+  });
+  const { onRunFileTool, runningFileTool } = useFileToolActions({
+    onOpenFile: (path) => onOpenFile(path),
+    onShowToast,
+    t
   });
   const isFilteringFiles = isFilteringFilesModel({ isSearching, query: searchQuery, searchError });
 
@@ -142,6 +152,7 @@ export function FilesSidebar({
                 onMoveFile={onMoveFile}
                 onMoveFolder={onMoveFolder}
                 onMoveItems={onMoveItems}
+                onRunFileTool={onRunFileTool}
                 onOpenFile={onOpenFile}
                 onOpenInOtherPane={onOpenInOtherPane}
                 onRequestExpansion={requestExpansion}
@@ -155,6 +166,7 @@ export function FilesSidebar({
                 pinnedPaths={pinnedPaths}
                 selectedItems={selectedItems}
                 selectedPaths={selectedPaths}
+                runningFileTool={runningFileTool}
                 workspaceState={workspaceState}
               />
             ) : null}

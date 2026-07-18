@@ -122,6 +122,7 @@ export interface AppLayoutFilesSidebarInput {
   handleRevealWorkspaceItem: FilesSidebarProps["onRevealItem"];
   handleSelectFolder: FilesSidebarProps["onSelectFolder"];
   handleSidebarOpenFile: FilesSidebarProps["onOpenFile"];
+  showToast: FilesSidebarProps["onShowToast"];
   handleTogglePin: FilesSidebarProps["onTogglePin"];
   isCreatingFile: FilesSidebarProps["isCreatingFile"];
   isCreatingFolder: FilesSidebarProps["isCreatingFolder"];

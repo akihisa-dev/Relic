@@ -11,6 +11,7 @@ Relicは、ユーザーが選んだローカルフォルダだけをワークス
 - 書き込み、移動、リネーム、削除境界の直前では、対象がまだワークスペース内か再確認する。
 - 外部Markdownインポートでは、読み取り元は外部パスを許可するが、書き込み先は必ずワークスペース内に限定する。
 - ツール出力は出力名を `safeOutputName(...)` で単一ファイル名に限定し、出力先を `resolveNewWorkspacePath(...)` で確認する。
+- ファイル加工の対象は `workspace`、`folder`、`files` の共有契約で受け、Main側でファイルツリーとの一致、各実体パス、Markdown種別、重複、件数、合計サイズを処理前に確認する。
 
 ## Rendererへ渡るローカルパス
 
@@ -36,7 +37,7 @@ Relicは、ユーザーが選んだローカルフォルダだけをワークス
 | ゴミ箱移動 | `app/src/main/files/trash.ts` | `resolveExistingWorkspacePath(...)` 後に型を確認し、外部実体は拒否 |
 | 単一ファイル置換 | `app/src/main/files/replace.ts` | `resolveExistingWorkspacePath(...)` と書き込み直前の `verifyExistingWorkspacePath(...)` |
 | 一括置換 | `app/src/main/files/replace.ts` | 対象収集時の `resolveExistingWorkspacePath(...)` と各書き込み直前の `verifyExistingWorkspacePath(...)` |
-| タイトル一覧・目次・タグ索引・マージ | `app/src/main/ipc/toolActions.ts` | 入力フォルダは `resolveExistingWorkspacePathOrRoot(...)`、出力は `writeToolMarkdownOutput(...)` |
+| タイトル一覧・目次・タグ索引・マージ | `app/src/main/ipc/toolActions.ts` | 対象は `resolveToolTargetPaths(...)`、出力は `writeToolMarkdownOutput(...)` |
 | ツール出力 | `app/src/main/ipc/toolOutputFiles.ts` | `safeOutputName(...)` と `resolveNewWorkspacePath(...)` |
 | PDF/SVG保存 | `app/src/main/ipc/outputHandlers.ts` | OSの保存ダイアログで選ばれたユーザー指定先へ保存する。ワークスペース内限定のファイル操作とは別境界として扱う |
 

@@ -25,7 +25,6 @@ describe("paneViewModel", () => {
 
     expect(panelTabLabel("frontmatter", t)).toBe("Frontmatter");
     expect(panelTabLabel("settings", t)).toBe("Settings");
-    expect(panelTabLabel("tools", t)).toBe("Tools");
     expect(paneTabLabel(panelTab, t)).toBe("Frontmatter");
     expect(paneTabLabel(fileTab, t)).toBe("Note");
     expect(paneTabLabel(chartTab, t)).toBe("Chronicle");

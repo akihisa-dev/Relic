@@ -117,6 +117,90 @@ afterEach(() => {
 });
 
 describe("FileTree", () => {
+  it("フォルダの右クリックから配下を対象に4つの加工を選べる", () => {
+    const onRunFileTool = vi.fn();
+    renderFileTree({ onRunFileTool });
+
+    openContextMenu("Folder");
+    const trigger = screen.getByRole("menuitem", { name: "File Processing" });
+    fireEvent.mouseEnter(trigger);
+    expect(screen.getByRole("menuitem", { name: "Create Title List" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Create Table of Contents" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Create Tag Index" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Merge Files" }));
+
+    expect(onRunFileTool).toHaveBeenCalledWith("mergeFiles", { kind: "folder", path: "Folder" });
+  });
+
+  it("単一Markdownファイルの右クリックには加工を表示しない", () => {
+    renderFileTree({ onRunFileTool: vi.fn() });
+    openContextMenu("Root");
+    expect(screen.queryByRole("menuitem", { name: "File Processing" })).not.toBeInTheDocument();
+  });
+
+  it("加工サブメニューをキーボードで開閉して移動できる", () => {
+    renderFileTree({ onRunFileTool: vi.fn() });
+    openContextMenu("Folder");
+    const trigger = screen.getByRole("menuitem", { name: "File Processing" });
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: "ArrowRight" });
+    const first = screen.getByRole("menuitem", { name: "Create Title List" });
+    expect(first).toHaveFocus();
+    fireEvent.keyDown(first, { key: "ArrowDown" });
+    expect(screen.getByRole("menuitem", { name: "Create Table of Contents" })).toHaveFocus();
+    fireEvent.keyDown(screen.getByRole("menuitem", { name: "Create Table of Contents" }), { key: "ArrowLeft" });
+    expect(trigger).toHaveFocus();
+  });
+
+  it("複数選択したMarkdownファイルだけを加工対象にする", () => {
+    const onRunFileTool = vi.fn();
+    renderFileTree({
+      onRunFileTool,
+      selectedItems: [
+        { path: "Folder/Child.md", type: "file" },
+        { path: "Root.md", type: "file" }
+      ],
+      selectedPaths: new Set(["Folder/Child.md", "Root.md"])
+    });
+
+    openContextMenu("Root");
+    fireEvent.mouseEnter(screen.getByRole("menuitem", { name: "File Processing" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Create Title List" }));
+
+    expect(onRunFileTool).toHaveBeenCalledWith("titleList", {
+      kind: "files",
+      paths: ["Folder/Child.md", "Root.md"]
+    });
+  });
+
+  it("混在する複数選択では理由を示して加工を無効にする", () => {
+    renderFileTree({
+      onRunFileTool: vi.fn(),
+      selectedItems: [
+        { path: "Folder", type: "folder" },
+        { path: "Root.md", type: "file" }
+      ],
+      selectedPaths: new Set(["Folder", "Root.md"])
+    });
+
+    openContextMenu("Folder");
+    expect(screen.getByRole("menuitem", { name: "File Processing" })).toBeDisabled();
+    expect(screen.getByText("Select only Markdown files to process them together.")).toBeInTheDocument();
+  });
+
+  it("ファイルツリーの空き領域ではワークスペース全体を加工対象にする", () => {
+    const onRunFileTool = vi.fn();
+    const { container } = render(
+      <I18nProvider language="en">
+        <FileTree isRoot nodes={tree} onOpenFile={vi.fn()} onRunFileTool={onRunFileTool} onSelectFolder={vi.fn()} />
+      </I18nProvider>
+    );
+    fireEvent.contextMenu(container.querySelector(".file-tree") as HTMLElement, { clientX: 40, clientY: 50 });
+    fireEvent.mouseEnter(screen.getByRole("menuitem", { name: "File Processing" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Create Tag Index" }));
+    expect(onRunFileTool).toHaveBeenCalledWith("tagIndex", { kind: "workspace" });
+  });
+
   it("rootに表示行数を保持する", () => {
     const { container } = render(
       <I18nProvider language="en">

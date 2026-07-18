@@ -1,6 +1,6 @@
 import type { MouseEvent } from "react";
 
-import type { WorkspaceTreeNode } from "../shared/ipc";
+import type { ToolTarget, WorkspaceTreeNode } from "../shared/ipc";
 import type {
   FileTreeExpansionAction,
   FileTreeExpansionRequest,
@@ -17,6 +17,7 @@ export interface FileTreeActions {
   onMoveFile?: (path: string, destFolder: string) => void;
   onMoveFolder?: (path: string, destFolder: string) => void;
   onMoveItems?: (items: FileTreeMoveItem[], destFolder: string) => void;
+  onRunFileTool?: (toolId: FileToolActionId, target: ToolTarget) => void;
   onOpenFile: (path: string, event?: MouseEvent<HTMLButtonElement>) => void;
   onOpenInOtherPane?: (path: string) => void;
   onRequestExpansion?: (action: FileTreeExpansionAction, scopePath?: string) => void;
@@ -26,6 +27,8 @@ export interface FileTreeActions {
   onSelectItem?: (node: WorkspaceTreeNode, event: MouseEvent<HTMLButtonElement>) => boolean;
   onTogglePin?: (path: string) => void;
 }
+
+export type FileToolActionId = "titleList" | "toc" | "tagIndex" | "mergeFiles";
 
 export interface FileTreeProps {
   actions?: FileTreeActions;
@@ -43,6 +46,8 @@ export interface FileTreeProps {
   onMoveFile?: (path: string, destFolder: string) => void;
   onMoveFolder?: (path: string, destFolder: string) => void;
   onMoveItems?: (items: FileTreeMoveItem[], destFolder: string) => void;
+  onRunFileTool?: (toolId: FileToolActionId, target: ToolTarget) => void;
+  runningFileTool?: FileToolActionId | null;
   onOpenFile: (path: string, event?: MouseEvent<HTMLButtonElement>) => void;
   onOpenInOtherPane?: (path: string) => void;
   onRequestExpansion?: (action: FileTreeExpansionAction, scopePath?: string) => void;

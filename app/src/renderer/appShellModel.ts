@@ -40,8 +40,7 @@ export function openFilePathsForTabs(tabs: Record<string, Tab>): Set<string> {
 export function panelLabelsForTranslator(t: Translator): Record<PanelTabKind, string> {
   return {
     frontmatter: t("nav.frontmatter"),
-    settings: t("nav.settings"),
-    tools: t("nav.tools")
+    settings: t("nav.settings")
   };
 }
 
@@ -105,10 +104,9 @@ export function activeChartIdsForPanes(
 
 export function enabledRailViewsForFeatures<TView extends Pick<AppRailView, "id">>(
   views: TView[],
-  featureToggles: Pick<FeatureToggles, "cards" | "chronicle" | "frontmatter" | "graph" | "sphere" | "table" | "tools">
+  featureToggles: Pick<FeatureToggles, "cards" | "chronicle" | "frontmatter" | "graph" | "sphere" | "table">
 ): TView[] {
   return views.filter((view) => {
-    if (view.id === "tools" && !featureToggles.tools) return false;
     if (view.id === "frontmatter" && !featureToggles.frontmatter) return false;
     if (view.id === "cards" && !featureToggles.cards) return false;
     if (view.id === "graph" && !featureToggles.graph) return false;

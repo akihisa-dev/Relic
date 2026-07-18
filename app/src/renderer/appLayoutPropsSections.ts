@@ -118,6 +118,7 @@ export function createFilesSidebarProps(input: AppLayoutFilesSidebarInput): File
     onMoveFolder: input.handleMoveFolder,
     onMoveItems: input.handleMoveTreeItems,
     onOpenFile: input.handleSidebarOpenFile,
+    onShowToast: input.showToast,
     onOpenInOtherPane: input.isSplit ? input.openTreeFileInOtherPane : undefined,
     onOpenQuickSwitcher: input.handleOpenQuickSwitcher,
     onOpenWorkspace: input.handleOpenWorkspace,

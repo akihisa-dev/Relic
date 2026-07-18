@@ -178,7 +178,6 @@ export function SettingsPanel({
         <div className="settings-stack">
           {(
             [
-              { key: "tools", label: t("settings.featureTools") },
               { key: "frontmatter", label: t("settings.featureFrontmatter") },
               { key: "cards", label: t("settings.featureCards") },
               { key: "table", label: t("settings.featureTable") },

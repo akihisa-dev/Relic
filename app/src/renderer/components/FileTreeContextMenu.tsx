@@ -3,6 +3,7 @@ import type { ReactElement, RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
+import type { ToolTarget } from "../../shared/ipc";
 import { workspaceFileKindForPath } from "../../shared/workspaceFileKinds";
 import { copyWorkspaceItemPathToClipboard, writeEditorClipboardText } from "../editorClipboard";
 import type { FileTreeActions } from "../fileTreeTypes";
@@ -17,6 +18,8 @@ import {
 import { useT } from "../i18n";
 import { parentFolderOf } from "../workspacePaths";
 import { WorkspaceInputDialog } from "./WorkspaceInputDialog";
+import { FileToolsSubmenu } from "./FileToolsSubmenu";
+import type { FileToolActionId } from "../fileTreeTypes";
 
 type FileTreeInputDialogKind = "create-file" | "create-folder" | "move";
 
@@ -37,6 +40,7 @@ interface FileTreeContextMenuProps {
   onStartRename: () => void;
   selectedItems: FileTreeMoveItem[];
   useSelectedItems: boolean;
+  runningFileTool?: FileToolActionId | null;
 }
 
 export function FileTreeContextMenu({
@@ -50,7 +54,8 @@ export function FileTreeContextMenu({
   onOpenNode,
   onStartRename,
   selectedItems,
-  useSelectedItems
+  useSelectedItems,
+  runningFileTool
 }: FileTreeContextMenuProps): ReactElement | null {
   const t = useT();
   const [inputDialog, setInputDialog] = useState<FileTreeInputDialogState | null>(null);
@@ -61,6 +66,13 @@ export function FileTreeContextMenu({
   const isMarkdownFile = node.type === "file" && fileKind === "markdown";
   const operationItems = fileTreeOperationItems(node, selectedItems, useSelectedItems);
   const canMove = canMoveAllFileTreeItems(operationItems);
+  const selectedMarkdownPaths = selectedItems.filter((item) => (
+    item.type === "file" && (item.kind === "markdown" || (item.kind === undefined && /\.md$/i.test(item.path)))
+  )).map((item) => item.path);
+  const hasMixedSelection = useSelectedItems && selectedMarkdownPaths.length !== selectedItems.length;
+  const toolTarget: ToolTarget | null = useSelectedItems
+    ? hasMixedSelection ? null : { kind: "files", paths: selectedMarkdownPaths }
+    : node.type === "folder" ? { kind: "folder", path: node.path } : null;
 
   const copyPath = (): void => {
     onClose();
@@ -260,6 +272,18 @@ export function FileTreeContextMenu({
           <button className="tab-context-menu-item" onClick={() => openInputDialog("move")} role="menuitem" type="button">
             {useSelectedItems ? t("files.moveSelected") : t("files.move")}
           </button>
+          <div className="tab-context-menu-separator" />
+        </>
+      ) : null}
+      {(node.type === "folder" || useSelectedItems) && actions.onRunFileTool ? (
+        <>
+          <FileToolsSubmenu
+            disabledReason={hasMixedSelection ? t("tools.mixedSelectionUnavailable") : undefined}
+            onClose={onClose}
+            onRun={actions.onRunFileTool}
+            runningTool={runningFileTool}
+            target={toolTarget}
+          />
           <div className="tab-context-menu-separator" />
         </>
       ) : null}

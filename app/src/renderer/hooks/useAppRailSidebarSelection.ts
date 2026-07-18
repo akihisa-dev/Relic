@@ -17,7 +17,7 @@ export function useAppRailSidebarSelection({
   setSidebarView
 }: UseAppRailSidebarSelectionInput): (view: SidebarView) => void {
   return useCallback((view: SidebarView): void => {
-    if (view === "tools" || view === "frontmatter" || view === "settings") {
+    if (view === "frontmatter" || view === "settings") {
       openPanelInPane(focusedPane, view, panelLabels[view]);
       setSidebarView("files");
       return;

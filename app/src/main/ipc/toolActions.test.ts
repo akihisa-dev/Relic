@@ -44,6 +44,107 @@ describe("toolActions", () => {
     );
   });
 
+  it("明示された複数Markdownだけからタイトル一覧を生成する", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await mkdir(path.join(workspacePath, "notes"));
+    await writeFile(path.join(workspacePath, "notes", "a.md"), "A", "utf8");
+    await writeFile(path.join(workspacePath, "notes", "b.md"), "B", "utf8");
+    await writeFile(path.join(workspacePath, "other.md"), "Other", "utf8");
+
+    const result = await generateTitleList({
+      outputFolder: "",
+      outputName: "Titles",
+      sortBy: "name",
+      target: { kind: "files", paths: ["notes/a.md", "notes/b.md"] }
+    });
+
+    expect(result).toEqual({ ok: true, value: "Titles.md" });
+    await expect(readFile(path.join(workspacePath, "Titles.md"), "utf8")).resolves.toBe("- [[a]]\n- [[b]]\n");
+    await expect(readFile(path.join(workspacePath, "notes", "a.md"), "utf8")).resolves.toBe("A");
+    await expect(readFile(path.join(workspacePath, "notes", "b.md"), "utf8")).resolves.toBe("B");
+  });
+
+  it("フォルダ対象では子フォルダ以下だけをマージする", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await mkdir(path.join(workspacePath, "notes", "child"), { recursive: true });
+    await writeFile(path.join(workspacePath, "notes", "a.md"), "A", "utf8");
+    await writeFile(path.join(workspacePath, "notes", "child", "b.md"), "B", "utf8");
+    await writeFile(path.join(workspacePath, "other.md"), "Other", "utf8");
+
+    const result = await mergeFiles({
+      filterType: "all",
+      filterValue: "",
+      insertFilenameHeading: false,
+      outputFolder: "",
+      outputName: "Merged",
+      sortBy: "name",
+      target: { kind: "folder", path: "notes" }
+    });
+
+    expect(result).toEqual({ ok: true, value: "Merged.md" });
+    await expect(readFile(path.join(workspacePath, "Merged.md"), "utf8")).resolves.toBe("A\n\n---\n\nB\n");
+  });
+
+  it("フォルダ対象の目次は対象フォルダ自身を重ねず配下の階層を出力する", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await mkdir(path.join(workspacePath, "notes", "child"), { recursive: true });
+    await writeFile(path.join(workspacePath, "notes", "a.md"), "A", "utf8");
+    await writeFile(path.join(workspacePath, "notes", "child", "b.md"), "B", "utf8");
+
+    const result = await generateTableOfContents({
+      includeSubfolders: true,
+      outputFolder: "",
+      outputName: "Toc",
+      target: { kind: "folder", path: "notes" },
+      targetFolder: ""
+    });
+
+    expect(result).toEqual({ ok: true, value: "Toc.md" });
+    await expect(readFile(path.join(workspacePath, "Toc.md"), "utf8")).resolves.toBe(
+      "- **child/**\n  - [[b]]\n- [[a]]\n"
+    );
+  });
+
+  it("明示された複数Markdownだけからタグ別索引を生成する", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await writeFile(path.join(workspacePath, "a.md"), "---\ntags: [selected]\n---\n", "utf8");
+    await writeFile(path.join(workspacePath, "b.md"), "---\ntags: [selected]\n---\n", "utf8");
+    await writeFile(path.join(workspacePath, "other.md"), "---\ntags: [other]\n---\n", "utf8");
+
+    const result = await generateTagIndex({
+      includeSubfolders: true,
+      includeUntagged: false,
+      outputFolder: "",
+      outputName: "Tags",
+      sortBy: "name",
+      target: { kind: "files", paths: ["a.md", "b.md"] },
+      targetFolder: ""
+    });
+
+    expect(result).toEqual({ ok: true, value: "Tags.md" });
+    await expect(readFile(path.join(workspacePath, "Tags.md"), "utf8")).resolves.toBe(
+      "# タグ別索引\n\n## selected\n- [[a]]\n- [[b]]\n"
+    );
+  });
+
+  it("空の対象では出力ファイルを作成しない", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await mkdir(path.join(workspacePath, "empty"));
+
+    const result = await generateTagIndex({
+      includeSubfolders: true,
+      includeUntagged: false,
+      outputFolder: "",
+      outputName: "Tags",
+      sortBy: "name",
+      target: { kind: "folder", path: "empty" },
+      targetFolder: ""
+    });
+
+    expect(result).toMatchObject({ error: { code: "TOOL_TARGET_EMPTY" }, ok: false });
+    await expect(readFile(path.join(workspacePath, "Tags.md"), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("タイトル一覧生成後に一時ファイルを残さない", async () => {
     const { workspacePath } = await prepareActiveWorkspace();
     await writeFile(path.join(workspacePath, "note.md"), "# Note\n", "utf8");

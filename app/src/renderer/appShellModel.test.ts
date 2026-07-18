@@ -28,7 +28,6 @@ const emptyPane = (activeTabId: string | null = null): PaneState => ({
 const tabs: Record<string, Tab> = {
   "chart-charts": { chartId: "charts", id: "chart-charts", kind: "chart", name: "Chronicle" },
   "panel-frontmatter": { id: "panel-frontmatter", kind: "panel", name: "Frontmatter", panel: "frontmatter" },
-  "panel-tools": { id: "panel-tools", kind: "panel", name: "Tools", panel: "tools" },
   "tab-note": { content: "Note", id: "tab-note", kind: "file", name: "Note", path: "Folder/Note.md", savedContent: "Note" }
 };
 
@@ -52,7 +51,7 @@ describe("appShellModel", () => {
 
   it("collects open file paths and panel tab ids", () => {
     expect(openFilePathsForTabs(tabs)).toEqual(new Set(["Folder/Note.md"]));
-    expect(openPanelTabIdsForTabs(tabs)).toEqual(new Set(["frontmatter", "tools"]));
+    expect(openPanelTabIdsForTabs(tabs)).toEqual(new Set(["frontmatter"]));
   });
 
   it("detects active panel and chart tabs from panes", () => {
@@ -75,7 +74,7 @@ describe("appShellModel", () => {
     )).toBe(true);
     expect(isChartTabActiveInPanes(
       emptyPane("panel-frontmatter"),
-      emptyPane("panel-tools"),
+      emptyPane("panel-frontmatter"),
       tabs
     )).toBe(false);
   });
@@ -85,15 +84,13 @@ describe("appShellModel", () => {
 
     expect(labels).toEqual({
       frontmatter: "Frontmatter",
-      settings: "Settings",
-      tools: "Tools"
+      settings: "Settings"
     });
   });
 
   it("filters and splits rail views without changing order", () => {
     const railViews: AppRailView[] = [
       { icon: null, id: "files", label: "Files" },
-      { icon: null, id: "tools", label: "Tools" },
       { icon: null, id: "frontmatter", label: "Frontmatter" },
       { icon: null, id: "cards", label: "Cards" },
       { icon: null, id: "table", label: "Table" },
@@ -113,8 +110,7 @@ describe("appShellModel", () => {
       frontmatter: false,
       graph: true,
       sphere: true,
-      table: true,
-      tools: false
+      table: true
     });
     const split = splitRailViews(enabled);
 

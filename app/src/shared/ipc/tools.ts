@@ -5,6 +5,13 @@ export const generateTitleListChannel = "tools:generateTitleList";
 export const generateTableOfContentsChannel = "tools:generateTableOfContents";
 export const generateTagIndexChannel = "tools:generateTagIndex";
 export const mergeFilesChannel = "tools:mergeFiles";
+export const maxToolTargetFiles = 10000;
+export const maxToolTargetTotalBytes = 100 * 1024 * 1024;
+
+export type ToolTarget =
+  | { kind: "workspace" }
+  | { kind: "folder"; path: string }
+  | { kind: "files"; paths: string[] };
 
 export interface GenerateTitleListInput {
   filterFolder?: string;
@@ -12,6 +19,7 @@ export interface GenerateTitleListInput {
   outputFolder: string;
   outputName: string;
   sortBy: "name" | "mtime";
+  target?: ToolTarget;
 }
 
 export interface GenerateTableOfContentsInput {
@@ -19,6 +27,7 @@ export interface GenerateTableOfContentsInput {
   outputFolder: string;
   outputName: string;
   targetFolder: string;
+  target?: ToolTarget;
 }
 
 export interface GenerateTagIndexInput {
@@ -28,6 +37,7 @@ export interface GenerateTagIndexInput {
   outputName: string;
   sortBy: "name" | "mtime";
   targetFolder: string;
+  target?: ToolTarget;
 }
 
 export type MergeFilterType = "folder" | "frontmatter" | "tag" | "all";
@@ -41,6 +51,7 @@ export interface MergeFilesInput {
   outputFolder: string;
   outputName: string;
   sortBy: MergeSortBy;
+  target?: ToolTarget;
 }
 
 export interface ToolsApi {

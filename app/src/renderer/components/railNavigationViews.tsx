@@ -11,15 +11,13 @@ import {
   IconGraph,
   IconSphere,
   IconSettings,
-  IconTable,
-  IconTools
+  IconTable
 } from "./RailNavigationIcons";
 
 type RailViewId = SidebarView | PanelTabKind | "cards" | "graph" | "sphere" | "table";
 
 export const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; icon: ReactElement }> = [
   { id: "files", labelKey: "nav.files", icon: <IconFiles /> },
-  { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
   { id: "frontmatter", labelKey: "nav.frontmatter", icon: <IconFrontmatter /> },
   { id: "cards", labelKey: "nav.cards", icon: <IconCards /> },
   { id: "table", labelKey: "nav.table", icon: <IconTable /> },

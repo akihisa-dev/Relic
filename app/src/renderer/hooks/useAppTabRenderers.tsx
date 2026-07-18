@@ -34,9 +34,6 @@ const LazyFrontmatterPanel = lazy(async () => ({
 const LazySettingsPanel = lazy(async () => ({
   default: (await import("../components/SettingsPanel")).SettingsPanel
 }));
-const LazyToolsPanel = lazy(async () => ({
-  default: (await import("../components/ToolsPanel")).ToolsPanel
-}));
 
 function LazyTabFallback({ graph = false }: { graph?: boolean }): ReactElement {
   const t = useT();
@@ -179,14 +176,6 @@ export function useAppTabRenderers({
   }, [charts, currentCardPath, handleOpenCardFile, handleOpenFile, handleOpenTagSearch, handleSelectCard, selectedCardPath, workspaceCacheKey, workspaceDataRevision]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
-    if (panel === "tools") {
-      return (
-        <Suspense fallback={<LazyTabFallback />}>
-          <LazyToolsPanel workspacePath={workspaceState?.activeWorkspace?.path ?? null} />
-        </Suspense>
-      );
-    }
-
     if (panel === "frontmatter") {
       return (
         <Suspense fallback={<LazyTabFallback />}>

@@ -603,6 +603,7 @@ export function App(): ReactElement {
       handleRevealWorkspaceItem,
       handleSelectFolder,
       handleSidebarOpenFile,
+      showToast,
       handleTogglePin,
       isCreatingFile,
       isCreatingFolder,

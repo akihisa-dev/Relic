@@ -91,7 +91,7 @@ describe("workspaceFileActionHelpers", () => {
       "tab-a": { content: "", id: "tab-a", kind: "file", name: "One", path: "A/One.md", savedContent: "" },
       "tab-b": { content: "", id: "tab-b", kind: "file", name: "Two", path: "A/Nested/Two.md", savedContent: "" },
       "tab-c": { content: "", id: "tab-c", kind: "file", name: "Other", path: "Other.md", savedContent: "" },
-      "panel-tools": { id: "panel-tools", kind: "panel", name: "Tools", panel: "tools" }
+      "panel-settings": { id: "panel-settings", kind: "panel", name: "Settings", panel: "settings" }
     };
 
     expect(buildFolderTabPathUpdates(tabs, "A", "Dest/A")).toEqual([

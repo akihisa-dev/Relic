@@ -119,4 +119,29 @@ describe("toolHandlerValidators", () => {
       sortBy: "name"
     })).toBe(false);
   });
+
+  it("validates explicit tool targets before processing", () => {
+    const base = {
+      outputFolder: "",
+      outputName: "Titles",
+      sortBy: "name" as const
+    };
+    expect(isGenerateTitleListInput({
+      ...base,
+      target: { kind: "files", paths: ["a.md", "folder/b.md"] }
+    })).toBe(true);
+    expect(isGenerateTitleListInput({
+      ...base,
+      target: { kind: "files", paths: ["a.md", "a.md"] }
+    })).toBe(false);
+    expect(isGenerateTitleListInput({
+      ...base,
+      target: { kind: "files", paths: ["../a.md", "b.md"] }
+    })).toBe(false);
+    expect(isGenerateTitleListInput({
+      ...base,
+      target: { kind: "folder", path: "/outside" }
+    })).toBe(false);
+    expect(isGenerateTitleListInput({ ...base, target: { kind: "workspace" } })).toBe(true);
+  });
 });
