@@ -70,7 +70,7 @@ describe("App workspaces", () => {
     expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*overflow-y:\s*auto;/s);
   });
 
-  it("ワークスペースを開く行の右クリックからワークスペース全体のファイル加工を実行する", async () => {
+  it("左レールの選択中ワークスペースの右クリックからワークスペース全体のファイル加工を実行する", async () => {
     vi.stubGlobal("innerWidth", 800);
     vi.stubGlobal("innerHeight", 600);
     const generateTitleList = vi.fn().mockResolvedValue({ ok: true, value: "タイトル一覧.md" });
@@ -84,26 +84,46 @@ describe("App workspaces", () => {
     });
 
     await renderApp();
-    const workspaceButton = await screen.findByRole("button", { name: "ワークスペースを開く" });
-
-    const workspaceSurface = document.querySelector<HTMLElement>(".files-sidebar-scroll-area");
-    expect(workspaceSurface).not.toBeNull();
-    fireEvent.contextMenu(workspaceSurface!, { clientX: 40, clientY: 50 });
+    const openWorkspaceButton = await screen.findByRole("button", { name: "ワークスペースを開く" });
+    fireEvent.contextMenu(openWorkspaceButton, { clientX: 40, clientY: 580 });
     expect(screen.queryByRole("menuitem", { name: "ファイル加工" })).not.toBeInTheDocument();
 
-    fireEvent.contextMenu(workspaceButton, { clientX: 40, clientY: 580 });
-    expect(screen.getByRole("menuitem", { name: "ファイル加工" })).toBeInTheDocument();
-    expect(screen.getByRole("menu")).toHaveStyle({ left: "40px", top: "552px" });
-    fireEvent.mouseDown(window);
-    expect(screen.queryByRole("menuitem", { name: "ファイル加工" })).not.toBeInTheDocument();
-
-    fireEvent.contextMenu(workspaceButton, { clientX: 40, clientY: 580 });
+    fireEvent.contextMenu(await screen.findByRole("button", { name: "Notes" }), { clientX: 40, clientY: 580 });
+    const menu = screen.getByRole("menu");
+    expect(within(menu).getByRole("menuitem", { name: "ファイル加工" })).toBeEnabled();
+    expect(menu).toHaveStyle({ left: "40px", top: "396px" });
     fireEvent.mouseEnter(screen.getByRole("menuitem", { name: "ファイル加工" }));
+    expect(screen.getByRole("menuitem", { name: "タイトル一覧を作成" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "目次を作成" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "タグ別索引を作成" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "ファイルをマージ" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("menuitem", { name: "タイトル一覧を作成" }));
 
     await waitFor(() => expect(generateTitleList).toHaveBeenCalledWith(expect.objectContaining({
       target: { kind: "workspace" }
     })));
+  });
+
+  it("左レールの選択中でないワークスペースではファイル加工を無効にする", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          workspaces: [
+            withWorkspace.activeWorkspace!,
+            { id: "ws-2", name: "Archive", path: "/tmp/Archive" }
+          ]
+        }
+      })
+    });
+
+    await renderApp();
+    fireEvent.contextMenu(await screen.findByRole("button", { name: "Archive" }));
+    const menu = screen.getByRole("menu");
+
+    expect(within(menu).getByRole("menuitem", { name: "ファイル加工" })).toBeDisabled();
+    expect(within(menu).getByText("このワークスペースへ切り替えてから実行してください。")).toBeInTheDocument();
   });
 
   it("検索ボタンからクイックスイッチャーを開く", async () => {

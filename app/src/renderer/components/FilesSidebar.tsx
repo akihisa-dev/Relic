@@ -1,18 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactElement } from "react";
-import { createPortal } from "react-dom";
 
-import type { SearchMode, WorkspaceSearchResult, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
+import type { SearchMode, ToolTarget, WorkspaceSearchResult, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
 import { type FileTreeExpansionRequest } from "../fileTreeModel";
-import { contextMenuPosition } from "../fileTreeUi";
 import { isFilteringFiles as isFilteringFilesModel } from "../filesSidebarModel";
 import { useFileTreeSelection } from "../hooks/useFileTreeSelection";
-import { useFileToolActions } from "../hooks/useFileToolActions";
-import { useT } from "../i18n";
+import type { FileToolActionId } from "../fileTreeTypes";
 import { FilesSearchResults } from "./FilesSearchResults";
 import { FilesSidebarTreeSection } from "./FilesSidebarTreeSection";
 import { FilesCreateActions, FilesWorkspaceActions, FilesWorkspaceEmpty } from "./FilesWorkspaceActions";
-import { FileToolsSubmenu } from "./FileToolsSubmenu";
 
 export interface FilesSidebarProps {
   isCreatingFile: boolean;
@@ -36,11 +32,11 @@ export interface FilesSidebarProps {
   onOpenInOtherPane?: (path: string) => void;
   onOpenQuickSwitcher: () => void;
   onOpenWorkspace: () => void;
+  onRunFileTool: (toolId: FileToolActionId, target: ToolTarget) => void;
   onRevealItem?: (path: string) => void;
   onRenameItem: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onSelectedCountChange?: (count: number) => void;
-  onShowToast: (text: string, type?: "error" | "info") => void;
   onTogglePin: (path: string) => void;
   openingFilePath?: string | null;
   openFilePaths?: Set<string>;
@@ -50,6 +46,7 @@ export interface FilesSidebarProps {
   searchMode: SearchMode;
   searchQuery: string;
   searchResults: WorkspaceSearchResult[];
+  runningFileTool: FileToolActionId | null;
   workspaceState: WorkspaceState | null;
 }
 
@@ -75,11 +72,11 @@ export function FilesSidebar({
   onOpenInOtherPane,
   onOpenQuickSwitcher,
   onOpenWorkspace,
+  onRunFileTool,
   onRevealItem,
   onRenameItem,
   onSelectFolder,
   onSelectedCountChange,
-  onShowToast,
   onTogglePin,
   openingFilePath,
   openFilePaths,
@@ -89,11 +86,10 @@ export function FilesSidebar({
   searchMode,
   searchQuery,
   searchResults,
+  runningFileTool,
   workspaceState
 }: FilesSidebarProps): ReactElement {
-  const t = useT();
   const [expansionRequest, setExpansionRequest] = useState<FileTreeExpansionRequest | undefined>(undefined);
-  const [workspaceContextMenu, setWorkspaceContextMenu] = useState<{ x: number; y: number } | null>(null);
   const activeWorkspace = workspaceState?.activeWorkspace ?? null;
   const pinnedPaths = useMemo(
     () => new Set(workspaceState?.pinnedPaths ?? []),
@@ -104,26 +100,7 @@ export function FilesSidebar({
     nodes: userNodes,
     onSelectedCountChange
   });
-  const { onRunFileTool, runningFileTool } = useFileToolActions({
-    onOpenFile: (path) => onOpenFile(path),
-    onShowToast,
-    t
-  });
   const isFilteringFiles = isFilteringFilesModel({ isSearching, query: searchQuery, searchError });
-
-  useEffect(() => {
-    if (!workspaceContextMenu) return;
-    const close = (): void => setWorkspaceContextMenu(null);
-    const closeOnEscape = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") close();
-    };
-    window.addEventListener("mousedown", close);
-    window.addEventListener("keydown", closeOnEscape);
-    return () => {
-      window.removeEventListener("mousedown", close);
-      window.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [workspaceContextMenu]);
 
   const requestExpansion = (action: FileTreeExpansionRequest["action"], scopePath?: string): void => {
     setExpansionRequest((current) => ({ action, id: (current?.id ?? 0) + 1, scopePath }));
@@ -189,31 +166,11 @@ export function FilesSidebar({
               />
             ) : null}
           </div>
-          {workspaceContextMenu ? createPortal(
-            <div
-              className="tab-context-menu file-tree-context-menu"
-              onMouseDown={(event) => event.stopPropagation()}
-              role="menu"
-              style={{ left: workspaceContextMenu.x, position: "fixed", top: workspaceContextMenu.y, zIndex: 40 }}
-            >
-              <FileToolsSubmenu
-                onClose={() => setWorkspaceContextMenu(null)}
-                onRun={onRunFileTool}
-                runningTool={runningFileTool}
-                target={{ kind: "workspace" }}
-              />
-            </div>,
-            document.body
-          ) : null}
           <FilesWorkspaceActions
             isCreatingWorkspace={isCreatingWorkspace}
             isOpeningWorkspace={isOpeningWorkspace}
             onCreateWorkspace={onCreateWorkspace}
             onOpenWorkspace={onOpenWorkspace}
-            onWorkspaceContextMenu={(event) => {
-              event.preventDefault();
-              setWorkspaceContextMenu(contextMenuPosition(event.clientX, event.clientY, { estimatedHeight: 40 }));
-            }}
           />
         </>
       ) : (

@@ -26,41 +26,44 @@ export function useFileToolActions({ onOpenFile, onShowToast, t }: UseFileToolAc
   runningFileTool: FileToolActionId | null;
 } {
   const [runningFileTool, setRunningFileTool] = useState<FileToolActionId | null>(null);
+  const callbacksRef = useRef({ onOpenFile, onShowToast, t });
   const runningRef = useRef(false);
+  callbacksRef.current = { onOpenFile, onShowToast, t };
 
   const onRunFileTool = useCallback((toolId: FileToolActionId, target: ToolTarget): void => {
     if (runningRef.current || !relicClient.current) return;
+    const callbacks = callbacksRef.current;
     runningRef.current = true;
     setRunningFileTool(toolId);
 
     const execute = async () => {
       if (toolId === "titleList") {
-        return relicClient.current!.generateTitleList({ ...buildTitleListInput(createDefaultTitleListDraft(t), t), target });
+        return relicClient.current!.generateTitleList({ ...buildTitleListInput(createDefaultTitleListDraft(callbacks.t), callbacks.t), target });
       }
       if (toolId === "toc") {
-        return relicClient.current!.generateTableOfContents({ ...buildTocInput(createDefaultTocDraft(t), t), target });
+        return relicClient.current!.generateTableOfContents({ ...buildTocInput(createDefaultTocDraft(callbacks.t), callbacks.t), target });
       }
       if (toolId === "tagIndex") {
-        return relicClient.current!.generateTagIndex({ ...buildTagIndexInput(createDefaultTagIndexDraft(t), t), target });
+        return relicClient.current!.generateTagIndex({ ...buildTagIndexInput(createDefaultTagIndexDraft(callbacks.t), callbacks.t), target });
       }
-      return relicClient.current!.mergeFiles({ ...buildMergeFilesInput(createDefaultMergeFilesDraft(t), t), target });
+      return relicClient.current!.mergeFiles({ ...buildMergeFilesInput(createDefaultMergeFilesDraft(callbacks.t), callbacks.t), target });
     };
 
     void execute()
       .then((result) => {
         if (!result.ok) {
-          onShowToast(result.error.message, "error");
+          callbacks.onShowToast(result.error.message, "error");
           return;
         }
-        onShowToast(t("tools.createdFile", { path: result.value }), "info");
-        onOpenFile(result.value);
+        callbacks.onShowToast(callbacks.t("tools.createdFile", { path: result.value }), "info");
+        callbacks.onOpenFile(result.value);
       })
-      .catch(() => onShowToast(t("tools.unexpectedError"), "error"))
+      .catch(() => callbacks.onShowToast(callbacks.t("tools.unexpectedError"), "error"))
       .finally(() => {
         runningRef.current = false;
         setRunningFileTool(null);
       });
-  }, [onOpenFile, onShowToast, t]);
+  }, []);
 
   return { onRunFileTool, runningFileTool };
 }

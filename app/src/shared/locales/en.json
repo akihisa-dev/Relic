@@ -459,6 +459,7 @@
   "tools.titleListDefaultName": "Title List",
   "tools.titleListDescription": "Create a linked list of Markdown file names.",
   "tools.tools": "File Processing",
+  "tools.activeWorkspaceRequired": "Switch to this workspace before running file processing.",
   "tools.createdFile": "Created {{path}}.",
   "tools.mixedSelectionUnavailable": "Select only Markdown files to process them together.",
   "tools.unexpectedError": "The file tool could not be run.",

@@ -1,9 +1,10 @@
-import { useMemo, type ComponentProps, type CSSProperties, type ReactElement } from "react";
+import { useCallback, useMemo, type ComponentProps, type CSSProperties, type ReactElement } from "react";
 
 import type { AppLanguage, EditorSettings } from "../../shared/ipc";
 import { appFontFamilyMap } from "../appFont";
 import { I18nProvider } from "../i18n";
 import { createTranslator } from "../i18nModel";
+import { useFileToolActions } from "../hooks/useFileToolActions";
 import { AppEditorWorkspace } from "./AppEditorWorkspace";
 import { AppFilesSidebar } from "./AppFilesSidebar";
 import { AppOverlays } from "./AppOverlays";
@@ -15,11 +16,11 @@ import { LayoutResizeBoundary } from "./LayoutResizeBoundary";
 
 export interface AppLayoutProps {
   editorWorkspaceProps: ComponentProps<typeof AppEditorWorkspace>;
-  filesSidebarProps: ComponentProps<typeof AppFilesSidebar>;
+  filesSidebarProps: Omit<ComponentProps<typeof AppFilesSidebar>, "onRunFileTool" | "runningFileTool">;
   font: EditorSettings["font"];
   language: AppLanguage;
   overlaysProps: ComponentProps<typeof AppOverlays>;
-  railProps: ComponentProps<typeof AppRail>;
+  railProps: Omit<ComponentProps<typeof AppRail>, "onRunFileTool" | "runningFileTool">;
   statusBarProps: ComponentProps<typeof AppStatusBar>;
   titleBarProps: ComponentProps<typeof AppTitleBar>;
 }
@@ -36,6 +37,15 @@ export function AppLayout({
 }: AppLayoutProps): ReactElement {
   const fontFamily = appFontFamilyMap[font];
   const t = useMemo(() => createTranslator(language), [language]);
+  const openFileFromTool = useCallback(
+    (path: string) => filesSidebarProps.onOpenFile(path),
+    [filesSidebarProps.onOpenFile]
+  );
+  const { onRunFileTool, runningFileTool } = useFileToolActions({
+    onOpenFile: openFileFromTool,
+    onShowToast: filesSidebarProps.onShowToast,
+    t
+  });
   const appFontStyle: CSSProperties & Record<"--font-body" | "--font-display" | "--font-mono", string> = {
     "--font-body": fontFamily,
     "--font-display": fontFamily,
@@ -60,8 +70,8 @@ export function AppLayout({
           />
         </AppTitleBar>
         <div className="workspace">
-          <AppRail {...railProps} />
-          <AppFilesSidebar {...filesSidebarProps} />
+          <AppRail {...railProps} onRunFileTool={onRunFileTool} runningFileTool={runningFileTool} />
+          <AppFilesSidebar {...filesSidebarProps} onRunFileTool={onRunFileTool} runningFileTool={runningFileTool} />
           {filesSidebarProps.isSidebarOpen ? (
             <LayoutResizeBoundary
               aria-label={t("pane.resizeSidebar")}

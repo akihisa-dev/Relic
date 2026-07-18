@@ -11,6 +11,7 @@ interface AppFilesSidebarProps extends Omit<FilesSidebarProps, "onSelectedCountC
   isSidebarResizing: boolean;
   onCloseSidebar: () => void;
   onSelectedCountChange: (count: number) => void;
+  onShowToast: (text: string, type?: "error" | "info") => void;
   selectedCountLabel: string;
   sidebarViews: Array<Pick<AppRailView<ReactElement>, "id" | "label">>;
   sidebarWidth: number;
@@ -24,6 +25,7 @@ export function AppFilesSidebar({
   isSidebarResizing,
   onCloseSidebar,
   onSelectedCountChange,
+  onShowToast: _onShowToast,
   selectedCountLabel: _selectedCountLabel,
   sidebarViews,
   sidebarWidth,

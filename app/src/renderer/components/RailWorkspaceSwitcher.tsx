@@ -2,8 +2,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { createPortal } from "react-dom";
 
-import type { WorkspaceState } from "../../shared/ipc";
+import type { ToolTarget, WorkspaceState } from "../../shared/ipc";
 import { writeEditorClipboardText } from "../editorClipboard";
+import type { FileToolActionId } from "../fileTreeTypes";
+import { useT } from "../i18n";
+import { FileToolsSubmenu } from "./FileToolsSubmenu";
 import { fixedMenuPosition } from "./railNavigationModel";
 
 interface RailWorkspaceSwitcherProps {
@@ -13,12 +16,14 @@ interface RailWorkspaceSwitcherProps {
   onRenameActiveChange?: (isActive: boolean) => void;
   onRenameComplete?: () => void;
   onRemoveWorkspace: (id: string) => void;
+  onRunFileTool: (toolId: FileToolActionId, target: ToolTarget) => void;
   onRenameWorkspace: (id: string, currentName: string) => Promise<boolean>;
   onRevealWorkspace: (id: string) => void;
   onSwitchWorkspace: (id: string) => void;
   renameLabel: string;
   revealWorkspaceLabel: string;
   removeLabel: (name: string) => string;
+  runningFileTool: FileToolActionId | null;
   workspaces: WorkspaceState["workspaces"];
 }
 
@@ -29,14 +34,17 @@ export function RailWorkspaceSwitcher({
   onRenameActiveChange,
   onRenameComplete,
   onRemoveWorkspace,
+  onRunFileTool,
   onRenameWorkspace,
   onSwitchWorkspace,
   onRevealWorkspace,
   renameLabel,
   revealWorkspaceLabel,
   removeLabel,
+  runningFileTool,
   workspaces
 }: RailWorkspaceSwitcherProps): ReactElement | null {
+  const t = useT();
   const [contextMenu, setContextMenu] = useState<{ workspaceId: string; name: string; path: string; x: number; y: number } | null>(null);
   const [renamingWorkspace, setRenamingWorkspace] = useState<{ id: string; name: string; value: string } | null>(null);
   const isComposingRenameRef = useRef(false);
@@ -178,7 +186,7 @@ export function RailWorkspaceSwitcher({
                 onContextMenu={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  setContextMenu({ name: ws.name, path: ws.path, workspaceId: ws.id, ...fixedMenuPosition(event.clientX, event.clientY, 128) });
+                  setContextMenu({ name: ws.name, path: ws.path, workspaceId: ws.id, ...fixedMenuPosition(event.clientX, event.clientY, 196) });
                 }}
                 onDoubleClick={(event) => {
                   event.preventDefault();
@@ -244,6 +252,13 @@ export function RailWorkspaceSwitcher({
           >
             {revealWorkspaceLabel}
           </button>
+          <FileToolsSubmenu
+            disabledReason={contextMenu.workspaceId === activeWorkspaceId ? undefined : t("tools.activeWorkspaceRequired")}
+            onClose={() => setContextMenu(null)}
+            onRun={onRunFileTool}
+            runningTool={runningFileTool}
+            target={contextMenu.workspaceId === activeWorkspaceId ? { kind: "workspace" } : null}
+          />
           <button
             className="tab-context-menu-item danger"
             onClick={() => {

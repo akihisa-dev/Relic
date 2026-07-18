@@ -1,7 +1,8 @@
 import { memo, type MouseEvent, type ReactElement } from "react";
 
-import type { WorkspaceState } from "../../shared/ipc";
+import type { ToolTarget, WorkspaceState } from "../../shared/ipc";
 import { chartIdForRailView, type AppRailView, type AppRailViewId } from "../appShellModel";
+import type { FileToolActionId } from "../fileTreeTypes";
 import type { PanelTabKind } from "../store/editorStore";
 import type { SidebarView } from "../store/uiStore";
 import { IconFiles, IconRefresh } from "./RailNavigationIcons";
@@ -22,6 +23,7 @@ interface AppRailProps {
   onCloseSidebar: () => void;
   onPanelButton: (panel: PanelTabKind, label: string, event: MouseEvent<HTMLButtonElement>) => void;
   onRemoveWorkspace: (id: string) => void;
+  onRunFileTool: (toolId: FileToolActionId, target: ToolTarget) => void;
   onRefreshWorkspace: () => void;
   onRenameActiveChange: (isActive: boolean) => void;
   onRenameComplete: () => void;
@@ -35,6 +37,7 @@ interface AppRailProps {
   panelRailViews: Array<AppRailView<ReactElement>>;
   primaryRailViews: Array<AppRailView<ReactElement>>;
   registeredWorkspaces: WorkspaceState["workspaces"];
+  runningFileTool: FileToolActionId | null;
   renameLabel: string;
   removeWorkspaceLabel: (name: string) => string;
   refreshLabel: string;
@@ -57,6 +60,7 @@ export const AppRail = memo(function AppRail({
   onCloseSidebar,
   onPanelButton,
   onRemoveWorkspace,
+  onRunFileTool,
   onRefreshWorkspace,
   onRenameActiveChange,
   onRenameComplete,
@@ -70,6 +74,7 @@ export const AppRail = memo(function AppRail({
   panelRailViews,
   primaryRailViews,
   registeredWorkspaces,
+  runningFileTool,
   renameLabel,
   removeWorkspaceLabel,
   refreshLabel,
@@ -149,12 +154,14 @@ export const AppRail = memo(function AppRail({
             onRenameActiveChange={onRenameActiveChange}
             onRenameComplete={onRenameComplete}
             onRemoveWorkspace={onRemoveWorkspace}
+            onRunFileTool={onRunFileTool}
             onRenameWorkspace={onRenameWorkspace}
             onRevealWorkspace={onRevealWorkspace}
             revealWorkspaceLabel={revealWorkspaceLabel}
             onSwitchWorkspace={onSwitchWorkspace}
             renameLabel={renameLabel}
             removeLabel={removeWorkspaceLabel}
+            runningFileTool={runningFileTool}
             workspaces={registeredWorkspaces}
           />
         </>

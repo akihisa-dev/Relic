@@ -459,6 +459,7 @@
   "tools.titleListDefaultName": "タイトル一覧",
   "tools.titleListDescription": "Markdownファイル名を内部リンク付きの一覧にします。",
   "tools.tools": "ファイル加工",
+  "tools.activeWorkspaceRequired": "このワークスペースへ切り替えてから実行してください。",
   "tools.createdFile": "{{path}} を作成しました。",
   "tools.mixedSelectionUnavailable": "Markdownファイルだけを複数選択してください。",
   "tools.unexpectedError": "ファイル加工を実行できませんでした。",
