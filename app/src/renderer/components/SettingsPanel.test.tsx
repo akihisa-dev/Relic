@@ -124,17 +124,17 @@ describe("SettingsPanel", () => {
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ cards: true }));
   });
 
-  it("フロントマターとテーブルを一つの機能として切り替える", () => {
+  it("フロントマターとテーブルを別の機能として切り替える", () => {
     const onFeatureTogglesSave = vi.fn();
     renderSettingsPanel({
       featureToggles: { ...defaultFeatureToggles, table: true },
       onFeatureTogglesSave
     });
 
-    expect(screen.getByRole("switch", { name: "Frontmatter" })).toHaveAttribute("aria-checked", "true");
-    expect(screen.queryByRole("switch", { name: "Table" })).not.toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Frontmatter" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("switch", { name: "Table" })).toHaveAttribute("aria-checked", "true");
 
-    fireEvent.click(screen.getByRole("switch", { name: "Frontmatter" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Table" }));
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({
       frontmatter: false,
       table: false

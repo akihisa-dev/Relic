@@ -36,5 +36,6 @@ export const allRailFeatureToggles = {
   frontmatter: true,
   graph: true,
   sphere: true,
+  table: true,
   tools: true
 };

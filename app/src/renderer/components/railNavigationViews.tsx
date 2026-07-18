@@ -7,18 +7,18 @@ import {
   IconChronicle,
   IconCards,
   IconFiles,
-  IconFrontmatter,
   IconGraph,
   IconSphere,
-  IconSettings
+  IconSettings,
+  IconTable
 } from "./RailNavigationIcons";
 
 type RailViewId = SidebarView | PanelTabKind | "cards" | "graph" | "sphere" | "table";
 
 export const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; icon: ReactElement }> = [
   { id: "files", labelKey: "nav.files", icon: <IconFiles /> },
-  { id: "frontmatter", labelKey: "nav.frontmatter", icon: <IconFrontmatter /> },
   { id: "cards", labelKey: "nav.cards", icon: <IconCards /> },
+  { id: "table", labelKey: "nav.table", icon: <IconTable /> },
   { id: "graph", labelKey: "nav.graph", icon: <IconGraph /> },
   { id: "sphere", labelKey: "nav.sphere", icon: <IconSphere /> },
   { id: "chronicle", labelKey: "nav.chronicle", icon: <IconChronicle /> },

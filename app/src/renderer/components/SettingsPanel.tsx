@@ -161,6 +161,7 @@ export function SettingsPanel({
             [
               { key: "frontmatter", label: t("settings.featureFrontmatter") },
               { key: "cards", label: t("settings.featureCards") },
+              { key: "table", label: t("settings.featureTable") },
               { key: "graph", label: t("settings.featureGraph") },
               { key: "sphere", label: t("settings.featureSphere") },
               { key: "chronicle", label: t("settings.featureChronicle") }
@@ -170,11 +171,9 @@ export function SettingsPanel({
               <span>{label}</span>
               <SettingsToggleSwitch
                 label={label}
-                on={key === "frontmatter" ? featureToggles.frontmatter || featureToggles.table : featureToggles[key]}
+                on={featureToggles[key]}
                 onChange={(on) => {
-                  const next = key === "frontmatter"
-                    ? { ...featureToggles, frontmatter: on, table: on }
-                    : { ...featureToggles, [key]: on };
+                  const next = { ...featureToggles, [key]: on };
                   onFeatureTogglesSave(next);
                 }}
               />

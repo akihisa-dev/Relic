@@ -94,7 +94,7 @@ describe("App rail panels", () => {
     fireEvent.mouseUp(document);
   });
 
-  it("レールのフロントマターボタンから統合テーブルを開ける", async () => {
+  it("レールのテーブルボタンからフロントマター設定を統合したテーブルを開ける", async () => {
     window.relic = makeRelicApi({
       getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceFrontmatterCategoryChoices: vi.fn().mockResolvedValue({
@@ -123,27 +123,28 @@ describe("App rail panels", () => {
 
     const rail = container.querySelector(".rail");
     if (!(rail instanceof HTMLElement)) throw new Error("rail was not rendered");
-    const frontmatterButton = within(rail).getByRole("button", { name: "フロントマター" });
+    const tableButton = within(rail).getByRole("button", { name: "テーブル" });
+    expect(within(rail).queryByRole("button", { name: "フロントマター" })).not.toBeInTheDocument();
 
-    fireEvent.click(frontmatterButton);
+    fireEvent.click(tableButton);
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
-    expect(activeTabId).toBe("panel-frontmatter");
+    expect(activeTabId).toBe("chart-table");
     expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
-      kind: "panel",
-      panel: "frontmatter"
+      chartId: "table",
+      kind: "chart"
     });
-    expect(document.querySelector('.pane-tab[data-tab-id="panel-frontmatter"] .pane-tab-icon svg')).toBeInTheDocument();
-    expect(frontmatterButton).toHaveClass("active");
+    expect(document.querySelector('.pane-tab[data-tab-id="chart-table"] .pane-tab-icon svg')).toBeInTheDocument();
+    expect(tableButton).toHaveClass("active");
     expect(await screen.findByText("1件のファイル")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "categoryの設定" }));
     expect((await screen.findAllByText("draft")).length).toBeGreaterThan(1);
 
-    fireEvent.click(frontmatterButton);
+    fireEvent.click(tableButton);
 
     expect(document.querySelector(".rail-tab-flight--close")).not.toBeInTheDocument();
-    expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-frontmatter");
-    expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeDefined();
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe("chart-table");
+    expect(useEditorStore.getState().tabs["chart-table"]).toBeDefined();
   });
 
 });

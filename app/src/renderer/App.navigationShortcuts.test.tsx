@@ -57,14 +57,14 @@ describe("App navigation and shortcuts", () => {
 
     const rail = container.querySelector(".rail");
     if (!(rail instanceof HTMLElement)) throw new Error("rail was not rendered");
-    fireEvent.click(within(rail).getByRole("button", { name: "フロントマター" }));
+    fireEvent.click(within(rail).getByRole("button", { name: "設定" }));
 
-    expect(document.querySelector('.pane-tab[data-tab-id="panel-frontmatter"]')?.textContent).toContain("フロントマター");
+    expect(document.querySelector('.pane-tab[data-tab-id="panel-settings"]')?.textContent).toContain("設定");
 
     useEditorStore.getState().setEditorSettings({ ...defaultEditorSettings, language: "en" });
 
     await waitFor(() => {
-      expect(document.querySelector('.pane-tab[data-tab-id="panel-frontmatter"]')?.textContent).toContain("Frontmatter");
+      expect(document.querySelector('.pane-tab[data-tab-id="panel-settings"]')?.textContent).toContain("Settings");
     });
   });
 
@@ -80,25 +80,25 @@ describe("App navigation and shortcuts", () => {
 
     const rail = container.querySelector(".rail");
     if (!(rail instanceof HTMLElement)) throw new Error("rail was not rendered");
-    const frontmatterButton = within(rail).getByRole("button", { name: "フロントマター" });
+    const tableButton = within(rail).getByRole("button", { name: "テーブル" });
 
-    fireEvent.click(frontmatterButton);
+    fireEvent.click(tableButton);
     fireEvent.click(within(rail).getByRole("button", { name: "設定" }));
 
-    expect(useEditorStore.getState().tabs["panel-frontmatter"]).toMatchObject({
-      kind: "panel",
-      panel: "frontmatter"
+    expect(useEditorStore.getState().tabs["chart-table"]).toMatchObject({
+      chartId: "table",
+      kind: "chart"
     });
     expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-settings");
-    expect(frontmatterButton).toHaveClass("open");
-    expect(frontmatterButton).not.toHaveClass("active");
+    expect(tableButton).toHaveClass("open");
+    expect(tableButton).not.toHaveClass("active");
 
-    fireEvent.click(frontmatterButton);
+    fireEvent.click(tableButton);
 
     expect(document.querySelector(".rail-tab-flight--close")).not.toBeInTheDocument();
-    expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-frontmatter");
-    expect(frontmatterButton).toHaveClass("active");
-    expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeDefined();
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe("chart-table");
+    expect(tableButton).toHaveClass("active");
+    expect(useEditorStore.getState().tabs["chart-table"]).toBeDefined();
     expect(useEditorStore.getState().tabs["panel-settings"]).toBeDefined();
   });
 

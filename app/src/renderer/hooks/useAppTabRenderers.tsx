@@ -143,6 +143,8 @@ export function useAppTabRenderers({
       return (
         <Suspense fallback={<LazyTabFallback />}>
           <LazyTableView
+            categoryChoices={categoryChoices}
+            onCategoryChoicesSave={handleSaveCategoryChoices}
             onOpenFile={handleOpenFile}
             refreshRevision={workspaceDataRevision}
             workspaceId={workspaceCacheKey}
@@ -173,7 +175,7 @@ export function useAppTabRenderers({
         />
       </Suspense>
     );
-  }, [charts, currentCardPath, handleOpenCardFile, handleOpenFile, handleOpenTagSearch, handleSelectCard, selectedCardPath, workspaceCacheKey, workspaceDataRevision]);
+  }, [categoryChoices, charts, currentCardPath, handleOpenCardFile, handleOpenFile, handleOpenTagSearch, handleSaveCategoryChoices, handleSelectCard, selectedCardPath, workspaceCacheKey, workspaceDataRevision]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "frontmatter") {
