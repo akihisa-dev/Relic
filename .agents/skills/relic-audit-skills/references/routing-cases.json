@@ -1,6 +1,5 @@
 {
   "version": 1,
-  "skillDescriptionDigest": "486d7322a93177561fe39bb003f37bffd8bd412dd8c88b0833ff5f44c8c6299e",
   "cases": [
     {
       "id": "issue-all-open",

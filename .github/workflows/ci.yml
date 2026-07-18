@@ -46,6 +46,13 @@ jobs:
           sudo chmod 4755 "$sandbox_path"
           test "$(stat -c '%u:%g:%a' "$sandbox_path")" = "0:0:4755"
 
+      - name: Check committed diff
+        working-directory: app
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: pnpm committed-diff:check -- "$BASE_SHA" "$HEAD_SHA"
+
       - name: Run reproducible CI verification
         working-directory: app
         run: pnpm verify:ci

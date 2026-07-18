@@ -174,7 +174,7 @@ cd app
 pnpm verify
 ```
 
-Run the full set of locally reproducible checks, including coverage, architecture, documentation, workflow, Skill routing, and whitespace checks:
+Run the full set of locally reproducible checks, including coverage reporting, architecture, documentation, workflow, and Skill structure checks:
 
 ```sh
 cd app
@@ -481,7 +481,7 @@ cd app
 pnpm verify
 ```
 
-カバレッジ、アーキテクチャ、文書、workflow、Skill routing、差分確認まで、ローカルで再現可能な包括確認を行う場合:
+カバレッジ測定、アーキテクチャ、文書、workflow、Skill構造まで、ローカルで再現可能な包括確認を行う場合:
 
 ```sh
 cd app

@@ -168,6 +168,8 @@ export function validateRepositoryWorkflowPolicy(workflows, packageJson) {
     errors.push(".github/workflows/ci.yml: Code CI must run for pushes to main.");
   } else if (!workflowCommands(codeCi).some((command) => command.includes("pnpm verify:ci"))) {
     errors.push(".github/workflows/ci.yml: Code CI must run pnpm verify:ci.");
+  } else if (!workflowCommands(codeCi).some((command) => command.includes("pnpm committed-diff:check"))) {
+    errors.push(".github/workflows/ci.yml: Code CI must check the committed diff range.");
   } else if (!workflowCommands(codeCi).some((command) => command.includes("pnpm smoke:electron"))) {
     errors.push(".github/workflows/ci.yml: Code CI must run the development Electron smoke.");
   } else if (!workflowCommands(codeCi).some((command) => (

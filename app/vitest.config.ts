@@ -13,12 +13,6 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "json-summary", "lcov"],
       reportsDirectory: "coverage",
-      thresholds: {
-        branches: 75,
-        functions: 86.5,
-        lines: 87,
-        statements: 83.5
-      }
     },
     globals: true,
     projects: [

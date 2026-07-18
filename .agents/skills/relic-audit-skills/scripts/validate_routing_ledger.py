@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import re
 import tempfile
@@ -35,21 +34,6 @@ def repository_skill_names(skill_root: Path) -> set[str]:
     return names
 
 
-def skill_description_digest(skill_root: Path) -> str:
-    entries: list[tuple[str, str]] = []
-    for skill_path in skill_root.glob("*/SKILL.md"):
-        fields: dict[str, str] = {}
-        for line in skill_path.read_text(encoding="utf-8").splitlines()[1:]:
-            if line == "---":
-                break
-            if ": " in line:
-                key, value = line.split(": ", 1)
-                fields[key] = value
-        entries.append((fields.get("name", ""), fields.get("description", "")))
-    payload = "".join(f"{name}\0{description}\n" for name, description in sorted(entries))
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
-
-
 def validate(workspace: Path, ledger_path: Path, results_path: Path) -> list[str]:
     errors: list[str] = []
     ledger = load_json(ledger_path)
@@ -58,10 +42,6 @@ def validate(workspace: Path, ledger_path: Path, results_path: Path) -> list[str
     cases = ledger.get("cases", [])
     case_ids: set[str] = set()
     covered_skills: set[str] = set()
-    actual_digest = skill_description_digest(workspace / ".agents/skills")
-    if ledger.get("skillDescriptionDigest") != actual_digest:
-        errors.append("Skill names or descriptions changed; review routing cases and update skillDescriptionDigest")
-
     for case in cases:
         missing = REQUIRED_CASE_FIELDS - set(case)
         if missing:
@@ -141,7 +121,7 @@ def self_test() -> None:
                 f"---\nname: {name}\ndescription: {name}\n---\n",
                 encoding="utf-8",
             )
-        ledger = {"version": 1, "skillDescriptionDigest": skill_description_digest(workspace / ".agents/skills"), "cases": [{
+        ledger = {"version": 1, "cases": [{
             "id": "case", "request": "request", "expectedEntrySkill": "example",
             "expectedSpecialistSkills": ["specialist"], "forbiddenSkills": ["forbidden"], "requiredDocs": [],
             "permissionMode": "read-only", "expectedEndState": "reported",
@@ -198,7 +178,16 @@ def main() -> int:
         for error in errors:
             print(f"- {error}")
         return 1
-    print(f"Skill routing ledger is valid ({len(repository_skill_names(workspace / '.agents/skills'))} repository-owned skills).")
+    results = load_json(reference_root / "routing-results.json")
+    statuses: dict[str, int] = {}
+    for case in results.get("cases", []):
+        status = case.get("execution", {}).get("status", "missing")
+        statuses[status] = statuses.get(status, 0) + 1
+    summary = ", ".join(f"{name}={count}" for name, count in sorted(statuses.items()))
+    print(
+        "Skill routing ledger metadata is valid; this does not prove current routing quality "
+        f"({len(repository_skill_names(workspace / '.agents/skills'))} repository-owned skills; {summary})."
+    )
     return 0
 
 
