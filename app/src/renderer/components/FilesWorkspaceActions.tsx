@@ -7,6 +7,7 @@ interface FilesWorkspaceActionProps {
   isOpeningWorkspace: boolean;
   onCreateWorkspace: () => void;
   onOpenWorkspace: () => void;
+  onWorkspaceContextMenu?: (event: ReactMouseEvent<HTMLButtonElement>) => void;
 }
 
 interface FilesCreateActionsProps {
@@ -109,7 +110,8 @@ export function FilesWorkspaceActions({
   isCreatingWorkspace,
   isOpeningWorkspace,
   onCreateWorkspace,
-  onOpenWorkspace
+  onOpenWorkspace,
+  onWorkspaceContextMenu
 }: FilesWorkspaceActionProps): ReactElement {
   const t = useT();
 
@@ -119,6 +121,7 @@ export function FilesWorkspaceActions({
         className="secondary-button workspace-action-button"
         disabled={isOpeningWorkspace || isCreatingWorkspace}
         onClick={onOpenWorkspace}
+        onContextMenu={onWorkspaceContextMenu}
         type="button"
       >
         <OpenWorkspaceIcon />

@@ -69,7 +69,7 @@ describe("App workspaces", () => {
     expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*overflow-y:\s*auto;/s);
   });
 
-  it("ファイル一覧の下にあるワークスペース空白領域からファイル加工を実行する", async () => {
+  it("ワークスペースを開く行の右クリックからワークスペース全体のファイル加工を実行する", async () => {
     const generateTitleList = vi.fn().mockResolvedValue({ ok: true, value: "タイトル一覧.md" });
     window.relic = makeRelicApi({
       generateTitleList,
@@ -81,16 +81,19 @@ describe("App workspaces", () => {
     });
 
     await renderApp();
-    await screen.findByRole("button", { name: "新規ファイル" });
+    const workspaceButton = await screen.findByRole("button", { name: "ワークスペースを開く" });
 
     const workspaceSurface = document.querySelector<HTMLElement>(".files-sidebar-scroll-area");
     expect(workspaceSurface).not.toBeNull();
     fireEvent.contextMenu(workspaceSurface!, { clientX: 40, clientY: 50 });
+    expect(screen.queryByRole("menuitem", { name: "ファイル加工" })).not.toBeInTheDocument();
+
+    fireEvent.contextMenu(workspaceButton, { clientX: 40, clientY: 50 });
     expect(screen.getByRole("menuitem", { name: "ファイル加工" })).toBeInTheDocument();
     fireEvent.mouseDown(window);
     expect(screen.queryByRole("menuitem", { name: "ファイル加工" })).not.toBeInTheDocument();
 
-    fireEvent.contextMenu(workspaceSurface!, { clientX: 40, clientY: 50 });
+    fireEvent.contextMenu(workspaceButton, { clientX: 40, clientY: 50 });
     fireEvent.mouseEnter(screen.getByRole("menuitem", { name: "ファイル加工" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "タイトル一覧を作成" }));
 

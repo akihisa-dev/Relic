@@ -144,14 +144,7 @@ export function FilesSidebar({
               onOpenQuickSwitcher={onOpenQuickSwitcher}
             />
           </div>
-          <div
-            className="files-sidebar-scroll-area"
-            onContextMenu={(event) => {
-              if (isFilteringFiles || (event.target as Element).closest(".file-tree-item")) return;
-              event.preventDefault();
-              setWorkspaceContextMenu(contextMenuPosition(event.clientX, event.clientY));
-            }}
-          >
+          <div className="files-sidebar-scroll-area">
             {isFilteringFiles ? (
               <FilesSearchResults
                 error={searchError}
@@ -217,6 +210,10 @@ export function FilesSidebar({
             isOpeningWorkspace={isOpeningWorkspace}
             onCreateWorkspace={onCreateWorkspace}
             onOpenWorkspace={onOpenWorkspace}
+            onWorkspaceContextMenu={(event) => {
+              event.preventDefault();
+              setWorkspaceContextMenu(contextMenuPosition(event.clientX, event.clientY));
+            }}
           />
         </>
       ) : (
