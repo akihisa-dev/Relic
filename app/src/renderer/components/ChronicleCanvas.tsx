@@ -3,8 +3,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, t
 import type { ChartEntry } from "../../shared/ipc";
 import { cancelChronicleCanvasFrame, chronicleCanvasWheelFactor } from "../chronicleCanvasHelpers";
 import {
+  CHRONICLE_INITIAL_PERIOD_SCALE,
   CHRONICLE_CANVAS_MAX_SCALE,
   CHRONICLE_CANVAS_MIN_SCALE,
+  CHRONICLE_PERIOD_SCALES,
+  changeChronicleCanvasPeriodScale,
   chronicleCanvasClickPath,
   chronicleCanvasPointerItemAtPoint,
   chronicleCanvasPointerMovedBeyondClickThreshold,
@@ -16,7 +19,8 @@ import {
   stepChronicleCanvasScene,
   zoomChronicleCanvasAtPoint,
   type ChronicleCanvasItem,
-  type ChronicleCanvasPoint
+  type ChronicleCanvasPoint,
+  type ChroniclePeriodScale
 } from "../chronicleCanvasModel";
 import { drawChronicleCanvas, type ChronicleCanvasTheme } from "../chronicleCanvasRenderer";
 import { useLatest } from "../hooks/useLatest";
@@ -41,10 +45,28 @@ interface PointerSession {
 export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): ReactElement {
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const scene = useMemo(() => createChronicleCanvasScene(entries), [entries]);
+  const [periodScaleIndex, setPeriodScaleIndex] = useState(() => CHRONICLE_PERIOD_SCALES.indexOf(CHRONICLE_INITIAL_PERIOD_SCALE));
+  const periodScale = CHRONICLE_PERIOD_SCALES[periodScaleIndex] ?? CHRONICLE_INITIAL_PERIOD_SCALE;
+  const sceneRandomValuesRef = useRef<number[]>([]);
+  const scene = useMemo(() => {
+    let randomIndex = 0;
+    const stableRandom = () => {
+      const stored = sceneRandomValuesRef.current[randomIndex];
+      if (stored !== undefined) {
+        randomIndex += 1;
+        return stored;
+      }
+      const next = Math.random();
+      sceneRandomValuesRef.current[randomIndex] = next;
+      randomIndex += 1;
+      return next;
+    };
+    return createChronicleCanvasScene(entries, stableRandom, periodScale);
+  }, [entries, periodScale]);
   const sceneRef = useLatest(scene);
+  const entriesRef = useLatest(entries);
   const [camera] = useState(createChronicleCanvasCamera);
-  const initializedSceneRef = useRef<unknown>(null);
+  const initializedEntriesRef = useRef<ChartEntry[] | null>(null);
   const pointerRef = useRef<PointerSession | null>(null);
   const hoveredItemIdRef = useRef<string | null>(null);
   const hoveredPointRef = useRef<ChronicleCanvasPoint | null>(null);
@@ -98,8 +120,8 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
       canvas.height = nextHeight;
       updateTheme();
     }
-    if (initializedSceneRef.current !== sceneRef.current) {
-      initializedSceneRef.current = sceneRef.current;
+    if (initializedEntriesRef.current !== entriesRef.current) {
+      initializedEntriesRef.current = entriesRef.current;
       initializeChronicleCanvasCamera(camera, sceneRef.current, width, height);
     }
 
@@ -146,6 +168,10 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
       cancelChronicleCanvasFrame(animationFrameRef);
     };
   }, [draw, updateTheme]);
+
+  useEffect(() => {
+    requestCanvasFrame(animationFrameRef, draw);
+  }, [draw, scene]);
 
   const canvasPoint = useCallback((clientX: number, clientY: number) => {
     const rect = canvasRef.current?.getBoundingClientRect();
@@ -249,29 +275,54 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     event.preventDefault();
     const point = canvasPoint(event.clientX, event.clientY);
     const factor = chronicleCanvasWheelFactor(event.deltaY);
-    const sceneMaximum = maximumScaleForScene(sceneRef.current, event.currentTarget.clientWidth || 720);
-    const nextScale = Math.min(sceneMaximum, Math.max(CHRONICLE_CANVAS_MIN_SCALE, camera.scale * factor));
+    const nextScale = Math.min(CHRONICLE_CANVAS_MAX_SCALE, Math.max(CHRONICLE_CANVAS_MIN_SCALE, camera.scale * factor));
     zoomChronicleCanvasAtPoint(camera, nextScale, point);
     requestCanvasFrame(animationFrameRef, draw);
   }, [canvasPoint, draw]);
 
+  const handlePeriodScaleChange = useCallback((nextIndex: number) => {
+    const nextPeriodScale = CHRONICLE_PERIOD_SCALES[nextIndex] as ChroniclePeriodScale | undefined;
+    if (nextPeriodScale === undefined || nextPeriodScale === periodScale) return;
+    const viewportWidth = canvasRef.current?.getBoundingClientRect().width || 720;
+    changeChronicleCanvasPeriodScale(camera, periodScale, nextPeriodScale, viewportWidth);
+    setPeriodScaleIndex(nextIndex);
+  }, [periodScale]);
+
+  const periodScaleText = t("chronicle.periodScaleValue", { count: periodScale });
+
   return (
-    <canvas
-      aria-label={t("chronicle.timelineAria")}
-      className="chronicle-canvas"
-      onPointerCancel={handlePointerCancel}
-      onPointerDown={handlePointerDown}
-      onPointerLeave={() => {
-        hoveredItemIdRef.current = null;
-        hoveredPointRef.current = null;
-        if (!pointerRef.current) canvasRef.current?.style.setProperty("cursor", "grab");
-        requestCanvasFrame(animationFrameRef, draw);
-      }}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onWheel={handleWheel}
-      ref={canvasRef}
-    />
+    <>
+      <label className="chronicle-period-scale">
+        <span>{t("chronicle.periodScale")}</span>
+        <input
+          aria-label={t("chronicle.periodScale")}
+          aria-valuetext={periodScaleText}
+          max={CHRONICLE_PERIOD_SCALES.length - 1}
+          min={0}
+          onChange={(event) => handlePeriodScaleChange(Number(event.target.value))}
+          step={1}
+          type="range"
+          value={periodScaleIndex}
+        />
+        <output>{periodScaleText}</output>
+      </label>
+      <canvas
+        aria-label={t("chronicle.timelineAria")}
+        className="chronicle-canvas"
+        onPointerCancel={handlePointerCancel}
+        onPointerDown={handlePointerDown}
+        onPointerLeave={() => {
+          hoveredItemIdRef.current = null;
+          hoveredPointRef.current = null;
+          if (!pointerRef.current) canvasRef.current?.style.setProperty("cursor", "grab");
+          requestCanvasFrame(animationFrameRef, draw);
+        }}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onWheel={handleWheel}
+        ref={canvasRef}
+      />
+    </>
   );
 }
 
@@ -290,15 +341,4 @@ function canvasContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D | nu
   } catch {
     return null;
   }
-}
-
-function maximumScaleForScene(scene: ReturnType<typeof createChronicleCanvasScene>, viewportWidth: number): number {
-  if (scene.years.length < 2) return CHRONICLE_CANVAS_MAX_SCALE;
-  let widestNeighborSpan = 0;
-  for (let index = 0; index < scene.years.length; index += 1) {
-    const left = scene.years[Math.max(0, index - 1)].x;
-    const right = scene.years[Math.min(scene.years.length - 1, index + 1)].x;
-    widestNeighborSpan = Math.max(widestNeighborSpan, right - left);
-  }
-  return Math.max(0.4, Math.min(CHRONICLE_CANVAS_MAX_SCALE, viewportWidth / Math.max(240, widestNeighborSpan + 160)));
 }

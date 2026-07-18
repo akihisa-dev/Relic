@@ -13,7 +13,8 @@
   background: var(--bg);
   cursor: grab;
   display: block;
-  height: 100%;
+  flex: 1;
+  height: auto;
   min-height: 0;
   min-width: 0;
   touch-action: none;
@@ -22,6 +23,40 @@
 
 .chronicle-canvas:active {
   cursor: grabbing;
+}
+
+.chronicle-period-scale {
+  align-items: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-2);
+  display: grid;
+  flex: 0 0 auto;
+  font-size: 12px;
+  gap: 12px;
+  grid-template-columns: auto minmax(120px, 240px) minmax(64px, auto);
+  min-height: 42px;
+  padding: 6px 14px;
+}
+
+.chronicle-period-scale input[type="range"] {
+  accent-color: var(--color-primary);
+  margin: 0;
+  width: 100%;
+}
+
+.chronicle-period-scale output {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+@media (max-width: 620px) {
+  .chronicle-period-scale {
+    gap: 8px;
+    grid-template-columns: auto minmax(80px, 1fr) auto;
+    padding-inline: 10px;
+  }
 }
 
 .chronicle-canvas-empty {

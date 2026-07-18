@@ -9,6 +9,24 @@ afterEach(() => {
 });
 
 describe("ChronicleCanvas cursor", () => {
+  it("ズーム操作とは独立した期間スケールを段階的に変更する", () => {
+    render(
+      <I18nProvider language="en">
+        <ChronicleCanvas entries={[]} onOpenFile={vi.fn()} />
+      </I18nProvider>
+    );
+
+    const slider = screen.getByRole("slider", { name: "Period scale" });
+    expect(slider).toHaveAttribute("aria-valuetext", "10-year intervals");
+    expect(screen.getByText("10-year intervals")).toBeInTheDocument();
+
+    fireEvent.change(slider, { target: { value: "4" } });
+
+    expect(slider).toHaveValue("4");
+    expect(slider).toHaveAttribute("aria-valuetext", "100-year intervals");
+    expect(screen.getByText("100-year intervals")).toBeInTheDocument();
+  });
+
   it("年表を押している間はgrabbingカーソルを表示する", () => {
     render(
       <I18nProvider language="en">

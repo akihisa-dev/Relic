@@ -3,6 +3,8 @@ import type { ChartEntry } from "../shared/ipc";
 export const CHRONICLE_CANVAS_MIN_SCALE = 0.08;
 export const CHRONICLE_CANVAS_MAX_SCALE = 2.4;
 export const CHRONICLE_CANVAS_INITIAL_SCALE = 0.82;
+export const CHRONICLE_PERIOD_SCALES = [1, 5, 10, 50, 100, 500] as const;
+export const CHRONICLE_INITIAL_PERIOD_SCALE: ChroniclePeriodScale = 10;
 export const CHRONICLE_CANVAS_LABEL_HEIGHT = 20;
 export const CHRONICLE_CANVAS_ITEM_LABEL_OFFSET = 22;
 const CHRONICLE_CANVAS_TEXT_FADE_START_SCALE = 0.04;
@@ -10,11 +12,11 @@ const CHRONICLE_CANVAS_TEXT_FADE_RANGE = 0.65;
 
 const itemHeight = 70;
 const labelCharacterWidth = 7.4;
-const minimumYearGap = 62;
-const yearGapScale = 48;
-const minimumYearTickWorldGap = 64 / CHRONICLE_CANVAS_MAX_SCALE;
+const yearTickGap = 96;
 const springStrength = 0.2;
 const damping = 0.72;
+
+export type ChroniclePeriodScale = typeof CHRONICLE_PERIOD_SCALES[number];
 
 export interface ChronicleCanvasCamera {
   panX: number;
@@ -51,7 +53,7 @@ export interface ChronicleCanvasYear {
 
 export interface ChronicleCanvasScene {
   items: ChronicleCanvasItem[];
-  years: ChronicleCanvasYear[];
+  periodScale: ChroniclePeriodScale;
 }
 
 export interface ChronicleCanvasLabelHit {
@@ -81,10 +83,9 @@ export function createChronicleCanvasCamera(): ChronicleCanvasCamera {
 
 export function createChronicleCanvasScene(
   entries: ChartEntry[],
-  random: () => number = Math.random
+  random: () => number = Math.random,
+  periodScale: ChroniclePeriodScale = CHRONICLE_INITIAL_PERIOD_SCALE
 ): ChronicleCanvasScene {
-  const years = buildChronicleCanvasYears(entries);
-  const xByYear = new Map(years.map((year) => [year.value, year.x]));
   const verticalSlots = entries.map((_, index) => (index - (entries.length - 1) / 2) * (itemHeight + 24));
   for (let index = verticalSlots.length - 1; index > 0; index -= 1) {
     const swapIndex = Math.floor(random() * (index + 1));
@@ -93,8 +94,8 @@ export function createChronicleCanvasScene(
   const items = entries.map((entry, index) => {
     const startYear = entry.startPoint.year;
     const endYear = entry.endPoint.year;
-    const startX = xByYear.get(startYear) ?? 0;
-    const endX = xByYear.get(endYear) ?? startX;
+    const startX = chronicleCanvasYearToX(startYear, periodScale);
+    const endX = chronicleCanvasYearToX(endYear, periodScale);
     const rangeLabel = formatRange(entry);
     const labelWidth = Math.max(48, entry.fileName.length * labelCharacterWidth + 18);
     const width = Math.max(24, Math.abs(endX - startX));
@@ -123,61 +124,29 @@ export function createChronicleCanvasScene(
 
   settleChronicleCanvasScene(items, 240);
   for (const item of items) item.homeY = item.y;
-  return { items, years };
+  return { items, periodScale };
 }
 
-export function buildChronicleCanvasYears(entries: ChartEntry[]): ChronicleCanvasYear[] {
-  const values = [...new Set(entries.flatMap((entry) => [entry.startPoint.year, entry.endPoint.year]))]
-    .sort((a, b) => a - b);
-  let x = 0;
-  const entryYears = values.map((value, index) => {
-    if (index > 0) {
-      const yearDifference = Math.max(1, value - values[index - 1]);
-      x += compressedYearDistance(yearDifference);
-    }
-    return { value, x };
-  });
-
-  const years = [...entryYears];
-  for (let index = 1; index < entryYears.length; index += 1) {
-    const left = entryYears[index - 1];
-    const right = entryYears[index];
-    const yearDifference = right.value - left.value;
-    const worldDistance = right.x - left.x;
-    const maximumIntervals = Math.floor(worldDistance / minimumYearTickWorldGap);
-    if (yearDifference <= 1 || maximumIntervals <= 1) continue;
-
-    const step = niceYearStep(yearDifference / maximumIntervals);
-    let value = Math.ceil(left.value / step) * step;
-    if (value <= left.value) value += step;
-    while (value < right.value) {
-      const progress = (value - left.value) / yearDifference;
-      const tickX = left.x + worldDistance * progress;
-      if (
-        tickX - left.x >= minimumYearTickWorldGap &&
-        right.x - tickX >= minimumYearTickWorldGap
-      ) {
-        years.push({ value, x: tickX });
-      }
-      const nextValue = value + step;
-      if (nextValue <= value) break;
-      value = nextValue;
-    }
-  }
-
-  return years.sort((left, right) => left.value - right.value);
+export function chronicleCanvasYearToX(year: number, periodScale: ChroniclePeriodScale): number {
+  return year / periodScale * yearTickGap;
 }
 
-export function compressedYearDistance(yearDifference: number): number {
-  return minimumYearGap + Math.log1p(Math.max(0, yearDifference - 1)) * yearGapScale;
+export function chronicleCanvasXToYear(x: number, periodScale: ChroniclePeriodScale): number {
+  return x / yearTickGap * periodScale;
 }
 
-function niceYearStep(minimumStep: number): number {
-  if (minimumStep <= 1) return 1;
-  const magnitude = 10 ** Math.floor(Math.log10(minimumStep));
-  const normalized = minimumStep / magnitude;
-  const multiplier = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
-  return multiplier * magnitude;
+export function changeChronicleCanvasPeriodScale(
+  camera: ChronicleCanvasCamera,
+  currentPeriodScale: ChroniclePeriodScale,
+  nextPeriodScale: ChroniclePeriodScale,
+  viewportWidth: number
+): void {
+  const centerScreenX = viewportWidth / 2;
+  const centerWorldX = (centerScreenX - camera.panX) / camera.scale;
+  const centerYear = chronicleCanvasXToYear(centerWorldX, currentPeriodScale);
+  camera.panX = centerScreenX - chronicleCanvasYearToX(centerYear, nextPeriodScale) * camera.scale;
+  camera.velocityX = 0;
+  camera.velocityY = 0;
 }
 
 export function settleChronicleCanvasScene(items: ChronicleCanvasItem[], iterations: number): void {
@@ -316,62 +285,40 @@ export function chronicleCanvasYearHeaderHeight(scale: number): number {
 }
 
 export function visibleChronicleCanvasYears(
-  years: ChronicleCanvasYear[],
-  camera: ChronicleCanvasCamera,
-  minimumScreenGap = 64,
-  viewportWidth?: number
-): ChronicleCanvasYear[] {
-  const visible: ChronicleCanvasYear[] = [];
-  let previousScreenX = -Infinity;
-  const range = viewportWidth === undefined
-    ? { end: years.length, start: 0 }
-    : visibleYearRange(years, camera, viewportWidth, minimumScreenGap);
-  for (let index = range.start; index < range.end; index += 1) {
-    const year = years[index];
-    const screenX = year.x * camera.scale + camera.panX;
-    if (screenX - previousScreenX < minimumScreenGap) continue;
-    visible.push(year);
-    previousScreenX = screenX;
-  }
-  return visible;
-}
-
-function visibleYearRange(
-  years: ChronicleCanvasYear[],
+  periodScale: ChroniclePeriodScale,
   camera: ChronicleCanvasCamera,
   viewportWidth: number,
-  overscan: number
-): { end: number; start: number } {
-  if (years.length === 0 || camera.scale <= 0) return { end: 0, start: 0 };
-
+  overscan = 64
+): ChronicleCanvasYear[] {
+  if (camera.scale <= 0 || viewportWidth <= 0) return [];
   const minimumWorldX = (-overscan - camera.panX) / camera.scale;
   const maximumWorldX = (viewportWidth + overscan - camera.panX) / camera.scale;
-  return {
-    end: upperBoundYearX(years, maximumWorldX),
-    start: lowerBoundYearX(years, minimumWorldX)
-  };
+  const startIndex = Math.floor(minimumWorldX / yearTickGap);
+  const endIndex = Math.ceil(maximumWorldX / yearTickGap);
+  const years: ChronicleCanvasYear[] = [];
+  for (let index = startIndex; index <= endIndex; index += 1) {
+    years.push({ value: index * periodScale, x: index * yearTickGap });
+  }
+  return years;
 }
 
-function lowerBoundYearX(years: ChronicleCanvasYear[], target: number): number {
-  let low = 0;
-  let high = years.length;
-  while (low < high) {
-    const middle = (low + high) >>> 1;
-    if (years[middle].x < target) low = middle + 1;
-    else high = middle;
-  }
-  return low;
+export function visibleChronicleCanvasYearLabels(
+  years: ChronicleCanvasYear[],
+  camera: ChronicleCanvasCamera,
+  minimumScreenGap = 64
+): ChronicleCanvasYear[] {
+  if (camera.scale <= 0) return [];
+  const minimumStride = Math.max(1, Math.ceil(minimumScreenGap / (yearTickGap * camera.scale)));
+  const stride = niceTickStride(minimumStride);
+  return years.filter((year) => Math.round(year.x / yearTickGap) % stride === 0);
 }
 
-function upperBoundYearX(years: ChronicleCanvasYear[], target: number): number {
-  let low = 0;
-  let high = years.length;
-  while (low < high) {
-    const middle = (low + high) >>> 1;
-    if (years[middle].x <= target) low = middle + 1;
-    else high = middle;
-  }
-  return low;
+function niceTickStride(minimumStride: number): number {
+  if (minimumStride <= 1) return 1;
+  const magnitude = 10 ** Math.floor(Math.log10(minimumStride));
+  const normalized = minimumStride / magnitude;
+  const multiplier = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return multiplier * magnitude;
 }
 
 export function chronicleCanvasItemAtPoint(

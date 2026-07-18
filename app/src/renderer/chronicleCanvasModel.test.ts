@@ -2,23 +2,25 @@ import { describe, expect, it } from "vitest";
 
 import type { ChartEntry } from "../shared/ipc";
 import {
-  buildChronicleCanvasYears,
   canvasToWorld,
+  changeChronicleCanvasPeriodScale,
   chronicleCanvasClickPath,
   chronicleCanvasLabelAtPoint,
   chronicleCanvasPointerItemAtPoint,
   chronicleCanvasPointerMovedBeyondClickThreshold,
   chronicleCanvasTextOpacity,
+  chronicleCanvasXToYear,
+  chronicleCanvasYearToX,
   chronicleCanvasYearFontSize,
   chronicleCanvasYearHeaderHeight,
   chronicleCanvasYearLabelY,
   chronicleCanvasYearOpacity,
-  compressedYearDistance,
   createChronicleCanvasCamera,
   createChronicleCanvasScene,
   initializeChronicleCanvasCamera,
   prepareChronicleCanvasPointerCancel,
   stepChronicleCanvasScene,
+  visibleChronicleCanvasYearLabels,
   visibleChronicleCanvasYears,
   worldToCanvas,
   zoomChronicleCanvasAtPoint
@@ -39,31 +41,25 @@ function entry(fileName: string, path: string, startYear: number, endYear = star
 }
 
 describe("chronicleCanvasModel", () => {
-  it("値がない年も目盛りへ補いながら過去から未来へ並べ、長い空白を圧縮する", () => {
-    const years = buildChronicleCanvasYears([
-      entry("A", "a.md", -100, 10),
-      entry("B", "b.md", 11, 1000)
-    ]);
+  it("データの有無に関係なく選択した期間スケールで年軸を生成する", () => {
+    const camera = { ...createChronicleCanvasCamera(), panX: 0, scale: 1 };
+    const years = visibleChronicleCanvasYears(10, camera, 400);
 
-    expect(years.map((year) => year.value)).toEqual(expect.arrayContaining([-100, -80, 10, 11, 100, 1000]));
-    expect(years.map((year) => year.x)).toEqual([...years.map((year) => year.x)].sort((a, b) => a - b));
-    const xByYear = new Map(years.map((year) => [year.value, year.x]));
-    expect((xByYear.get(10) ?? 0) - (xByYear.get(-100) ?? 0)).toBeCloseTo(compressedYearDistance(110));
-    expect((xByYear.get(11) ?? 0) - (xByYear.get(10) ?? 0)).toBeCloseTo(compressedYearDistance(1));
-    expect(compressedYearDistance(1000)).toBeGreaterThan(compressedYearDistance(10));
-    expect(compressedYearDistance(1000)).toBeLessThan(compressedYearDistance(10) * 10);
+    expect(years.map((year) => year.value)).toEqual([-10, 0, 10, 20, 30, 40, 50]);
+    expect(years.map((year) => year.x)).toEqual([-96, 0, 96, 192, 288, 384, 480]);
   });
 
-  it("非常に長い年代でも目盛り候補を必要数だけ生成する", () => {
-    const years = buildChronicleCanvasYears([
-      entry("Past", "past.md", -1_000_000_000),
-      entry("Future", "future.md", 1_000_000_000)
-    ]);
+  it("期間スケールだけで年の横位置を変え、データ構成には影響されない", () => {
+    const compact = createChronicleCanvasScene([entry("A", "a.md", 100)], () => 0.5, 100);
+    const detailed = createChronicleCanvasScene([
+      entry("A", "a.md", 100),
+      entry("B", "b.md", 10_000)
+    ], () => 0.5, 10);
 
-    expect(years.at(0)?.value).toBe(-1_000_000_000);
-    expect(years.at(-1)?.value).toBe(1_000_000_000);
-    expect(years.length).toBeGreaterThan(2);
-    expect(years.length).toBeLessThan(100);
+    expect(compact.items[0].startX).toBe(96);
+    expect(detailed.items[0].startX).toBe(960);
+    expect(detailed.items[0].startX).toBe(chronicleCanvasYearToX(100, 10));
+    expect(chronicleCanvasXToYear(detailed.items[0].startX, 10)).toBe(100);
   });
 
   it("単年と期間を独立項目として収束済みの位置へ配置する", () => {
@@ -116,6 +112,19 @@ describe("chronicleCanvasModel", () => {
     expect(worldToCanvas(worldBefore, camera).y).toBeCloseTo(focus.y);
   });
 
+  it("期間スケール変更では画面中央の年とズーム率を維持する", () => {
+    const camera = { ...createChronicleCanvasCamera(), panX: -800, scale: 1.2 };
+    const viewportWidth = 800;
+    const centerWorldBefore = (viewportWidth / 2 - camera.panX) / camera.scale;
+    const centerYearBefore = chronicleCanvasXToYear(centerWorldBefore, 10);
+
+    changeChronicleCanvasPeriodScale(camera, 10, 100, viewportWidth);
+
+    const centerWorldAfter = (viewportWidth / 2 - camera.panX) / camera.scale;
+    expect(chronicleCanvasXToYear(centerWorldAfter, 100)).toBeCloseTo(centerYearBefore);
+    expect(camera.scale).toBe(1.2);
+  });
+
   it("年ラベルを縦パンに影響されないヘッダー領域へ置く", () => {
     const camera = { ...createChronicleCanvasCamera(), panY: -100 };
 
@@ -134,33 +143,24 @@ describe("chronicleCanvasModel", () => {
     expect(chronicleCanvasYearFontSize(0.82)).toBeCloseTo(11);
     expect(chronicleCanvasYearFontSize(2.4)).toBeGreaterThan(chronicleCanvasYearFontSize(0.82));
     const camera = { ...createChronicleCanvasCamera(), panX: 0, scale: 0.1 };
-    const years = [
-      { value: 1, x: 0 },
-      { value: 2, x: 100 },
-      { value: 3, x: 1000 }
-    ];
-    expect(visibleChronicleCanvasYears(years, camera).map((year) => year.value)).toEqual([1, 3]);
+    const years = visibleChronicleCanvasYears(10, camera, 800);
+    const labels = visibleChronicleCanvasYearLabels(years, camera);
+    expect(years.every((year, index) => index === 0 || year.value - years[index - 1].value === 10)).toBe(true);
+    expect(labels.length).toBeLessThan(years.length);
+    expect(labels.every((year) => year.value % 100 === 0)).toBe(true);
   });
 
-  it("limits year selection to the visible viewport for large timelines", () => {
-    const years = Array.from({ length: 10_000 }, (_, index) => ({ value: index, x: index * 100 }));
-    let indexedReads = 0;
-    const measuredYears = new Proxy(years, {
-      get(target, property, receiver) {
-        if (typeof property === "string" && /^\d+$/.test(property)) indexedReads += 1;
-        return Reflect.get(target, property, receiver);
-      }
-    });
+  it("どの年代へ移動しても表示範囲に必要な年目盛りだけを生成する", () => {
     const camera = createChronicleCanvasCamera();
-    camera.scale = 1;
+    camera.scale = 0.08;
     camera.panX = -500_000;
 
-    const visible = visibleChronicleCanvasYears(measuredYears, camera, 64, 800);
+    const visible = visibleChronicleCanvasYears(1, camera, 800);
 
-    expect(visible.length).toBeLessThan(12);
-    expect(visible.at(0)?.value).toBeGreaterThanOrEqual(4_999);
-    expect(visible.at(-1)?.value).toBeLessThanOrEqual(5_009);
-    expect(indexedReads).toBeLessThan(100);
+    expect(visible.length).toBeLessThan(130);
+    expect(visible.at(0)?.value).toBeGreaterThan(65_000);
+    expect(visible.at(-1)?.value).toBeLessThan(65_300);
+    expect((visible.at(-1)?.value ?? 0) - (visible.at(0)?.value ?? 0)).toBe(visible.length - 1);
   });
 
   it("通常の濃さに達したファイル名だけをクリック対象にする", () => {

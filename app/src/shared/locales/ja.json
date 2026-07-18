@@ -56,6 +56,8 @@
   "chronicle.verticalMinimap": "縦方向ミニマップ",
   "chronicle.overview": "全体",
   "chronicle.period": "年代",
+  "chronicle.periodScale": "期間スケール",
+  "chronicle.periodScaleValue": "{{count}}年単位",
   "chronicle.search": "検索 / フィルタ",
   "chronicle.searchPlaceholder": "ファイル名・パス・値",
   "chronicle.resizeEnd": "バーの終了位置を変更",

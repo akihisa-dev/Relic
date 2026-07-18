@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ChartEntry } from "../shared/ipc";
 import {
+  chronicleCanvasYearLabelY,
   createChronicleCanvasCamera,
   createChronicleCanvasScene,
   initializeChronicleCanvasCamera
@@ -23,6 +24,25 @@ function entry(fileName: string, path: string, year: number): ChartEntry {
 }
 
 describe("chronicleCanvasRenderer", () => {
+  it("項目の年ではなく期間スケールの規則に沿った年ラベルを描画する", () => {
+    const scene = createChronicleCanvasScene([entry("A", "a.md", 105)], () => 0.5, 10);
+    const camera = createChronicleCanvasCamera();
+    initializeChronicleCanvasCamera(camera, scene, 800, 400);
+    const fillTextCalls: Array<{ font: string; text: string; x: number; y: number }> = [];
+    const context = createCanvasContext(fillTextCalls);
+
+    drawChronicleCanvas(context, scene, camera, null, null, 800, 400, {
+      background: "#fff",
+      itemPalette: ["#f00"],
+      mutedText: "#666",
+      text: "#111"
+    });
+
+    const yearLabels = fillTextCalls.filter((call) => call.y === chronicleCanvasYearLabelY(camera.scale));
+    expect(yearLabels.map((call) => call.text)).toEqual(expect.arrayContaining(["100", "110"]));
+    expect(yearLabels.map((call) => call.text)).not.toContain("105");
+  });
+
   it("ホバー中の項目名を14pxでカーソル位置へ描画する", () => {
     const scene = createChronicleCanvasScene([entry("A", "a.md", 100)], () => 0.5);
     const camera = createChronicleCanvasCamera();

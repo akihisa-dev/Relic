@@ -6,6 +6,7 @@ import {
   chronicleCanvasYearLabelY,
   chronicleCanvasYearFontSize,
   chronicleCanvasYearOpacity,
+  visibleChronicleCanvasYearLabels,
   visibleChronicleCanvasYears,
   worldToCanvas,
   type ChronicleCanvasCamera,
@@ -48,7 +49,8 @@ export function drawChronicleCanvas(
   context.fillStyle = theme.background;
   context.fillRect(0, 0, viewportWidth, viewportHeight);
 
-  const visibleYears = visibleChronicleCanvasYears(scene.years, camera, 64, viewportWidth);
+  const visibleYears = visibleChronicleCanvasYears(scene.periodScale, camera, viewportWidth);
+  const visibleYearLabels = visibleChronicleCanvasYearLabels(visibleYears, camera);
   drawYearGuides(context, visibleYears, camera, viewportWidth, viewportHeight, theme);
   const labelHits: ChronicleCanvasLabelHit[] = [];
   const itemPalette = theme.itemPalette?.length ? theme.itemPalette : [theme.mutedText];
@@ -68,7 +70,7 @@ export function drawChronicleCanvas(
     );
     labelHits.push(hit);
   }
-  drawYearHeader(context, visibleYears, camera, viewportWidth, theme);
+  drawYearHeader(context, visibleYearLabels, camera, viewportWidth, theme);
   context.restore();
   return { labelHits };
 }
