@@ -106,7 +106,6 @@ describe("appShellModel", () => {
       ...defaultFeatureToggles,
       cards: true,
       chronicle: false,
-      frontmatter: false,
       graph: true,
       sphere: true,
       table: true

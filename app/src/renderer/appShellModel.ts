@@ -104,10 +104,9 @@ export function activeChartIdsForPanes(
 
 export function enabledRailViewsForFeatures<TView extends Pick<AppRailView, "id">>(
   views: TView[],
-  featureToggles: Pick<FeatureToggles, "cards" | "chronicle" | "frontmatter" | "graph" | "sphere" | "table">
+  featureToggles: Pick<FeatureToggles, "cards" | "chronicle" | "graph" | "sphere" | "table">
 ): TView[] {
   return views.filter((view) => {
-    if (view.id === "frontmatter" && !featureToggles.frontmatter) return false;
     if (view.id === "cards" && !featureToggles.cards) return false;
     if (view.id === "graph" && !featureToggles.graph) return false;
     if (view.id === "sphere" && !featureToggles.sphere) return false;
