@@ -61,7 +61,7 @@ description: Relicのグラフビューについて、Markdown由来のfile・ta
 4. simulationでseedまたは純粋入力を固定し、worker世代、Transferable、stale応答、停止、破棄を確認する。
 5. frame loopでidle停止、全restart契機、重複予約なし、theme cache無効化、unmount cleanupを確認する。
 6. `app/` で対象のnode・rendererテストと `pnpm typecheck` を実行し、process境界へ触れた場合は `pnpm architecture:check`、影響が広い場合は `pnpm verify` を実行する。
-7. 大規模dataへの影響は `pnpm performance:workspace` またはlarge版を同条件で比較し、遅延chunkへ影響する場合は `pnpm build:size:check` を実行する。
+7. 大規模dataへの影響は `pnpm performance:workspace` またはlarge版を同条件で比較し、Rendererのbuildまたは初期読込境界へ影響する場合は `pnpm renderer:production:check` を実行する。
 8. 見た目や操作を変えた場合は `$relic-change-ui` と `$relic-test-development-app` に従い、空data、テーマ、resize、実操作を確認する。
 9. 仕様をlinks、navigation、design、data-model、decisionsの該当正本へ同期し、`git diff --check` と全差分を確認する。
 

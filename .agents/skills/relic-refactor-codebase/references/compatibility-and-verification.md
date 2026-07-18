@@ -29,7 +29,7 @@
 - cache・索引: full build、cache hit/miss、単一file無効化、削除・rename、外部変更、unreadable fileを確認する。
 - renderer: render回数だけでなく、描画停止と全再開trigger、同一frameの重複予約、unmount後の処理を確認する。
 - architecture: 禁止依存、Node・Electron APIの流入、循環依存、公開面の増加を確認する。
-- bundle: initial/deferred、JavaScript/CSS/asset、個別chunkとtotalを分け、baseline更新理由を確認する。
+- Renderer production: production buildの成立と、保護対象dependencyが初期静的import経路へ含まれないことを確認する。容量と増加率は合否条件にしない。
 - 配布: runtime必須entryと禁止entry、source map、source・test混入、LICENSE、第三者通知、SBOMを確認する。
 
 ## 現行コマンドの確認
@@ -44,12 +44,12 @@
 | 境界・循環 | `pnpm architecture:check` |
 | 文書索引 | `pnpm docs:index:check` |
 | source規模の候補抽出 | `pnpm source:size` |
-| renderer容量 | `pnpm build:size:check` |
+| Renderer production build・初期静的import | `pnpm renderer:production:check` |
 | workspace性能 | `pnpm performance:workspace`、`pnpm performance:workspace:large` |
 | license・SBOM | `pnpm licenses:check` |
 | 配布内容 | 対象OSのsafe buildまたはsafe checkとpackage content report |
 
-狭いtestから始め、影響が広がるたびに検証面を追加する。`verify:full` の成功だけでbundle、license、性能、OS別配布まで確認済みとは表現しない。
+狭いtestから始め、影響が広がるたびに検証面を追加する。`verify:full` の成功だけでRenderer production境界、license、性能、OS別配布まで確認済みとは表現しない。
 
 ## 完了判定
 

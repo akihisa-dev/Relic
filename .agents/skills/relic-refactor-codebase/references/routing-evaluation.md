@@ -26,7 +26,7 @@
 
 ## 隣接Skillとの境界
 
-- `relic-audit-code-health`: 診断、候補評価、単一の巨大file・React・bundle・性能問題の局所改善を担当する。複数の状態所有、process、保存、性能、配布、文書を一つの完了条件で作り直す場合は本Skillへ渡す。
+- `relic-audit-code-health`: 診断、候補評価、単一の巨大file・React・初期読込・性能問題の局所改善を担当する。複数の状態所有、process、保存、性能、配布、文書を一つの完了条件で作り直す場合は本Skillへ渡す。
 - `relic-change-*`: 機能領域固有の契約と安全条件を担当する。本Skillは全体の影響地図、変更単位、実装順、横断検証を担当し、専門Skillの規則を上書きしない。
 - `relic-test-code`: test設計と失敗切り分けを担当する。本Skillはrefactorで必要な回帰面を選ぶ。
 - `relic-debug-packaging`: 実際のpackage・make・ASAR障害とOS別成果物を担当する。本Skillは配布影響の有無と必要な検証を判断する。

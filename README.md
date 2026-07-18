@@ -181,7 +181,7 @@ cd app
 pnpm verify:full
 ```
 
-Run the reproducible part of Code CI, adding dependency notices, SBOM, and renderer bundle checks:
+Run the reproducible part of Code CI, adding dependency notices, SBOM, and the Renderer production boundary check:
 
 ```sh
 pnpm verify:ci
@@ -488,7 +488,7 @@ cd app
 pnpm verify:full
 ```
 
-依存通知、SBOM、renderer bundle確認も加え、Code CIの再現可能部分を実行する場合:
+依存通知、SBOM、Rendererのproduction buildと初期読込境界の確認も加え、Code CIの再現可能部分を実行する場合:
 
 ```sh
 pnpm verify:ci

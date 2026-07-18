@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "skillDescriptionDigest": "1ac250b70d47d00d149b740cabd216fc9ecfd78ae5e89c017c6763c4186832ad",
+  "skillDescriptionDigest": "486d7322a93177561fe39bb003f37bffd8bd412dd8c88b0833ff5f44c8c6299e",
   "cases": [
     {
       "id": "issue-all-open",
@@ -153,7 +153,7 @@
       "forbiddenSkills": ["relic-release"],
       "requiredDocs": ["docs/engineering/dependency-licenses.md", "docs/development.md"],
       "permissionMode": "local-change",
-      "expectedEndState": "lockfile、通知、SBOM、bundle、配布影響が同期する",
+      "expectedEndState": "lockfile、通知、SBOM、Renderer production build・初期読込境界、配布影響が同期する",
       "misrouteImpact": "供給網または配布互換の確認が欠落する"
     },
     {
