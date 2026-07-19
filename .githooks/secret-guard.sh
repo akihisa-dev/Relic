@@ -179,6 +179,14 @@ check_range() {
   done
 }
 
+check_new_ref() {
+  local_sha="$1"
+
+  for commit in $(git rev-list "$local_sha" --not --remotes); do
+    check_commit "$commit"
+  done
+}
+
 check_pre_push() {
   while read local_ref local_sha remote_ref remote_sha; do
     if [ "$local_sha" = "$zero" ]; then
@@ -186,12 +194,11 @@ check_pre_push() {
     fi
 
     if [ "$remote_sha" = "$zero" ]; then
-      range="$local_sha"
+      check_new_ref "$local_sha"
     else
       range="$remote_sha..$local_sha"
+      check_range "$range"
     fi
-
-    check_range "$range"
   done
 }
 
@@ -215,10 +222,17 @@ run_self_test() {
     fi
     git commit -q -m "safe"
     safe_commit=$(git rev-parse HEAD)
+    git update-ref refs/remotes/origin/main "$safe_commit"
     blocked=0
     check_commit "$safe_commit"
     if [ "$blocked" -ne 0 ]; then
       echo "Secret guard self-test failed: safe fixture was blocked." >&2
+      exit 1
+    fi
+    blocked=0
+    check_new_ref "$safe_commit"
+    if [ "$blocked" -ne 0 ]; then
+      echo "Secret guard self-test failed: a new ref to a published commit was blocked." >&2
       exit 1
     fi
 
@@ -237,6 +251,12 @@ run_self_test() {
     check_commit "$blocked_commit"
     if [ "$blocked" -eq 0 ]; then
       echo "Secret guard self-test failed: dummy token fixture was not blocked." >&2
+      exit 1
+    fi
+    blocked=0
+    check_new_ref "$blocked_commit"
+    if [ "$blocked" -eq 0 ]; then
+      echo "Secret guard self-test failed: a new ref with an unpublished credential was not blocked." >&2
       exit 1
     fi
   )

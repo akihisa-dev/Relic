@@ -23,6 +23,7 @@ RelicはGitHub Public Repositoryとして公開する前提で管理する。脆
 - `.githooks/pre-commit` は `.githooks/secret-guard.sh --staged` を呼び出し、ステージ済みの差分から禁止ファイル名と秘密情報らしい文字列を検知する。
 - `.githooks/pre-push` は `.githooks/secret-guard.sh --pre-push` を呼び出し、push対象コミットを検査する。
 - 検知対象は、環境変数ファイル、認証情報を示すファイル名、HTTP Authorization header、provider token、秘密鍵、認証情報を含むDB接続文字列など、漏えいリスクが高い形に限定する。
+- 新しいbranchやtagのpushでは、どのremoteにも未到達のcommitだけを新しい公開範囲として検査する。既に公開済みのcommitを指すtag作成で全履歴を再検査せず、未公開commitを含むrefでは従来どおり検査する。
 - 画像、ZIP、実行ファイルなど、テキストとして検査する必要がないファイルは内容検査の対象外とする。
 - 検知ルールの確認には `.githooks/secret-guard.sh --self-test` を使い、本物のtoken、秘密鍵、実在credentialをテストやログへ含めない。
 - AIエージェントのコミット・公開手順は `core.hooksPath` の設定だけに依存せず、staged差分または送信commit rangeのguardを明示実行する。
