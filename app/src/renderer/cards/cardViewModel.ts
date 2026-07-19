@@ -1,6 +1,7 @@
 import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 
-export function resolveCardImagePath(sourcePath: string, imagePath: string): string | null {
+export function resolveCardImagePath(sourcePath: string, imagePath: string | null): string | null {
+  if (imagePath === null) return null;
   const normalizedImagePath = imagePath.trim().replace(/\\/g, "/");
   if (
     normalizedImagePath === "" ||

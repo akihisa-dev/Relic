@@ -44,7 +44,7 @@ describe("useWorkspaceCardsState", () => {
 });
 
 function card(path: string): WorkspaceCard {
-  return { imagePath: "image.webp", name: path, path };
+  return { flavorText: null, imagePath: "image.webp", name: path, path };
 }
 
 function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {

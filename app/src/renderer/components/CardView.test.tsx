@@ -15,8 +15,13 @@ afterEach(() => {
 });
 
 const cards: WorkspaceCard[] = [
-  { imagePath: "./images/moon.webp", name: "Moon", path: "notes/moon.md" },
-  { imagePath: "./images/sun.webp", name: "Sun", path: "notes/sun.md" }
+  {
+    flavorText: "かつて夜を照らした剣。\n今も淡い光を宿している。",
+    imagePath: "./images/moon.webp",
+    name: "Moon",
+    path: "notes/moon.md"
+  },
+  { flavorText: null, imagePath: "./images/sun.webp", name: "Sun", path: "notes/sun.md" }
 ];
 
 function StatefulCardView({
@@ -65,6 +70,8 @@ describe("CardView", () => {
     expect(screen.queryByText("カード")).not.toBeInTheDocument();
     expect(screen.queryByText("カードビュー")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Moon" })).toHaveAttribute("aria-current", "true");
+    expect(view.container.querySelector(".card-view-description"))
+      .toHaveTextContent("かつて夜を照らした剣。 今も淡い光を宿している。");
     await waitFor(() => expect(readImageFile).toHaveBeenCalledTimes(1));
     expect(readImageFile).toHaveBeenLastCalledWith({ path: "notes/images/moon.webp" });
 
@@ -170,7 +177,7 @@ describe("CardView", () => {
     window.relic = makeRelicApi({
       getWorkspaceCards: vi.fn().mockResolvedValue({
         ok: true,
-        value: [{ imagePath: "../../outside.webp", name: "Broken", path: "broken.md" }]
+        value: [{ flavorText: null, imagePath: "../../outside.webp", name: "Broken", path: "broken.md" }]
       }),
       readImageFile
     });
@@ -191,6 +198,33 @@ describe("CardView", () => {
     expect(readImageFile).not.toHaveBeenCalled();
   });
 
+  it("cardの画像パスが空でもカード名と操作を残して代替表示にする", async () => {
+    const readImageFile = vi.fn();
+    window.relic = makeRelicApi({
+      getWorkspaceCards: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{ flavorText: "画像は未設定。", imagePath: null, name: "Missing", path: "missing.md" }]
+      }),
+      readImageFile
+    });
+
+    render(
+      <I18nProvider language="ja">
+        <CardView
+          onOpenFile={vi.fn()}
+          onSelectPath={vi.fn()}
+          refreshRevision={0}
+          workspaceId="workspace-1"
+        />
+      </I18nProvider>
+    );
+
+    expect(await screen.findByText("画像を表示できません")).toBeInTheDocument();
+    expect(screen.getByText("画像は未設定。")).toHaveClass("card-view-description");
+    expect(screen.getByRole("button", { name: "Missingを開く" })).toBeInTheDocument();
+    expect(readImageFile).not.toHaveBeenCalled();
+  });
+
   it("対象がない場合は表示条件を案内する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceCards: vi.fn().mockResolvedValue({ ok: true, value: [] })
@@ -208,6 +242,6 @@ describe("CardView", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "表示できるカードはまだありません" })).toBeInTheDocument();
-    expect(screen.getByText(/cardプロパティに/)).toBeInTheDocument();
+    expect(screen.getByText(/cardプロパティを/)).toBeInTheDocument();
   });
 });

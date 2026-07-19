@@ -207,7 +207,7 @@ describe("registerWorkspaceDataHandlers", () => {
       channel: getWorkspaceCardsChannel,
       label: "カード",
       reader: dependencies.readWorkspaceCards,
-      value: [{ imagePath: "images/card.webp", name: "Card", path: "card.md" }],
+      value: [{ flavorText: null, imagePath: "images/card.webp", name: "Card", path: "card.md" }],
     },
     {
       channel: getWorkspaceGraphChannel,

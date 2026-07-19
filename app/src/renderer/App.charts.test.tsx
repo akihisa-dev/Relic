@@ -613,7 +613,7 @@ describe("App charts", () => {
       getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceCards: vi.fn().mockResolvedValue({
         ok: true,
-        value: [{ imagePath: "images/moon.webp", name: "Moon", path: "notes/moon.md" }]
+        value: [{ flavorText: null, imagePath: "images/moon.webp", name: "Moon", path: "notes/moon.md" }]
       }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
       readMarkdownFile: vi.fn().mockResolvedValue({

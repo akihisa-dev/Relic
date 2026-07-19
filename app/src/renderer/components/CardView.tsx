@@ -81,7 +81,7 @@ export function CardView({
               <span className="card-view-image-frame">
                 <CardImage card={selectedCard} key={selectedCard.path} />
               </span>
-              <span aria-hidden="true" className="card-view-description" />
+              <span className="card-view-description">{selectedCard.flavorText}</span>
             </button>
           ) : null}
         </div>

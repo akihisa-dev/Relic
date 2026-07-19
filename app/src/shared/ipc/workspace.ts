@@ -125,7 +125,8 @@ export interface WorkspaceChart extends ChartSettings {
 }
 
 export interface WorkspaceCard {
-  imagePath: string;
+  flavorText: string | null;
+  imagePath: string | null;
   name: string;
   path: string;
 }
