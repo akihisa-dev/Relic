@@ -4,6 +4,7 @@ import { GFM } from "@lezer/markdown";
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { appFontFamilyMap } from "../appFont";
 import { headingFoldRange } from "../editorHeadingFolding";
 import { I18nProvider } from "../i18n";
 import { makeRelicApi } from "../../test/rendererTestUtils";
@@ -31,6 +32,17 @@ afterEach(() => {
 });
 
 describe("Editor preview", () => {
+  it("設定したフォントをMarkdown本文へ反映する", () => {
+    const { container } = renderEditor({
+      content: "本文",
+      settings: { ...settings, font: "mincho" }
+    });
+
+    expect(container.querySelector(".cm-content")).toHaveStyle({
+      fontFamily: appFontFamilyMap.mincho
+    });
+  });
+
   it("本文は設定幅の内側で折り返す", async () => {
     const { container } = renderEditor({
       content: "長い本文".repeat(80),

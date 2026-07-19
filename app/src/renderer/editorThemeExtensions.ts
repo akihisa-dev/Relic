@@ -39,6 +39,7 @@ export function buildEditorThemeExtension(settings: EditorSettings): Extension {
     },
     ".cm-content": {
       boxSizing: "border-box",
+      fontFamily: appFontFamilyMap[settings.font],
       maxWidth: settings.maxWidth === "none" ? "none" : settings.maxWidth,
       margin: "0 auto",
       padding: "8px 32px 24px"
