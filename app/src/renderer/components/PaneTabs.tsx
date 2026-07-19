@@ -6,6 +6,7 @@ import { PaneTabBar } from "./PaneTabBar";
 import { PaneTabContextMenu } from "./PaneTabContextMenu";
 
 interface PaneTabsProps {
+  canReopenClosedTab: boolean;
   closingTabIds: Set<string>;
   isSplitView: boolean;
   pane: PaneId;
@@ -17,6 +18,7 @@ interface PaneTabsProps {
   onCloseTabsToRight: (pane: PaneId, tabId: string) => void;
   onDuplicateTabFile?: (tabId: string) => void;
   onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
+  onReopenClosedTab: () => void;
   onRevealTabFile?: (tabId: string) => void;
   onSavePreviewAsPdf: (tab: FileTab) => void;
   onTabClose: (pane: PaneId, tabId: string) => void;
@@ -26,6 +28,7 @@ interface PaneTabsProps {
 }
 
 export function PaneTabs({
+  canReopenClosedTab,
   closingTabIds,
   isSplitView,
   pane,
@@ -37,6 +40,7 @@ export function PaneTabs({
   onCloseTabsToRight,
   onDuplicateTabFile,
   onOpenInOtherPane,
+  onReopenClosedTab,
   onRevealTabFile,
   onSavePreviewAsPdf,
   onTabClose,
@@ -80,6 +84,7 @@ export function PaneTabs({
         onTabSelect={(tabId) => onTabSelect(pane, tabId)}
       />
       <PaneTabContextMenu
+        canReopenClosedTab={canReopenClosedTab}
         contextMenu={contextMenu}
         contextTab={contextTab}
         isPinned={contextTabIsPinned}
@@ -90,6 +95,7 @@ export function PaneTabs({
         onCloseTabsToRight={(tabId) => onCloseTabsToRight(pane, tabId)}
         onDuplicateTabFile={onDuplicateTabFile}
         onOpenInOtherPane={(tabId) => onOpenInOtherPane(pane, tabId)}
+        onReopenClosedTab={onReopenClosedTab}
         onRevealTabFile={onRevealTabFile}
         onSavePreviewAsPdf={onSavePreviewAsPdf}
         onTabClose={(tabId) => onTabClose(pane, tabId)}

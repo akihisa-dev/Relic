@@ -58,6 +58,7 @@ function setPaneState(tabs: Record<string, Tab>, leftPane: PaneState, rightPane:
 function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
   const props: PaneViewProps = {
     allFilePaths: [],
+    canReopenClosedTab: false,
     editorActionPulse: 0,
     editorSettings: defaultEditorSettings,
     focusedPane: "left",
@@ -82,6 +83,7 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     onLargeMarkdownFallback: vi.fn(),
     onFocus: vi.fn(),
     onOpenInOtherPane: vi.fn(),
+    onReopenClosedTab: vi.fn(),
     onOpenLink: vi.fn(),
     onOpenWikiLink: vi.fn(),
     onRenameFile: vi.fn(),

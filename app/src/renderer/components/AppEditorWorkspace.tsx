@@ -15,6 +15,7 @@ import { PaneView, type PaneViewProps } from "./PaneView";
 interface AppEditorWorkspaceProps {
   allFilePaths: string[];
   activeFileTab: FileTab | null;
+  canReopenClosedTab: boolean;
   applyingReferenceKey: string | null;
   backlinks: Backlink[];
   editorActionPulse: number;
@@ -43,6 +44,7 @@ interface AppEditorWorkspaceProps {
   onLargeMarkdownFallback: (name: string, path: string) => void;
   onOpenFile: (path: string) => void;
   onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
+  onReopenClosedTab: () => void;
   onOpenLink: (href: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
   onApplyUnlinkedReference: (reference: UnlinkedReference) => Promise<void>;
@@ -128,6 +130,7 @@ function paneViewProps(
 export function AppEditorWorkspace({
   allFilePaths,
   activeFileTab,
+  canReopenClosedTab,
   applyingReferenceKey,
   backlinks,
   editorActionPulse,
@@ -156,6 +159,7 @@ export function AppEditorWorkspace({
   onLargeMarkdownFallback,
   onOpenFile,
   onOpenInOtherPane,
+  onReopenClosedTab,
   onOpenLink,
   onOpenWikiLink,
   onApplyUnlinkedReference,
@@ -196,6 +200,7 @@ export function AppEditorWorkspace({
 
   const commonPaneViewProps: CommonPaneViewProps = {
     allFilePaths,
+    canReopenClosedTab,
     editorSettings,
     focusedPane,
     frontmatterCandidates,
@@ -210,6 +215,7 @@ export function AppEditorWorkspace({
     onFileSaved,
     onLargeMarkdownFallback,
     onOpenInOtherPane,
+    onReopenClosedTab,
     onOpenLink,
     onOpenWikiLink,
     onRenameFile,

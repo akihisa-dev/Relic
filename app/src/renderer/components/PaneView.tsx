@@ -14,6 +14,7 @@ import { PaneTabs } from "./PaneTabs";
 
 export interface PaneViewProps {
   allFilePaths: string[];
+  canReopenClosedTab: boolean;
   editorActionPulse: number;
   editorSettings: EditorSettings;
   focusedPane: PaneId;
@@ -43,6 +44,7 @@ export interface PaneViewProps {
   onFileSaveError?: (message: string) => void;
   onLargeMarkdownFallback?: (name: string, path: string) => void;
   onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
+  onReopenClosedTab: () => void;
   onRenameFile: (path: string, name: string) => void;
   onRevealTabFile?: (tabId: string) => void;
   onSavePreviewAsPdf: (tab: FileTab) => void;
@@ -57,6 +59,7 @@ export interface PaneViewProps {
 
 export function PaneView({
   allFilePaths,
+  canReopenClosedTab,
   editorActionPulse,
   editorSettings,
   focusedPane,
@@ -85,6 +88,7 @@ export function PaneView({
   onFileSaveError,
   onLargeMarkdownFallback,
   onOpenInOtherPane,
+  onReopenClosedTab,
   onRenameFile,
   onRevealTabFile,
   onSavePreviewAsPdf,
@@ -155,6 +159,7 @@ export function PaneView({
       role="presentation"
     >
       <PaneTabs
+        canReopenClosedTab={canReopenClosedTab}
         closingTabIds={closingTabIds}
         isSplitView={isSplitView}
         pane={pane}
@@ -166,6 +171,7 @@ export function PaneView({
         onCloseTabsToRight={onCloseTabsToRight}
         onDuplicateTabFile={onDuplicateTabFile}
         onOpenInOtherPane={onOpenInOtherPane}
+        onReopenClosedTab={onReopenClosedTab}
         onRevealTabFile={onRevealTabFile}
         onSavePreviewAsPdf={onSavePreviewAsPdf}
         onTabClose={onTabClose}

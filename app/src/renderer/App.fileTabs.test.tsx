@@ -388,6 +388,46 @@ describe("App file tabs", () => {
     });
   });
 
+  it("タブの右クリックメニューから最後に閉じたタブを開く", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    const fileTab = (await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).closest(".pane-tab");
+    expect(fileTab).not.toBeNull();
+
+    fireEvent.contextMenu(fileTab!);
+    expect(await screen.findByRole("button", { name: "閉じたタブを開く" })).toBeDisabled();
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    act(() => {
+      useEditorStore.getState().openPanelInPane("left", "settings", "設定");
+      useEditorStore.getState().closeTab("left", "panel-settings");
+    });
+
+    fireEvent.contextMenu(fileTab!);
+    const reopenButton = await screen.findByRole("button", { name: "閉じたタブを開く" });
+    expect(reopenButton).toBeEnabled();
+    fireEvent.click(reopenButton);
+
+    await waitFor(() => {
+      expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-settings");
+    });
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
   it("右クリックメニューのMarkdownボタンを開いているタブへ反映する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({

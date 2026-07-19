@@ -29,6 +29,7 @@ export interface AppLayoutShellInput {
 export interface AppLayoutEditorWorkspaceInput {
   activeFileTab: EditorWorkspaceProps["activeFileTab"];
   allFilePaths: EditorWorkspaceProps["allFilePaths"];
+  canReopenClosedTab: EditorWorkspaceProps["canReopenClosedTab"];
   appInlineHandlers: Pick<
     EditorWorkspaceProps,
     "onEditorAction" | "onOutlineHeadingClick" | "onScrollTargetHandled"
@@ -69,6 +70,7 @@ export interface AppLayoutEditorWorkspaceInput {
   moveTab: EditorWorkspaceProps["onTabMove"];
   onApplyUnlinkedReference: EditorWorkspaceProps["onApplyUnlinkedReference"];
   openFileInOtherPane: EditorWorkspaceProps["onOpenInOtherPane"];
+  reopenClosedTab: EditorWorkspaceProps["onReopenClosedTab"];
   outlineHeadings: EditorWorkspaceProps["outlineHeadings"];
   outgoingLinks: EditorWorkspaceProps["outgoingLinks"];
   outgoingLinksLimited: EditorWorkspaceProps["outgoingLinksLimited"];

@@ -8,6 +8,7 @@ import { useT } from "../i18n";
 import type { PaneTabContextMenuState } from "../hooks/usePaneTabInteractions";
 
 interface PaneTabContextMenuProps {
+  canReopenClosedTab: boolean;
   contextMenu: PaneTabContextMenuState | null;
   contextTab: Tab | null | undefined;
   isSplitView: boolean;
@@ -18,6 +19,7 @@ interface PaneTabContextMenuProps {
   onCloseTabsToRight: (tabId: string) => void;
   onDuplicateTabFile?: (tabId: string) => void;
   onOpenInOtherPane: (tabId: string) => void;
+  onReopenClosedTab: () => void;
   onRevealTabFile?: (tabId: string) => void;
   onSavePreviewAsPdf: (tab: FileTab) => void;
   onTabClose: (tabId: string) => void;
@@ -25,6 +27,7 @@ interface PaneTabContextMenuProps {
 }
 
 export function PaneTabContextMenu({
+  canReopenClosedTab,
   contextMenu,
   contextTab,
   isSplitView,
@@ -35,6 +38,7 @@ export function PaneTabContextMenu({
   onCloseTabsToRight,
   onDuplicateTabFile,
   onOpenInOtherPane,
+  onReopenClosedTab,
   onRevealTabFile,
   onSavePreviewAsPdf,
   onTabClose,
@@ -147,6 +151,17 @@ export function PaneTabContextMenu({
         type="button"
       >
         {t("pane.closeTab")}
+      </button>
+      <button
+        className="tab-context-menu-item"
+        disabled={!canReopenClosedTab}
+        onClick={() => {
+          onReopenClosedTab();
+          onClose();
+        }}
+        type="button"
+      >
+        {t("command.reopenClosedTab")}
       </button>
       <button
         className="tab-context-menu-item"
