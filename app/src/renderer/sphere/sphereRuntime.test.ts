@@ -252,7 +252,7 @@ describe("sphereRuntime", () => {
     runtime.setData(data);
     const guideGroup = scene.add.mock.calls[0][0];
     const ring = guideGroup.getObjectByName("sphere-equator-ring") as { geometry: { getAttribute: (name: string) => { getX: (index: number) => number } } };
-    const initialRadius = ring.geometry.getAttribute("position").getX(0);
+    const initialRadius = ring.geometry.getAttribute("instanceStart").getX(0);
     runAnimationFrame();
     runAnimationFrame();
     Object.assign(data.nodes[0], { x: 240, y: 0, z: 0 });
@@ -261,7 +261,7 @@ describe("sphereRuntime", () => {
 
     expect(scene.add).toHaveBeenCalledOnce();
     expect(scene.remove).not.toHaveBeenCalled();
-    expect(ring.geometry.getAttribute("position").getX(0)).toBeGreaterThan(initialRadius);
+    expect(ring.geometry.getAttribute("instanceStart").getX(0)).toBeGreaterThan(initialRadius);
     expect(controls.maxTargetRadius).toBeGreaterThan(SPHERE_MIN_GUIDE_RADIUS);
 
     forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
