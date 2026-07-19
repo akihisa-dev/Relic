@@ -225,6 +225,7 @@ export function hasInvalidFrontmatterYaml(content: string): boolean {
   if (endIndex === -1) return true;
 
   const yamlText = lines.slice(1, endIndex).join("\n");
+  if (yamlText.trim() === "") return false;
   try {
     const parsed = yaml.load(yamlText);
     return parsed !== null && parsed !== undefined && (typeof parsed !== "object" || Array.isArray(parsed));
@@ -240,6 +241,18 @@ export function findFrontmatterBlock(state: EditorState): FrontmatterBlock | nul
   const openLine = state.doc.line(range.start);
   const closeLine = state.doc.line(range.end);
   const yamlText = state.doc.sliceString(openLine.to + 1, closeLine.from);
+
+  if (yamlText.trim() === "") {
+    return {
+      bodyFrom: closeLine.to + 1,
+      data: {},
+      endLine: range.end,
+      from: openLine.from,
+      startLine: range.start,
+      to: closeLine.to,
+      yamlText
+    };
+  }
 
   try {
     const parsed = yaml.load(yamlText);

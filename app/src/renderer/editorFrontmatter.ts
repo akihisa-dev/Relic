@@ -54,6 +54,19 @@ export function canAppendOrCreateFrontmatterField(view: EditorView): boolean {
   return findFrontmatterLineRange(view.state.doc) === null;
 }
 
+export function createFrontmatter(view: EditorView): void {
+  if (findFrontmatterBlock(view.state)) return;
+  if (view.state.doc.lines > 0 && view.state.doc.line(1).text.trim() === "---") return;
+  if (findFrontmatterLineRange(view.state.doc) !== null) return;
+
+  view.dispatch({
+    changes: {
+      from: 0,
+      insert: "---\n---\n"
+    }
+  });
+}
+
 export function appendOrCreateFrontmatterField(view: EditorView, key: string): void {
   const block = findFrontmatterBlock(view.state);
 

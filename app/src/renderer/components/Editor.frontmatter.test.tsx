@@ -347,12 +347,31 @@ describe("Editor frontmatter", () => {
     expect(container.querySelector(".cm-frontmatter-add-input")).toBeNull();
 
     fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
-    const tagsItem = Array.from(document.body.querySelectorAll(".editor-frontmatter-add-menu-item"))
-      .find((item) => item.textContent?.includes("tags")) as HTMLButtonElement;
-    fireEvent.click(tagsItem);
 
-    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("tags:"));
-    expect(viewRef.current?.state.doc.toString()).toBe("---\ntags:\n---\n# 本文");
+    expect(onChange).toHaveBeenLastCalledWith("---\n---\n# 本文");
+    expect(viewRef.current?.state.doc.toString()).toBe("---\n---\n# 本文");
+    expect(document.body.querySelector(".editor-frontmatter-add-menu")).toBeNull();
+  });
+
+  it("常設プラスボタンは既存フロントマターへプロパティを追加しない", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
+    const content = "---\ntags:\n---\n# 本文";
+    const { container } = render(
+      <Editor
+        content={content}
+        onChange={onChange}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-editor")).not.toBeNull());
+    fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(viewRef.current?.state.doc.toString()).toBe(content);
+    expect(document.body.querySelector(".editor-frontmatter-add-menu")).toBeNull();
   });
 
   it("削除後に作り直したフロントマターは以前の展開状態を勝手に引き継がない", async () => {
@@ -371,40 +390,13 @@ describe("Editor frontmatter", () => {
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).toBeNull());
 
     fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
-    const tagsItem = Array.from(document.body.querySelectorAll(".editor-frontmatter-add-menu-item"))
-      .find((item) => item.textContent?.includes("tags")) as HTMLButtonElement;
-    fireEvent.click(tagsItem);
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
     expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("true");
     expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(0);
   });
 
-  it("空の新規ファイルでもフロントマター追加メニューを本文行数に依存しない高さで表示する", async () => {
-    const viewRef = createRef<EditorView | null>();
-    const { container } = render(
-      <Editor
-        content=""
-        onChange={vi.fn()}
-        settings={settings}
-        viewRef={viewRef}
-      />
-    );
-
-    await waitFor(() => expect(container.querySelector(".cm-editor")).not.toBeNull());
-
-    fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
-    const menu = document.body.querySelector(".editor-frontmatter-add-menu") as HTMLElement;
-
-    expect(menu).not.toBeNull();
-    expect(menu.parentElement).toBe(document.body);
-    expect(container.contains(menu)).toBe(false);
-    expect(menu.style.top).not.toBe("");
-    expect(menu.style.left).not.toBe("");
-    expect(menu.style.maxHeight).not.toBe("");
-  });
-
-  it("フロントマター追加メニューは画面端で見切れにくい位置へ補正する", async () => {
+  it("本文内のプロパティ追加メニューは画面端で見切れにくい位置へ補正する", async () => {
     const originalInnerWidth = window.innerWidth;
     const originalInnerHeight = window.innerHeight;
     const originalClientWidth = Object.getOwnPropertyDescriptor(document.documentElement, "clientWidth");
@@ -416,16 +408,16 @@ describe("Editor frontmatter", () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
-        content=""
+        content={"---\ntags:\n---\n# 本文"}
         onChange={vi.fn()}
         settings={settings}
         viewRef={viewRef}
       />
     );
 
-    await waitFor(() => expect(container.querySelector(".cm-editor")).not.toBeNull());
+    await expandFrontmatter(container);
 
-    const button = container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement;
+    const button = container.querySelector(".cm-frontmatter-add-property") as HTMLButtonElement;
     vi.spyOn(button, "getBoundingClientRect").mockReturnValue({
       bottom: 752,
       height: 32,
@@ -455,7 +447,7 @@ describe("Editor frontmatter", () => {
     }
   });
 
-  it("未完了のフロントマター記法にはプロパティを追加しない", async () => {
+  it("未完了のフロントマター記法にはフロントマターを追加しない", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
     const { container } = render(
@@ -472,8 +464,7 @@ describe("Editor frontmatter", () => {
 
     fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
 
-    expect(document.body.querySelector(".editor-frontmatter-add-menu-empty")).not.toBeNull();
-    expect(document.body.querySelector(".editor-frontmatter-add-menu-item")).toBeNull();
+    expect(document.body.querySelector(".editor-frontmatter-add-menu")).toBeNull();
     expect(onChange).not.toHaveBeenCalled();
     expect(viewRef.current?.state.doc.toString()).toBe("---\nstatus: draft\n# 本文");
   });

@@ -511,6 +511,7 @@
   "frontmatter.properties": "プロパティ",
   "frontmatter.openProperties": "プロパティを開く",
   "frontmatter.closeProperties": "プロパティを閉じる",
+  "frontmatter.addFrontmatter": "フロントマターを追加",
   "frontmatter.addProperty": "プロパティを追加",
   "frontmatter.addValue": "値を追加",
   "frontmatter.addValueToField": "{{field}} に値を追加",

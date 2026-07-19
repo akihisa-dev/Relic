@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import {
   appendOrCreateFrontmatterField,
   canAppendOrCreateFrontmatterField,
+  createFrontmatter,
   findFrontmatterBlock,
   frontmatterPropertyMenuRequestEvent,
   type FrontmatterPropertyMenuRequest
@@ -27,7 +28,6 @@ export function EditorFrontmatterPropertyMenu({
   t,
   viewRef
 }: EditorFrontmatterPropertyMenuProps): ReactElement {
-  const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuAnchorRef = useRef<HTMLElement | null>(null);
   const [menu, setMenu] = useState<FrontmatterPropertyMenuState | null>(null);
@@ -39,9 +39,9 @@ export function EditorFrontmatterPropertyMenu({
     setMenu(null);
   };
 
-  const toggleMenu = (anchor: HTMLElement | null = buttonRef.current): void => {
+  const toggleMenu = (anchor: HTMLElement): void => {
     const view = viewRef.current;
-    if (!view || !anchor) return;
+    if (!view) return;
 
     if (menu && menuAnchorRef.current === anchor) {
       closeMenu();
@@ -65,6 +65,13 @@ export function EditorFrontmatterPropertyMenu({
 
     appendOrCreateFrontmatterField(view, key);
     closeMenu();
+  };
+
+  const addFrontmatter = (): void => {
+    const view = viewRef.current;
+    if (!view) return;
+
+    createFrontmatter(view);
   };
 
   useEffect(() => {
@@ -118,12 +125,9 @@ export function EditorFrontmatterPropertyMenu({
 
   const button = (
     <button
-      aria-expanded={menu ? "true" : "false"}
-      aria-haspopup="menu"
-      aria-label={t("frontmatter.addProperty")}
+      aria-label={t("frontmatter.addFrontmatter")}
       className="editor-frontmatter-add-button"
-      onClick={() => toggleMenu()}
-      ref={buttonRef}
+      onClick={addFrontmatter}
       type="button"
     >
       +

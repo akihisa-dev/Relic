@@ -511,6 +511,7 @@
   "frontmatter.properties": "Properties",
   "frontmatter.openProperties": "Open properties",
   "frontmatter.closeProperties": "Close properties",
+  "frontmatter.addFrontmatter": "Add frontmatter",
   "frontmatter.addProperty": "Add property",
   "frontmatter.addValue": "Add value",
   "frontmatter.addValueToField": "Add value to {{field}}",

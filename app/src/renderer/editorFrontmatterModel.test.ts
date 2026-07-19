@@ -1,7 +1,10 @@
+import { EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 
 import {
   formatDateForInput,
+  findFrontmatterBlock,
+  hasInvalidFrontmatterYaml,
   inputPlaceholderForDateFormat,
   parseChronicleYearInput,
   parseDateInput,
@@ -25,6 +28,13 @@ function frontmatterBlock(yamlText: string): FrontmatterBlock {
 }
 
 describe("editorFrontmatterModel", () => {
+  it("空のYAMLブロックを有効なフロントマターとして扱う", () => {
+    const state = EditorState.create({ doc: "---\n---\n# 本文" });
+
+    expect(findFrontmatterBlock(state)?.data).toEqual({});
+    expect(hasInvalidFrontmatterYaml(state.doc.toString())).toBe(false);
+  });
+
   it("YAMLのコメント、クォート、フィールド順を保持して書き戻す", () => {
     const yamlText = [
       "title: 'Old' # keep",
