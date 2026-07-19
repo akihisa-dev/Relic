@@ -34,6 +34,8 @@ import { useWorkspaceTableState } from "../table/useWorkspaceTableState";
 import { TablePropertyPopover } from "./TablePropertyPopover";
 
 const rowHeight = 48;
+const fileColumnWidth = 260;
+const propertyColumnWidth = 190;
 
 export function TableView({
   categoryChoices = [],
@@ -130,8 +132,8 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, setSor
   const range = visibleTableRange(rows.length, scrollTop, viewportHeight, rowHeight);
   const visibleRows = rows.slice(range.start, range.end);
   const gridStyle = {
-    gridTemplateColumns: `minmax(220px, 280px) repeat(${selectedProperties.length}, minmax(180px, 1fr))`,
-    minWidth: `${260 + selectedProperties.length * 190}px`
+    gridTemplateColumns: `${fileColumnWidth}px repeat(${selectedProperties.length}, ${propertyColumnWidth}px)`,
+    minWidth: `${fileColumnWidth + selectedProperties.length * propertyColumnWidth}px`
   } satisfies CSSProperties;
 
   useEffect(() => {

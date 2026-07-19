@@ -79,7 +79,9 @@ describe("TableView", () => {
     const tableElement = screen.getByRole("table");
     expect(tableElement).toHaveClass("table-view-scroll");
     expect(tableElement.querySelectorAll(".table-view-cell--sticky").length).toBeGreaterThan(1);
-    expect(tableElement.querySelector<HTMLElement>(".table-view-header")?.style.minWidth).toBe("450px");
+    const tableHeader = tableElement.querySelector<HTMLElement>(".table-view-header");
+    expect(tableHeader?.style.gridTemplateColumns).toBe("260px repeat(1, 190px)");
+    expect(tableHeader?.style.minWidth).toBe("450px");
   });
 
   it("プロパティ列のドラッグ中断では保存せず、ドロップ時だけ順序を保存する", async () => {
