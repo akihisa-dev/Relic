@@ -5,14 +5,28 @@ import { useT } from "../i18n";
 import { ChronicleCanvas } from "./ChronicleCanvas";
 
 interface ChartViewProps {
+  categoryChoices?: string[];
   chart?: WorkspaceChart | null;
   charts?: WorkspaceChart[];
+  hiddenCategoryKeys?: string[];
   onOpenFile: (path: string) => void;
+  onHiddenCategoryKeysChange?: (keys: string[]) => void;
+  onRailCollapsedChange?: (collapsed: boolean) => void;
+  railCollapsed?: boolean;
 }
 
 const defaultCharts: WorkspaceChart[] = [];
 
-export function ChartView({ chart = null, charts = defaultCharts, onOpenFile }: ChartViewProps): ReactElement {
+export function ChartView({
+  categoryChoices,
+  chart = null,
+  charts = defaultCharts,
+  hiddenCategoryKeys,
+  onHiddenCategoryKeysChange,
+  onOpenFile,
+  onRailCollapsedChange,
+  railCollapsed
+}: ChartViewProps): ReactElement {
   const t = useT();
   const activeChart = chart ?? charts[0] ?? null;
 
@@ -22,7 +36,15 @@ export function ChartView({ chart = null, charts = defaultCharts, onOpenFile }: 
 
   return (
     <div className="chronicle-panel">
-      <ChronicleCanvas entries={activeChart.entries} onOpenFile={onOpenFile} />
+      <ChronicleCanvas
+        categoryChoices={categoryChoices}
+        entries={activeChart.entries}
+        hiddenCategoryKeys={hiddenCategoryKeys}
+        onHiddenCategoryKeysChange={onHiddenCategoryKeysChange}
+        onOpenFile={onOpenFile}
+        onRailCollapsedChange={onRailCollapsedChange}
+        railCollapsed={railCollapsed}
+      />
     </div>
   );
 }

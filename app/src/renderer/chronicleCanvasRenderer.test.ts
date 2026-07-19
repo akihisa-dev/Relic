@@ -9,8 +9,9 @@ import {
 } from "./chronicleCanvasModel";
 import { drawChronicleCanvas } from "./chronicleCanvasRenderer";
 
-function entry(fileName: string, path: string, year: number): ChartEntry {
+function entry(fileName: string, path: string, year: number, category?: string): ChartEntry {
   return {
+    ...(category ? { category } : {}),
     chronicleEntryIndex: 0,
     endLabel: String(year),
     endPoint: { month: null, year },
@@ -73,6 +74,27 @@ describe("chronicleCanvasRenderer", () => {
       x: hoveredPoint.x,
       y: hoveredPoint.y - 20
     });
+  });
+
+  it("非表示カテゴリを描画せず、候補外カテゴリも安定した色で描画対象にする", () => {
+    const scene = createChronicleCanvasScene([
+      entry("War", "war.md", 100, "戦争"),
+      entry("People", "people.md", 110, "人物")
+    ], () => 0.5);
+    const camera = createChronicleCanvasCamera();
+    initializeChronicleCanvasCamera(camera, scene, 800, 400);
+    const fillTextCalls: Array<{ font: string; text: string; x: number; y: number }> = [];
+    const context = createCanvasContext(fillTextCalls);
+
+    drawChronicleCanvas(context, scene, camera, null, null, 800, 400, {
+      background: "#fff",
+      itemPalette: ["#f00", "#0f0", "#00f"],
+      mutedText: "#666",
+      text: "#111"
+    }, new Set(["category:戦争"]));
+
+    expect(fillTextCalls.some((call) => call.text === "War")).toBe(false);
+    expect(fillTextCalls.some((call) => call.text === "People")).toBe(true);
   });
 });
 

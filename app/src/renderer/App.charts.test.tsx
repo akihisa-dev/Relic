@@ -583,6 +583,7 @@ describe("App charts", () => {
     });
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
     await waitFor(() => expect(renderResult.container.querySelector(".chronicle-canvas")).not.toBeNull());
+    expect(screen.getByRole("complementary", { name: "カテゴリ" })).toBeInTheDocument();
     expect(renderResult.container.querySelector(".chronicle-sidebar")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-name-column")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-year-summary")).toBeNull();
@@ -677,6 +678,56 @@ describe("App charts", () => {
     await waitFor(() => expect(container.querySelector(".chronicle-canvas")).not.toBeNull());
     expect(container.querySelector(".chronicle-actions")).toBeNull();
     expect(updateChartEntry).not.toHaveBeenCalled();
+  });
+
+  it("chronicleのカテゴリフィルターをタブへ戻った後もペイン内で維持する", async () => {
+    const warEntry = { ...kamakuraEntry(), category: "戦争" };
+    const peopleEntry = {
+      ...kamakuraEntry(),
+      category: "人物",
+      fileName: "人物記録",
+      path: "history/person.md"
+    };
+    window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{
+          entries: [warEntry, peopleEntry],
+          filePaths: [warEntry.path, peopleEntry.path],
+          id: "chronicle",
+          name: "年表",
+          source: "chronicle"
+        }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+    await screen.findByText("Notes");
+    fireEvent.click(screen.getByRole("button", { name: "クロニクル" }));
+
+    const warButton = await screen.findByRole("button", { name: /戦争/ });
+    fireEvent.click(warButton);
+    expect(warButton).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("1 / 2件")).toBeInTheDocument();
+
+    useEditorStore.getState().openFileInPane("left", {
+      content: "# 一時ファイル",
+      name: "一時ファイル",
+      path: "temporary.md"
+    });
+    await waitFor(() => expect(screen.queryByRole("complementary", { name: "カテゴリ" })).not.toBeInTheDocument());
+    useEditorStore.getState().setTabActive("left", "chart-chronicle");
+
+    expect(await screen.findByRole("button", { name: /戦争/ })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("1 / 2件")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "すべて非表示" }));
+    expect(screen.getByText("すべてのカテゴリが非表示です。")).toBeInTheDocument();
+    const showAllButtons = screen.getAllByRole("button", { name: "すべて表示" });
+    fireEvent.click(showAllButtons.at(-1)!);
+    expect(screen.getByText("2 / 2件")).toBeInTheDocument();
   });
 
 });

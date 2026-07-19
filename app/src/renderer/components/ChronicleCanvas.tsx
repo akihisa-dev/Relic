@@ -3,6 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, t
 import type { ChartEntry } from "../../shared/ipc";
 import { cancelChronicleCanvasFrame, chronicleCanvasWheelFactor } from "../chronicleCanvasHelpers";
 import {
+  CHRONICLE_CATEGORY_PALETTE_SIZE,
+  createChronicleCategoryOptions,
+  isChronicleEntryVisible,
+  pruneChronicleHiddenCategoryKeys
+} from "../chronicleCategoryModel";
+import {
   CHRONICLE_INITIAL_PERIOD_SCALE,
   CHRONICLE_CANVAS_MAX_SCALE,
   CHRONICLE_CANVAS_MIN_SCALE,
@@ -25,10 +31,16 @@ import {
 import { drawChronicleCanvas, type ChronicleCanvasTheme } from "../chronicleCanvasRenderer";
 import { useLatest } from "../hooks/useLatest";
 import { useT } from "../i18n";
+import { ChronicleCategoryRail } from "./ChronicleCategoryRail";
 
 interface ChronicleCanvasProps {
+  categoryChoices?: string[];
   entries: ChartEntry[];
+  hiddenCategoryKeys?: string[];
   onOpenFile: (path: string) => void;
+  onHiddenCategoryKeysChange?: (keys: string[]) => void;
+  onRailCollapsedChange?: (collapsed: boolean) => void;
+  railCollapsed?: boolean;
 }
 
 interface PointerSession {
@@ -42,9 +54,27 @@ interface PointerSession {
   type: "item" | "pan";
 }
 
-export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): ReactElement {
+const emptyCategoryChoices: string[] = [];
+const emptyHiddenCategoryKeys: string[] = [];
+
+export function ChronicleCanvas({
+  categoryChoices = emptyCategoryChoices,
+  entries,
+  hiddenCategoryKeys = emptyHiddenCategoryKeys,
+  onOpenFile,
+  onHiddenCategoryKeysChange = () => undefined,
+  onRailCollapsedChange = () => undefined,
+  railCollapsed = false
+}: ChronicleCanvasProps): ReactElement {
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const hiddenCategoryKeySet = useMemo(() => new Set(hiddenCategoryKeys), [hiddenCategoryKeys]);
+  const categoryOptions = useMemo(() => createChronicleCategoryOptions(
+    entries,
+    categoryChoices,
+    t("chronicle.uncategorized"),
+    CHRONICLE_CATEGORY_PALETTE_SIZE
+  ), [categoryChoices, entries, t]);
   const [periodScaleIndex, setPeriodScaleIndex] = useState(() => CHRONICLE_PERIOD_SCALES.indexOf(CHRONICLE_INITIAL_PERIOD_SCALE));
   const periodScale = CHRONICLE_PERIOD_SCALES[periodScaleIndex] ?? CHRONICLE_INITIAL_PERIOD_SCALE;
   const sceneRandomValuesRef = useRef<number[]>([]);
@@ -65,6 +95,11 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
   }, [entries, periodScale]);
   const sceneRef = useLatest(scene);
   const entriesRef = useLatest(entries);
+  const hiddenCategoryKeysRef = useLatest(hiddenCategoryKeySet);
+  const visibleItems = useMemo(() => scene.items.filter((item) => (
+    isChronicleEntryVisible(item.entry, hiddenCategoryKeySet)
+  )), [hiddenCategoryKeySet, scene.items]);
+  const visibleItemsRef = useLatest(visibleItems);
   const [camera] = useState(createChronicleCanvasCamera);
   const initializedEntriesRef = useRef<ChartEntry[] | null>(null);
   const pointerRef = useRef<PointerSession | null>(null);
@@ -90,12 +125,14 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     themeRef.current = {
       background: token("--color-bg", "#f4f0e6"),
       itemPalette: [
-        token("--color-accent", "#f2691b"),
-        token("--color-primary", "#1a1b17"),
-        token("--color-text-secondary", "#62625b"),
-        token("--color-border-strong", "#b8af9f"),
-        token("--color-text-muted", "#76756c"),
-        token("--color-accent-strong", "#d95711")
+        token("--chronicle-category-0", "#c94f16"),
+        token("--chronicle-category-1", "#2563eb"),
+        token("--chronicle-category-2", "#008a5a"),
+        token("--chronicle-category-3", "#8a3ffc"),
+        token("--chronicle-category-4", "#b23a48"),
+        token("--chronicle-category-5", "#9a6700"),
+        token("--chronicle-category-6", "#007c91"),
+        token("--chronicle-category-7", "#6b5d4d")
       ],
       mutedText: token("--color-text-secondary", "#62625b"),
       text: token("--color-text", "#1a1b17")
@@ -131,7 +168,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     const draggedItemId = pointerRef.current?.type === "item" ? pointerRef.current.item?.id ?? null : null;
     let simulationMoving = false;
     if (draggedItemId || simulationActiveRef.current) {
-      simulationActiveRef.current = stepChronicleCanvasScene(sceneRef.current.items, draggedItemId, deltaSeconds);
+      simulationActiveRef.current = stepChronicleCanvasScene(visibleItemsRef.current, draggedItemId, deltaSeconds);
       simulationMoving = simulationActiveRef.current;
     }
     const inertiaMoving = pointerRef.current?.type !== "pan" && stepChronicleCanvasInertia(camera);
@@ -145,7 +182,8 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
       hoveredPointRef.current,
       width,
       height,
-      themeRef.current
+      themeRef.current,
+      hiddenCategoryKeysRef.current
     );
     if (simulationMoving || inertiaMoving || draggedItemId) {
       animationFrameRef.current = requestAnimationFrame(draw);
@@ -173,6 +211,22 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     requestCanvasFrame(animationFrameRef, draw);
   }, [draw, scene]);
 
+  useEffect(() => {
+    const prunedKeys = pruneChronicleHiddenCategoryKeys(hiddenCategoryKeys, categoryOptions);
+    if (prunedKeys.length !== hiddenCategoryKeys.length) onHiddenCategoryKeysChange(prunedKeys);
+  }, [categoryOptions, hiddenCategoryKeys, onHiddenCategoryKeysChange]);
+
+  useEffect(() => {
+    const hoveredItemId = hoveredItemIdRef.current;
+    if (hoveredItemId && !scene.items.some((item) => (
+      item.id === hoveredItemId && isChronicleEntryVisible(item.entry, hiddenCategoryKeySet)
+    ))) {
+      hoveredItemIdRef.current = null;
+      hoveredPointRef.current = null;
+    }
+    requestCanvasFrame(animationFrameRef, draw);
+  }, [draw, hiddenCategoryKeySet, scene.items]);
+
   const canvasPoint = useCallback((clientX: number, clientY: number) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     return { x: clientX - (rect?.left ?? 0), y: clientY - (rect?.top ?? 0) };
@@ -181,7 +235,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
   const handlePointerDown = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
     if (event.button !== 0) return;
     const point = canvasPoint(event.clientX, event.clientY);
-    const item = chronicleCanvasPointerItemAtPoint(sceneRef.current.items, camera, point);
+    const item = chronicleCanvasPointerItemAtPoint(visibleItemsRef.current, camera, point);
     event.currentTarget.setPointerCapture(event.pointerId);
     camera.velocityX = 0;
     camera.velocityY = 0;
@@ -202,7 +256,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
 
   const handlePointerMove = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
     const point = canvasPoint(event.clientX, event.clientY);
-    const hovered = chronicleCanvasPointerItemAtPoint(sceneRef.current.items, camera, point);
+    const hovered = chronicleCanvasPointerItemAtPoint(visibleItemsRef.current, camera, point);
     const hoveredChanged = hoveredItemIdRef.current !== (hovered?.id ?? null);
     const hoveredPointChanged = hovered
       ? hoveredPointRef.current?.x !== point.x || hoveredPointRef.current?.y !== point.y
@@ -255,7 +309,7 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
     }
     pointerRef.current = null;
     const point = canvasPoint(event.clientX, event.clientY);
-    const hovered = chronicleCanvasPointerItemAtPoint(sceneRef.current.items, camera, point);
+    const hovered = chronicleCanvasPointerItemAtPoint(visibleItemsRef.current, camera, point);
     event.currentTarget.style.cursor = hovered ? "pointer" : "grab";
     requestCanvasFrame(animationFrameRef, draw);
   }, [canvasPoint, draw]);
@@ -306,22 +360,41 @@ export function ChronicleCanvas({ entries, onOpenFile }: ChronicleCanvasProps): 
         />
         <output>{periodScaleText}</output>
       </label>
-      <canvas
-        aria-label={t("chronicle.timelineAria")}
-        className="chronicle-canvas"
-        onPointerCancel={handlePointerCancel}
-        onPointerDown={handlePointerDown}
-        onPointerLeave={() => {
-          hoveredItemIdRef.current = null;
-          hoveredPointRef.current = null;
-          if (!pointerRef.current) canvasRef.current?.style.setProperty("cursor", "grab");
-          requestCanvasFrame(animationFrameRef, draw);
-        }}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onWheel={handleWheel}
-        ref={canvasRef}
-      />
+      <div className="chronicle-body">
+        <ChronicleCategoryRail
+          collapsed={railCollapsed}
+          hiddenCategoryKeys={hiddenCategoryKeySet}
+          onCollapsedChange={onRailCollapsedChange}
+          onHiddenCategoryKeysChange={onHiddenCategoryKeysChange}
+          options={categoryOptions}
+        />
+        <div className="chronicle-canvas-wrap">
+          <canvas
+            aria-label={t("chronicle.timelineAria")}
+            className="chronicle-canvas"
+            onPointerCancel={handlePointerCancel}
+            onPointerDown={handlePointerDown}
+            onPointerLeave={() => {
+              hoveredItemIdRef.current = null;
+              hoveredPointRef.current = null;
+              if (!pointerRef.current) canvasRef.current?.style.setProperty("cursor", "grab");
+              requestCanvasFrame(animationFrameRef, draw);
+            }}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onWheel={handleWheel}
+            ref={canvasRef}
+          />
+          {visibleItems.length === 0 ? (
+            <div className="chronicle-filter-empty">
+              <p>{t("chronicle.allCategoriesHidden")}</p>
+              <button onClick={() => onHiddenCategoryKeysChange([])} type="button">
+                {t("chronicle.showAllCategories")}
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
     </>
   );
 }

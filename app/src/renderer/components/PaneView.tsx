@@ -28,7 +28,7 @@ export interface PaneViewProps {
   workspacePath?: string | null;
   workspaceDataRevision?: number;
   viewRef: MutableRefObject<EditorView | null>;
-  renderChartTab: (chartId: string) => ReactNode;
+  renderChartTab: (chartId: string, pane?: PaneId) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
   onCloseAllTabs: (pane: PaneId) => void;
@@ -185,6 +185,7 @@ export function PaneView({
         editorActionPulse={editorActionPulse}
         editorSettings={editorSettings}
         frontmatterCandidates={frontmatterCandidates}
+        pane={pane}
         renderChartTab={renderChartTab}
         renderPanelTab={renderPanelTab}
         sourceMode={sourceMode}

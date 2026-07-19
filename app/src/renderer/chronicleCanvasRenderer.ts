@@ -16,6 +16,10 @@ import {
   type ChronicleCanvasScene,
   type ChronicleCanvasYear
 } from "./chronicleCanvasModel";
+import {
+  chronicleCategoryPaletteIndex,
+  isChronicleEntryVisible
+} from "./chronicleCategoryModel";
 
 const nodeRadius = 6;
 const itemLabelFontFamily = "-apple-system, BlinkMacSystemFont, sans-serif";
@@ -42,7 +46,8 @@ export function drawChronicleCanvas(
   hoveredPoint: ChronicleCanvasPoint | null,
   viewportWidth: number,
   viewportHeight: number,
-  theme: ChronicleCanvasTheme
+  theme: ChronicleCanvasTheme,
+  hiddenCategoryKeys: ReadonlySet<string> = new Set()
 ): ChronicleCanvasDrawResult {
   context.save();
   context.clearRect(0, 0, viewportWidth, viewportHeight);
@@ -54,9 +59,13 @@ export function drawChronicleCanvas(
   drawYearGuides(context, visibleYears, camera, viewportWidth, viewportHeight, theme);
   const labelHits: ChronicleCanvasLabelHit[] = [];
   const itemPalette = theme.itemPalette?.length ? theme.itemPalette : [theme.mutedText];
-  for (const [index, item] of scene.items.entries()) {
+  for (const item of scene.items) {
+    if (!isChronicleEntryVisible(item.entry, hiddenCategoryKeys)) continue;
     if (!isItemVisible(item, camera, viewportWidth, viewportHeight)) continue;
-    const itemColor = itemPalette[index % itemPalette.length] ?? theme.mutedText;
+    const paletteIndex = chronicleCategoryPaletteIndex(item.entry.category, itemPalette.length);
+    const itemColor = paletteIndex === null
+      ? theme.mutedText
+      : itemPalette[paletteIndex] ?? theme.mutedText;
     const hit = drawItem(
       context,
       item,

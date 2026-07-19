@@ -13,7 +13,7 @@ import {
 } from "../editorInputBuffer";
 import { isLargeMarkdownContent } from "../largeMarkdown";
 import { textCount } from "../paneViewModel";
-import { useEditorStore, type PanelTabKind, type Tab } from "../store/editorStore";
+import { useEditorStore, type PaneId, type PanelTabKind, type Tab } from "../store/editorStore";
 import { useT } from "../i18n";
 import { SourceModeButton } from "./AppMainActions";
 import { Editor } from "./Editor";
@@ -24,7 +24,8 @@ interface PaneContentSurfaceProps {
   editorActionPulse: number;
   editorSettings: EditorSettings;
   frontmatterCandidates: Record<string, string[]>;
-  renderChartTab: (chartId: string) => ReactNode;
+  pane?: PaneId;
+  renderChartTab: (chartId: string, pane?: PaneId) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   sourceMode: boolean;
   typewriterMode: boolean;
@@ -50,6 +51,7 @@ export function PaneContentSurface({
   editorActionPulse,
   editorSettings,
   frontmatterCandidates,
+  pane = "left",
   renderChartTab,
   renderPanelTab,
   sourceMode,
@@ -222,7 +224,7 @@ export function PaneContentSurface({
     return (
       <div className="editor-surface panel-tab-surface">
         <div className="panel-tab-body">
-          {renderChartTab(activeTab.chartId)}
+          {renderChartTab(activeTab.chartId, pane)}
         </div>
       </div>
     );

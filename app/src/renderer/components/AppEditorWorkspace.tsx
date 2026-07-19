@@ -68,7 +68,7 @@ interface AppEditorWorkspaceProps {
   outgoingLinks: ResolvedWikiLink[];
   outgoingLinksLimited: boolean;
   unlinkedReferences: UnlinkedReferencesResult;
-  renderChartTab: (chartId: string) => ReactNode;
+  renderChartTab: (chartId: string, pane?: PaneId) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
   rightEditorViewRef: MutableRefObject<EditorView | null>;

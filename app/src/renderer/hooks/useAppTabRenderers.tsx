@@ -11,7 +11,7 @@ import type {
 } from "../../shared/ipc";
 import { useT } from "../i18n";
 import { preloadWorkspaceGraph } from "../graph/workspaceGraphLoader";
-import type { PanelTabKind } from "../store/editorStore";
+import { useEditorStore, type PaneId, type PanelTabKind } from "../store/editorStore";
 
 const LazyChartView = lazy(async () => ({
   default: (await import("../components/ChartPanel")).ChartView
@@ -60,6 +60,18 @@ interface UseAppTabRenderersInput {
   workspaceState: WorkspaceState | null;
 }
 
+interface ChroniclePaneViewState {
+  hiddenCategoryKeys: string[];
+  railCollapsed: boolean;
+  workspaceId: string;
+}
+
+const defaultChroniclePaneViewState = (workspaceId: string): ChroniclePaneViewState => ({
+  hiddenCategoryKeys: [],
+  railCollapsed: false,
+  workspaceId
+});
+
 export function useAppTabRenderers({
   appInfo,
   categoryChoices,
@@ -75,10 +87,16 @@ export function useAppTabRenderers({
   workspaceDataRevision,
   workspaceState
 }: UseAppTabRenderersInput): {
-  renderChartTab: (chartId: string) => ReactNode;
+  renderChartTab: (chartId: string, pane?: PaneId) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
 } {
   const workspaceCacheKey = workspaceState?.activeWorkspace?.id ?? "none";
+  const leftHasChronicle = useEditorStore((state) => state.leftPane.tabIds.includes("chart-chronicle"));
+  const rightHasChronicle = useEditorStore((state) => state.rightPane.tabIds.includes("chart-chronicle"));
+  const [chroniclePaneViewStates, setChroniclePaneViewStates] = useState<Record<PaneId, ChroniclePaneViewState>>({
+    left: defaultChroniclePaneViewState(workspaceCacheKey),
+    right: defaultChroniclePaneViewState(workspaceCacheKey)
+  });
   const [cardSelection, setCardSelection] = useState<{ path: string; workspaceId: string } | null>(null);
   const currentFileRef = useRef<{ path: string; workspaceId: string } | null>(null);
   if (currentFilePath) {
@@ -110,7 +128,27 @@ export function useAppTabRenderers({
     return () => window.clearTimeout(timer);
   }, [featureToggles.sphere, workspaceCacheKey, workspaceDataRevision]);
 
-  const renderChartTab = useCallback((chartId: string): ReactNode => {
+  useEffect(() => {
+    setChroniclePaneViewStates((current) => {
+      const next = { ...current };
+      let changed = false;
+      for (const [pane, hasChronicle] of [["left", leftHasChronicle], ["right", rightHasChronicle]] as const) {
+        if (hasChronicle && current[pane].workspaceId === workspaceCacheKey) continue;
+        const reset = defaultChroniclePaneViewState(workspaceCacheKey);
+        if (
+          current[pane].workspaceId !== reset.workspaceId ||
+          current[pane].hiddenCategoryKeys.length > 0 ||
+          current[pane].railCollapsed
+        ) {
+          next[pane] = reset;
+          changed = true;
+        }
+      }
+      return changed ? next : current;
+    });
+  }, [leftHasChronicle, rightHasChronicle, workspaceCacheKey]);
+
+  const renderChartTab = useCallback((chartId: string, pane: PaneId = "left"): ReactNode => {
     if (chartId === "cards") {
       return (
         <Suspense fallback={<LazyTabFallback />}>
@@ -169,13 +207,42 @@ export function useAppTabRenderers({
     return (
       <Suspense fallback={<LazyTabFallback />}>
         <LazyChartView
+          categoryChoices={categoryChoices}
           chart={chartId === "charts" ? null : charts.find((chart) => chart.id === chartId) ?? null}
           charts={chartId === "charts" ? charts : undefined}
+          hiddenCategoryKeys={chroniclePaneViewStates[pane].workspaceId === workspaceCacheKey
+            ? chroniclePaneViewStates[pane].hiddenCategoryKeys
+            : []}
+          onHiddenCategoryKeysChange={(hiddenCategoryKeys: string[]) => {
+            setChroniclePaneViewStates((current) => ({
+              ...current,
+              [pane]: {
+                ...(current[pane].workspaceId === workspaceCacheKey
+                  ? current[pane]
+                  : defaultChroniclePaneViewState(workspaceCacheKey)),
+                hiddenCategoryKeys
+              }
+            }));
+          }}
           onOpenFile={handleOpenFile}
+          onRailCollapsedChange={(railCollapsed: boolean) => {
+            setChroniclePaneViewStates((current) => ({
+              ...current,
+              [pane]: {
+                ...(current[pane].workspaceId === workspaceCacheKey
+                  ? current[pane]
+                  : defaultChroniclePaneViewState(workspaceCacheKey)),
+                railCollapsed
+              }
+            }));
+          }}
+          railCollapsed={chroniclePaneViewStates[pane].workspaceId === workspaceCacheKey
+            ? chroniclePaneViewStates[pane].railCollapsed
+            : false}
         />
       </Suspense>
     );
-  }, [categoryChoices, charts, currentCardPath, handleOpenCardFile, handleOpenFile, handleOpenTagSearch, handleSaveCategoryChoices, handleSelectCard, selectedCardPath, workspaceCacheKey, workspaceDataRevision]);
+  }, [categoryChoices, charts, chroniclePaneViewStates, currentCardPath, handleOpenCardFile, handleOpenFile, handleOpenTagSearch, handleSaveCategoryChoices, handleSelectCard, selectedCardPath, workspaceCacheKey, workspaceDataRevision]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "frontmatter") {
