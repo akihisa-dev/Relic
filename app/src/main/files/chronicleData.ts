@@ -1,8 +1,8 @@
 import path from "node:path";
 
-import { monthAxisToYear, pointToMonthAxis } from "../../shared/chartTime";
+import { pointToMonthAxis } from "../../shared/chartTime";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
-import type { ChartEntry, UpdateChartEntryInput } from "../../shared/ipc";
+import type { ChartEntry } from "../../shared/ipc";
 import { parseFrontmatter } from "./frontmatter";
 import {
   extractChronicleRangesFromData,
@@ -64,19 +64,6 @@ export function sortChronicleEntries(entries: ChartEntry[]): ChartEntry[] {
       a.endValue - b.endValue ||
       a.fileName.localeCompare(b.fileName, "ja")
   );
-}
-
-export function updateChronicleDataForChartEdit(
-  data: Record<string, unknown>,
-  input: UpdateChartEntryInput
-): Record<string, unknown> {
-  const start = monthAxisToYear(Math.min(input.startValue, input.endValue));
-  const end = monthAxisToYear(Math.max(input.startValue, input.endValue));
-
-  return {
-    ...data,
-    chronicle: start === end ? start : { end, start }
-  };
 }
 
 export function extractChronicleRange(
