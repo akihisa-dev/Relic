@@ -1,4 +1,4 @@
-import type { Translator } from "./i18nModel";
+import type { TranslationKey, Translator } from "./i18nModel";
 import type { PaneId, PanelTabKind, Tab } from "./store/editorStore";
 
 export const PANE_TAB_DRAG_MIME = "application/relic-tab";
@@ -13,6 +13,14 @@ export interface TextCount {
   words: number;
 }
 
+const CHART_TAB_LABEL_KEYS: Readonly<Record<string, TranslationKey>> = {
+  cards: "nav.cards",
+  chronicle: "nav.chronicle",
+  graph: "nav.graph",
+  sphere: "nav.sphere",
+  table: "nav.table"
+};
+
 export function panelTabLabel(panel: PanelTabKind, t: Translator): string {
   if (panel === "frontmatter") return t("nav.frontmatter");
   return t("nav.settings");
@@ -20,7 +28,12 @@ export function panelTabLabel(panel: PanelTabKind, t: Translator): string {
 
 export function paneTabLabel(tab: Tab | null | undefined, t: Translator): string {
   if (!tab) return "";
-  return tab.kind === "panel" ? panelTabLabel(tab.panel, t) : tab.name;
+  if (tab.kind === "panel") return panelTabLabel(tab.panel, t);
+  if (tab.kind === "chart") {
+    const labelKey = CHART_TAB_LABEL_KEYS[tab.chartId];
+    return labelKey ? t(labelKey) : tab.name;
+  }
+  return tab.name;
 }
 
 export function textCount(content: string): TextCount {

@@ -18,17 +18,47 @@ import type { Tab } from "./store/editorStore";
 const t = createTranslator("en");
 
 describe("paneViewModel", () => {
-  it("labels panel tabs through translations and other tabs by name", () => {
+  it("labels panel tabs through translations and file tabs by name", () => {
     const panelTab: Tab = { id: "panel-frontmatter", kind: "panel", name: "ignored", panel: "frontmatter" };
     const fileTab: Tab = { content: "", id: "tab-file", kind: "file", name: "Note", path: "Note.md", savedContent: "" };
-    const chartTab: Tab = { chartId: "chronicle", id: "chart-chronicle", kind: "chart", name: "Chronicle" };
 
     expect(panelTabLabel("frontmatter", t)).toBe("Frontmatter");
     expect(panelTabLabel("settings", t)).toBe("Settings");
     expect(paneTabLabel(panelTab, t)).toBe("Frontmatter");
     expect(paneTabLabel(fileTab, t)).toBe("Note");
-    expect(paneTabLabel(chartTab, t)).toBe("Chronicle");
     expect(paneTabLabel(null, t)).toBe("");
+  });
+
+  it("labels built-in chart tabs using the current display language", () => {
+    const ja = createTranslator("ja");
+    const chartTabs: Tab[] = [
+      { chartId: "cards", id: "chart-cards", kind: "chart", name: "stale" },
+      { chartId: "table", id: "chart-table", kind: "chart", name: "stale" },
+      { chartId: "graph", id: "chart-graph", kind: "chart", name: "stale" },
+      { chartId: "sphere", id: "chart-sphere", kind: "chart", name: "stale" },
+      { chartId: "chronicle", id: "chart-chronicle", kind: "chart", name: "stale" }
+    ];
+
+    expect(chartTabs.map((tab) => paneTabLabel(tab, ja))).toEqual([
+      "カード",
+      "テーブル",
+      "グラフ",
+      "スフィア",
+      "クロニクル"
+    ]);
+    expect(chartTabs.map((tab) => paneTabLabel(tab, t))).toEqual([
+      "Cards",
+      "Table",
+      "Graph",
+      "Sphere",
+      "Chronicle"
+    ]);
+  });
+
+  it("preserves the stored name for unknown chart tabs", () => {
+    const chartTab: Tab = { chartId: "custom", id: "chart-custom", kind: "chart", name: "Custom chart" };
+
+    expect(paneTabLabel(chartTab, createTranslator("ja"))).toBe("Custom chart");
   });
 
   it("counts characters and whitespace-delimited words", () => {
