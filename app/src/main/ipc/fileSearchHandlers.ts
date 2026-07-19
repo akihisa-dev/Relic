@@ -1,5 +1,3 @@
-import { ipcMain } from "electron";
-
 import {
   applyUnlinkedReferenceChannel,
   type ApplyUnlinkedReferenceInput,
@@ -22,6 +20,7 @@ import { readBacklinks } from "../files/backlinks";
 import { readMarkdownFile } from "../files/markdownFiles";
 import { applySearchAndReplace, replaceInFile, searchAndReplace } from "../files/replace";
 import { searchWorkspace, workspaceSearchMaxFileBytes } from "../files/search";
+import { handleLocalizedIpc } from "./localizedIpcHandler";
 import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordinator";
 import { applyUnlinkedReference, readUnlinkedReferences } from "../files/unlinkedReferences";
 import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
@@ -36,7 +35,7 @@ import {
 } from "./fileHandlerValidators";
 
 export function registerFileSearchHandlers(): void {
-  ipcMain.handle(searchWorkspaceChannel, async (_event, ...args: unknown[]) => {
+  handleLocalizedIpc(searchWorkspaceChannel, async (_event, ...args: unknown[]) => {
     try {
       const searchInput = normalizeSearchWorkspaceInput(args.length === 1 ? args[0] : args);
 
@@ -92,7 +91,7 @@ export function registerFileSearchHandlers(): void {
     }
   });
 
-  ipcMain.handle(readMarkdownFileChannel, async (_event, input: ReadMarkdownFileInput) => {
+  handleLocalizedIpc(readMarkdownFileChannel, async (_event, input: ReadMarkdownFileInput) => {
     try {
       if (!isPathInput(input)) {
         return fail("FILE_READ_INVALID_INPUT", "ファイルパスを指定してください。");
@@ -111,7 +110,7 @@ export function registerFileSearchHandlers(): void {
     }
   });
 
-  ipcMain.handle(getBacklinksChannel, async (_event, input: GetBacklinksInput) => {
+  handleLocalizedIpc(getBacklinksChannel, async (_event, input: GetBacklinksInput) => {
     try {
       if (!isPathInput(input)) {
         return fail("BACKLINKS_INVALID_INPUT", "バックリンクを確認するファイルを指定してください。");
@@ -138,7 +137,7 @@ export function registerFileSearchHandlers(): void {
     }
   });
 
-  ipcMain.handle(getUnlinkedReferencesChannel, async (_event, input: GetUnlinkedReferencesInput) => {
+  handleLocalizedIpc(getUnlinkedReferencesChannel, async (_event, input: GetUnlinkedReferencesInput) => {
     try {
       if (!isPathInput(input)) {
         return fail("UNLINKED_REFERENCES_INVALID_INPUT", "未リンク参照を確認するファイルを指定してください。");
@@ -165,7 +164,7 @@ export function registerFileSearchHandlers(): void {
     }
   });
 
-  ipcMain.handle(applyUnlinkedReferenceChannel, async (_event, input: ApplyUnlinkedReferenceInput) => {
+  handleLocalizedIpc(applyUnlinkedReferenceChannel, async (_event, input: ApplyUnlinkedReferenceInput) => {
     try {
       if (!isApplyUnlinkedReferenceInput(input)) {
         return fail("UNLINKED_REFERENCE_INVALID_INPUT", "リンク化する未リンク参照を指定してください。");
@@ -191,7 +190,7 @@ export function registerFileSearchHandlers(): void {
     }
   });
 
-  ipcMain.handle(replaceInFileChannel, async (_event, input: ReplaceInFileInput) => {
+  handleLocalizedIpc(replaceInFileChannel, async (_event, input: ReplaceInFileInput) => {
     try {
       if (!isReplaceInFileInput(input)) {
         return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
@@ -222,7 +221,7 @@ export function registerFileSearchHandlers(): void {
     }
   });
 
-  ipcMain.handle(searchAndReplaceChannel, async (_event, input: SearchAndReplaceInput) => {
+  handleLocalizedIpc(searchAndReplaceChannel, async (_event, input: SearchAndReplaceInput) => {
     try {
       if (!isSearchAndReplaceInput(input)) {
         return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
@@ -246,7 +245,7 @@ export function registerFileSearchHandlers(): void {
     }
   });
 
-  ipcMain.handle(applySearchAndReplaceChannel, async (_event, input: SearchAndReplaceInput) => {
+  handleLocalizedIpc(applySearchAndReplaceChannel, async (_event, input: SearchAndReplaceInput) => {
     try {
       if (!isSearchAndReplaceInput(input)) {
         return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");

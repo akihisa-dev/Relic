@@ -1,4 +1,4 @@
-import { app, ipcMain } from "electron";
+import { app } from "electron";
 
 import {
   defaultFeatureToggles,
@@ -15,6 +15,7 @@ import {
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readAppSettings, updateAppSettings } from "../settings/appSettings";
 import { ipcErrorDetails } from "./activeWorkspace";
+import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
   isFeatureTogglesInput,
   isFrontmatterTemplatesInput,
@@ -22,7 +23,7 @@ import {
 } from "./workspaceHandlerValidators";
 
 export function registerWorkspacePreferenceHandlers(): void {
-  ipcMain.handle(getFeatureTogglesChannel, async (): Promise<RelicResult<FeatureToggles>> => {
+  handleLocalizedIpc(getFeatureTogglesChannel, async (): Promise<RelicResult<FeatureToggles>> => {
     try {
       const settings = await readAppSettings(app.getPath("userData"));
       return ok(settings.featureToggles ?? defaultFeatureToggles);
@@ -31,7 +32,7 @@ export function registerWorkspacePreferenceHandlers(): void {
     }
   });
 
-  ipcMain.handle(saveFeatureTogglesChannel, async (_event, input: unknown): Promise<RelicResult<void>> => {
+  handleLocalizedIpc(saveFeatureTogglesChannel, async (_event, input: unknown): Promise<RelicResult<void>> => {
     try {
       if (!isFeatureTogglesInput(input)) {
         return fail("FEATURE_TOGGLES_INVALID_INPUT", "機能トグルの値が正しくありません。");
@@ -47,7 +48,7 @@ export function registerWorkspacePreferenceHandlers(): void {
     }
   });
 
-  ipcMain.handle(getUserDefinedFieldsChannel, async (): Promise<RelicResult<UserDefinedField[]>> => {
+  handleLocalizedIpc(getUserDefinedFieldsChannel, async (): Promise<RelicResult<UserDefinedField[]>> => {
     try {
       const settings = await readAppSettings(app.getPath("userData"));
       return ok(settings.userDefinedFields);
@@ -56,7 +57,7 @@ export function registerWorkspacePreferenceHandlers(): void {
     }
   });
 
-  ipcMain.handle(saveUserDefinedFieldsChannel, async (_event, input: UserDefinedField[]): Promise<RelicResult<void>> => {
+  handleLocalizedIpc(saveUserDefinedFieldsChannel, async (_event, input: UserDefinedField[]): Promise<RelicResult<void>> => {
     try {
       if (!isUserDefinedFieldsInput(input)) {
         return fail("USER_DEFINED_FIELDS_INVALID_INPUT", "カスタムフィールドの値が正しくありません。");
@@ -72,7 +73,7 @@ export function registerWorkspacePreferenceHandlers(): void {
     }
   });
 
-  ipcMain.handle(getFrontmatterTemplatesChannel, async (): Promise<RelicResult<FrontmatterTemplate[]>> => {
+  handleLocalizedIpc(getFrontmatterTemplatesChannel, async (): Promise<RelicResult<FrontmatterTemplate[]>> => {
     try {
       const settings = await readAppSettings(app.getPath("userData"));
       return ok(settings.frontmatterTemplates);
@@ -81,7 +82,7 @@ export function registerWorkspacePreferenceHandlers(): void {
     }
   });
 
-  ipcMain.handle(saveFrontmatterTemplatesChannel, async (_event, input: FrontmatterTemplate[]): Promise<RelicResult<void>> => {
+  handleLocalizedIpc(saveFrontmatterTemplatesChannel, async (_event, input: FrontmatterTemplate[]): Promise<RelicResult<void>> => {
     try {
       if (!isFrontmatterTemplatesInput(input)) {
         return fail("FRONTMATTER_TEMPLATES_INVALID_INPUT", "フロントマターテンプレートの値が正しくありません。");

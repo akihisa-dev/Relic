@@ -1,4 +1,4 @@
-import { BrowserWindow, clipboard, dialog, ipcMain } from "electron";
+import { BrowserWindow, clipboard, dialog } from "electron";
 
 import {
   copyDiagramSvgChannel,
@@ -18,13 +18,14 @@ import { redactSensitiveText } from "../../shared/securityRedaction";
 import { atomicWriteFile, atomicWriteTextFile } from "../files/atomicWrite";
 import { getMainTranslator } from "../i18n";
 import { outputSessionPartition } from "../windowOptions";
+import { handleLocalizedIpc } from "./localizedIpcHandler";
 import { hasRenderableSvg, sanitizeOutputSvg } from "./sanitizeOutputSvg";
 
 const defaultPdfName = "relic-preview";
 const defaultSvgName = "relic-diagram";
 
 export function registerOutputHandlers(): void {
-  ipcMain.handle(
+  handleLocalizedIpc(
     savePreviewAsPdfChannel,
     async (event, input: unknown): Promise<RelicResult<OutputSavedResult>> => {
       const t = await getMainTranslator();
@@ -59,7 +60,7 @@ export function registerOutputHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     saveDiagramSvgChannel,
     async (event, input: unknown): Promise<RelicResult<OutputSavedResult>> => {
       const t = await getMainTranslator();
@@ -99,7 +100,7 @@ export function registerOutputHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     copyDiagramSvgChannel,
     async (_event, input: unknown): Promise<RelicResult<OutputCopyResult>> => {
       const t = await getMainTranslator();

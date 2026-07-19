@@ -1,5 +1,3 @@
-import { ipcMain } from "electron";
-
 import type { ChartSettings } from "../../shared/ipc";
 import {
   getFrontmatterValueCandidatesChannel,
@@ -31,6 +29,7 @@ import {
   updateWorkspaceSettings
 } from "../settings/workspaceSettings";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
+import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
   isChartsInput,
   isFrontmatterCategoryChoicesInput,
@@ -39,7 +38,7 @@ import {
 } from "./workspaceHandlerValidators";
 
 export function registerWorkspaceDataHandlers(): void {
-  ipcMain.handle(getWorkspaceTagsChannel, async () => {
+  handleLocalizedIpc(getWorkspaceTagsChannel, async () => {
     try {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
@@ -59,7 +58,7 @@ export function registerWorkspaceDataHandlers(): void {
     }
   });
 
-  ipcMain.handle(getFrontmatterValueCandidatesChannel, async () => {
+  handleLocalizedIpc(getFrontmatterValueCandidatesChannel, async () => {
     try {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
@@ -79,7 +78,7 @@ export function registerWorkspaceDataHandlers(): void {
     }
   });
 
-  ipcMain.handle(getWorkspaceAliasesChannel, async () => {
+  handleLocalizedIpc(getWorkspaceAliasesChannel, async () => {
     try {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
@@ -99,7 +98,7 @@ export function registerWorkspaceDataHandlers(): void {
     }
   });
 
-  ipcMain.handle(getWorkspaceGraphChannel, async () => {
+  handleLocalizedIpc(getWorkspaceGraphChannel, async () => {
     try {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
@@ -119,7 +118,7 @@ export function registerWorkspaceDataHandlers(): void {
     }
   });
 
-  ipcMain.handle(getWorkspaceChartsChannel, async () => {
+  handleLocalizedIpc(getWorkspaceChartsChannel, async () => {
     try {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
@@ -143,7 +142,7 @@ export function registerWorkspaceDataHandlers(): void {
     }
   });
 
-  ipcMain.handle(getWorkspaceCardsChannel, async () => {
+  handleLocalizedIpc(getWorkspaceCardsChannel, async () => {
     try {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
@@ -163,7 +162,7 @@ export function registerWorkspaceDataHandlers(): void {
     }
   });
 
-  ipcMain.handle(getWorkspaceTableChannel, async () => {
+  handleLocalizedIpc(getWorkspaceTableChannel, async () => {
     try {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
@@ -199,7 +198,7 @@ export function registerWorkspaceDataHandlers(): void {
     }
   });
 
-  ipcMain.handle(saveWorkspaceChartsChannel, async (_event, input: unknown) => {
+  handleLocalizedIpc(saveWorkspaceChartsChannel, async (_event, input: unknown) => {
     try {
       if (!isChartsInput(input)) {
         return fail("INVALID_CHARTS", "チャート設定が正しくありません。");
@@ -233,7 +232,7 @@ export function registerWorkspaceDataHandlers(): void {
     }
   });
 
-  ipcMain.handle(getWorkspaceFrontmatterCategoryChoicesChannel, async () => {
+  handleLocalizedIpc(getWorkspaceFrontmatterCategoryChoicesChannel, async () => {
     try {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
@@ -252,7 +251,7 @@ export function registerWorkspaceDataHandlers(): void {
     }
   });
 
-  ipcMain.handle(saveWorkspaceFrontmatterCategoryChoicesChannel, async (_event, input: unknown) => {
+  handleLocalizedIpc(saveWorkspaceFrontmatterCategoryChoicesChannel, async (_event, input: unknown) => {
     try {
       if (!isFrontmatterCategoryChoicesInput(input)) {
         return fail("INVALID_FRONTMATTER_CATEGORY_CHOICES", "category候補が正しくありません。");
@@ -281,7 +280,7 @@ export function registerWorkspaceDataHandlers(): void {
     }
   });
 
-  ipcMain.handle(saveWorkspaceTablePropertiesChannel, async (_event, input: unknown) => {
+  handleLocalizedIpc(saveWorkspaceTablePropertiesChannel, async (_event, input: unknown) => {
     try {
       if (!isTablePropertiesInput(input)) {
         return fail("INVALID_TABLE_PROPERTIES", "テーブルの列設定が正しくありません。");
@@ -304,7 +303,7 @@ export function registerWorkspaceDataHandlers(): void {
     }
   });
 
-  ipcMain.handle(updateChartEntryChannel, async (_event, input: unknown) => {
+  handleLocalizedIpc(updateChartEntryChannel, async (_event, input: unknown) => {
     try {
       if (!isUpdateChartEntryInput(input)) {
         return fail("CHART_ENTRY_UPDATE_INVALID_INPUT", "チャートの変更内容が正しくありません。");

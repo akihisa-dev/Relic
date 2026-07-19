@@ -64,6 +64,7 @@ import {
 import { workspaceDerivedDataSession } from "../files/workspaceDerivedDataSession";
 import { writeAppSettings } from "../settings/appSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
+import { setMainTranslator } from "../i18n";
 import { registerFolderItemHandlers } from "./folderItemHandlers";
 import { registerMarkdownFileHandlers } from "./markdownFileHandlers";
 
@@ -85,6 +86,7 @@ describe("markdownFileHandlers", () => {
   });
 
   beforeEach(() => {
+    setMainTranslator("ja");
     const icon = { isEmpty: electronMock.isEmpty };
     electronMock.createFromDataURL.mockReturnValue(icon);
     electronMock.createFromPath.mockReturnValue(icon);

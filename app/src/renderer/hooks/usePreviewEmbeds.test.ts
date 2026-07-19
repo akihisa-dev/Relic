@@ -1,7 +1,9 @@
 import { renderHook, waitFor } from "@testing-library/react";
+import { createElement, type PropsWithChildren } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { makeRelicApi } from "../../test/rendererTestUtils";
+import { I18nProvider } from "../i18n";
 import { usePreviewEmbeds } from "./usePreviewEmbeds";
 
 type ReadMarkdownResult =
@@ -72,6 +74,26 @@ describe("usePreviewEmbeds", () => {
 
     await waitFor(() => {
       expect(readMarkdownFile).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  it("埋め込み読込の例外を英語UI向けの文言へ置き換える", async () => {
+    window.relic = makeRelicApi({
+      readMarkdownFile: vi.fn().mockRejectedValue(new Error("technical details"))
+    });
+    const wrapper = ({ children }: PropsWithChildren) =>
+      createElement(I18nProvider, { children, language: "en" });
+
+    const { result } = renderHook(
+      () => usePreviewEmbeds("![[A]]", "/tmp/Notes"),
+      { wrapper }
+    );
+
+    await waitFor(() => {
+      expect(result.current.get("A.md")).toEqual({
+        message: "Could not read the embedded file.",
+        status: "error"
+      });
     });
   });
 });

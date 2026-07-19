@@ -33,6 +33,7 @@ import { workspaceDataProvider } from "../files/workspaceDataProvider";
 import { writeAppSettings } from "../settings/appSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
 import { registerFileSearchHandlers } from "./fileSearchHandlers";
+import { setMainTranslator } from "../i18n";
 
 type RegisteredHandler = (event: unknown, ...args: unknown[]) => Promise<unknown>;
 
@@ -41,6 +42,7 @@ describe("fileSearchHandlers", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    setMainTranslator("ja");
     registerFileSearchHandlers();
   });
 

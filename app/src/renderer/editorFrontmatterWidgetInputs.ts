@@ -40,7 +40,7 @@ export function createFrontmatterValueInput({
   value: unknown;
   view: EditorView;
 }): HTMLElement {
-  if (isChronicleField(key)) return chronicleInput(view, value, updateField);
+  if (isChronicleField(key)) return chronicleInput(view, value, updateField, t);
   if (field?.type === "boolean") return booleanInput(view, key, firstArrayValue(value), updateField, true);
   if (isSingleValueField(field)) {
     return scalarInput(view, key, firstArrayValue(value), field, candidates, updateField, dateFormat, true);
@@ -195,13 +195,14 @@ function booleanInput(
 function chronicleInput(
   view: EditorView,
   value: unknown,
-  updateField: FrontmatterFieldUpdater
+  updateField: FrontmatterFieldUpdater,
+  t: Translator
 ): HTMLElement {
   const wrap = document.createElement("span");
   wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-chronicle";
   const range = chronicleYearRangeInput(value);
-  const startInput = chronicleYearInput("chronicle-start", range.start, "開始年");
-  const endInput = chronicleYearInput("chronicle-end", range.end, "終了年（任意）");
+  const startInput = chronicleYearInput("chronicle-start", range.start, t("frontmatter.chronicleStartInput"));
+  const endInput = chronicleYearInput("chronicle-end", range.end, t("frontmatter.chronicleEndInput"));
   const commit = (): void => {
     const startRaw = startInput.value.trim();
     const endRaw = endInput.value.trim();

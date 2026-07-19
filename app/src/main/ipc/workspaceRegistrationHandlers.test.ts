@@ -43,9 +43,14 @@ vi.mock("node:fs/promises", async (importOriginal) => ({
   rm: dependencies.rm,
 }));
 
-vi.mock("../i18n", () => ({
-  getMainTranslator: dependencies.getMainTranslator,
-}));
+vi.mock("../i18n", async () => {
+  const { createTranslator } = await vi.importActual<typeof import("../../shared/i18n")>("../../shared/i18n");
+  return {
+    getCachedMainLanguage: () => "ja",
+    getCachedMainTranslator: () => createTranslator("ja"),
+    getMainTranslator: dependencies.getMainTranslator,
+  };
+});
 
 vi.mock("../files/workspaceDataInvalidation", () => ({
   invalidateWorkspaceData: dependencies.invalidateWorkspaceData,

@@ -18,6 +18,7 @@ import {
   defaultFrontmatterTemplates,
   defaultUserDefinedFields
 } from "../../shared/ipc";
+import { createTranslator } from "../../shared/i18n";
 import { resolveWikiLinks } from "../../shared/links";
 import { writeAppSettings } from "../settings/appSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
@@ -695,6 +696,26 @@ describe("toolActions", () => {
       expect.objectContaining({ exists: true, path: "notes/b.md" }),
       expect.objectContaining({ exists: true, path: "notes/untagged.md" })
     ]);
+  });
+
+  it("タグ別索引のRelic生成文言だけを英語へ切り替える", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await mkdir(path.join(workspacePath, "notes"));
+    await writeFile(path.join(workspacePath, "notes", "会議.md"), "# Meeting\n", "utf8");
+
+    const result = await generateTagIndex({
+      includeSubfolders: true,
+      includeUntagged: true,
+      outputFolder: ".",
+      outputName: "Index",
+      sortBy: "name",
+      targetFolder: "notes"
+    }, {}, createTranslator("en"));
+
+    expect(result).toEqual({ ok: true, value: "Index.md" });
+    await expect(readFile(path.join(workspacePath, "Index.md"), "utf8")).resolves.toBe(
+      "# Tag Index\n\n## Untagged\n- [[会議]]\n"
+    );
   });
 
   it("タグ別索引の見出しはタグ名由来の危険なMarkdown構造を避ける", async () => {

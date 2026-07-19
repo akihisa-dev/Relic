@@ -4,6 +4,8 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { createTranslator } from "../../shared/i18n";
+
 import {
   createMarkdownFile,
   createMarkdownFileAtPath,
@@ -15,6 +17,7 @@ import {
   renameMarkdownFile,
   writeMarkdownFileContent
 } from "./markdownFiles";
+import { createCopyNameFormatter } from "./markdownFilePaths";
 import type { RealpathOperations } from "./paths";
 
 function createRealpathRaceOperations(options: {
@@ -651,6 +654,24 @@ describe("duplicateMarkdownFile", () => {
       "# 読書メモ"
     );
     expect((await readdir(workspacePath)).sort()).toEqual(["読書メモ のコピー.md", "読書メモ.md"]);
+  });
+
+  it("英語UI向けの複製名でも元のファイル名を保持する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-duplicate-file-en-"));
+    temporaryPaths.push(workspacePath);
+    const t = createTranslator("en");
+
+    await writeFile(path.join(workspacePath, "読書メモ.md"), "# Note", "utf8");
+
+    const result = await duplicateMarkdownFile(
+      workspacePath,
+      "読書メモ.md",
+      {},
+      createCopyNameFormatter(t)
+    );
+
+    expect(result).toMatchObject({ ok: true, value: { path: "読書メモ copy.md" } });
+    await expect(readFile(path.join(workspacePath, "読書メモ copy.md"), "utf8")).resolves.toBe("# Note");
   });
 
   it("コピー名が既にある場合は連番で複製する", async () => {

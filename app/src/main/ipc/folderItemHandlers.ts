@@ -1,4 +1,4 @@
-import { ipcMain, shell } from "electron";
+import { shell } from "electron";
 
 import {
   createFolderChannel,
@@ -16,6 +16,7 @@ import { createFolder, moveFolder, renameFolder } from "../files/folders";
 import { moveWorkspaceItemToTrash } from "../files/trash";
 import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
+import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
   isCreateFolderInput,
   isMoveFolderInput,
@@ -25,7 +26,7 @@ import {
 import { buildWorkspaceState } from "./workspaceState";
 
 export function registerFolderItemHandlers(): void {
-  ipcMain.handle(
+  handleLocalizedIpc(
     createFolderChannel,
     async (_event, input: CreateFolderInput): Promise<RelicResult<WorkspaceState>> => {
       try {
@@ -54,7 +55,7 @@ export function registerFolderItemHandlers(): void {
     }
   );
 
-  ipcMain.handle(moveFolderChannel, async (_event, input: MoveFolderInput) => {
+  handleLocalizedIpc(moveFolderChannel, async (_event, input: MoveFolderInput) => {
     try {
       if (!isMoveFolderInput(input)) {
         return fail("FOLDER_MOVE_INVALID_INPUT", "移動先フォルダを指定してください。");
@@ -84,7 +85,7 @@ export function registerFolderItemHandlers(): void {
     }
   });
 
-  ipcMain.handle(renameFolderChannel, async (_event, input: RenameFolderInput) => {
+  handleLocalizedIpc(renameFolderChannel, async (_event, input: RenameFolderInput) => {
     try {
       if (!isRenameFolderInput(input)) {
         return fail("FOLDER_RENAME_INVALID_INPUT", "変更後のフォルダ名を入力してください。");
@@ -110,7 +111,7 @@ export function registerFolderItemHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     moveItemToTrashChannel,
     async (_event, input: MoveItemToTrashInput): Promise<RelicResult<WorkspaceState>> => {
       try {

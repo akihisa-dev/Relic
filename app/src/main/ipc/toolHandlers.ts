@@ -1,5 +1,3 @@
-import { ipcMain } from "electron";
-
 import {
   generateTagIndexChannel,
   generateTableOfContentsChannel,
@@ -7,7 +5,9 @@ import {
   mergeFilesChannel
 } from "../../shared/ipc";
 import { fail, type RelicResult } from "../../shared/result";
+import { getCachedMainTranslator } from "../i18n";
 import { ipcErrorDetails } from "./activeWorkspace";
+import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
   generateTagIndex,
   generateTableOfContents,
@@ -22,7 +22,7 @@ import {
 } from "./toolHandlerValidators";
 
 export function registerToolHandlers(): void {
-  ipcMain.handle(
+  handleLocalizedIpc(
     mergeFilesChannel,
     async (_event, input: unknown): Promise<RelicResult<string>> => {
       try {
@@ -37,7 +37,7 @@ export function registerToolHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     generateTitleListChannel,
     async (_event, input: unknown): Promise<RelicResult<string>> => {
       try {
@@ -52,7 +52,7 @@ export function registerToolHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     generateTableOfContentsChannel,
     async (_event, input: unknown): Promise<RelicResult<string>> => {
       try {
@@ -67,7 +67,7 @@ export function registerToolHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     generateTagIndexChannel,
     async (_event, input: unknown): Promise<RelicResult<string>> => {
       try {
@@ -75,7 +75,7 @@ export function registerToolHandlers(): void {
           return fail("TAG_INDEX_INVALID_INPUT", "タグ別索引の生成条件が無効です。");
         }
 
-        return await generateTagIndex(input);
+        return await generateTagIndex(input, {}, getCachedMainTranslator());
       } catch (error) {
         return fail("TAG_INDEX_FAILED", "タグ別索引の生成に失敗しました。", ipcErrorDetails(error));
       }

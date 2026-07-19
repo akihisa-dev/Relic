@@ -38,9 +38,14 @@ vi.mock("electron", () => ({
   }
 }));
 
-vi.mock("../i18n", () => ({
-  getMainTranslator: vi.fn().mockResolvedValue((key: string) => key)
-}));
+vi.mock("../i18n", async () => {
+  const { createTranslator } = await vi.importActual<typeof import("../../shared/i18n")>("../../shared/i18n");
+  return {
+    getCachedMainLanguage: () => "ja",
+    getCachedMainTranslator: () => createTranslator("ja"),
+    getMainTranslator: vi.fn().mockResolvedValue(createTranslator("ja"))
+  };
+});
 
 import { relicIpcContract } from "../../shared/ipc";
 import { registerAppHandlers } from "./appHandlers";

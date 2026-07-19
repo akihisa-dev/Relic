@@ -96,6 +96,7 @@ import {
   updateChartEntryChannel,
 } from "../../shared/ipc";
 import { registerWorkspaceDataHandlers } from "./workspaceDataHandlers";
+import { setMainTranslator } from "../i18n";
 
 type RegisteredHandler = (...args: unknown[]) => Promise<unknown>;
 
@@ -137,6 +138,7 @@ function handlerFor(channel: string): RegisteredHandler {
 
 describe("registerWorkspaceDataHandlers", () => {
   beforeEach(() => {
+    setMainTranslator("ja", "ja");
     vi.clearAllMocks();
     dependencies.normalizeWorkspaceRelativeSettingPath.mockImplementation(
       (path: string): string | null => path,

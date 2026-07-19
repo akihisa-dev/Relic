@@ -55,4 +55,12 @@ describe("i18n dictionaries", () => {
 
     expect(untranslated).toEqual([]);
   });
+
+  it("routes main IPC results through the localization boundary", () => {
+    const directRegistrations = sourceFiles(path.join(process.cwd(), "src", "main"))
+      .filter((filePath) => !filePath.endsWith("localizedIpcHandler.ts"))
+      .filter((filePath) => readFileSync(filePath, "utf8").includes("ipcMain.handle"));
+
+    expect(directRegistrations).toEqual([]);
+  });
 });

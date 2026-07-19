@@ -1,6 +1,6 @@
 import { mkdir } from "node:fs/promises";
 
-import { app, dialog, ipcMain } from "electron";
+import { app, dialog } from "electron";
 
 import {
   createNewWorkspaceChannel,
@@ -18,9 +18,10 @@ import {
 import { syncWorkspaceWatcher } from "../workspace/workspaceWatcher";
 import { ipcErrorDetails } from "./activeWorkspace";
 import { buildWorkspaceState } from "./workspaceState";
+import { handleLocalizedIpc } from "./localizedIpcHandler";
 
 export function registerWorkspaceSelectionHandlers(): void {
-  ipcMain.handle(openWorkspaceChannel, async (): Promise<RelicResult<WorkspaceState>> => {
+  handleLocalizedIpc(openWorkspaceChannel, async (): Promise<RelicResult<WorkspaceState>> => {
     try {
       const t = await getMainTranslator();
       const selection = await dialog.showOpenDialog({
@@ -52,7 +53,7 @@ export function registerWorkspaceSelectionHandlers(): void {
     }
   });
 
-  ipcMain.handle(createNewWorkspaceChannel, async (): Promise<RelicResult<WorkspaceState>> => {
+  handleLocalizedIpc(createNewWorkspaceChannel, async (): Promise<RelicResult<WorkspaceState>> => {
     try {
       const t = await getMainTranslator();
       const selection = await dialog.showSaveDialog({

@@ -1,4 +1,4 @@
-import { app, clipboard, ipcMain } from "electron";
+import { app, clipboard } from "electron";
 
 import {
   copyEditorTextToClipboardChannel,
@@ -25,7 +25,9 @@ import {
 } from "../files/fileRecovery";
 import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
 import { readAppSettings, updateAppSettings } from "../settings/appSettings";
+import { setMainTranslator } from "../i18n";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
+import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
   editorClipboardMaxTextLength,
   isCopyEditorTextToClipboardInput,
@@ -38,7 +40,7 @@ import {
 } from "./fileHandlerValidators";
 
 export function registerEditorHandlers(): void {
-  ipcMain.handle(
+  handleLocalizedIpc(
     writeMarkdownFileChannel,
     async (_event, input: WriteMarkdownFileInput): Promise<RelicResult<void>> => {
       try {
@@ -78,7 +80,7 @@ export function registerEditorHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     listFileRecoverySnapshotsChannel,
     async (_event, input: FileRecoveryInput): Promise<RelicResult<FileRecoveryEntry[]>> => {
       try {
@@ -100,7 +102,7 @@ export function registerEditorHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     readFileRecoverySnapshotChannel,
     async (_event, input: ReadFileRecoverySnapshotInput): Promise<RelicResult<FileRecoverySnapshot>> => {
       try {
@@ -123,11 +125,12 @@ export function registerEditorHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     getEditorSettingsChannel,
     async (): Promise<RelicResult<EditorSettings>> => {
       try {
         const settings = await readAppSettings(app.getPath("userData"));
+        setMainTranslator(settings.editorSettings.language);
 
         return ok(settings.editorSettings);
       } catch (error) {
@@ -140,7 +143,7 @@ export function registerEditorHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     saveEditorSettingsChannel,
     async (_event, input: unknown): Promise<RelicResult<void>> => {
       try {
@@ -152,6 +155,7 @@ export function registerEditorHandlers(): void {
           ...settings,
           editorSettings: input
         }));
+        setMainTranslator(input.language);
 
         return ok(undefined);
       } catch (error) {
@@ -164,7 +168,7 @@ export function registerEditorHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     copyEditorTextToClipboardChannel,
     async (_event, input: CopyEditorTextToClipboardInput): Promise<RelicResult<void>> => {
       try {
@@ -187,7 +191,7 @@ export function registerEditorHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     readEditorTextFromClipboardChannel,
     async (): Promise<RelicResult<string>> => {
       try {

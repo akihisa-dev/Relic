@@ -1,4 +1,4 @@
-import { app, ipcMain } from "electron";
+import { app } from "electron";
 
 import {
   removeWorkspaceChannel,
@@ -18,6 +18,7 @@ import {
 } from "../workspace/workspaceService";
 import { syncWorkspaceWatcher } from "../workspace/workspaceWatcher";
 import { ipcErrorDetails } from "./activeWorkspace";
+import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
   isRenameWorkspaceInput,
   isSwitchWorkspaceInput,
@@ -33,7 +34,7 @@ export function registerWorkspaceRegistrationMutationHandlers(): void {
 }
 
 function registerTogglePinHandler(): void {
-  ipcMain.handle(togglePinChannel, async (_event, rawPath: unknown): Promise<RelicResult<WorkspaceState>> => {
+  handleLocalizedIpc(togglePinChannel, async (_event, rawPath: unknown): Promise<RelicResult<WorkspaceState>> => {
     try {
       const pinnedPath = workspaceSettings.parsePinnedPaths([rawPath]).at(0);
 
@@ -78,7 +79,7 @@ function registerTogglePinHandler(): void {
 }
 
 function registerSwitchWorkspaceHandler(): void {
-  ipcMain.handle(
+  handleLocalizedIpc(
     switchWorkspaceChannel,
     async (_event, input: unknown): Promise<RelicResult<WorkspaceState>> => {
       try {
@@ -119,7 +120,7 @@ function registerSwitchWorkspaceHandler(): void {
 }
 
 function registerRemoveWorkspaceHandler(): void {
-  ipcMain.handle(
+  handleLocalizedIpc(
     removeWorkspaceChannel,
     async (_event, input: unknown): Promise<RelicResult<WorkspaceState>> => {
       try {
@@ -151,7 +152,7 @@ function registerRemoveWorkspaceHandler(): void {
 }
 
 function registerRenameWorkspaceHandler(): void {
-  ipcMain.handle(
+  handleLocalizedIpc(
     renameWorkspaceChannel,
     async (_event, input: unknown): Promise<RelicResult<WorkspaceState>> => {
       try {

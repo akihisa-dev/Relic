@@ -8,6 +8,24 @@ import { Editor } from "./Editor";
 import { expandFrontmatter, settings } from "./editorTestHelpers";
 
 describe("Editor frontmatter fields", () => {
+  it("chronicle入力の案内を英語UIでローカライズする", async () => {
+    const { container } = render(
+      <I18nProvider language="en">
+        <Editor
+          content={"---\nchronicle: 1185\n---\n# Body"}
+          onChange={vi.fn()}
+          settings={{ ...settings, language: "en" }}
+        />
+      </I18nProvider>
+    );
+
+    await expandFrontmatter(container);
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
+    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle input")) as HTMLInputElement[];
+    expect(inputs[0].placeholder).toBe("Start year");
+    expect(inputs[1].placeholder).toBe("End year (optional)");
+  });
+
   it("chronicleプロパティは開始年と終了年を通常YAMLで編集する", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(

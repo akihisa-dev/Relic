@@ -3,11 +3,13 @@ import { useEffect, useMemo, useState } from "react";
 
 import { extractEmbedTargets, maxEmbeddedFileLength, type EmbedState } from "../previewMarkdown";
 import { runWithConcurrency } from "../concurrency";
+import { useT } from "../i18n";
 
 const emptyEmbeds = new Map<string, EmbedState>();
 const maxConcurrentEmbeds = 2;
 
 export function usePreviewEmbeds(content: string, workspacePath: string | null | undefined): Map<string, EmbedState> {
+  const t = useT();
   const [embeds, setEmbeds] = useState<Map<string, EmbedState>>(new Map());
   const targets = useMemo(() => extractEmbedTargets(content), [content]);
 
@@ -36,10 +38,10 @@ export function usePreviewEmbeds(content: string, workspacePath: string | null |
           content: result.value.content,
           name: result.value.name
         }];
-      } catch (error) {
+      } catch {
         return [target, {
           status: "error",
-          message: error instanceof Error ? error.message : "Failed to read embedded file."
+          message: t("preview.embedLoadFailed")
         }];
       }
     });
@@ -53,7 +55,7 @@ export function usePreviewEmbeds(content: string, workspacePath: string | null |
     return () => {
       canceled = true;
     };
-  }, [targets, workspacePath]);
+  }, [t, targets, workspacePath]);
 
   return targets.length > 0 && relicClient.current ? embeds : emptyEmbeds;
 }

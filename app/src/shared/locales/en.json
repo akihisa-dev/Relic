@@ -602,5 +602,21 @@
   "dialogs.openWorkspaceMessage": "Choose the workspace folder to use with Relic.",
   "dialogs.createWorkspaceButton": "Create Here",
   "dialogs.createWorkspaceMessage": "Choose the location and name for the new workspace.",
-  "dialogs.workspaceName": "Workspace name"
+  "dialogs.workspaceName": "Workspace name",
+  "errors.invalidInput": "Check the information you entered.",
+  "errors.notFound": "The requested item could not be found.",
+  "errors.alreadyExists": "An item with the same name already exists.",
+  "errors.outsideWorkspace": "Items outside the workspace cannot be used.",
+  "errors.tooLarge": "The requested operation is too large to complete.",
+  "errors.conflict": "The item changed during the operation. Reload it and try again.",
+  "errors.unsupported": "This item or operation is not supported.",
+  "errors.workspaceRequired": "Open a workspace first.",
+  "errors.operationFailed": "The operation could not be completed.",
+  "files.copyName": "{{name}} copy{{number}}{{extension}}",
+  "frontmatter.chronicleStartInput": "Start year",
+  "frontmatter.chronicleEndInput": "End year (optional)",
+  "preview.embedLoadFailed": "Could not read the embedded file.",
+  "tools.tagIndexDocumentTitle": "Tag Index",
+  "tools.untagged": "Untagged",
+  "common.untitled": "Untitled"
 }

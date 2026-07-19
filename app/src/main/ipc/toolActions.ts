@@ -10,6 +10,7 @@ import {
   type GenerateTitleListInput,
   type MergeFilesInput
 } from "../../shared/ipc";
+import { createTranslator, type Translator } from "../../shared/i18n";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
@@ -154,7 +155,8 @@ export async function generateTableOfContents(
 
 export async function generateTagIndex(
   input: GenerateTagIndexInput,
-  operations: Partial<ToolActionFileOperations> = {}
+  operations: Partial<ToolActionFileOperations> = {},
+  t: Translator = createTranslator("ja")
 ): Promise<RelicResult<string>> {
   const fileOperations = { ...defaultToolActionFileOperations, ...operations };
   const context = await getToolWorkspaceContext();
@@ -188,7 +190,7 @@ export async function generateTagIndex(
     try {
       const content = await fileOperations.readFile(path.join(workspacePath, file.relPath), "utf-8");
       const tags = parseMarkdownTags(content).frontmatterTags;
-      const targetTags = tags.length > 0 ? tags : input.includeUntagged ? ["タグなし"] : [];
+      const targetTags = tags.length > 0 ? tags : input.includeUntagged ? [t("tools.untagged")] : [];
 
       for (const tag of targetTags) {
         grouped.set(tag, [...(grouped.get(tag) ?? []), file]);
@@ -198,7 +200,7 @@ export async function generateTagIndex(
     }
   });
 
-  const lines: string[] = ["# タグ別索引", ""];
+  const lines: string[] = [`# ${t("tools.tagIndexDocumentTitle")}`, ""];
   const sortedTags = Array.from(grouped.keys()).toSorted((a, b) => a.localeCompare(b, "ja"));
   for (const tag of sortedTags) {
     const files = grouped.get(tag) ?? [];
@@ -208,7 +210,7 @@ export async function generateTagIndex(
       files.sort((a, b) => (a.name ?? a.relPath).localeCompare(b.name ?? b.relPath, "ja"));
     }
 
-    lines.push(`## ${formatGeneratedMarkdownHeadingText(tag)}`);
+    lines.push(`## ${formatGeneratedMarkdownHeadingText(tag, t("common.untitled"))}`);
     for (const file of files) {
       const displayName = file.name ?? file.relPath.replace(/\.md$/i, "");
       lines.push(`- ${wikiLinkForPath(file.relPath, displayName)}`);

@@ -602,5 +602,21 @@
   "dialogs.openWorkspaceMessage": "Relicで使うワークスペースフォルダを選んでください。",
   "dialogs.createWorkspaceButton": "ここに作成",
   "dialogs.createWorkspaceMessage": "新しいワークスペースの場所と名前を指定してください。",
-  "dialogs.workspaceName": "ワークスペース名"
+  "dialogs.workspaceName": "ワークスペース名",
+  "errors.invalidInput": "入力内容を確認してください。",
+  "errors.notFound": "対象が見つかりませんでした。",
+  "errors.alreadyExists": "同じ名前の項目がすでにあります。",
+  "errors.outsideWorkspace": "ワークスペース外の項目は使用できません。",
+  "errors.tooLarge": "処理対象が大きすぎるため完了できませんでした。",
+  "errors.conflict": "処理中に対象が変更されました。再読み込みしてからもう一度お試しください。",
+  "errors.unsupported": "この項目または操作には対応していません。",
+  "errors.workspaceRequired": "先にワークスペースを開いてください。",
+  "errors.operationFailed": "処理を完了できませんでした。",
+  "files.copyName": "{{name}} のコピー{{number}}{{extension}}",
+  "frontmatter.chronicleStartInput": "開始年",
+  "frontmatter.chronicleEndInput": "終了年（任意）",
+  "preview.embedLoadFailed": "埋め込みファイルを読み込めませんでした。",
+  "tools.tagIndexDocumentTitle": "タグ別索引",
+  "tools.untagged": "タグなし",
+  "common.untitled": "無題"
 }

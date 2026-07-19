@@ -1,6 +1,6 @@
 import { rm } from "node:fs/promises";
 
-import { app, ipcMain } from "electron";
+import { app } from "electron";
 
 import {
   getWorkspaceStateChannel,
@@ -16,11 +16,12 @@ import { syncWorkspaceWatcher } from "../workspace/workspaceWatcher";
 import { ipcErrorDetails } from "./activeWorkspace";
 import { isRefreshWorkspaceInput } from "./workspaceHandlerValidators";
 import { buildWorkspaceState } from "./workspaceState";
+import { handleLocalizedIpc } from "./localizedIpcHandler";
 
 const workspaceRefreshPromises = new Map<string, Promise<RelicResult<WorkspaceState>>>();
 
 export function registerWorkspaceStateHandlers(): void {
-  ipcMain.handle(getWorkspaceStateChannel, async (): Promise<RelicResult<WorkspaceState>> => {
+  handleLocalizedIpc(getWorkspaceStateChannel, async (): Promise<RelicResult<WorkspaceState>> => {
     try {
       const settings = await readAppSettings(app.getPath("userData"));
       syncWorkspaceWatcher(settings);
@@ -35,7 +36,7 @@ export function registerWorkspaceStateHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     refreshWorkspaceChannel,
     async (_event, input: unknown): Promise<RelicResult<WorkspaceState>> => {
       try {

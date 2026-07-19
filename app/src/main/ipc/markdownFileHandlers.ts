@@ -50,7 +50,10 @@ import {
   verifyExistingWorkspacePath
 } from "../files/paths";
 import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
+import { getCachedMainTranslator } from "../i18n";
+import { createCopyNameFormatter } from "../files/markdownFilePaths";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
+import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
   isCreateMarkdownFileInput,
   isImportImageFileInput,
@@ -76,7 +79,7 @@ function workspaceFileDragIcon(): Electron.NativeImage {
 }
 
 export function registerMarkdownFileHandlers(): void {
-  ipcMain.handle(
+  handleLocalizedIpc(
     copyWorkspaceItemPathChannel,
     async (_event, input: CopyWorkspaceItemPathInput): Promise<RelicResult<void>> => {
       try {
@@ -105,7 +108,7 @@ export function registerMarkdownFileHandlers(): void {
     }
   );
 
-  ipcMain.handle(getLinkUpdateImpactChannel, async (_event, input: LinkUpdateImpactInput) => {
+  handleLocalizedIpc(getLinkUpdateImpactChannel, async (_event, input: LinkUpdateImpactInput) => {
     try {
       if (!isLinkUpdateImpactInput(input)) {
         return fail("LINK_UPDATE_IMPACT_INVALID_INPUT", "リンク更新の確認対象が正しくありません。");
@@ -129,7 +132,7 @@ export function registerMarkdownFileHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     createMarkdownFileChannel,
     async (_event, input: CreateMarkdownFileInput): Promise<RelicResult<WorkspaceState>> => {
       try {
@@ -158,7 +161,7 @@ export function registerMarkdownFileHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     importMarkdownFilesChannel,
     async (_event, input: ImportMarkdownFilesInput): Promise<RelicResult<WorkspaceState>> => {
       try {
@@ -191,7 +194,7 @@ export function registerMarkdownFileHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     importImageFileChannel,
     async (_event, input: ImportImageFileInput) => {
       try {
@@ -221,7 +224,7 @@ export function registerMarkdownFileHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     readImageFileChannel,
     async (_event, input: ReadImageFileInput) => {
       try {
@@ -243,7 +246,7 @@ export function registerMarkdownFileHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     readPdfFileChannel,
     async (_event, input: ReadPdfFileInput) => {
       try {
@@ -306,7 +309,7 @@ export function registerMarkdownFileHandlers(): void {
     }
   );
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     createLinkedMarkdownFileChannel,
     async (_event, input: CreateLinkedMarkdownFileInput) => {
       try {
@@ -338,7 +341,7 @@ export function registerMarkdownFileHandlers(): void {
     }
   );
 
-  ipcMain.handle(duplicateMarkdownFileChannel, async (_event, input: DuplicateMarkdownFileInput) => {
+  handleLocalizedIpc(duplicateMarkdownFileChannel, async (_event, input: DuplicateMarkdownFileInput) => {
     try {
       if (!isPathInput(input)) {
         return fail("FILE_DUPLICATE_INVALID_INPUT", "複製するファイルを選択してください。");
@@ -347,7 +350,13 @@ export function registerMarkdownFileHandlers(): void {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
 
-      const duplicatedFile = await duplicateMarkdownFile(context.value.activeWorkspace.path, input.path);
+      const t = getCachedMainTranslator();
+      const duplicatedFile = await duplicateMarkdownFile(
+        context.value.activeWorkspace.path,
+        input.path,
+        {},
+        createCopyNameFormatter(t)
+      );
 
       if (!duplicatedFile.ok) {
         return duplicatedFile;
@@ -367,7 +376,7 @@ export function registerMarkdownFileHandlers(): void {
     }
   });
 
-  ipcMain.handle(renameMarkdownFileChannel, async (_event, input: RenameMarkdownFileInput) => {
+  handleLocalizedIpc(renameMarkdownFileChannel, async (_event, input: RenameMarkdownFileInput) => {
     try {
       if (!isRenameMarkdownFileInput(input)) {
         return fail("FILE_RENAME_INVALID_INPUT", "変更後のファイル名を入力してください。");
@@ -400,7 +409,7 @@ export function registerMarkdownFileHandlers(): void {
     }
   });
 
-  ipcMain.handle(moveMarkdownFileChannel, async (_event, input: MoveMarkdownFileInput) => {
+  handleLocalizedIpc(moveMarkdownFileChannel, async (_event, input: MoveMarkdownFileInput) => {
     try {
       if (!isMoveMarkdownFileInput(input)) {
         return fail("FILE_MOVE_INVALID_INPUT", "移動先フォルダを指定してください。");
@@ -433,7 +442,7 @@ export function registerMarkdownFileHandlers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleLocalizedIpc(
     revealWorkspaceItemChannel,
     async (_event, input: RevealWorkspaceItemInput): Promise<RelicResult<void>> => {
       try {

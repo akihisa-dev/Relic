@@ -12,7 +12,8 @@ import {
   createCopyRelativePath,
   markdownPathInFolder,
   normalizeMarkdownFileName,
-  renamedMarkdownPath
+  renamedMarkdownPath,
+  type CopyNameFormatter
 } from "./markdownFilePaths";
 import {
   type RealpathOperations,
@@ -447,7 +448,8 @@ async function moveMarkdownFileToPath(
 export async function duplicateMarkdownFile(
   workspacePath: string,
   relativePath: string,
-  operations: Partial<RealpathOperations> = {}
+  operations: Partial<RealpathOperations> = {},
+  formatCopyName?: CopyNameFormatter
 ): Promise<RelicResult<MarkdownFileContent>> {
   if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを複製できます。");
@@ -464,7 +466,12 @@ export async function duplicateMarkdownFile(
     if (!safeSourcePath.ok) return safeSourcePath;
 
     const content = await readFile(sourcePath.value, "utf8");
-    const destinationRelativePath = await createCopyRelativePath(workspacePath, relativePath);
+    const destinationRelativePath = await createCopyRelativePath(
+      workspacePath,
+      relativePath,
+      undefined,
+      formatCopyName
+    );
     const destinationPath = await resolveNewWorkspacePath(workspacePath, destinationRelativePath, operations);
 
     if (!destinationPath.ok) {

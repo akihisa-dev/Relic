@@ -77,6 +77,8 @@ vi.mock("../i18n", async () => {
   const { createTranslator } = await vi.importActual<typeof import("../../shared/i18n")>("../../shared/i18n");
 
   return {
+    getCachedMainLanguage: () => "ja",
+    getCachedMainTranslator: () => createTranslator("ja"),
     getMainTranslator: async () => createTranslator("ja")
   };
 });
