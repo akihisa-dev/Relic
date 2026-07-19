@@ -82,6 +82,8 @@ export function ChronicleCanvas({
 }: ChronicleCanvasProps): ReactElement {
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const calendarSettingsButtonRef = useRef<HTMLButtonElement | null>(null);
+  const calendarSettingsPanelRef = useRef<HTMLElement | null>(null);
   const hiddenCategoryKeySet = useMemo(() => new Set(hiddenCategoryKeys), [hiddenCategoryKeys]);
   const categoryOptions = useMemo(() => createChronicleCategoryOptions(
     entries,
@@ -113,6 +115,21 @@ export function ChronicleCanvas({
   const sceneRef = useLatest(scene);
   const entriesRef = useLatest(entries);
   const categoryHuesRef = useLatest(categoryHues);
+
+  useEffect(() => {
+    if (!calendarSettingsOpen) return;
+
+    const closeOnPointerDown = (event: globalThis.PointerEvent): void => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (calendarSettingsButtonRef.current?.contains(target)) return;
+      if (calendarSettingsPanelRef.current?.contains(target)) return;
+      setCalendarSettingsOpen(false);
+    };
+
+    document.addEventListener("pointerdown", closeOnPointerDown);
+    return () => document.removeEventListener("pointerdown", closeOnPointerDown);
+  }, [calendarSettingsOpen]);
   const hiddenCategoryKeysRef = useLatest(hiddenCategoryKeySet);
   const visibleItems = useMemo(() => scene.items.filter((item) => (
     isChronicleEntryVisible(item.entry, hiddenCategoryKeySet)
@@ -383,6 +400,7 @@ export function ChronicleCanvas({
           aria-expanded={calendarSettingsOpen}
           className="chronicle-calendar-settings-button"
           onClick={() => setCalendarSettingsOpen((open) => !open)}
+          ref={calendarSettingsButtonRef}
           type="button"
         >
           {t("chronicle.calendarSettings")}
@@ -428,6 +446,7 @@ export function ChronicleCanvas({
               entries={entries}
               onClose={() => setCalendarSettingsOpen(false)}
               onSave={onCalendarSettingsSave}
+              panelRef={calendarSettingsPanelRef}
               settings={calendarSettings}
             />
           ) : null}
@@ -441,11 +460,13 @@ function ChronicleCalendarSettingsPanel({
   entries,
   onClose,
   onSave,
+  panelRef,
   settings
 }: {
   entries: ChartEntry[];
   onClose: () => void;
   onSave: (settings: ChronicleCalendarSettings) => void;
+  panelRef: React.RefObject<HTMLElement | null>;
   settings: ChronicleCalendarSettings;
 }): ReactElement {
   const t = useT();
@@ -479,7 +500,7 @@ function ChronicleCalendarSettingsPanel({
     if (visible.length > 0) save({ ...draft, visibleCalendarNames: visible });
   };
   return (
-    <section aria-label={t("chronicle.calendarSettings")} className="chronicle-calendar-settings-panel">
+    <section aria-label={t("chronicle.calendarSettings")} className="chronicle-calendar-settings-panel" ref={panelRef}>
       <header>
         <h2>{t("chronicle.calendarSettings")}</h2>
         <button aria-label={t("chronicle.closeCalendarSettings")} onClick={onClose} type="button">×</button>

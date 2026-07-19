@@ -31,6 +31,28 @@ describe("ChronicleCanvas cursor", () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ visibleCalendarNames: ["基準暦", "別暦"] }));
   });
 
+  it("暦設定はパネル内の操作では維持し、外側のクリックで閉じる", () => {
+    render(
+      <I18nProvider language="ja">
+        <ChronicleCanvas entries={[]} onOpenFile={vi.fn()} />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
+    const panel = screen.getByRole("region", { name: "暦設定" });
+    fireEvent.pointerDown(panel);
+    expect(panel).toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("region", { name: "暦設定" })).not.toBeInTheDocument();
+
+    const settingsButton = screen.getByRole("button", { name: "暦設定" });
+    fireEvent.click(settingsButton);
+    fireEvent.pointerDown(settingsButton);
+    fireEvent.click(settingsButton);
+    expect(screen.queryByRole("region", { name: "暦設定" })).not.toBeInTheDocument();
+  });
+
   it("その他の暦の開始年を空欄から負数まで入力して保存する", () => {
     const onSave = vi.fn();
     render(
