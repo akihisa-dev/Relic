@@ -23,6 +23,16 @@ describe("i18n dictionaries", () => {
     expect(Object.keys(ja).sort()).toEqual(Object.keys(en).sort());
   });
 
+  it("shows the current chronicle frontmatter format in both languages", () => {
+    const singleYearExample = "chronicle:\n  calendar: 西暦\n  start: 1185\n  end: 1185";
+    const rangeExample = "chronicle:\n  calendar: 西暦\n  start: 1185\n  end: 1333";
+
+    expect(ja["settings.fixedFieldChronicleSingleExample"]).toBe(singleYearExample);
+    expect(en["settings.fixedFieldChronicleSingleExample"]).toBe(singleYearExample);
+    expect(ja["settings.fixedFieldChronicleRangeExample"]).toBe(rangeExample);
+    expect(en["settings.fixedFieldChronicleRangeExample"]).toBe(rangeExample);
+  });
+
   it("does not reference missing literal translation keys", () => {
     const keys = new Set(Object.keys(en));
     const missing: Array<{ filePath: string; key: string }> = [];
