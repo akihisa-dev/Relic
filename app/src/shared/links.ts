@@ -1,4 +1,10 @@
 import { ensureMarkdownExtension, stripMarkdownExtension } from "./markdownExtension";
+import {
+  collectMarkdownCodeRanges,
+  decodeMarkdownPath,
+  isMarkdownOffsetInRanges,
+  normalizeMarkdownPathSegments
+} from "./markdownScan";
 
 export type WikiLinkKind = "embed" | "link";
 
@@ -63,7 +69,7 @@ export function scanWikiLinks(markdown: string, options: ScanWikiLinksOptions = 
 
   for (const match of markdown.matchAll(pattern)) {
     const from = match.index;
-    if (from === undefined || isOffsetInRanges(from, codeRanges)) continue;
+    if (from === undefined || isMarkdownOffsetInRanges(from, codeRanges)) continue;
 
     const raw = match[0] ?? "";
     const body = match[2] ?? "";
@@ -124,14 +130,14 @@ export function resolveWikiLinkPath(target: string, sourcePath: string): string 
   const normalizedTarget = normalizeWikiLinkTarget(target);
 
   if (normalizedTarget.includes("/")) {
-    return normalizePathSegments(normalizedTarget);
+    return normalizeMarkdownPathSegments(normalizedTarget);
   }
 
   const sourceDirectory = sourcePath.includes("/")
     ? sourcePath.split("/").slice(0, -1).join("/")
     : "";
 
-  return normalizePathSegments(
+  return normalizeMarkdownPathSegments(
     sourceDirectory === "" ? normalizedTarget : `${sourceDirectory}/${normalizedTarget}`
   );
 }
@@ -149,19 +155,19 @@ export function resolveMarkdownLinkPath(href: string, sourcePath: string): Markd
   }
 
   const [pathPart, headingPart] = trimmedHref.split("#", 2);
-  const decodedPath = decodeMarkdownLinkPath(pathPart);
+  const decodedPath = decodeMarkdownPath(pathPart);
   const normalizedTarget = ensureMarkdownExtension(decodedPath);
   const sourceDirectory = sourcePath.includes("/")
     ? sourcePath.split("/").slice(0, -1).join("/")
     : "";
   const resolvedPath = normalizedTarget.startsWith("/")
-    ? normalizePathSegments(normalizedTarget)
-    : normalizePathSegments(
+    ? normalizeMarkdownPathSegments(normalizedTarget)
+    : normalizeMarkdownPathSegments(
       sourceDirectory === "" ? normalizedTarget : `${sourceDirectory}/${normalizedTarget}`
     );
 
   return {
-    heading: headingPart ? decodeMarkdownLinkPath(headingPart).trim() || null : null,
+    heading: headingPart ? decodeMarkdownPath(headingPart).trim() || null : null,
     path: resolvedPath
   };
 }
@@ -180,7 +186,7 @@ export function createWikiLinkResolver(
   existingMarkdownPaths: Iterable<string>,
   aliasesByPath: AliasIndex = {}
 ): (markdown: string, sourcePath: string, options?: ScanWikiLinksOptions) => ResolvedWikiLink[] {
-  const normalizedExistingPaths = [...existingMarkdownPaths].map(normalizePathSegments);
+  const normalizedExistingPaths = [...existingMarkdownPaths].map(normalizeMarkdownPathSegments);
   const existingPaths = new Set(normalizedExistingPaths);
   const uniqueBasenameTargets = buildUniqueBasenameTargetMap(normalizedExistingPaths);
   const aliasTargets = buildAliasTargetMap(aliasesByPath);
@@ -211,7 +217,7 @@ export function resolveWikiLinkPathWithAliases(
   aliasesByPath: AliasIndex = {}
 ): string {
   const resolvedPath = resolveWikiLinkPath(target, sourcePath);
-  const normalizedExistingPaths = [...existingMarkdownPaths].map(normalizePathSegments);
+  const normalizedExistingPaths = [...existingMarkdownPaths].map(normalizeMarkdownPathSegments);
   const existingPaths = new Set(normalizedExistingPaths);
 
   if (existingPaths.has(resolvedPath)) return resolvedPath;
@@ -275,130 +281,13 @@ function markdownPathKey(path: string): string {
   return `${stripMarkdownExtension(path)}.md`;
 }
 
-function closesMarkdownFence(line: string, fence: { marker: "`" | "~"; length: number }): boolean {
-  let index = 0;
-
-  while (index < line.length && line[index] === " ") {
-    index += 1;
-  }
-
-  if (index > 3) return false;
-
-  let markerLength = 0;
-
-  while (line[index + markerLength] === fence.marker) {
-    markerLength += 1;
-  }
-
-  return markerLength >= fence.length;
-}
-
-function collectMarkdownCodeRanges(markdown: string): Array<{ from: number; to: number }> {
-  const ranges: Array<{ from: number; to: number }> = [];
-  const lines = markdown.match(/[^\n]*(?:\n|$)/g) ?? [];
-  let fence: { marker: "`" | "~"; length: number } | null = null;
-  let offset = 0;
-
-  for (const line of lines) {
-    const lineStart = offset;
-    const lineEnd = lineStart + line.length;
-    offset = lineEnd;
-
-    if (line === "") continue;
-
-    if (fence) {
-      const closesFence = closesMarkdownFence(line, fence);
-      if (closesFence) {
-        fence = null;
-      }
-
-      ranges.push({ from: lineStart, to: lineEnd });
-      continue;
-    }
-
-    const fenceStart = line.match(/^ {0,3}(`{3,}|~{3,})/);
-    if (fenceStart) {
-      const markerRun = fenceStart[1];
-      fence = {
-        length: markerRun.length,
-        marker: markerRun[0] as "`" | "~"
-      };
-
-      ranges.push({ from: lineStart, to: lineEnd });
-      continue;
-    }
-
-    if (/^(?: {4}|\t)/.test(line)) {
-      ranges.push({ from: lineStart, to: lineEnd });
-      continue;
-    }
-
-    ranges.push(...collectInlineCodeRanges(line, lineStart));
-  }
-
-  return ranges;
-}
-
-function collectInlineCodeRanges(line: string, lineStart: number): Array<{ from: number; to: number }> {
-  const ranges: Array<{ from: number; to: number }> = [];
-  let cursor = 0;
-
-  while (cursor < line.length) {
-    const start = line.indexOf("`", cursor);
-    if (start < 0) {
-      break;
-    }
-
-    let markerLength = 1;
-    while (line[start + markerLength] === "`") {
-      markerLength += 1;
-    }
-
-    const marker = "`".repeat(markerLength);
-    const end = line.indexOf(marker, start + markerLength);
-    if (end < 0) {
-      break;
-    }
-
-    ranges.push({ from: lineStart + start, to: lineStart + end + markerLength });
-    cursor = end + markerLength;
-  }
-
-  return ranges;
-}
-
-function isOffsetInRanges(offset: number, ranges: Array<{ from: number; to: number }>): boolean {
-  for (const range of ranges) {
-    if (offset < range.from) return false;
-    if (offset >= range.from && offset < range.to) return true;
-  }
-
-  return false;
-}
-
-function normalizePathSegments(value: string): string {
-  const output: string[] = [];
-
-  for (const segment of value.replace(/\\/g, "/").split("/")) {
-    if (segment === "" || segment === ".") continue;
-    if (segment === "..") {
-      output.pop();
-      continue;
-    }
-
-    output.push(segment);
-  }
-
-  return output.join("/");
-}
-
 function buildAliasTargetMap(aliasesByPath: AliasIndex): Map<string, string> {
   const result = new Map<string, string>();
 
   for (const [path, aliases] of Object.entries(aliasesByPath).sort(([a], [b]) => a.localeCompare(b))) {
     for (const alias of aliases) {
       const key = aliasKey(alias);
-      if (key && !result.has(key)) result.set(key, normalizePathSegments(path));
+      if (key && !result.has(key)) result.set(key, normalizeMarkdownPathSegments(path));
     }
   }
 
@@ -411,12 +300,4 @@ function aliasKey(value: string): string {
     .replace(/\\/g, "/")
     .replace(/\.md$/i, "")
     .toLocaleLowerCase();
-}
-
-function decodeMarkdownLinkPath(value: string): string {
-  try {
-    return decodeURIComponent(value.trim()).replace(/\\/g, "/");
-  } catch {
-    return value.trim().replace(/\\/g, "/");
-  }
 }

@@ -1,10 +1,7 @@
-import { relicClient } from "./relicClient";
-import type { EditorView } from "@codemirror/view";
-import { useCallback, useMemo, useRef, useState, type ReactElement } from "react";
+import { useCallback, useMemo, useState, type ReactElement } from "react";
 import { useShallow } from "zustand/react/shallow";
 
 import { type WorkspaceState } from "../shared/ipc";
-import type { AppLinkContextMenu } from "./appLinks";
 import { createAppLayoutProps } from "./appLayoutProps";
 import { selectAppEditorStoreState, selectAppUiStoreState } from "./appStoreSelectors";
 import { AppLayout } from "./components/AppLayout";
@@ -13,7 +10,10 @@ import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
 import { useAppCloseGuards } from "./hooks/useAppCloseGuards";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
 import { useAppInlineHandlers } from "./hooks/useAppInlineHandlers";
+import { useAppFileSaved } from "./hooks/useAppFileSaved";
 import { useAppLayoutWidths } from "./hooks/useAppLayoutWidths";
+import { useAppOverlayState } from "./hooks/useAppOverlayState";
+import { useAppPanePresentationState } from "./hooks/useAppPanePresentationState";
 import { useAppPaneFileActions } from "./hooks/useAppPaneFileActions";
 import { useAppPreviewOutputActions } from "./hooks/useAppPreviewOutputActions";
 import { useAppRailNavigation } from "./hooks/useAppRailNavigation";
@@ -23,20 +23,15 @@ import { useAppSettingsState } from "./hooks/useAppSettingsState";
 import { useAppTabRenderers } from "./hooks/useAppTabRenderers";
 import { useAppTheme } from "./hooks/useAppTheme";
 import { useAppToast } from "./hooks/useAppToast";
-import { useAppWorkspaceCollections } from "./hooks/useAppWorkspaceCollections";
+import { useAppWorkspaceDerivedData } from "./hooks/useAppWorkspaceDerivedData";
 import { useCommandPaletteCommands } from "./hooks/useCommandPaletteCommands";
 import { useEditorAutoSave } from "./hooks/useEditorAutoSave";
-import type { HeadingScrollTarget } from "./editorDerivedState";
 import { usePaneTabMotion } from "./hooks/usePaneTabMotion";
 import { useRailFlights } from "./hooks/useRailFlights";
 import { useSidebarFileInteractions } from "./hooks/useSidebarFileInteractions";
 import { useSplitCloseMotion } from "./hooks/useSplitCloseMotion";
 import { useWindowCloseRequest } from "./hooks/useWindowCloseRequest";
-import { useWorkspaceAliases } from "./hooks/useWorkspaceAliases";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
-import { useWorkspaceFrontmatterCategoryChoices } from "./hooks/useWorkspaceFrontmatterCategoryChoices";
-import { useWorkspaceChronicleCalendarSettings } from "./hooks/useWorkspaceChronicleCalendarSettings";
-import { useWorkspaceCharts } from "./hooks/useWorkspaceCharts";
 import { useWorkspaceExternalRefresh } from "./hooks/useWorkspaceExternalRefresh";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
@@ -46,13 +41,30 @@ import "./styles.css";
 
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
-  const [linkContextMenu, setLinkContextMenu] = useState<AppLinkContextMenu | null>(null);
   const { closeToast, isToastClosing, setWorkspaceError, showToast, toastMessage } = useAppToast();
-  const [leftPaneScrollHeading, setLeftPaneScrollHeading] = useState<HeadingScrollTarget | undefined>(undefined);
-  const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<HeadingScrollTarget | undefined>(undefined);
-  const [editorActionPulse, setEditorActionPulse] = useState(0);
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
-  const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
+  const {
+    linkContextMenu,
+    openQuickSwitcher,
+    setLinkContextMenu,
+    setShowCommandPalette,
+    setShowQuickSwitcher,
+    showCommandPalette,
+    showQuickSwitcher
+  } = useAppOverlayState();
+  const {
+    editorActionPulse,
+    isLeftSourceMode,
+    isRightSourceMode,
+    leftEditorViewRef,
+    leftPaneScrollHeading,
+    rightEditorViewRef,
+    rightPaneScrollHeading,
+    setEditorActionPulse,
+    setIsLeftSourceMode,
+    setIsRightSourceMode,
+    setLeftPaneScrollHeading,
+    setRightPaneScrollHeading
+  } = useAppPanePresentationState();
   const [workspaceDataRevision, setWorkspaceDataRevision] = useState(0);
   const {
     clearRailTabFlight,
@@ -61,8 +73,6 @@ export function App(): ReactElement {
     sidebarCreateFlight
   } = useRailFlights();
   const [fileSelectionCount, setFileSelectionCount] = useState(0);
-  const [isLeftSourceMode, setIsLeftSourceMode] = useState(false);
-  const [isRightSourceMode, setIsRightSourceMode] = useState(false);
   const {
     holdWorkspaceRailAfterRename,
     isWorkspaceRenameActive,
@@ -182,52 +192,32 @@ export function App(): ReactElement {
     workspaceState
   });
 
-  const handleOpenQuickSwitcher = useCallback((): void => {
-    setShowCommandPalette(false);
-    setShowQuickSwitcher(true);
-  }, []);
-
   const {
+    aliasesByPath,
+    calendarSettings,
+    categoryChoices,
+    charts,
     existingMarkdownPaths,
+    frontmatterCandidatesWithCategory,
+    handleSaveCalendarSettings,
+    handleSaveCategoryChoices,
     openFilePathSet,
-    registeredWorkspaces
-  } = useAppWorkspaceCollections({ tabs, workspaceState });
-  const aliasesByPath = useWorkspaceAliases({ setWorkspaceError, workspaceState });
-  const { charts, reloadCharts } = useWorkspaceCharts({
+    registeredWorkspaces,
+    reloadCharts
+  } = useAppWorkspaceDerivedData({
+    frontmatterCandidates,
     hasOpenChart,
     setWorkspaceError,
+    tabs,
     workspaceState
   });
-  const { categoryChoices, handleSaveCategoryChoices } = useWorkspaceFrontmatterCategoryChoices({
+
+  const handleFileSaved = useAppFileSaved({
+    hasOpenChart,
+    reloadCharts,
     setWorkspaceError,
-    workspaceState
+    setWorkspaceState
   });
-  const { calendarSettings, handleSaveCalendarSettings } = useWorkspaceChronicleCalendarSettings({
-    onSaved: () => { void reloadCharts(); },
-    setWorkspaceError,
-    workspaceState
-  });
-  const frontmatterCandidatesWithCategory = useMemo(() => ({
-    ...frontmatterCandidates,
-    category: categoryChoices,
-    chronicle: [calendarSettings.baseCalendarName, ...calendarSettings.calendars.map((calendar) => calendar.name)]
-  }), [calendarSettings, categoryChoices, frontmatterCandidates]);
-
-  const handleFileSaved = useCallback((path?: string): void => {
-    if (hasOpenChart) void reloadCharts();
-    if (!path || !relicClient.current) return;
-
-    void relicClient.current.getWorkspaceState().then((result) => {
-      if (result.ok) {
-        setWorkspaceState(result.value);
-        return;
-      }
-
-      setWorkspaceError(result.error.message);
-    }).catch((error) => {
-      setWorkspaceError(error instanceof Error ? error.message : String(error));
-    });
-  }, [hasOpenChart, reloadCharts, setWorkspaceError, setWorkspaceState]);
 
   const { flushTabsBeforeClose, saveStatusByTabId } = useEditorAutoSave({
     conflictCloseBlockedMessage: t("pane.externalConflictCloseBlocked"),
@@ -358,14 +348,12 @@ export function App(): ReactElement {
     workspaceState
   });
   useWindowCloseRequest(ensureCanCloseAllTabs);
-
   const isDarkTheme = useAppTheme(editorSettings.theme);
-
   useAppKeyboardShortcuts({
     closeTab: closeTabWithMotion,
     focusedPane,
     leftPane,
-    requestFileSearchFocus: handleOpenQuickSwitcher,
+    requestFileSearchFocus: openQuickSwitcher,
     reopenClosedTab,
     rightPane,
     setIsCreatingFile,
@@ -385,9 +373,6 @@ export function App(): ReactElement {
     startRightPanelResize,
     startSidebarResize
   } = useAppLayoutWidths();
-
-  const leftEditorViewRef = useRef<EditorView | null>(null);
-  const rightEditorViewRef = useRef<EditorView | null>(null);
 
   const {
     handleCreateFileInFolder,
@@ -454,7 +439,7 @@ export function App(): ReactElement {
     canReopenClosedTab,
     handleDeleteActiveFile,
     handleDuplicateActiveFile,
-    requestFileSearchFocus: handleOpenQuickSwitcher,
+    requestFileSearchFocus: openQuickSwitcher,
     reopenClosedTab,
     setIsCreatingFile,
     setShowQuickSwitcher,
@@ -611,7 +596,7 @@ export function App(): ReactElement {
       handleMoveFile,
       handleMoveFolder,
       handleMoveTreeItems,
-      handleOpenQuickSwitcher,
+      handleOpenQuickSwitcher: openQuickSwitcher,
       handleOpenWorkspace,
       handleRenameTreeItem,
       handleRevealWorkspaceItem,

@@ -32,23 +32,31 @@ export interface AppSettings {
   workspaces: WorkspaceSummary[];
 }
 
-const defaultAppSettings: AppSettings = {
-  editorSettings: defaultEditorSettings,
-  featureToggles: defaultFeatureToggles,
-  frontmatterTemplates: defaultFrontmatterTemplates,
-  lastWorkspaceId: null,
-  userDefinedFields: defaultUserDefinedFields,
-  workspaces: []
-};
-
 const appSettingsStore = new SecureVersionedJsonStore<Record<string, unknown>, AppSettings>({
   createCorruptError: createCorruptSettingsError,
-  defaultValue: defaultAppSettings,
+  createDefaultValue: createDefaultAppSettings,
   migrate: migrateAppSettings,
   parse: parseAppSettings,
   parseObject: parseSettingsObject,
   serialize: serializeAppSettings
 });
+
+function createDefaultAppSettings(): AppSettings {
+  return {
+    editorSettings: { ...defaultEditorSettings },
+    featureToggles: { ...defaultFeatureToggles },
+    frontmatterTemplates: defaultFrontmatterTemplates.map((template) => ({
+      ...template,
+      fieldNames: [...template.fieldNames]
+    })),
+    lastWorkspaceId: null,
+    userDefinedFields: defaultUserDefinedFields.map((field) => ({
+      ...field,
+      ...(field.choices ? { choices: [...field.choices] } : {})
+    })),
+    workspaces: []
+  };
+}
 
 export function getAppSettingsPath(userDataPath: string): string {
   return path.join(userDataPath, "app-settings.json");
@@ -87,7 +95,7 @@ function parseAppSettings(raw: Record<string, unknown>): AppSettings {
 
 function parseEditorSettings(raw: unknown): EditorSettings {
   if (typeof raw !== "object" || raw === null) {
-    return defaultEditorSettings;
+    return { ...defaultEditorSettings };
   }
 
   const s = raw as Record<string, unknown>;
@@ -115,7 +123,7 @@ function isPositiveFiniteNumber(value: unknown): value is number {
 
 function parseFeatureToggles(raw: unknown): FeatureToggles {
   if (typeof raw !== "object" || raw === null) {
-    return defaultFeatureToggles;
+    return { ...defaultFeatureToggles };
   }
 
   const s = raw as Record<string, unknown>;
@@ -134,7 +142,7 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
 const WORKSPACE_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
-  if (!Array.isArray(raw)) return defaultUserDefinedFields;
+  if (!Array.isArray(raw)) return createDefaultAppSettings().userDefinedFields;
 
   const result: UserDefinedField[] = [];
   const names = new Set<string>();
@@ -182,7 +190,7 @@ function parseFieldChoices(raw: unknown, type: UserDefinedField["type"]): string
 }
 
 function parseFrontmatterTemplates(raw: unknown): FrontmatterTemplate[] {
-  if (!Array.isArray(raw)) return defaultFrontmatterTemplates;
+  if (!Array.isArray(raw)) return createDefaultAppSettings().frontmatterTemplates;
 
   const result: FrontmatterTemplate[] = [];
   const names = new Set<string>();

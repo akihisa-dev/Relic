@@ -8,6 +8,12 @@ import {
   resolveMarkdownLinkPath
 } from "../../shared/links";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
+import {
+  collectMarkdownCodeRanges,
+  decodeMarkdownPath,
+  isMarkdownOffsetInRanges,
+  normalizeMarkdownPathSegments
+} from "../../shared/markdownScan";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readWorkspaceAliases } from "./aliases";
 import { errorDetails } from "./fileSystem";
@@ -222,7 +228,7 @@ function scanMarkdownLinks(markdown: string): string[] {
   const pattern = /(!)?\[[^\]\n]*\]\(([^)\n]+)\)/g;
 
   for (const match of markdown.matchAll(pattern)) {
-    if (match.index !== undefined && isOffsetInRanges(match.index, codeRanges)) continue;
+    if (match.index !== undefined && isMarkdownOffsetInRanges(match.index, codeRanges)) continue;
     if (match[1]) continue;
 
     const rawTarget = match[2]?.trim();
@@ -245,7 +251,7 @@ function scanMarkdownAttachmentLinks(
   const pattern = /!\[[^\]\n]*\]\(([^)\n]+)\)/g;
 
   for (const match of markdown.matchAll(pattern)) {
-    if (match.index !== undefined && isOffsetInRanges(match.index, codeRanges)) continue;
+    if (match.index !== undefined && isMarkdownOffsetInRanges(match.index, codeRanges)) continue;
 
     const rawTarget = match[1]?.trim();
     if (!rawTarget) continue;
@@ -279,7 +285,7 @@ function resolveAttachmentTargetPath(
   sourcePath: string,
   attachmentPaths: Set<string>
 ): string | null {
-  const normalizedTarget = decodeMarkdownLinkPath(target.trim()).replace(/\\/g, "/");
+  const normalizedTarget = decodeMarkdownPath(target);
   if (
     normalizedTarget === "" ||
     /^[a-z][a-z0-9+.-]*:/i.test(normalizedTarget) ||
@@ -294,8 +300,8 @@ function resolveAttachmentTargetPath(
     ? sourcePath.split("/").slice(0, -1).join("/")
     : "";
   const directPath = normalizedTarget.startsWith("/")
-    ? normalizePathSegments(normalizedTarget.slice(1))
-    : normalizePathSegments(
+    ? normalizeMarkdownPathSegments(normalizedTarget.slice(1))
+    : normalizeMarkdownPathSegments(
       sourceDirectory === "" ? normalizedTarget : `${sourceDirectory}/${normalizedTarget}`
     );
 
@@ -341,7 +347,7 @@ function scanInlineTags(markdown: string): string[] {
 
   for (const match of markdown.matchAll(pattern)) {
     const tagStart = (match.index ?? 0) + (match[1]?.length ?? 0);
-    if (isOffsetInRanges(tagStart, codeRanges)) continue;
+    if (isMarkdownOffsetInRanges(tagStart, codeRanges)) continue;
 
     const tag = match[2]?.replace(/\/+$/, "");
     if (!tag || /^\d+$/.test(tag)) continue;
@@ -359,14 +365,6 @@ function rawWikiTargetBase(raw: string): string {
   return (targetWithHeading.split("#", 1)[0] ?? "").trim();
 }
 
-function decodeMarkdownLinkPath(value: string): string {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-}
-
 function uniqueBasenamePath(target: string, paths: Set<string>): string | null {
   const targetKey = target.toLocaleLowerCase();
   let match: string | null = null;
@@ -378,54 +376,4 @@ function uniqueBasenamePath(target: string, paths: Set<string>): string | null {
   }
 
   return match;
-}
-
-function normalizePathSegments(value: string): string {
-  const segments: string[] = [];
-  for (const segment of value.replace(/\\/g, "/").split("/")) {
-    if (segment === "" || segment === ".") continue;
-    if (segment === "..") {
-      segments.pop();
-      continue;
-    }
-    segments.push(segment);
-  }
-
-  return segments.join("/");
-}
-
-function collectMarkdownCodeRanges(markdown: string): Array<{ from: number; to: number }> {
-  const ranges: Array<{ from: number; to: number }> = [];
-  const lines = markdown.match(/[^\n]*(?:\n|$)/g) ?? [];
-  let fence: { marker: "`" | "~"; length: number } | null = null;
-  let offset = 0;
-
-  for (const line of lines) {
-    const lineEnd = offset + line.length;
-    const fenceMatch = /^( {0,3})(`{3,}|~{3,})/.exec(line);
-
-    if (fence) {
-      ranges.push({ from: offset, to: lineEnd });
-      if (fenceMatch && fenceMatch[2]?.startsWith(fence.marker) && fenceMatch[2].length >= fence.length) {
-        fence = null;
-      }
-    } else if (fenceMatch) {
-      fence = { length: fenceMatch[2].length, marker: fenceMatch[2][0] as "`" | "~" };
-      ranges.push({ from: offset, to: lineEnd });
-    }
-
-    offset = lineEnd;
-  }
-
-  const inlinePattern = /`+[^`\n]*`+/g;
-  for (const match of markdown.matchAll(inlinePattern)) {
-    const from = match.index;
-    if (from !== undefined) ranges.push({ from, to: from + (match[0]?.length ?? 0) });
-  }
-
-  return ranges;
-}
-
-function isOffsetInRanges(offset: number, ranges: Array<{ from: number; to: number }>): boolean {
-  return ranges.some((range) => offset >= range.from && offset < range.to);
 }

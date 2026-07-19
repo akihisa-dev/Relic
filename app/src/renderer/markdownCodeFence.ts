@@ -1,7 +1,10 @@
-export interface CodeFenceMarker {
-  char: "`" | "~";
-  length: number;
-}
+import {
+  isMarkdownCodeFenceClosing,
+  parseMarkdownCodeFenceOpening,
+  type MarkdownCodeFenceMarker
+} from "../shared/markdownCodeFence";
+
+export type CodeFenceMarker = MarkdownCodeFenceMarker;
 
 export interface BacktickCodeFence {
   language: string | null;
@@ -9,19 +12,11 @@ export interface BacktickCodeFence {
 }
 
 export function parseCodeFenceOpening(lineText: string): CodeFenceMarker | null {
-  const match = /^ {0,3}(`{3,}|~{3,})/.exec(lineText);
-  if (!match) return null;
-
-  const marker = match[1];
-  return { char: marker[0] as "`" | "~", length: marker.length };
+  return parseMarkdownCodeFenceOpening(lineText);
 }
 
 export function isClosingCodeFence(lineText: string, opening: CodeFenceMarker): boolean {
-  const match = /^ {0,3}(`{3,}|~{3,})[ \t]*$/.exec(lineText);
-  if (!match) return false;
-
-  const marker = match[1];
-  return marker[0] === opening.char && marker.length >= opening.length;
+  return isMarkdownCodeFenceClosing(lineText, opening);
 }
 
 export function parseBacktickOpeningFence(lineText: string): BacktickCodeFence | null {

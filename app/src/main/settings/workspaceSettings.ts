@@ -35,24 +35,33 @@ export const defaultCharts: ChartSettings[] = [
   { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" }
 ];
 
-const defaultWorkspaceSettings: WorkspaceSettings = {
-  charts: defaultCharts,
-  chronicleCalendarSettings: defaultChronicleCalendarSettings,
-  frontmatterCategoryChoices: [],
-  pinnedPaths: [],
-  tableProperties: [],
-  workspacePath: ""
-};
-
 const WORKSPACE_SETTINGS_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 const workspaceSettingsStore = new SecureVersionedJsonStore<PersistedWorkspaceSettings, WorkspaceSettings>({
   createCorruptError: createCorruptWorkspaceSettingsError,
-  defaultValue: defaultWorkspaceSettings,
+  createDefaultValue: createDefaultWorkspaceSettings,
   migrate: migrateWorkspaceSettings,
   parse: parseWorkspaceSettings,
   parseObject: parseSettingsObject,
   serialize: serializeWorkspaceSettings
 });
+
+function createDefaultWorkspaceSettings(): WorkspaceSettings {
+  return {
+    charts: defaultCharts.map((chart) => ({
+      ...chart,
+      ...(chart.filePaths ? { filePaths: [...chart.filePaths] } : {})
+    })),
+    chronicleCalendarSettings: {
+      ...defaultChronicleCalendarSettings,
+      calendars: defaultChronicleCalendarSettings.calendars.map((calendar) => ({ ...calendar })),
+      visibleCalendarNames: [...defaultChronicleCalendarSettings.visibleCalendarNames]
+    },
+    frontmatterCategoryChoices: [],
+    pinnedPaths: [],
+    tableProperties: [],
+    workspacePath: ""
+  };
+}
 
 export function getWorkspaceSettingsPath(userDataPath: string, workspaceId: string): string {
   assertSafeWorkspaceSettingsId(workspaceId);
@@ -68,7 +77,7 @@ export async function readWorkspaceSettings(
     const settingsPath = getWorkspaceSettingsPath(userDataPath, workspaceId);
     return workspaceSettingsStore.read(settingsPath);
   } catch (error) {
-    if (isInvalidWorkspaceSettingsIdError(error)) return defaultWorkspaceSettings;
+    if (isInvalidWorkspaceSettingsIdError(error)) return createDefaultWorkspaceSettings();
     throw error;
   }
 }

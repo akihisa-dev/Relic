@@ -10,7 +10,7 @@ export interface SettingsMigrationResult<TRaw> {
 
 export interface SecureVersionedJsonCodec<TRaw extends object, TValue> {
   createCorruptError: (settingsPath: string) => Error;
-  defaultValue: TValue;
+  createDefaultValue: () => TValue;
   migrate: (raw: TRaw, settingsPath: string) => SettingsMigrationResult<TRaw>;
   parse: (raw: TRaw) => TValue;
   parseObject: (raw: unknown) => TRaw | null;
@@ -59,7 +59,7 @@ export class SecureVersionedJsonStore<TRaw extends object, TValue> {
       }
 
       const parsedObject = this.codec.parseObject(parsedJson.value);
-      if (!parsedObject) return this.codec.defaultValue;
+      if (!parsedObject) return this.codec.createDefaultValue();
 
       const migrated = this.codec.migrate(parsedObject, settingsPath);
       if (migrated.didMigrate && persistMigration) {
@@ -72,7 +72,7 @@ export class SecureVersionedJsonStore<TRaw extends object, TValue> {
 
       return this.codec.parse(migrated.settings);
     } catch (error) {
-      if (isMissingFileError(error)) return this.codec.defaultValue;
+      if (isMissingFileError(error)) return this.codec.createDefaultValue();
       throw error;
     }
   }

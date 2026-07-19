@@ -28,9 +28,9 @@ describe("collectUnlinkedReferencesInMarkdown", () => {
     ]);
   });
 
-  it("コードブロックとMarkdownリンク内の文字列は候補にしない", () => {
+  it("コード範囲とMarkdownリンク内の文字列は候補にしない", () => {
     const references = collectUnlinkedReferencesInMarkdown(
-      "```md\nTarget\n```\n[Target](Target.md)\n通常の Target",
+      "```md\nTarget\n```\n`Target`\n    Target\n[Target](Target.md)\n通常の Target",
       {
         existingMarkdownPaths: ["Target.md", "source.md"],
         sourcePath: "source.md",

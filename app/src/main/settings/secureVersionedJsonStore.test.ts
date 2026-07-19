@@ -16,7 +16,7 @@ interface TestSettings {
 
 const testCodec: SecureVersionedJsonCodec<TestSettings, TestSettings> = {
   createCorruptError: () => new Error("設定ファイルが壊れています。"),
-  defaultValue: { value: 0 },
+  createDefaultValue: () => ({ value: 0 }),
   migrate: (raw) => ({ didMigrate: false, settings: raw }),
   parse: (raw) => raw,
   parseObject: (raw) => (
@@ -60,6 +60,18 @@ describe("SecureVersionedJsonStore", () => {
   async function readValue(settingsPath: string): Promise<number> {
     return (JSON.parse(await readFile(settingsPath, "utf8")) as TestSettings).value;
   }
+
+  it("設定ファイルがない場合は読み込みごとに独立した既定値を返す", async () => {
+    const settingsPath = await createSettingsPath();
+    const store = new SecureVersionedJsonStore(testCodec);
+
+    const first = await store.read(settingsPath);
+    first.value = 99;
+    const second = await store.read(settingsPath);
+
+    expect(second).toEqual({ value: 0 });
+    expect(second).not.toBe(first);
+  });
 
   it("同じ設定パスへのwriteを開始順に直列化する", async () => {
     const settingsPath = await createSettingsPath();

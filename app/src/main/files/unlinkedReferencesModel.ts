@@ -3,6 +3,7 @@ import path from "node:path";
 import type { UnlinkedReference } from "../../shared/ipc";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { formatWikiLink } from "../../shared/links";
+import { collectMarkdownCodeRanges } from "../../shared/markdownScan";
 
 interface CollectUnlinkedReferencesOptions {
   existingMarkdownPaths: string[];
@@ -161,57 +162,6 @@ function collectMarkdownLinkRanges(content: string): Array<{ from: number; to: n
   }
 
   return ranges;
-}
-
-function collectMarkdownCodeRanges(markdown: string): Array<{ from: number; to: number }> {
-  const ranges: Array<{ from: number; to: number }> = [];
-  const lines = markdown.match(/[^\n]*(?:\n|$)/g) ?? [];
-  let fence: { marker: "`" | "~"; length: number } | null = null;
-  let offset = 0;
-
-  for (const line of lines) {
-    const lineStart = offset;
-    const lineEnd = lineStart + line.length;
-    offset = lineEnd;
-
-    if (line === "") continue;
-
-    if (fence) {
-      const closesFence = closesMarkdownFence(line, fence);
-      ranges.push({ from: lineStart, to: lineEnd });
-      if (closesFence) fence = null;
-      continue;
-    }
-
-    const fenceStart = line.match(/^ {0,3}(`{3,}|~{3,})/);
-    if (fenceStart) {
-      const markerRun = fenceStart[1] ?? "";
-      fence = {
-        length: markerRun.length,
-        marker: markerRun[0] === "~" ? "~" : "`"
-      };
-      ranges.push({ from: lineStart, to: lineEnd });
-    }
-  }
-
-  return ranges;
-}
-
-function closesMarkdownFence(line: string, fence: { marker: "`" | "~"; length: number }): boolean {
-  let index = 0;
-
-  while (index < line.length && line[index] === " ") {
-    index += 1;
-  }
-
-  if (index > 3) return false;
-
-  let markerLength = 0;
-  while (line[index + markerLength] === fence.marker) {
-    markerLength += 1;
-  }
-
-  return markerLength >= fence.length;
 }
 
 function isRangeInRanges(
