@@ -39,6 +39,7 @@ describe("sphereRuntime", () => {
   let animationFrames: Array<{ callback: FrameRequestCallback; id: number }>;
   let canvas: HTMLCanvasElement;
   let chargeForce: { strength: ReturnType<typeof vi.fn> };
+  let controlListeners: Map<string, Set<() => void>>;
   let controls: Record<string, unknown>;
   let linkForce: { distance: ReturnType<typeof vi.fn> };
   let observerDisconnect: ReturnType<typeof vi.fn>;
@@ -55,7 +56,18 @@ describe("sphereRuntime", () => {
     animationFrames = [];
     canvas = document.createElement("canvas");
     chargeForce = { strength: vi.fn() };
-    controls = { cursor: { set: vi.fn() } };
+    controlListeners = new Map();
+    controls = {
+      addEventListener: vi.fn((type: string, listener: () => void) => {
+        const listeners = controlListeners.get(type) ?? new Set();
+        listeners.add(listener);
+        controlListeners.set(type, listeners);
+      }),
+      cursor: { set: vi.fn() },
+      removeEventListener: vi.fn((type: string, listener: () => void) => {
+        controlListeners.get(type)?.delete(listener);
+      })
+    };
     linkForce = { distance: vi.fn() };
     observerDisconnect = vi.fn();
     observerUnobserve = vi.fn();
@@ -134,6 +146,8 @@ describe("sphereRuntime", () => {
     runAnimationFrame();
     runAnimationFrame();
     forceGraphMocks.graph.onEngineTick.mock.calls[0][0]();
+    const guideGroup = scene.add.mock.calls[0][0];
+    const gridLine = guideGroup.getObjectByName("sphere-grid-latitude-30") as { material: { opacity: number } };
 
     expect(canvas).toHaveAttribute("aria-label", "スフィア");
     expect(controls).toMatchObject({
@@ -143,6 +157,11 @@ describe("sphereRuntime", () => {
       minDistance: 48
     });
     expect(forceGraphMocks.graph.graphData).toHaveBeenCalled();
+    expect(gridLine.material.opacity).toBe(0.16);
+    controlListeners.get("start")?.forEach((listener) => listener());
+    expect(gridLine.material.opacity).toBe(0.4);
+    controlListeners.get("end")?.forEach((listener) => listener());
+    expect(gridLine.material.opacity).toBe(0.16);
     expect(forceGraphMocks.graph.linkVisibility).toHaveBeenCalledWith(true);
     expect(forceGraphMocks.graph.linkOpacity).toHaveBeenCalledWith(0.48);
     expect(forceGraphMocks.graph.linkOpacity).toHaveBeenLastCalledWith(0.48);
@@ -229,6 +248,9 @@ describe("sphereRuntime", () => {
     expect(observerDisconnect).toHaveBeenCalledOnce();
     expect(observerUnobserve).toHaveBeenCalledOnce();
     expect(scene.remove).toHaveBeenCalledTimes(2);
+    expect(controls.removeEventListener).toHaveBeenCalledTimes(2);
+    expect(controlListeners.get("start")?.size).toBe(0);
+    expect(controlListeners.get("end")?.size).toBe(0);
   });
 
   it("中心ガイドを1画面分先に表示してからノード配置を始める", () => {

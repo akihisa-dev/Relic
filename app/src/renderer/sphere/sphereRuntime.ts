@@ -40,6 +40,7 @@ export interface SphereRuntime {
 }
 
 type OrbitControlLimits = {
+  addEventListener?: (type: "end" | "start", listener: () => void) => void;
   cursor?: { set: (x: number, y: number, z: number) => void };
   enablePan?: boolean;
   maxDistance?: number;
@@ -47,6 +48,7 @@ type OrbitControlLimits = {
   maxPolarAngle?: number;
   minDistance?: number;
   minPolarAngle?: number;
+  removeEventListener?: (type: "end" | "start", listener: () => void) => void;
 };
 
 type SphereCamera = {
@@ -230,6 +232,10 @@ export function createSphereRuntime(
   controls.maxTargetRadius = SPHERE_MIN_GUIDE_RADIUS;
   controls.minPolarAngle = 0.04;
   controls.maxPolarAngle = Math.PI - 0.04;
+  const handleControlsStart = () => guides?.setInteractionActive(true);
+  const handleControlsEnd = () => guides?.setInteractionActive(false);
+  controls.addEventListener?.("start", handleControlsStart);
+  controls.addEventListener?.("end", handleControlsEnd);
   const renderer = graph.renderer();
   const camera = graph.camera() as unknown as SphereCamera;
   const canvas = renderer.domElement;
@@ -287,6 +293,8 @@ export function createSphereRuntime(
       if (disposed) return;
       disposed = true;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      controls.removeEventListener?.("start", handleControlsStart);
+      controls.removeEventListener?.("end", handleControlsEnd);
       canvas.removeEventListener("webglcontextlost", handleContextLost);
       resizeObserver?.unobserve(currentHost);
       resizeObserver?.disconnect();

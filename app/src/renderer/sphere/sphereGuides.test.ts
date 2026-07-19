@@ -44,11 +44,43 @@ describe("sphereGuides", () => {
     expect((ringGlow.material as LineMaterial).linewidth).toBeGreaterThan((ring.material as LineMaterial).linewidth);
   });
 
+  it("赤道と中心軸より控えめな天球グリッドを生成する", () => {
+    const guides = createSphereGuides(100, "#8899aa");
+    const latitudeLines = guides.group.children.filter(({ name }) => name.startsWith("sphere-grid-latitude-")) as Line2[];
+    const meridianLines = guides.group.children.filter(({ name }) => name.startsWith("sphere-grid-meridian-")) as Line2[];
+    const gridMaterial = latitudeLines[0]!.material as LineMaterial;
+    const equator = guides.group.getObjectByName("sphere-equator-ring") as Line2;
+
+    expect(latitudeLines).toHaveLength(4);
+    expect(meridianLines).toHaveLength(4);
+    expect(gridMaterial).toMatchObject({
+      dashed: true,
+      depthTest: false,
+      linewidth: 0.85,
+      opacity: 0.16,
+      transparent: true
+    });
+    expect(gridMaterial.opacity).toBeLessThan((equator.material as LineMaterial).opacity);
+    expect(latitudeLines.every(({ raycast }) => raycast({} as never, []) === undefined)).toBe(true);
+
+    guides.setInteractionActive(true);
+    expect(gridMaterial.opacity).toBe(0.4);
+    guides.setInteractionActive(false);
+    expect(gridMaterial.opacity).toBe(0.16);
+  });
+
   it("同じガイドを維持したまま半径と点線間隔を更新する", () => {
     const guides = createSphereGuides(100, "#8899aa");
     const axis = guides.group.getObjectByName("sphere-center-axis") as Line2;
     const ring = guides.group.getObjectByName("sphere-equator-ring") as Line2;
+    const latitude = guides.group.getObjectByName("sphere-grid-latitude-30") as Line2;
+    const meridian = guides.group.getObjectByName("sphere-grid-meridian-45") as Line2;
     const initialRingRadius = ring.geometry.getAttribute("instanceStart").getX(0);
+    const initialLatitudeY = latitude.geometry.getAttribute("instanceStart").getY(0);
+    const initialMeridianRadius = Math.hypot(
+      meridian.geometry.getAttribute("instanceStart").getX(0),
+      meridian.geometry.getAttribute("instanceStart").getZ(0)
+    );
     const initialDashSize = (ring.material as LineMaterial).dashSize;
 
     guides.setRadius(200);
@@ -56,6 +88,11 @@ describe("sphereGuides", () => {
     expect(guides.group.getObjectByName("sphere-center-axis")).toBe(axis);
     expect(guides.group.getObjectByName("sphere-equator-ring")).toBe(ring);
     expect(ring.geometry.getAttribute("instanceStart").getX(0)).toBeGreaterThan(initialRingRadius);
+    expect(latitude.geometry.getAttribute("instanceStart").getY(0)).toBeGreaterThan(initialLatitudeY);
+    expect(Math.hypot(
+      meridian.geometry.getAttribute("instanceStart").getX(0),
+      meridian.geometry.getAttribute("instanceStart").getZ(0)
+    )).toBeGreaterThan(initialMeridianRadius);
     expect((ring.material as LineMaterial).dashSize).toBeGreaterThan(initialDashSize);
   });
 
