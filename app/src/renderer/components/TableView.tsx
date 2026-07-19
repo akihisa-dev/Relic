@@ -5,6 +5,7 @@ import {
   useState,
   type CSSProperties,
   type Dispatch,
+  type DragEvent,
   type ReactElement,
   type SetStateAction
 } from "react";
@@ -22,7 +23,9 @@ import {
   directoryForPath,
   duplicateFileNames,
   nextTableSort,
+  reorderTableProperties,
   sortTableRows,
+  type TableColumnDropEdge,
   visibleTableRange,
   type TableSort
 } from "../table/tableViewModel";
@@ -106,6 +109,11 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, setSor
   const [selectedProperties, setSelectedProperties] = useState(table.selectedProperties);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [draggedProperty, setDraggedProperty] = useState<string | null>(null);
+  const [columnDropTarget, setColumnDropTarget] = useState<{
+    edge: TableColumnDropEdge;
+    property: string;
+  } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [openProperty, setOpenProperty] = useState<string | null>(null);
   const [propertySearch, setPropertySearch] = useState("");
@@ -162,12 +170,7 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, setSor
     };
   }, [menuOpen]);
 
-  const toggleProperty = async (property: string): Promise<void> => {
-    if (saving) return;
-    const previous = selectedProperties;
-    const next = previous.includes(property)
-      ? previous.filter((item) => item !== property)
-      : [...previous, property].sort((left, right) => left.localeCompare(right, "ja", { numeric: true, sensitivity: "base" }));
+  const saveProperties = async (next: string[], previous: string[]): Promise<void> => {
     setSelectedProperties(next);
     setSaving(true);
     setSaveError(null);
@@ -186,6 +189,52 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, setSor
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggleProperty = async (property: string): Promise<void> => {
+    if (saving) return;
+    const previous = selectedProperties;
+    const next = previous.includes(property)
+      ? previous.filter((item) => item !== property)
+      : [...previous, property];
+    await saveProperties(next, previous);
+  };
+
+  const startColumnDrag = (property: string, event: DragEvent<HTMLButtonElement>): void => {
+    if (saving) {
+      event.preventDefault();
+      return;
+    }
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", property);
+    setOpenProperty(null);
+    setDraggedProperty(property);
+    setColumnDropTarget(null);
+  };
+
+  const dragColumnOver = (property: string, event: DragEvent<HTMLDivElement>): void => {
+    if (!draggedProperty || draggedProperty === property || saving) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const edge: TableColumnDropEdge = event.clientX < bounds.left + bounds.width / 2 ? "before" : "after";
+    setColumnDropTarget({ edge, property });
+  };
+
+  const finishColumnDrag = (): void => {
+    setDraggedProperty(null);
+    setColumnDropTarget(null);
+  };
+
+  const dropColumn = async (property: string, event: DragEvent<HTMLDivElement>): Promise<void> => {
+    if (!draggedProperty || draggedProperty === property || saving) return;
+    event.preventDefault();
+    const previous = selectedProperties;
+    const edge = columnDropTarget?.property === property ? columnDropTarget.edge : "before";
+    const next = reorderTableProperties(previous, draggedProperty, property, edge);
+    finishColumnDrag();
+    if (next === previous) return;
+    await saveProperties(next, previous);
   };
 
   return (
@@ -254,8 +303,17 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, setSor
             <SortableHeader
               active={sort.property === property}
               direction={sort.direction}
+              dragState={draggedProperty === property
+                ? "dragging"
+                : columnDropTarget?.property === property
+                  ? `drop-${columnDropTarget.edge}`
+                  : undefined}
               key={property}
               label={property}
+              onColumnDragEnd={finishColumnDrag}
+              onColumnDragOver={(event) => dragColumnOver(property, event)}
+              onColumnDragStart={(event) => startColumnDrag(property, event)}
+              onColumnDrop={(event) => void dropColumn(property, event)}
               onClick={() => setSort((current) => nextTableSort(current, property))}
               onPropertySettings={FIXED_FIELDS.some((field) => field.name === property)
                 ? () => setOpenProperty((current) => current === property ? null : property)
@@ -268,6 +326,7 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, setSor
                 />
               ) : null}
               propertySettingsOpen={openProperty === property}
+              reorderDisabled={saving}
               setPropertySettingsOpen={(open) => setOpenProperty(open ? property : null)}
             />
           ))}
@@ -293,21 +352,33 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, setSor
 function SortableHeader({
   active,
   direction,
+  dragState,
   label,
+  onColumnDragEnd,
+  onColumnDragOver,
+  onColumnDragStart,
+  onColumnDrop,
   onClick,
   onPropertySettings,
   propertySettings,
   propertySettingsOpen = false,
+  reorderDisabled = false,
   setPropertySettingsOpen,
   sticky = false
 }: {
   active: boolean;
   direction: "asc" | "desc";
+  dragState?: "dragging" | "drop-after" | "drop-before";
   label: string;
+  onColumnDragEnd?: () => void;
+  onColumnDragOver?: (event: DragEvent<HTMLDivElement>) => void;
+  onColumnDragStart?: (event: DragEvent<HTMLButtonElement>) => void;
+  onColumnDrop?: (event: DragEvent<HTMLDivElement>) => void;
   onClick: () => void;
   onPropertySettings?: () => void;
   propertySettings?: ReactElement | null;
   propertySettingsOpen?: boolean;
+  reorderDisabled?: boolean;
   setPropertySettingsOpen?: (open: boolean) => void;
   sticky?: boolean;
 }): ReactElement {
@@ -333,10 +404,29 @@ function SortableHeader({
   return (
     <div
       aria-sort={active ? (direction === "asc" ? "ascending" : "descending") : "none"}
-      className={sticky ? "table-view-cell table-view-cell--sticky" : "table-view-cell"}
+      className={[
+        "table-view-cell",
+        sticky ? "table-view-cell--sticky" : "",
+        dragState ? `table-view-cell--${dragState}` : ""
+      ].filter(Boolean).join(" ")}
+      onDragOver={onColumnDragOver}
+      onDrop={onColumnDrop}
       ref={propertyMenuRef}
       role="columnheader"
     >
+      {onColumnDragStart ? (
+        <button
+          aria-label={t("table.reorderColumn", { name: label })}
+          className="table-column-drag-handle"
+          disabled={reorderDisabled}
+          draggable={!reorderDisabled}
+          onDragEnd={onColumnDragEnd}
+          onDragStart={onColumnDragStart}
+          type="button"
+        >
+          <span aria-hidden="true">⋮⋮</span>
+        </button>
+      ) : null}
       <button className="table-sort-button" aria-label={t("table.sortBy", { name: label })} onClick={onClick} type="button">
         <span>{label}</span>
         <span aria-hidden="true" className="table-sort-indicator">{active ? (direction === "asc" ? "↑" : "↓") : "↕"}</span>

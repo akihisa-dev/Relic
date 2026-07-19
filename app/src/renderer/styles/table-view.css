@@ -163,6 +163,18 @@
   padding-block: 0;
 }
 
+.table-view-header .table-view-cell--dragging {
+  opacity: 0.55;
+}
+
+.table-view-header .table-view-cell--drop-before {
+  box-shadow: inset 2px 0 var(--accent);
+}
+
+.table-view-header .table-view-cell--drop-after {
+  box-shadow: inset -2px 0 var(--accent);
+}
+
 .table-view-cell--sticky {
   box-shadow: 1px 0 0 var(--border-soft);
   left: 0;
@@ -191,6 +203,37 @@
   text-align: left;
   flex: 1;
   width: auto;
+}
+
+.table-column-drag-handle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  cursor: grab;
+  display: inline-flex;
+  flex: 0 0 18px;
+  font: inherit;
+  height: 26px;
+  justify-content: center;
+  letter-spacing: -5px;
+  overflow: hidden;
+  padding: 0 4px 0 0;
+  width: 18px;
+}
+
+.table-column-drag-handle:hover {
+  color: var(--text);
+}
+
+.table-column-drag-handle:active {
+  cursor: grabbing;
+}
+
+.table-column-drag-handle:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 .table-view-cell[role="columnheader"] button:focus-visible,

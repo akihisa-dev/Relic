@@ -82,6 +82,74 @@ describe("TableView", () => {
     expect(tableElement.querySelector<HTMLElement>(".table-view-header")?.style.minWidth).toBe("450px");
   });
 
+  it("プロパティ列のドラッグ中断では保存せず、ドロップ時だけ順序を保存する", async () => {
+    const saveWorkspaceTableProperties = vi.fn().mockResolvedValue({ ok: true, value: ["status", "count"] });
+    window.relic = makeRelicApi({
+      getWorkspaceTable: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { ...table, selectedProperties: ["count", "status"] }
+      }),
+      saveWorkspaceTableProperties
+    });
+    renderTable();
+
+    await screen.findByText("2件のファイル");
+    const countHandle = screen.getByRole("button", { name: "count列を移動" });
+    const statusHeader = screen.getByRole("columnheader", { name: /status/ });
+    Object.defineProperty(statusHeader, "getBoundingClientRect", {
+      configurable: true,
+      value: () => ({ bottom: 40, height: 40, left: 100, right: 200, top: 0, width: 100, x: 100, y: 0 })
+    });
+    const dataTransfer = { dropEffect: "none", effectAllowed: "none", setData: vi.fn() };
+
+    fireEvent.dragStart(countHandle, { dataTransfer });
+    fireEvent.dragEnd(countHandle, { dataTransfer });
+    expect(saveWorkspaceTableProperties).not.toHaveBeenCalled();
+
+    fireEvent.dragStart(countHandle, { dataTransfer });
+    fireEvent.dragOver(statusHeader, { clientX: 190, dataTransfer });
+    expect(statusHeader).toHaveClass("table-view-cell--drop-after");
+    fireEvent.drop(statusHeader, { clientX: 190, dataTransfer });
+
+    await waitFor(() => expect(saveWorkspaceTableProperties).toHaveBeenCalledWith(["status", "count"]));
+    const headers = screen.getAllByRole("columnheader");
+    expect(headers[1].querySelector(".table-sort-button")).toHaveTextContent("status");
+    expect(headers[2].querySelector(".table-sort-button")).toHaveTextContent("count");
+  });
+
+  it("列の並び順保存に失敗した場合は元の順序へ戻す", async () => {
+    const saveWorkspaceTableProperties = vi.fn().mockResolvedValue({
+      error: { code: "WRITE_FAILED", message: "列設定を保存できませんでした。" },
+      ok: false
+    });
+    window.relic = makeRelicApi({
+      getWorkspaceTable: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { ...table, selectedProperties: ["count", "status"] }
+      }),
+      saveWorkspaceTableProperties
+    });
+    renderTable();
+
+    await screen.findByText("2件のファイル");
+    const countHandle = screen.getByRole("button", { name: "count列を移動" });
+    const statusHeader = screen.getByRole("columnheader", { name: /status/ });
+    Object.defineProperty(statusHeader, "getBoundingClientRect", {
+      configurable: true,
+      value: () => ({ bottom: 40, height: 40, left: 100, right: 200, top: 0, width: 100, x: 100, y: 0 })
+    });
+    const dataTransfer = { dropEffect: "none", effectAllowed: "none", setData: vi.fn() };
+
+    fireEvent.dragStart(countHandle, { dataTransfer });
+    fireEvent.dragOver(statusHeader, { clientX: 190, dataTransfer });
+    fireEvent.drop(statusHeader, { clientX: 190, dataTransfer });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("列設定を保存できませんでした。");
+    const headers = screen.getAllByRole("columnheader");
+    expect(headers[1].querySelector(".table-sort-button")).toHaveTextContent("count");
+    expect(headers[2].querySelector(".table-sort-button")).toHaveTextContent("status");
+  });
+
   it("固定プロパティの列から説明とcategory候補を管理する", async () => {
     const onCategoryChoicesSave = vi.fn();
     const categoryTable: WorkspaceTable = {

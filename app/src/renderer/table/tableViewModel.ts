@@ -1,6 +1,7 @@
 import type { WorkspaceTableRow, WorkspaceTableValue } from "../../shared/ipc";
 
 export type TableSort = { direction: "asc" | "desc"; property: string | null };
+export type TableColumnDropEdge = "after" | "before";
 
 const collator = new Intl.Collator("ja", { numeric: true, sensitivity: "base" });
 
@@ -38,6 +39,19 @@ export function nextTableSort(current: TableSort, property: string | null): Tabl
   return current.property === property
     ? { direction: current.direction === "asc" ? "desc" : "asc", property }
     : { direction: "asc", property };
+}
+
+export function reorderTableProperties(
+  properties: string[],
+  source: string,
+  target: string,
+  edge: TableColumnDropEdge
+): string[] {
+  if (source === target || !properties.includes(source) || !properties.includes(target)) return properties;
+  const next = properties.filter((property) => property !== source);
+  const targetIndex = next.indexOf(target);
+  next.splice(edge === "before" ? targetIndex : targetIndex + 1, 0, source);
+  return next;
 }
 
 export function visibleTableRange(

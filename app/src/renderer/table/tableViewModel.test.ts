@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { WorkspaceTableRow } from "../../shared/ipc";
-import { duplicateFileNames, nextTableSort, sortTableRows, visibleTableRange } from "./tableViewModel";
+import {
+  duplicateFileNames,
+  nextTableSort,
+  reorderTableProperties,
+  sortTableRows,
+  visibleTableRange
+} from "./tableViewModel";
 
 const rows: WorkspaceTableRow[] = [
   { frontmatterStatus: "valid", name: "file10", path: "b/file10.md", properties: { count: { kind: "number", numberValue: 10, text: "10" } } },
@@ -40,5 +46,14 @@ describe("tableViewModel", () => {
     expect(nextTableSort({ direction: "asc", property: null }, null)).toEqual({ direction: "desc", property: null });
     expect(nextTableSort({ direction: "desc", property: null }, "status")).toEqual({ direction: "asc", property: "status" });
     expect(visibleTableRange(1000, 480, 480, 48, 2)).toEqual({ start: 8, end: 22 });
+  });
+
+  it("プロパティ列をドロップ位置の前後へ移動する", () => {
+    expect(reorderTableProperties(["count", "status", "tags"], "tags", "count", "before"))
+      .toEqual(["tags", "count", "status"]);
+    expect(reorderTableProperties(["count", "status", "tags"], "count", "status", "after"))
+      .toEqual(["status", "count", "tags"]);
+    expect(reorderTableProperties(["count", "status"], "count", "count", "after"))
+      .toEqual(["count", "status"]);
   });
 });

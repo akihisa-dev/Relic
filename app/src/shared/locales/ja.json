@@ -35,6 +35,7 @@
   "table.noMatchingProperties": "一致するプロパティがありません。",
   "table.noProperties": "利用できるフロントマタープロパティがありません。",
   "table.propertySettings": "{{name}}の設定",
+  "table.reorderColumn": "{{name}}列を移動",
   "table.retry": "再試行",
   "table.saveFailed": "列設定を保存できませんでした。",
   "table.searchProperties": "プロパティを検索",

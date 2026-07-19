@@ -35,6 +35,7 @@
   "table.noMatchingProperties": "No matching properties.",
   "table.noProperties": "There are no frontmatter properties to show.",
   "table.propertySettings": "{{name}} settings",
+  "table.reorderColumn": "Move {{name}} column",
   "table.retry": "Retry",
   "table.saveFailed": "Could not save the column settings.",
   "table.searchProperties": "Search properties",
