@@ -360,16 +360,19 @@ export function ChronicleCanvas({
     <>
       <div className="chronicle-period-scale">
         <label>{t("chronicle.periodScale")}</label>
-        <input
-          aria-label={t("chronicle.periodScale")}
-          aria-valuetext={periodScaleText}
-          max={CHRONICLE_PERIOD_SCALES.length - 1}
-          min={0}
-          onChange={(event) => handlePeriodScaleChange(Number(event.target.value))}
-          step={1}
-          type="range"
-          value={periodScaleIndex}
-        />
+        <div className="chronicle-period-scale-control">
+          <input
+            aria-label={t("chronicle.periodScale")}
+            aria-valuetext={periodScaleText}
+            max={CHRONICLE_PERIOD_SCALES.length - 1}
+            min={0}
+            onChange={(event) => handlePeriodScaleChange(Number(event.target.value))}
+            step={1}
+            type="range"
+            value={periodScaleIndex}
+          />
+          <output>{periodScaleText}</output>
+        </div>
         <button
           aria-expanded={calendarSettingsOpen}
           className="chronicle-calendar-settings-button"
@@ -378,7 +381,6 @@ export function ChronicleCanvas({
         >
           {t("chronicle.calendarSettings")}
         </button>
-        <output>{periodScaleText}</output>
       </div>
       <div className="chronicle-body">
         <ChronicleCategoryRail

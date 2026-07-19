@@ -316,9 +316,18 @@
   flex: 0 0 auto;
   font-size: 12px;
   gap: 12px;
-  grid-template-columns: auto minmax(120px, 240px) auto minmax(64px, auto);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   min-height: 42px;
   padding: 6px 14px;
+}
+
+.chronicle-period-scale-control {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(120px, 240px) max-content;
+  justify-self: center;
+  max-width: 100%;
 }
 
 .chronicle-period-scale input[type="range"] {
@@ -330,7 +339,7 @@
 .chronicle-period-scale output {
   color: var(--text);
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  white-space: nowrap;
 }
 
 .chronicle-calendar-settings-button,
@@ -343,8 +352,11 @@
   border-radius: 5px;
   color: var(--text);
   cursor: pointer;
-  min-height: 28px;
-  padding: 0 10px;
+  font-size: 11px;
+  justify-self: end;
+  min-height: 26px;
+  padding: 0 8px;
+  width: max-content;
 }
 
 .chronicle-calendar-settings-panel {
@@ -408,8 +420,14 @@
 @media (max-width: 620px) {
   .chronicle-period-scale {
     gap: 8px;
-    grid-template-columns: auto minmax(80px, 1fr) auto auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     padding-inline: 10px;
+  }
+
+  .chronicle-period-scale-control {
+    gap: 6px;
+    grid-template-columns: minmax(80px, 1fr) max-content;
+    justify-self: stretch;
   }
 }
 

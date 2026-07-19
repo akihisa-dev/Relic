@@ -39,8 +39,11 @@ describe("ChronicleCanvas cursor", () => {
     );
 
     const slider = screen.getByRole("slider", { name: "Period scale" });
+    const scaleValue = screen.getByText("10-year intervals");
+    const settingsButton = screen.getByRole("button", { name: "Calendar settings" });
     expect(slider).toHaveAttribute("aria-valuetext", "10-year intervals");
-    expect(screen.getByText("10-year intervals")).toBeInTheDocument();
+    expect(slider.parentElement).toContainElement(scaleValue);
+    expect(slider.closest(".chronicle-period-scale")?.lastElementChild).toBe(settingsButton);
 
     fireEvent.change(slider, { target: { value: "4" } });
 
