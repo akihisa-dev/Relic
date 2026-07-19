@@ -161,12 +161,24 @@ describe("sphereRuntime", () => {
     expect(boundaryNode.vx).toBeLessThan(0);
     forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
     expect(data.nodes[0]).toMatchObject({ x: 10, y: 20, z: 30 });
-    expect(forceGraphMocks.graph.zoomToFit).toHaveBeenCalledWith(420, 72);
+    expect(forceGraphMocks.graph.cameraPosition).toHaveBeenCalledWith(
+      {
+        x: expect.any(Number),
+        y: expect.any(Number),
+        z: expect.any(Number)
+      },
+      { x: 0, y: 0, z: 0 },
+      420
+    );
+    const initialCameraPosition = forceGraphMocks.graph.cameraPosition.mock.calls[0][0];
+    expect(initialCameraPosition.x).toBeCloseTo(initialCameraPosition.z);
+    expect(initialCameraPosition.y).toBeGreaterThan(0);
+    expect(initialCameraPosition.x).toBeGreaterThan(initialCameraPosition.y);
     runtime.setData(sphereData());
     runAnimationFrame();
     runAnimationFrame();
     forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
-    expect(forceGraphMocks.graph.zoomToFit).toHaveBeenCalledTimes(2);
+    expect(forceGraphMocks.graph.cameraPosition).toHaveBeenCalledTimes(2);
     expect(scene.add).toHaveBeenCalledTimes(2);
     const colorAccessor = forceGraphMocks.graph.nodeColor.mock.calls[0][0];
     const linkColorAccessor = forceGraphMocks.graph.linkColor.mock.calls[0][0];
@@ -194,10 +206,17 @@ describe("sphereRuntime", () => {
     runtime.resetView();
     expect((controls.cursor as { set: ReturnType<typeof vi.fn> }).set).toHaveBeenCalledWith(0, 0, 0);
     expect(forceGraphMocks.graph.cameraPosition).toHaveBeenCalledWith(
-      { x: 0, y: 0, z: expect.any(Number) },
+      {
+        x: expect.any(Number),
+        y: expect.any(Number),
+        z: expect.any(Number)
+      },
       { x: 0, y: 0, z: 0 },
       420
     );
+    const resetCameraPosition = forceGraphMocks.graph.cameraPosition.mock.calls.at(-1)?.[0];
+    expect(resetCameraPosition.x).toBeCloseTo(resetCameraPosition.z);
+    expect(resetCameraPosition.y).toBeGreaterThan(0);
 
     canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
     expect(callbacks.onContextLost).toHaveBeenCalled();

@@ -14,6 +14,7 @@ import {
   sphereLinkDistance,
   sphereLinkTouchesFocus,
   sphereNodeChargeStrength,
+  sphereQuarterCameraPosition,
   type SphereData,
   type SphereLink,
   type SphereNode
@@ -149,6 +150,28 @@ export function createSphereRuntime(
     guides.setRadius(guideRadius);
     controls.maxTargetRadius = guideRadius;
   };
+  const fitQuarterView = (duration: number) => {
+    const bounds = graph.getGraphBbox();
+    const rect = currentHost.getBoundingClientRect();
+    const fitDistance = bounds
+      ? sphereCameraFitDistance(bounds, {
+        aspect: camera.aspect,
+        fov: camera.fov,
+        height: Math.max(1, Math.floor(rect.height))
+      }, 72)
+      : null;
+    const distance = Math.min(
+      controls.maxDistance ?? 4_800,
+      Math.max(controls.minDistance ?? 48, fitDistance ?? guideRadius * 3)
+    );
+    controls.cursor?.set(0, 0, 0);
+    resumeAnimation();
+    graph.cameraPosition(
+      sphereQuarterCameraPosition(distance),
+      { x: 0, y: 0, z: 0 },
+      duration
+    );
+  };
   const scheduleNodeData = () => {
     nodeDataFrame = requestAnimationFrame(() => {
       nodeDataFrame = requestAnimationFrame(() => {
@@ -196,7 +219,7 @@ export function createSphereRuntime(
       followLayoutRadius();
       if (shouldFit) {
         hasFittedData = true;
-        graph.zoomToFit(420, 72);
+        fitQuarterView(420);
       }
     });
 
@@ -291,26 +314,7 @@ export function createSphereRuntime(
     },
     resetView: () => {
       if (disposed || data.nodes.length === 0 || !hasRenderedData) return;
-      const bounds = graph.getGraphBbox();
-      const rect = currentHost.getBoundingClientRect();
-      const fitDistance = bounds
-        ? sphereCameraFitDistance(bounds, {
-          aspect: camera.aspect,
-          fov: camera.fov,
-          height: Math.max(1, Math.floor(rect.height))
-        }, 72)
-        : null;
-      const distance = Math.min(
-        controls.maxDistance ?? 4_800,
-        Math.max(controls.minDistance ?? 48, fitDistance ?? guideRadius * 3)
-      );
-      controls.cursor?.set(0, 0, 0);
-      resumeAnimation();
-      graph.cameraPosition(
-        { x: 0, y: 0, z: distance },
-        { x: 0, y: 0, z: 0 },
-        420
-      );
+      fitQuarterView(420);
     },
     setData: (nextData) => {
       if (nextData === data) return;

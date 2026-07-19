@@ -46,6 +46,18 @@ export interface SphereLayoutSettings {
 
 export const SPHERE_MIN_GUIDE_RADIUS = 80;
 
+export function sphereQuarterCameraPosition(distance: number): SphereCoordinates {
+  const safeDistance = Math.max(0, distance);
+  const elevation = Math.PI / 6;
+  const horizontalDistance = safeDistance * Math.cos(elevation);
+  const diagonalComponent = horizontalDistance / Math.sqrt(2);
+  return {
+    x: diagonalComponent,
+    y: safeDistance * Math.sin(elevation),
+    z: diagonalComponent
+  };
+}
+
 export function sphereCameraFitDistance(
   bounds: SphereBounds,
   viewport: { aspect: number; fov: number; height: number },

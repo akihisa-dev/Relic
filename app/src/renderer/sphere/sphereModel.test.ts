@@ -12,7 +12,8 @@ import {
   sphereLinkTouchesFocus,
   sphereNodeChargeStrength,
   sphereNodeColors,
-  sphereNodeValue
+  sphereNodeValue,
+  sphereQuarterCameraPosition
 } from "./sphereModel";
 
 describe("sphereModel", () => {
@@ -90,7 +91,7 @@ describe("sphereModel", () => {
     expect(sphereCoreRadius([])).toBe(SPHERE_MIN_GUIDE_RADIUS);
   });
 
-  it("正面から全ノードを収めるカメラ距離を表示領域から求める", () => {
+  it("全ノードを収めるカメラ距離を表示領域から求める", () => {
     const distance = sphereCameraFitDistance(
       { x: [-120, 100], y: [-80, 90], z: [-60, 70] },
       { aspect: 1.5, fov: 60, height: 600 },
@@ -103,5 +104,14 @@ describe("sphereModel", () => {
       { aspect: 1.5, fov: 60, height: 600 },
       72
     )).toBeNull();
+  });
+
+  it("右上から見下ろすクォーター視点を一定距離で求める", () => {
+    const position = sphereQuarterCameraPosition(1_000);
+
+    expect(position.x).toBeCloseTo(position.z);
+    expect(position.y).toBeCloseTo(500);
+    expect(position.x).toBeGreaterThan(position.y);
+    expect(Math.hypot(position.x, position.y, position.z)).toBeCloseTo(1_000);
   });
 });
