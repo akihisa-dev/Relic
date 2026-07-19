@@ -9,7 +9,7 @@ export interface WorkspaceFileActionsContext {
   aliasesByPath: AliasIndex;
   beforeMutateWorkspaceItems?: (items: Array<{ path: string; type: "file" | "folder" }>) => Promise<boolean> | boolean;
   closeAllTabs: () => void;
-  closeTab: (pane: PaneId, tabId: string) => void;
+  closeTab: (pane: PaneId, tabId: string, remember?: boolean) => void;
   existingMarkdownPaths: string[];
   focusedPane: PaneId;
   leftPane: PaneState;

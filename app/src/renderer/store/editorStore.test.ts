@@ -23,6 +23,7 @@ const sampleFile3 = {
 
 function resetStore(): void {
   useEditorStore.setState({
+    closedTabs: [],
     editorSettings: defaultEditorSettings,
     focusedPane: "left",
     isSplit: false,
@@ -520,5 +521,79 @@ describe("editorStore", () => {
     expect(Object.keys(state.tabs)).toHaveLength(0);
     expect(state.navigationHistory).toEqual([]);
     expect(state.navigationIndex).toBe(-1);
+    expect(state.closedTabs).toEqual([]);
+  });
+
+  it("最後に閉じたタブを元の位置へ戻してアクティブにする", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    useEditorStore.getState().openFileInPane("left", sampleFile2);
+    useEditorStore.getState().openFileInPane("left", sampleFile3);
+    const closedTabId = useEditorStore.getState().leftPane.tabIds[1];
+
+    useEditorStore.getState().closeTab("left", closedTabId);
+    useEditorStore.getState().reopenClosedTab();
+
+    const state = useEditorStore.getState();
+    expect(state.leftPane.tabIds).toEqual([
+      expect.any(String),
+      closedTabId,
+      expect.any(String)
+    ]);
+    expect(state.leftPane.activeTabId).toBe(closedTabId);
+    expect(state.focusedPane).toBe("left");
+    expect(state.closedTabs).toEqual([]);
+  });
+
+  it("閉じたタブを新しい順に復元し、既に開いている同じファイルは重複させない", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    const firstTabId = useEditorStore.getState().leftPane.activeTabId!;
+    useEditorStore.getState().openFileInPane("left", sampleFile2);
+    const secondTabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    useEditorStore.getState().closeTab("left", firstTabId);
+    useEditorStore.getState().closeTab("left", secondTabId);
+    useEditorStore.getState().openFileInPane("left", sampleFile2);
+    const manuallyOpenedTabId = useEditorStore.getState().leftPane.activeTabId!;
+    useEditorStore.getState().reopenClosedTab();
+
+    let state = useEditorStore.getState();
+    expect(state.leftPane.tabIds).toEqual([manuallyOpenedTabId]);
+    expect(state.leftPane.activeTabId).toBe(manuallyOpenedTabId);
+
+    useEditorStore.getState().reopenClosedTab();
+    state = useEditorStore.getState();
+    expect(state.tabs[state.leftPane.activeTabId!]).toMatchObject({ path: sampleFile.path });
+    expect(state.leftPane.tabIds).toHaveLength(2);
+  });
+
+  it("右ペインを閉じた後は閉じたタブを左ペインへ復元する", () => {
+    useEditorStore.getState().toggleSplit();
+    useEditorStore.getState().openFileInPane("right", sampleFile);
+    const tabId = useEditorStore.getState().rightPane.activeTabId!;
+    useEditorStore.getState().closeTab("right", tabId);
+    useEditorStore.getState().toggleSplit();
+
+    useEditorStore.getState().reopenClosedTab();
+
+    const state = useEditorStore.getState();
+    expect(state.isSplit).toBe(false);
+    expect(state.leftPane.tabIds).toContain(tabId);
+    expect(state.leftPane.activeTabId).toBe(tabId);
+  });
+
+  it("削除や外部変更として閉じたタブは復元履歴へ追加しない", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    const tabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    useEditorStore.getState().closeTab("left", tabId);
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    const reopenedTabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    useEditorStore.getState().closeTab("left", reopenedTabId, false);
+    useEditorStore.getState().reopenClosedTab();
+
+    const state = useEditorStore.getState();
+    expect(state.leftPane.tabIds).toEqual([]);
+    expect(state.closedTabs).toEqual([]);
   });
 });

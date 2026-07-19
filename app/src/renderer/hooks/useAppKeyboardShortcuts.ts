@@ -8,6 +8,7 @@ interface UseAppKeyboardShortcutsInput {
   focusedPane: PaneId;
   leftPane: PaneState;
   requestFileSearchFocus: () => void;
+  reopenClosedTab: () => void;
   rightPane: PaneState;
   setIsCreatingFile: (isCreating: boolean) => void;
   setShowCommandPalette: (updater: boolean | ((current: boolean) => boolean)) => void;
@@ -16,7 +17,6 @@ interface UseAppKeyboardShortcutsInput {
   toggleRightPanel: () => void;
   toggleSidebar: () => void;
   toggleSplit: () => void;
-  toggleTypewriterMode: () => void;
 }
 
 export function useAppKeyboardShortcuts({
@@ -24,6 +24,7 @@ export function useAppKeyboardShortcuts({
   focusedPane,
   leftPane,
   requestFileSearchFocus,
+  reopenClosedTab,
   rightPane,
   setIsCreatingFile,
   setShowCommandPalette,
@@ -31,8 +32,7 @@ export function useAppKeyboardShortcuts({
   setSidebarView,
   toggleRightPanel,
   toggleSidebar,
-  toggleSplit,
-  toggleTypewriterMode
+  toggleSplit
 }: UseAppKeyboardShortcutsInput): void {
   useEffect(() => {
     const handler = (event: KeyboardEvent): void => {
@@ -70,7 +70,7 @@ export function useAppKeyboardShortcuts({
         setIsCreatingFile(true);
       } else if (key === "t" && event.shiftKey) {
         event.preventDefault();
-        toggleTypewriterMode();
+        reopenClosedTab();
       }
     };
 
@@ -82,6 +82,7 @@ export function useAppKeyboardShortcuts({
     focusedPane,
     leftPane,
     requestFileSearchFocus,
+    reopenClosedTab,
     rightPane,
     setIsCreatingFile,
     setShowCommandPalette,
@@ -89,7 +90,6 @@ export function useAppKeyboardShortcuts({
     setSidebarView,
     toggleRightPanel,
     toggleSidebar,
-    toggleSplit,
-    toggleTypewriterMode
+    toggleSplit
   ]);
 }

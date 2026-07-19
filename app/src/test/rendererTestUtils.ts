@@ -32,6 +32,7 @@ export function installMatchMediaMock(): void {
 export function resetRendererStores(): void {
   __resetEditorInputBufferForTests();
   useEditorStore.setState({
+    closedTabs: [],
     focusedPane: "left",
     isSplit: false,
     leftPane: { activeTabId: null, history: [], tabIds: [] },

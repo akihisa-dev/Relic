@@ -3,6 +3,11 @@ import { create } from "zustand";
 import { defaultEditorSettings, type EditorSettings, type MarkdownFileContent } from "../../shared/ipc";
 import { flushPendingEditorChanges } from "../editorInputBuffer";
 import {
+  type ClosedTabEntry,
+  rememberClosedTabs,
+  reopenClosedTabState
+} from "./editorClosedTabHistoryModel";
+import {
   moveEditorNavigationState,
   pruneEditorNavigationState,
   recordEditorNavigationState,
@@ -49,6 +54,7 @@ export type {
 
 interface EditorStore {
   editorSettings: EditorSettings;
+  closedTabs: ClosedTabEntry[];
   focusedPane: PaneId;
   isSplit: boolean;
   leftPane: PaneState;
@@ -57,7 +63,7 @@ interface EditorStore {
   rightPane: PaneState;
   tabs: Record<string, Tab>;
 
-  closeTab: (pane: PaneId, tabId: string) => void;
+  closeTab: (pane: PaneId, tabId: string, remember?: boolean) => void;
   closeOtherTabs: (pane: PaneId, tabId: string) => void;
   closeTabsToRight: (pane: PaneId, tabId: string) => void;
   closeAllTabsInPane: (pane: PaneId) => void;
@@ -70,6 +76,7 @@ interface EditorStore {
   openPdfInPane: (pane: PaneId, pdf: { name: string; path: string }) => void;
   openChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
+  reopenClosedTab: () => void;
   resolveTabExternalConflict: (tabId: string, choice: "external" | "relic") => void;
   setTabExternalConflict: (tabId: string, content: string) => void;
   setEditorSettings: (settings: EditorSettings) => void;
@@ -84,6 +91,7 @@ interface EditorStore {
 }
 
 export const useEditorStore = create<EditorStore>((set) => ({
+  closedTabs: [],
   editorSettings: defaultEditorSettings,
   focusedPane: "left",
   isSplit: false,
@@ -126,10 +134,21 @@ export const useEditorStore = create<EditorStore>((set) => ({
     });
   },
 
-  closeTab: (pane, tabId) => {
+  closeTab: (pane, tabId, remember = true) => {
     flushPendingEditorChanges([tabId]);
     set((state) => {
-      return pruneEditorNavigationState(state, closeTabState(state, pane, tabId));
+      const closePatch = closeTabState(state, pane, tabId);
+      const closedTabs = rememberClosedTabs(state, pane, closePatch, remember);
+      return { ...pruneEditorNavigationState(state, closePatch), closedTabs };
+    });
+  },
+
+  reopenClosedTab: () => {
+    flushPendingEditorChanges();
+    set((state) => {
+      const reopenPatch = reopenClosedTabState(state);
+      if (!reopenPatch) return state;
+      return { ...recordEditorNavigationState(state, reopenPatch), closedTabs: reopenPatch.closedTabs };
     });
   },
 
@@ -182,21 +201,27 @@ export const useEditorStore = create<EditorStore>((set) => ({
   closeOtherTabs: (pane, tabId) => {
     flushPendingEditorChanges();
     set((state) => {
-      return pruneEditorNavigationState(state, closeOtherTabsState(state, pane, tabId));
+      const closePatch = closeOtherTabsState(state, pane, tabId);
+      const closedTabs = rememberClosedTabs(state, pane, closePatch, true);
+      return { ...pruneEditorNavigationState(state, closePatch), closedTabs };
     });
   },
 
   closeTabsToRight: (pane, tabId) => {
     flushPendingEditorChanges();
     set((state) => {
-      return pruneEditorNavigationState(state, closeTabsToRightState(state, pane, tabId));
+      const closePatch = closeTabsToRightState(state, pane, tabId);
+      const closedTabs = rememberClosedTabs(state, pane, closePatch, true);
+      return { ...pruneEditorNavigationState(state, closePatch), closedTabs };
     });
   },
 
   closeAllTabsInPane: (pane) => {
     flushPendingEditorChanges();
     set((state) => {
-      return pruneEditorNavigationState(state, closeAllTabsInPaneState(state, pane));
+      const closePatch = closeAllTabsInPaneState(state, pane);
+      const closedTabs = rememberClosedTabs(state, pane, closePatch, true);
+      return { ...pruneEditorNavigationState(state, closePatch), closedTabs };
     });
   },
 
@@ -243,6 +268,7 @@ export const useEditorStore = create<EditorStore>((set) => ({
     flushPendingEditorChanges();
     set({
       ...closeAllTabsState(),
+      closedTabs: [],
       navigationHistory: [],
       navigationIndex: -1
     });

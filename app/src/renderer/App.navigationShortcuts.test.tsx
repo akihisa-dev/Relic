@@ -304,6 +304,32 @@ describe("App navigation and shortcuts", () => {
     expect(screen.getByText("Ctrl+N")).toBeInTheDocument();
   });
 
+  it("閉じたタブがある場合はコマンドとショートカットで最後のタブを開ける", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+    await screen.findByRole("main");
+
+    act(() => {
+      useEditorStore.getState().openPanelInPane("left", "settings", "設定");
+      useEditorStore.getState().closeTab("left", "panel-settings");
+    });
+
+    fireEvent.keyDown(window, { key: "P", metaKey: true, shiftKey: true });
+    expect(await screen.findByText("閉じたタブを開く")).toBeInTheDocument();
+    expect(screen.getByText("⌘⇧T")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.keyDown(window, { key: "t", metaKey: true, shiftKey: true });
+
+    await waitFor(() => {
+      expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-settings");
+    });
+    expect(useEditorStore.getState().closedTabs).toEqual([]);
+  });
+
   it("ファイルボタンでファイルサイドバーを開閉できる", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })

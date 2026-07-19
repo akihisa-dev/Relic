@@ -72,6 +72,7 @@ export function App(): ReactElement {
   const {
     canNavigateBack,
     canNavigateForward,
+    canReopenClosedTab,
     editorSettings,
     focusedPane,
     isSplit,
@@ -91,6 +92,7 @@ export function App(): ReactElement {
     openPdfInPane,
     openChartInPane,
     openPanelInPane,
+    reopenClosedTab,
     setEditorSettings,
     setFocusedPane,
     setTabActive,
@@ -357,6 +359,7 @@ export function App(): ReactElement {
     focusedPane,
     leftPane,
     requestFileSearchFocus: handleOpenQuickSwitcher,
+    reopenClosedTab,
     rightPane,
     setIsCreatingFile,
     setShowCommandPalette,
@@ -364,8 +367,7 @@ export function App(): ReactElement {
     setSidebarView,
     toggleRightPanel: toggleRightPanelIfAvailable,
     toggleSidebar,
-    toggleSplit: toggleSplitWithMotion,
-    toggleTypewriterMode
+    toggleSplit: toggleSplitWithMotion
   });
 
   const {
@@ -442,9 +444,11 @@ export function App(): ReactElement {
   });
   const commands = useCommandPaletteCommands({
     activeFileName: activeFileTabInFocusedPane?.name ?? null,
+    canReopenClosedTab,
     handleDeleteActiveFile,
     handleDuplicateActiveFile,
     requestFileSearchFocus: handleOpenQuickSwitcher,
+    reopenClosedTab,
     setIsCreatingFile,
     setShowQuickSwitcher,
     setSidebarView,

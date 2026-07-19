@@ -9,9 +9,11 @@ type Translate = (key: TranslationKey, params?: Record<string, string>) => strin
 
 interface UseCommandPaletteCommandsInput {
   activeFileName: string | null;
+  canReopenClosedTab: boolean;
   handleDeleteActiveFile: () => void;
   handleDuplicateActiveFile: () => void;
   requestFileSearchFocus: () => void;
+  reopenClosedTab: () => void;
   setIsCreatingFile: (isCreating: boolean) => void;
   setShowQuickSwitcher: (isShown: boolean) => void;
   setSidebarView: (view: SidebarView) => void;
@@ -24,9 +26,11 @@ interface UseCommandPaletteCommandsInput {
 
 export function useCommandPaletteCommands({
   activeFileName,
+  canReopenClosedTab,
   handleDeleteActiveFile,
   handleDuplicateActiveFile,
   requestFileSearchFocus,
+  reopenClosedTab,
   setIsCreatingFile,
   setShowQuickSwitcher,
   setSidebarView,
@@ -74,10 +78,17 @@ export function useCommandPaletteCommands({
         shortcut: formatShortcut(["mod", "shift", "B"]),
         action: toggleRightPanel
       },
+      ...(canReopenClosedTab
+        ? [{
+            id: "reopen-closed-tab",
+            label: t("command.reopenClosedTab"),
+            shortcut: formatShortcut(["mod", "shift", "T"]),
+            action: reopenClosedTab
+          }]
+        : []),
       {
         id: "toggle-typewriter",
         label: t("command.typewriter"),
-        shortcut: formatShortcut(["mod", "shift", "T"]),
         action: toggleTypewriterMode
       },
       ...(activeFileName
@@ -109,9 +120,11 @@ export function useCommandPaletteCommands({
     ],
     [
       activeFileName,
+      canReopenClosedTab,
       handleDeleteActiveFile,
       handleDuplicateActiveFile,
       requestFileSearchFocus,
+      reopenClosedTab,
       setIsCreatingFile,
       setShowQuickSwitcher,
       setSidebarView,

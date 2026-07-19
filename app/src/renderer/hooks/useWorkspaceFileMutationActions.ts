@@ -344,7 +344,7 @@ export function useWorkspaceFileMutationActions({
         [{ path: activeFile.tab.path, type: "file" }],
         () => relicClient.current!.moveItemToTrash({ path: activeFile.tab.path, type: "file" }),
         (value) => {
-          closeTab(focusedPane, activeFile.tabId);
+          closeTab(focusedPane, activeFile.tabId, false);
           setWorkspaceState(value);
         }
       );
@@ -365,7 +365,7 @@ export function useWorkspaceFileMutationActions({
           (value) => {
             const item = { path, type };
             tabCloseTargetsForTreeItem({ item, leftPane, rightPane, tabs })
-              .forEach((target) => closeTab(target.pane, target.tabId));
+              .forEach((target) => closeTab(target.pane, target.tabId, false));
             setWorkspaceState(value);
           }
         );
@@ -394,7 +394,7 @@ export function useWorkspaceFileMutationActions({
           if (!result.ok) {
             if (nextWorkspaceState) {
               tabCloseTargetsForTreeItems({ items: deletedItems, leftPane, rightPane, tabs })
-                .forEach((target) => closeTab(target.pane, target.tabId));
+                .forEach((target) => closeTab(target.pane, target.tabId, false));
               setWorkspaceState(nextWorkspaceState);
             }
             setWorkspaceError(result.error.message);
@@ -405,7 +405,7 @@ export function useWorkspaceFileMutationActions({
         }
 
         tabCloseTargetsForTreeItems({ items: deletableItems, leftPane, rightPane, tabs })
-          .forEach((target) => closeTab(target.pane, target.tabId));
+          .forEach((target) => closeTab(target.pane, target.tabId, false));
 
         if (nextWorkspaceState) setWorkspaceState(nextWorkspaceState);
       })();

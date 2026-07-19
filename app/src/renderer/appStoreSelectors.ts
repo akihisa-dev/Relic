@@ -8,6 +8,7 @@ export function selectAppEditorStoreState(state: EditorStoreState) {
   return {
     canNavigateBack: state.navigationIndex > 0,
     canNavigateForward: state.navigationIndex < state.navigationHistory.length - 1,
+    canReopenClosedTab: state.closedTabs.length > 0,
     closeAllTabs: state.closeAllTabs,
     closeAllTabsInPane: state.closeAllTabsInPane,
     closeOtherTabs: state.closeOtherTabs,
@@ -26,6 +27,7 @@ export function selectAppEditorStoreState(state: EditorStoreState) {
     openImageInPane: state.openImageInPane,
     openPdfInPane: state.openPdfInPane,
     openPanelInPane: state.openPanelInPane,
+    reopenClosedTab: state.reopenClosedTab,
     rightPane: state.rightPane,
     setEditorSettings: state.setEditorSettings,
     setFocusedPane: state.setFocusedPane,

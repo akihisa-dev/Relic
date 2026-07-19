@@ -304,6 +304,7 @@
   "commandPalette.empty": "一致するコマンドがありません",
   "commandPalette.placeholder": "コマンドを検索...",
   "command.renameFile": "ファイル名を変更: {{name}}",
+  "command.reopenClosedTab": "閉じたタブを開く",
   "command.rightPanel": "右パネルを切り替え",
   "command.search": "検索を開く",
   "command.settings": "設定を開く",

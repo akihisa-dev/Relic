@@ -48,7 +48,7 @@ export async function applyWorkspaceSnapshot({
     if (tab?.kind !== "file" || nextFilePathSet.has(tab.path)) return;
 
     if (tab.content === tab.savedContent && !tab.externalConflict) {
-      useEditorStore.getState().closeTab(pane, tabId);
+      useEditorStore.getState().closeTab(pane, tabId, false);
       return;
     }
 

@@ -304,6 +304,7 @@
   "commandPalette.empty": "No matching commands.",
   "commandPalette.placeholder": "Search commands...",
   "command.renameFile": "Rename file: {{name}}",
+  "command.reopenClosedTab": "Reopen Closed Tab",
   "command.rightPanel": "Toggle Right Panel",
   "command.search": "Open Search",
   "command.settings": "Open Settings",
