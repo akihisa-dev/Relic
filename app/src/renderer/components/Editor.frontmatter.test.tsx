@@ -346,7 +346,11 @@ describe("Editor frontmatter", () => {
     expect(container.querySelector(".cm-frontmatter-starter")).toBeNull();
     expect(container.querySelector(".cm-frontmatter-add-input")).toBeNull();
 
-    fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
+    const addButton = container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement;
+    expect(addButton).toHaveAccessibleName("Add frontmatter");
+    expect(addButton.querySelector("svg[aria-hidden='true']")).not.toBeNull();
+    expect(addButton.textContent).toBe("");
+    fireEvent.click(addButton);
 
     expect(onChange).toHaveBeenLastCalledWith("---\n---\n# 本文");
     expect(viewRef.current?.state.doc.toString()).toBe("---\n---\n# 本文");

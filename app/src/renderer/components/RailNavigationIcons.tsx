@@ -8,7 +8,7 @@ export const IconFiles = (_props: { sidebarOpen?: boolean } = {}): ReactElement 
 );
 
 export const IconFrontmatter = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
+  <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
     <path d="M2 6h4" />
     <path d="M2 10h4" />
     <path d="M2 14h4" />

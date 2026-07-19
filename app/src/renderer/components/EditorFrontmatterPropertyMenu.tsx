@@ -16,6 +16,7 @@ import {
   type FrontmatterPropertyMenuState
 } from "../editorFrontmatterPropertyMenuModel";
 import type { Translator } from "../i18nModel";
+import { IconFrontmatter } from "./RailNavigationIcons";
 
 interface EditorFrontmatterPropertyMenuProps {
   host?: HTMLElement | null;
@@ -130,7 +131,7 @@ export function EditorFrontmatterPropertyMenu({
       onClick={addFrontmatter}
       type="button"
     >
-      +
+      <IconFrontmatter />
     </button>
   );
   const propertyMenu = menu ? (
