@@ -101,9 +101,9 @@ export function ChronicleCategoryRail({
       <div className="chronicle-category-list">
         {filteredOptions.map((option) => {
           const visible = !hiddenCategoryKeys.has(option.key);
-          const markerColor = option.paletteIndex === null
+          const markerColor = option.hue === null
             ? "var(--chronicle-category-uncategorized)"
-            : `var(--chronicle-category-${option.paletteIndex})`;
+            : `hsl(${option.hue} var(--chronicle-category-saturation) var(--chronicle-category-lightness))`;
           return (
             <button
               aria-pressed={visible}

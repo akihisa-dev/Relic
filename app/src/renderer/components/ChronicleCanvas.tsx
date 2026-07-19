@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, t
 import type { ChartEntry } from "../../shared/ipc";
 import { cancelChronicleCanvasFrame, chronicleCanvasWheelFactor } from "../chronicleCanvasHelpers";
 import {
-  CHRONICLE_CATEGORY_PALETTE_SIZE,
   createChronicleCategoryOptions,
   isChronicleEntryVisible,
   pruneChronicleHiddenCategoryKeys
@@ -72,9 +71,11 @@ export function ChronicleCanvas({
   const categoryOptions = useMemo(() => createChronicleCategoryOptions(
     entries,
     categoryChoices,
-    t("chronicle.uncategorized"),
-    CHRONICLE_CATEGORY_PALETTE_SIZE
+    t("chronicle.uncategorized")
   ), [categoryChoices, entries, t]);
+  const categoryHues = useMemo(() => new Map(categoryOptions.flatMap((option) => (
+    option.hue === null ? [] : [[option.key, option.hue] as const]
+  ))), [categoryOptions]);
   const [periodScaleIndex, setPeriodScaleIndex] = useState(() => CHRONICLE_PERIOD_SCALES.indexOf(CHRONICLE_INITIAL_PERIOD_SCALE));
   const periodScale = CHRONICLE_PERIOD_SCALES[periodScaleIndex] ?? CHRONICLE_INITIAL_PERIOD_SCALE;
   const sceneRandomValuesRef = useRef<number[]>([]);
@@ -95,6 +96,7 @@ export function ChronicleCanvas({
   }, [entries, periodScale]);
   const sceneRef = useLatest(scene);
   const entriesRef = useLatest(entries);
+  const categoryHuesRef = useLatest(categoryHues);
   const hiddenCategoryKeysRef = useLatest(hiddenCategoryKeySet);
   const visibleItems = useMemo(() => scene.items.filter((item) => (
     isChronicleEntryVisible(item.entry, hiddenCategoryKeySet)
@@ -112,7 +114,8 @@ export function ChronicleCanvas({
   const openFileRef = useLatest(onOpenFile);
   const themeRef = useRef<ChronicleCanvasTheme>({
     background: "#f4f0e6",
-    itemPalette: ["#f2691b", "#1a1b17", "#62625b", "#b8af9f", "#76756c", "#d95711"],
+    categoryLightness: 40,
+    categorySaturation: 68,
     mutedText: "#76756c",
     text: "#1a1b17"
   });
@@ -122,18 +125,11 @@ export function ChronicleCanvas({
     if (!canvas) return;
     const styles = getComputedStyle(canvas);
     const token = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+    const percentage = (name: string, fallback: number) => Number.parseFloat(token(name, String(fallback))) || fallback;
     themeRef.current = {
       background: token("--color-bg", "#f4f0e6"),
-      itemPalette: [
-        token("--chronicle-category-0", "#c94f16"),
-        token("--chronicle-category-1", "#2563eb"),
-        token("--chronicle-category-2", "#008a5a"),
-        token("--chronicle-category-3", "#8a3ffc"),
-        token("--chronicle-category-4", "#b23a48"),
-        token("--chronicle-category-5", "#9a6700"),
-        token("--chronicle-category-6", "#007c91"),
-        token("--chronicle-category-7", "#6b5d4d")
-      ],
+      categoryLightness: percentage("--chronicle-category-lightness", 40),
+      categorySaturation: percentage("--chronicle-category-saturation", 68),
       mutedText: token("--color-text-secondary", "#62625b"),
       text: token("--color-text", "#1a1b17")
     };
@@ -183,7 +179,8 @@ export function ChronicleCanvas({
       width,
       height,
       themeRef.current,
-      hiddenCategoryKeysRef.current
+      hiddenCategoryKeysRef.current,
+      categoryHuesRef.current
     );
     if (simulationMoving || inertiaMoving || draggedItemId) {
       animationFrameRef.current = requestAnimationFrame(draw);

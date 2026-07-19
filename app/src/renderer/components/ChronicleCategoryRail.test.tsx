@@ -6,9 +6,9 @@ import { I18nProvider } from "../i18n";
 import { ChronicleCategoryRail } from "./ChronicleCategoryRail";
 
 const options: ChronicleCategoryOption[] = [
-  { count: 2, key: "category:War", label: "War", paletteIndex: 0 },
-  { count: 1, key: "category:People", label: "People", paletteIndex: 1 },
-  { count: 1, key: "uncategorized", label: "Uncategorized", paletteIndex: null }
+  { count: 2, hue: 0, key: "category:War", label: "War" },
+  { count: 1, hue: 137, key: "category:People", label: "People" },
+  { count: 1, hue: null, key: "uncategorized", label: "Uncategorized" }
 ];
 
 afterEach(cleanup);

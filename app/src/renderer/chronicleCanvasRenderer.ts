@@ -17,7 +17,7 @@ import {
   type ChronicleCanvasYear
 } from "./chronicleCanvasModel";
 import {
-  chronicleCategoryPaletteIndex,
+  chronicleCategoryKey,
   isChronicleEntryVisible
 } from "./chronicleCategoryModel";
 
@@ -29,7 +29,8 @@ const hoveredItemGlowBlur = 10;
 
 export interface ChronicleCanvasTheme {
   background: string;
-  itemPalette: string[];
+  categoryLightness: number;
+  categorySaturation: number;
   mutedText: string;
   text: string;
 }
@@ -47,7 +48,8 @@ export function drawChronicleCanvas(
   viewportWidth: number,
   viewportHeight: number,
   theme: ChronicleCanvasTheme,
-  hiddenCategoryKeys: ReadonlySet<string> = new Set()
+  hiddenCategoryKeys: ReadonlySet<string> = new Set(),
+  categoryHues: ReadonlyMap<string, number> = new Map()
 ): ChronicleCanvasDrawResult {
   context.save();
   context.clearRect(0, 0, viewportWidth, viewportHeight);
@@ -58,14 +60,13 @@ export function drawChronicleCanvas(
   const visibleYearLabels = visibleChronicleCanvasYearLabels(visibleYears, camera);
   drawYearGuides(context, visibleYears, camera, viewportWidth, viewportHeight, theme);
   const labelHits: ChronicleCanvasLabelHit[] = [];
-  const itemPalette = theme.itemPalette?.length ? theme.itemPalette : [theme.mutedText];
   for (const item of scene.items) {
     if (!isChronicleEntryVisible(item.entry, hiddenCategoryKeys)) continue;
     if (!isItemVisible(item, camera, viewportWidth, viewportHeight)) continue;
-    const paletteIndex = chronicleCategoryPaletteIndex(item.entry.category, itemPalette.length);
-    const itemColor = paletteIndex === null
+    const hue = categoryHues.get(chronicleCategoryKey(item.entry.category));
+    const itemColor = hue === undefined
       ? theme.mutedText
-      : itemPalette[paletteIndex] ?? theme.mutedText;
+      : `hsl(${hue} ${theme.categorySaturation}% ${theme.categoryLightness}%)`;
     const hit = drawItem(
       context,
       item,

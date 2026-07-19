@@ -1,13 +1,7 @@
 /* ─── Chronicle canvas ─── */
 .chronicle-panel {
-  --chronicle-category-0: #c94f16;
-  --chronicle-category-1: #2563eb;
-  --chronicle-category-2: #008a5a;
-  --chronicle-category-3: #8a3ffc;
-  --chronicle-category-4: #b23a48;
-  --chronicle-category-5: #9a6700;
-  --chronicle-category-6: #007c91;
-  --chronicle-category-7: #6b5d4d;
+  --chronicle-category-lightness: 40%;
+  --chronicle-category-saturation: 68%;
   --chronicle-category-uncategorized: var(--color-text-muted);
   display: flex;
   flex-direction: column;
@@ -19,14 +13,8 @@
 }
 
 [data-theme="dark"] .chronicle-panel {
-  --chronicle-category-0: #ff9b4d;
-  --chronicle-category-1: #68a5ff;
-  --chronicle-category-2: #45e39b;
-  --chronicle-category-3: #c3a6ff;
-  --chronicle-category-4: #ff7f8a;
-  --chronicle-category-5: #e8bf55;
-  --chronicle-category-6: #5ed5e8;
-  --chronicle-category-7: #c8b39a;
+  --chronicle-category-lightness: 70%;
+  --chronicle-category-saturation: 78%;
 }
 
 .chronicle-body {

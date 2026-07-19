@@ -1,13 +1,14 @@
 import type { ChartEntry } from "../shared/ipc";
 
 export const CHRONICLE_UNCATEGORIZED_KEY = "uncategorized";
-export const CHRONICLE_CATEGORY_PALETTE_SIZE = 8;
+const CHRONICLE_CATEGORY_HUE_COUNT = 360;
+const CHRONICLE_CATEGORY_HUE_STEP = 137;
 
 export interface ChronicleCategoryOption {
   count: number;
+  hue: number | null;
   key: string;
   label: string;
-  paletteIndex: number | null;
 }
 
 export function chronicleCategoryKey(category: string | undefined): string {
@@ -15,23 +16,10 @@ export function chronicleCategoryKey(category: string | undefined): string {
   return normalized ? `category:${normalized}` : CHRONICLE_UNCATEGORIZED_KEY;
 }
 
-export function chronicleCategoryPaletteIndex(category: string | undefined, paletteLength: number): number | null {
-  const normalized = category?.trim();
-  if (!normalized || paletteLength <= 0) return null;
-
-  let hash = 2166136261;
-  for (let index = 0; index < normalized.length; index += 1) {
-    hash ^= normalized.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0) % paletteLength;
-}
-
 export function createChronicleCategoryOptions(
   entries: ChartEntry[],
   categoryChoices: string[],
-  uncategorizedLabel: string,
-  paletteLength: number
+  uncategorizedLabel: string
 ): ChronicleCategoryOption[] {
   const counts = new Map<string, { count: number; label: string }>();
   for (const entry of entries) {
@@ -43,16 +31,14 @@ export function createChronicleCategoryOptions(
 
   const choices = uniqueNormalizedValues(categoryChoices);
   const choiceOrder = new Map(choices.map((choice, index) => [chronicleCategoryKey(choice), index]));
-  const options = [...counts.entries()].map(([key, value]) => ({
+  const options: ChronicleCategoryOption[] = [...counts.entries()].map(([key, value]) => ({
     count: value.count,
+    hue: null,
     key,
-    label: value.label,
-    paletteIndex: key === CHRONICLE_UNCATEGORIZED_KEY
-      ? null
-      : chronicleCategoryPaletteIndex(value.label, paletteLength)
+    label: value.label
   }));
 
-  return options.toSorted((left, right) => {
+  const sortedOptions = options.toSorted((left, right) => {
     if (left.key === CHRONICLE_UNCATEGORIZED_KEY) return 1;
     if (right.key === CHRONICLE_UNCATEGORIZED_KEY) return -1;
     const leftOrder = choiceOrder.get(left.key);
@@ -64,6 +50,8 @@ export function createChronicleCategoryOptions(
     }
     return left.label.localeCompare(right.label, "ja");
   });
+  assignDistinctCategoryHues(sortedOptions);
+  return sortedOptions;
 }
 
 export function isChronicleEntryVisible(entry: ChartEntry, hiddenCategoryKeys: ReadonlySet<string>): boolean {
@@ -88,4 +76,29 @@ function uniqueNormalizedValues(values: string[]): string[] {
     result.push(normalized);
   }
   return result;
+}
+
+function assignDistinctCategoryHues(options: ChronicleCategoryOption[]): void {
+  const usedSlots = new Set<number>();
+  const categorizedOptions = options
+    .filter((option) => option.key !== CHRONICLE_UNCATEGORIZED_KEY)
+    .toSorted((left, right) => left.key.localeCompare(right.key, "ja"));
+
+  for (const option of categorizedOptions) {
+    let slot = hashCategory(option.key) % CHRONICLE_CATEGORY_HUE_COUNT;
+    while (usedSlots.has(slot) && usedSlots.size < CHRONICLE_CATEGORY_HUE_COUNT) {
+      slot = (slot + 1) % CHRONICLE_CATEGORY_HUE_COUNT;
+    }
+    usedSlots.add(slot);
+    option.hue = (slot * CHRONICLE_CATEGORY_HUE_STEP) % CHRONICLE_CATEGORY_HUE_COUNT;
+  }
+}
+
+function hashCategory(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }

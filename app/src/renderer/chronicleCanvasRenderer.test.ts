@@ -34,7 +34,8 @@ describe("chronicleCanvasRenderer", () => {
 
     drawChronicleCanvas(context, scene, camera, null, null, 800, 400, {
       background: "#fff",
-      itemPalette: ["#f00"],
+      categoryLightness: 40,
+      categorySaturation: 68,
       mutedText: "#666",
       text: "#111"
     });
@@ -62,7 +63,8 @@ describe("chronicleCanvasRenderer", () => {
       400,
       {
         background: "#fff",
-        itemPalette: ["#f00"],
+        categoryLightness: 40,
+        categorySaturation: 68,
         mutedText: "#666",
         text: "#111"
       }
@@ -84,28 +86,32 @@ describe("chronicleCanvasRenderer", () => {
     const camera = createChronicleCanvasCamera();
     initializeChronicleCanvasCamera(camera, scene, 800, 400);
     const fillTextCalls: Array<{ font: string; text: string; x: number; y: number }> = [];
-    const context = createCanvasContext(fillTextCalls);
+    const fillStyleCalls: string[] = [];
+    const context = createCanvasContext(fillTextCalls, fillStyleCalls);
 
-    drawChronicleCanvas(context, scene, camera, null, null, 800, 400, {
+    drawChronicleCanvas(context, scene, camera, scene.items[1].id, { x: 400, y: 200 }, 800, 400, {
       background: "#fff",
-      itemPalette: ["#f00", "#0f0", "#00f"],
+      categoryLightness: 40,
+      categorySaturation: 68,
       mutedText: "#666",
       text: "#111"
-    }, new Set(["category:戦争"]));
+    }, new Set(["category:戦争"]), new Map([["category:人物", 137]]));
 
     expect(fillTextCalls.some((call) => call.text === "War")).toBe(false);
     expect(fillTextCalls.some((call) => call.text === "People")).toBe(true);
+    expect(fillStyleCalls).toContain("hsl(137 68% 40%)");
   });
 });
 
 function createCanvasContext(
-  fillTextCalls: Array<{ font: string; text: string; x: number; y: number }>
+  fillTextCalls: Array<{ font: string; text: string; x: number; y: number }>,
+  fillStyleCalls: string[] = []
 ): CanvasRenderingContext2D {
   const context = {
     arc: () => undefined,
     beginPath: () => undefined,
     clearRect: () => undefined,
-    fill: () => undefined,
+    fill: () => fillStyleCalls.push(String(context.fillStyle)),
     fillRect: () => undefined,
     fillText: (text: string, x: number, y: number) => {
       fillTextCalls.push({ font: context.font, text, x, y });
