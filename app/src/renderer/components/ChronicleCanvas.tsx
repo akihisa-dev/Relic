@@ -60,6 +60,12 @@ interface PointerSession {
   type: "item" | "pan";
 }
 
+interface ChronicleCalendarSettingsDraft {
+  baseCalendarName: string;
+  calendars: Array<{ name: string; yearOne: string }>;
+  visibleCalendarNames: string[];
+}
+
 const emptyCategoryChoices: string[] = [];
 const emptyHiddenCategoryKeys: string[] = [];
 
@@ -443,22 +449,27 @@ function ChronicleCalendarSettingsPanel({
   settings: ChronicleCalendarSettings;
 }): ReactElement {
   const t = useT();
-  const [draft, setDraft] = useState(settings);
-  useEffect(() => setDraft(settings), [settings]);
-  const names = chronicleCalendarNames(draft);
+  const [draft, setDraft] = useState(() => createCalendarSettingsDraft(settings));
+  useEffect(() => setDraft(createCalendarSettingsDraft(settings)), [settings]);
+  const names = [draft.baseCalendarName, ...draft.calendars.map((calendar) => calendar.name)];
   const usedNames = useMemo(() => new Set(entries.flatMap((entry) => entry.calendarName ? [entry.calendarName] : [])), [entries]);
-  const save = (next: ChronicleCalendarSettings): void => {
+  const save = (next: ChronicleCalendarSettingsDraft): void => {
+    const calendars = next.calendars.flatMap((calendar) => {
+      const yearOne = parseCalendarYearOne(calendar.yearOne);
+      return yearOne === null ? [] : [{ name: calendar.name.trim(), yearOne }];
+    });
+    if (calendars.length !== next.calendars.length) return;
     const normalized = {
-      ...next,
       baseCalendarName: next.baseCalendarName.trim(),
-      calendars: next.calendars.map((calendar) => ({ ...calendar, name: calendar.name.trim() }))
+      calendars,
+      visibleCalendarNames: next.visibleCalendarNames
     };
     const normalizedNames = chronicleCalendarNames(normalized);
     if (!normalized.baseCalendarName || new Set(normalizedNames).size !== normalizedNames.length ||
       normalized.calendars.some((calendar) => !calendar.name || calendar.yearOne === 0 || !Number.isInteger(calendar.yearOne))) return;
     const visibleCalendarNames = normalized.visibleCalendarNames.filter((name) => normalizedNames.includes(name));
     const complete = { ...normalized, visibleCalendarNames: visibleCalendarNames.length > 0 ? visibleCalendarNames : [normalized.baseCalendarName] };
-    setDraft(complete);
+    setDraft(createCalendarSettingsDraft(complete));
     onSave(complete);
   };
   const toggleVisible = (name: string): void => {
@@ -524,8 +535,9 @@ function ChronicleCalendarSettingsPanel({
                 <input
                   inputMode="numeric"
                   onBlur={() => save(draft)}
-                  onChange={(event) => setDraft({ ...draft, calendars: draft.calendars.map((item, itemIndex) => itemIndex === index ? { ...item, yearOne: Number(event.target.value) } : item) })}
-                  type="number"
+                  onChange={(event) => setDraft({ ...draft, calendars: draft.calendars.map((item, itemIndex) => itemIndex === index ? { ...item, yearOne: event.target.value } : item) })}
+                  pattern="-?[0-9]*"
+                  type="text"
                   value={calendar.yearOne}
                 />
                 <span>{t("chronicle.yearSuffix")}</span>
@@ -546,13 +558,27 @@ function ChronicleCalendarSettingsPanel({
             let name = baseName;
             let suffix = 2;
             while (names.includes(name)) name = `${baseName} ${suffix++}`;
-            setDraft({ ...draft, calendars: [...draft.calendars, { name, yearOne: 1 }] });
+            setDraft({ ...draft, calendars: [...draft.calendars, { name, yearOne: "1" }] });
           }}
           type="button"
         >＋ {t("chronicle.addCalendar")}</button>
       </div>
     </section>
   );
+}
+
+function createCalendarSettingsDraft(settings: ChronicleCalendarSettings): ChronicleCalendarSettingsDraft {
+  return {
+    ...settings,
+    calendars: settings.calendars.map((calendar) => ({ ...calendar, yearOne: String(calendar.yearOne) }))
+  };
+}
+
+function parseCalendarYearOne(value: string): number | null {
+  const normalized = value.trim();
+  if (!/^-?\d+$/.test(normalized)) return null;
+  const yearOne = Number(normalized);
+  return Number.isInteger(yearOne) && yearOne !== 0 ? yearOne : null;
 }
 
 function requestCanvasFrame(

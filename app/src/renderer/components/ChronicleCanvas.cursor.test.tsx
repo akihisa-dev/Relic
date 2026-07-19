@@ -31,6 +31,37 @@ describe("ChronicleCanvas cursor", () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ visibleCalendarNames: ["基準暦", "別暦"] }));
   });
 
+  it("その他の暦の開始年を空欄から負数まで入力して保存する", () => {
+    const onSave = vi.fn();
+    render(
+      <I18nProvider language="ja">
+        <ChronicleCanvas
+          calendarSettings={{
+            baseCalendarName: "基準暦",
+            calendars: [{ name: "別暦", yearOne: 450 }],
+            visibleCalendarNames: ["基準暦"]
+          }}
+          entries={[]}
+          onCalendarSettingsSave={onSave}
+          onOpenFile={vi.fn()}
+        />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
+    const yearOneInput = screen.getByLabelText(/1年 ＝ 基準暦/);
+    fireEvent.change(yearOneInput, { target: { value: "" } });
+    expect(yearOneInput).toHaveValue("");
+    fireEvent.change(yearOneInput, { target: { value: "-" } });
+    expect(yearOneInput).toHaveValue("-");
+    fireEvent.change(yearOneInput, { target: { value: "-240" } });
+    fireEvent.blur(yearOneInput);
+
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+      calendars: [{ name: "別暦", yearOne: -240 }]
+    }));
+  });
+
   it("ズーム操作とは独立した期間スケールを段階的に変更する", () => {
     render(
       <I18nProvider language="en">

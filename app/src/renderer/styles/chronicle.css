@@ -401,7 +401,7 @@
 .chronicle-calendar-field { display: grid; gap: 6px; grid-template-columns: 90px 1fr; margin-top: 8px; }
 .chronicle-calendar-field span { color: var(--text-2); font-size: 12px; line-height: 28px; }
 .chronicle-calendar-settings-panel input:not([type]),
-.chronicle-calendar-settings-panel input[type="number"] {
+.chronicle-calendar-settings-panel input[inputmode="numeric"] {
   background: var(--bg);
   border: 1px solid var(--border-medium);
   border-radius: 5px;
@@ -413,7 +413,7 @@
 .chronicle-calendar-definition-list { display: grid; gap: 8px; margin-top: 8px; }
 .chronicle-calendar-definition { align-items: center; display: grid; gap: 7px; grid-template-columns: minmax(80px, 1fr) minmax(130px, 1.4fr) 24px; }
 .chronicle-calendar-definition > label { align-items: center; color: var(--text-2); display: flex; font-size: 11px; gap: 4px; white-space: nowrap; }
-.chronicle-calendar-definition input[type="number"] { width: 70px; }
+.chronicle-calendar-definition input[inputmode="numeric"] { width: 70px; }
 .chronicle-calendar-definition > button:disabled { cursor: default; opacity: 0.3; }
 .chronicle-calendar-add { background: transparent; border: 0; color: var(--color-primary); cursor: pointer; margin-top: 10px; padding: 4px 0; }
 
