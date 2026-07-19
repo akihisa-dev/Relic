@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Vector3 } from "three";
 
 import { defaultGraphDrawTheme } from "../graph/graphTypes";
 import { SPHERE_MIN_GUIDE_RADIUS, type SphereData } from "./sphereModel";
@@ -37,6 +38,13 @@ function sphereData(): SphereData {
 
 describe("sphereRuntime", () => {
   let animationFrames: Array<{ callback: FrameRequestCallback; id: number }>;
+  let camera: {
+    aspect: number;
+    fov: number;
+    lookAt: ReturnType<typeof vi.fn>;
+    position: Vector3;
+    up: Vector3;
+  };
   let canvas: HTMLCanvasElement;
   let chargeForce: { strength: ReturnType<typeof vi.fn> };
   let controlListeners: Map<string, Set<() => void>>;
@@ -55,6 +63,13 @@ describe("sphereRuntime", () => {
   beforeEach(() => {
     animationFrames = [];
     canvas = document.createElement("canvas");
+    camera = {
+      aspect: 1.5,
+      fov: 60,
+      lookAt: vi.fn(),
+      position: new Vector3(180, 90, 240),
+      up: new Vector3(0, 1, 0)
+    };
     chargeForce = { strength: vi.fn() };
     controlListeners = new Map();
     controls = {
@@ -64,6 +79,8 @@ describe("sphereRuntime", () => {
         controlListeners.set(type, listeners);
       }),
       cursor: { set: vi.fn() },
+      target: new Vector3(36, -12, 18),
+      update: vi.fn(),
       removeEventListener: vi.fn((type: string, listener: () => void) => {
         controlListeners.get(type)?.delete(listener);
       })
@@ -87,7 +104,7 @@ describe("sphereRuntime", () => {
     }));
 
     const graph: Record<string, any> = {
-      camera: vi.fn(() => ({ aspect: 1.5, fov: 60 })),
+      camera: vi.fn(() => camera),
       cameraPosition: vi.fn(() => graph),
       controls: vi.fn(() => controls),
       getGraphBbox: vi.fn(() => ({ x: [-120, 100], y: [-80, 90], z: [-60, 70] })),
@@ -156,6 +173,42 @@ describe("sphereRuntime", () => {
       maxTargetRadius: SPHERE_MIN_GUIDE_RADIUS,
       minDistance: 48
     });
+    const cameraPositionBeforeOrbit = camera.position.clone();
+    const targetBeforeOrbit = (controls.target as Vector3).clone();
+    const viewDistanceBeforeOrbit = cameraPositionBeforeOrbit.distanceTo(targetBeforeOrbit);
+    canvas.dispatchEvent(new MouseEvent("pointerdown", { button: 2 }));
+    document.dispatchEvent(new MouseEvent("pointermove", { clientX: 20, clientY: 0 }));
+    expect(controls.target).toEqual(targetBeforeOrbit);
+    canvas.dispatchEvent(new MouseEvent("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    expect(controls.target).toEqual(targetBeforeOrbit);
+    document.dispatchEvent(new MouseEvent("pointermove", { clientX: 11, clientY: 11 }));
+    expect(controls.target).toEqual(targetBeforeOrbit);
+    document.dispatchEvent(new MouseEvent("pointermove", { clientX: 16, clientY: 10 }));
+    expect(controls.target).not.toEqual(new Vector3(0, 0, 0));
+    expect((controls.target as Vector3).length()).toBeCloseTo(targetBeforeOrbit.length());
+    expect(camera.position.length()).toBeCloseTo(cameraPositionBeforeOrbit.length());
+    expect(camera.position.distanceTo(controls.target as Vector3)).toBeCloseTo(viewDistanceBeforeOrbit);
+    expect(camera.position).not.toEqual(cameraPositionBeforeOrbit);
+    expect(controls.target).not.toEqual(targetBeforeOrbit);
+    expect(camera.lookAt).toHaveBeenCalledWith(controls.target);
+    expect(controls.update).toHaveBeenCalledOnce();
+    document.dispatchEvent(new MouseEvent("pointerup"));
+    const cameraHeightBeforeDownwardDrag = camera.position.y;
+    canvas.dispatchEvent(new MouseEvent("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    document.dispatchEvent(new MouseEvent("pointermove", { clientX: 10, clientY: 16 }));
+    expect(camera.position.y).toBeGreaterThan(cameraHeightBeforeDownwardDrag);
+    document.dispatchEvent(new MouseEvent("pointerup"));
+    expect(controls.update).toHaveBeenCalledTimes(2);
+    canvas.dispatchEvent(new MouseEvent("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    document.dispatchEvent(new MouseEvent("pointerup"));
+    document.dispatchEvent(new MouseEvent("pointermove", { clientX: 20, clientY: 10 }));
+    canvas.dispatchEvent(new MouseEvent("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    canvas.dispatchEvent(new MouseEvent("pointercancel"));
+    document.dispatchEvent(new MouseEvent("pointermove", { clientX: 20, clientY: 10 }));
+    canvas.dispatchEvent(new MouseEvent("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    canvas.dispatchEvent(new MouseEvent("lostpointercapture"));
+    document.dispatchEvent(new MouseEvent("pointermove", { clientX: 20, clientY: 10 }));
+    expect(controls.update).toHaveBeenCalledTimes(2);
     expect(forceGraphMocks.graph.graphData).toHaveBeenCalled();
     expect(gridLine.material.opacity).toBe(0.26);
     controlListeners.get("start")?.forEach((listener) => listener());

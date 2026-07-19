@@ -1,4 +1,5 @@
 import ForceGraph3D, { type ForceGraph3DInstance } from "3d-force-graph";
+import { Quaternion, Vector3 } from "three";
 
 import { defaultGraphDrawTheme, type GraphDrawTheme } from "../graph/graphTypes";
 import {
@@ -45,17 +46,23 @@ type OrbitControlLimits = {
   addEventListener?: (type: "end" | "start", listener: () => void) => void;
   cursor?: { set: (x: number, y: number, z: number) => void };
   enablePan?: boolean;
+  enableRotate?: boolean;
   maxDistance?: number;
   maxTargetRadius?: number;
   maxPolarAngle?: number;
   minDistance?: number;
   minPolarAngle?: number;
   removeEventListener?: (type: "end" | "start", listener: () => void) => void;
+  target?: Vector3;
+  update?: () => void;
 };
 
 type SphereCamera = {
   aspect: number;
   fov: number;
+  lookAt: (target: Vector3) => void;
+  position: Vector3;
+  up: Vector3;
 };
 
 type ConfigurableChargeForce = {
@@ -69,6 +76,8 @@ type ConfigurableLinkForce = {
 type SphereBoundaryForce = ((alpha: number) => void) & {
   initialize: (nodes: SphereNode[]) => void;
 };
+
+const SPHERE_ORBIT_DRAG_THRESHOLD_PX = 5;
 
 function createSphereBoundaryForce(radius: number): SphereBoundaryForce {
   let nodes: SphereNode[] = [];
@@ -169,6 +178,7 @@ export function createSphereRuntime(
       Math.max(controls.minDistance ?? 48, fitDistance ?? guideRadius * 3)
     );
     controls.cursor?.set(0, 0, 0);
+    camera.up.set(0, 1, 0);
     resumeAnimation();
     graph.cameraPosition(
       sphereQuarterCameraPosition(distance),
@@ -231,6 +241,7 @@ export function createSphereRuntime(
 
   const controls = graph.controls() as OrbitControlLimits;
   controls.enablePan = true;
+  controls.enableRotate = false;
   controls.minDistance = 48;
   controls.maxDistance = 4_800;
   controls.maxTargetRadius = SPHERE_MIN_GUIDE_RADIUS;
@@ -243,6 +254,81 @@ export function createSphereRuntime(
   const renderer = graph.renderer();
   const camera = graph.camera() as unknown as SphereCamera;
   const canvas = renderer.domElement;
+  const sphereUp = new Vector3(0, 1, 0);
+  const orbitRotation = new Quaternion();
+  const orbitPitchAxis = new Vector3();
+  const orbitViewDirection = new Vector3();
+  const orbitProposedPosition = new Vector3();
+  const rotateAroundSphere = (deltaX: number, deltaY: number) => {
+    const target = controls.target;
+    if (!target) return;
+    const height = Math.max(1, currentHost.getBoundingClientRect().height);
+    const radiansPerPixel = (Math.PI * 2) / height;
+    orbitRotation.setFromAxisAngle(sphereUp, -deltaX * radiansPerPixel);
+    camera.position.applyQuaternion(orbitRotation);
+    target.applyQuaternion(orbitRotation);
+    camera.up.applyQuaternion(orbitRotation);
+
+    orbitViewDirection.subVectors(target, camera.position).normalize();
+    orbitPitchAxis.crossVectors(orbitViewDirection, camera.up).normalize();
+    if (orbitPitchAxis.lengthSq() > 0 && deltaY !== 0) {
+      orbitRotation.setFromAxisAngle(orbitPitchAxis, -deltaY * radiansPerPixel);
+      orbitProposedPosition.copy(camera.position).applyQuaternion(orbitRotation);
+      const radius = orbitProposedPosition.length();
+      const polarAngle = radius === 0
+        ? Math.PI / 2
+        : Math.acos(Math.max(-1, Math.min(1, orbitProposedPosition.y / radius)));
+      if (polarAngle >= (controls.minPolarAngle ?? 0) && polarAngle <= (controls.maxPolarAngle ?? Math.PI)) {
+        camera.position.copy(orbitProposedPosition);
+        target.applyQuaternion(orbitRotation);
+        camera.up.applyQuaternion(orbitRotation);
+      }
+    }
+    camera.lookAt(target);
+    controls.update?.();
+  };
+  let orbitPointer: {
+    active: boolean;
+    id: number;
+    lastX: number;
+    lastY: number;
+    startX: number;
+    startY: number;
+  } | null = null;
+  const handlePointerDown = (event: PointerEvent) => {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey) {
+      orbitPointer = null;
+      return;
+    }
+    orbitPointer = {
+      active: false,
+      id: event.pointerId,
+      lastX: event.clientX,
+      lastY: event.clientY,
+      startX: event.clientX,
+      startY: event.clientY
+    };
+  };
+  const handlePointerMove = (event: PointerEvent) => {
+    if (!orbitPointer || event.pointerId !== orbitPointer.id) return;
+    if (!orbitPointer.active) {
+      if (Math.hypot(event.clientX - orbitPointer.startX, event.clientY - orbitPointer.startY) <= SPHERE_ORBIT_DRAG_THRESHOLD_PX) return;
+      orbitPointer.active = true;
+      guides?.setInteractionActive(true);
+    }
+    rotateAroundSphere(event.clientX - orbitPointer.lastX, event.clientY - orbitPointer.lastY);
+    orbitPointer.lastX = event.clientX;
+    orbitPointer.lastY = event.clientY;
+  };
+  const handlePointerEnd = () => {
+    if (orbitPointer?.active) guides?.setInteractionActive(false);
+    orbitPointer = null;
+  };
+  canvas.addEventListener("pointerdown", handlePointerDown);
+  document.addEventListener("pointermove", handlePointerMove, true);
+  document.addEventListener("pointerup", handlePointerEnd, true);
+  canvas.addEventListener("pointercancel", handlePointerEnd);
+  canvas.addEventListener("lostpointercapture", handlePointerEnd);
   canvas.setAttribute("aria-label", callbacks.canvasLabel);
   canvas.setAttribute("tabindex", "0");
   let lastWidth = 0;
@@ -299,6 +385,11 @@ export function createSphereRuntime(
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       controls.removeEventListener?.("start", handleControlsStart);
       controls.removeEventListener?.("end", handleControlsEnd);
+      canvas.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("pointermove", handlePointerMove, true);
+      document.removeEventListener("pointerup", handlePointerEnd, true);
+      canvas.removeEventListener("pointercancel", handlePointerEnd);
+      canvas.removeEventListener("lostpointercapture", handlePointerEnd);
       canvas.removeEventListener("webglcontextlost", handleContextLost);
       resizeObserver?.unobserve(currentHost);
       resizeObserver?.disconnect();
