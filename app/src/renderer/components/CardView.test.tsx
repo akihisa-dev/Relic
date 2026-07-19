@@ -66,7 +66,8 @@ describe("CardView", () => {
 
     const cardButton = await screen.findByRole("button", { name: "Moonを開く" });
     expect(cardButton).toBeInTheDocument();
-    expect(cardButton.parentElement).toHaveClass("card-view-body");
+    expect(cardButton.parentElement).toHaveClass("card-view-stage");
+    expect(cardButton.parentElement?.parentElement).toHaveClass("card-view-body");
     expect(screen.queryByText("カード")).not.toBeInTheDocument();
     expect(screen.queryByText("カードビュー")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Moon" })).toHaveAttribute("aria-current", "true");

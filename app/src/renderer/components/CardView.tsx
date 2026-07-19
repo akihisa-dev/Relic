@@ -69,20 +69,22 @@ export function CardView({
             ))}
           </div>
           {selectedCard ? (
-            <button
-              aria-label={t("cards.openFile", { name: selectedCard.name })}
-              className="card-view-item"
-              onClick={() => onOpenFile(selectedCard.path)}
-              type="button"
-            >
-              <span className="card-view-name-row">
-                <span className="card-view-name">{selectedCard.name}</span>
-              </span>
-              <span className="card-view-image-frame">
-                <CardImage card={selectedCard} key={selectedCard.path} />
-              </span>
-              <span className="card-view-description">{selectedCard.flavorText}</span>
-            </button>
+            <div className="card-view-stage">
+              <button
+                aria-label={t("cards.openFile", { name: selectedCard.name })}
+                className="card-view-item"
+                onClick={() => onOpenFile(selectedCard.path)}
+                type="button"
+              >
+                <span className="card-view-name-row">
+                  <span className="card-view-name">{selectedCard.name}</span>
+                </span>
+                <span className="card-view-image-frame">
+                  <CardImage card={selectedCard} key={selectedCard.path} />
+                </span>
+                <span className="card-view-description">{selectedCard.flavorText}</span>
+              </button>
+            </div>
           ) : null}
         </div>
       ) : null}
