@@ -134,6 +134,10 @@ export function SphereView({
   const focusedNode = focusId
     ? filteredGraph.nodes.find((node) => node.id === focusId) ?? null
     : null;
+  const canResetView = filteredGraph.nodes.length > 0
+    && !graphState.loading
+    && !graphState.error
+    && !runtimeError;
 
   useEffect(() => {
     const updateTheme = () => setTheme(readGraphDrawTheme(document.documentElement));
@@ -221,11 +225,29 @@ export function SphereView({
 
   return (
     <div className="sphere-view-shell">
-      <div className="sphere-view-canvas" ref={hostRef} />
+      <div
+        className="sphere-view-canvas"
+        onKeyDown={(event) => {
+          if (!canResetView || event.key !== "0" || event.altKey || event.ctrlKey || event.metaKey) return;
+          event.preventDefault();
+          runtimeRef.current?.resetView();
+        }}
+        ref={hostRef}
+      />
       <div className="sphere-view-meta">
         <span>{t("graph.nodeCount", { count: filteredGraph.nodes.length })}</span>
         <span>{t("sphere.instructions")}</span>
       </div>
+      <button
+        aria-label={t("sphere.resetView")}
+        className="sphere-view-reset"
+        disabled={!canResetView}
+        onClick={() => runtimeRef.current?.resetView()}
+        type="button"
+      >
+        <SphereResetIcon />
+        <span className="sphere-view-reset-label">{t("sphere.resetView")}</span>
+      </button>
       {focusedNode ? <div className="sphere-view-focus">{focusedNode.label}</div> : null}
       {graphState.loading ? <div className="graph-view-status">{t("sphere.loading")}</div> : null}
       {graphState.error ? (
@@ -238,5 +260,14 @@ export function SphereView({
         <div className="graph-view-status graph-view-status--error">{runtimeError}</div>
       ) : null}
     </div>
+  );
+}
+
+function SphereResetIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="16">
+      <path d="M3 12a9 9 0 1 0 3-6.708" />
+      <path d="M3 3v6h6" />
+    </svg>
   );
 }

@@ -31,7 +31,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: calc(100% - 24px);
+  max-width: calc(100% - 172px);
   padding: 6px 8px;
   border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
   border-radius: 6px;
@@ -41,6 +41,40 @@
   box-shadow: var(--shadow-popover, 0 12px 34px rgba(15, 23, 42, 0.14));
   backdrop-filter: blur(10px);
   pointer-events: none;
+}
+
+.sphere-view-reset {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  inset-inline-end: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-surface-elevated) 88%, transparent);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  box-shadow: var(--shadow-popover, 0 12px 34px rgba(15, 23, 42, 0.14));
+  backdrop-filter: blur(10px);
+}
+
+.sphere-view-reset:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.sphere-view-reset:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.sphere-view-reset:disabled {
+  cursor: default;
+  opacity: 0.48;
 }
 
 .sphere-view-focus {
@@ -64,7 +98,15 @@
 }
 
 @media (max-width: 720px) {
+  .sphere-view-meta {
+    max-width: calc(100% - 68px);
+  }
+
   .sphere-view-meta span:last-child {
+    display: none;
+  }
+
+  .sphere-view-reset-label {
     display: none;
   }
 }

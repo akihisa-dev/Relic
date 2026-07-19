@@ -30,6 +30,12 @@ export interface SphereCoordinates {
   z: number;
 }
 
+export interface SphereBounds {
+  x: [number, number];
+  y: [number, number];
+  z: [number, number];
+}
+
 export interface SphereLayoutSettings {
   boundaryRadius: number;
   chargeStrength: number;
@@ -39,6 +45,26 @@ export interface SphereLayoutSettings {
 }
 
 export const SPHERE_MIN_GUIDE_RADIUS = 80;
+
+export function sphereCameraFitDistance(
+  bounds: SphereBounds,
+  viewport: { aspect: number; fov: number; height: number },
+  padding: number
+): number | null {
+  const coordinates = [...bounds.x, ...bounds.y, ...bounds.z];
+  if (coordinates.some((value) => !Number.isFinite(value))) return null;
+  if (!Number.isFinite(viewport.fov) || viewport.fov <= 0) return null;
+
+  const height = Math.max(1, viewport.height);
+  const aspect = Number.isFinite(viewport.aspect) && viewport.aspect > 0 ? viewport.aspect : 1;
+  const availableRatio = Math.max(0.05, 1 - Math.max(0, padding) * 2 / height);
+  const paddedFovRadians = availableRatio * viewport.fov * Math.PI / 180;
+  const maxBoxSide = Math.max(...coordinates.map((value) => Math.abs(value))) * 2;
+  if (maxBoxSide <= 0) return null;
+
+  const fitHeightDistance = maxBoxSide / Math.atan(paddedFovRadians);
+  return Math.max(fitHeightDistance, fitHeightDistance / aspect);
+}
 
 export function sphereLayoutSettings(nodeCount: number, linkCount: number): SphereLayoutSettings {
   const safeNodeCount = Math.max(1, nodeCount);

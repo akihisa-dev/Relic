@@ -4,6 +4,7 @@ import { defaultGraphDrawTheme } from "../graph/graphTypes";
 import {
   createSphereData,
   SPHERE_MIN_GUIDE_RADIUS,
+  sphereCameraFitDistance,
   sphereCoreRadius,
   sphereFocusIds,
   sphereLayoutSettings,
@@ -87,5 +88,20 @@ describe("sphereModel", () => {
 
     expect(sphereCoreRadius(nodes)).toBe(100);
     expect(sphereCoreRadius([])).toBe(SPHERE_MIN_GUIDE_RADIUS);
+  });
+
+  it("正面から全ノードを収めるカメラ距離を表示領域から求める", () => {
+    const distance = sphereCameraFitDistance(
+      { x: [-120, 100], y: [-80, 90], z: [-60, 70] },
+      { aspect: 1.5, fov: 60, height: 600 },
+      72
+    );
+
+    expect(distance).toBeGreaterThan(240);
+    expect(sphereCameraFitDistance(
+      { x: [0, 0], y: [0, 0], z: [0, 0] },
+      { aspect: 1.5, fov: 60, height: 600 },
+      72
+    )).toBeNull();
   });
 });

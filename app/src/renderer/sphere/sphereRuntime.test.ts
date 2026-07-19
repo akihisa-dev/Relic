@@ -55,7 +55,7 @@ describe("sphereRuntime", () => {
     animationFrames = [];
     canvas = document.createElement("canvas");
     chargeForce = { strength: vi.fn() };
-    controls = {};
+    controls = { cursor: { set: vi.fn() } };
     linkForce = { distance: vi.fn() };
     observerDisconnect = vi.fn();
     observerUnobserve = vi.fn();
@@ -75,8 +75,10 @@ describe("sphereRuntime", () => {
     }));
 
     const graph: Record<string, any> = {
-      camera: vi.fn(() => ({})),
+      camera: vi.fn(() => ({ aspect: 1.5, fov: 60 })),
+      cameraPosition: vi.fn(() => graph),
       controls: vi.fn(() => controls),
+      getGraphBbox: vi.fn(() => ({ x: [-120, 100], y: [-80, 90], z: [-60, 70] })),
       scene: vi.fn(() => scene),
       renderer: vi.fn(() => ({
         domElement: canvas,
@@ -188,6 +190,14 @@ describe("sphereRuntime", () => {
     forceGraphMocks.graph.onBackgroundClick.mock.calls[0][0]();
     expect(callbacks.onNodeClick).toHaveBeenCalledWith(data.nodes[0]);
     expect(callbacks.onBackgroundClick).toHaveBeenCalledOnce();
+
+    runtime.resetView();
+    expect((controls.cursor as { set: ReturnType<typeof vi.fn> }).set).toHaveBeenCalledWith(0, 0, 0);
+    expect(forceGraphMocks.graph.cameraPosition).toHaveBeenCalledWith(
+      { x: 0, y: 0, z: expect.any(Number) },
+      { x: 0, y: 0, z: 0 },
+      420
+    );
 
     canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
     expect(callbacks.onContextLost).toHaveBeenCalled();

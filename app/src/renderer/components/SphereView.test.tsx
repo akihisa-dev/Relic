@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { makeRelicApi } from "../../test/rendererTestUtils";
@@ -11,6 +11,7 @@ const runtimeMocks = vi.hoisted(() => ({
   createSphereRuntime: vi.fn(),
   dispose: vi.fn(),
   attach: vi.fn(),
+  resetView: vi.fn(),
   setCallbacks: vi.fn(),
   setData: vi.fn(),
   setFocus: vi.fn(),
@@ -46,6 +47,7 @@ function renderSphereView(
     return {
       attach: runtimeMocks.attach,
       dispose: runtimeMocks.dispose,
+      resetView: runtimeMocks.resetView,
       setCallbacks: runtimeMocks.setCallbacks,
       setData: runtimeMocks.setData,
       setFocus: runtimeMocks.setFocus,
@@ -113,6 +115,34 @@ describe("SphereView", () => {
 
     act(() => runtimeMocks.callbacks?.onBackgroundClick());
     expect(runtimeMocks.setFocus).toHaveBeenLastCalledWith(null);
+  });
+
+  it("ボタンと0キーで選択を保ったまま視点をリセットする", async () => {
+    const { container } = renderSphereView();
+    const resetButton = screen.getByRole("button", { name: "視点をリセット" });
+    expect(resetButton).toBeDisabled();
+    fireEvent.keyDown(container.querySelector(".sphere-view-canvas")!, { key: "0" });
+    expect(runtimeMocks.resetView).not.toHaveBeenCalled();
+    await waitFor(() => expect(resetButton).toBeEnabled());
+    await waitFor(() => expect(runtimeMocks.callbacks).not.toBeNull());
+    const node = {
+      backlinkCount: 0,
+      exists: true,
+      id: "A.md",
+      label: "A",
+      linkCount: 1,
+      path: "A.md",
+      type: "file",
+      val: 4
+    };
+
+    act(() => runtimeMocks.callbacks?.onNodeClick(node));
+    fireEvent.click(resetButton);
+    fireEvent.keyDown(container.querySelector(".sphere-view-canvas")!, { key: "0" });
+
+    expect(runtimeMocks.resetView).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(runtimeMocks.setFocus).toHaveBeenLastCalledWith("A.md");
   });
 
   it("別ノードへの切替では開かず、選択中のタグを再クリックすると検索する", async () => {

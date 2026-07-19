@@ -7,6 +7,7 @@ import {
 } from "./sphereGuides";
 import {
   SPHERE_MIN_GUIDE_RADIUS,
+  sphereCameraFitDistance,
   sphereCoreRadius,
   sphereFocusIds,
   sphereLayoutSettings,
@@ -29,6 +30,7 @@ interface SphereRuntimeCallbacks {
 export interface SphereRuntime {
   attach: (host: HTMLElement) => void;
   dispose: () => void;
+  resetView: () => void;
   setData: (data: SphereData) => void;
   setCallbacks: (callbacks: SphereRuntimeCallbacks) => void;
   setFocus: (focusId: string | null) => void;
@@ -37,12 +39,18 @@ export interface SphereRuntime {
 }
 
 type OrbitControlLimits = {
+  cursor?: { set: (x: number, y: number, z: number) => void };
   enablePan?: boolean;
   maxDistance?: number;
   maxTargetRadius?: number;
   maxPolarAngle?: number;
   minDistance?: number;
   minPolarAngle?: number;
+};
+
+type SphereCamera = {
+  aspect: number;
+  fov: number;
 };
 
 type ConfigurableChargeForce = {
@@ -200,6 +208,7 @@ export function createSphereRuntime(
   controls.minPolarAngle = 0.04;
   controls.maxPolarAngle = Math.PI - 0.04;
   const renderer = graph.renderer();
+  const camera = graph.camera() as unknown as SphereCamera;
   const canvas = renderer.domElement;
   canvas.setAttribute("aria-label", callbacks.canvasLabel);
   canvas.setAttribute("tabindex", "0");
@@ -279,6 +288,29 @@ export function createSphereRuntime(
       renderer.forceContextLoss();
       graph._destructor();
       currentHost.replaceChildren();
+    },
+    resetView: () => {
+      if (disposed || data.nodes.length === 0 || !hasRenderedData) return;
+      const bounds = graph.getGraphBbox();
+      const rect = currentHost.getBoundingClientRect();
+      const fitDistance = bounds
+        ? sphereCameraFitDistance(bounds, {
+          aspect: camera.aspect,
+          fov: camera.fov,
+          height: Math.max(1, Math.floor(rect.height))
+        }, 72)
+        : null;
+      const distance = Math.min(
+        controls.maxDistance ?? 4_800,
+        Math.max(controls.minDistance ?? 48, fitDistance ?? guideRadius * 3)
+      );
+      controls.cursor?.set(0, 0, 0);
+      resumeAnimation();
+      graph.cameraPosition(
+        { x: 0, y: 0, z: distance },
+        { x: 0, y: 0, z: 0 },
+        420
+      );
     },
     setData: (nextData) => {
       if (nextData === data) return;
