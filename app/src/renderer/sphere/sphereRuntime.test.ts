@@ -157,11 +157,11 @@ describe("sphereRuntime", () => {
       minDistance: 48
     });
     expect(forceGraphMocks.graph.graphData).toHaveBeenCalled();
-    expect(gridLine.material.opacity).toBe(0.16);
+    expect(gridLine.material.opacity).toBe(0.26);
     controlListeners.get("start")?.forEach((listener) => listener());
-    expect(gridLine.material.opacity).toBe(0.4);
+    expect(gridLine.material.opacity).toBe(0.5);
     controlListeners.get("end")?.forEach((listener) => listener());
-    expect(gridLine.material.opacity).toBe(0.16);
+    expect(gridLine.material.opacity).toBe(0.26);
     expect(forceGraphMocks.graph.linkVisibility).toHaveBeenCalledWith(true);
     expect(forceGraphMocks.graph.linkOpacity).toHaveBeenCalledWith(0.48);
     expect(forceGraphMocks.graph.linkOpacity).toHaveBeenLastCalledWith(0.48);
