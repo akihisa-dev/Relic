@@ -196,11 +196,15 @@ export function sphereStarColor(
   color: string,
   node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">
 ): string {
+  return sphereColorWithOpacity(color, SPHERE_STAR_OPACITY[sphereStarMagnitude(node)]);
+}
+
+export function sphereColorWithOpacity(color: string, opacity: number): string {
   const match = /^#([0-9a-f]{6})$/iu.exec(color);
   if (!match) return color;
   const value = Number.parseInt(match[1]!, 16);
-  const opacity = SPHERE_STAR_OPACITY[sphereStarMagnitude(node)];
-  return `rgba(${value >> 16}, ${(value >> 8) & 0xff}, ${value & 0xff}, ${opacity})`;
+  const safeOpacity = Math.max(0, Math.min(1, opacity));
+  return `rgba(${value >> 16}, ${(value >> 8) & 0xff}, ${value & 0xff}, ${safeOpacity})`;
 }
 
 export function sphereFocusIds(data: SphereData, focusId: string | null): Set<string> {

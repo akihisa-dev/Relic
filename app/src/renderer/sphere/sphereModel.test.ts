@@ -5,6 +5,7 @@ import {
   createSphereData,
   SPHERE_MIN_GUIDE_RADIUS,
   sphereCameraFitDistance,
+  sphereColorWithOpacity,
   sphereCoreRadius,
   sphereFocusIds,
   sphereLayoutSettings,
@@ -68,6 +69,8 @@ describe("sphereModel", () => {
       .toBe("rgba(242, 105, 27, 0.4)");
     expect(sphereStarColor("#f2691b", { backlinkCount: 2, linkCount: 3 }))
       .toBe("rgba(242, 105, 27, 1)");
+    expect(sphereColorWithOpacity("#62625b", 0.12)).toBe("rgba(98, 98, 91, 0.12)");
+    expect(sphereColorWithOpacity("currentColor", 0.12)).toBe("currentColor");
   });
 
   it("リンク密度が高いほど反発力とリンク距離を増やす", () => {

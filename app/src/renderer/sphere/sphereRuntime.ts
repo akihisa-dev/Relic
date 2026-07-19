@@ -8,6 +8,7 @@ import {
 import {
   SPHERE_MIN_GUIDE_RADIUS,
   sphereCameraFitDistance,
+  sphereColorWithOpacity,
   sphereCoreRadius,
   sphereFocusIds,
   sphereLayoutSettings,
@@ -202,11 +203,13 @@ export function createSphereRuntime(
       const baseColor = nodeColors.get(node.id) ?? theme.textSecondary;
       if (!focusId) return sphereStarColor(baseColor, node);
       if (node.id === focusId) return theme.accent;
-      return focusIds.has(node.id) ? baseColor : sphereStarColor(theme.border, node);
+      return focusIds.has(node.id) ? baseColor : sphereColorWithOpacity(theme.border, 0.16);
     })
     .linkColor((link) => focusId && sphereLinkTouchesFocus(link, focusId)
       ? theme.accent
-      : theme.textSecondary)
+      : focusId
+        ? sphereColorWithOpacity(theme.textSecondary, 0.12)
+        : theme.textSecondary)
     .onNodeHover((node) => callbacks.onNodeHover(node))
     .onNodeClick((node) => callbacks.onNodeClick(node))
     .onBackgroundClick(() => callbacks.onBackgroundClick())

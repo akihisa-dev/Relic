@@ -204,7 +204,7 @@ describe("sphereRuntime", () => {
     const linkWidthAccessor = forceGraphMocks.graph.linkWidth.mock.calls[0][0];
     expect(colorAccessor(sphereData().nodes[0])).toBe(defaultGraphDrawTheme.accent);
     expect(colorAccessor(sphereData().nodes[1])).toBe("#222222");
-    expect(colorAccessor(sphereData().nodes[2])).toBe("rgba(59, 60, 51, 0.4)");
+    expect(colorAccessor(sphereData().nodes[2])).toBe("rgba(59, 60, 51, 0.16)");
     expect(linkWidthAccessor(sphereData().links[0])).toBe(2.4);
     const unfocusedLink = {
       count: 1,
@@ -216,10 +216,11 @@ describe("sphereRuntime", () => {
     } as const;
     expect(linkWidthAccessor(unfocusedLink)).toBe(0);
     expect(linkColorAccessor(sphereData().links[0])).toBe(defaultGraphDrawTheme.accent);
-    expect(linkColorAccessor(unfocusedLink)).toBe(defaultGraphDrawTheme.textSecondary);
+    expect(linkColorAccessor(unfocusedLink)).toBe("rgba(98, 98, 91, 0.12)");
     runtime.setFocus(null);
     expect(colorAccessor(sphereData().nodes[0])).toBe("rgba(17, 17, 17, 0.58)");
     expect(colorAccessor(sphereData().nodes[2])).toBe("rgba(51, 51, 51, 0.4)");
+    expect(linkColorAccessor(unfocusedLink)).toBe(defaultGraphDrawTheme.textSecondary);
     forceGraphMocks.graph.onNodeClick.mock.calls[0][0](data.nodes[0]);
     forceGraphMocks.graph.onBackgroundClick.mock.calls[0][0]();
     expect(callbacks.onNodeClick).toHaveBeenCalledWith(data.nodes[0]);
