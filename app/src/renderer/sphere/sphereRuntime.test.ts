@@ -210,11 +210,11 @@ describe("sphereRuntime", () => {
     document.dispatchEvent(new MouseEvent("pointermove", { clientX: 20, clientY: 10 }));
     expect(controls.update).toHaveBeenCalledTimes(2);
     expect(forceGraphMocks.graph.graphData).toHaveBeenCalled();
-    expect(gridLine.material.opacity).toBe(0.42);
+    expect(gridLine.material.opacity).toBe(0.52);
     controlListeners.get("start")?.forEach((listener) => listener());
-    expect(gridLine.material.opacity).toBe(0.66);
+    expect(gridLine.material.opacity).toBe(0.78);
     controlListeners.get("end")?.forEach((listener) => listener());
-    expect(gridLine.material.opacity).toBe(0.42);
+    expect(gridLine.material.opacity).toBe(0.52);
     expect(forceGraphMocks.graph.linkVisibility).toHaveBeenCalledWith(true);
     expect(forceGraphMocks.graph.linkOpacity).toHaveBeenCalledWith(0.42);
     expect(forceGraphMocks.graph.linkOpacity).toHaveBeenLastCalledWith(0.42);

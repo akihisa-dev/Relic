@@ -56,17 +56,17 @@ describe("sphereGuides", () => {
     expect(gridMaterial).toMatchObject({
       dashed: true,
       depthTest: false,
-      linewidth: 0.85,
-      opacity: 0.42,
+      linewidth: 1,
+      opacity: 0.52,
       transparent: true
     });
     expect(gridMaterial.opacity).toBeLessThan((equator.material as LineMaterial).opacity);
     expect(latitudeLines.every(({ raycast }) => raycast({} as never, []) === undefined)).toBe(true);
 
     guides.setInteractionActive(true);
-    expect(gridMaterial.opacity).toBe(0.66);
+    expect(gridMaterial.opacity).toBe(0.78);
     guides.setInteractionActive(false);
-    expect(gridMaterial.opacity).toBe(0.42);
+    expect(gridMaterial.opacity).toBe(0.52);
   });
 
   it("同じガイドを維持したまま半径と点線間隔を更新する", () => {
