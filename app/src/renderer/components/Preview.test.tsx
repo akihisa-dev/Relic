@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
 import { makeRelicApi } from "../../test/rendererTestUtils";
+import { resolveAppFontFamily } from "../appFont";
 import { I18nProvider } from "../i18n";
 import { normalizeEmbedTarget } from "../previewMarkdown";
 import { __resetPreviewImageLoaderForTests } from "../previewImageLoader";
@@ -21,6 +22,24 @@ describe("Preview", () => {
     render(<Preview content="# タイトル" settings={settings} />);
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("タイトル");
+  });
+
+  it("表示言語に対応するフォントをプレビューへ反映する", () => {
+    const { container, rerender } = render(
+      <Preview content="日本語 English" settings={{ ...settings, font: "mincho", language: "ja" }} />
+    );
+
+    expect(container.querySelector(".preview-body")).toHaveStyle({
+      fontFamily: resolveAppFontFamily("mincho", "ja")
+    });
+
+    rerender(
+      <Preview content="English" settings={{ ...settings, font: "mincho", language: "en" }} />
+    );
+
+    expect(container.querySelector(".preview-body")).toHaveStyle({
+      fontFamily: resolveAppFontFamily("mincho", "en")
+    });
   });
 
   it("チェックボックスをクリックすると onChange が呼ばれる", () => {

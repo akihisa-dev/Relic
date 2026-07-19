@@ -1,7 +1,7 @@
 import { useCallback, useMemo, type ComponentProps, type CSSProperties, type ReactElement } from "react";
 
 import type { AppLanguage, EditorSettings } from "../../shared/ipc";
-import { appFontFamilyMap } from "../appFont";
+import { resolveAppFontFamily } from "../appFont";
 import { I18nProvider } from "../i18n";
 import { createTranslator } from "../i18nModel";
 import { useFileToolActions } from "../hooks/useFileToolActions";
@@ -35,7 +35,7 @@ export function AppLayout({
   statusBarProps,
   titleBarProps
 }: AppLayoutProps): ReactElement {
-  const fontFamily = appFontFamilyMap[font];
+  const fontFamily = resolveAppFontFamily(font, language);
   const t = useMemo(() => createTranslator(language), [language]);
   const openFileFromTool = useCallback(
     (path: string) => filesSidebarProps.onOpenFile(path),

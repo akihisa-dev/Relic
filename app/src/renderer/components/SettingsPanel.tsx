@@ -15,15 +15,15 @@ const publicRepositoryUrl = "https://github.com/akihisa-dev/Relic";
 function getEditorFontLabelKeys(platform?: NodeJS.Platform): { gothic: TranslationKey; mincho: TranslationKey; mono: TranslationKey } {
   if (platform === "win32") {
     return {
-      gothic: "settings.fontGothicWindows",
-      mincho: "settings.fontMinchoWindows",
+      gothic: "settings.fontSansWindows",
+      mincho: "settings.fontSerifWindows",
       mono: "settings.fontMonoWindows"
     };
   }
 
   return {
-    gothic: "settings.fontGothicMac",
-    mincho: "settings.fontMinchoMac",
+    gothic: "settings.fontSansMac",
+    mincho: "settings.fontSerifMac",
     mono: "settings.fontMonoMac"
   };
 }

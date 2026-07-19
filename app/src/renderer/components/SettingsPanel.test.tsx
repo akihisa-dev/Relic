@@ -60,21 +60,21 @@ describe("SettingsPanel", () => {
     expect(screen.queryByText("win32")).not.toBeInTheDocument();
   });
 
-  it("macOSではフォント選択肢をmacOSの元フォント名で表示する", () => {
+  it("英語のmacOSでは英語向けフォントを表示する", () => {
     renderSettingsPanel({ platform: "darwin" });
 
     expect(screen.getByRole("button", { name: "System font" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Hiragino Sans" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Hiragino Mincho ProN" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Arial" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Georgia" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Menlo" })).toBeInTheDocument();
   });
 
-  it("Windowsではフォント選択肢をWindowsの元フォント名で表示する", () => {
+  it("英語のWindowsでは英語向けフォントを表示する", () => {
     renderSettingsPanel({ platform: "win32" });
 
     expect(screen.getByRole("button", { name: "System font" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Yu Gothic" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Yu Mincho" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Arial" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Georgia" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Consolas" })).toBeInTheDocument();
   });
 
@@ -91,7 +91,7 @@ describe("SettingsPanel", () => {
     const onSave = vi.fn();
     renderSettingsPanel({ onSave });
 
-    fireEvent.click(screen.getByRole("button", { name: "Hiragino Sans" }));
+    fireEvent.click(screen.getByRole("button", { name: "Arial" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ font: "gothic" }));
 
     fireEvent.change(screen.getByDisplayValue("16"), { target: { value: "18" } });

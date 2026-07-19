@@ -4,7 +4,7 @@ import { GFM } from "@lezer/markdown";
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { appFontFamilyMap } from "../appFont";
+import { resolveAppFontFamily } from "../appFont";
 import { headingFoldRange } from "../editorHeadingFolding";
 import { I18nProvider } from "../i18n";
 import { makeRelicApi } from "../../test/rendererTestUtils";
@@ -39,7 +39,7 @@ describe("Editor preview", () => {
     });
 
     expect(container.querySelector(".cm-content")).toHaveStyle({
-      fontFamily: appFontFamilyMap.mincho
+      fontFamily: resolveAppFontFamily("mincho", "ja")
     });
   });
 

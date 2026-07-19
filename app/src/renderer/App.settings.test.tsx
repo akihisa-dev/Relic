@@ -12,7 +12,7 @@ import {
   restoreNavigatorPlatform,
   setNavigatorPlatform
 } from "./appTestHelpers";
-import { appFontFamilyMap } from "./appFont";
+import { resolveAppFontFamily } from "./appFont";
 
 describe("App settings", () => {
   beforeAll(installMatchMediaMock);
@@ -59,6 +59,30 @@ describe("App settings", () => {
     );
   });
 
+  it("表示言語を切り替えると選択中のプリセットを対応言語のフォントへ切り替える", async () => {
+    const saveEditorSettings = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({
+      getEditorSettings: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { ...defaultEditorSettings, font: "mincho", language: "ja" }
+      }),
+      saveEditorSettings
+    });
+
+    await renderApp();
+
+    const shell = document.querySelector<HTMLElement>(".app-shell");
+    await waitFor(() => expect(shell?.style.fontFamily).toBe(resolveAppFontFamily("mincho", "ja")));
+
+    fireEvent.click(await screen.findByRole("checkbox", { name: "英語に切り替える" }));
+
+    await waitFor(() => expect(shell?.style.fontFamily).toBe(resolveAppFontFamily("mincho", "en")));
+    expect(saveEditorSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ font: "mincho", language: "en" })
+    );
+  });
+
   it("設定フォントをアプリ全体の文字用CSS変数へ反映する", async () => {
     window.relic = makeRelicApi({
       getEditorSettings: vi.fn().mockResolvedValue({
@@ -71,12 +95,13 @@ describe("App settings", () => {
 
     await waitFor(() => {
       const shell = document.querySelector<HTMLElement>(".app-shell");
+      const fontFamily = resolveAppFontFamily("mono", "ja");
 
       expect(shell).not.toBeNull();
-      expect(shell?.style.fontFamily).toBe(appFontFamilyMap.mono);
-      expect(shell?.style.getPropertyValue("--font-body")).toBe(appFontFamilyMap.mono);
-      expect(shell?.style.getPropertyValue("--font-display")).toBe(appFontFamilyMap.mono);
-      expect(shell?.style.getPropertyValue("--font-mono")).toBe(appFontFamilyMap.mono);
+      expect(shell?.style.fontFamily).toBe(fontFamily);
+      expect(shell?.style.getPropertyValue("--font-body")).toBe(fontFamily);
+      expect(shell?.style.getPropertyValue("--font-display")).toBe(fontFamily);
+      expect(shell?.style.getPropertyValue("--font-mono")).toBe(fontFamily);
     });
   });
 });

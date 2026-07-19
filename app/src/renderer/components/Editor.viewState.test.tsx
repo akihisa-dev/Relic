@@ -4,6 +4,7 @@ import { BlockType } from "@codemirror/view";
 import { fireEvent, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { resolveAppFontFamily } from "../appFont";
 import { renderEditorWithView, settings } from "./editorTestHelpers";
 import { Editor } from "./Editor";
 import {
@@ -141,6 +142,31 @@ describe("Editor view state", () => {
     expect(view.scrollDOM.scrollTop).toBe(240);
     expect(view.scrollDOM.scrollLeft).toBe(12);
     expect(view.hasFocus).toBe(true);
+  });
+
+  it("表示言語の切替時もEditorViewを維持して対応言語のフォントへ切り替える", async () => {
+    const { rerender, view, viewRef } = await renderEditorWithView({
+      content: "日本語 English",
+      settings: { ...settings, font: "mincho", language: "ja" }
+    });
+
+    expect(view.contentDOM).toHaveStyle({
+      fontFamily: resolveAppFontFamily("mincho", "ja")
+    });
+
+    rerender(
+      <Editor
+        content={view.state.doc.toString()}
+        onChange={() => undefined}
+        settings={{ ...settings, font: "mincho", language: "en" }}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).toBe(view));
+    expect(view.contentDOM).toHaveStyle({
+      fontFamily: resolveAppFontFamily("mincho", "en")
+    });
   });
 
   it("source/live preview切替後もEditorViewと選択範囲とスクロール位置を維持する", async () => {

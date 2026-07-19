@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import type { EditorSettings } from "../../shared/ipc";
-import { appFontFamilyMap } from "../appFont";
+import { resolveAppFontFamily } from "../appFont";
 import { enhancePreviewTableColorSwatches } from "../colorSwatches";
 import { usePreviewEmbeds } from "../hooks/usePreviewEmbeds";
 import { useT } from "../i18n";
@@ -154,7 +154,7 @@ export function Preview({
   }, []);
 
   const style: React.CSSProperties = {
-    fontFamily: appFontFamilyMap[settings.font],
+    fontFamily: resolveAppFontFamily(settings.font, settings.language),
     fontSize: `${settings.fontSize}px`,
     lineHeight: settings.lineHeight,
     maxWidth: settings.maxWidth === "none" ? "none" : settings.maxWidth,

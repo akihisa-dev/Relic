@@ -3,7 +3,7 @@ import { EditorView, lineNumbers, ViewPlugin } from "@codemirror/view";
 import type { ViewUpdate } from "@codemirror/view";
 
 import type { EditorSettings } from "../shared/ipc";
-import { appFontFamilyMap } from "./appFont";
+import { resolveAppFontFamily } from "./appFont";
 import type { Translator } from "./i18nModel";
 
 const typewriterExtension = ViewPlugin.fromClass(
@@ -23,9 +23,11 @@ const typewriterExtension = ViewPlugin.fromClass(
 );
 
 export function buildEditorThemeExtension(settings: EditorSettings): Extension {
+  const fontFamily = resolveAppFontFamily(settings.font, settings.language);
+
   return EditorView.theme({
     "&": {
-      fontFamily: appFontFamilyMap[settings.font],
+      fontFamily,
       fontSize: `${settings.fontSize}px`,
       lineHeight: String(settings.lineHeight),
       height: "100%"
@@ -39,7 +41,7 @@ export function buildEditorThemeExtension(settings: EditorSettings): Extension {
     },
     ".cm-content": {
       boxSizing: "border-box",
-      fontFamily: appFontFamilyMap[settings.font],
+      fontFamily,
       maxWidth: settings.maxWidth === "none" ? "none" : settings.maxWidth,
       margin: "0 auto",
       padding: "8px 32px 24px"
