@@ -111,7 +111,8 @@ export function SphereView({
     workspaceCacheKey
   });
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-  const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const selectedNodeIdRef = useRef<string | null>(null);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
   const [theme, setTheme] = useState<GraphDrawTheme>(defaultGraphDrawTheme);
   const options = useMemo(loadGraphOptions, []);
@@ -129,7 +130,7 @@ export function SphereView({
     () => sphereNodeColors(filteredGraph, colorGroups, theme),
     [colorGroups, filteredGraph, theme]
   );
-  const focusId = pinnedNodeId ?? hoveredNodeId;
+  const focusId = selectedNodeId ?? hoveredNodeId;
   const focusedNode = focusId
     ? filteredGraph.nodes.find((node) => node.id === focusId) ?? null
     : null;
@@ -161,18 +162,25 @@ export function SphereView({
     try {
       const runtime = acquireSphereRuntime(host, {
         canvasLabel: t("sphere.canvasLabel"),
-        onBackgroundFocusClear: () => setPinnedNodeId(null),
+        onBackgroundClick: () => {
+          selectedNodeIdRef.current = null;
+          setSelectedNodeId(null);
+        },
         onContextLost: () => {
           runtimeRef.current?.dispose();
           runtimeRef.current = null;
           setRuntimeError(t("sphere.webglLost"));
         },
-        onNodeActivate: (node) => {
+        onNodeClick: (node) => {
+          if (selectedNodeIdRef.current !== node.id) {
+            selectedNodeIdRef.current = node.id;
+            setSelectedNodeId(node.id);
+            return;
+          }
           const action = graphNodePrimaryAction(node);
           if (action?.type === "file") openFileRef.current(action.path);
           if (action?.type === "tagSearch") openTagSearchRef.current(action.tag);
         },
-        onNodeFocus: (node) => setPinnedNodeId((current) => current === node.id ? null : node.id),
         onNodeHover: (node) => setHoveredNodeId(node?.id ? String(node.id) : null)
       });
       runtimeRef.current = runtime;
@@ -196,6 +204,12 @@ export function SphereView({
   useEffect(() => {
     runtimeRef.current?.setData(sphereData);
   }, [sphereData]);
+
+  useEffect(() => {
+    if (!selectedNodeId || filteredGraph.nodes.some((node) => node.id === selectedNodeId)) return;
+    selectedNodeIdRef.current = null;
+    setSelectedNodeId(null);
+  }, [filteredGraph.nodes, selectedNodeId]);
 
   useEffect(() => {
     runtimeRef.current?.setTheme(theme, nodeColors);

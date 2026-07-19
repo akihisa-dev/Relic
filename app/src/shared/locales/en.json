@@ -179,7 +179,7 @@
   "graph.reorderGroup": "Reorder group",
   "sphere.canvasLabel": "Sphere",
   "sphere.empty": "There are no nodes to display.",
-  "sphere.instructions": "Drag to rotate · Scroll to zoom · Right-click to highlight",
+  "sphere.instructions": "Click to select · Click again to open · Drag to rotate · Right-drag to move · Scroll to zoom",
   "sphere.loadFailed": "Could not load Sphere.",
   "sphere.loading": "Loading Sphere...",
   "sphere.unavailable": "Sphere is unavailable in this environment. The 2D graph remains available.",

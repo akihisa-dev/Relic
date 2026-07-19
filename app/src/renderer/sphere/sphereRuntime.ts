@@ -20,10 +20,9 @@ import {
 
 interface SphereRuntimeCallbacks {
   canvasLabel: string;
-  onBackgroundFocusClear: () => void;
+  onBackgroundClick: () => void;
   onContextLost: () => void;
-  onNodeActivate: (node: SphereNode) => void;
-  onNodeFocus: (node: SphereNode) => void;
+  onNodeClick: (node: SphereNode) => void;
   onNodeHover: (node: SphereNode | null) => void;
 }
 
@@ -40,6 +39,7 @@ export interface SphereRuntime {
 type OrbitControlLimits = {
   enablePan?: boolean;
   maxDistance?: number;
+  maxTargetRadius?: number;
   maxPolarAngle?: number;
   minDistance?: number;
   minPolarAngle?: number;
@@ -139,6 +139,7 @@ export function createSphereRuntime(
     const targetRadius = sphereCoreRadius(data.nodes);
     guideRadius += (targetRadius - guideRadius) * 0.18;
     guides.setRadius(guideRadius);
+    controls.maxTargetRadius = guideRadius;
   };
   const scheduleNodeData = () => {
     nodeDataFrame = requestAnimationFrame(() => {
@@ -173,15 +174,8 @@ export function createSphereRuntime(
       ? theme.accent
       : theme.textSecondary)
     .onNodeHover((node) => callbacks.onNodeHover(node))
-    .onNodeClick((node) => callbacks.onNodeActivate(node))
-    .onNodeRightClick((node, event) => {
-      event.preventDefault();
-      callbacks.onNodeFocus(node);
-    })
-    .onBackgroundRightClick((event) => {
-      event.preventDefault();
-      callbacks.onBackgroundFocusClear();
-    })
+    .onNodeClick((node) => callbacks.onNodeClick(node))
+    .onBackgroundClick(() => callbacks.onBackgroundClick())
     .onEngineTick(() => {
       if (!layoutPending || !guides) return;
       followLayoutRadius();
@@ -199,9 +193,10 @@ export function createSphereRuntime(
     });
 
   const controls = graph.controls() as OrbitControlLimits;
-  controls.enablePan = false;
+  controls.enablePan = true;
   controls.minDistance = 48;
   controls.maxDistance = 4_800;
+  controls.maxTargetRadius = SPHERE_MIN_GUIDE_RADIUS;
   controls.minPolarAngle = 0.04;
   controls.maxPolarAngle = Math.PI - 0.04;
   const renderer = graph.renderer();
@@ -275,8 +270,7 @@ export function createSphereRuntime(
         .linkWidth(0)
         .onNodeHover(() => undefined)
         .onNodeClick(() => undefined)
-        .onNodeRightClick(() => undefined)
-        .onBackgroundRightClick(() => undefined)
+        .onBackgroundClick(() => undefined)
         .onEngineTick(() => undefined)
         .onEngineStop(() => undefined);
       graph.d3Force("sphere-boundary", null);
@@ -291,6 +285,7 @@ export function createSphereRuntime(
       resumeAnimation();
       const shouldClearRenderedData = hasRenderedData;
       data = nextData;
+      controls.maxTargetRadius = SPHERE_MIN_GUIDE_RADIUS;
       layoutPending = false;
       cancelNodeDataFrame();
       if (shouldClearRenderedData) {

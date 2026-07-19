@@ -2,6 +2,7 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { makeRelicApi } from "../../test/rendererTestUtils";
+import { graphOptionsStorageKey } from "../graph/graphViewRuntime";
 import { I18nProvider } from "../i18n";
 import { disposeParkedSphereRuntime, SphereView } from "./SphereView";
 
@@ -21,7 +22,10 @@ vi.mock("../sphere/sphereRuntime", () => ({
   createSphereRuntime: (...args: any[]) => runtimeMocks.createSphereRuntime(...args)
 }));
 
-function renderSphereView(language: "en" | "ja" = "ja") {
+function renderSphereView(
+  language: "en" | "ja" = "ja",
+  additionalNodes: Array<Record<string, unknown>> = []
+) {
   const onOpenFile = vi.fn();
   const onOpenTagSearch = vi.fn();
   window.relic = makeRelicApi({
@@ -31,7 +35,8 @@ function renderSphereView(language: "en" | "ja" = "ja") {
         links: [{ count: 1, source: "A.md", target: "B.md", type: "link" }],
         nodes: [
           { backlinkCount: 0, exists: true, id: "A.md", label: "A", linkCount: 1, path: "A.md", type: "file" },
-          { backlinkCount: 1, exists: true, id: "B.md", label: "B", linkCount: 0, path: "B.md", type: "file" }
+          { backlinkCount: 1, exists: true, id: "B.md", label: "B", linkCount: 0, path: "B.md", type: "file" },
+          ...additionalNodes
         ]
       }
     })
@@ -61,6 +66,7 @@ afterEach(() => {
   cleanup();
   disposeParkedSphereRuntime();
   runtimeMocks.callbacks = null;
+  window.localStorage.clear();
   vi.clearAllMocks();
 });
 
@@ -78,7 +84,7 @@ describe("SphereView", () => {
     expect(screen.getByText("2件のノード")).toBeInTheDocument();
   });
 
-  it("ホバー・固定強調・ファイル表示を3D runtimeから接続する", async () => {
+  it("ホバー・2段階選択・ファイル表示を3D runtimeから接続する", async () => {
     const { onOpenFile } = renderSphereView();
     await waitFor(() => expect(runtimeMocks.callbacks).not.toBeNull());
     const node = {
@@ -97,12 +103,51 @@ describe("SphereView", () => {
     expect(screen.getByText("A")).toBeInTheDocument();
     expect(runtimeMocks.setFocus).toHaveBeenLastCalledWith("A.md");
 
-    act(() => runtimeMocks.callbacks?.onNodeFocus(node));
+    act(() => runtimeMocks.callbacks?.onNodeClick(node));
     act(() => runtimeMocks.callbacks?.onNodeHover(null));
     expect(runtimeMocks.setFocus).toHaveBeenLastCalledWith("A.md");
+    expect(onOpenFile).not.toHaveBeenCalled();
 
-    act(() => runtimeMocks.callbacks?.onNodeActivate(node));
+    act(() => runtimeMocks.callbacks?.onNodeClick(node));
     expect(onOpenFile).toHaveBeenCalledWith("A.md");
+
+    act(() => runtimeMocks.callbacks?.onBackgroundClick());
+    expect(runtimeMocks.setFocus).toHaveBeenLastCalledWith(null);
+  });
+
+  it("別ノードへの切替では開かず、選択中のタグを再クリックすると検索する", async () => {
+    window.localStorage.setItem(graphOptionsStorageKey, JSON.stringify({ showTags: true }));
+    const tagNode = {
+      backlinkCount: 1,
+      exists: true,
+      id: "#topic",
+      label: "#topic",
+      linkCount: 0,
+      type: "tag",
+      val: 4
+    };
+    const { onOpenFile, onOpenTagSearch } = renderSphereView("ja", [tagNode]);
+    await waitFor(() => expect(runtimeMocks.callbacks).not.toBeNull());
+    const fileNode = {
+      backlinkCount: 0,
+      exists: true,
+      id: "A.md",
+      label: "A",
+      linkCount: 1,
+      path: "A.md",
+      type: "file",
+      val: 4
+    };
+
+    act(() => runtimeMocks.callbacks?.onNodeClick(fileNode));
+    act(() => runtimeMocks.callbacks?.onNodeClick(tagNode));
+
+    expect(onOpenFile).not.toHaveBeenCalled();
+    expect(onOpenTagSearch).not.toHaveBeenCalled();
+    expect(runtimeMocks.setFocus).toHaveBeenLastCalledWith("#topic");
+
+    act(() => runtimeMocks.callbacks?.onNodeClick(tagNode));
+    expect(onOpenTagSearch).toHaveBeenCalledWith("topic");
   });
 
   it("WebGL停止をスフィア内のエラーに限定してruntimeを破棄する", async () => {

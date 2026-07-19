@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { defaultGraphDrawTheme } from "../graph/graphTypes";
-import type { SphereData } from "./sphereModel";
+import { SPHERE_MIN_GUIDE_RADIUS, type SphereData } from "./sphereModel";
 
 const forceGraphMocks = vi.hoisted(() => ({
   graph: {} as Record<string, any>
@@ -87,8 +87,8 @@ describe("sphereRuntime", () => {
     };
     for (const method of [
       "showNavInfo", "enableNodeDrag", "nodeId", "nodeLabel", "nodeVal", "nodeOpacity", "linkOpacity",
-      "linkVisibility", "linkWidth", "nodeColor", "linkColor", "onNodeHover", "onNodeClick", "onNodeRightClick",
-      "onBackgroundRightClick", "onEngineTick", "onEngineStop", "width", "height", "backgroundColor", "nodeResolution",
+      "linkVisibility", "linkWidth", "nodeColor", "linkColor", "onNodeHover", "onNodeClick", "onBackgroundClick",
+      "onEngineTick", "onEngineStop", "width", "height", "backgroundColor", "nodeResolution",
       "nodeRelSize", "cooldownTicks", "cooldownTime", "graphData", "refresh", "zoomToFit", "pauseAnimation",
       "resumeAnimation", "_destructor"
     ]) {
@@ -114,10 +114,9 @@ describe("sphereRuntime", () => {
     });
     const callbacks = {
       canvasLabel: "スフィア",
-      onBackgroundFocusClear: vi.fn(),
+      onBackgroundClick: vi.fn(),
       onContextLost: vi.fn(),
-      onNodeActivate: vi.fn(),
-      onNodeFocus: vi.fn(),
+      onNodeClick: vi.fn(),
       onNodeHover: vi.fn()
     };
     const runtime = createSphereRuntime(host, callbacks);
@@ -135,7 +134,12 @@ describe("sphereRuntime", () => {
     forceGraphMocks.graph.onEngineTick.mock.calls[0][0]();
 
     expect(canvas).toHaveAttribute("aria-label", "スフィア");
-    expect(controls).toMatchObject({ enablePan: false, minDistance: 48, maxDistance: 4_800 });
+    expect(controls).toMatchObject({
+      enablePan: true,
+      maxDistance: 4_800,
+      maxTargetRadius: SPHERE_MIN_GUIDE_RADIUS,
+      minDistance: 48
+    });
     expect(forceGraphMocks.graph.graphData).toHaveBeenCalled();
     expect(forceGraphMocks.graph.linkVisibility).toHaveBeenCalledWith(true);
     expect(forceGraphMocks.graph.linkOpacity).toHaveBeenCalledWith(0.48);
@@ -180,6 +184,10 @@ describe("sphereRuntime", () => {
     expect(linkWidthAccessor(unfocusedLink)).toBe(0);
     expect(linkColorAccessor(sphereData().links[0])).toBe(defaultGraphDrawTheme.accent);
     expect(linkColorAccessor(unfocusedLink)).toBe(defaultGraphDrawTheme.textSecondary);
+    forceGraphMocks.graph.onNodeClick.mock.calls[0][0](data.nodes[0]);
+    forceGraphMocks.graph.onBackgroundClick.mock.calls[0][0]();
+    expect(callbacks.onNodeClick).toHaveBeenCalledWith(data.nodes[0]);
+    expect(callbacks.onBackgroundClick).toHaveBeenCalledOnce();
 
     canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
     expect(callbacks.onContextLost).toHaveBeenCalled();
@@ -198,10 +206,9 @@ describe("sphereRuntime", () => {
     const host = document.createElement("div");
     const runtime = createSphereRuntime(host, {
       canvasLabel: "スフィア",
-      onBackgroundFocusClear: vi.fn(),
+      onBackgroundClick: vi.fn(),
       onContextLost: vi.fn(),
-      onNodeActivate: vi.fn(),
-      onNodeFocus: vi.fn(),
+      onNodeClick: vi.fn(),
       onNodeHover: vi.fn()
     });
     const data = sphereData();
@@ -225,10 +232,9 @@ describe("sphereRuntime", () => {
     const host = document.createElement("div");
     const runtime = createSphereRuntime(host, {
       canvasLabel: "スフィア",
-      onBackgroundFocusClear: vi.fn(),
+      onBackgroundClick: vi.fn(),
       onContextLost: vi.fn(),
-      onNodeActivate: vi.fn(),
-      onNodeFocus: vi.fn(),
+      onNodeClick: vi.fn(),
       onNodeHover: vi.fn()
     });
     const data = sphereData();
@@ -246,6 +252,7 @@ describe("sphereRuntime", () => {
     expect(scene.add).toHaveBeenCalledOnce();
     expect(scene.remove).not.toHaveBeenCalled();
     expect(ring.geometry.getAttribute("position").getX(0)).toBeGreaterThan(initialRadius);
+    expect(controls.maxTargetRadius).toBeGreaterThan(SPHERE_MIN_GUIDE_RADIUS);
 
     forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
 
@@ -258,10 +265,9 @@ describe("sphereRuntime", () => {
     const host = document.createElement("div");
     const runtime = createSphereRuntime(host, {
       canvasLabel: "スフィア",
-      onBackgroundFocusClear: vi.fn(),
+      onBackgroundClick: vi.fn(),
       onContextLost: vi.fn(),
-      onNodeActivate: vi.fn(),
-      onNodeFocus: vi.fn(),
+      onNodeClick: vi.fn(),
       onNodeHover: vi.fn()
     });
     const data = sphereData();
@@ -279,10 +285,9 @@ describe("sphereRuntime", () => {
     const host = document.createElement("div");
     const runtime = createSphereRuntime(host, {
       canvasLabel: "スフィア",
-      onBackgroundFocusClear: vi.fn(),
+      onBackgroundClick: vi.fn(),
       onContextLost: vi.fn(),
-      onNodeActivate: vi.fn(),
-      onNodeFocus: vi.fn(),
+      onNodeClick: vi.fn(),
       onNodeHover: vi.fn()
     });
     const data = sphereData();
