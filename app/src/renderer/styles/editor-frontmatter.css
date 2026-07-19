@@ -1,6 +1,7 @@
 .cm-frontmatter-properties {
   animation: frontmatter-panel-in var(--motion-normal) var(--ease-enter);
   color: var(--text);
+  container-type: inline-size;
   display: block;
   line-height: 1.35;
   max-width: 100%;
@@ -38,11 +39,11 @@
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  font-size: 1.16em;
-  font-weight: 750;
-  gap: 16px;
-  min-height: 50px;
-  padding: 0 20px;
+  font-size: 1em;
+  font-weight: 700;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 14px;
   transform-origin: left center;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
@@ -72,7 +73,7 @@
   transition:
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-normal) var(--ease-enter);
-  width: 22px;
+  width: 18px;
 }
 
 .cm-frontmatter-properties[data-collapsed="true"] .cm-frontmatter-toggle {
@@ -82,15 +83,15 @@
 .cm-frontmatter-count {
   align-items: center;
   background: var(--hover);
-  border-radius: 7px;
+  border-radius: 999px;
   color: var(--text-2);
   display: inline-flex;
-  font-size: 0.72em;
+  font-size: 0.7em;
   font-weight: 700;
   justify-content: center;
-  min-height: 24px;
-  min-width: 34px;
-  padding: 0 8px;
+  min-height: 20px;
+  min-width: 28px;
+  padding: 0 7px;
 }
 
 .cm-frontmatter-row {
@@ -103,8 +104,8 @@
   border-radius: 0;
   display: grid;
   gap: 0;
-  grid-template-columns: 52px minmax(148px, 220px) minmax(0, 1fr) 58px;
-  min-height: 76px;
+  grid-template-columns: 38px minmax(120px, 180px) minmax(0, 1fr) 44px;
+  min-height: 52px;
   min-width: 0;
   padding: 0;
   position: relative;
@@ -117,11 +118,11 @@
 }
 
 .cm-frontmatter-row[data-frontmatter-key="chronicle"] {
-  grid-template-columns: 52px minmax(148px, 220px) minmax(0, 1fr);
+  grid-template-columns: 38px minmax(120px, 180px) minmax(0, 1fr);
 }
 
 .cm-frontmatter-row:has(.cm-frontmatter-chronicle) {
-  grid-template-columns: 52px minmax(148px, 220px) minmax(0, 1fr);
+  grid-template-columns: 38px minmax(120px, 180px) minmax(0, 1fr);
 }
 
 .cm-frontmatter-row:hover {
@@ -196,12 +197,12 @@
 
 .cm-frontmatter-row-icon::before {
   background:
-    radial-gradient(circle, currentColor 2.4px, transparent 2.9px) 0 0 / 9px 9px;
+    radial-gradient(circle, currentColor 1.8px, transparent 2.3px) 0 0 / 7px 7px;
   content: "";
   display: block;
-  height: 38px;
-  opacity: 0.72;
-  width: 18px;
+  height: 24px;
+  opacity: 0.66;
+  width: 12px;
 }
 
 .cm-frontmatter-row:hover .cm-frontmatter-row-icon {
@@ -215,12 +216,12 @@
   border-right: 1px solid var(--border);
   color: var(--text-2);
   display: flex;
-  font-size: 1.04em;
-  font-weight: 650;
+  font-size: 0.96em;
+  font-weight: 620;
   line-height: 1.25;
   min-width: 0;
   overflow: hidden;
-  padding: 0 20px 0 0;
+  padding: 0 12px 0 0;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -232,11 +233,11 @@
   border-radius: 7px;
   color: var(--text);
   font: inherit;
-  min-height: 34px;
+  min-height: 30px;
   min-width: 0;
   outline: none;
   line-height: 1.35;
-  padding: 4px 10px;
+  padding: 3px 9px;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     border-color var(--motion-fast) var(--ease-standard),
@@ -263,7 +264,7 @@
 .cm-frontmatter-input-wrap {
   display: block;
   min-width: 0;
-  padding: 14px 16px;
+  padding: 9px 10px;
   width: 100%;
 }
 
@@ -279,10 +280,10 @@
 
 .cm-frontmatter-chronicle {
   display: grid;
-  gap: 10px;
+  gap: 6px;
   max-width: 100%;
   min-width: 0;
-  padding: 14px 16px;
+  padding: 9px 10px;
   width: 100%;
 }
 
@@ -291,10 +292,10 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
   grid-template-columns: minmax(110px, 1.35fr) minmax(58px, 0.75fr) minmax(30px, 0.38fr) minmax(58px, 0.75fr) minmax(30px, 0.38fr) 38px;
   min-width: 0;
-  padding: 8px 10px;
+  padding: 6px 8px;
   width: 100%;
 }
 
@@ -327,7 +328,7 @@
   line-height: 1.45;
   min-width: 0;
   outline: none;
-  padding: 14px 16px;
+  padding: 9px 10px;
   resize: vertical;
   transition:
     box-shadow var(--motion-fast) var(--ease-standard),
@@ -353,7 +354,7 @@
   display: inline-flex;
   gap: 8px;
   min-width: 0;
-  padding: 14px 16px;
+  padding: 9px 10px;
 }
 
 .cm-frontmatter-checkbox {
@@ -368,26 +369,28 @@
 .cm-frontmatter-remove {
   align-items: center;
   align-self: center;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
   color: var(--text-3);
   cursor: pointer;
   display: inline-flex;
-  height: 34px;
+  height: 30px;
   justify-content: center;
   line-height: 1;
   padding: 0;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
-  width: 34px;
+  width: 30px;
   z-index: 1;
 }
 
 .cm-frontmatter-remove:hover {
   background: var(--hover);
+  border-color: var(--border);
   color: var(--text);
 }
 
@@ -426,9 +429,9 @@
   align-items: flex-start;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 6px;
   min-width: 0;
-  padding: 14px 16px;
+  padding: 9px 10px;
   width: 100%;
 }
 
@@ -443,11 +446,11 @@
   font-size: 1em;
   gap: 8px;
   max-width: min(28ch, 100%);
-  min-height: 34px;
-  flex: 0 1 142px;
+  min-height: 30px;
+  flex: 0 1 128px;
   min-width: 0;
   line-height: 1.2;
-  padding: 3px 8px 3px 10px;
+  padding: 2px 6px 2px 9px;
   transform-origin: left center;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
@@ -484,14 +487,14 @@
   color: var(--text-3);
   cursor: pointer;
   display: inline-flex;
-  height: 24px;
+  height: 22px;
   justify-content: center;
   padding: 0;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
-  width: 24px;
+  width: 22px;
 }
 
 .cm-frontmatter-pill-remove:hover {
@@ -516,8 +519,8 @@
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  height: 34px;
-  width: 34px;
+  height: 30px;
+  width: 30px;
 }
 
 .cm-frontmatter-pill-input {
@@ -532,24 +535,24 @@
   border-top: 0;
   border-radius: 0 0 8px 8px;
   display: flex;
-  min-height: 62px;
-  padding: 14px 20px;
+  min-height: 48px;
+  padding: 8px 12px;
   width: 100%;
 }
 
 .cm-frontmatter-add-property {
   align-items: center;
   background: var(--bg);
-  border: 1px solid var(--accent);
-  border-radius: 8px;
-  color: var(--accent);
+  border: 1px solid var(--border-medium);
+  border-radius: 7px;
+  color: var(--text);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
   font-weight: 650;
-  gap: 12px;
-  min-height: 36px;
-  padding: 0 16px;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 12px;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     color var(--motion-fast) var(--ease-standard),
@@ -565,6 +568,7 @@
 }
 
 .cm-frontmatter-add-property-icon {
+  color: var(--accent);
   font-size: 1.32em;
   line-height: 1;
 }
@@ -622,26 +626,26 @@
   align-items: center;
   background: transparent;
   border: 1px dashed var(--border-medium);
-  border-radius: 8px;
+  border-radius: 7px;
   color: var(--accent);
   cursor: pointer;
   display: inline-flex;
   font-size: 1.35em;
-  height: 36px;
+  height: 30px;
   justify-content: center;
-  min-height: 36px;
+  min-height: 30px;
   padding: 0;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
-  width: 36px;
+  width: 30px;
 }
 
 @media (max-width: 760px) {
   .cm-frontmatter-row {
-    grid-template-columns: 48px minmax(112px, 160px) minmax(0, 1fr) 58px;
-    min-height: 96px;
+    grid-template-columns: 36px minmax(112px, 150px) minmax(0, 1fr) 44px;
+    min-height: 56px;
   }
 
   .cm-frontmatter-chronicle-entry {
@@ -663,16 +667,23 @@
   }
 }
 
-@media (max-width: 520px) {
-  .cm-frontmatter-row {
-    grid-template-columns: 42px minmax(0, 1fr) 54px;
+@container (max-width: 520px) {
+  .cm-frontmatter-row,
+  .cm-frontmatter-row[data-frontmatter-key="chronicle"],
+  .cm-frontmatter-row:has(.cm-frontmatter-chronicle) {
+    grid-template-columns: 34px minmax(0, 1fr) 42px;
     min-width: 0;
+  }
+
+  .cm-frontmatter-row[data-frontmatter-key="chronicle"],
+  .cm-frontmatter-row:has(.cm-frontmatter-chronicle) {
+    grid-template-columns: 34px minmax(0, 1fr);
   }
 
   .cm-frontmatter-key {
     border-right: 0;
     grid-column: 2 / 3;
-    padding: 18px 0 0;
+    padding: 10px 0 0;
   }
 
   .cm-frontmatter-row > .cm-frontmatter-input-wrap,
@@ -680,7 +691,12 @@
   .cm-frontmatter-row > .cm-frontmatter-yaml-input,
   .cm-frontmatter-row > .cm-frontmatter-boolean {
     grid-column: 2 / -1;
-    padding: 14px 12px 18px 0;
+    padding: 6px 8px 10px 0;
+  }
+
+  .cm-frontmatter-row > .cm-frontmatter-remove {
+    grid-column: 3;
+    grid-row: 1;
   }
 
   .cm-frontmatter-chronicle-entry {
