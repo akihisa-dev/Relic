@@ -1,32 +1,16 @@
-import { useState } from "react";
 import type { ReactElement, RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
-import type { ToolTarget } from "../../shared/ipc";
-import { workspaceFileKindForPath } from "../../shared/workspaceFileKinds";
 import { copyWorkspaceItemPathToClipboard, writeEditorClipboardText } from "../editorClipboard";
 import type { FileTreeActions } from "../fileTreeTypes";
-import {
-  canMoveAllFileTreeItems,
-  fileTreeMarkdownLinkForPath,
-  fileTreeOperationItems,
-  moveItemsToDestination,
-  normalizeDestinationFolder,
-  type FileTreeMoveItem
-} from "../fileTreeModel";
+import { fileTreeMarkdownLinkForPath, type FileTreeMoveItem } from "../fileTreeModel";
+import { deriveFileTreeContextTarget } from "../fileTreeContextMenuModel";
+import { useFileTreeContextMenuDialog } from "../hooks/useFileTreeContextMenuDialog";
 import { useT } from "../i18n";
-import { parentFolderOf } from "../workspacePaths";
 import { WorkspaceInputDialog } from "./WorkspaceInputDialog";
 import { FileToolsSubmenu } from "./FileToolsSubmenu";
 import type { FileToolActionId } from "../fileTreeTypes";
-
-type FileTreeInputDialogKind = "create-file" | "create-folder" | "move";
-
-interface FileTreeInputDialogState {
-  kind: FileTreeInputDialogKind;
-  value: string;
-}
 
 interface FileTreeContextMenuProps {
   actions: FileTreeActions;
@@ -58,21 +42,24 @@ export function FileTreeContextMenu({
   runningFileTool
 }: FileTreeContextMenuProps): ReactElement | null {
   const t = useT();
-  const [inputDialog, setInputDialog] = useState<FileTreeInputDialogState | null>(null);
+  const { canMove, hasMixedSelection, isMarkdownFile, operationItems, toolTarget } =
+    deriveFileTreeContextTarget(node, selectedItems, useSelectedItems);
+  const {
+    closeInputDialog,
+    inputDialog,
+    openInputDialog,
+    setInputValue,
+    submitInputDialog
+  } = useFileTreeContextMenuDialog({
+    actions,
+    defaultFolderName: t("files.defaultNewFolderName"),
+    defaultNoteName: t("files.defaultNewNoteName"),
+    nodePath: node.path,
+    onMenuClose: onClose,
+    operationItems
+  });
 
   if (!contextMenu && !inputDialog) return null;
-
-  const fileKind = node.type === "file" ? node.kind ?? workspaceFileKindForPath(node.path) : null;
-  const isMarkdownFile = node.type === "file" && fileKind === "markdown";
-  const operationItems = fileTreeOperationItems(node, selectedItems, useSelectedItems);
-  const canMove = canMoveAllFileTreeItems(operationItems);
-  const selectedMarkdownPaths = selectedItems.filter((item) => (
-    item.type === "file" && (item.kind === "markdown" || (item.kind === undefined && /\.md$/i.test(item.path)))
-  )).map((item) => item.path);
-  const hasMixedSelection = useSelectedItems && selectedMarkdownPaths.length !== selectedItems.length;
-  const toolTarget: ToolTarget | null = useSelectedItems
-    ? hasMixedSelection ? null : { kind: "files", paths: selectedMarkdownPaths }
-    : node.type === "folder" ? { kind: "folder", path: node.path } : null;
 
   const copyPath = (): void => {
     onClose();
@@ -82,33 +69,6 @@ export function FileTreeContextMenu({
   const copyMarkdownLink = (): void => {
     onClose();
     void writeEditorClipboardText(fileTreeMarkdownLinkForPath(node.path)).catch(() => undefined);
-  };
-
-  const openInputDialog = (kind: FileTreeInputDialogKind): void => {
-    onClose();
-    setInputDialog({
-      kind,
-      value: kind === "move"
-        ? parentFolderOf(node.path)
-        : kind === "create-file"
-          ? t("files.defaultNewNoteName")
-          : t("files.defaultNewFolderName")
-    });
-  };
-
-  const submitInputDialog = (): void => {
-    if (!inputDialog) return;
-    const value = inputDialog.value.trim();
-    if (!value && inputDialog.kind !== "move") return;
-
-    if (inputDialog.kind === "create-file") {
-      actions.onCreateFileInFolder?.(node.path, value);
-    } else if (inputDialog.kind === "create-folder") {
-      actions.onCreateFolderInFolder?.(node.path, value);
-    } else {
-      moveItemsToDestination(operationItems, normalizeDestinationFolder(value), actions);
-    }
-    setInputDialog(null);
   };
 
   const menu = contextMenu ? createPortal(
@@ -312,9 +272,9 @@ export function FileTreeContextMenu({
         <WorkspaceInputDialog
           allowEmpty={inputDialog.kind === "move"}
           cancelLabel={t("common.cancel")}
-          onCancel={() => setInputDialog(null)}
+          onCancel={closeInputDialog}
           onSubmit={submitInputDialog}
-          onValueChange={(value) => setInputDialog((current) => current ? { ...current, value } : null)}
+          onValueChange={setInputValue}
           submitLabel={inputDialog.kind === "move" ? t("common.apply") : t("common.create")}
           title={inputDialog.kind === "move"
             ? t("files.moveDestinationPrompt")

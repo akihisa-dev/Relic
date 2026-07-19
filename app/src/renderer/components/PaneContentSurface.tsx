@@ -1,7 +1,6 @@
-import { relicClient } from "../relicClient";
 import { EditorView } from "@codemirror/view";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, FormEvent, KeyboardEvent, MutableRefObject, ReactElement, ReactNode } from "react";
+import type { CSSProperties, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import { hasInvalidFrontmatterYaml } from "../editorFrontmatter";
@@ -16,7 +15,9 @@ import { textCount } from "../paneViewModel";
 import { useEditorStore, type PaneId, type PanelTabKind, type Tab } from "../store/editorStore";
 import { useT } from "../i18n";
 import { SourceModeButton } from "./AppMainActions";
+import { EditableFileTitle } from "./EditableFileTitle";
 import { Editor } from "./Editor";
+import { ImageTabSurface, PdfTabSurface } from "./PaneAttachmentSurfaces";
 
 interface PaneContentSurfaceProps {
   activeTab: Tab | null | undefined;
@@ -251,182 +252,4 @@ function commitBufferedEditorChange(change: BufferedEditorChange): void {
   const tab = useEditorStore.getState().tabs[change.tabId];
   if (tab?.kind !== "file" || tab.path !== change.filePath) return;
   useEditorStore.getState().updateTabContent(change.tabId, change.content);
-}
-
-interface PdfTabSurfaceProps {
-  name: string;
-  path: string;
-  refreshRevision: number;
-}
-
-function PdfTabSurface({ name, path, refreshRevision }: PdfTabSurfaceProps): ReactElement {
-  const t = useT();
-  const [pdfState, setPdfState] = useState<{ error: string | null; path: string; src: string | null } | null>(null);
-  const pdfSrc = pdfState?.path === path ? pdfState.src : null;
-  const loadError = pdfState?.path === path ? pdfState.error : null;
-
-  useEffect(() => {
-    let active = true;
-
-    void relicClient.current?.readPdfFile({ path }).then((result) => {
-      if (!active) return;
-
-      if (result.ok) {
-        setPdfState({ error: null, path, src: result.value.dataUrl });
-        return;
-      }
-
-      setPdfState({ error: result.error.message, path, src: null });
-    }).catch(() => {
-      if (!active) return;
-      setPdfState({ error: t("pane.pdfLoadFailed"), path, src: null });
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [path, refreshRevision, t]);
-
-  return (
-    <div className="editor-surface pdf-tab-surface">
-      <div className="image-tab-title-row">
-        <div className="editor-file-title-slot">
-          <div className="editor-file-title" title={path}>{name}</div>
-        </div>
-      </div>
-      <div className="pdf-tab-body">
-        {pdfSrc ? (
-          <iframe
-            className="pdf-tab-frame"
-            sandbox="allow-scripts"
-            src={pdfSrc}
-            title={name}
-          />
-        ) : (
-          <output className="editor-conflict-banner">
-            <span>{loadError ?? t("pane.pdfLoading")}</span>
-          </output>
-        )}
-      </div>
-    </div>
-  );
-}
-
-interface ImageTabSurfaceProps {
-  name: string;
-  path: string;
-  refreshRevision: number;
-}
-
-function ImageTabSurface({ name, path, refreshRevision }: ImageTabSurfaceProps): ReactElement {
-  const t = useT();
-  const [imageState, setImageState] = useState<{ error: string | null; path: string; src: string | null } | null>(null);
-  const imageSrc = imageState?.path === path ? imageState.src : null;
-  const loadError = imageState?.path === path ? imageState.error : null;
-
-  useEffect(() => {
-    let active = true;
-
-    void relicClient.current?.readImageFile({ path }).then((result) => {
-      if (!active) return;
-
-      if (result.ok) {
-        setImageState({ error: null, path, src: result.value.dataUrl });
-        return;
-      }
-
-      setImageState({ error: result.error.message, path, src: null });
-    }).catch(() => {
-      if (!active) return;
-      setImageState({ error: t("pane.imageLoadFailed"), path, src: null });
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [path, refreshRevision, t]);
-
-  return (
-    <div className="editor-surface image-tab-surface">
-      <div className="image-tab-title-row">
-        <div className="editor-file-title-slot">
-          <div className="editor-file-title" title={path}>{name}</div>
-        </div>
-      </div>
-      <div className="image-tab-body">
-        {imageSrc ? (
-          <img alt={name} className="image-tab-image" src={imageSrc} />
-        ) : (
-          <output className="editor-conflict-banner">
-            <span>{loadError ?? t("pane.imageLoading")}</span>
-          </output>
-        )}
-      </div>
-    </div>
-  );
-}
-
-interface EditableFileTitleProps {
-  name: string;
-  onRename: (name: string) => void;
-}
-
-function EditableFileTitle({ name, onRename }: EditableFileTitleProps): ReactElement {
-  const [draft, setDraft] = useState(name);
-  const [editing, setEditing] = useState(false);
-  const t = useT();
-
-  useEffect(() => {
-    if (!editing) {
-      setDraft(name);
-    }
-  }, [editing, name]);
-
-  const commit = (): void => {
-    const nextName = draft.trim();
-    setEditing(false);
-
-    if (!nextName || nextName === name) {
-      setDraft(name);
-      return;
-    }
-
-    onRename(nextName);
-  };
-
-  if (editing) {
-    return (
-      <form
-        className="editor-file-title-form"
-        onSubmit={(event: FormEvent<HTMLFormElement>) => {
-          event.preventDefault();
-          commit();
-        }}
-      >
-        <input
-          aria-label={t("pane.enterFileName")}
-          className="editor-file-title editor-file-title-input"
-          onBlur={commit}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
-            if (event.key === "Escape") {
-              setDraft(name);
-              setEditing(false);
-            }
-          }}
-          value={draft}
-        />
-      </form>
-    );
-  }
-
-  return (
-    <button
-      className="editor-file-title editor-file-title-button"
-      onClick={() => setEditing(true)}
-      type="button"
-    >
-      {name}
-    </button>
-  );
 }

@@ -26,18 +26,18 @@ Relicは、ユーザーが選んだローカルフォルダだけをワークス
 
 | 操作 | 主な実装 | 境界確認 |
 |------|----------|----------|
-| Markdown読み込み | `app/src/main/files/markdownFiles.ts` | `resolveExistingWorkspacePath(...)` と読み込み直前の `verifyExistingWorkspacePath(...)` |
-| Markdown書き込み | `app/src/main/files/markdownFiles.ts` | `resolveExistingWorkspacePath(...)` と保存直前の `verifyExistingWorkspacePath(...)` |
-| Markdown新規作成 | `app/src/main/files/markdownFiles.ts` | `resolveNewWorkspacePath(...)` と作成直前の `verifyNewWorkspacePath(...)` |
-| Markdownリネーム・移動 | `app/src/main/files/markdownFiles.ts` | sourceは `verifyExistingWorkspacePath(...)`、destinationは `verifyNewWorkspacePath(...)` |
-| Markdown複製 | `app/src/main/files/markdownFiles.ts` | sourceは `verifyExistingWorkspacePath(...)`、destinationは `verifyNewWorkspacePath(...)` |
-| Markdownインポート | `app/src/main/files/markdownFiles.ts` | sourceは読み取りのみ、destinationは `resolveNewWorkspacePath(...)` と `verifyNewWorkspacePath(...)` |
+| Markdown読み込み | `app/src/main/files/markdownFileContent.ts` | `resolveExistingWorkspacePath(...)` と読み込み直前の `verifyExistingWorkspacePath(...)` |
+| Markdown書き込み | `app/src/main/files/markdownFileContent.ts` | `resolveExistingWorkspacePath(...)` と保存直前の `verifyExistingWorkspacePath(...)` |
+| Markdown新規作成 | `app/src/main/files/markdownFileCreation.ts` | `resolveNewWorkspacePath(...)` と作成直前の `verifyNewWorkspacePath(...)` |
+| Markdownリネーム・移動 | `app/src/main/files/markdownFileRelocation.ts` | sourceは `verifyExistingWorkspacePath(...)`、destinationは `verifyNewWorkspacePath(...)` |
+| Markdown複製 | `app/src/main/files/markdownFileRelocation.ts` | sourceは `verifyExistingWorkspacePath(...)`、destinationは `verifyNewWorkspacePath(...)` |
+| Markdownインポート | `app/src/main/files/markdownFileCreation.ts` | sourceは読み取りのみ、destinationは `resolveNewWorkspacePath(...)` と `verifyNewWorkspacePath(...)` |
 | フォルダ作成 | `app/src/main/files/folders.ts` | parentは `resolveExistingWorkspacePathOrRoot(...)`、作成先は `verifyNewWorkspacePath(...)` |
 | フォルダリネーム・移動 | `app/src/main/files/folders.ts` | sourceは `verifyExistingWorkspacePath(...)`、destinationは `verifyNewWorkspacePath(...)` |
 | ゴミ箱移動 | `app/src/main/files/trash.ts` | `resolveExistingWorkspacePath(...)` 後に型を確認し、外部実体は拒否 |
 | 単一ファイル置換 | `app/src/main/files/replace.ts` | `resolveExistingWorkspacePath(...)` と書き込み直前の `verifyExistingWorkspacePath(...)` |
 | 一括置換 | `app/src/main/files/replace.ts` | 対象収集時の `resolveExistingWorkspacePath(...)` と各書き込み直前の `verifyExistingWorkspacePath(...)` |
-| タイトル一覧・目次・タグ索引・マージ | `app/src/main/ipc/toolActions.ts` | 対象は `resolveToolTargetPaths(...)`、出力は `writeToolMarkdownOutput(...)` |
+| タイトル一覧・目次・タグ索引・マージ | `app/src/main/ipc/toolTitleListAction.ts`、`toolTableOfContentsAction.ts`、`toolTagIndexAction.ts`、`toolMergeAction.ts` | 対象は `resolveToolTargetPaths(...)`、出力は `writeToolMarkdownOutput(...)` |
 | ツール出力 | `app/src/main/ipc/toolOutputFiles.ts` | `safeOutputName(...)` と `resolveNewWorkspacePath(...)` |
 | PDF/SVG保存 | `app/src/main/ipc/outputHandlers.ts` | OSの保存ダイアログで選ばれたユーザー指定先へ保存する。ワークスペース内限定のファイル操作とは別境界として扱う |
 

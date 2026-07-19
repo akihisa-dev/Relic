@@ -72,7 +72,8 @@ js-yaml                   # フロントマターYAML処理
 - `app/src/renderer/editorCompletionExtensions.ts`: Markdown言語サポート、内部リンク補完と候補索引
 - `app/src/renderer/editorThemeExtensions.ts`: `EditorView.theme` によるフォント・行間・最大幅・現在行とタイプライターモード
 - `app/src/renderer/editorEventExtensions.ts`: キーマップ、リンククリック、入力・IMEイベント
-- `app/src/renderer/editorLivePreview.ts`: ライブプレビュー装飾、数式・脚注・図表ブロック検出
+- `app/src/renderer/editorLivePreview.ts`: 可視行のインライン装飾と図表Widgetへの接続
+- `app/src/renderer/editorLivePreviewBlockField.ts`: 通常コードブロックとブロック数式のStateField、可視範囲同期、再構築判定
 - `app/src/renderer/editorLivePreviewWidgets.ts`: ライブプレビュー内のインライン表示、コードブロック、数式、脚注Widget
 - `app/src/renderer/editorDiagramLivePreview.ts`: ライブプレビュー内の図表Widget
 - `app/src/renderer/diagramPreview.ts`: Mermaid / D2 共通のSVG表示、安全化、エラー表示接続
@@ -82,7 +83,9 @@ js-yaml                   # フロントマターYAML処理
 - `app/src/renderer/diagramPanZoom.ts`: 図表のpan / zoom操作
 - `app/src/renderer/editorTableWidget.ts`: ライブプレビュー表のDOM操作、フォーカス、CodeMirror書き戻し
 - `app/src/renderer/editorTableWidgetModel.ts`: ライブプレビュー表のTSV貼り付け、選択範囲、コピー、削除、矢印移動判定の純粋処理
-- `app/src/renderer/previewMarkdown.ts`: marked / marked-footnote / DOMPurify / highlight.js / KaTeX によるプレビューHTML生成
+- `app/src/renderer/previewMarkdown.ts`: 埋め込みを含むプレビューHTML生成とDOMPurifyによる安全化
+- `app/src/renderer/previewMarkdownModel.ts`: 埋め込み・画像パス、見出しID、HTML文字列の純粋な正規化
+- `app/src/renderer/previewMarkdownRenderer.ts`: marked / marked-footnoteの拡張、highlight.js、KaTeX、画像・リンクrenderer
 - `app/src/main/files/frontmatter.ts`、`app/src/renderer/editorFrontmatterModel.ts`: `js-yaml` によるフロントマター解析・書き戻し
 
 ---

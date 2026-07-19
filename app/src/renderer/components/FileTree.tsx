@@ -1,23 +1,19 @@
-import { relicClient } from "../relicClient";
-import { Fragment, memo, useEffect, useMemo, useRef, useState } from "react";
-import type { DragEvent, MouseEvent, ReactElement } from "react";
+import { Fragment, memo, useEffect, useMemo, useState } from "react";
+import type { MouseEvent, ReactElement } from "react";
 
 import {
-  clearOutboundFileTreeDrag,
   childMotionPathsForAppearingFolder,
   buildVisibleFileTreeRows,
   countFilesInFolder,
-  FILE_TREE_OUTBOUND_FILE_DRAG_EVENT,
-  getOutboundFileTreeDragItems,
-  movableItemsForDestination,
-  moveItemsToDestination,
   shouldUseSelectedFileTreeItems,
   type FileTreeMoveItem
 } from "../fileTreeModel";
-import type { FileTreeActions, FileTreeItemProps, FileTreeProps } from "../fileTreeTypes";
+import { fileTreeActionsFromProps } from "../fileTreeActions";
+import type { FileTreeItemProps, FileTreeProps } from "../fileTreeTypes";
 import { useFileTreeDragDrop } from "../hooks/useFileTreeDragDrop";
 import { useFileTreeItemState } from "../hooks/useFileTreeItemState";
 import { useFileTreeMotion } from "../hooks/useFileTreeMotion";
+import { useRootFileTreeDrop } from "../hooks/useRootFileTreeDrop";
 import { useT } from "../i18n";
 import { FileTreeContextMenu } from "./FileTreeContextMenu";
 import { FileTreeItemRow } from "./FileTreeItemRow";
@@ -28,63 +24,6 @@ const defaultSelectedItems: FileTreeMoveItem[] = [];
 const defaultSelectedPaths = new Set<string>();
 const largeFileTreeRowThreshold = 1000;
 const initialFolderFileLimit = 10;
-const outboundFileDragIgnoreMs = 2000;
-
-function droppedFilePathsFromEvent(event: DragEvent<HTMLElement>): string[] {
-  if (!relicClient.current) return [];
-
-  const filePaths: string[] = [];
-  for (const file of Array.from(event.dataTransfer.files)) {
-    const filePath = relicClient.current.getDroppedFilePath(file);
-    if (filePath) filePaths.push(filePath);
-  }
-
-  return filePaths;
-}
-
-function fileTreeActionsFromProps({
-  actions,
-  onDeleteItem,
-  onDeleteSelectedItems,
-  onCreateFileInFolder,
-  onCreateFolderInFolder,
-  onDuplicateFile,
-  onImportMarkdownFiles,
-  onMoveFile,
-  onMoveFolder,
-  onMoveItems,
-  onRunFileTool,
-  onOpenFile,
-  onOpenInOtherPane,
-  onRequestExpansion,
-  onRevealItem,
-  onRenameItem,
-  onSelectFolder,
-  onSelectItem,
-  onTogglePin
-}: FileTreeProps): FileTreeActions {
-  return actions ?? {
-    onDeleteItem,
-    onDeleteSelectedItems,
-    onCreateFileInFolder,
-    onCreateFolderInFolder,
-    onDuplicateFile,
-    onImportMarkdownFiles,
-    onMoveFile,
-    onMoveFolder,
-    onMoveItems,
-    onRunFileTool,
-    onOpenFile,
-    onOpenInOtherPane,
-    onRequestExpansion,
-    onRevealItem,
-    onRenameItem,
-    onSelectFolder,
-    onSelectItem,
-    onTogglePin
-  };
-}
-
 export const FileTreeItem = memo(function FileTreeItem({
   actions: providedActions,
   expansionRequest,
@@ -342,8 +281,6 @@ export const FileTree = memo(function FileTree({
   suppressOpeningAnimation = false
 }: FileTreeProps & { animation?: "expand" }): ReactElement {
   const t = useT();
-  const [isRootFileDragOver, setIsRootFileDragOver] = useState(false);
-  const ignoreRootFileDragOverUntilRef = useRef(0);
   const activeAppearingPaths = useFileTreeMotion(nodes, motionPaths);
   const directFiles = useMemo(() => nodes.filter((node) => node.type === "file"), [nodes]);
   const hiddenFiles = directFiles.slice(initialFolderFileLimit);
@@ -420,83 +357,8 @@ export const FileTree = memo(function FileTree({
     onSelectItem,
     onTogglePin
   ]);
-  const canImportDroppedFiles = (event: DragEvent<HTMLElement>): boolean => (
-    isRoot &&
-    Date.now() > ignoreRootFileDragOverUntilRef.current &&
-    Boolean(actions.onImportMarkdownFiles) &&
-    Array.from(event.dataTransfer.types ?? []).includes("Files")
-  );
-
-  const canMoveOutboundFilesToRoot = (event: DragEvent<HTMLElement>): boolean => (
-    isRoot
-    && Array.from(event.dataTransfer.types ?? []).includes("Files")
-    && movableItemsForDestination(getOutboundFileTreeDragItems(), "").length > 0
-  );
-
-  useEffect(() => {
-    const ignoreOutboundFileDrag = (): void => {
-      ignoreRootFileDragOverUntilRef.current = Date.now() + outboundFileDragIgnoreMs;
-      setIsRootFileDragOver(false);
-    };
-    const clearRootDragOver = (): void => {
-      ignoreRootFileDragOverUntilRef.current = 0;
-      setIsRootFileDragOver(false);
-    };
-    const clearOutboundDrag = (): void => {
-      clearOutboundFileTreeDrag();
-      clearRootDragOver();
-    };
-
-    window.addEventListener(FILE_TREE_OUTBOUND_FILE_DRAG_EVENT, ignoreOutboundFileDrag);
-    window.addEventListener("blur", clearRootDragOver);
-    window.addEventListener("dragend", clearOutboundDrag);
-    window.addEventListener("drop", clearRootDragOver);
-    return () => {
-      window.removeEventListener(FILE_TREE_OUTBOUND_FILE_DRAG_EVENT, ignoreOutboundFileDrag);
-      window.removeEventListener("blur", clearRootDragOver);
-      window.removeEventListener("dragend", clearOutboundDrag);
-      window.removeEventListener("drop", clearRootDragOver);
-    };
-  }, []);
-
-  const handleRootDragLeave = (): void => {
-    setIsRootFileDragOver(false);
-  };
-
-  const handleRootDragOver = (event: DragEvent<HTMLUListElement>): void => {
-    if (canMoveOutboundFilesToRoot(event)) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
-      setIsRootFileDragOver(true);
-      return;
-    }
-
-    if (!canImportDroppedFiles(event)) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "copy";
-    setIsRootFileDragOver(true);
-  };
-
-  const handleRootDrop = (event: DragEvent<HTMLUListElement>): void => {
-    setIsRootFileDragOver(false);
-
-    const outboundItems = getOutboundFileTreeDragItems();
-    if (canMoveOutboundFilesToRoot(event)) {
-      event.preventDefault();
-      event.stopPropagation();
-      clearOutboundFileTreeDrag();
-      moveItemsToDestination(outboundItems, "", actions);
-      return;
-    }
-
-    if (!canImportDroppedFiles(event)) return;
-
-    const sourcePaths = droppedFilePathsFromEvent(event);
-    if (sourcePaths.length === 0) return;
-
-    event.preventDefault();
-    actions.onImportMarkdownFiles?.(sourcePaths, "");
-  };
+  const { handleRootDragLeave, handleRootDragOver, handleRootDrop, isRootFileDragOver } =
+    useRootFileTreeDrop({ actions, isRoot });
 
   return (
     <ul
