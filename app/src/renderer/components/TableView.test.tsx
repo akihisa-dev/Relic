@@ -64,6 +64,7 @@ describe("TableView", () => {
 
     await screen.findByText("2件のファイル");
     fireEvent.click(screen.getByRole("button", { name: "列" }));
+    expect(screen.queryByText("固定プロパティ")).not.toBeInTheDocument();
     fireEvent.change(screen.getByRole("searchbox", { name: "プロパティを検索" }), { target: { value: "cou" } });
     expect(screen.queryByText("status")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("checkbox", { name: "count" }));
@@ -132,9 +133,7 @@ describe("TableView", () => {
     expect(screen.queryByRole("dialog", { name: "category settings" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Columns" }));
-    fireEvent.click(screen.getByRole("button", { name: "Open aliases reference" }));
-    expect(screen.getByText("Alternative names that can link to this file. Used for link resolution and file name search. Write values as a standard YAML list.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Back to columns/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Open aliases reference" })).not.toBeInTheDocument();
   });
 
   it("更新番号が変わると再取得し、表示列と並べ替え条件を維持する", async () => {

@@ -87,45 +87,6 @@
   overflow: auto;
 }
 
-.table-fixed-property-reference {
-  border-top: 1px solid var(--border-soft);
-  display: grid;
-  gap: 2px;
-  margin-top: 8px;
-  padding-top: 10px;
-}
-
-.table-fixed-property-reference > .frontmatter-field-group-label {
-  padding: 0 8px 4px;
-}
-
-.table-fixed-property-reference > button,
-.table-column-reference-back {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  display: flex;
-  font: inherit;
-  justify-content: space-between;
-  padding: 7px 8px;
-  text-align: left;
-  width: 100%;
-}
-
-.table-fixed-property-reference > button:hover,
-.table-column-reference-back:hover {
-  background: var(--hover);
-}
-
-.table-column-reference-back {
-  color: var(--text-2);
-  font-size: 12px;
-  margin-bottom: 8px;
-  width: auto;
-}
-
 .table-column-option {
   align-items: center;
   border-radius: var(--radius-sm);

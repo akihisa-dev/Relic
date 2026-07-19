@@ -28,7 +28,7 @@ import {
 } from "../table/tableViewModel";
 import { resetWorkspaceTableCache } from "../table/workspaceTableLoader";
 import { useWorkspaceTableState } from "../table/useWorkspaceTableState";
-import { TableFixedPropertyReferenceList, TablePropertyPopover } from "./TablePropertyPopover";
+import { TablePropertyPopover } from "./TablePropertyPopover";
 
 const rowHeight = 48;
 
@@ -107,7 +107,6 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, setSor
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [columnReferenceProperty, setColumnReferenceProperty] = useState<string | null>(null);
   const [openProperty, setOpenProperty] = useState<string | null>(null);
   const [propertySearch, setPropertySearch] = useState("");
   const [scrollTop, setScrollTop] = useState(0);
@@ -148,13 +147,11 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, setSor
     const close = (event: PointerEvent): void => {
       if (!menuRef.current?.contains(event.target as Node)) {
         setMenuOpen(false);
-        setColumnReferenceProperty(null);
       }
     };
     const escape = (event: KeyboardEvent): void => {
       if (event.key === "Escape") {
         setMenuOpen(false);
-        setColumnReferenceProperty(null);
       }
     };
     document.addEventListener("pointerdown", close);
@@ -191,11 +188,6 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, setSor
     }
   };
 
-  const toggleColumnMenu = (): void => {
-    if (menuOpen) setColumnReferenceProperty(null);
-    setMenuOpen(!menuOpen);
-  };
-
   return (
     <section aria-label={t("table.title")} className="table-view">
       <header className="table-view-toolbar">
@@ -205,58 +197,38 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, setSor
             aria-expanded={menuOpen}
             aria-haspopup="dialog"
             className="table-column-menu-trigger"
-            onClick={toggleColumnMenu}
+            onClick={() => setMenuOpen((open) => !open)}
             type="button"
           >
             {t("table.columns")}
           </button>
           {menuOpen ? (
             <div aria-label={t("table.columns")} className="table-column-popover" role="dialog">
-              {columnReferenceProperty ? (
+              {table.availableProperties.length > 0 ? (
                 <>
-                  <button
-                    className="table-column-reference-back"
-                    onClick={() => setColumnReferenceProperty(null)}
-                    type="button"
-                  >
-                    ← {t("table.backToColumns")}
-                  </button>
-                  <TablePropertyPopover
-                    categoryChoices={categoryChoices}
-                    onCategoryChoicesSave={onCategoryChoicesSave}
-                    property={columnReferenceProperty}
+                  <input
+                    aria-label={t("table.searchProperties")}
+                    onChange={(event) => setPropertySearch(event.target.value)}
+                    placeholder={t("table.searchProperties")}
+                    type="search"
+                    value={propertySearch}
                   />
+                  <div className="table-column-options">
+                    {filteredProperties.map((property) => (
+                      <label className="table-column-option" key={property}>
+                        <input
+                          checked={selectedProperties.includes(property)}
+                          disabled={saving}
+                          onChange={() => void toggleProperty(property)}
+                          type="checkbox"
+                        />
+                        <span>{property}</span>
+                      </label>
+                    ))}
+                    {filteredProperties.length === 0 ? <p>{t("table.noMatchingProperties")}</p> : null}
+                  </div>
                 </>
-              ) : (
-                <>
-                  {table.availableProperties.length > 0 ? (
-                    <>
-                      <input
-                        aria-label={t("table.searchProperties")}
-                        onChange={(event) => setPropertySearch(event.target.value)}
-                        placeholder={t("table.searchProperties")}
-                        type="search"
-                        value={propertySearch}
-                      />
-                      <div className="table-column-options">
-                        {filteredProperties.map((property) => (
-                          <label className="table-column-option" key={property}>
-                            <input
-                              checked={selectedProperties.includes(property)}
-                              disabled={saving}
-                              onChange={() => void toggleProperty(property)}
-                              type="checkbox"
-                            />
-                            <span>{property}</span>
-                          </label>
-                        ))}
-                        {filteredProperties.length === 0 ? <p>{t("table.noMatchingProperties")}</p> : null}
-                      </div>
-                    </>
-                  ) : <p>{t("table.noProperties")}</p>}
-                  <TableFixedPropertyReferenceList onSelect={setColumnReferenceProperty} />
-                </>
-              )}
+              ) : <p>{t("table.noProperties")}</p>}
             </div>
           ) : null}
         </div>

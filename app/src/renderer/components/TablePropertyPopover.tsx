@@ -5,30 +5,6 @@ import { FIXED_FIELDS, parseChoiceInput, uniqueChoices } from "../frontmatterSet
 import { useT } from "../i18n";
 import { FrontmatterChoiceEditor } from "./FrontmatterChoiceEditor";
 
-export function TableFixedPropertyReferenceList({
-  onSelect
-}: {
-  onSelect: (property: string) => void;
-}): ReactElement {
-  const t = useT();
-  return (
-    <div className="table-fixed-property-reference">
-      <div className="frontmatter-field-group-label">{t("settings.fixedFields")}</div>
-      {FIXED_FIELDS.map((field) => (
-        <button
-          aria-label={t("table.openPropertyReference", { name: field.name })}
-          key={field.name}
-          onClick={() => onSelect(field.name)}
-          type="button"
-        >
-          <span>{field.name}</span>
-          <span aria-hidden="true">›</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function TablePropertyPopover({
   categoryChoices,
   onCategoryChoicesSave,
