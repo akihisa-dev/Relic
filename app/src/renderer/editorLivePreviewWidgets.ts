@@ -5,6 +5,7 @@ import katex from "katex";
 import { writeEditorClipboardText } from "./editorClipboard";
 import { sanitizeTrustedMathHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
+import { configureCodeBlockTypeSelect, createCodeBlockTypeSelect } from "./editorCodeBlockType";
 import { loadPreviewImage } from "./previewImageLoader";
 
 export const codeBlockSourceInteractionEffect = StateEffect.define<{ from: number; to: number }>();
@@ -288,9 +289,7 @@ export class CodeBlockWidget extends WidgetType {
     header.className = "cm-live-code-block-header";
     header.contentEditable = "false";
 
-    const label = document.createElement("span");
-    label.className = "cm-live-code-block-label";
-    label.textContent = this.language || this.t("editor.codeBlockLanguageFallback");
+    const typeSelect = createCodeBlockTypeSelect(view, this.revealPosition, this.language, this.t);
 
     const button = document.createElement("button");
     button.className = "cm-live-code-block-copy";
@@ -307,7 +306,7 @@ export class CodeBlockWidget extends WidgetType {
         .catch(() => setTemporaryButtonText(button, this.t("editor.copyFailed"), this.t("editor.copy")));
     });
 
-    header.append(label, button);
+    header.append(typeSelect, button);
 
     const pre = document.createElement("pre");
     pre.className = "cm-live-code-block-pre";
@@ -348,10 +347,11 @@ export class CodeBlockWidget extends WidgetType {
     dom.dataset.blockFrom = String(this.revealPosition);
     dom.dataset.blockTo = String(this.revealTo);
     const code = dom.querySelector<HTMLTextAreaElement>(".cm-live-code-block-source");
-    const label = dom.querySelector<HTMLElement>(".cm-live-code-block-label");
-    if (!code || !label) return false;
+    const typeSelect = dom.querySelector<HTMLSelectElement>(".cm-live-code-block-type");
+    if (!code || !typeSelect) return false;
 
-    label.textContent = this.language || this.t("editor.codeBlockLanguageFallback");
+    typeSelect.dataset.blockFrom = String(this.revealPosition);
+    configureCodeBlockTypeSelect(typeSelect, this.language, this.t);
     code.setAttribute("aria-label", this.language || this.t("editor.codeBlockLanguageFallback"));
     if (code.value !== this.source) code.value = this.source;
     code.rows = Math.max(1, this.source.split("\n").length);

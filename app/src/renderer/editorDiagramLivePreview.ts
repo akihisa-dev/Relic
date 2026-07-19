@@ -13,6 +13,7 @@ import { getRenderedDiagramSvgText } from "./diagramSvg";
 import { enterDiagramSourceEdit } from "./editorDiagramEditState";
 import { createTranslator, type Translator } from "./i18nModel";
 import { buildDiagramDefaultFileName } from "./outputHtml";
+import { createCodeBlockTypeSelect } from "./editorCodeBlockType";
 
 export class DiagramBlockWidget extends WidgetType {
   readonly className = "cm-live-diagram";
@@ -44,6 +45,7 @@ export class DiagramBlockWidget extends WidgetType {
     const label = this.language === "d2" ? "D2" : "Mermaid";
     const toolbar = document.createElement("div");
     toolbar.className = "cm-live-diagram-toolbar";
+    const typeSelect = createCodeBlockTypeSelect(view, this.blockFrom, this.language, this.t);
     const fitButton = document.createElement("button");
     fitButton.type = "button";
     fitButton.className = "cm-live-diagram-fit-button";
@@ -73,7 +75,7 @@ export class DiagramBlockWidget extends WidgetType {
       );
     });
 
-    toolbar.append(fitButton, editButton);
+    toolbar.append(typeSelect, fitButton, editButton);
 
     const diagram = document.createElement("div");
     diagram.className = "cm-live-diagram-body";

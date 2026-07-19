@@ -485,6 +485,74 @@ describe("Editor live preview", () => {
     expect(container.textContent).not.toContain("```");
   });
 
+  it("コードブロックのヘッダーで特別な種類と通常コードを切り替えられる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const source = "かつて王家の儀礼に用いられた剣。";
+    const { container } = render(
+      <Editor
+        content={["```ts", source, "```", "", "本文"].join("\n")}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
+    const initialSelect = await waitFor(() => {
+      const select = container.querySelector<HTMLSelectElement>(".cm-live-code-block-type");
+      expect(select).not.toBeNull();
+      return select as HTMLSelectElement;
+    });
+
+    expect(initialSelect.selectedOptions[0]?.textContent).toBe("ts");
+    expect(Array.from(initialSelect.options).map((option) => option.textContent)).toEqual([
+      "ts",
+      "Code",
+      "Flavor text",
+      "Mermaid diagram",
+      "D2 diagram"
+    ]);
+
+    fireEvent.change(initialSelect, { target: { value: "flavortext" } });
+    await waitFor(() => expect(viewRef.current?.state.doc.toString()).toContain(`\`\`\`flavortext\n${source}\n\`\`\``));
+
+    const flavorTextSelect = await waitFor(() => {
+      const select = container.querySelector<HTMLSelectElement>(".cm-live-code-block-type");
+      expect(select?.value).toBe("flavortext");
+      return select as HTMLSelectElement;
+    });
+    fireEvent.change(flavorTextSelect, { target: { value: "" } });
+
+    await waitFor(() => expect(viewRef.current?.state.doc.toString()).toContain(`\`\`\`\n${source}\n\`\`\``));
+    expect(viewRef.current?.state.doc.toString()).not.toContain("flavortext");
+  });
+
+  it("図表ヘッダーから通常コードへ戻して本文を保持できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const source = "graph TD; A-->B";
+    const { container } = render(
+      <Editor
+        content={["```mermaid", source, "```", "", "本文"].join("\n")}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-diagram")).not.toBeNull());
+    const diagramSelect = container.querySelector<HTMLSelectElement>(".cm-live-diagram-toolbar .cm-live-code-block-type");
+    expect(diagramSelect?.value).toBe("mermaid");
+    fireEvent.change(diagramSelect as HTMLSelectElement, { target: { value: "" } });
+
+    await waitFor(() => expect(viewRef.current?.state.doc.toString()).toContain(`\`\`\`\n${source}\n\`\`\``));
+    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull());
+    expect(viewRef.current?.state.doc.toString()).not.toContain("mermaid");
+    warn.mockRestore();
+  });
+
   it("通常コードブロックのパネルから本文だけをコピーできる", async () => {
     const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     window.relic = makeRelicApi({
@@ -504,7 +572,7 @@ describe("Editor live preview", () => {
     await waitFor(() => expect(viewRef.current).not.toBeNull());
     viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
     await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull());
-    expect(container.querySelector(".cm-live-code-block-label")?.textContent).toBe("ts");
+    expect(container.querySelector<HTMLSelectElement>(".cm-live-code-block-type")?.selectedOptions[0]?.textContent).toBe("ts");
 
     fireEvent.click(container.querySelector(".cm-live-code-block-copy") as HTMLButtonElement);
 

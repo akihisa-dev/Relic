@@ -216,13 +216,38 @@
   outline-offset: 0;
 }
 
-.cm-live-code-block-label {
+.cm-live-code-block-type {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
   color: var(--text-3);
+  cursor: pointer;
   font-family: Menlo, monospace;
   font-size: 12px;
+  min-height: 22px;
+  min-width: 0;
   overflow: hidden;
+  padding: 0 4px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.cm-live-code-block-type:hover,
+.cm-live-code-block-type:focus-visible {
+  background: var(--hover);
+  border-color: var(--border-medium);
+  color: var(--text);
+  outline: none;
+}
+
+.cm-live-code-block-header .cm-live-code-block-type {
+  max-width: min(240px, 60%);
+}
+
+.cm-live-diagram-toolbar .cm-live-code-block-type {
+  margin-right: auto;
+  min-height: 26px;
+  max-width: min(240px, 42%);
 }
 
 .cm-live-code-block-copy {
