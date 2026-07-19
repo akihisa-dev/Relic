@@ -45,7 +45,7 @@ describe("chronicleCanvasModel", () => {
     const camera = { ...createChronicleCanvasCamera(), panX: 0, scale: 1 };
     const years = visibleChronicleCanvasYears(10, camera, 400);
 
-    expect(years.map((year) => year.value)).toEqual([-10, 0, 10, 20, 30, 40, 50]);
+    expect(years.map((year) => year.value)).toEqual([-10, 1, 10, 20, 30, 40, 50]);
     expect(years.map((year) => year.x)).toEqual([-96, 0, 96, 192, 288, 384, 480]);
   });
 
@@ -145,9 +145,9 @@ describe("chronicleCanvasModel", () => {
     const camera = { ...createChronicleCanvasCamera(), panX: 0, scale: 0.1 };
     const years = visibleChronicleCanvasYears(10, camera, 800);
     const labels = visibleChronicleCanvasYearLabels(years, camera);
-    expect(years.every((year, index) => index === 0 || year.value - years[index - 1].value === 10)).toBe(true);
+    expect(years.some((year) => year.value === 0)).toBe(false);
     expect(labels.length).toBeLessThan(years.length);
-    expect(labels.every((year) => year.value % 100 === 0)).toBe(true);
+    expect(labels.every((year) => year.value === 1 || year.value % 100 === 0)).toBe(true);
   });
 
   it("どの年代へ移動しても表示範囲に必要な年目盛りだけを生成する", () => {

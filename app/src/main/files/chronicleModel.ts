@@ -1,6 +1,7 @@
 import type { ChroniclePoint } from "../../shared/ipc";
 
 export interface ChronicleRange {
+  calendarName: string | null;
   end: ChroniclePoint;
   entryIndex: 0;
   start: ChroniclePoint;
@@ -13,15 +14,16 @@ export function extractChronicleRangesFromData(
   if (!range) return [];
 
   return [{
+    calendarName: range.calendarName,
     end: { month: null, year: range.end },
     entryIndex: 0,
     start: { month: null, year: range.start }
   }];
 }
 
-export function parseChronicleRange(value: unknown): { end: number; start: number } | null {
+export function parseChronicleRange(value: unknown): { calendarName: string | null; end: number; start: number } | null {
   if (Number.isInteger(value) && value !== 0) {
-    return { end: Number(value), start: Number(value) };
+    return { calendarName: null, end: Number(value), start: Number(value) };
   }
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
 
@@ -30,7 +32,11 @@ export function parseChronicleRange(value: unknown): { end: number; start: numbe
   const end = range.end === undefined ? range.start : range.end;
   if (!Number.isInteger(end) || end === 0 || Number(range.start) > Number(end)) return null;
 
-  return { end: Number(end), start: Number(range.start) };
+  const calendarName = typeof range.calendar === "string" && range.calendar.trim() === range.calendar && range.calendar !== ""
+    ? range.calendar
+    : null;
+  if ("calendar" in range && calendarName === null) return null;
+  return { calendarName, end: Number(end), start: Number(range.start) };
 }
 
 export function formatPoint(point: ChroniclePoint): string {

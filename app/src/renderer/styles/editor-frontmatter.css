@@ -308,6 +308,7 @@ select.cm-frontmatter-input {
   min-width: 0;
   padding: 4px 8px;
   width: 100%;
+  grid-template-columns: minmax(90px, 1fr) minmax(72px, 1fr) minmax(72px, 1fr);
 }
 
 .cm-frontmatter-chronicle-entry {

@@ -9,6 +9,7 @@ import type {
   WorkspaceChart,
   WorkspaceState
 } from "../../shared/ipc";
+import type { ChronicleCalendarSettings } from "../../shared/chronicleCalendar";
 import { useT } from "../i18n";
 import { preloadWorkspaceGraph } from "../graph/workspaceGraphLoader";
 import { useEditorStore, type PaneId, type PanelTabKind } from "../store/editorStore";
@@ -47,6 +48,7 @@ function LazyTabFallback({ graph = false }: { graph?: boolean }): ReactElement {
 interface UseAppTabRenderersInput {
   appInfo: AppInfo | null;
   categoryChoices: FrontmatterCategoryChoice[];
+  calendarSettings: ChronicleCalendarSettings;
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
   charts: WorkspaceChart[];
@@ -55,6 +57,7 @@ interface UseAppTabRenderersInput {
   handleOpenTagSearch: (tag: string) => void;
   handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
   handleSaveCategoryChoices: (choices: FrontmatterCategoryChoice[]) => void;
+  handleSaveCalendarSettings: (settings: ChronicleCalendarSettings) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
   workspaceDataRevision: number;
   workspaceState: WorkspaceState | null;
@@ -75,6 +78,7 @@ const defaultChroniclePaneViewState = (workspaceId: string): ChroniclePaneViewSt
 export function useAppTabRenderers({
   appInfo,
   categoryChoices,
+  calendarSettings,
   editorSettings,
   featureToggles,
   charts,
@@ -83,6 +87,7 @@ export function useAppTabRenderers({
   handleOpenTagSearch,
   handleSaveFeatureToggles,
   handleSaveCategoryChoices,
+  handleSaveCalendarSettings,
   handleSaveSettings,
   workspaceDataRevision,
   workspaceState
@@ -207,6 +212,7 @@ export function useAppTabRenderers({
     return (
       <Suspense fallback={<LazyTabFallback />}>
         <LazyChartView
+          calendarSettings={calendarSettings}
           categoryChoices={categoryChoices}
           chart={chartId === "charts" ? null : charts.find((chart) => chart.id === chartId) ?? null}
           charts={chartId === "charts" ? charts : undefined}
@@ -224,6 +230,7 @@ export function useAppTabRenderers({
               }
             }));
           }}
+          onCalendarSettingsSave={handleSaveCalendarSettings}
           onOpenFile={handleOpenFile}
           onRailCollapsedChange={(railCollapsed: boolean) => {
             setChroniclePaneViewStates((current) => ({
@@ -242,7 +249,7 @@ export function useAppTabRenderers({
         />
       </Suspense>
     );
-  }, [categoryChoices, charts, chroniclePaneViewStates, currentCardPath, handleOpenCardFile, handleOpenFile, handleOpenTagSearch, handleSaveCategoryChoices, handleSelectCard, selectedCardPath, workspaceCacheKey, workspaceDataRevision]);
+  }, [calendarSettings, categoryChoices, charts, chroniclePaneViewStates, currentCardPath, handleOpenCardFile, handleOpenFile, handleOpenTagSearch, handleSaveCalendarSettings, handleSaveCategoryChoices, handleSelectCard, selectedCardPath, workspaceCacheKey, workspaceDataRevision]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "frontmatter") {

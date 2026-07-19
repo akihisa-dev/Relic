@@ -29,6 +29,7 @@ import {
   getWorkspaceChartsChannel,
   getWorkspaceCardsChannel,
   getWorkspaceFrontmatterCategoryChoicesChannel,
+  getWorkspaceChronicleCalendarSettingsChannel,
   getWorkspaceGraphChannel,
   getWorkspaceTableChannel,
   getLinkUpdateImpactChannel,
@@ -56,6 +57,7 @@ import {
   saveWorkspaceChartsChannel,
   saveWorkspaceTablePropertiesChannel,
   saveWorkspaceFrontmatterCategoryChoicesChannel,
+  saveWorkspaceChronicleCalendarSettingsChannel,
   updateChartEntryChannel,
   saveEditorSettingsChannel,
   generateTitleListChannel,
@@ -97,6 +99,7 @@ import {
   type EditorSettings,
   type Backlink,
   type FrontmatterCategoryChoice,
+  type ChronicleCalendarSettings,
   type GetBacklinksInput,
   type GetUnlinkedReferencesInput,
   type ImportImageFileInput,
@@ -202,6 +205,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getWorkspaceCardsChannel) as Promise<RelicResult<WorkspaceCard[]>>,
   getWorkspaceFrontmatterCategoryChoices: () =>
     ipcRenderer.invoke(getWorkspaceFrontmatterCategoryChoicesChannel) as Promise<RelicResult<FrontmatterCategoryChoice[]>>,
+  getWorkspaceChronicleCalendarSettings: () =>
+    ipcRenderer.invoke(getWorkspaceChronicleCalendarSettingsChannel) as Promise<RelicResult<ChronicleCalendarSettings>>,
   getWorkspaceGraph: () =>
     ipcRenderer.invoke(getWorkspaceGraphChannel) as Promise<RelicResult<WorkspaceGraph>>,
   getWorkspaceTable: () =>
@@ -273,6 +278,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(readEditorTextFromClipboardChannel) as Promise<RelicResult<string>>,
   saveWorkspaceFrontmatterCategoryChoices: (input: FrontmatterCategoryChoice[]) =>
     ipcRenderer.invoke(saveWorkspaceFrontmatterCategoryChoicesChannel, input) as Promise<RelicResult<FrontmatterCategoryChoice[]>>,
+  saveWorkspaceChronicleCalendarSettings: (input: ChronicleCalendarSettings) =>
+    ipcRenderer.invoke(saveWorkspaceChronicleCalendarSettingsChannel, input) as Promise<RelicResult<ChronicleCalendarSettings>>,
   saveWorkspaceCharts: (input: ChartSettings[]) =>
     ipcRenderer.invoke(saveWorkspaceChartsChannel, input) as Promise<RelicResult<WorkspaceChart[]>>,
   saveWorkspaceTableProperties: (input: string[]) =>

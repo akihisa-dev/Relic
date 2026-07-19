@@ -1,7 +1,7 @@
 import type { SettingsMigrationResult } from "../settings/secureVersionedJsonStore";
 
 export const currentAppSettingsSchemaVersion = 6;
-export const currentWorkspaceSettingsSchemaVersion = 3;
+export const currentWorkspaceSettingsSchemaVersion = 4;
 
 export type WorkspaceSettingsMigrationRecord = {
   charts?: unknown;
@@ -60,7 +60,7 @@ export function migrateWorkspaceSettings<T extends WorkspaceSettingsMigrationRec
     return { didMigrate: false, settings: raw };
   }
 
-  if (schemaVersion === 0 || schemaVersion === 1 || schemaVersion === 2) {
+  if (schemaVersion === 0 || schemaVersion === 1 || schemaVersion === 2 || schemaVersion === 3) {
     return {
       didMigrate: true,
       settings: {

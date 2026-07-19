@@ -32,6 +32,7 @@ describe("Editor frontmatter fields", () => {
       <I18nProvider language="ja">
         <Editor
           content={"---\nchronicle: 1185\n---\n# 本文"}
+          frontmatterCandidates={{ chronicle: ["西暦"] }}
           onChange={vi.fn()}
           settings={settings}
           viewRef={viewRef}
@@ -42,13 +43,14 @@ describe("Editor frontmatter fields", () => {
     await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
     const controls = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as Array<HTMLInputElement | HTMLSelectElement>;
-    expect(container.querySelector(".cm-frontmatter-chronicle select")).toBeNull();
-    expect((controls[0] as HTMLInputElement).placeholder).toBe("開始年");
-    expect((controls[1] as HTMLInputElement).placeholder).toBe("終了年（任意）");
-    fireEvent.input(controls[1], { target: { value: "1333" } });
+    expect((controls[0] as HTMLSelectElement).value).toBe("西暦");
+    expect((controls[1] as HTMLInputElement).placeholder).toBe("開始年");
+    expect((controls[2] as HTMLInputElement).placeholder).toBe("終了年（任意）");
+    fireEvent.input(controls[2], { target: { value: "1333" } });
 
     expect(viewRef.current?.state.doc.toString()).toContain([
       "chronicle:",
+      "  calendar: 西暦",
       "  start: 1185",
       "  end: 1333"
     ].join("\n"));

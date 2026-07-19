@@ -6,6 +6,9 @@ import {
   type UpdateChartEntryInput,
   type WorkspaceChart
 } from "../../shared/ipc";
+import type { ChronicleCalendarSettings } from "../../shared/chronicleCalendar";
+import { calendarYearToBaseYear, defaultChronicleCalendarSettings } from "../../shared/chronicleCalendar";
+import { pointToMonthAxis } from "../../shared/chartTime";
 import { updateChartFrontmatterContent } from "../../shared/chartFrontmatterUpdate";
 import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
@@ -44,18 +47,36 @@ const defaultChartOperations: ChartWriteOperations = {
 export async function readWorkspaceCharts(
   workspacePath: string,
   charts: ChartSettings[],
+  calendarSettingsOrOptions: ChronicleCalendarSettings | WorkspaceDerivedDataOptions | WorkspaceMarkdownReadOperations | undefined = defaultChronicleCalendarSettings,
   optionsOrOperations: WorkspaceDerivedDataOptions | WorkspaceMarkdownReadOperations = {}
 ): Promise<RelicResult<WorkspaceChart[]>> {
+  const calendarSettings = isCalendarSettings(calendarSettingsOrOptions)
+    ? calendarSettingsOrOptions
+    : defaultChronicleCalendarSettings;
+  const derivedOptions = isCalendarSettings(calendarSettingsOrOptions) ? optionsOrOperations : calendarSettingsOrOptions ?? {};
   const startedAt = startPerformanceMeasure();
   try {
-    const options = normalizeWorkspaceDerivedDataOptions(optionsOrOperations);
+    const options = normalizeWorkspaceDerivedDataOptions(derivedOptions);
     const parseCache = options.parseCache ?? createWorkspaceDerivedDataCache();
     const fileIndex = await readWorkspaceDerivedFileIndex(workspacePath, options);
     const entriesBySource: Record<ChartSettings["source"], ChartEntry[]> = { chronicle: [] };
 
     for (const record of readableWorkspaceMarkdownRecords(fileIndex)) {
       const fileEntries = chartEntriesForRecord(record, parseCache);
-      entriesBySource.chronicle.push(...fileEntries.chronicle);
+      entriesBySource.chronicle.push(...fileEntries.chronicle.flatMap((entry) => {
+        const calendarName = entry.calendarName ?? calendarSettings.baseCalendarName;
+        const startYear = calendarYearToBaseYear(entry.startPoint.year, calendarName, calendarSettings);
+        const endYear = calendarYearToBaseYear(entry.endPoint.year, calendarName, calendarSettings);
+        if (startYear === null || endYear === null) return [];
+        return [{
+          ...entry,
+          calendarName,
+          startPoint: { month: null, year: startYear },
+          endPoint: { month: null, year: endYear },
+          startValue: pointToMonthAxis(startYear, null),
+          endValue: pointToMonthAxis(endYear, null)
+        }];
+      }));
     }
 
     const sortedEntriesBySource = {
@@ -64,6 +85,7 @@ export async function readWorkspaceCharts(
 
     const workspaceCharts = charts.map((chart) => ({
       ...chart,
+      calendarSettings,
       entries: sortedEntriesBySource[chart.source]
     }));
     finishPerformanceMeasure("readWorkspaceCharts", startedAt, {
@@ -85,9 +107,19 @@ export async function readWorkspaceCharts(
 export async function updateWorkspaceChartEntry(
   workspacePath: string,
   charts: ChartSettings[],
-  input: UpdateChartEntryInput,
+  calendarSettingsOrInput: ChronicleCalendarSettings | UpdateChartEntryInput,
+  inputOrOperations?: UpdateChartEntryInput | ChartWriteOperations,
   operations: ChartWriteOperations = defaultChartOperations
 ): Promise<RelicResult<WorkspaceChart[]>> {
+  const calendarSettings = isCalendarSettings(calendarSettingsOrInput)
+    ? calendarSettingsOrInput
+    : defaultChronicleCalendarSettings;
+  const input = isCalendarSettings(calendarSettingsOrInput)
+    ? inputOrOperations as UpdateChartEntryInput
+    : calendarSettingsOrInput;
+  const activeOperations = !isCalendarSettings(calendarSettingsOrInput) && inputOrOperations
+    ? inputOrOperations as ChartWriteOperations
+    : operations;
   try {
     if (!hasMarkdownExtension(input.path)) {
       return fail("CHART_ENTRY_NOT_MARKDOWN", "Markdownファイル以外は更新できません。");
@@ -99,12 +131,12 @@ export async function updateWorkspaceChartEntry(
       return absolutePath;
     }
 
-    const content = await operations.readFile(absolutePath.value, "utf8");
-    const nextContent = updateChartFrontmatterContent(content, input);
+    const content = await activeOperations.readFile(absolutePath.value, "utf8");
+    const nextContent = updateChartFrontmatterContent(content, input, calendarSettings);
 
     if (!nextContent.ok) return nextContent;
 
-    const currentContent = await operations.readFile(absolutePath.value, "utf8");
+    const currentContent = await activeOperations.readFile(absolutePath.value, "utf8");
 
     if (currentContent !== content) {
       return fail(
@@ -113,9 +145,9 @@ export async function updateWorkspaceChartEntry(
       );
     }
 
-    await operations.writeTextFile(absolutePath.value, nextContent.value);
+    await activeOperations.writeTextFile(absolutePath.value, nextContent.value);
 
-    return readWorkspaceCharts(workspacePath, charts, { operations });
+    return readWorkspaceCharts(workspacePath, charts, calendarSettings, { operations: activeOperations });
   } catch (error) {
     return fail(
       "CHART_ENTRY_UPDATE_FAILED",
@@ -123,4 +155,8 @@ export async function updateWorkspaceChartEntry(
       errorDetails(error)
     );
   }
+}
+
+function isCalendarSettings(value: unknown): value is ChronicleCalendarSettings {
+  return typeof value === "object" && value !== null && "baseCalendarName" in value;
 }

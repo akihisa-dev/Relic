@@ -34,6 +34,7 @@ export function collectChartEntriesForFrontmatterData(
     const endValue = pointToMonthAxis(range.end.year, null);
     entriesBySource.chronicle.push({
       ...(category ? { category } : {}),
+      ...(range.calendarName ? { calendarName: range.calendarName } : {}),
       chronicleEntryIndex: range.entryIndex,
       endValue,
       endPoint: range.end,

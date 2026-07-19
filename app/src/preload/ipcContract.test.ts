@@ -50,7 +50,7 @@ describe("preload IPC contract", () => {
     const api = exposedApi();
 
     expect(api.apiContractVersion).toBe(relicApiContractVersion);
-    expect(relicApiContractVersion).toBe(1);
+    expect(relicApiContractVersion).toBe(2);
     expect(Object.keys(api).sort()).toEqual([
       "apiContractVersion",
       ...Object.keys(relicIpcContract)

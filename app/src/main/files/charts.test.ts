@@ -28,6 +28,24 @@ describe("extractChronicleRange", () => {
 });
 
 describe("readWorkspaceCharts", () => {
+  it("設定済みの暦を基準暦へ換算し、元の年ラベルは維持する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-calendars-"));
+    await writeFile(path.join(workspacePath, "known.md"), "---\nchronicle: { calendar: 別暦, start: -1, end: 2 }\n---\n", "utf8");
+    await writeFile(path.join(workspacePath, "unknown.md"), "---\nchronicle: { calendar: 不明暦, start: 1, end: 1 }\n---\n", "utf8");
+    const result = await readWorkspaceCharts(
+      workspacePath,
+      [{ filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" }],
+      { baseCalendarName: "基準暦", calendars: [{ name: "別暦", yearOne: 450 }], visibleCalendarNames: ["基準暦", "別暦"] }
+    );
+    expect(result).toMatchObject({ ok: true, value: [{ entries: [{
+      calendarName: "別暦",
+      startLabel: "−1",
+      endLabel: "2",
+      startPoint: { year: 449 },
+      endPoint: { year: 451 }
+    }] }] });
+  });
+
   it("Markdownファイルから年表entryを読む", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-chart-"));
     await writeFile(path.join(workspacePath, "main.MD"), "---\nchronicle: 10\n---\n# Main\n", "utf8");
@@ -104,6 +122,6 @@ describe("updateWorkspaceChartEntry", () => {
     );
 
     expect(result.ok).toBe(true);
-    expect(await readFile(filePath, "utf8")).toContain("chronicle:\n  end: 13\n  start: 12");
+    expect(await readFile(filePath, "utf8")).toContain("chronicle:\n  calendar: 西暦\n  start: 12\n  end: 13");
   });
 });

@@ -20,6 +20,10 @@ import {
   chronicleCategoryKey,
   isChronicleEntryVisible
 } from "./chronicleCategoryModel";
+import {
+  baseYearToCalendarYear,
+  type ChronicleCalendarSettings
+} from "../shared/chronicleCalendar";
 
 const nodeRadius = 6;
 const itemLabelFontFamily = "-apple-system, BlinkMacSystemFont, sans-serif";
@@ -49,7 +53,8 @@ export function drawChronicleCanvas(
   viewportHeight: number,
   theme: ChronicleCanvasTheme,
   hiddenCategoryKeys: ReadonlySet<string> = new Set(),
-  categoryHues: ReadonlyMap<string, number> = new Map()
+  categoryHues: ReadonlyMap<string, number> = new Map(),
+  calendarSettings?: ChronicleCalendarSettings
 ): ChronicleCanvasDrawResult {
   context.save();
   context.clearRect(0, 0, viewportWidth, viewportHeight);
@@ -58,7 +63,11 @@ export function drawChronicleCanvas(
 
   const visibleYears = visibleChronicleCanvasYears(scene.periodScale, camera, viewportWidth);
   const visibleYearLabels = visibleChronicleCanvasYearLabels(visibleYears, camera);
-  drawYearGuides(context, visibleYears, camera, viewportWidth, viewportHeight, theme);
+  const visibleCalendars = calendarSettings
+    ? calendarSettings.visibleCalendarNames
+    : [];
+  const rowCount = Math.max(1, visibleCalendars.length);
+  drawYearGuides(context, visibleYears, camera, viewportWidth, viewportHeight, theme, rowCount);
   const labelHits: ChronicleCanvasLabelHit[] = [];
   for (const item of scene.items) {
     if (!isChronicleEntryVisible(item.entry, hiddenCategoryKeys)) continue;
@@ -80,7 +89,7 @@ export function drawChronicleCanvas(
     );
     labelHits.push(hit);
   }
-  drawYearHeader(context, visibleYearLabels, camera, viewportWidth, theme);
+  drawYearHeader(context, visibleYearLabels, camera, viewportWidth, theme, calendarSettings);
   context.restore();
   return { labelHits };
 }
@@ -91,10 +100,11 @@ function drawYearGuides(
   camera: ChronicleCanvasCamera,
   viewportWidth: number,
   viewportHeight: number,
-  theme: ChronicleCanvasTheme
+  theme: ChronicleCanvasTheme,
+  rowCount: number
 ): void {
   const opacity = chronicleCanvasYearOpacity(camera.scale);
-  const headerHeight = chronicleCanvasYearHeaderHeight(camera.scale);
+  const headerHeight = chronicleCanvasYearHeaderHeight(camera.scale, rowCount);
   context.save();
   context.globalAlpha = opacity * 0.12;
   context.strokeStyle = theme.mutedText;
@@ -116,11 +126,14 @@ function drawYearHeader(
   years: ChronicleCanvasYear[],
   camera: ChronicleCanvasCamera,
   viewportWidth: number,
-  theme: ChronicleCanvasTheme
+  theme: ChronicleCanvasTheme,
+  calendarSettings?: ChronicleCalendarSettings
 ): void {
   const opacity = chronicleCanvasYearOpacity(camera.scale);
   const fontSize = chronicleCanvasYearFontSize(camera.scale);
-  const headerHeight = chronicleCanvasYearHeaderHeight(camera.scale);
+  const calendarNames = calendarSettings?.visibleCalendarNames ?? [];
+  const rows = calendarNames.length > 0 ? calendarNames : [""];
+  const headerHeight = chronicleCanvasYearHeaderHeight(camera.scale, rows.length);
   context.save();
   context.globalAlpha = 1;
   context.fillStyle = theme.background;
@@ -137,13 +150,23 @@ function drawYearHeader(
   context.textAlign = "center";
   context.textBaseline = "middle";
 
-  for (const year of years) {
-    const position = worldToCanvas({ x: year.x, y: 0 }, camera);
-    position.y = chronicleCanvasYearLabelY(camera.scale);
-    if (position.x < -60 || position.x > viewportWidth + 60) continue;
+  for (const [row, calendarName] of rows.entries()) {
+    context.textAlign = "left";
     context.globalAlpha = opacity * 0.88;
-    context.fillStyle = theme.mutedText;
-    context.fillText(formatYear(year.value), position.x, position.y);
+    context.fillText(calendarName, 10, chronicleCanvasYearLabelY(camera.scale, row));
+    context.textAlign = "center";
+    for (const year of years) {
+      const position = worldToCanvas({ x: year.x, y: 0 }, camera);
+      position.y = chronicleCanvasYearLabelY(camera.scale, row);
+      if (position.x < 58 || position.x > viewportWidth + 60) continue;
+      const converted = calendarSettings && calendarName
+        ? baseYearToCalendarYear(year.value, calendarName, calendarSettings)
+        : year.value;
+      if (converted === null) continue;
+      context.globalAlpha = opacity * 0.88;
+      context.fillStyle = theme.mutedText;
+      context.fillText(formatYear(converted), position.x, position.y);
+    }
   }
   context.restore();
 }

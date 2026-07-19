@@ -275,13 +275,13 @@ export function chronicleCanvasYearFontSize(scale: number): number {
   return Math.min(18, Math.max(9, 11 * Math.sqrt(scale / CHRONICLE_CANVAS_INITIAL_SCALE)));
 }
 
-export function chronicleCanvasYearLabelY(scale: number): number {
-  return Math.max(22, chronicleCanvasYearFontSize(scale) + 14);
+export function chronicleCanvasYearLabelY(scale: number, row = 0): number {
+  return Math.max(22, chronicleCanvasYearFontSize(scale) + 14) + row * 24;
 }
 
-export function chronicleCanvasYearHeaderHeight(scale: number): number {
+export function chronicleCanvasYearHeaderHeight(scale: number, rowCount = 1): number {
   const yearFontSize = chronicleCanvasYearFontSize(scale);
-  return Math.ceil(chronicleCanvasYearLabelY(scale) + yearFontSize / 2 + 16);
+  return Math.ceil(chronicleCanvasYearLabelY(scale, Math.max(0, rowCount - 1)) + yearFontSize / 2 + 12);
 }
 
 export function visibleChronicleCanvasYears(
@@ -297,7 +297,8 @@ export function visibleChronicleCanvasYears(
   const endIndex = Math.ceil(maximumWorldX / yearTickGap);
   const years: ChronicleCanvasYear[] = [];
   for (let index = startIndex; index <= endIndex; index += 1) {
-    years.push({ value: index * periodScale, x: index * yearTickGap });
+    const year = index * periodScale;
+    years.push({ value: year === 0 ? 1 : year, x: index * yearTickGap });
   }
   return years;
 }

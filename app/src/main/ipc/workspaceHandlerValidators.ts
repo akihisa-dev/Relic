@@ -1,5 +1,6 @@
 import type {
   FeatureToggles,
+  ChronicleCalendarSettings,
   FrontmatterCategoryChoice,
   FrontmatterTemplate,
   ChartSettings,
@@ -107,6 +108,28 @@ export function isFrontmatterCategoryChoicesInput(input: unknown): input is Fron
     choices.add(choice);
     return true;
   });
+}
+
+export function isChronicleCalendarSettingsInput(input: unknown): input is ChronicleCalendarSettings {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) return false;
+  const candidate = input as Record<string, unknown>;
+  if (typeof candidate.baseCalendarName !== "string" || !validCalendarName(candidate.baseCalendarName)) return false;
+  if (!Array.isArray(candidate.calendars) || candidate.calendars.length > 32) return false;
+  const names = new Set([candidate.baseCalendarName]);
+  for (const value of candidate.calendars) {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+    const calendar = value as Record<string, unknown>;
+    if (typeof calendar.name !== "string" || !validCalendarName(calendar.name) || names.has(calendar.name)) return false;
+    if (!Number.isInteger(calendar.yearOne) || calendar.yearOne === 0) return false;
+    names.add(calendar.name);
+  }
+  return Array.isArray(candidate.visibleCalendarNames) && candidate.visibleCalendarNames.length > 0 &&
+    new Set(candidate.visibleCalendarNames).size === candidate.visibleCalendarNames.length &&
+    candidate.visibleCalendarNames.every((name) => typeof name === "string" && names.has(name));
+}
+
+function validCalendarName(name: string): boolean {
+  return name.length > 0 && name.length <= 100 && name.trim() === name && !name.includes("\0");
 }
 
 export function isTablePropertiesInput(input: unknown): input is string[] {

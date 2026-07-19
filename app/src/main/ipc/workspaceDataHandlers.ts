@@ -5,15 +5,18 @@ import {
   getWorkspaceChartsChannel,
   getWorkspaceCardsChannel,
   getWorkspaceFrontmatterCategoryChoicesChannel,
+  getWorkspaceChronicleCalendarSettingsChannel,
   getWorkspaceGraphChannel,
   getWorkspaceTableChannel,
   getWorkspaceTagsChannel,
   saveWorkspaceFrontmatterCategoryChoicesChannel,
+  saveWorkspaceChronicleCalendarSettingsChannel,
   saveWorkspaceChartsChannel,
   saveWorkspaceTablePropertiesChannel,
   updateChartEntryChannel
 } from "../../shared/ipc";
 import { fail } from "../../shared/result";
+import { defaultChronicleCalendarSettings } from "../../shared/chronicleCalendar";
 import { readWorkspaceAliases } from "../files/aliases";
 import { readWorkspaceCharts, updateWorkspaceChartEntry } from "../files/charts";
 import { readWorkspaceCards } from "../files/cards";
@@ -33,6 +36,7 @@ import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
   isChartsInput,
   isFrontmatterCategoryChoicesInput,
+  isChronicleCalendarSettingsInput,
   isTablePropertiesInput,
   isUpdateChartEntryInput
 } from "./workspaceHandlerValidators";
@@ -132,7 +136,7 @@ export function registerWorkspaceDataHandlers(): void {
         workspaceId: context.value.activeWorkspace.id,
         workspacePath: context.value.activeWorkspace.path
       });
-      return readWorkspaceCharts(data.workspacePath, workspaceSettings.charts, data.options);
+      return readWorkspaceCharts(data.workspacePath, workspaceSettings.charts, workspaceSettings.chronicleCalendarSettings ?? defaultChronicleCalendarSettings, data.options);
     } catch (error) {
       return fail(
         "WORKSPACE_CHARTS_FAILED",
@@ -208,7 +212,7 @@ export function registerWorkspaceDataHandlers(): void {
       if (!context.ok) return context;
 
       const savedCharts = normalizeChartSettingsForSave(input);
-      await updateWorkspaceSettings(
+      const workspaceSettings = await updateWorkspaceSettings(
         context.value.userDataPath,
         context.value.activeWorkspace.id,
         (workspaceSettings) => ({
@@ -222,7 +226,12 @@ export function registerWorkspaceDataHandlers(): void {
         workspacePath: context.value.activeWorkspace.path
       });
 
-      return readWorkspaceCharts(data.workspacePath, savedCharts, data.options);
+      return readWorkspaceCharts(
+        data.workspacePath,
+        savedCharts,
+        workspaceSettings.chronicleCalendarSettings ?? defaultChronicleCalendarSettings,
+        data.options
+      );
     } catch (error) {
       return fail(
         "WORKSPACE_CHARTS_SAVE_FAILED",
@@ -248,6 +257,17 @@ export function registerWorkspaceDataHandlers(): void {
         "category候補を読み込めませんでした。",
         ipcErrorDetails(error)
       );
+    }
+  });
+
+  handleLocalizedIpc(getWorkspaceChronicleCalendarSettingsChannel, async () => {
+    try {
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
+      const settings = await readWorkspaceSettings(context.value.userDataPath, context.value.activeWorkspace.id);
+      return { ok: true as const, value: settings.chronicleCalendarSettings ?? defaultChronicleCalendarSettings };
+    } catch (error) {
+      return fail("WORKSPACE_CHRONICLE_CALENDARS_FAILED", "暦設定を読み込めませんでした。", ipcErrorDetails(error));
     }
   });
 
@@ -277,6 +297,22 @@ export function registerWorkspaceDataHandlers(): void {
         "category候補を保存できませんでした。",
         ipcErrorDetails(error)
       );
+    }
+  });
+
+  handleLocalizedIpc(saveWorkspaceChronicleCalendarSettingsChannel, async (_event, input: unknown) => {
+    try {
+      if (!isChronicleCalendarSettingsInput(input)) return fail("INVALID_CHRONICLE_CALENDARS", "暦設定が正しくありません。");
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
+      const settings = await updateWorkspaceSettings(
+        context.value.userDataPath,
+        context.value.activeWorkspace.id,
+        (current) => ({ ...current, chronicleCalendarSettings: input })
+      );
+      return { ok: true as const, value: settings.chronicleCalendarSettings ?? defaultChronicleCalendarSettings };
+    } catch (error) {
+      return fail("WORKSPACE_CHRONICLE_CALENDARS_SAVE_FAILED", "暦設定を保存できませんでした。", ipcErrorDetails(error));
     }
   });
 
@@ -319,6 +355,7 @@ export function registerWorkspaceDataHandlers(): void {
       const result = await updateWorkspaceChartEntry(
         context.value.activeWorkspace.path,
         workspaceSettings.charts,
+        workspaceSettings.chronicleCalendarSettings ?? defaultChronicleCalendarSettings,
         input
       );
       if (result.ok) {

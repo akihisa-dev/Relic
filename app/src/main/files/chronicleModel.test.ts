@@ -12,6 +12,11 @@ describe("chronicleModel", () => {
       start: { month: null, year: 1185 },
       end: { month: null, year: 1333 }
     });
+    expect(extractChronicleRangesFromData({ chronicle: { calendar: "皇紀", start: 1, end: 1 } })[0]).toMatchObject({
+      calendarName: "皇紀",
+      start: { month: null, year: 1 },
+      end: { month: null, year: 1 }
+    });
   });
 
   it("旧暦配列、0年、逆順、非整数を読まない", () => {

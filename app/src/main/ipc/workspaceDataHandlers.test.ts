@@ -269,6 +269,7 @@ describe("registerWorkspaceDataHandlers", () => {
     expect(dependencies.readWorkspaceCharts).toHaveBeenCalledWith(
       workspace.path,
       workspaceSettings.charts,
+      { baseCalendarName: "西暦", calendars: [], visibleCalendarNames: ["西暦"] },
       providerOptions,
     );
   });
@@ -382,6 +383,7 @@ describe("registerWorkspaceDataHandlers", () => {
     expect(dependencies.readWorkspaceCharts).toHaveBeenCalledWith(
       workspace.path,
       savedCharts,
+      { baseCalendarName: "西暦", calendars: [], visibleCalendarNames: ["西暦"] },
       providerOptions,
     );
   });
@@ -447,6 +449,7 @@ describe("registerWorkspaceDataHandlers", () => {
     expect(dependencies.updateWorkspaceChartEntry).toHaveBeenCalledWith(
       workspace.path,
       workspaceSettings.charts,
+      { baseCalendarName: "西暦", calendars: [], visibleCalendarNames: ["西暦"] },
       input,
     );
     expect(dependencies.invalidateWorkspaceData).toHaveBeenCalledWith(

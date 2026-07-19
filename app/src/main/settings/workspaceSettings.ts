@@ -6,6 +6,10 @@ import {
   type FrontmatterCategoryChoice,
   type ChartSource
 } from "../../shared/ipc";
+import {
+  defaultChronicleCalendarSettings,
+  type ChronicleCalendarSettings
+} from "../../shared/chronicleCalendar";
 import { normalizeWorkspaceRelativeInputPath } from "../files/paths";
 import {
   currentWorkspaceSettingsSchemaVersion,
@@ -16,6 +20,7 @@ import { SecureVersionedJsonStore } from "./secureVersionedJsonStore";
 
 export interface WorkspaceSettings {
   charts: ChartSettings[];
+  chronicleCalendarSettings?: ChronicleCalendarSettings;
   frontmatterCategoryChoices: FrontmatterCategoryChoice[];
   pinnedPaths: string[];
   tableProperties: string[];
@@ -32,6 +37,7 @@ export const defaultCharts: ChartSettings[] = [
 
 const defaultWorkspaceSettings: WorkspaceSettings = {
   charts: defaultCharts,
+  chronicleCalendarSettings: defaultChronicleCalendarSettings,
   frontmatterCategoryChoices: [],
   pinnedPaths: [],
   tableProperties: [],
@@ -70,10 +76,41 @@ export async function readWorkspaceSettings(
 function parseWorkspaceSettings(raw: PersistedWorkspaceSettings): WorkspaceSettings {
   return {
     charts: parseCharts(raw.charts),
+    chronicleCalendarSettings: parseChronicleCalendarSettings(raw.chronicleCalendarSettings),
     frontmatterCategoryChoices: parseFrontmatterCategoryChoices(raw.frontmatterCategoryChoices),
     pinnedPaths: parsePinnedPaths(raw.pinnedPaths),
     tableProperties: parseTableProperties(raw.tableProperties),
     workspacePath: typeof raw.workspacePath === "string" ? raw.workspacePath : ""
+  };
+}
+
+export function parseChronicleCalendarSettings(raw: unknown): ChronicleCalendarSettings {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return defaultChronicleCalendarSettings;
+  const candidate = raw as Record<string, unknown>;
+  const baseCalendarName = typeof candidate.baseCalendarName === "string" ? candidate.baseCalendarName.trim() : "";
+  if (!baseCalendarName) return defaultChronicleCalendarSettings;
+  const calendars = Array.isArray(candidate.calendars) ? candidate.calendars.flatMap((value) => {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return [];
+    const calendar = value as Record<string, unknown>;
+    const name = typeof calendar.name === "string" ? calendar.name.trim() : "";
+    if (!name || !Number.isInteger(calendar.yearOne) || calendar.yearOne === 0) return [];
+    return [{ name, yearOne: Number(calendar.yearOne) }];
+  }) : [];
+  const names = new Set([baseCalendarName]);
+  const uniqueCalendars = calendars.filter((calendar) => {
+    if (names.has(calendar.name)) return false;
+    names.add(calendar.name);
+    return true;
+  });
+  const visibleCalendarNames = Array.isArray(candidate.visibleCalendarNames)
+    ? candidate.visibleCalendarNames.filter((name): name is string => typeof name === "string" && names.has(name))
+    : [];
+  return {
+    baseCalendarName,
+    calendars: uniqueCalendars,
+    visibleCalendarNames: Array.from(new Set(visibleCalendarNames)).length > 0
+      ? Array.from(new Set(visibleCalendarNames))
+      : [baseCalendarName]
   };
 }
 

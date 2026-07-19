@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   defaultCharts,
   getWorkspaceSettingsPath,
+  parseChronicleCalendarSettings,
   readWorkspaceSettings,
   updateWorkspaceSettings,
   writeWorkspaceSettings
@@ -20,6 +21,22 @@ describe("workspaceSettings", () => {
     await Promise.all(
       temporaryPaths.splice(0).map((p) => rm(p, { force: true, recursive: true }))
     );
+  });
+
+  it("暦設定は有効な名前と表示対象だけを復元する", () => {
+    expect(parseChronicleCalendarSettings({
+      baseCalendarName: " 基準暦 ",
+      calendars: [
+        { name: "別暦", yearOne: 450 },
+        { name: "別暦", yearOne: 500 },
+        { name: "無効", yearOne: 0 }
+      ],
+      visibleCalendarNames: ["基準暦", "別暦", "不明", "別暦"]
+    })).toEqual({
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "別暦", yearOne: 450 }],
+      visibleCalendarNames: ["基準暦", "別暦"]
+    });
   });
 
   it("設定ファイルがない場合はデフォルトを返す", async () => {
@@ -201,7 +218,7 @@ describe("workspaceSettings", () => {
 
     await readWorkspaceSettings(userDataPath, "ws-legacy-v0");
     const afterFirstRead = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
-    expect(afterFirstRead.schemaVersion).toBe(3);
+    expect(afterFirstRead.schemaVersion).toBe(4);
 
     await delay(1100);
     const firstMtime = (await stat(settingsPath)).mtimeMs;
@@ -225,7 +242,7 @@ describe("workspaceSettings", () => {
 
     const raw = JSON.parse(await readFile(getWorkspaceSettingsPath(userDataPath, "ws-new"), "utf8")) as Record<string, unknown>;
 
-    expect(raw.schemaVersion).toBe(3);
+    expect(raw.schemaVersion).toBe(4);
     expect(raw.charts).toEqual(defaultCharts);
     expect(raw.ganttCharts).toBeUndefined();
     await expect(readdir(path.dirname(getWorkspaceSettingsPath(userDataPath, "ws-new")))).resolves.toEqual([
@@ -293,6 +310,11 @@ describe("workspaceSettings", () => {
     expect(() => getWorkspaceSettingsPath(userDataPath, "folder/ws")).toThrow("Invalid workspace settings id.");
     await expect(readWorkspaceSettings(userDataPath, "../outside")).resolves.toEqual({
       charts: defaultCharts,
+      chronicleCalendarSettings: {
+        baseCalendarName: "西暦",
+        calendars: [],
+        visibleCalendarNames: ["西暦"]
+      },
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
       tableProperties: [],
@@ -410,7 +432,7 @@ describe("workspaceSettings", () => {
     await Promise.all([update, readWhileUpdating]);
 
     const raw = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(3);
+    expect(raw.schemaVersion).toBe(4);
     expect(raw.workspacePath).toBe("/Users/test/new");
   });
 });

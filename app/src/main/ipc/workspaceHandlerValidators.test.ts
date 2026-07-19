@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  isChronicleCalendarSettingsInput,
   isFeatureTogglesInput,
   isFrontmatterCategoryChoicesInput,
   isFrontmatterTemplatesInput,
@@ -13,6 +14,17 @@ import {
 } from "./workspaceHandlerValidators";
 
 describe("workspaceHandlerValidators", () => {
+  it("暦名の重複、0年、表示対象なしを拒否する", () => {
+    expect(isChronicleCalendarSettingsInput({
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "別暦", yearOne: 450 }],
+      visibleCalendarNames: ["基準暦", "別暦"]
+    })).toBe(true);
+    expect(isChronicleCalendarSettingsInput({ baseCalendarName: "基準暦", calendars: [{ name: "別暦", yearOne: 0 }], visibleCalendarNames: ["基準暦"] })).toBe(false);
+    expect(isChronicleCalendarSettingsInput({ baseCalendarName: "基準暦", calendars: [{ name: "基準暦", yearOne: 1 }], visibleCalendarNames: ["基準暦"] })).toBe(false);
+    expect(isChronicleCalendarSettingsInput({ baseCalendarName: "基準暦", calendars: [], visibleCalendarNames: [] })).toBe(false);
+  });
+
   it("テーブル列は重複、空白、過大入力を拒否する", () => {
     expect(isTablePropertiesInput(["status", "tags"])).toBe(true);
     expect(isTablePropertiesInput(["status", "status"])).toBe(false);

@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type ReactElement, type WheelEvent } from "react";
 
 import type { ChartEntry } from "../../shared/ipc";
+import {
+  chronicleCalendarNames,
+  type ChronicleCalendarSettings
+} from "../../shared/chronicleCalendar";
 import { cancelChronicleCanvasFrame, chronicleCanvasWheelFactor } from "../chronicleCanvasHelpers";
 import {
   createChronicleCategoryOptions,
@@ -13,6 +17,7 @@ import {
   CHRONICLE_CANVAS_MIN_SCALE,
   CHRONICLE_PERIOD_SCALES,
   changeChronicleCanvasPeriodScale,
+  chronicleCanvasYearHeaderHeight,
   chronicleCanvasClickPath,
   chronicleCanvasPointerItemAtPoint,
   chronicleCanvasPointerMovedBeyondClickThreshold,
@@ -33,11 +38,13 @@ import { useT } from "../i18n";
 import { ChronicleCategoryRail } from "./ChronicleCategoryRail";
 
 interface ChronicleCanvasProps {
+  calendarSettings?: ChronicleCalendarSettings;
   categoryChoices?: string[];
   entries: ChartEntry[];
   hiddenCategoryKeys?: string[];
   onOpenFile: (path: string) => void;
   onHiddenCategoryKeysChange?: (keys: string[]) => void;
+  onCalendarSettingsSave?: (settings: ChronicleCalendarSettings) => void;
   onRailCollapsedChange?: (collapsed: boolean) => void;
   railCollapsed?: boolean;
 }
@@ -57,11 +64,13 @@ const emptyCategoryChoices: string[] = [];
 const emptyHiddenCategoryKeys: string[] = [];
 
 export function ChronicleCanvas({
+  calendarSettings = { baseCalendarName: "西暦", calendars: [], visibleCalendarNames: ["西暦"] },
   categoryChoices = emptyCategoryChoices,
   entries,
   hiddenCategoryKeys = emptyHiddenCategoryKeys,
   onOpenFile,
   onHiddenCategoryKeysChange = () => undefined,
+  onCalendarSettingsSave = () => undefined,
   onRailCollapsedChange = () => undefined,
   railCollapsed = false
 }: ChronicleCanvasProps): ReactElement {
@@ -77,6 +86,7 @@ export function ChronicleCanvas({
     option.hue === null ? [] : [[option.key, option.hue] as const]
   ))), [categoryOptions]);
   const [periodScaleIndex, setPeriodScaleIndex] = useState(() => CHRONICLE_PERIOD_SCALES.indexOf(CHRONICLE_INITIAL_PERIOD_SCALE));
+  const [calendarSettingsOpen, setCalendarSettingsOpen] = useState(false);
   const periodScale = CHRONICLE_PERIOD_SCALES[periodScaleIndex] ?? CHRONICLE_INITIAL_PERIOD_SCALE;
   const sceneRandomValuesRef = useRef<number[]>([]);
   const scene = useMemo(() => {
@@ -180,12 +190,13 @@ export function ChronicleCanvas({
       height,
       themeRef.current,
       hiddenCategoryKeysRef.current,
-      categoryHuesRef.current
+      categoryHuesRef.current,
+      calendarSettings
     );
     if (simulationMoving || inertiaMoving || draggedItemId) {
       animationFrameRef.current = requestAnimationFrame(draw);
     }
-  }, [updateTheme]);
+  }, [calendarSettings, updateTheme]);
 
   useEffect(() => {
     updateTheme();
@@ -228,11 +239,15 @@ export function ChronicleCanvas({
     const rect = canvasRef.current?.getBoundingClientRect();
     return { x: clientX - (rect?.left ?? 0), y: clientY - (rect?.top ?? 0) };
   }, []);
+  const pointerItemAt = useCallback((point: ChronicleCanvasPoint): ChronicleCanvasItem | null => {
+    if (point.y < chronicleCanvasYearHeaderHeight(camera.scale, calendarSettings.visibleCalendarNames.length)) return null;
+    return chronicleCanvasPointerItemAtPoint(visibleItemsRef.current, camera, point);
+  }, [calendarSettings.visibleCalendarNames.length, camera]);
 
   const handlePointerDown = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
     if (event.button !== 0) return;
     const point = canvasPoint(event.clientX, event.clientY);
-    const item = chronicleCanvasPointerItemAtPoint(visibleItemsRef.current, camera, point);
+    const item = pointerItemAt(point);
     event.currentTarget.setPointerCapture(event.pointerId);
     camera.velocityX = 0;
     camera.velocityY = 0;
@@ -249,11 +264,11 @@ export function ChronicleCanvas({
     };
     event.currentTarget.style.cursor = "grabbing";
     requestCanvasFrame(animationFrameRef, draw);
-  }, [canvasPoint, draw]);
+  }, [canvasPoint, draw, pointerItemAt]);
 
   const handlePointerMove = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
     const point = canvasPoint(event.clientX, event.clientY);
-    const hovered = chronicleCanvasPointerItemAtPoint(visibleItemsRef.current, camera, point);
+    const hovered = pointerItemAt(point);
     const hoveredChanged = hoveredItemIdRef.current !== (hovered?.id ?? null);
     const hoveredPointChanged = hovered
       ? hoveredPointRef.current?.x !== point.x || hoveredPointRef.current?.y !== point.y
@@ -290,7 +305,7 @@ export function ChronicleCanvas({
       simulationActiveRef.current = true;
     }
     requestCanvasFrame(animationFrameRef, draw);
-  }, [canvasPoint, draw]);
+  }, [canvasPoint, draw, pointerItemAt]);
 
   const handlePointerUp = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
     const pointer = pointerRef.current;
@@ -306,10 +321,10 @@ export function ChronicleCanvas({
     }
     pointerRef.current = null;
     const point = canvasPoint(event.clientX, event.clientY);
-    const hovered = chronicleCanvasPointerItemAtPoint(visibleItemsRef.current, camera, point);
+    const hovered = pointerItemAt(point);
     event.currentTarget.style.cursor = hovered ? "pointer" : "grab";
     requestCanvasFrame(animationFrameRef, draw);
-  }, [canvasPoint, draw]);
+  }, [canvasPoint, draw, pointerItemAt]);
 
   const handlePointerCancel = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
     const pointer = pointerRef.current;
@@ -343,8 +358,8 @@ export function ChronicleCanvas({
 
   return (
     <>
-      <label className="chronicle-period-scale">
-        <span>{t("chronicle.periodScale")}</span>
+      <div className="chronicle-period-scale">
+        <label>{t("chronicle.periodScale")}</label>
         <input
           aria-label={t("chronicle.periodScale")}
           aria-valuetext={periodScaleText}
@@ -355,8 +370,16 @@ export function ChronicleCanvas({
           type="range"
           value={periodScaleIndex}
         />
+        <button
+          aria-expanded={calendarSettingsOpen}
+          className="chronicle-calendar-settings-button"
+          onClick={() => setCalendarSettingsOpen((open) => !open)}
+          type="button"
+        >
+          {t("chronicle.calendarSettings")}
+        </button>
         <output>{periodScaleText}</output>
-      </label>
+      </div>
       <div className="chronicle-body">
         <ChronicleCategoryRail
           collapsed={railCollapsed}
@@ -382,17 +405,151 @@ export function ChronicleCanvas({
             onWheel={handleWheel}
             ref={canvasRef}
           />
-          {visibleItems.length === 0 ? (
+          {entries.length > 0 && visibleItems.length === 0 ? (
             <div className="chronicle-filter-empty">
               <p>{t("chronicle.allCategoriesHidden")}</p>
               <button onClick={() => onHiddenCategoryKeysChange([])} type="button">
                 {t("chronicle.showAllCategories")}
               </button>
             </div>
+          ) : entries.length === 0 ? (
+            <div className="chronicle-filter-empty"><p>{t("chronicle.empty")}</p></div>
+          ) : null}
+          {calendarSettingsOpen ? (
+            <ChronicleCalendarSettingsPanel
+              entries={entries}
+              onClose={() => setCalendarSettingsOpen(false)}
+              onSave={onCalendarSettingsSave}
+              settings={calendarSettings}
+            />
           ) : null}
         </div>
       </div>
     </>
+  );
+}
+
+function ChronicleCalendarSettingsPanel({
+  entries,
+  onClose,
+  onSave,
+  settings
+}: {
+  entries: ChartEntry[];
+  onClose: () => void;
+  onSave: (settings: ChronicleCalendarSettings) => void;
+  settings: ChronicleCalendarSettings;
+}): ReactElement {
+  const t = useT();
+  const [draft, setDraft] = useState(settings);
+  useEffect(() => setDraft(settings), [settings]);
+  const names = chronicleCalendarNames(draft);
+  const usedNames = useMemo(() => new Set(entries.flatMap((entry) => entry.calendarName ? [entry.calendarName] : [])), [entries]);
+  const save = (next: ChronicleCalendarSettings): void => {
+    const normalized = {
+      ...next,
+      baseCalendarName: next.baseCalendarName.trim(),
+      calendars: next.calendars.map((calendar) => ({ ...calendar, name: calendar.name.trim() }))
+    };
+    const normalizedNames = chronicleCalendarNames(normalized);
+    if (!normalized.baseCalendarName || new Set(normalizedNames).size !== normalizedNames.length ||
+      normalized.calendars.some((calendar) => !calendar.name || calendar.yearOne === 0 || !Number.isInteger(calendar.yearOne))) return;
+    const visibleCalendarNames = normalized.visibleCalendarNames.filter((name) => normalizedNames.includes(name));
+    const complete = { ...normalized, visibleCalendarNames: visibleCalendarNames.length > 0 ? visibleCalendarNames : [normalized.baseCalendarName] };
+    setDraft(complete);
+    onSave(complete);
+  };
+  const toggleVisible = (name: string): void => {
+    const visible = draft.visibleCalendarNames.includes(name)
+      ? draft.visibleCalendarNames.filter((candidate) => candidate !== name)
+      : [...draft.visibleCalendarNames, name];
+    if (visible.length > 0) save({ ...draft, visibleCalendarNames: visible });
+  };
+  return (
+    <section aria-label={t("chronicle.calendarSettings")} className="chronicle-calendar-settings-panel">
+      <header>
+        <h2>{t("chronicle.calendarSettings")}</h2>
+        <button aria-label={t("chronicle.closeCalendarSettings")} onClick={onClose} type="button">×</button>
+      </header>
+      <div className="chronicle-calendar-settings-content">
+        <h3>{t("chronicle.visibleCalendars")}</h3>
+        <div className="chronicle-calendar-visible-list">
+          {names.map((name) => (
+            <label key={name}>
+              <input checked={draft.visibleCalendarNames.includes(name)} onChange={() => toggleVisible(name)} type="checkbox" />
+              <span>{name}</span>
+            </label>
+          ))}
+        </div>
+        <h3>{t("chronicle.baseCalendar")}</h3>
+        <label className="chronicle-calendar-field">
+          <span>{t("chronicle.calendarName")}</span>
+          <input
+            onBlur={() => save(draft)}
+            onChange={(event) => {
+              const previous = draft.baseCalendarName;
+              const name = event.target.value;
+              setDraft({
+                ...draft,
+                baseCalendarName: name,
+                visibleCalendarNames: draft.visibleCalendarNames.map((candidate) => candidate === previous ? name : candidate)
+              });
+            }}
+            value={draft.baseCalendarName}
+          />
+        </label>
+        <h3>{t("chronicle.otherCalendars")}</h3>
+        <div className="chronicle-calendar-definition-list">
+          {draft.calendars.map((calendar, index) => (
+            <div className="chronicle-calendar-definition" key={index}>
+              <input
+                aria-label={t("chronicle.calendarName")}
+                disabled={usedNames.has(calendar.name)}
+                onBlur={() => save(draft)}
+                onChange={(event) => {
+                  const previous = calendar.name;
+                  const name = event.target.value;
+                  setDraft({
+                    ...draft,
+                    calendars: draft.calendars.map((item, itemIndex) => itemIndex === index ? { ...item, name } : item),
+                    visibleCalendarNames: draft.visibleCalendarNames.map((candidate) => candidate === previous ? name : candidate)
+                  });
+                }}
+                value={calendar.name}
+              />
+              <label>
+                <span>{t("chronicle.yearOneEqualsBase")}</span>
+                <input
+                  inputMode="numeric"
+                  onBlur={() => save(draft)}
+                  onChange={(event) => setDraft({ ...draft, calendars: draft.calendars.map((item, itemIndex) => itemIndex === index ? { ...item, yearOne: Number(event.target.value) } : item) })}
+                  type="number"
+                  value={calendar.yearOne}
+                />
+                <span>{t("chronicle.yearSuffix")}</span>
+              </label>
+              <button
+                aria-label={t("chronicle.removeCalendar", { name: calendar.name })}
+                disabled={usedNames.has(calendar.name)}
+                onClick={() => save({ ...draft, calendars: draft.calendars.filter((_, itemIndex) => itemIndex !== index), visibleCalendarNames: draft.visibleCalendarNames.filter((name) => name !== calendar.name) })}
+                type="button"
+              >×</button>
+            </div>
+          ))}
+        </div>
+        <button
+          className="chronicle-calendar-add"
+          onClick={() => {
+            const baseName = t("chronicle.newCalendar");
+            let name = baseName;
+            let suffix = 2;
+            while (names.includes(name)) name = `${baseName} ${suffix++}`;
+            setDraft({ ...draft, calendars: [...draft.calendars, { name, yearOne: 1 }] });
+          }}
+          type="button"
+        >＋ {t("chronicle.addCalendar")}</button>
+      </div>
+    </section>
   );
 }
 

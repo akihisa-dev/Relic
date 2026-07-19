@@ -40,7 +40,7 @@ export function createFrontmatterValueInput({
   value: unknown;
   view: EditorView;
 }): HTMLElement {
-  if (isChronicleField(key)) return chronicleInput(view, value, updateField, t);
+  if (isChronicleField(key)) return chronicleInput(view, value, candidates.chronicle ?? [], updateField, t);
   if (field?.type === "boolean") return booleanInput(view, key, firstArrayValue(value), updateField, true);
   if (isSingleValueField(field)) {
     return scalarInput(view, key, firstArrayValue(value), field, candidates, updateField, dateFormat, true);
@@ -195,12 +195,31 @@ function booleanInput(
 function chronicleInput(
   view: EditorView,
   value: unknown,
+  calendarNames: string[],
   updateField: FrontmatterFieldUpdater,
   t: Translator
 ): HTMLElement {
   const wrap = document.createElement("span");
   wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-chronicle";
   const range = chronicleYearRangeInput(value);
+  const currentCalendar = typeof value === "object" && value !== null && !Array.isArray(value) &&
+    typeof (value as Record<string, unknown>).calendar === "string"
+    ? String((value as Record<string, unknown>).calendar)
+    : calendarNames[0] ?? "";
+  const calendarSelect = document.createElement("select");
+  calendarSelect.className = "cm-frontmatter-input cm-frontmatter-select";
+  const selectableNames = currentCalendar && !calendarNames.includes(currentCalendar)
+    ? [currentCalendar, ...calendarNames]
+    : calendarNames;
+  for (const name of selectableNames) {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    option.disabled = !calendarNames.includes(name);
+    calendarSelect.append(option);
+  }
+  calendarSelect.value = currentCalendar;
+  if (!calendarNames.includes(currentCalendar)) calendarSelect.setAttribute("aria-invalid", "true");
   const startInput = chronicleYearInput("chronicle-start", range.start, t("frontmatter.chronicleStartInput"));
   const endInput = chronicleYearInput("chronicle-end", range.end, t("frontmatter.chronicleEndInput"));
   const commit = (): void => {
@@ -214,7 +233,7 @@ function chronicleInput(
     }
     const start = parseChronicleYearInput(startRaw);
     const end = endRaw ? parseChronicleYearInput(endRaw) : start;
-    const invalid = start === null || end === null || start === 0 || end === 0 || start > end;
+    const invalid = !calendarNames.includes(calendarSelect.value) || start === null || end === null || start === 0 || end === 0 || start > end;
     if (invalid) {
       startInput.setAttribute("aria-invalid", "true");
       endInput.setAttribute("aria-invalid", "true");
@@ -222,11 +241,12 @@ function chronicleInput(
     }
     startInput.removeAttribute("aria-invalid");
     endInput.removeAttribute("aria-invalid");
-    updateField(view, "chronicle", endRaw && end !== start ? { start, end } : start);
+    updateField(view, "chronicle", { calendar: calendarSelect.value, start, end });
   };
+  calendarSelect.addEventListener("change", commit);
   startInput.addEventListener("input", commit);
   endInput.addEventListener("input", commit);
-  wrap.append(startInput, endInput);
+  wrap.append(calendarSelect, startInput, endInput);
   return wrap;
 }
 

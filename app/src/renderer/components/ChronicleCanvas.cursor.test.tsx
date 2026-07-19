@@ -9,6 +9,28 @@ afterEach(() => {
 });
 
 describe("ChronicleCanvas cursor", () => {
+  it("暦設定を現在のツールバー内で開き、表示する暦を複数選択する", () => {
+    const onSave = vi.fn();
+    render(
+      <I18nProvider language="ja">
+        <ChronicleCanvas
+          calendarSettings={{
+            baseCalendarName: "基準暦",
+            calendars: [{ name: "別暦", yearOne: 450 }],
+            visibleCalendarNames: ["基準暦"]
+          }}
+          entries={[]}
+          onCalendarSettingsSave={onSave}
+          onOpenFile={vi.fn()}
+        />
+      </I18nProvider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
+    expect(screen.getByRole("heading", { name: "暦設定" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("checkbox", { name: "別暦" }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ visibleCalendarNames: ["基準暦", "別暦"] }));
+  });
+
   it("ズーム操作とは独立した期間スケールを段階的に変更する", () => {
     render(
       <I18nProvider language="en">
