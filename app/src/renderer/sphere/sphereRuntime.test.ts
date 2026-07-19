@@ -163,8 +163,8 @@ describe("sphereRuntime", () => {
     controlListeners.get("end")?.forEach((listener) => listener());
     expect(gridLine.material.opacity).toBe(0.26);
     expect(forceGraphMocks.graph.linkVisibility).toHaveBeenCalledWith(true);
-    expect(forceGraphMocks.graph.linkOpacity).toHaveBeenCalledWith(0.48);
-    expect(forceGraphMocks.graph.linkOpacity).toHaveBeenLastCalledWith(0.48);
+    expect(forceGraphMocks.graph.linkOpacity).toHaveBeenCalledWith(0.42);
+    expect(forceGraphMocks.graph.linkOpacity).toHaveBeenLastCalledWith(0.42);
     const chargeAccessor = chargeForce.strength.mock.calls[0][0];
     const distanceAccessor = linkForce.distance.mock.calls[0][0];
     expect(chargeAccessor(data.nodes[0])).toBe(-60);
@@ -204,7 +204,7 @@ describe("sphereRuntime", () => {
     const linkWidthAccessor = forceGraphMocks.graph.linkWidth.mock.calls[0][0];
     expect(colorAccessor(sphereData().nodes[0])).toBe(defaultGraphDrawTheme.accent);
     expect(colorAccessor(sphereData().nodes[1])).toBe("#222222");
-    expect(colorAccessor(sphereData().nodes[2])).toBe(defaultGraphDrawTheme.border);
+    expect(colorAccessor(sphereData().nodes[2])).toBe("rgba(59, 60, 51, 0.4)");
     expect(linkWidthAccessor(sphereData().links[0])).toBe(2.4);
     const unfocusedLink = {
       count: 1,
@@ -217,6 +217,9 @@ describe("sphereRuntime", () => {
     expect(linkWidthAccessor(unfocusedLink)).toBe(0);
     expect(linkColorAccessor(sphereData().links[0])).toBe(defaultGraphDrawTheme.accent);
     expect(linkColorAccessor(unfocusedLink)).toBe(defaultGraphDrawTheme.textSecondary);
+    runtime.setFocus(null);
+    expect(colorAccessor(sphereData().nodes[0])).toBe("rgba(17, 17, 17, 0.58)");
+    expect(colorAccessor(sphereData().nodes[2])).toBe("rgba(51, 51, 51, 0.4)");
     forceGraphMocks.graph.onNodeClick.mock.calls[0][0](data.nodes[0]);
     forceGraphMocks.graph.onBackgroundClick.mock.calls[0][0]();
     expect(callbacks.onNodeClick).toHaveBeenCalledWith(data.nodes[0]);

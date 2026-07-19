@@ -13,7 +13,9 @@ import {
   sphereNodeChargeStrength,
   sphereNodeColors,
   sphereNodeValue,
-  sphereQuarterCameraPosition
+  sphereQuarterCameraPosition,
+  sphereStarColor,
+  sphereStarMagnitude
 } from "./sphereModel";
 
 describe("sphereModel", () => {
@@ -54,9 +56,18 @@ describe("sphereModel", () => {
     expect(data.nodes[0]).not.toHaveProperty("baseColor");
   });
 
-  it("関連数に応じてノード体積を増やし上限を設ける", () => {
-    expect(sphereNodeValue({ backlinkCount: 0, linkCount: 0 })).toBeCloseTo(4.2);
-    expect(sphereNodeValue({ backlinkCount: 10_000, linkCount: 10_000 })).toBe(18);
+  it("関連数を5段階の星の等級へ変換し、明るい星ほど体積を増やす", () => {
+    expect(sphereStarMagnitude({ backlinkCount: 0, linkCount: 0 })).toBe(5);
+    expect(sphereStarMagnitude({ backlinkCount: 0, linkCount: 1 })).toBe(4);
+    expect(sphereStarMagnitude({ backlinkCount: 1, linkCount: 1 })).toBe(3);
+    expect(sphereStarMagnitude({ backlinkCount: 1, linkCount: 2 })).toBe(2);
+    expect(sphereStarMagnitude({ backlinkCount: 2, linkCount: 3 })).toBe(1);
+    expect(sphereNodeValue({ backlinkCount: 0, linkCount: 0 })).toBe(3);
+    expect(sphereNodeValue({ backlinkCount: 10_000, linkCount: 10_000 })).toBe(30);
+    expect(sphereStarColor("#f2691b", { backlinkCount: 0, linkCount: 0 }))
+      .toBe("rgba(242, 105, 27, 0.4)");
+    expect(sphereStarColor("#f2691b", { backlinkCount: 2, linkCount: 3 }))
+      .toBe("rgba(242, 105, 27, 1)");
   });
 
   it("リンク密度が高いほど反発力とリンク距離を増やす", () => {
@@ -65,8 +76,8 @@ describe("sphereModel", () => {
 
     expect(dense.chargeStrength).toBeLessThan(sparse.chargeStrength);
     expect(dense.linkDistance).toBeGreaterThan(sparse.linkDistance);
-    expect(dense.linkOpacity).toBe(0.18);
-    expect(sparse.linkOpacity).toBe(0.48);
+    expect(dense.linkOpacity).toBeCloseTo(0.16);
+    expect(sparse.linkOpacity).toBe(0.42);
     expect(dense.nodeRelSize).toBeLessThan(sparse.nodeRelSize);
     expect(dense.nodeRelSize).toBeGreaterThanOrEqual(2.7);
     expect(dense.boundaryRadius).toBe(sparse.boundaryRadius);

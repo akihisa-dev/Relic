@@ -44,7 +44,23 @@ export interface SphereLayoutSettings {
   nodeRelSize: number;
 }
 
+export type SphereStarMagnitude = 1 | 2 | 3 | 4 | 5;
+
 export const SPHERE_MIN_GUIDE_RADIUS = 80;
+const SPHERE_STAR_OPACITY: Record<SphereStarMagnitude, number> = {
+  1: 1,
+  2: 0.9,
+  3: 0.76,
+  4: 0.58,
+  5: 0.4
+};
+const SPHERE_STAR_VALUE: Record<SphereStarMagnitude, number> = {
+  1: 30,
+  2: 18,
+  3: 10,
+  4: 5.5,
+  5: 3
+};
 
 export function sphereQuarterCameraPosition(distance: number): SphereCoordinates {
   const safeDistance = Math.max(0, distance);
@@ -84,14 +100,14 @@ export function sphereLayoutSettings(nodeCount: number, linkCount: number): Sphe
   const linkPressure = Math.max(0, averageDegree - 1);
   const countPressure = Math.min(0.5, Math.max(0, nodeCount - 300) / 1_200);
   const linkOpacityPressure = Math.min(
-    0.3,
+    0.26,
     Math.max(0, averageDegree - 2) * 0.04 + Math.max(0, nodeCount - 300) / 2_000
   );
   return {
     boundaryRadius: Math.max(180, Math.cbrt(safeNodeCount) * 55),
     chargeStrength: -Math.min(360, 60 + linkPressure * 28),
     linkDistance: Math.min(160, 30 + linkPressure * 16),
-    linkOpacity: 0.48 - linkOpacityPressure,
+    linkOpacity: 0.42 - linkOpacityPressure,
     nodeRelSize: Math.max(2.7, 4.2 - Math.min(1, linkPressure * 0.16) - countPressure)
   };
 }
@@ -162,7 +178,29 @@ export function sphereNodeColors(
 }
 
 export function sphereNodeValue(node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">): number {
-  return Math.min(18, 2 + Math.sqrt(node.backlinkCount + node.linkCount + 1) * 2.2);
+  return SPHERE_STAR_VALUE[sphereStarMagnitude(node)];
+}
+
+export function sphereStarMagnitude(
+  node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">
+): SphereStarMagnitude {
+  const connections = Math.max(0, node.backlinkCount + node.linkCount);
+  if (connections >= 5) return 1;
+  if (connections >= 3) return 2;
+  if (connections >= 2) return 3;
+  if (connections >= 1) return 4;
+  return 5;
+}
+
+export function sphereStarColor(
+  color: string,
+  node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">
+): string {
+  const match = /^#([0-9a-f]{6})$/iu.exec(color);
+  if (!match) return color;
+  const value = Number.parseInt(match[1]!, 16);
+  const opacity = SPHERE_STAR_OPACITY[sphereStarMagnitude(node)];
+  return `rgba(${value >> 16}, ${(value >> 8) & 0xff}, ${value & 0xff}, ${opacity})`;
 }
 
 export function sphereFocusIds(data: SphereData, focusId: string | null): Set<string> {

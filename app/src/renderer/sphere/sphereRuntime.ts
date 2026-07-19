@@ -15,6 +15,7 @@ import {
   sphereLinkTouchesFocus,
   sphereNodeChargeStrength,
   sphereQuarterCameraPosition,
+  sphereStarColor,
   type SphereData,
   type SphereLink,
   type SphereNode
@@ -193,15 +194,15 @@ export function createSphereRuntime(
     .nodeVal((node) => node.val)
     .nodeOpacity(0.9)
     .linkVisibility(true)
-    .linkOpacity(0.48)
+    .linkOpacity(0.42)
     .linkWidth((link) => {
       return sphereLinkTouchesFocus(link, focusId) ? 2.4 : 0;
     })
     .nodeColor((node) => {
       const baseColor = nodeColors.get(node.id) ?? theme.textSecondary;
-      if (!focusId) return baseColor;
+      if (!focusId) return sphereStarColor(baseColor, node);
       if (node.id === focusId) return theme.accent;
-      return focusIds.has(node.id) ? baseColor : theme.border;
+      return focusIds.has(node.id) ? baseColor : sphereStarColor(theme.border, node);
     })
     .linkColor((link) => focusId && sphereLinkTouchesFocus(link, focusId)
       ? theme.accent
