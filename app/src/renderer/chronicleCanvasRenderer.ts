@@ -94,7 +94,7 @@ export function drawChronicleCanvas(
   if (calendarSettings) drawCalendarSurfaces(
     context,
     scene,
-    visibleYears,
+    visibleYearLabels,
     camera,
     viewportWidth,
     viewportHeight,

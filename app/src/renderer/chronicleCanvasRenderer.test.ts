@@ -155,6 +155,37 @@ describe("chronicleCanvasRenderer", () => {
     expect(fillTextCalls.some((call) => call.text === "Kingdom")).toBe(true);
   });
 
+  it("追加暦の年ラベルを基準暦と同じ画面間隔で間引く", () => {
+    const settings = {
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "王国暦", range: { end: 100, start: 1 }, yearOne: 1 }],
+      visibleCalendarNames: ["基準暦", "王国暦"]
+    };
+    const scene = createChronicleCanvasScene([], () => 0.5, 1, settings);
+    const camera = { ...createChronicleCanvasCamera(), panX: 0, panY: 0, scale: 0.5 };
+    const fillTextCalls: FillTextCall[] = [];
+    const context = createCanvasContext(fillTextCalls);
+
+    drawChronicleCanvas(context, scene, camera, null, null, 800, 500, {
+      background: "#fff",
+      categoryLightness: 40,
+      categorySaturation: 68,
+      mutedText: "#666",
+      text: "#111"
+    }, new Set(), new Map(), settings);
+
+    const baseLabelY = chronicleCanvasYearLabelY(camera.scale);
+    const baseLabelXs = new Set(fillTextCalls.filter((call) => (
+      call.y === baseLabelY && /^-?\d+$/.test(call.text)
+    )).map((call) => call.x));
+    const addedLabelXs = fillTextCalls.filter((call) => (
+      call.y !== baseLabelY && /^-?\d+$/.test(call.text)
+    )).map((call) => call.x);
+
+    expect(addedLabelXs.length).toBeGreaterThan(1);
+    expect(addedLabelXs.every((x) => baseLabelXs.has(x))).toBe(true);
+  });
+
   it("設定範囲外の項目を警告色の破線延長領域へ描画する", () => {
     const settings = {
       baseCalendarName: "基準暦",
