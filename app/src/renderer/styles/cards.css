@@ -101,30 +101,11 @@
   overflow: hidden;
   padding: clamp(14px, 3cqi, 18px) clamp(14px, 3.4cqi, 20px) clamp(16px, 3.6cqi, 22px);
   text-align: left;
-  transition:
-    background-color var(--motion-fast) var(--ease-standard),
-    border-color var(--motion-fast) var(--ease-standard),
-    box-shadow var(--motion-fast) var(--ease-standard),
-    transform var(--motion-fast) var(--ease-press);
   width: min(
     100cqi,
     max(0px, calc(118cqb - 93px)),
     max(0px, calc(150cqb - 213px))
   );
-}
-
-.card-view-item:hover {
-  border-color: #8d8777;
-  box-shadow:
-    inset 0 0 0 3px #2d2e29,
-    0 15px 38px color-mix(in srgb, var(--shadow) 82%, transparent);
-  transform: translateY(-2px);
-}
-
-.card-view-item:focus-visible {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
-  outline: none;
 }
 
 .card-view-image-frame {
@@ -282,7 +263,6 @@
     animation: none;
   }
 
-  .card-view-item,
   .card-view-list-item {
     transition-duration: 1ms;
   }

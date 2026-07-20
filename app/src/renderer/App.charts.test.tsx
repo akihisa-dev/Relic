@@ -626,10 +626,10 @@ describe("App charts", () => {
     await screen.findByText("Notes");
 
     fireEvent.click(screen.getByRole("button", { name: "カード" }));
-    const card = await screen.findByRole("button", { name: "Moonを開く" });
-    expect(screen.getByRole("button", { name: "Moon" })).toHaveAttribute("aria-current", "true");
+    const listItem = await screen.findByRole("button", { name: "Moon" });
+    expect(listItem).toHaveAttribute("aria-current", "true");
 
-    fireEvent.click(card);
+    fireEvent.click(listItem);
     await waitFor(() => expect(window.relic!.readMarkdownFile).toHaveBeenCalledWith({ path: "notes/moon.md" }));
     await waitFor(() => {
       const activeTabId = useEditorStore.getState().leftPane.activeTabId;

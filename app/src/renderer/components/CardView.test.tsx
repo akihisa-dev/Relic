@@ -64,10 +64,11 @@ describe("CardView", () => {
       </I18nProvider>
     );
 
-    const cardButton = await screen.findByRole("button", { name: "Moonを開く" });
-    expect(cardButton).toBeInTheDocument();
-    expect(cardButton.parentElement).toHaveClass("card-view-stage");
-    expect(cardButton.parentElement?.parentElement).toHaveClass("card-view-body");
+    await screen.findByRole("button", { name: "Moon" });
+    const card = view.container.querySelector(".card-view-item");
+    expect(card).toBeInTheDocument();
+    expect(card?.parentElement).toHaveClass("card-view-stage");
+    expect(card?.parentElement?.parentElement).toHaveClass("card-view-body");
     expect(screen.queryByText("カード")).not.toBeInTheDocument();
     expect(screen.queryByText("カードビュー")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Moon" })).toHaveAttribute("aria-current", "true");
@@ -78,12 +79,15 @@ describe("CardView", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Sun" }));
     expect(onOpenFile).not.toHaveBeenCalled();
-    expect(await screen.findByRole("button", { name: "Sunを開く" })).toBeInTheDocument();
+    expect(await screen.findByText("Sun", { selector: ".card-view-name" })).toBeInTheDocument();
     await waitFor(() => expect(readImageFile).toHaveBeenCalledTimes(2));
     expect(readImageFile).toHaveBeenLastCalledWith({ path: "notes/images/sun.webp" });
     expect(view.container.querySelectorAll("img")).toHaveLength(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "Sunを開く" }));
+    fireEvent.click(view.container.querySelector(".card-view-item")!);
+    expect(onOpenFile).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sun" }));
     expect(onOpenFile).toHaveBeenCalledWith("notes/sun.md");
   });
 
@@ -111,7 +115,7 @@ describe("CardView", () => {
       </I18nProvider>
     );
 
-    expect(await screen.findByRole("button", { name: "Sunを開く" })).toBeInTheDocument();
+    expect(await screen.findByText("Sun", { selector: ".card-view-name" })).toBeInTheDocument();
     await waitFor(() => expect(onSelectPath).toHaveBeenCalledWith("notes/sun.md"));
 
     onSelectPath.mockClear();
@@ -127,7 +131,7 @@ describe("CardView", () => {
       </I18nProvider>
     );
 
-    expect(await screen.findByRole("button", { name: "Moonを開く" })).toBeInTheDocument();
+    expect(await screen.findByText("Moon", { selector: ".card-view-name" })).toBeInTheDocument();
     await waitFor(() => expect(onSelectPath).toHaveBeenCalledWith("notes/moon.md"));
   });
 
@@ -156,7 +160,7 @@ describe("CardView", () => {
       </I18nProvider>
     );
 
-    await screen.findByRole("button", { name: "Moonを開く" });
+    await screen.findByText("Moon", { selector: ".card-view-name" });
     await waitFor(() => expect(readImageFile).toHaveBeenCalledWith({ path: "notes/images/moon.webp" }));
     const imageFrame = view.container.querySelector<HTMLElement>(".card-view-image-frame");
     const loadingImage = view.container.querySelector<HTMLElement>('.card-view-image[data-image-state="loading"]');
@@ -195,7 +199,7 @@ describe("CardView", () => {
     );
 
     expect(await screen.findByText("画像を表示できません")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Brokenを開く" })).toBeInTheDocument();
+    expect(screen.getByText("Broken", { selector: ".card-view-name" })).toBeInTheDocument();
     expect(readImageFile).not.toHaveBeenCalled();
   });
 
@@ -222,7 +226,7 @@ describe("CardView", () => {
 
     expect(await screen.findByText("画像を表示できません")).toBeInTheDocument();
     expect(screen.getByText("画像は未設定。")).toHaveClass("card-view-description");
-    expect(screen.getByRole("button", { name: "Missingを開く" })).toBeInTheDocument();
+    expect(screen.getByText("Missing", { selector: ".card-view-name" })).toBeInTheDocument();
     expect(readImageFile).not.toHaveBeenCalled();
   });
 
