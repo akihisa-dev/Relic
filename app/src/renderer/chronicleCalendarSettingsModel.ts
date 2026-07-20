@@ -1,12 +1,11 @@
 import {
   chronicleCalendarNames,
-  isValidChronicleCalendarRange,
   type ChronicleCalendarSettings
 } from "../shared/chronicleCalendar";
 
 export interface ChronicleCalendarSettingsDraft {
   baseCalendarName: string;
-  calendars: Array<{ isNew: boolean; name: string; rangeEnd: string; rangeStart: string; yearOne: string }>;
+  calendars: Array<{ isNew: boolean; name: string; rangeEnd: string; yearOne: string }>;
   visibleCalendarNames: string[];
 }
 
@@ -19,7 +18,6 @@ export function createChronicleCalendarSettingsDraft(
       isNew: false,
       name: calendar.name,
       rangeEnd: calendar.range ? String(calendar.range.end) : "",
-      rangeStart: calendar.range ? String(calendar.range.start) : "",
       yearOne: String(calendar.yearOne)
     }))
   };
@@ -30,8 +28,8 @@ export function normalizeChronicleCalendarSettingsDraft(
 ): ChronicleCalendarSettings | null {
   const calendars = draft.calendars.flatMap((calendar) => {
     const yearOne = parseChronicleCalendarYearOne(calendar.yearOne);
-    const range = parseChronicleCalendarRange(calendar.rangeStart, calendar.rangeEnd);
-    const hasRangeInput = calendar.rangeStart.trim() !== "" || calendar.rangeEnd.trim() !== "";
+    const range = parseChronicleCalendarEndYear(calendar.rangeEnd);
+    const hasRangeInput = calendar.rangeEnd.trim() !== "";
     if (yearOne === null || ((calendar.isNew || hasRangeInput) && range === null)) return [];
     return yearOne === null ? [] : [{ name: calendar.name.trim(), range, yearOne }];
   });
@@ -53,12 +51,9 @@ export function normalizeChronicleCalendarSettingsDraft(
   };
 }
 
-export function parseChronicleCalendarRange(startValue: string, endValue: string): { end: number; start: number } | null {
-  const start = parseChronicleCalendarYearOne(startValue);
+export function parseChronicleCalendarEndYear(endValue: string): { end: number; start: 1 } | null {
   const end = parseChronicleCalendarYearOne(endValue);
-  if (start === null || end === null) return null;
-  const range = { end, start };
-  return isValidChronicleCalendarRange(range) ? range : null;
+  return end !== null && end >= 1 ? { end, start: 1 } : null;
 }
 
 export function parseChronicleCalendarYearOne(value: string): number | null {

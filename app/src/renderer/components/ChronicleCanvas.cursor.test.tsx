@@ -32,7 +32,7 @@ describe("ChronicleCanvas cursor", () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ visibleCalendarNames: ["基準暦", "別暦"] }));
   });
 
-  it("暦面の有効な開始年と終了年がそろってから保存する", () => {
+  it("暦面の終了年だけを入力し、追加暦の1年から始まる範囲として保存する", () => {
     const onSave = vi.fn();
     render(
       <I18nProvider language="ja">
@@ -50,16 +50,17 @@ describe("ChronicleCanvas cursor", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
-    expect(screen.getByText(/範囲未設定/)).toBeInTheDocument();
-    const start = screen.getByLabelText("暦面の開始年");
+    expect(screen.getByText(/終了年未設定/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("暦面の開始年")).not.toBeInTheDocument();
     const end = screen.getByLabelText("暦面の終了年");
-    fireEvent.change(start, { target: { value: "-10" } });
-    fireEvent.blur(start);
+    fireEvent.change(end, { target: { value: "0" } });
+    fireEvent.blur(end);
+    expect(screen.getByText("終了年を1以上の整数で入力してください。")).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
     fireEvent.change(end, { target: { value: "100" } });
     fireEvent.blur(end);
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
-      calendars: [{ name: "別暦", range: { end: 100, start: -10 }, yearOne: 450 }]
+      calendars: [{ name: "別暦", range: { end: 100, start: 1 }, yearOne: 450 }]
     }));
   });
 

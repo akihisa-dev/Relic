@@ -15,7 +15,7 @@ import {
 import {
   createChronicleCalendarSettingsDraft,
   normalizeChronicleCalendarSettingsDraft,
-  parseChronicleCalendarRange
+  parseChronicleCalendarEndYear
 } from "../chronicleCalendarSettingsModel";
 import { useT } from "../i18n";
 
@@ -130,7 +130,7 @@ export function ChronicleCalendarSettingsPanel({
         <h3>{t("chronicle.otherCalendars")}</h3>
         <div className="chronicle-calendar-definition-list">
           {draft.calendars.map((calendar, index) => {
-            const range = parseChronicleCalendarRange(calendar.rangeStart, calendar.rangeEnd);
+            const range = parseChronicleCalendarEndYear(calendar.rangeEnd);
             const savedCalendar = settings.calendars.find((candidate) => candidate.name === calendar.name);
             const overflowCount = range && savedCalendar
               ? entries.filter((entry) => {
@@ -176,22 +176,6 @@ export function ChronicleCalendarSettingsPanel({
               </label>
               <div className="chronicle-calendar-range-fields">
                 <label>
-                  <span>{t("chronicle.surfaceStartYear")}</span>
-                  <input
-                    inputMode="numeric"
-                    onBlur={() => save(draft)}
-                    onChange={(event) => setDraft({
-                      ...draft,
-                      calendars: draft.calendars.map((item, itemIndex) => (
-                        itemIndex === index ? { ...item, rangeStart: event.target.value } : item
-                      ))
-                    })}
-                    pattern="-?[0-9]*"
-                    type="text"
-                    value={calendar.rangeStart}
-                  />
-                </label>
-                <label>
                   <span>{t("chronicle.surfaceEndYear")}</span>
                   <input
                     inputMode="numeric"
@@ -208,7 +192,7 @@ export function ChronicleCalendarSettingsPanel({
                   />
                 </label>
               </div>
-              {!calendar.rangeStart && !calendar.rangeEnd && !calendar.isNew ? (
+              {!calendar.rangeEnd && !calendar.isNew ? (
                 <p className="chronicle-calendar-range-status">{t("chronicle.surfaceRangeUnset")}</p>
               ) : range === null ? (
                 <p className="chronicle-calendar-range-status chronicle-calendar-range-status--error">{t("chronicle.surfaceRangeInvalid")}</p>
@@ -240,7 +224,7 @@ export function ChronicleCalendarSettingsPanel({
             while (names.includes(name)) name = `${baseName} ${suffix++}`;
             setDraft({
               ...draft,
-              calendars: [...draft.calendars, { isNew: true, name, rangeEnd: "", rangeStart: "", yearOne: "1" }],
+              calendars: [...draft.calendars, { isNew: true, name, rangeEnd: "", yearOne: "1" }],
               visibleCalendarNames: [...draft.visibleCalendarNames, name]
             });
           }}
