@@ -122,6 +122,6 @@ describe("updateWorkspaceChartEntry", () => {
     );
 
     expect(result.ok).toBe(true);
-    expect(await readFile(filePath, "utf8")).toContain("chronicle:\n  calendar: 西暦\n  start: 12\n  end: 13");
+    expect(await readFile(filePath, "utf8")).toContain("chronicle:\n  calendar: 基準暦\n  start: 12\n  end: 13");
   });
 });

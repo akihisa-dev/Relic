@@ -29,7 +29,7 @@ describe("chronicleCanvasRenderer", () => {
     const scene = createChronicleCanvasScene([entry("A", "a.md", 105)], () => 0.5, 10);
     const camera = createChronicleCanvasCamera();
     initializeChronicleCanvasCamera(camera, scene, 800, 400);
-    const fillTextCalls: Array<{ font: string; text: string; x: number; y: number }> = [];
+    const fillTextCalls: FillTextCall[] = [];
     const context = createCanvasContext(fillTextCalls);
 
     drawChronicleCanvas(context, scene, camera, null, null, 800, 400, {
@@ -49,7 +49,7 @@ describe("chronicleCanvasRenderer", () => {
     const scene = createChronicleCanvasScene([entry("A", "a.md", 100)], () => 0.5);
     const camera = createChronicleCanvasCamera();
     initializeChronicleCanvasCamera(camera, scene, 800, 400);
-    const fillTextCalls: Array<{ font: string; text: string; x: number; y: number }> = [];
+    const fillTextCalls: FillTextCall[] = [];
     const context = createCanvasContext(fillTextCalls);
     const hoveredPoint = { x: 250, y: 200 };
 
@@ -70,7 +70,7 @@ describe("chronicleCanvasRenderer", () => {
       }
     );
 
-    expect(fillTextCalls.find((call) => call.text === "A")).toEqual({
+    expect(fillTextCalls.find((call) => call.text === "A")).toMatchObject({
       font: "750 14px -apple-system, BlinkMacSystemFont, sans-serif",
       text: "A",
       x: hoveredPoint.x,
@@ -85,7 +85,7 @@ describe("chronicleCanvasRenderer", () => {
     ], () => 0.5);
     const camera = createChronicleCanvasCamera();
     initializeChronicleCanvasCamera(camera, scene, 800, 400);
-    const fillTextCalls: Array<{ font: string; text: string; x: number; y: number }> = [];
+    const fillTextCalls: FillTextCall[] = [];
     const fillStyleCalls: string[] = [];
     const context = createCanvasContext(fillTextCalls, fillStyleCalls);
 
@@ -101,10 +101,44 @@ describe("chronicleCanvasRenderer", () => {
     expect(fillTextCalls.some((call) => call.text === "People")).toBe(true);
     expect(fillStyleCalls).toContain("hsl(137 68% 40%)");
   });
+
+  it("先頭行の基準暦名を背景と異なる文字色で描画する", () => {
+    const scene = createChronicleCanvasScene([entry("A", "a.md", 560)], () => 0.5, 10);
+    const camera = createChronicleCanvasCamera();
+    initializeChronicleCanvasCamera(camera, scene, 800, 400);
+    const fillTextCalls: FillTextCall[] = [];
+    const context = createCanvasContext(fillTextCalls);
+
+    drawChronicleCanvas(context, scene, camera, null, null, 800, 400, {
+      background: "#fff",
+      categoryLightness: 40,
+      categorySaturation: 68,
+      mutedText: "#666",
+      text: "#111"
+    }, new Set(), new Map(), {
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "比較暦", yearOne: 10 }],
+      visibleCalendarNames: ["基準暦", "比較暦"]
+    });
+
+    expect(fillTextCalls.find((call) => call.text === "基準暦")).toMatchObject({
+      fillStyle: "#666",
+      x: 10,
+      y: chronicleCanvasYearLabelY(camera.scale, 0)
+    });
+  });
 });
 
+interface FillTextCall {
+  fillStyle: string;
+  font: string;
+  text: string;
+  x: number;
+  y: number;
+}
+
 function createCanvasContext(
-  fillTextCalls: Array<{ font: string; text: string; x: number; y: number }>,
+  fillTextCalls: FillTextCall[],
   fillStyleCalls: string[] = []
 ): CanvasRenderingContext2D {
   const context = {
@@ -114,7 +148,7 @@ function createCanvasContext(
     fill: () => fillStyleCalls.push(String(context.fillStyle)),
     fillRect: () => undefined,
     fillText: (text: string, x: number, y: number) => {
-      fillTextCalls.push({ font: context.font, text, x, y });
+      fillTextCalls.push({ fillStyle: String(context.fillStyle), font: context.font, text, x, y });
     },
     lineTo: () => undefined,
     measureText: () => ({ width: 42 }) as TextMetrics,

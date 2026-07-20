@@ -10,9 +10,9 @@ export interface ChronicleCalendarSettings {
 }
 
 export const defaultChronicleCalendarSettings: ChronicleCalendarSettings = {
-  baseCalendarName: "西暦",
+  baseCalendarName: "基準暦",
   calendars: [],
-  visibleCalendarNames: ["西暦"]
+  visibleCalendarNames: ["基準暦"]
 };
 
 export function chronicleCalendarNames(settings: ChronicleCalendarSettings): string[] {

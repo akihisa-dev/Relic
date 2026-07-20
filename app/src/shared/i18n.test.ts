@@ -24,8 +24,8 @@ describe("i18n dictionaries", () => {
   });
 
   it("shows the current chronicle frontmatter format in both languages", () => {
-    const singleYearExample = "chronicle:\n  calendar: 西暦\n  start: 1185\n  end: 1185";
-    const rangeExample = "chronicle:\n  calendar: 西暦\n  start: 1185\n  end: 1333";
+    const singleYearExample = "chronicle:\n  calendar: 基準暦\n  start: 1185\n  end: 1185";
+    const rangeExample = "chronicle:\n  calendar: 基準暦\n  start: 1185\n  end: 1333";
 
     expect(ja["settings.fixedFieldChronicleSingleExample"]).toBe(singleYearExample);
     expect(en["settings.fixedFieldChronicleSingleExample"]).toBe(singleYearExample);

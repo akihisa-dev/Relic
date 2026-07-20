@@ -311,9 +311,9 @@ describe("workspaceSettings", () => {
     await expect(readWorkspaceSettings(userDataPath, "../outside")).resolves.toEqual({
       charts: defaultCharts,
       chronicleCalendarSettings: {
-        baseCalendarName: "西暦",
+        baseCalendarName: "基準暦",
         calendars: [],
-        visibleCalendarNames: ["西暦"]
+        visibleCalendarNames: ["基準暦"]
       },
       frontmatterCategoryChoices: [],
       pinnedPaths: [],

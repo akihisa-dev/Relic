@@ -21,7 +21,7 @@ describe("updateChartFrontmatterContent", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value).toContain("chronicle:\n  calendar: 西暦\n  start: 11\n  end: 13");
+    expect(result.value).toContain("chronicle:\n  calendar: 基準暦\n  start: 11\n  end: 13");
     expect(result.value).toContain("tags: [資料]");
     expect(result.value).toContain("# 本文");
   });

@@ -153,6 +153,7 @@ function drawYearHeader(
   for (const [row, calendarName] of rows.entries()) {
     context.textAlign = "left";
     context.globalAlpha = opacity * 0.88;
+    context.fillStyle = theme.mutedText;
     context.fillText(calendarName, 10, chronicleCanvasYearLabelY(camera.scale, row));
     context.textAlign = "center";
     for (const year of years) {

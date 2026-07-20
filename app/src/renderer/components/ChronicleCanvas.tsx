@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
 import type { ChartEntry } from "../../shared/ipc";
-import type { ChronicleCalendarSettings } from "../../shared/chronicleCalendar";
+import {
+  defaultChronicleCalendarSettings,
+  type ChronicleCalendarSettings
+} from "../../shared/chronicleCalendar";
 import {
   createChronicleCategoryOptions,
   isChronicleEntryVisible,
@@ -37,7 +40,7 @@ const emptyCategoryChoices: string[] = [];
 const emptyHiddenCategoryKeys: string[] = [];
 
 export function ChronicleCanvas({
-  calendarSettings = { baseCalendarName: "西暦", calendars: [], visibleCalendarNames: ["西暦"] },
+  calendarSettings = defaultChronicleCalendarSettings,
   categoryChoices = emptyCategoryChoices,
   entries,
   hiddenCategoryKeys = emptyHiddenCategoryKeys,

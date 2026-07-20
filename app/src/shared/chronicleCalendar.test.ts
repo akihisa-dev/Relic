@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { baseYearToCalendarYear, calendarYearToBaseYear } from "./chronicleCalendar";
+import {
+  baseYearToCalendarYear,
+  calendarYearToBaseYear,
+  defaultChronicleCalendarSettings
+} from "./chronicleCalendar";
 
 const settings = {
   baseCalendarName: "基準暦",
@@ -9,6 +13,14 @@ const settings = {
 };
 
 describe("chronicleCalendar", () => {
+  it("基準暦をデフォルト名として表示する", () => {
+    expect(defaultChronicleCalendarSettings).toEqual({
+      baseCalendarName: "基準暦",
+      calendars: [],
+      visibleCalendarNames: ["基準暦"]
+    });
+  });
+
   it("年0を作らずに基準暦と別暦を往復する", () => {
     expect(calendarYearToBaseYear(-2, "別暦", settings)).toBe(448);
     expect(calendarYearToBaseYear(-1, "別暦", settings)).toBe(449);

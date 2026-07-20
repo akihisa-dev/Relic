@@ -185,7 +185,7 @@ tags:
   - 資料
   - 下書き
 chronicle:
-  calendar: 西暦
+  calendar: 基準暦
   start: 1185
   end: 1333
 ```
@@ -227,7 +227,7 @@ card:
 
 ```yaml
 chronicle:
-  calendar: 西暦
+  calendar: 基準暦
   start: 1185
   end: 1185
 ```
