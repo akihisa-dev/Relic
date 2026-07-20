@@ -22,6 +22,7 @@ import {
 } from "./chronicleCategoryModel";
 import {
   baseYearToCalendarYear,
+  defaultChronicleCalendarSettings,
   type ChronicleCalendarSettings
 } from "../shared/chronicleCalendar";
 
@@ -63,15 +64,13 @@ export function drawChronicleCanvas(
 
   const visibleYears = visibleChronicleCanvasYears(scene.periodScale, camera, viewportWidth);
   const visibleYearLabels = visibleChronicleCanvasYearLabels(visibleYears, camera);
-  const visibleCalendars = calendarSettings
-    ? calendarSettings.visibleCalendarNames
-    : [];
-  const rowCount = Math.max(1, visibleCalendars.length);
-  drawYearGuides(context, visibleYears, camera, viewportWidth, viewportHeight, theme, rowCount);
+  drawYearGuides(context, visibleYears, camera, viewportWidth, viewportHeight, theme, 1);
   const labelHits: ChronicleCanvasLabelHit[] = [];
-  for (const item of scene.items) {
-    if (!isChronicleEntryVisible(item.entry, hiddenCategoryKeys)) continue;
-    if (!isItemVisible(item, camera, viewportWidth, viewportHeight)) continue;
+  const baseCalendarName = calendarSettings?.baseCalendarName ?? defaultChronicleCalendarSettings.baseCalendarName;
+  const visibleCalendarNames = new Set(calendarSettings?.visibleCalendarNames ?? [baseCalendarName]);
+  const drawVisibleItem = (item: ChronicleCanvasItem): void => {
+    if (!isChronicleEntryVisible(item.entry, hiddenCategoryKeys)) return;
+    if (!isItemVisible(item, camera, viewportWidth, viewportHeight)) return;
     const hue = categoryHues.get(chronicleCategoryKey(item.entry.category));
     const itemColor = hue === undefined
       ? theme.mutedText
@@ -88,6 +87,23 @@ export function drawChronicleCanvas(
       theme
     );
     labelHits.push(hit);
+  };
+  for (const item of scene.items) {
+    if (item.calendarName === baseCalendarName) drawVisibleItem(item);
+  }
+  if (calendarSettings) drawCalendarSurfaces(
+    context,
+    scene,
+    visibleYears,
+    camera,
+    viewportWidth,
+    viewportHeight,
+    theme,
+    calendarSettings,
+    visibleCalendarNames
+  );
+  for (const item of scene.items) {
+    if (item.calendarName !== baseCalendarName && visibleCalendarNames.has(item.calendarName)) drawVisibleItem(item);
   }
   drawYearHeader(context, visibleYearLabels, camera, viewportWidth, theme, calendarSettings);
   context.restore();
@@ -131,9 +147,8 @@ function drawYearHeader(
 ): void {
   const opacity = chronicleCanvasYearOpacity(camera.scale);
   const fontSize = chronicleCanvasYearFontSize(camera.scale);
-  const calendarNames = calendarSettings?.visibleCalendarNames ?? [];
-  const rows = calendarNames.length > 0 ? calendarNames : [""];
-  const headerHeight = chronicleCanvasYearHeaderHeight(camera.scale, rows.length);
+  const calendarName = calendarSettings?.baseCalendarName ?? "";
+  const headerHeight = chronicleCanvasYearHeaderHeight(camera.scale);
   context.save();
   context.globalAlpha = 1;
   context.fillStyle = theme.background;
@@ -150,26 +165,103 @@ function drawYearHeader(
   context.textAlign = "center";
   context.textBaseline = "middle";
 
-  for (const [row, calendarName] of rows.entries()) {
-    context.textAlign = "left";
+  context.textAlign = "left";
+  context.globalAlpha = opacity * 0.88;
+  context.fillStyle = theme.mutedText;
+  context.fillText(calendarName, 10, chronicleCanvasYearLabelY(camera.scale));
+  context.textAlign = "center";
+  for (const year of years) {
+    const position = worldToCanvas({ x: year.x, y: 0 }, camera);
+    position.y = chronicleCanvasYearLabelY(camera.scale);
+    if (position.x < 58 || position.x > viewportWidth + 60) continue;
     context.globalAlpha = opacity * 0.88;
     context.fillStyle = theme.mutedText;
-    context.fillText(calendarName, 10, chronicleCanvasYearLabelY(camera.scale, row));
-    context.textAlign = "center";
-    for (const year of years) {
-      const position = worldToCanvas({ x: year.x, y: 0 }, camera);
-      position.y = chronicleCanvasYearLabelY(camera.scale, row);
-      if (position.x < 58 || position.x > viewportWidth + 60) continue;
-      const converted = calendarSettings && calendarName
-        ? baseYearToCalendarYear(year.value, calendarName, calendarSettings)
-        : year.value;
-      if (converted === null) continue;
-      context.globalAlpha = opacity * 0.88;
-      context.fillStyle = theme.mutedText;
-      context.fillText(formatYear(converted), position.x, position.y);
-    }
+    context.fillText(formatYear(year.value), position.x, position.y);
   }
   context.restore();
+}
+
+function drawCalendarSurfaces(
+  context: CanvasRenderingContext2D,
+  scene: ChronicleCanvasScene,
+  years: ChronicleCanvasYear[],
+  camera: ChronicleCanvasCamera,
+  viewportWidth: number,
+  viewportHeight: number,
+  theme: ChronicleCanvasTheme,
+  calendarSettings: ChronicleCalendarSettings,
+  visibleCalendarNames: ReadonlySet<string>
+): void {
+  for (const surface of scene.surfaces) {
+    if (!visibleCalendarNames.has(surface.calendarName)) continue;
+    const top = worldToCanvas({ x: 0, y: surface.y - surface.height / 2 }, camera).y;
+    const height = surface.height * camera.scale;
+    if (top > viewportHeight || top + height < chronicleCanvasYearHeaderHeight(camera.scale)) continue;
+    const declaredStart = surface.startX === null ? 0 : worldToCanvas({ x: surface.startX, y: 0 }, camera).x;
+    const declaredEnd = surface.endX === null ? viewportWidth : worldToCanvas({ x: surface.endX, y: 0 }, camera).x;
+    const singleYearWidth = Math.max(18, 28 * Math.sqrt(camera.scale));
+    const left = declaredStart === declaredEnd
+      ? declaredStart - singleYearWidth / 2
+      : Math.min(declaredStart, declaredEnd);
+    const right = declaredStart === declaredEnd
+      ? declaredEnd + singleYearWidth / 2
+      : Math.max(declaredStart, declaredEnd);
+    const contentStart = worldToCanvas({ x: surface.contentStartX, y: 0 }, camera).x;
+    const contentEnd = worldToCanvas({ x: surface.contentEndX, y: 0 }, camera).x;
+    const effectiveLeft = Math.min(left, contentStart);
+    const effectiveRight = Math.max(right, contentEnd);
+    if (effectiveRight < 0 || effectiveLeft > viewportWidth) continue;
+    const clippedRect = (start: number, end: number): { left: number; width: number } | null => {
+      const clippedLeft = Math.max(-2, Math.min(start, end));
+      const clippedRight = Math.min(viewportWidth + 2, Math.max(start, end));
+      return clippedRight > clippedLeft ? { left: clippedLeft, width: clippedRight - clippedLeft } : null;
+    };
+    const declaredRect = clippedRect(left, right);
+    context.save();
+    context.globalAlpha = 0.1;
+    context.fillStyle = theme.mutedText;
+    if (declaredRect) context.fillRect(declaredRect.left, top, declaredRect.width, height);
+    context.globalAlpha = 0.42;
+    context.strokeStyle = theme.mutedText;
+    context.lineWidth = 1.5;
+    if (surface.rangeState === "unset" && "setLineDash" in context) context.setLineDash([8, 6]);
+    if (declaredRect) context.strokeRect(declaredRect.left, top, declaredRect.width, height);
+
+    if (surface.rangeState === "overflow") {
+      context.globalAlpha = 0.12;
+      context.fillStyle = "#d97706";
+      const leadingOverflow = contentStart < left ? clippedRect(contentStart, left) : null;
+      const trailingOverflow = contentEnd > right ? clippedRect(right, contentEnd) : null;
+      if (leadingOverflow) context.fillRect(leadingOverflow.left, top, leadingOverflow.width, height);
+      if (trailingOverflow) context.fillRect(trailingOverflow.left, top, trailingOverflow.width, height);
+      context.globalAlpha = 0.72;
+      context.strokeStyle = "#d97706";
+      if ("setLineDash" in context) context.setLineDash([6, 5]);
+      if (leadingOverflow) context.strokeRect(leadingOverflow.left, top, leadingOverflow.width, height);
+      if (trailingOverflow) context.strokeRect(trailingOverflow.left, top, trailingOverflow.width, height);
+      if ("setLineDash" in context) context.setLineDash([]);
+    }
+
+    context.globalAlpha = 0.9;
+    context.fillStyle = theme.text;
+    context.font = "750 12px -apple-system, BlinkMacSystemFont, sans-serif";
+    context.textAlign = "left";
+    context.textBaseline = "middle";
+    const labelX = Math.min(Math.max(left + 10, 10), Math.max(10, Math.min(right - 10, viewportWidth - 120)));
+    context.fillText(surface.calendarName, labelX, top + 18);
+    context.font = "650 10px -apple-system, BlinkMacSystemFont, sans-serif";
+    context.textAlign = "center";
+    for (const year of years) {
+      const x = worldToCanvas({ x: year.x, y: 0 }, camera).x;
+      if (x < left + 56 || x > right || x < 0 || x > viewportWidth) continue;
+      const converted = baseYearToCalendarYear(year.value, surface.calendarName, calendarSettings);
+      if (converted === null) continue;
+      context.globalAlpha = 0.72;
+      context.fillStyle = theme.mutedText;
+      context.fillText(formatYear(converted), x, top + 18);
+    }
+    context.restore();
+  }
 }
 
 function drawItem(

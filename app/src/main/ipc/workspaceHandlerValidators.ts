@@ -12,6 +12,7 @@ import type {
   UserDefinedField,
 } from "../../shared/ipc";
 import { workspaceTablePreferenceLimits, type WorkspaceTablePreferences } from "../../shared/ipc";
+import { isValidChronicleCalendarRange } from "../../shared/chronicleCalendar";
 import {
   isUserDefinedFieldType,
   isValidUserDefinedFieldName,
@@ -121,11 +122,17 @@ export function isChronicleCalendarSettingsInput(input: unknown): input is Chron
     if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
     const calendar = value as Record<string, unknown>;
     if (typeof calendar.name !== "string" || !validCalendarName(calendar.name) || names.has(calendar.name)) return false;
-    if (!Number.isInteger(calendar.yearOne) || calendar.yearOne === 0) return false;
+    if (!Number.isSafeInteger(calendar.yearOne) || calendar.yearOne === 0) return false;
+    if (calendar.range !== null) {
+      if (typeof calendar.range !== "object" || Array.isArray(calendar.range)) return false;
+      const range = calendar.range as Record<string, unknown>;
+      if (!isValidChronicleCalendarRange({ end: Number(range.end), start: Number(range.start) })) return false;
+    }
     names.add(calendar.name);
   }
   return Array.isArray(candidate.visibleCalendarNames) && candidate.visibleCalendarNames.length > 0 &&
     new Set(candidate.visibleCalendarNames).size === candidate.visibleCalendarNames.length &&
+    candidate.visibleCalendarNames[0] === candidate.baseCalendarName &&
     candidate.visibleCalendarNames.every((name) => typeof name === "string" && names.has(name));
 }
 

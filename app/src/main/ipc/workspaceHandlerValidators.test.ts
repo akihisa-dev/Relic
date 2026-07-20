@@ -17,12 +17,14 @@ describe("workspaceHandlerValidators", () => {
   it("暦名の重複、0年、表示対象なしを拒否する", () => {
     expect(isChronicleCalendarSettingsInput({
       baseCalendarName: "基準暦",
-      calendars: [{ name: "別暦", yearOne: 450 }],
+      calendars: [{ name: "別暦", range: { end: 100, start: 1 }, yearOne: 450 }],
       visibleCalendarNames: ["基準暦", "別暦"]
     })).toBe(true);
-    expect(isChronicleCalendarSettingsInput({ baseCalendarName: "基準暦", calendars: [{ name: "別暦", yearOne: 0 }], visibleCalendarNames: ["基準暦"] })).toBe(false);
-    expect(isChronicleCalendarSettingsInput({ baseCalendarName: "基準暦", calendars: [{ name: "基準暦", yearOne: 1 }], visibleCalendarNames: ["基準暦"] })).toBe(false);
+    expect(isChronicleCalendarSettingsInput({ baseCalendarName: "基準暦", calendars: [{ name: "別暦", range: null, yearOne: 0 }], visibleCalendarNames: ["基準暦"] })).toBe(false);
+    expect(isChronicleCalendarSettingsInput({ baseCalendarName: "基準暦", calendars: [{ name: "基準暦", range: null, yearOne: 1 }], visibleCalendarNames: ["基準暦"] })).toBe(false);
     expect(isChronicleCalendarSettingsInput({ baseCalendarName: "基準暦", calendars: [], visibleCalendarNames: [] })).toBe(false);
+    expect(isChronicleCalendarSettingsInput({ baseCalendarName: "基準暦", calendars: [{ name: "別暦", range: { end: 1, start: 10 }, yearOne: 1 }], visibleCalendarNames: ["基準暦"] })).toBe(false);
+    expect(isChronicleCalendarSettingsInput({ baseCalendarName: "基準暦", calendars: [{ name: "別暦", range: { end: Number.MAX_VALUE, start: 1 }, yearOne: 1 }], visibleCalendarNames: ["基準暦"] })).toBe(false);
   });
 
   it("テーブル表示設定は列、幅、絞り込みの不正入力を拒否する", () => {

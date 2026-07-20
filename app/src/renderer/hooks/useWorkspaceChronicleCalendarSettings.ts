@@ -39,15 +39,21 @@ export function useWorkspaceChronicleCalendarSettings({
     const client = relicClient.current;
     if (!client || !workspaceId) return;
     const current = beginRequest();
+    const previousSettings = snapshot?.workspaceId === workspaceId
+      ? snapshot.settings
+      : defaultChronicleCalendarSettings;
     setSnapshot({ settings, workspaceId });
     void client.saveWorkspaceChronicleCalendarSettings(settings).then((result) => {
       if (!current()) return;
       if (result.ok) {
         setSnapshot({ settings: result.value, workspaceId });
         onSaved();
-      } else setWorkspaceError(result.error.message);
+      } else {
+        setSnapshot({ settings: previousSettings, workspaceId });
+        setWorkspaceError(result.error.message);
+      }
     });
-  }, [beginRequest, onSaved, setWorkspaceError, workspaceId]);
+  }, [beginRequest, onSaved, setWorkspaceError, snapshot, workspaceId]);
 
   return {
     calendarSettings: snapshot?.workspaceId === workspaceId ? snapshot.settings : defaultChronicleCalendarSettings,

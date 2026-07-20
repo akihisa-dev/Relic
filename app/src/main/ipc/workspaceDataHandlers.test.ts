@@ -86,11 +86,13 @@ import {
   getWorkspaceAliasesChannel,
   getWorkspaceChartsChannel,
   getWorkspaceCardsChannel,
+  getWorkspaceChronicleCalendarSettingsChannel,
   getWorkspaceFrontmatterCategoryChoicesChannel,
   getWorkspaceGraphChannel,
   getWorkspaceTableChannel,
   getWorkspaceTagsChannel,
   saveWorkspaceChartsChannel,
+  saveWorkspaceChronicleCalendarSettingsChannel,
   saveWorkspaceFrontmatterCategoryChoicesChannel,
   saveWorkspaceTablePreferencesChannel,
   updateChartEntryChannel,
@@ -114,6 +116,11 @@ const workspaceSettings = {
       source: "chronicle" as const,
     },
   ],
+  chronicleCalendarSettings: {
+    baseCalendarName: "基準暦",
+    calendars: [{ name: "別暦", range: null, yearOne: 450 }],
+    visibleCalendarNames: ["基準暦", "別暦"]
+  },
   frontmatterCategoryChoices: ["人物"],
   tablePreferences: {
     columnWidths: [],
@@ -276,7 +283,7 @@ describe("registerWorkspaceDataHandlers", () => {
     expect(dependencies.readWorkspaceCharts).toHaveBeenCalledWith(
       workspace.path,
       workspaceSettings.charts,
-      { baseCalendarName: "基準暦", calendars: [], visibleCalendarNames: ["基準暦"] },
+      workspaceSettings.chronicleCalendarSettings,
       providerOptions,
     );
   });
@@ -310,6 +317,11 @@ describe("registerWorkspaceDataHandlers", () => {
       label: "カテゴリ候補",
       value: workspaceSettings.frontmatterCategoryChoices,
     },
+    {
+      channel: getWorkspaceChronicleCalendarSettingsChannel,
+      label: "暦面設定",
+      value: workspaceSettings.chronicleCalendarSettings,
+    },
   ])("$label の読取はワークスペース設定の対応値だけを返す", async ({ channel, value }) => {
     const result = await handlerFor(channel)();
 
@@ -331,6 +343,15 @@ describe("registerWorkspaceDataHandlers", () => {
       channel: saveWorkspaceFrontmatterCategoryChoicesChannel,
       input: ["人物", "人物"],
       label: "重複したカテゴリ候補",
+    },
+    {
+      channel: saveWorkspaceChronicleCalendarSettingsChannel,
+      input: {
+        baseCalendarName: "基準暦",
+        calendars: [{ name: "別暦", range: { end: 1, start: 10 }, yearOne: 450 }],
+        visibleCalendarNames: ["基準暦", "別暦"]
+      },
+      label: "逆転した暦面範囲",
     },
     {
       channel: updateChartEntryChannel,
@@ -390,7 +411,7 @@ describe("registerWorkspaceDataHandlers", () => {
     expect(dependencies.readWorkspaceCharts).toHaveBeenCalledWith(
       workspace.path,
       savedCharts,
-      { baseCalendarName: "基準暦", calendars: [], visibleCalendarNames: ["基準暦"] },
+      workspaceSettings.chronicleCalendarSettings,
       providerOptions,
     );
   });
@@ -409,6 +430,26 @@ describe("registerWorkspaceDataHandlers", () => {
       expect.any(Function),
     );
     expect(dependencies.invalidateWorkspaceData).not.toHaveBeenCalled();
+  });
+
+  it("有効な暦面範囲だけをワークスペース設定へ保存する", async () => {
+    const input = {
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "別暦", range: { end: 100, start: -10 }, yearOne: 450 }],
+      visibleCalendarNames: ["基準暦", "別暦"]
+    };
+    dependencies.updateWorkspaceSettings.mockImplementationOnce(
+      async (_userDataPath, _workspaceId, update) => update(workspaceSettings)
+    );
+
+    const result = await handlerFor(saveWorkspaceChronicleCalendarSettingsChannel)({}, input);
+
+    expect(result).toEqual({ ok: true, value: input });
+    expect(dependencies.updateWorkspaceSettings).toHaveBeenCalledWith(
+      "/user-data",
+      workspace.id,
+      expect.any(Function)
+    );
   });
 
   it("テーブル表示設定をワークスペース設定へ保存する", async () => {
@@ -460,7 +501,7 @@ describe("registerWorkspaceDataHandlers", () => {
     expect(dependencies.updateWorkspaceChartEntry).toHaveBeenCalledWith(
       workspace.path,
       workspaceSettings.charts,
-      { baseCalendarName: "基準暦", calendars: [], visibleCalendarNames: ["基準暦"] },
+      workspaceSettings.chronicleCalendarSettings,
       input,
     );
     expect(dependencies.invalidateWorkspaceData).toHaveBeenCalledWith(

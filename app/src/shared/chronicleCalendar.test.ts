@@ -8,7 +8,7 @@ import {
 
 const settings = {
   baseCalendarName: "基準暦",
-  calendars: [{ name: "別暦", yearOne: 450 }],
+  calendars: [{ name: "別暦", range: null, yearOne: 450 }],
   visibleCalendarNames: ["基準暦", "別暦"]
 };
 

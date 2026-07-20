@@ -26,8 +26,9 @@ import {
   zoomChronicleCanvasAtPoint
 } from "./chronicleCanvasModel";
 
-function entry(fileName: string, path: string, startYear: number, endYear = startYear): ChartEntry {
+function entry(fileName: string, path: string, startYear: number, endYear = startYear, calendarName?: string): ChartEntry {
   return {
+    ...(calendarName ? { calendarName } : {}),
     chronicleEntryIndex: 0,
     endLabel: String(endYear),
     endPoint: { month: null, year: endYear },
@@ -75,6 +76,68 @@ describe("chronicleCanvasModel", () => {
     expect(scene.items[2].rangeLabel).toBe("100 〜 300");
     expect(Math.abs(scene.items[0].y - scene.items[1].y)).toBeGreaterThan(10);
     expect(scene.items.every((item) => item.vx === 0 && item.vy === 0)).toBe(true);
+  });
+
+  it("基準暦項目と設定順の追加暦面へ項目を所属させる", () => {
+    const settings = {
+      baseCalendarName: "基準暦",
+      calendars: [
+        { name: "王国暦", range: { end: 20, start: 1 }, yearOne: 100 },
+        { name: "交易暦", range: null, yearOne: 200 }
+      ],
+      visibleCalendarNames: ["基準暦", "王国暦", "交易暦"]
+    };
+    const scene = createChronicleCanvasScene([
+      entry("Base", "base.md", 105),
+      entry("Kingdom", "kingdom.md", 110, 110, "王国暦"),
+      entry("Trade", "trade.md", 205, 205, "交易暦")
+    ], () => 0.5, 10, settings);
+
+    expect(scene.surfaces.map((surface) => surface.calendarName)).toEqual(["王国暦", "交易暦"]);
+    expect(scene.surfaces[0]).toMatchObject({ rangeState: "bounded" });
+    expect(scene.surfaces[1]).toMatchObject({ rangeState: "unset", startX: null, endX: null });
+    expect(scene.items.map((item) => item.calendarName)).toEqual(["基準暦", "王国暦", "交易暦"]);
+    expect(scene.items[1].y).toBeGreaterThan(scene.items[0].y);
+    expect(scene.items[2].y).toBeGreaterThan(scene.items[1].y);
+  });
+
+  it("宣言範囲外の項目を消さず警告状態へ含める", () => {
+    const settings = {
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "王国暦", range: { end: 5, start: 1 }, yearOne: 100 }],
+      visibleCalendarNames: ["基準暦", "王国暦"]
+    };
+    const scene = createChronicleCanvasScene([
+      entry("Overflow", "overflow.md", 110, 110, "王国暦")
+    ], () => 0.5, 10, settings);
+
+    expect(scene.items).toHaveLength(1);
+    expect(scene.surfaces[0].rangeState).toBe("overflow");
+    expect(scene.surfaces[0].contentEndX).toBeGreaterThan(scene.surfaces[0].endX ?? 0);
+  });
+
+  it("別の暦面に属する項目は互いに反発せず、縦ドラッグを所属領域内へ制限する", () => {
+    const settings = {
+      baseCalendarName: "基準暦",
+      calendars: [
+        { name: "王国暦", range: { end: 20, start: 1 }, yearOne: 100 },
+        { name: "交易暦", range: { end: 20, start: 1 }, yearOne: 100 }
+      ],
+      visibleCalendarNames: ["基準暦", "王国暦", "交易暦"]
+    };
+    const scene = createChronicleCanvasScene([
+      entry("Kingdom", "kingdom.md", 110, 110, "王国暦"),
+      entry("Trade", "trade.md", 110, 110, "交易暦")
+    ], () => 0.5, 10, settings);
+    const [first, second] = scene.items;
+    first.y = second.y;
+    first.homeY = second.y;
+    second.homeY = second.y;
+    stepChronicleCanvasScene(scene.items, first.id, 1 / 60);
+    expect(second.vy).toBe(0);
+    first.y = first.maxY + 100;
+    stepChronicleCanvasScene(scene.items, first.id, 1 / 60);
+    expect(first.y).toBe(first.maxY);
   });
 
   it("一時移動した項目を対応年へ戻し、近傍項目にも反発を伝える", () => {

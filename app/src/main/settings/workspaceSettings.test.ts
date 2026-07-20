@@ -28,16 +28,40 @@ describe("workspaceSettings", () => {
     expect(parseChronicleCalendarSettings({
       baseCalendarName: " 基準暦 ",
       calendars: [
-        { name: "別暦", yearOne: 450 },
-        { name: "別暦", yearOne: 500 },
-        { name: "無効", yearOne: 0 }
+        { name: "別暦", range: { end: 80, start: -10 }, yearOne: 450 },
+        { name: "別暦", range: { end: 50, start: 1 }, yearOne: 500 },
+        { name: "無効", range: null, yearOne: 0 }
       ],
       visibleCalendarNames: ["基準暦", "別暦", "不明", "別暦"]
     })).toEqual({
       baseCalendarName: "基準暦",
-      calendars: [{ name: "別暦", yearOne: 450 }],
+      calendars: [{ name: "別暦", range: { end: 80, start: -10 }, yearOne: 450 }],
       visibleCalendarNames: ["基準暦", "別暦"]
     });
+  });
+
+  it("v5の追加暦は範囲を推測せず未設定としてv6へ移行する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-calendar-v5");
+    await mkdir(path.dirname(settingsPath), { recursive: true });
+    await writeFile(settingsPath, JSON.stringify({
+      schemaVersion: 5,
+      chronicleCalendarSettings: {
+        baseCalendarName: "基準暦",
+        calendars: [{ name: "別暦", yearOne: 450 }],
+        visibleCalendarNames: ["基準暦", "別暦"]
+      }
+    }), "utf8");
+
+    const settings = await readWorkspaceSettings(userDataPath, "ws-calendar-v5");
+    const persisted = JSON.parse(await readFile(settingsPath, "utf8"));
+
+    expect(settings.chronicleCalendarSettings?.calendars).toEqual([
+      { name: "別暦", range: null, yearOne: 450 }
+    ]);
+    expect(persisted.schemaVersion).toBe(6);
+    expect(persisted.chronicleCalendarSettings.calendars[0].range).toBeNull();
   });
 
   it("設定ファイルがない場合はデフォルトを返す", async () => {
@@ -248,7 +272,7 @@ describe("workspaceSettings", () => {
 
     await readWorkspaceSettings(userDataPath, "ws-legacy-v0");
     const afterFirstRead = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
-    expect(afterFirstRead.schemaVersion).toBe(5);
+    expect(afterFirstRead.schemaVersion).toBe(6);
 
     await delay(1100);
     const firstMtime = (await stat(settingsPath)).mtimeMs;
@@ -272,7 +296,7 @@ describe("workspaceSettings", () => {
 
     const raw = JSON.parse(await readFile(getWorkspaceSettingsPath(userDataPath, "ws-new"), "utf8")) as Record<string, unknown>;
 
-    expect(raw.schemaVersion).toBe(5);
+    expect(raw.schemaVersion).toBe(6);
     expect(raw.charts).toEqual(defaultCharts);
     expect(raw.ganttCharts).toBeUndefined();
     expect(raw.tableProperties).toBeUndefined();
@@ -464,7 +488,7 @@ describe("workspaceSettings", () => {
     await Promise.all([update, readWhileUpdating]);
 
     const raw = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(5);
+    expect(raw.schemaVersion).toBe(6);
     expect(raw.workspacePath).toBe("/Users/test/new");
   });
 });

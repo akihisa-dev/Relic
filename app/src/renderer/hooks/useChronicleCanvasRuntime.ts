@@ -15,6 +15,7 @@ import {
   CHRONICLE_CANVAS_MAX_SCALE,
   CHRONICLE_CANVAS_MIN_SCALE,
   changeChronicleCanvasPeriodScale,
+  clampChronicleCanvasItemY,
   chronicleCanvasClickPath,
   chronicleCanvasPointerItemAtPoint,
   chronicleCanvasPointerMovedBeyondClickThreshold,
@@ -205,9 +206,9 @@ export function useChronicleCanvasRuntime({
     return { x: clientX - (rect?.left ?? 0), y: clientY - (rect?.top ?? 0) };
   }, []);
   const pointerItemAt = useCallback((point: ChronicleCanvasPoint): ChronicleCanvasItem | null => {
-    if (point.y < chronicleCanvasYearHeaderHeight(camera.scale, calendarSettings.visibleCalendarNames.length)) return null;
+    if (point.y < chronicleCanvasYearHeaderHeight(camera.scale)) return null;
     return chronicleCanvasPointerItemAtPoint(visibleItemsRef.current, camera, point);
-  }, [calendarSettings.visibleCalendarNames.length, camera, visibleItemsRef]);
+  }, [camera, visibleItemsRef]);
 
   const handlePointerDown = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
     if (event.button !== 0) return;
@@ -264,6 +265,7 @@ export function useChronicleCanvasRuntime({
     if (pointer.item) {
       pointer.item.x += dx / camera.scale;
       pointer.item.y += dy / camera.scale;
+      clampChronicleCanvasItemY(pointer.item);
       pointer.item.vx = dx / camera.scale;
       pointer.item.vy = dy / camera.scale;
       simulationActiveRef.current = true;

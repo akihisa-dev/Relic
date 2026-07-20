@@ -35,7 +35,7 @@ describe("readWorkspaceCharts", () => {
     const result = await readWorkspaceCharts(
       workspacePath,
       [{ filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" }],
-      { baseCalendarName: "基準暦", calendars: [{ name: "別暦", yearOne: 450 }], visibleCalendarNames: ["基準暦", "別暦"] }
+      { baseCalendarName: "基準暦", calendars: [{ name: "別暦", range: null, yearOne: 450 }], visibleCalendarNames: ["基準暦", "別暦"] }
     );
     expect(result).toMatchObject({ ok: true, value: [{ entries: [{
       calendarName: "別暦",

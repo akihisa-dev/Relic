@@ -77,11 +77,14 @@ export function ChronicleCanvas({
       randomIndex += 1;
       return next;
     };
-    return createChronicleCanvasScene(entries, stableRandom, periodScale);
-  }, [entries, periodScale]);
-  const visibleItems = useMemo(() => scene.items.filter((item) => (
+    return createChronicleCanvasScene(entries, stableRandom, periodScale, calendarSettings);
+  }, [calendarSettings, entries, periodScale]);
+  const calendarVisibleItems = useMemo(() => scene.items.filter((item) => (
+    item.calendarName === calendarSettings.baseCalendarName || calendarSettings.visibleCalendarNames.includes(item.calendarName)
+  )), [calendarSettings.baseCalendarName, calendarSettings.visibleCalendarNames, scene.items]);
+  const visibleItems = useMemo(() => calendarVisibleItems.filter((item) => (
     isChronicleEntryVisible(item.entry, hiddenCategoryKeySet)
-  )), [hiddenCategoryKeySet, scene.items]);
+  )), [calendarVisibleItems, hiddenCategoryKeySet]);
   const canvasRuntime = useChronicleCanvasRuntime({
     calendarSettings,
     categoryHues,
@@ -146,6 +149,7 @@ export function ChronicleCanvas({
           <canvas
             aria-label={t("chronicle.timelineAria")}
             className="chronicle-canvas"
+            onLostPointerCapture={canvasRuntime.handlePointerCancel}
             onPointerCancel={canvasRuntime.handlePointerCancel}
             onPointerDown={canvasRuntime.handlePointerDown}
             onPointerLeave={canvasRuntime.handlePointerLeave}
@@ -154,7 +158,11 @@ export function ChronicleCanvas({
             onWheel={canvasRuntime.handleWheel}
             ref={canvasRuntime.canvasRef}
           />
-          {entries.length > 0 && visibleItems.length === 0 ? (
+          {entries.length > 0 && calendarVisibleItems.length === 0 ? (
+            <div className="chronicle-filter-empty">
+              <p>{t("chronicle.allCalendarSurfacesHidden")}</p>
+            </div>
+          ) : entries.length > 0 && visibleItems.length === 0 ? (
             <div className="chronicle-filter-empty">
               <p>{t("chronicle.allCategoriesHidden")}</p>
               <button onClick={() => onHiddenCategoryKeysChange([])} type="button">

@@ -1,10 +1,11 @@
 import type { SettingsMigrationResult } from "../settings/secureVersionedJsonStore";
 
 export const currentAppSettingsSchemaVersion = 6;
-export const currentWorkspaceSettingsSchemaVersion = 5;
+export const currentWorkspaceSettingsSchemaVersion = 6;
 
 export type WorkspaceSettingsMigrationRecord = {
   charts?: unknown;
+  chronicleCalendarSettings?: unknown;
   ganttCharts?: unknown;
   schemaVersion?: unknown;
   tablePreferences?: unknown;
@@ -62,7 +63,7 @@ export function migrateWorkspaceSettings<T extends WorkspaceSettingsMigrationRec
     return { didMigrate: false, settings: raw };
   }
 
-  if (schemaVersion === 0 || schemaVersion === 1 || schemaVersion === 2 || schemaVersion === 3 || schemaVersion === 4) {
+  if (schemaVersion === 0 || schemaVersion === 1 || schemaVersion === 2 || schemaVersion === 3 || schemaVersion === 4 || schemaVersion === 5) {
     return {
       didMigrate: true,
       settings: {
@@ -76,6 +77,7 @@ export function migrateWorkspaceSettings<T extends WorkspaceSettingsMigrationRec
           sort: { direction: "asc", property: null },
           wrappedProperties: []
         },
+        chronicleCalendarSettings: migrateChronicleCalendarSettings(raw.chronicleCalendarSettings),
         schemaVersion: currentWorkspaceSettingsSchemaVersion
       }
     };
@@ -87,6 +89,20 @@ export function migrateWorkspaceSettings<T extends WorkspaceSettingsMigrationRec
     schemaVersion,
     "UnsupportedWorkspaceSettingsVersionError"
   );
+}
+
+function migrateChronicleCalendarSettings(raw: unknown): unknown {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return raw;
+  const settings = raw as Record<string, unknown>;
+  if (!Array.isArray(settings.calendars)) return raw;
+  return {
+    ...settings,
+    calendars: settings.calendars.map((value) => (
+      typeof value === "object" && value !== null && !Array.isArray(value)
+        ? { ...(value as Record<string, unknown>), range: (value as Record<string, unknown>).range ?? null }
+        : value
+    ))
+  };
 }
 
 function migrateFeatureToggles(raw: unknown): unknown {

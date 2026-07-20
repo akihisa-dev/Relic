@@ -411,10 +411,28 @@
   padding: 0 7px;
 }
 .chronicle-calendar-definition-list { display: grid; gap: 8px; margin-top: 8px; }
-.chronicle-calendar-definition { align-items: center; display: grid; gap: 7px; grid-template-columns: minmax(80px, 1fr) minmax(130px, 1.4fr) 24px; }
+.chronicle-calendar-definition {
+  align-items: center;
+  border-bottom: 1px solid var(--border-soft);
+  display: grid;
+  gap: 7px;
+  grid-template-columns: minmax(80px, 1fr) minmax(130px, 1.4fr) 24px;
+  padding-bottom: 10px;
+}
 .chronicle-calendar-definition > label { align-items: center; color: var(--text-2); display: flex; font-size: 11px; gap: 4px; white-space: nowrap; }
 .chronicle-calendar-definition input[inputmode="numeric"] { width: 70px; }
 .chronicle-calendar-definition > button:disabled { cursor: default; opacity: 0.3; }
+.chronicle-calendar-range-fields {
+  display: grid;
+  gap: 8px;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.chronicle-calendar-range-fields label { color: var(--text-2); display: grid; font-size: 11px; gap: 4px; }
+.chronicle-calendar-range-fields input[inputmode="numeric"] { width: 100%; }
+.chronicle-calendar-range-status { color: var(--text-3); font-size: 11px; grid-column: 1 / -1; line-height: 1.4; margin: 0; }
+.chronicle-calendar-range-status--error { color: var(--color-danger); }
+.chronicle-calendar-range-status--warning { color: var(--color-warning, #b45309); }
 .chronicle-calendar-add { background: transparent; border: 0; color: var(--color-primary); cursor: pointer; margin-top: 10px; padding: 4px 0; }
 
 @media (max-width: 620px) {

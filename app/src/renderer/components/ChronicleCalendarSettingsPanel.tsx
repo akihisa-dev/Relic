@@ -8,10 +8,14 @@ import {
 } from "react";
 
 import type { ChartEntry } from "../../shared/ipc";
-import type { ChronicleCalendarSettings } from "../../shared/chronicleCalendar";
+import {
+  baseYearToCalendarYear,
+  type ChronicleCalendarSettings
+} from "../../shared/chronicleCalendar";
 import {
   createChronicleCalendarSettingsDraft,
-  normalizeChronicleCalendarSettingsDraft
+  normalizeChronicleCalendarSettingsDraft,
+  parseChronicleCalendarRange
 } from "../chronicleCalendarSettingsModel";
 import { useT } from "../i18n";
 
@@ -78,10 +82,11 @@ export function ChronicleCalendarSettingsPanel({
     onSave(normalized);
   };
   const toggleVisible = (name: string): void => {
+    if (name === draft.baseCalendarName) return;
     const visible = draft.visibleCalendarNames.includes(name)
       ? draft.visibleCalendarNames.filter((candidate) => candidate !== name)
       : [...draft.visibleCalendarNames, name];
-    if (visible.length > 0) save({ ...draft, visibleCalendarNames: visible });
+    save({ ...draft, visibleCalendarNames: visible });
   };
 
   return (
@@ -91,11 +96,16 @@ export function ChronicleCalendarSettingsPanel({
         <button aria-label={t("chronicle.closeCalendarSettings")} onClick={onClose} type="button">×</button>
       </header>
       <div className="chronicle-calendar-settings-content">
-        <h3>{t("chronicle.visibleCalendars")}</h3>
+        <h3>{t("chronicle.visibleCalendarSurfaces")}</h3>
         <div className="chronicle-calendar-visible-list">
           {names.map((name) => (
             <label key={name}>
-              <input checked={draft.visibleCalendarNames.includes(name)} onChange={() => toggleVisible(name)} type="checkbox" />
+              <input
+                checked={name === draft.baseCalendarName || draft.visibleCalendarNames.includes(name)}
+                disabled={name === draft.baseCalendarName}
+                onChange={() => toggleVisible(name)}
+                type="checkbox"
+              />
               <span>{name}</span>
             </label>
           ))}
@@ -119,7 +129,18 @@ export function ChronicleCalendarSettingsPanel({
         </label>
         <h3>{t("chronicle.otherCalendars")}</h3>
         <div className="chronicle-calendar-definition-list">
-          {draft.calendars.map((calendar, index) => (
+          {draft.calendars.map((calendar, index) => {
+            const range = parseChronicleCalendarRange(calendar.rangeStart, calendar.rangeEnd);
+            const savedCalendar = settings.calendars.find((candidate) => candidate.name === calendar.name);
+            const overflowCount = range && savedCalendar
+              ? entries.filter((entry) => {
+                if (entry.calendarName !== calendar.name) return false;
+                const start = baseYearToCalendarYear(entry.startPoint.year, calendar.name, settings);
+                const end = baseYearToCalendarYear(entry.endPoint.year, calendar.name, settings);
+                return start !== null && end !== null && (start < range.start || end > range.end);
+              }).length
+              : 0;
+            return (
             <div className="chronicle-calendar-definition" key={index}>
               <input
                 aria-label={t("chronicle.calendarName")}
@@ -153,6 +174,49 @@ export function ChronicleCalendarSettingsPanel({
                 />
                 <span>{t("chronicle.yearSuffix")}</span>
               </label>
+              <div className="chronicle-calendar-range-fields">
+                <label>
+                  <span>{t("chronicle.surfaceStartYear")}</span>
+                  <input
+                    inputMode="numeric"
+                    onBlur={() => save(draft)}
+                    onChange={(event) => setDraft({
+                      ...draft,
+                      calendars: draft.calendars.map((item, itemIndex) => (
+                        itemIndex === index ? { ...item, rangeStart: event.target.value } : item
+                      ))
+                    })}
+                    pattern="-?[0-9]*"
+                    type="text"
+                    value={calendar.rangeStart}
+                  />
+                </label>
+                <label>
+                  <span>{t("chronicle.surfaceEndYear")}</span>
+                  <input
+                    inputMode="numeric"
+                    onBlur={() => save(draft)}
+                    onChange={(event) => setDraft({
+                      ...draft,
+                      calendars: draft.calendars.map((item, itemIndex) => (
+                        itemIndex === index ? { ...item, rangeEnd: event.target.value } : item
+                      ))
+                    })}
+                    pattern="-?[0-9]*"
+                    type="text"
+                    value={calendar.rangeEnd}
+                  />
+                </label>
+              </div>
+              {!calendar.rangeStart && !calendar.rangeEnd && !calendar.isNew ? (
+                <p className="chronicle-calendar-range-status">{t("chronicle.surfaceRangeUnset")}</p>
+              ) : range === null ? (
+                <p className="chronicle-calendar-range-status chronicle-calendar-range-status--error">{t("chronicle.surfaceRangeInvalid")}</p>
+              ) : overflowCount > 0 ? (
+                <p className="chronicle-calendar-range-status chronicle-calendar-range-status--warning">
+                  {t("chronicle.surfaceRangeOverflow", { count: overflowCount })}
+                </p>
+              ) : null}
               <button
                 aria-label={t("chronicle.removeCalendar", { name: calendar.name })}
                 disabled={usedNames.has(calendar.name)}
@@ -164,7 +228,8 @@ export function ChronicleCalendarSettingsPanel({
                 type="button"
               >×</button>
             </div>
-          ))}
+            );
+          })}
         </div>
         <button
           className="chronicle-calendar-add"
@@ -173,7 +238,11 @@ export function ChronicleCalendarSettingsPanel({
             let name = baseName;
             let suffix = 2;
             while (names.includes(name)) name = `${baseName} ${suffix++}`;
-            setDraft({ ...draft, calendars: [...draft.calendars, { name, yearOne: "1" }] });
+            setDraft({
+              ...draft,
+              calendars: [...draft.calendars, { isNew: true, name, rangeEnd: "", rangeStart: "", yearOne: "1" }],
+              visibleCalendarNames: [...draft.visibleCalendarNames, name]
+            });
           }}
           type="button"
         >＋ {t("chronicle.addCalendar")}</button>

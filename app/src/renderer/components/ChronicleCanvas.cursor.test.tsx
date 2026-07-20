@@ -9,14 +9,14 @@ afterEach(() => {
 });
 
 describe("ChronicleCanvas cursor", () => {
-  it("暦設定を現在のツールバー内で開き、表示する暦を複数選択する", () => {
+  it("暦設定を現在のツールバー内で開き、追加暦面の表示を切り替える", () => {
     const onSave = vi.fn();
     render(
       <I18nProvider language="ja">
         <ChronicleCanvas
           calendarSettings={{
             baseCalendarName: "基準暦",
-            calendars: [{ name: "別暦", yearOne: 450 }],
+            calendars: [{ name: "別暦", range: null, yearOne: 450 }],
             visibleCalendarNames: ["基準暦"]
           }}
           entries={[]}
@@ -27,8 +27,100 @@ describe("ChronicleCanvas cursor", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
     expect(screen.getByRole("heading", { name: "暦設定" })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "基準暦" })).toBeDisabled();
     fireEvent.click(screen.getByRole("checkbox", { name: "別暦" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ visibleCalendarNames: ["基準暦", "別暦"] }));
+  });
+
+  it("暦面の有効な開始年と終了年がそろってから保存する", () => {
+    const onSave = vi.fn();
+    render(
+      <I18nProvider language="ja">
+        <ChronicleCanvas
+          calendarSettings={{
+            baseCalendarName: "基準暦",
+            calendars: [{ name: "別暦", range: null, yearOne: 450 }],
+            visibleCalendarNames: ["基準暦", "別暦"]
+          }}
+          entries={[]}
+          onCalendarSettingsSave={onSave}
+          onOpenFile={vi.fn()}
+        />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
+    expect(screen.getByText(/範囲未設定/)).toBeInTheDocument();
+    const start = screen.getByLabelText("暦面の開始年");
+    const end = screen.getByLabelText("暦面の終了年");
+    fireEvent.change(start, { target: { value: "-10" } });
+    fireEvent.blur(start);
+    expect(onSave).not.toHaveBeenCalled();
+    fireEvent.change(end, { target: { value: "100" } });
+    fireEvent.blur(end);
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+      calendars: [{ name: "別暦", range: { end: 100, start: -10 }, yearOne: 450 }]
+    }));
+  });
+
+  it("暦面の設定範囲外にある項目件数を表示する", () => {
+    render(
+      <I18nProvider language="ja">
+        <ChronicleCanvas
+          calendarSettings={{
+            baseCalendarName: "基準暦",
+            calendars: [{ name: "別暦", range: { end: 5, start: 1 }, yearOne: 100 }],
+            visibleCalendarNames: ["基準暦", "別暦"]
+          }}
+          entries={[{
+            calendarName: "別暦",
+            chronicleEntryIndex: 0,
+            endLabel: "11",
+            endPoint: { month: null, year: 110 },
+            endValue: 110,
+            fileName: "Outside",
+            path: "outside.md",
+            startLabel: "11",
+            startPoint: { month: null, year: 110 },
+            startValue: 110
+          }]}
+          onOpenFile={vi.fn()}
+        />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
+    expect(screen.getByText("設定範囲外に1件の項目があります。")).toBeInTheDocument();
+  });
+
+  it("非表示の追加暦面しか項目がない場合はカテゴリ非表示と区別する", () => {
+    render(
+      <I18nProvider language="ja">
+        <ChronicleCanvas
+          calendarSettings={{
+            baseCalendarName: "基準暦",
+            calendars: [{ name: "別暦", range: { end: 20, start: 1 }, yearOne: 100 }],
+            visibleCalendarNames: ["基準暦"]
+          }}
+          entries={[{
+            calendarName: "別暦",
+            chronicleEntryIndex: 0,
+            endLabel: "1",
+            endPoint: { month: null, year: 100 },
+            endValue: 100,
+            fileName: "Hidden surface item",
+            path: "hidden.md",
+            startLabel: "1",
+            startPoint: { month: null, year: 100 },
+            startValue: 100
+          }]}
+          onOpenFile={vi.fn()}
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText("表示中の暦面に年表項目はありません。")).toBeInTheDocument();
+    expect(screen.queryByText("すべてのカテゴリが非表示です。")).not.toBeInTheDocument();
   });
 
   it("暦設定はパネル内の操作では維持し、外側のクリックで閉じる", () => {
@@ -60,7 +152,7 @@ describe("ChronicleCanvas cursor", () => {
         <ChronicleCanvas
           calendarSettings={{
             baseCalendarName: "基準暦",
-            calendars: [{ name: "別暦", yearOne: 450 }],
+            calendars: [{ name: "別暦", range: null, yearOne: 450 }],
             visibleCalendarNames: ["基準暦"]
           }}
           entries={[]}
@@ -80,7 +172,7 @@ describe("ChronicleCanvas cursor", () => {
     fireEvent.blur(yearOneInput);
 
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
-      calendars: [{ name: "別暦", yearOne: -240 }]
+      calendars: [{ name: "別暦", range: null, yearOne: -240 }]
     }));
   });
 
@@ -152,5 +244,7 @@ describe("ChronicleCanvas cursor", () => {
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 12, clientY: 12 }));
     expect(setPointerCapture).toHaveBeenCalledTimes(2);
     expect(canvas).toHaveStyle("cursor: grabbing");
+    fireEvent(canvas, new MouseEvent("lostpointercapture", { bubbles: true, clientX: 12, clientY: 12 }));
+    expect(canvas).toHaveStyle("cursor: grab");
   });
 });

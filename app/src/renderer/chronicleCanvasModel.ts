@@ -1,4 +1,9 @@
 import type { ChartEntry } from "../shared/ipc";
+import {
+  calendarYearToBaseYear,
+  defaultChronicleCalendarSettings,
+  type ChronicleCalendarSettings
+} from "../shared/chronicleCalendar";
 
 export const CHRONICLE_CANVAS_MIN_SCALE = 0.08;
 export const CHRONICLE_CANVAS_MAX_SCALE = 2.4;
@@ -28,6 +33,7 @@ export interface ChronicleCanvasCamera {
 }
 
 export interface ChronicleCanvasItem {
+  calendarName: string;
   endX: number;
   endYear: number;
   entry: ChartEntry;
@@ -36,6 +42,8 @@ export interface ChronicleCanvasItem {
   id: string;
   labelWidth: number;
   labelTextWidth: number | null;
+  maxY: number;
+  minY: number;
   rangeLabel: string;
   startX: number;
   startYear: number;
@@ -43,6 +51,17 @@ export interface ChronicleCanvasItem {
   vy: number;
   width: number;
   x: number;
+  y: number;
+}
+
+export interface ChronicleCalendarSurface {
+  calendarName: string;
+  contentEndX: number;
+  contentStartX: number;
+  endX: number | null;
+  height: number;
+  rangeState: "bounded" | "overflow" | "unset";
+  startX: number | null;
   y: number;
 }
 
@@ -54,6 +73,7 @@ export interface ChronicleCanvasYear {
 export interface ChronicleCanvasScene {
   items: ChronicleCanvasItem[];
   periodScale: ChroniclePeriodScale;
+  surfaces: ChronicleCalendarSurface[];
 }
 
 export interface ChronicleCanvasLabelHit {
@@ -84,14 +104,64 @@ export function createChronicleCanvasCamera(): ChronicleCanvasCamera {
 export function createChronicleCanvasScene(
   entries: ChartEntry[],
   random: () => number = Math.random,
-  periodScale: ChroniclePeriodScale = CHRONICLE_INITIAL_PERIOD_SCALE
+  periodScale: ChroniclePeriodScale = CHRONICLE_INITIAL_PERIOD_SCALE,
+  calendarSettings: ChronicleCalendarSettings = defaultChronicleCalendarSettings
 ): ChronicleCanvasScene {
-  const verticalSlots = entries.map((_, index) => (index - (entries.length - 1) / 2) * (itemHeight + 24));
-  for (let index = verticalSlots.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(random() * (index + 1));
-    [verticalSlots[index], verticalSlots[swapIndex]] = [verticalSlots[swapIndex], verticalSlots[index]];
+  const baseEntries = entries.filter((entry) => (entry.calendarName ?? calendarSettings.baseCalendarName) === calendarSettings.baseCalendarName);
+  const addedEntries = calendarSettings.calendars.map((calendar) => ({
+    calendar,
+    entries: entries.filter((entry) => entry.calendarName === calendar.name)
+  }));
+  const baseHeight = Math.max(180, baseEntries.length * (itemHeight + 24) + 80);
+  const items = createCanvasItems(baseEntries, calendarSettings.baseCalendarName, -baseHeight / 2, baseHeight, random, periodScale);
+  const surfaces: ChronicleCalendarSurface[] = [];
+  let surfaceTop = baseHeight / 2 + 72;
+  for (const group of addedEntries) {
+    const height = Math.max(180, group.entries.length * (itemHeight + 24) + 88);
+    const surfaceY = surfaceTop + height / 2;
+    const surfaceItems = createCanvasItems(group.entries, group.calendar.name, surfaceTop, height, random, periodScale);
+    items.push(...surfaceItems);
+    const declaredStartYear = group.calendar.range
+      ? calendarYearToBaseYear(group.calendar.range.start, group.calendar.name, calendarSettings)
+      : null;
+    const declaredEndYear = group.calendar.range
+      ? calendarYearToBaseYear(group.calendar.range.end, group.calendar.name, calendarSettings)
+      : null;
+    const declaredStartX = declaredStartYear === null ? null : chronicleCanvasYearToX(declaredStartYear, periodScale);
+    const declaredEndX = declaredEndYear === null ? null : chronicleCanvasYearToX(declaredEndYear, periodScale);
+    const contentStartX = surfaceItems.length > 0 ? Math.min(...surfaceItems.map((item) => item.startX)) : declaredStartX ?? 0;
+    const contentEndX = surfaceItems.length > 0 ? Math.max(...surfaceItems.map((item) => item.endX)) : declaredEndX ?? 0;
+    const overflow = declaredStartX !== null && declaredEndX !== null &&
+      (contentStartX < declaredStartX || contentEndX > declaredEndX);
+    surfaces.push({
+      calendarName: group.calendar.name,
+      contentEndX,
+      contentStartX,
+      endX: declaredEndX,
+      height,
+      rangeState: declaredStartX === null || declaredEndX === null ? "unset" : overflow ? "overflow" : "bounded",
+      startX: declaredStartX,
+      y: surfaceY
+    });
+    surfaceTop += height + 48;
   }
-  const items = entries.map((entry, index) => {
+
+  settleChronicleCanvasScene(items, 240);
+  for (const item of items) item.homeY = item.y;
+  return { items, periodScale, surfaces };
+}
+
+function createCanvasItems(
+  entries: ChartEntry[],
+  calendarName: string,
+  top: number,
+  height: number,
+  random: () => number,
+  periodScale: ChroniclePeriodScale
+): ChronicleCanvasItem[] {
+  const usableHeight = Math.max(0, height - 100);
+  const verticalSlots = entries.map((_, index) => top + 50 + (entries.length <= 1 ? usableHeight / 2 : usableHeight * index / (entries.length - 1)));
+  return entries.map((entry, index) => {
     const startYear = entry.startPoint.year;
     const endYear = entry.endPoint.year;
     const startX = chronicleCanvasYearToX(startYear, periodScale);
@@ -103,6 +173,7 @@ export function createChronicleCanvasScene(
     const initialY = verticalSlots[index] + (random() - 0.5) * 12;
 
     return {
+      calendarName,
       endX,
       endYear,
       entry,
@@ -111,6 +182,8 @@ export function createChronicleCanvasScene(
       id: entryKey(entry),
       labelWidth,
       labelTextWidth: null,
+      maxY: top + height - 42,
+      minY: top + 42,
       rangeLabel,
       startX,
       startYear,
@@ -121,10 +194,6 @@ export function createChronicleCanvasScene(
       y: initialY
     } satisfies ChronicleCanvasItem;
   });
-
-  settleChronicleCanvasScene(items, 240);
-  for (const item of items) item.homeY = item.y;
-  return { items, periodScale };
 }
 
 export function chronicleCanvasYearToX(year: number, periodScale: ChroniclePeriodScale): number {
@@ -167,15 +236,19 @@ export function stepChronicleCanvasScene(
   const frameScale = Math.min(2, Math.max(0.25, deltaSeconds * 60));
   let moving = false;
 
-  const verticalOrder = items.length > 24 ? items.toSorted((left, right) => left.y - right.y) : items;
-  const maximumItemHeight = items.reduce((maximum, item) => Math.max(maximum, item.height), 0);
-  for (let leftIndex = 0; leftIndex < verticalOrder.length; leftIndex += 1) {
-    const left = verticalOrder[leftIndex];
-    const maximumVerticalDistance = (left.height + maximumItemHeight) / 2 + 12;
-    for (let rightIndex = leftIndex + 1; rightIndex < verticalOrder.length; rightIndex += 1) {
-      const right = verticalOrder[rightIndex];
-      if (right.y - left.y > maximumVerticalDistance) break;
-      applyItemRepulsion(left, right, frameScale);
+  const calendarNames = new Set(items.map((item) => item.calendarName));
+  for (const calendarName of calendarNames) {
+    const group = items.filter((item) => item.calendarName === calendarName);
+    const verticalOrder = group.length > 24 ? group.toSorted((left, right) => left.y - right.y) : group;
+    const maximumItemHeight = group.reduce((maximum, item) => Math.max(maximum, item.height), 0);
+    for (let leftIndex = 0; leftIndex < verticalOrder.length; leftIndex += 1) {
+      const left = verticalOrder[leftIndex];
+      const maximumVerticalDistance = (left.height + maximumItemHeight) / 2 + 12;
+      for (let rightIndex = leftIndex + 1; rightIndex < verticalOrder.length; rightIndex += 1) {
+        const right = verticalOrder[rightIndex];
+        if (right.y - left.y > maximumVerticalDistance) break;
+        applyItemRepulsion(left, right, frameScale);
+      }
     }
   }
 
@@ -192,10 +265,15 @@ export function stepChronicleCanvasScene(
       item.x += item.vx * frameScale;
       item.y += item.vy * frameScale;
     }
+    clampChronicleCanvasItemY(item);
     moving ||= Math.abs(item.vx) + Math.abs(item.vy) > 0.02;
   }
 
   return moving;
+}
+
+export function clampChronicleCanvasItemY(item: ChronicleCanvasItem): void {
+  item.y = Math.min(item.maxY, Math.max(item.minY, item.y));
 }
 
 function applyItemRepulsion(

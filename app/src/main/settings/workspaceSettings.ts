@@ -12,6 +12,7 @@ import {
 } from "../../shared/ipc";
 import {
   defaultChronicleCalendarSettings,
+  isValidChronicleCalendarRange,
   type ChronicleCalendarSettings
 } from "../../shared/chronicleCalendar";
 import { normalizeWorkspaceRelativeInputPath } from "../files/paths";
@@ -106,8 +107,9 @@ export function parseChronicleCalendarSettings(raw: unknown): ChronicleCalendarS
     if (typeof value !== "object" || value === null || Array.isArray(value)) return [];
     const calendar = value as Record<string, unknown>;
     const name = typeof calendar.name === "string" ? calendar.name.trim() : "";
-    if (!name || !Number.isInteger(calendar.yearOne) || calendar.yearOne === 0) return [];
-    return [{ name, yearOne: Number(calendar.yearOne) }];
+    if (!name || !Number.isSafeInteger(calendar.yearOne) || calendar.yearOne === 0) return [];
+    const range = parseChronicleCalendarRange(calendar.range);
+    return [{ name, range, yearOne: Number(calendar.yearOne) }];
   }) : [];
   const names = new Set([baseCalendarName]);
   const uniqueCalendars = calendars.filter((calendar) => {
@@ -121,10 +123,15 @@ export function parseChronicleCalendarSettings(raw: unknown): ChronicleCalendarS
   return {
     baseCalendarName,
     calendars: uniqueCalendars,
-    visibleCalendarNames: Array.from(new Set(visibleCalendarNames)).length > 0
-      ? Array.from(new Set(visibleCalendarNames))
-      : [baseCalendarName]
+    visibleCalendarNames: [baseCalendarName, ...Array.from(new Set(visibleCalendarNames)).filter((name) => name !== baseCalendarName)]
   };
+}
+
+function parseChronicleCalendarRange(raw: unknown): { end: number; start: number } | null {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
+  const candidate = raw as Record<string, unknown>;
+  const range = { end: Number(candidate.end), start: Number(candidate.start) };
+  return isValidChronicleCalendarRange(range) ? range : null;
 }
 
 export function parseCharts(raw: unknown): ChartSettings[] {

@@ -1,6 +1,12 @@
 export interface ChronicleCalendarDefinition {
   name: string;
+  range: ChronicleCalendarRange | null;
   yearOne: number;
+}
+
+export interface ChronicleCalendarRange {
+  end: number;
+  start: number;
 }
 
 export interface ChronicleCalendarSettings {
@@ -17,6 +23,16 @@ export const defaultChronicleCalendarSettings: ChronicleCalendarSettings = {
 
 export function chronicleCalendarNames(settings: ChronicleCalendarSettings): string[] {
   return [settings.baseCalendarName, ...settings.calendars.map((calendar) => calendar.name)];
+}
+
+export function isValidChronicleCalendarYear(year: number): boolean {
+  return Number.isSafeInteger(year) && year !== 0;
+}
+
+export function isValidChronicleCalendarRange(range: ChronicleCalendarRange): boolean {
+  return isValidChronicleCalendarYear(range.start) &&
+    isValidChronicleCalendarYear(range.end) &&
+    chronicleYearToOrdinal(range.start) <= chronicleYearToOrdinal(range.end);
 }
 
 export function chronicleYearToOrdinal(year: number): number {

@@ -117,7 +117,7 @@ describe("chronicleCanvasRenderer", () => {
       text: "#111"
     }, new Set(), new Map(), {
       baseCalendarName: "基準暦",
-      calendars: [{ name: "比較暦", yearOne: 10 }],
+      calendars: [{ name: "比較暦", range: { end: 100, start: 1 }, yearOne: 10 }],
       visibleCalendarNames: ["基準暦", "比較暦"]
     });
 
@@ -126,6 +126,57 @@ describe("chronicleCanvasRenderer", () => {
       x: 10,
       y: chronicleCanvasYearLabelY(camera.scale, 0)
     });
+  });
+
+  it("追加暦を半透明の暦面と局所年目盛りとして描画する", () => {
+    const settings = {
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "王国暦", range: { end: 20, start: 1 }, yearOne: 100 }],
+      visibleCalendarNames: ["基準暦", "王国暦"]
+    };
+    const addedEntry = { ...entry("Kingdom", "kingdom.md", 110), calendarName: "王国暦" };
+    const scene = createChronicleCanvasScene([addedEntry], () => 0.5, 10, settings);
+    const camera = createChronicleCanvasCamera();
+    initializeChronicleCanvasCamera(camera, scene, 800, 500);
+    const fillTextCalls: FillTextCall[] = [];
+    const strokeRectCalls: Array<{ height: number; width: number; x: number; y: number }> = [];
+    const context = createCanvasContext(fillTextCalls, [], strokeRectCalls);
+
+    drawChronicleCanvas(context, scene, camera, null, null, 800, 500, {
+      background: "#fff",
+      categoryLightness: 40,
+      categorySaturation: 68,
+      mutedText: "#666",
+      text: "#111"
+    }, new Set(), new Map(), settings);
+
+    expect(strokeRectCalls.length).toBeGreaterThan(0);
+    expect(fillTextCalls.some((call) => call.text === "王国暦")).toBe(true);
+    expect(fillTextCalls.some((call) => call.text === "Kingdom")).toBe(true);
+  });
+
+  it("設定範囲外の項目を警告色の破線延長領域へ描画する", () => {
+    const settings = {
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "王国暦", range: { end: 5, start: 1 }, yearOne: 100 }],
+      visibleCalendarNames: ["基準暦", "王国暦"]
+    };
+    const addedEntry = { ...entry("Outside", "outside.md", 115), calendarName: "王国暦" };
+    const scene = createChronicleCanvasScene([addedEntry], () => 0.5, 10, settings);
+    const camera = createChronicleCanvasCamera();
+    initializeChronicleCanvasCamera(camera, scene, 800, 500);
+    const lineDashCalls: number[][] = [];
+    const context = createCanvasContext([], [], [], lineDashCalls);
+
+    drawChronicleCanvas(context, scene, camera, null, null, 800, 500, {
+      background: "#fff",
+      categoryLightness: 40,
+      categorySaturation: 68,
+      mutedText: "#666",
+      text: "#111"
+    }, new Set(), new Map(), settings);
+
+    expect(lineDashCalls).toContainEqual([6, 5]);
   });
 });
 
@@ -139,7 +190,9 @@ interface FillTextCall {
 
 function createCanvasContext(
   fillTextCalls: FillTextCall[],
-  fillStyleCalls: string[] = []
+  fillStyleCalls: string[] = [],
+  strokeRectCalls: Array<{ height: number; width: number; x: number; y: number }> = [],
+  lineDashCalls: number[][] = []
 ): CanvasRenderingContext2D {
   const context = {
     arc: () => undefined,
@@ -155,7 +208,9 @@ function createCanvasContext(
     moveTo: () => undefined,
     restore: () => undefined,
     save: () => undefined,
+    setLineDash: (segments: number[]) => lineDashCalls.push(segments),
     stroke: () => undefined,
+    strokeRect: (x: number, y: number, width: number, height: number) => strokeRectCalls.push({ height, width, x, y }),
     fillStyle: "",
     font: "",
     globalAlpha: 1,
