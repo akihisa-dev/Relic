@@ -437,7 +437,7 @@ export function chronicleCanvasItemAtPoint(
   for (let index = items.length - 1; index >= 0; index -= 1) {
     const item = items[index];
     const halfWidth = Math.max(item.width / 2, 18 / camera.scale);
-    const halfHeight = Math.max(item.height / 2, 18 / camera.scale);
+    const halfHeight = Math.max(item.height / 2, 18 / chronicleCanvasVerticalScale(camera.scale));
     if (Math.abs(world.x - item.x) <= halfWidth && Math.abs(world.y - item.y) <= halfHeight) return item;
   }
   return null;

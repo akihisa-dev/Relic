@@ -342,6 +342,19 @@ describe("chronicleCanvasModel", () => {
     expect(chronicleCanvasClickPath(item, false)).toBe("range.md");
   });
 
+  it("低倍率で項目の縦方向の当たり判定を画面上へ過剰に広げない", () => {
+    const scene = createChronicleCanvasScene([entry("Range", "range.md", 100, 300)], () => 0.5);
+    const item = scene.items[0];
+    const camera = { ...createChronicleCanvasCamera(), panX: 0, panY: 220, scale: 0.08 };
+    const itemPoint = worldToCanvas({ x: item.x, y: item.y }, camera);
+
+    expect(chronicleCanvasPointerItemAtPoint(scene.items, camera, itemPoint)).toBe(item);
+    expect(chronicleCanvasPointerItemAtPoint(scene.items, camera, {
+      x: itemPoint.x,
+      y: itemPoint.y - 40
+    })).toBeNull();
+  });
+
   it("ドラッグと年表ヘッダーはファイルを開く対象にしない", () => {
     const scene = createChronicleCanvasScene([entry("Range", "range.md", 100, 300)], () => 0.5);
     const item = scene.items[0];
