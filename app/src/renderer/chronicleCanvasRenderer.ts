@@ -288,7 +288,6 @@ function drawItem(
   const renderedOpacity = hovered ? Math.max(0.92, baseOpacity) : baseOpacity;
   const naturalCenterX = (start.x + end.x) / 2;
   const defaultLabelY = start.y - CHRONICLE_CANVAS_ITEM_LABEL_OFFSET;
-  const defaultRangeY = start.y + 24;
 
   context.save();
   context.strokeStyle = itemColor;
@@ -324,9 +323,12 @@ function drawItem(
     Math.min(viewportWidth - measuredLabelWidth / 2 - 12, hoveredLabel ? hoveredPoint.x : naturalCenterX)
   );
   const labelY = hoveredLabel
-    ? Math.max(chronicleCanvasYearHeaderHeight(camera.scale) + 14, Math.min(viewportHeight - 24, hoveredPoint.y - 20))
+    ? Math.max(
+      chronicleCanvasYearHeaderHeight(camera.scale) + 14,
+      Math.min(viewportHeight - 42, hoveredPoint.y - CHRONICLE_CANVAS_ITEM_LABEL_OFFSET)
+    )
     : defaultLabelY;
-  const rangeY = hoveredLabel ? labelY + 18 : defaultRangeY;
+  const rangeY = labelY + 18;
   context.fillText(item.entry.fileName, centerX, labelY);
   context.fillStyle = theme.mutedText;
   context.font = "650 11px -apple-system, BlinkMacSystemFont, sans-serif";

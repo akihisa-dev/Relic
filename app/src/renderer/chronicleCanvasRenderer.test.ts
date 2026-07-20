@@ -5,7 +5,8 @@ import {
   chronicleCanvasYearLabelY,
   createChronicleCanvasCamera,
   createChronicleCanvasScene,
-  initializeChronicleCanvasCamera
+  initializeChronicleCanvasCamera,
+  worldToCanvas
 } from "./chronicleCanvasModel";
 import { drawChronicleCanvas } from "./chronicleCanvasRenderer";
 
@@ -45,7 +46,29 @@ describe("chronicleCanvasRenderer", () => {
     expect(yearLabels.map((call) => call.text)).not.toContain("105");
   });
 
-  it("ホバー中の項目名を14pxでカーソル位置へ描画する", () => {
+  it("項目名と年を節点の上へ2段で描画する", () => {
+    const scene = createChronicleCanvasScene([entry("A", "a.md", 100)], () => 0.5);
+    const camera = createChronicleCanvasCamera();
+    initializeChronicleCanvasCamera(camera, scene, 800, 400);
+    const fillTextCalls: FillTextCall[] = [];
+    const context = createCanvasContext(fillTextCalls);
+
+    drawChronicleCanvas(context, scene, camera, null, null, 800, 400, {
+      background: "#fff",
+      categoryLightness: 40,
+      categorySaturation: 68,
+      mutedText: "#666",
+      text: "#111"
+    });
+
+    const itemY = worldToCanvas({ x: scene.items[0].x, y: scene.items[0].y }, camera).y;
+    const nameLabel = fillTextCalls.find((call) => call.text === "A")!;
+    const rangeLabel = fillTextCalls.find((call) => call.text === "100" && call.font.startsWith("650 11px"))!;
+    expect(nameLabel.y).toBeLessThan(rangeLabel.y);
+    expect(rangeLabel.y).toBeLessThan(itemY);
+  });
+
+  it("ホバー中も項目名と年をポインターの上側へまとめて描画する", () => {
     const scene = createChronicleCanvasScene([entry("A", "a.md", 100)], () => 0.5);
     const camera = createChronicleCanvasCamera();
     initializeChronicleCanvasCamera(camera, scene, 800, 400);
@@ -73,6 +96,10 @@ describe("chronicleCanvasRenderer", () => {
     expect(fillTextCalls.find((call) => call.text === "A")).toMatchObject({
       font: "750 14px -apple-system, BlinkMacSystemFont, sans-serif",
       text: "A",
+      x: hoveredPoint.x,
+      y: hoveredPoint.y - 38
+    });
+    expect(fillTextCalls.find((call) => call.text === "100" && call.font.startsWith("650 11px"))).toMatchObject({
       x: hoveredPoint.x,
       y: hoveredPoint.y - 20
     });
