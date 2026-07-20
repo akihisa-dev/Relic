@@ -1,18 +1,33 @@
 import type { ChronicleCalendarSettings } from "../shared/chronicleCalendar";
 import type { ChartEntry } from "../shared/ipc";
+import {
+  chronicleCategoryKey,
+  createChronicleCategoryOptions,
+  type ChronicleCategoryOption
+} from "./chronicleCategoryModel";
 
 const CHRONICLE_CALENDAR_HUE_COUNT = 360;
 const CHRONICLE_CALENDAR_HUE_STEP = 137;
 
-export interface ChronicleCalendarTreeFile {
-  fileName: string;
-  path: string;
+export interface ChronicleCalendarTreeCategory extends ChronicleCategoryOption {
+  visibilityKey: string;
 }
 
 export interface ChronicleCalendarTreeNode {
   calendarName: string;
-  files: ChronicleCalendarTreeFile[];
+  categories: ChronicleCalendarTreeCategory[];
   hue: number | null;
+}
+
+export function chronicleCalendarCategoryVisibilityKey(calendarName: string, categoryKey: string): string {
+  return JSON.stringify([calendarName, categoryKey]);
+}
+
+export function chronicleEntryCategoryVisibilityKey(entry: ChartEntry, baseCalendarName: string): string {
+  return chronicleCalendarCategoryVisibilityKey(
+    entry.calendarName?.trim() || baseCalendarName,
+    chronicleCategoryKey(entry.category)
+  );
 }
 
 export function createChronicleCalendarHues(
@@ -37,27 +52,33 @@ export function createChronicleCalendarHues(
 export function createChronicleCalendarTree(
   entries: ChartEntry[],
   settings: ChronicleCalendarSettings,
-  hues: ReadonlyMap<string, number> = createChronicleCalendarHues(settings)
+  categoryChoices: string[],
+  uncategorizedLabel: string,
+  calendarHues: ReadonlyMap<string, number> = createChronicleCalendarHues(settings),
+  categoryHues: ReadonlyMap<string, number> = new Map()
 ): ChronicleCalendarTreeNode[] {
   const calendarNames = [settings.baseCalendarName, ...settings.calendars.map((calendar) => calendar.name)];
   const knownNames = new Set(calendarNames);
-  const filesByCalendar = new Map<string, Map<string, ChronicleCalendarTreeFile>>(
-    calendarNames.map((name) => [name, new Map()])
-  );
+  const entriesByCalendar = new Map<string, ChartEntry[]>(calendarNames.map((name) => [name, []]));
 
   for (const entry of entries) {
     const calendarName = entry.calendarName?.trim() || settings.baseCalendarName;
     if (!knownNames.has(calendarName)) continue;
-    const files = filesByCalendar.get(calendarName);
-    if (!files?.has(entry.path)) files?.set(entry.path, { fileName: entry.fileName, path: entry.path });
+    entriesByCalendar.get(calendarName)?.push(entry);
   }
 
   return calendarNames.map((calendarName) => ({
     calendarName,
-    files: [...(filesByCalendar.get(calendarName)?.values() ?? [])].toSorted((left, right) => (
-      left.fileName.localeCompare(right.fileName, "ja") || left.path.localeCompare(right.path, "ja")
-    )),
-    hue: calendarName === settings.baseCalendarName ? null : hues.get(calendarName) ?? null
+    categories: createChronicleCategoryOptions(
+      entriesByCalendar.get(calendarName) ?? [],
+      categoryChoices,
+      uncategorizedLabel
+    ).map((category) => ({
+      ...category,
+      hue: categoryHues.get(category.key) ?? category.hue,
+      visibilityKey: chronicleCalendarCategoryVisibilityKey(calendarName, category.key)
+    })),
+    hue: calendarName === settings.baseCalendarName ? null : calendarHues.get(calendarName) ?? null
   }));
 }
 

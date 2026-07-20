@@ -680,7 +680,7 @@ describe("App charts", () => {
     expect(updateChartEntry).not.toHaveBeenCalled();
   });
 
-  it("chronicleの暦ツリーとレール開閉をタブへ戻った後もペイン内で維持する", async () => {
+  it("chronicleの暦→カテゴリツリーと表示状態をタブへ戻った後もペイン内で維持する", async () => {
     const warEntry = kamakuraEntry();
     const peopleEntry = {
       ...kamakuraEntry(),
@@ -707,8 +707,8 @@ describe("App charts", () => {
     fireEvent.click(screen.getByRole("button", { name: "クロニクル" }));
 
     expect(await screen.findByRole("button", { name: "基準暦を折りたたむ" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "鎌倉時代" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "人物記録" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "未分類カテゴリを非表示" }));
+    expect(screen.getByRole("button", { name: "未分類カテゴリを表示" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "暦ツリーを折りたたむ" }));
 
     useEditorStore.getState().openFileInPane("left", {
@@ -721,8 +721,7 @@ describe("App charts", () => {
 
     const expandTree = await screen.findByRole("button", { name: "暦ツリーを展開" });
     fireEvent.click(expandTree);
-    expect(screen.getByRole("button", { name: "鎌倉時代" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "人物記録" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "未分類カテゴリを表示" })).toBeInTheDocument();
   });
 
 });

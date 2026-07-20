@@ -9,6 +9,7 @@ import {
   worldToCanvas
 } from "./chronicleCanvasModel";
 import { drawChronicleCanvas } from "./chronicleCanvasRenderer";
+import { chronicleCalendarCategoryVisibilityKey } from "./chronicleCalendarTreeModel";
 
 function entry(fileName: string, path: string, year: number, category?: string): ChartEntry {
   return {
@@ -128,6 +129,39 @@ describe("chronicleCanvasRenderer", () => {
     expect(fillTextCalls.some((call) => call.text === "War")).toBe(true);
     expect(fillTextCalls.some((call) => call.text === "People")).toBe(true);
     expect(fillStyleCalls).toContain("hsl(137 68% 40%)");
+  });
+
+  it("同じカテゴリでも指定した暦に属する項目だけを非表示にする", () => {
+    const settings = {
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "王国暦", range: { end: 20, start: 1 }, yearOne: 100 }],
+      visibleCalendarNames: ["基準暦", "王国暦"]
+    };
+    const scene = createChronicleCanvasScene([
+      entry("Base", "base.md", 105, "戦役"),
+      { ...entry("Kingdom", "kingdom.md", 10, "戦役"), calendarName: "王国暦" }
+    ], () => 0.5, 10, settings);
+    const camera = createChronicleCanvasCamera();
+    initializeChronicleCanvasCamera(camera, scene, 800, 500);
+    const fillTextCalls: FillTextCall[] = [];
+
+    drawChronicleCanvas(
+      createCanvasContext(fillTextCalls),
+      scene,
+      camera,
+      null,
+      null,
+      800,
+      500,
+      { background: "#fff", categoryLightness: 40, categorySaturation: 68, mutedText: "#666", text: "#111" },
+      new Map(),
+      settings,
+      new Map(),
+      new Set([chronicleCalendarCategoryVisibilityKey("王国暦", "category:戦役")])
+    );
+
+    expect(fillTextCalls.some((call) => call.text === "Base")).toBe(true);
+    expect(fillTextCalls.some((call) => call.text === "Kingdom")).toBe(false);
   });
 
   it("先頭行の基準暦名を背景と異なる文字色で描画する", () => {

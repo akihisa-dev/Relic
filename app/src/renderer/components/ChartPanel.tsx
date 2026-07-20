@@ -10,8 +10,10 @@ interface ChartViewProps {
   calendarSettings?: ChronicleCalendarSettings;
   chart?: WorkspaceChart | null;
   charts?: WorkspaceChart[];
+  hiddenCategoryKeys?: string[];
   onOpenFile: (path: string) => void;
   onCalendarSettingsSave?: (settings: ChronicleCalendarSettings) => void;
+  onHiddenCategoryKeysChange?: (keys: string[]) => void;
   onRailCollapsedChange?: (collapsed: boolean) => void;
   railCollapsed?: boolean;
 }
@@ -23,7 +25,9 @@ export function ChartView({
   calendarSettings,
   chart = null,
   charts = defaultCharts,
+  hiddenCategoryKeys,
   onCalendarSettingsSave,
+  onHiddenCategoryKeysChange,
   onOpenFile,
   onRailCollapsedChange,
   railCollapsed
@@ -41,7 +45,9 @@ export function ChartView({
         calendarSettings={calendarSettings}
         categoryChoices={categoryChoices}
         entries={activeChart.entries}
+        hiddenCategoryKeys={hiddenCategoryKeys}
         onCalendarSettingsSave={onCalendarSettingsSave}
+        onHiddenCategoryKeysChange={onHiddenCategoryKeysChange}
         onOpenFile={onOpenFile}
         onRailCollapsedChange={onRailCollapsedChange}
         railCollapsed={railCollapsed}

@@ -85,7 +85,8 @@
 
 .chronicle-calendar-tree-collapse:focus-visible,
 .chronicle-calendar-tree-calendar:focus-visible,
-.chronicle-calendar-tree-file:focus-visible,
+.chronicle-calendar-tree-visibility:focus-visible,
+.chronicle-calendar-tree-category:focus-visible,
 .chronicle-filter-empty button:focus-visible {
   outline: 2px solid var(--accent-ring);
   outline-offset: -2px;
@@ -132,7 +133,8 @@
 }
 
 .chronicle-calendar-tree-calendar,
-.chronicle-calendar-tree-file {
+.chronicle-calendar-tree-category,
+.chronicle-calendar-tree-visibility {
   align-items: center;
   background: transparent;
   border: 0;
@@ -155,8 +157,15 @@
   padding: 4px 7px;
 }
 
+.chronicle-calendar-tree-calendar-row {
+  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+}
+
 .chronicle-calendar-tree-calendar:hover,
-.chronicle-calendar-tree-file:hover {
+.chronicle-calendar-tree-category:hover,
+.chronicle-calendar-tree-visibility:hover {
   background: var(--hover);
 }
 
@@ -174,8 +183,7 @@
   width: 10px;
 }
 
-.chronicle-calendar-tree-name,
-.chronicle-calendar-tree-file span:last-child {
+.chronicle-calendar-tree-name {
   display: -webkit-box;
   line-height: 1.25;
   min-width: 0;
@@ -191,24 +199,49 @@
   font-weight: 500;
 }
 
-.chronicle-calendar-tree-files {
+.chronicle-calendar-tree-categories {
   border-left: 1px solid color-mix(in srgb, var(--chronicle-calendar-color) 38%, var(--border-soft));
   margin: 0 0 4px 24px;
   padding-left: 5px;
 }
 
-.chronicle-calendar-tree-file {
+.chronicle-calendar-tree-category {
   display: grid;
   font-weight: 450;
-  grid-template-columns: 10px minmax(0, 1fr);
+  grid-template-columns: 10px minmax(0, 1fr) auto 18px;
   min-height: 30px;
   padding: 3px 7px 3px 3px;
 }
 
-.chronicle-calendar-tree-branch {
-  border-bottom: 1px solid color-mix(in srgb, var(--chronicle-calendar-color) 42%, var(--border-soft));
-  height: 1px;
+.chronicle-calendar-tree-category-marker {
+  background: var(--chronicle-tree-category-color);
+  border-radius: 50%;
+  height: 8px;
   width: 8px;
+}
+
+.chronicle-calendar-tree-visibility {
+  font-size: 9px;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0;
+}
+
+.chronicle-calendar-tree-category-visibility {
+  color: var(--text-3);
+  font-size: 9px;
+  text-align: center;
+}
+
+.chronicle-calendar-tree-group--hidden .chronicle-calendar-tree-calendar,
+.chronicle-calendar-tree-group--hidden .chronicle-calendar-tree-visibility,
+.chronicle-calendar-tree-category--hidden {
+  opacity: 0.48;
+}
+
+.chronicle-calendar-tree-visibility:disabled {
+  cursor: default;
+  opacity: 0.25;
 }
 
 .chronicle-calendar-tree-empty,

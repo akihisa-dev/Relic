@@ -8,42 +8,49 @@ afterEach(cleanup);
 
 const nodes = [{
   calendarName: "基準暦",
-  files: [{ fileName: "王都.md", path: "地誌/王都.md" }],
+  categories: [{ count: 1, hue: 20, key: "category:地誌", label: "地誌", visibilityKey: "base-place" }],
   hue: null
 }, {
   calendarName: "灰王暦",
-  files: [{ fileName: "七門攻防.md", path: "戦役/七門攻防.md" }],
+  categories: [{ count: 2, hue: 137, key: "category:戦役", label: "戦役", visibilityKey: "ash-war" }],
   hue: 137
 }];
 
-describe("ChronicleCalendarTreeRail", () => {
-  it("暦から所属ファイルをたどり、ファイルを開く", () => {
-    const onOpenFile = vi.fn();
-    render(
-      <I18nProvider language="ja">
-        <ChronicleCalendarTreeRail collapsed={false} nodes={nodes} onCollapsedChange={vi.fn()} onOpenFile={onOpenFile} />
-      </I18nProvider>
-    );
+function renderRail(overrides: Partial<Parameters<typeof ChronicleCalendarTreeRail>[0]> = {}) {
+  const props = {
+    baseCalendarName: "基準暦",
+    collapsed: false,
+    hiddenCategoryKeys: new Set<string>(),
+    nodes,
+    onCalendarVisibilityChange: vi.fn(),
+    onCategoryVisibilityChange: vi.fn(),
+    onCollapsedChange: vi.fn(),
+    visibleCalendarNames: new Set(["基準暦", "灰王暦"]),
+    ...overrides
+  };
+  render(<I18nProvider language="ja"><ChronicleCalendarTreeRail {...props} /></I18nProvider>);
+  return props;
+}
 
-    expect(screen.getByText("基準暦")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "七門攻防.md" }));
-    expect(onOpenFile).toHaveBeenCalledWith("戦役/七門攻防.md");
+describe("ChronicleCalendarTreeRail", () => {
+  it("暦から所属カテゴリをたどり、それぞれの表示を切り替える", () => {
+    const props = renderRail();
+    fireEvent.click(screen.getByRole("button", { name: "戦役カテゴリを非表示" }));
+    expect(props.onCategoryVisibilityChange).toHaveBeenCalledWith("ash-war", false);
+    fireEvent.click(screen.getByRole("button", { name: "灰王暦を非表示" }));
+    expect(props.onCalendarVisibilityChange).toHaveBeenCalledWith("灰王暦", false);
 
     fireEvent.click(screen.getByRole("button", { name: "灰王暦を折りたたむ" }));
-    expect(screen.queryByRole("button", { name: "七門攻防.md" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "戦役カテゴリを非表示" })).not.toBeInTheDocument();
   });
 
-  it("暦名とファイル名を検索し、Escapeで解除する", () => {
-    render(
-      <I18nProvider language="ja">
-        <ChronicleCalendarTreeRail collapsed={false} nodes={nodes} onCollapsedChange={vi.fn()} onOpenFile={vi.fn()} />
-      </I18nProvider>
-    );
-    const search = screen.getByRole("searchbox", { name: "暦・ファイルを検索" });
-    fireEvent.change(search, { target: { value: "七門" } });
-    expect(screen.queryByText("王都.md")).not.toBeInTheDocument();
-    expect(screen.getByText("七門攻防.md")).toBeInTheDocument();
+  it("暦名とカテゴリ名を検索し、Escapeで解除する", () => {
+    renderRail();
+    const search = screen.getByRole("searchbox", { name: "暦・カテゴリを検索" });
+    fireEvent.change(search, { target: { value: "戦役" } });
+    expect(screen.queryByText("地誌")).not.toBeInTheDocument();
+    expect(screen.getByText("戦役")).toBeInTheDocument();
     fireEvent.keyDown(search, { key: "Escape" });
-    expect(screen.getByText("王都.md")).toBeInTheDocument();
+    expect(screen.getByText("地誌")).toBeInTheDocument();
   });
 });

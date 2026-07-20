@@ -19,6 +19,7 @@ import {
 import {
   chronicleCategoryKey
 } from "./chronicleCategoryModel";
+import { chronicleEntryCategoryVisibilityKey } from "./chronicleCalendarTreeModel";
 import {
   baseYearToCalendarYear,
   defaultChronicleCalendarSettings,
@@ -56,7 +57,8 @@ export function drawChronicleCanvas(
   theme: ChronicleCanvasTheme,
   categoryHues: ReadonlyMap<string, number> = new Map(),
   calendarSettings?: ChronicleCalendarSettings,
-  calendarHues: ReadonlyMap<string, number> = new Map()
+  calendarHues: ReadonlyMap<string, number> = new Map(),
+  hiddenCategoryKeys: ReadonlySet<string> = new Set()
 ): ChronicleCanvasDrawResult {
   context.save();
   context.clearRect(0, 0, viewportWidth, viewportHeight);
@@ -70,6 +72,7 @@ export function drawChronicleCanvas(
   const baseCalendarName = calendarSettings?.baseCalendarName ?? defaultChronicleCalendarSettings.baseCalendarName;
   const visibleCalendarNames = new Set(calendarSettings?.visibleCalendarNames ?? [baseCalendarName]);
   const drawVisibleItem = (item: ChronicleCanvasItem): void => {
+    if (hiddenCategoryKeys.has(chronicleEntryCategoryVisibilityKey(item.entry, baseCalendarName))) return;
     if (!isItemVisible(item, camera, viewportWidth, viewportHeight)) return;
     const hue = categoryHues.get(chronicleCategoryKey(item.entry.category));
     const itemColor = hue === undefined

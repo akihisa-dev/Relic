@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import type { ChartEntry } from "../shared/ipc";
-import { createChronicleCalendarHues, createChronicleCalendarTree } from "./chronicleCalendarTreeModel";
+import {
+  chronicleCalendarCategoryVisibilityKey,
+  createChronicleCalendarHues,
+  createChronicleCalendarTree
+} from "./chronicleCalendarTreeModel";
 
-function entry(fileName: string, path: string, calendarName?: string, chronicleEntryIndex = 0): ChartEntry {
+function entry(fileName: string, path: string, calendarName?: string, category?: string): ChartEntry {
   return {
     ...(calendarName ? { calendarName } : {}),
-    chronicleEntryIndex,
+    ...(category ? { category } : {}),
+    chronicleEntryIndex: 0,
     endLabel: "1",
     endPoint: { month: null, year: 1 },
     endValue: 1,
@@ -28,18 +33,27 @@ const settings = {
 };
 
 describe("chronicleCalendarTreeModel", () => {
-  it("暦を親、重複を除いた所属ファイルを子として設定順に構成する", () => {
+  it("暦を親、所属カテゴリを子として件数付きで設定順に構成する", () => {
     const tree = createChronicleCalendarTree([
-      entry("王都.md", "王都.md"),
-      entry("七門攻防.md", "戦役/七門攻防.md", "灰王暦"),
-      entry("七門攻防.md", "戦役/七門攻防.md", "灰王暦", 1),
-      entry("対象外.md", "対象外.md", "未知暦")
-    ], settings);
+      entry("王都.md", "王都.md", undefined, "地誌"),
+      entry("七門攻防.md", "戦役/七門攻防.md", "灰王暦", "戦役"),
+      entry("終戦.md", "戦役/終戦.md", "灰王暦", "戦役"),
+      entry("記録.md", "記録.md", "灰王暦"),
+      entry("対象外.md", "対象外.md", "未知暦", "人物")
+    ], settings, ["戦役", "地誌"], "未分類");
 
     expect(tree.map((node) => node.calendarName)).toEqual(["基準暦", "灰王暦", "聖鐘暦"]);
-    expect(tree[0].files).toEqual([{ fileName: "王都.md", path: "王都.md" }]);
-    expect(tree[1].files).toEqual([{ fileName: "七門攻防.md", path: "戦役/七門攻防.md" }]);
-    expect(tree[2].files).toEqual([]);
+    expect(tree[0].categories.map(({ count, label }) => ({ count, label }))).toEqual([{ count: 1, label: "地誌" }]);
+    expect(tree[1].categories.map(({ count, label }) => ({ count, label }))).toEqual([
+      { count: 2, label: "戦役" },
+      { count: 1, label: "未分類" }
+    ]);
+    expect(tree[2].categories).toEqual([]);
+  });
+
+  it("暦とカテゴリの組を表示状態の識別子にする", () => {
+    expect(chronicleCalendarCategoryVisibilityKey("基準暦", "category:戦役"))
+      .not.toBe(chronicleCalendarCategoryVisibilityKey("灰王暦", "category:戦役"));
   });
 
   it("追加暦名ごとに設定順へ依存しない異なる色相を割り当てる", () => {
