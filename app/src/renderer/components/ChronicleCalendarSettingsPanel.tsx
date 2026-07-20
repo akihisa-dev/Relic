@@ -96,24 +96,11 @@ export function ChronicleCalendarSettingsPanel({
         <button aria-label={t("chronicle.closeCalendarSettings")} onClick={onClose} type="button">×</button>
       </header>
       <div className="chronicle-calendar-settings-content">
-        <h3>{t("chronicle.visibleCalendarSurfaces")}</h3>
-        <div className="chronicle-calendar-visible-list">
-          {names.map((name) => (
-            <label key={name}>
-              <input
-                checked={name === draft.baseCalendarName || draft.visibleCalendarNames.includes(name)}
-                disabled={name === draft.baseCalendarName}
-                onChange={() => toggleVisible(name)}
-                type="checkbox"
-              />
-              <span>{name}</span>
-            </label>
-          ))}
-        </div>
         <h3>{t("chronicle.baseCalendar")}</h3>
-        <label className="chronicle-calendar-field">
-          <span>{t("chronicle.calendarName")}</span>
+        <div className="chronicle-calendar-base-card">
+          <input aria-label={draft.baseCalendarName} checked disabled readOnly type="checkbox" />
           <input
+            aria-label={t("chronicle.calendarName")}
             onBlur={() => save(draft)}
             onChange={(event) => {
               const previous = draft.baseCalendarName;
@@ -126,7 +113,8 @@ export function ChronicleCalendarSettingsPanel({
             }}
             value={draft.baseCalendarName}
           />
-        </label>
+          <span className="chronicle-calendar-always-visible">{t("chronicle.alwaysVisible")}</span>
+        </div>
         <h3>{t("chronicle.otherCalendars")}</h3>
         <div className="chronicle-calendar-definition-list">
           {draft.calendars.map((calendar, index) => {
@@ -142,58 +130,85 @@ export function ChronicleCalendarSettingsPanel({
               : 0;
             return (
             <div className="chronicle-calendar-definition" key={index}>
-              <input
-                aria-label={t("chronicle.calendarName")}
-                disabled={usedNames.has(calendar.name)}
-                onBlur={() => save(draft)}
-                onChange={(event) => {
-                  const previous = calendar.name;
-                  const name = event.target.value;
-                  setDraft({
-                    ...draft,
-                    calendars: draft.calendars.map((item, itemIndex) => itemIndex === index ? { ...item, name } : item),
-                    visibleCalendarNames: draft.visibleCalendarNames.map((candidate) => candidate === previous ? name : candidate)
-                  });
-                }}
-                value={calendar.name}
-              />
-              <label>
-                <span>{t("chronicle.yearOneEqualsBase")}</span>
+              <div className="chronicle-calendar-definition-header">
                 <input
-                  inputMode="numeric"
-                  onBlur={() => save(draft)}
-                  onChange={(event) => setDraft({
-                    ...draft,
-                    calendars: draft.calendars.map((item, itemIndex) => (
-                      itemIndex === index ? { ...item, yearOne: event.target.value } : item
-                    ))
-                  })}
-                  pattern="-?[0-9]*"
-                  type="text"
-                  value={calendar.yearOne}
+                  aria-label={calendar.name}
+                  checked={draft.visibleCalendarNames.includes(calendar.name)}
+                  onChange={() => toggleVisible(calendar.name)}
+                  type="checkbox"
                 />
-                <span>{t("chronicle.yearSuffix")}</span>
-              </label>
-              <div className="chronicle-calendar-range-fields">
+                <input
+                  aria-label={t("chronicle.calendarName")}
+                  disabled={usedNames.has(calendar.name)}
+                  onBlur={() => save(draft)}
+                  onChange={(event) => {
+                    const previous = calendar.name;
+                    const name = event.target.value;
+                    setDraft({
+                      ...draft,
+                      calendars: draft.calendars.map((item, itemIndex) => itemIndex === index ? { ...item, name } : item),
+                      visibleCalendarNames: draft.visibleCalendarNames.map((candidate) => candidate === previous ? name : candidate)
+                    });
+                  }}
+                  value={calendar.name}
+                />
+                <button
+                  aria-label={t("chronicle.removeCalendar", { name: calendar.name })}
+                  disabled={usedNames.has(calendar.name)}
+                  onClick={() => save({
+                    ...draft,
+                    calendars: draft.calendars.filter((_, itemIndex) => itemIndex !== index),
+                    visibleCalendarNames: draft.visibleCalendarNames.filter((name) => name !== calendar.name)
+                  })}
+                  type="button"
+                >{t("common.delete")}</button>
+              </div>
+              <div className="chronicle-calendar-definition-fields">
+                <label>
+                  <span>{t("chronicle.yearOneEqualsBase")}</span>
+                  <span className="chronicle-calendar-number-field">
+                    <input
+                      aria-label={t("chronicle.yearOneEqualsBase")}
+                      inputMode="numeric"
+                      onBlur={() => save(draft)}
+                      onChange={(event) => setDraft({
+                        ...draft,
+                        calendars: draft.calendars.map((item, itemIndex) => (
+                          itemIndex === index ? { ...item, yearOne: event.target.value } : item
+                        ))
+                      })}
+                      pattern="-?[0-9]*"
+                      type="text"
+                      value={calendar.yearOne}
+                    />
+                    <span>{t("chronicle.yearSuffix")}</span>
+                  </span>
+                </label>
                 <label>
                   <span>{t("chronicle.surfaceEndYear")}</span>
-                  <input
-                    inputMode="numeric"
-                    onBlur={() => save(draft)}
-                    onChange={(event) => setDraft({
-                      ...draft,
-                      calendars: draft.calendars.map((item, itemIndex) => (
-                        itemIndex === index ? { ...item, rangeEnd: event.target.value } : item
-                      ))
-                    })}
-                    pattern="-?[0-9]*"
-                    type="text"
-                    value={calendar.rangeEnd}
-                  />
+                  <span className="chronicle-calendar-number-field">
+                    <input
+                      aria-label={t("chronicle.surfaceEndYear")}
+                      inputMode="numeric"
+                      onBlur={() => save(draft)}
+                      onChange={(event) => setDraft({
+                        ...draft,
+                        calendars: draft.calendars.map((item, itemIndex) => (
+                          itemIndex === index ? { ...item, rangeEnd: event.target.value } : item
+                        ))
+                      })}
+                      pattern="-?[0-9]*"
+                      type="text"
+                      value={calendar.rangeEnd}
+                    />
+                    <span>{t("chronicle.yearSuffix")}</span>
+                  </span>
                 </label>
               </div>
-              {!calendar.rangeEnd && !calendar.isNew ? (
-                <p className="chronicle-calendar-range-status">{t("chronicle.surfaceRangeUnset")}</p>
+              {!calendar.rangeEnd ? (
+                <p className="chronicle-calendar-range-status">
+                  {t(calendar.isNew ? "chronicle.surfaceRangeRequired" : "chronicle.surfaceRangeUnset")}
+                </p>
               ) : range === null ? (
                 <p className="chronicle-calendar-range-status chronicle-calendar-range-status--error">{t("chronicle.surfaceRangeInvalid")}</p>
               ) : overflowCount > 0 ? (
@@ -201,21 +216,12 @@ export function ChronicleCalendarSettingsPanel({
                   {t("chronicle.surfaceRangeOverflow", { count: overflowCount })}
                 </p>
               ) : null}
-              <button
-                aria-label={t("chronicle.removeCalendar", { name: calendar.name })}
-                disabled={usedNames.has(calendar.name)}
-                onClick={() => save({
-                  ...draft,
-                  calendars: draft.calendars.filter((_, itemIndex) => itemIndex !== index),
-                  visibleCalendarNames: draft.visibleCalendarNames.filter((name) => name !== calendar.name)
-                })}
-                type="button"
-              >×</button>
             </div>
             );
           })}
         </div>
         <button
+          aria-label={t("chronicle.addCalendar")}
           className="chronicle-calendar-add"
           onClick={() => {
             const baseName = t("chronicle.newCalendar");

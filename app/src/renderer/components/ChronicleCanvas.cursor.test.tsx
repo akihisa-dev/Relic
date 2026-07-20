@@ -52,7 +52,7 @@ describe("ChronicleCanvas cursor", () => {
     fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
     expect(screen.getByText(/終了年未設定/)).toBeInTheDocument();
     expect(screen.queryByLabelText("暦面の開始年")).not.toBeInTheDocument();
-    const end = screen.getByLabelText("暦面の終了年");
+    const end = screen.getByLabelText("終了年");
     fireEvent.change(end, { target: { value: "0" } });
     fireEvent.blur(end);
     expect(screen.getByText("終了年を1以上の整数で入力してください。")).toBeInTheDocument();
@@ -62,6 +62,20 @@ describe("ChronicleCanvas cursor", () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
       calendars: [{ name: "別暦", range: { end: 100, start: 1 }, yearOne: 450 }]
     }));
+  });
+
+  it("追加直後は未入力をエラーにせず、終了年の入力を案内する", () => {
+    render(
+      <I18nProvider language="ja">
+        <ChronicleCanvas entries={[]} onOpenFile={vi.fn()} />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
+    fireEvent.click(screen.getByRole("button", { name: "暦を追加" }));
+
+    expect(screen.getByText("終了年を入力すると暦面が登録されます。")).toBeInTheDocument();
+    expect(screen.queryByText("終了年を1以上の整数で入力してください。")).not.toBeInTheDocument();
   });
 
   it("暦面の設定範囲外にある項目件数を表示する", () => {
@@ -164,7 +178,7 @@ describe("ChronicleCanvas cursor", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
-    const yearOneInput = screen.getByLabelText(/1年 ＝ 基準暦/);
+    const yearOneInput = screen.getByLabelText("基準暦での開始年");
     fireEvent.change(yearOneInput, { target: { value: "" } });
     expect(yearOneInput).toHaveValue("");
     fireEvent.change(yearOneInput, { target: { value: "-" } });
