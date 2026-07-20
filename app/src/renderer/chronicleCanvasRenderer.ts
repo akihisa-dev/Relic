@@ -30,6 +30,8 @@ const itemLabelFontFamily = "-apple-system, BlinkMacSystemFont, sans-serif";
 const itemLabelFontSize = 12;
 const hoveredItemLabelFontSize = 14;
 const hoveredItemGlowBlur = 10;
+const itemLabelGap = 8;
+const itemRangeFont = "650 11px -apple-system, BlinkMacSystemFont, sans-serif";
 
 export interface ChronicleCanvasTheme {
   background: string;
@@ -311,36 +313,42 @@ function drawItem(
   context.globalAlpha = renderedOpacity;
   context.fillStyle = theme.text;
   const labelFontSize = hovered ? hoveredItemLabelFontSize : itemLabelFontSize;
-  context.font = `750 ${labelFontSize}px ${itemLabelFontFamily}`;
+  const itemNameFont = `750 ${labelFontSize}px ${itemLabelFontFamily}`;
+  context.font = itemNameFont;
   context.textAlign = "center";
   context.textBaseline = "middle";
   const measuredLabelWidth = hovered
     ? context.measureText(item.entry.fileName).width
     : item.labelTextWidth ?? (item.labelTextWidth = context.measureText(item.entry.fileName).width);
+  context.font = itemRangeFont;
+  const measuredRangeWidth = context.measureText(item.rangeLabel).width;
+  const combinedLabelWidth = measuredLabelWidth + itemLabelGap + measuredRangeWidth;
   const hoveredLabel = hovered && hoveredPoint;
   const centerX = Math.max(
-    measuredLabelWidth / 2 + 12,
-    Math.min(viewportWidth - measuredLabelWidth / 2 - 12, hoveredLabel ? hoveredPoint.x : naturalCenterX)
+    combinedLabelWidth / 2 + 12,
+    Math.min(viewportWidth - combinedLabelWidth / 2 - 12, hoveredLabel ? hoveredPoint.x : naturalCenterX)
   );
   const labelY = hoveredLabel
     ? Math.max(
       chronicleCanvasYearHeaderHeight(camera.scale) + 14,
-      Math.min(viewportHeight - 42, hoveredPoint.y - CHRONICLE_CANVAS_ITEM_LABEL_OFFSET)
+      Math.min(viewportHeight - 24, hoveredPoint.y - CHRONICLE_CANVAS_ITEM_LABEL_OFFSET)
     )
     : defaultLabelY;
-  const rangeY = labelY + 18;
-  context.fillText(item.entry.fileName, centerX, labelY);
+  const nameX = centerX - combinedLabelWidth / 2 + measuredLabelWidth / 2;
+  const rangeX = centerX + combinedLabelWidth / 2 - measuredRangeWidth / 2;
+  context.font = itemNameFont;
+  context.fillText(item.entry.fileName, nameX, labelY);
   context.fillStyle = theme.mutedText;
-  context.font = "650 11px -apple-system, BlinkMacSystemFont, sans-serif";
-  context.fillText(item.rangeLabel, centerX, rangeY);
+  context.font = itemRangeFont;
+  context.fillText(item.rangeLabel, rangeX, labelY);
   context.restore();
 
   return {
     height: CHRONICLE_CANVAS_LABEL_HEIGHT,
     itemId: item.id,
     opacity: baseOpacity,
-    width: measuredLabelWidth + 12,
-    x: centerX - measuredLabelWidth / 2 - 6,
+    width: combinedLabelWidth + 12,
+    x: centerX - combinedLabelWidth / 2 - 6,
     y: labelY - CHRONICLE_CANVAS_LABEL_HEIGHT / 2
   };
 }

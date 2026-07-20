@@ -46,7 +46,7 @@ describe("chronicleCanvasRenderer", () => {
     expect(yearLabels.map((call) => call.text)).not.toContain("105");
   });
 
-  it("項目名と年を節点の上へ2段で描画する", () => {
+  it("項目名、年の順で節点の上へ1行に描画する", () => {
     const scene = createChronicleCanvasScene([entry("A", "a.md", 100)], () => 0.5);
     const camera = createChronicleCanvasCamera();
     initializeChronicleCanvasCamera(camera, scene, 800, 400);
@@ -64,11 +64,12 @@ describe("chronicleCanvasRenderer", () => {
     const itemY = worldToCanvas({ x: scene.items[0].x, y: scene.items[0].y }, camera).y;
     const nameLabel = fillTextCalls.find((call) => call.text === "A")!;
     const rangeLabel = fillTextCalls.find((call) => call.text === "100" && call.font.startsWith("650 11px"))!;
-    expect(nameLabel.y).toBeLessThan(rangeLabel.y);
+    expect(nameLabel.x).toBeLessThan(rangeLabel.x);
+    expect(nameLabel.y).toBe(rangeLabel.y);
     expect(rangeLabel.y).toBeLessThan(itemY);
   });
 
-  it("ホバー中も項目名と年をポインターの上側へまとめて描画する", () => {
+  it("ホバー中も項目名、年の順でポインターの上側へ1行に描画する", () => {
     const scene = createChronicleCanvasScene([entry("A", "a.md", 100)], () => 0.5);
     const camera = createChronicleCanvasCamera();
     initializeChronicleCanvasCamera(camera, scene, 800, 400);
@@ -93,16 +94,16 @@ describe("chronicleCanvasRenderer", () => {
       }
     );
 
-    expect(fillTextCalls.find((call) => call.text === "A")).toMatchObject({
+    const hoveredName = fillTextCalls.find((call) => call.text === "A")!;
+    const hoveredRange = fillTextCalls.find((call) => call.text === "100" && call.font.startsWith("650 11px"))!;
+    expect(hoveredName).toMatchObject({
       font: "750 14px -apple-system, BlinkMacSystemFont, sans-serif",
       text: "A",
-      x: hoveredPoint.x,
-      y: hoveredPoint.y - 38
+      y: hoveredPoint.y - 24
     });
-    expect(fillTextCalls.find((call) => call.text === "100" && call.font.startsWith("650 11px"))).toMatchObject({
-      x: hoveredPoint.x,
-      y: hoveredPoint.y - 20
-    });
+    expect(hoveredRange.y).toBe(hoveredName.y);
+    expect(hoveredName.x).toBeLessThan(hoveredPoint.x);
+    expect(hoveredRange.x).toBeGreaterThan(hoveredPoint.x);
   });
 
   it("カテゴリごとの安定した色で項目を描画する", () => {
