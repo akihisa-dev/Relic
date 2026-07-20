@@ -1,6 +1,6 @@
 ---
 name: relic-change-ui
-description: RelicのUI、デザイン、画面構成、操作感、表示状態を実装または修正し、関連仕様、状態別テスト、開発版での実画面確認、説明画像まで安全に整合させる。見た目、レイアウト、テーマ、hover・focus・drag・zoom・pointerup・pointercancel・lost capture・狭幅、アニメーション、README掲載画像の変更依頼に使う。UI用語・日英翻訳はrelic-change-localization、グラフ・クロニクル固有操作はrelic-change-graph・relic-change-chronicle、機能固有の状態遷移やデータ規則は対応する機能変更Skillを優先または併用し、調査・レビューだけでは読み取り専用、Issue起点はrelic-issue、コミットだけはrelic-commitを優先する。
+description: RelicのUI、デザイン、画面構成、操作感、表示状態を実装または修正し、関連仕様と状態別テストを安全に整合させる。開発版での実画面確認と説明画像の取得はユーザーが明示した場合だけ扱う。見た目、レイアウト、テーマ、hover・focus・drag・zoom・pointerup・pointercancel・lost capture・狭幅、アニメーション、README掲載画像の変更依頼に使う。UI用語・日英翻訳はrelic-change-localization、グラフ・クロニクル固有操作はrelic-change-graph・relic-change-chronicle、機能固有の状態遷移やデータ規則は対応する機能変更Skillを優先または併用し、調査・レビューだけでは読み取り専用、Issue起点はrelic-issue、コミットだけはrelic-commitを優先する。
 ---
 
 # Relic UI Change
@@ -37,10 +37,10 @@ description: RelicのUI、デザイン、画面構成、操作感、表示状態
 
 1. 状態遷移や操作を変えた場合はReact Testing Libraryの回帰テスト、計算や座標を変えた場合はmodelの単体テストを追加または更新する。pointer操作では通常の `pointerup`、`pointercancel`、`lostpointercapture`、中断後の再操作を分け、副作用と一時状態の解放を確認する。壊れやすいピクセル値だけをテストへ固定しない。
 2. 仕様分岐や状態遷移を追加・変更した場合は対象テストまたは回帰テストを追加し、`app/` で `pnpm verify` を実行する。軽微な見た目だけの変更は対象rendererテストと `pnpm typecheck` を実行し、影響が広い場合は `pnpm verify`、構造境界に触れた場合は `pnpm architecture:check` も実行する。
-3. テスト成功だけで視覚的な完了と判断しない。見た目、操作感、テーマ、Canvas、プラットフォーム差など自動テストで判断できない変更は実画面で確認する。
-4. 実画面確認が必要な場合は `$relic-test-development-app` に従い、その作業中に起動したことを証明できる開発版だけを使う。
-5. 実画面では受入条件に選んだ状態を確認し、必要なら表示、操作結果、計算済みスタイル、コンソールエラーを記録する。確認していない状態を確認済みと報告しない。
-6. 表示と操作が確定してから、ユーザーから見える仕様を `docs/design/DESIGN.md` と該当機能文書へ同期する。README掲載画像が現行表示を説明できなくなる場合だけ、実際の開発版から画像を更新する。
+3. テスト成功だけで、見た目、操作感、テーマ、Canvas、プラットフォーム差など自動テストで判断できない状態まで確認済みと判断しない。実画面確認の指示がなければ未確認として扱うが、完了の阻害条件にはしない。
+4. ユーザーが実画面確認を明示的に指示した場合だけ `$relic-test-development-app` に従い、その作業中に起動したことを証明できる開発版を使う。
+5. 実画面確認を指示された場合は、受入条件に選んだ状態を確認し、必要なら表示、操作結果、計算済みスタイル、コンソールエラーを記録する。確認していない状態を確認済みと報告しない。
+6. ユーザーから見える仕様を、実装と自動検証に基づいて `docs/design/DESIGN.md` と該当機能文書へ同期する。README掲載画像の更新は、ユーザーが実アプリのスクリーンショット取得も明示した場合だけ行う。
 7. `git diff --check` と全差分を確認し、意図しない画像、生成物、絶対パス、他製品名がないことを確かめる。
 
 ## 完了する

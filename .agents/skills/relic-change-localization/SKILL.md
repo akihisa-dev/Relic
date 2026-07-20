@@ -39,7 +39,7 @@ description: Relicの日本語・英語UI文言、用語、翻訳キー、placeh
 3. 日本語と英語で、文字列補間、改行、句読点、複数行、空値、長いファイル名や数値を確認する。
 4. 英語の長い文言と日本語の折返しについて、狭い幅、button、tab、menu、tooltip、dialog、aria nameの影響を選ぶ。
 5. 文言変更だけを理由に固定幅を増やさず、短いUI名、自然な折返し、既存layoutの順に解決する。
-6. 見切れや操作性を自動テストで判断できない場合は `$relic-change-ui` と `$relic-test-development-app` に従い、その作業で起動した開発版だけを確認する。
+6. ユーザーが実画面確認を明示的に指示した場合だけ、見切れや操作性を `$relic-change-ui` と `$relic-test-development-app` に従って、その作業で起動した開発版で確認する。
 
 ## 検証する
 

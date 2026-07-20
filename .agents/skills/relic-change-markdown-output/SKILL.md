@@ -41,7 +41,7 @@ description: RelicのMarkdownプレビューHTML、ページプレビュー用HT
 3. output handlerとSVG sanitizerで不正入力、サイズ上限、取消、安全保存、window制限、エラー秘匿を確認する。
 4. IPC契約を変えた場合はshared型、preload、client、handler登録と契約テストを同じ作業で更新する。
 5. Markdown parser・sanitizerの仕様分岐、ファイル出力、IPC入力検証を追加・変更した場合は対象テストまたは回帰テストを追加し、`app/` で `pnpm verify` を実行する。その他の変更でも対象node・rendererテストと `pnpm typecheck` を実行し、影響が広い場合は `pnpm verify` を実行する。
-6. 出力結果の見た目、改ページ、出力ウィンドウ、CSP、PDFオプション、HTML読込経路を変えた場合は、一時データを使う開発版から実PDFを確認する。
+6. 出力結果の見た目、改ページ、出力ウィンドウ、CSP、PDFオプション、HTML読込経路を変え、かつユーザーが実画面確認を明示的に指示した場合だけ、一時データを使う開発版から実PDFを確認する。
 7. `git diff --check` と生成HTML・SVG差分を確認し、script、外部依存、編集UI、機密情報がないことを確かめる。
 
 ## 完了する

@@ -46,7 +46,7 @@ description: Relicのmain・preload・renderer間のElectron境界、型付きIP
 3. パス入力では絶対パス、`..`、NUL文字、外部を指すシンボリックリンクを必要に応じて確認する。
 4. ウィンドウ変更ではwindow options、security、終了保護、出力ウィンドウの対象テストを実行する。
 5. IPC入力検証、handlerの仕様分岐、ファイル操作へ触れた場合は、対象テストまたは回帰テストを追加し、`app/` で `pnpm verify` を実行する。その他の境界変更でも `pnpm architecture:check`、`pnpm typecheck` と対象のNode・rendererテストを実行し、影響が広い場合は `pnpm verify` を実行する。
-6. lifecycleの実確認が必要なら、その作業で起動した開発版と一時userDataだけを使う。
+6. ユーザーがlifecycleの実確認を明示的に指示した場合だけ、その作業で起動した開発版と一時userDataを使う。
 7. ユーザーから見える契約や安全条件を変えた場合は、関連機能文書とarchitectureを同期する。
 8. `git diff --check` と全差分を確認し、秘密情報、絶対パス、一時ログを残さない。
 

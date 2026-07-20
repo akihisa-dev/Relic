@@ -15,7 +15,7 @@
 | 設定・保存済みdata | schema version、既定値、移行、atomic write | 旧形式読込、競合、失敗後、再起動 |
 | workspace・file | root境界、path規則、外部変更、保存待ち | 一時directory、競合、切替、復旧 |
 | IPC・公開型 | channel、method、input/output、limits | shared・preload・main契約検査 |
-| UI・操作 | 画面構成、focus、mouse、keyboard、drag | 状態遷移test、必要なら開発版 |
+| UI・操作 | 画面構成、focus、mouse、keyboard、drag | 状態遷移test、明示指示時だけ開発版 |
 | CSS・asset | import順、selector責務、font・image参照 | build出力、見た目、残存参照 |
 | 性能 | fixture、fingerprint、warmup、回数、I/O | 同条件の中央値、内訳、正しさ |
 | 配布 | ASAR entry、resources、OS差、legal files | safe build/check、内容report |
