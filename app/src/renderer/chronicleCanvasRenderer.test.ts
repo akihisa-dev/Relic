@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ChartEntry } from "../shared/ipc";
 import {
+  CHRONICLE_CANVAS_MIN_VERTICAL_SCALE,
   chronicleCanvasYearLabelY,
   createChronicleCanvasCamera,
   createChronicleCanvasScene,
@@ -217,6 +218,32 @@ describe("chronicleCanvasRenderer", () => {
       fillStyle: "hsl(210 68% 40%)"
     });
     expect(fillTextCalls.some((call) => call.text === "Kingdom")).toBe(true);
+  });
+
+  it("最小倍率でも暦面の高さを安全な縦倍率で描画する", () => {
+    const settings = {
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "王国暦", range: { end: 40, start: 1 }, yearOne: 100 }],
+      visibleCalendarNames: ["基準暦", "王国暦"]
+    };
+    const scene = createChronicleCanvasScene([
+      { ...entry("First", "first.md", 110), calendarName: "王国暦" },
+      { ...entry("Second", "second.md", 120), calendarName: "王国暦" }
+    ], () => 0.5, 10, settings);
+    const camera = { ...createChronicleCanvasCamera(), panX: 0, panY: 0, scale: 0.08 };
+    const strokeRectCalls: Array<{ height: number; width: number; x: number; y: number }> = [];
+
+    drawChronicleCanvas(createCanvasContext([], [], strokeRectCalls), scene, camera, null, null, 800, 500, {
+      background: "#fff",
+      categoryLightness: 40,
+      categorySaturation: 68,
+      mutedText: "#666",
+      text: "#111"
+    }, new Map(), settings);
+
+    expect(strokeRectCalls[0].height).toBeCloseTo(
+      scene.surfaces[0].height * CHRONICLE_CANVAS_MIN_VERTICAL_SCALE
+    );
   });
 
   it("追加暦の年ラベルを基準暦と同じ画面間隔で間引く", () => {

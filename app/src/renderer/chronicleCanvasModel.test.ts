@@ -12,6 +12,7 @@ import {
   chronicleCanvasPointerItemAtPoint,
   chronicleCanvasPointerMovedBeyondClickThreshold,
   chronicleCanvasTextOpacity,
+  chronicleCanvasVerticalScale,
   chronicleCanvasXToYear,
   chronicleCanvasYearToX,
   chronicleCanvasYearFontSize,
@@ -159,6 +160,35 @@ describe("chronicleCanvasModel", () => {
     expect(firstLabelTop).toBeGreaterThan(30);
     expect(itemScreenGaps.every((gap) => gap >= 60)).toBe(true);
     expect(lastRangeBottom).toBeLessThan((surfaceBottom - surfaceTop) * scale - 12);
+  });
+
+  it("最小倍率でも横軸だけを縮め、暦面の縦方向は安全間隔を保つ", () => {
+    const settings = {
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "王国暦", range: { end: 80, start: 1 }, yearOne: 100 }],
+      visibleCalendarNames: ["基準暦", "王国暦"]
+    };
+    const scene = createChronicleCanvasScene([
+      entry("First", "first.md", 100, 120, "王国暦"),
+      entry("Second", "second.md", 130, 140, "王国暦"),
+      entry("Third", "third.md", 150, 160, "王国暦")
+    ], () => 0.5, 10, settings);
+    const surface = scene.surfaces[0];
+    const items = scene.items
+      .filter((item) => item.calendarName === "王国暦")
+      .toSorted((left, right) => left.y - right.y);
+    const camera = { ...createChronicleCanvasCamera(), panX: 0, panY: 0, scale: 0.08 };
+    const surfaceTop = surface.y - surface.height / 2;
+    const surfaceTopOnCanvas = worldToCanvas({ x: 0, y: surfaceTop }, camera).y;
+    const firstItemOnCanvas = worldToCanvas({ x: items[0].x, y: items[0].y }, camera);
+    const secondItemOnCanvas = worldToCanvas({ x: items[1].x, y: items[1].y }, camera);
+
+    expect(chronicleCanvasVerticalScale(camera.scale)).toBe(0.4);
+    expect(firstItemOnCanvas.x).toBe(items[0].x * camera.scale);
+    expect(firstItemOnCanvas.y - CHRONICLE_CANVAS_ITEM_LABEL_OFFSET).toBeGreaterThan(
+      surfaceTopOnCanvas + 18 + CHRONICLE_CANVAS_LABEL_HEIGHT / 2
+    );
+    expect(secondItemOnCanvas.y - firstItemOnCanvas.y).toBeGreaterThanOrEqual(50);
   });
 
   it("宣言範囲外の項目を消さず警告状態へ含める", () => {

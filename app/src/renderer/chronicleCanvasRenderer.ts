@@ -2,6 +2,7 @@ import {
   CHRONICLE_CANVAS_ITEM_LABEL_OFFSET,
   CHRONICLE_CANVAS_LABEL_HEIGHT,
   chronicleCanvasTextOpacity,
+  chronicleCanvasVerticalScale,
   chronicleCanvasYearHeaderHeight,
   chronicleCanvasYearLabelY,
   chronicleCanvasYearFontSize,
@@ -200,7 +201,7 @@ function drawCalendarSurfaces(
   for (const surface of scene.surfaces) {
     if (!visibleCalendarNames.has(surface.calendarName)) continue;
     const top = worldToCanvas({ x: 0, y: surface.y - surface.height / 2 }, camera).y;
-    const height = surface.height * camera.scale;
+    const height = surface.height * chronicleCanvasVerticalScale(camera.scale);
     if (top > viewportHeight || top + height < chronicleCanvasYearHeaderHeight(camera.scale)) continue;
     const declaredStart = surface.startX === null ? 0 : worldToCanvas({ x: surface.startX, y: 0 }, camera).x;
     const declaredEnd = surface.endX === null ? viewportWidth : worldToCanvas({ x: surface.endX, y: 0 }, camera).x;
@@ -382,7 +383,7 @@ function isItemVisible(
 ): boolean {
   const position = worldToCanvas({ x: item.x, y: item.y }, camera);
   const halfWidth = item.width * camera.scale / 2 + 120;
-  const halfHeight = item.height * camera.scale / 2 + 60;
+  const halfHeight = item.height * chronicleCanvasVerticalScale(camera.scale) / 2 + 60;
   return position.x + halfWidth >= 0 && position.x - halfWidth <= viewportWidth && position.y + halfHeight >= 0 && position.y - halfHeight <= viewportHeight;
 }
 

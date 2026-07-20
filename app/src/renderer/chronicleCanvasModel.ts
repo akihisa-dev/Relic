@@ -8,6 +8,7 @@ import {
 export const CHRONICLE_CANVAS_MIN_SCALE = 0.08;
 export const CHRONICLE_CANVAS_MAX_SCALE = 2.4;
 export const CHRONICLE_CANVAS_INITIAL_SCALE = 0.82;
+export const CHRONICLE_CANVAS_MIN_VERTICAL_SCALE = 0.4;
 export const CHRONICLE_PERIOD_SCALES = [1, 5, 10, 50, 100, 500] as const;
 export const CHRONICLE_INITIAL_PERIOD_SCALE: ChroniclePeriodScale = 10;
 export const CHRONICLE_CANVAS_LABEL_HEIGHT = 20;
@@ -334,17 +335,23 @@ export function initializeChronicleCanvasCamera(
 }
 
 export function worldToCanvas(point: ChronicleCanvasPoint, camera: ChronicleCanvasCamera): ChronicleCanvasPoint {
+  const verticalScale = chronicleCanvasVerticalScale(camera.scale);
   return {
     x: point.x * camera.scale + camera.panX,
-    y: point.y * camera.scale + camera.panY
+    y: point.y * verticalScale + camera.panY
   };
 }
 
 export function canvasToWorld(point: ChronicleCanvasPoint, camera: ChronicleCanvasCamera): ChronicleCanvasPoint {
+  const verticalScale = chronicleCanvasVerticalScale(camera.scale);
   return {
     x: (point.x - camera.panX) / camera.scale,
-    y: (point.y - camera.panY) / camera.scale
+    y: (point.y - camera.panY) / verticalScale
   };
+}
+
+export function chronicleCanvasVerticalScale(scale: number): number {
+  return Math.max(CHRONICLE_CANVAS_MIN_VERTICAL_SCALE, scale);
 }
 
 export function zoomChronicleCanvasAtPoint(
@@ -357,7 +364,7 @@ export function zoomChronicleCanvasAtPoint(
   camera.targetScale = clampedScale;
   camera.scale = clampedScale;
   camera.panX = point.x - worldPoint.x * clampedScale;
-  camera.panY = point.y - worldPoint.y * clampedScale;
+  camera.panY = point.y - worldPoint.y * chronicleCanvasVerticalScale(clampedScale);
 }
 
 export function chronicleCanvasTextOpacity(scale: number): number {
