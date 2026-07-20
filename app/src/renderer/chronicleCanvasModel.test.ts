@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import type { ChartEntry } from "../shared/ipc";
 import {
+  CHRONICLE_CALENDAR_SURFACE_HEADER_INSET,
+  CHRONICLE_CANVAS_ITEM_LABEL_OFFSET,
+  CHRONICLE_CANVAS_LABEL_HEIGHT,
   canvasToWorld,
   changeChronicleCanvasPeriodScale,
   chronicleCanvasClickPath,
@@ -99,6 +102,35 @@ describe("chronicleCanvasModel", () => {
     expect(scene.items.map((item) => item.calendarName)).toEqual(["基準暦", "王国暦", "交易暦"]);
     expect(scene.items[1].y).toBeGreaterThan(scene.items[0].y);
     expect(scene.items[2].y).toBeGreaterThan(scene.items[1].y);
+  });
+
+  it("追加暦面の年ラベル帯より下へファイル項目を配置する", () => {
+    const settings = {
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "王国暦", range: { end: 40, start: 1 }, yearOne: 100 }],
+      visibleCalendarNames: ["基準暦", "王国暦"]
+    };
+    const scene = createChronicleCanvasScene([
+      entry("First", "first.md", 100, 140, "王国暦"),
+      entry("Second", "second.md", 110, 110, "王国暦")
+    ], () => 0.5, 10, settings);
+    const surface = scene.surfaces[0];
+    const surfaceTop = surface.y - surface.height / 2;
+    const surfaceItems = scene.items.filter((item) => item.calendarName === "王国暦");
+    const camera = createChronicleCanvasCamera();
+    initializeChronicleCanvasCamera(camera, scene, 800, 500);
+    const surfaceTopOnCanvas = worldToCanvas({ x: 0, y: surfaceTop }, camera).y;
+    const firstItemOnCanvas = worldToCanvas({ x: 0, y: Math.min(...surfaceItems.map((item) => item.y)) }, camera).y;
+
+    expect(surfaceItems.every((item) => (
+      item.minY >= surfaceTop + CHRONICLE_CALENDAR_SURFACE_HEADER_INSET - 8
+    ))).toBe(true);
+    expect(Math.min(...surfaceItems.map((item) => item.y))).toBeGreaterThan(
+      surfaceTop + CHRONICLE_CALENDAR_SURFACE_HEADER_INSET - 12
+    );
+    expect(firstItemOnCanvas - CHRONICLE_CANVAS_ITEM_LABEL_OFFSET).toBeGreaterThan(
+      surfaceTopOnCanvas + 18 + CHRONICLE_CANVAS_LABEL_HEIGHT / 2
+    );
   });
 
   it("宣言範囲外の項目を消さず警告状態へ含める", () => {

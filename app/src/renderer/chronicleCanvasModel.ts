@@ -12,6 +12,7 @@ export const CHRONICLE_PERIOD_SCALES = [1, 5, 10, 50, 100, 500] as const;
 export const CHRONICLE_INITIAL_PERIOD_SCALE: ChroniclePeriodScale = 10;
 export const CHRONICLE_CANVAS_LABEL_HEIGHT = 20;
 export const CHRONICLE_CANVAS_ITEM_LABEL_OFFSET = 22;
+export const CHRONICLE_CALENDAR_SURFACE_HEADER_INSET = 86;
 const CHRONICLE_CANVAS_TEXT_FADE_START_SCALE = 0.04;
 const CHRONICLE_CANVAS_TEXT_FADE_RANGE = 0.65;
 
@@ -117,9 +118,17 @@ export function createChronicleCanvasScene(
   const surfaces: ChronicleCalendarSurface[] = [];
   let surfaceTop = baseHeight / 2 + 72;
   for (const group of addedEntries) {
-    const height = Math.max(180, group.entries.length * (itemHeight + 24) + 88);
+    const height = Math.max(216, group.entries.length * (itemHeight + 24) + 124);
     const surfaceY = surfaceTop + height / 2;
-    const surfaceItems = createCanvasItems(group.entries, group.calendar.name, surfaceTop, height, random, periodScale);
+    const surfaceItems = createCanvasItems(
+      group.entries,
+      group.calendar.name,
+      surfaceTop,
+      height,
+      random,
+      periodScale,
+      CHRONICLE_CALENDAR_SURFACE_HEADER_INSET
+    );
     items.push(...surfaceItems);
     const declaredStartYear = group.calendar.range
       ? calendarYearToBaseYear(group.calendar.range.start, group.calendar.name, calendarSettings)
@@ -157,10 +166,12 @@ function createCanvasItems(
   top: number,
   height: number,
   random: () => number,
-  periodScale: ChroniclePeriodScale
+  periodScale: ChroniclePeriodScale,
+  topInset = 50
 ): ChronicleCanvasItem[] {
-  const usableHeight = Math.max(0, height - 100);
-  const verticalSlots = entries.map((_, index) => top + 50 + (entries.length <= 1 ? usableHeight / 2 : usableHeight * index / (entries.length - 1)));
+  const bottomInset = 50;
+  const usableHeight = Math.max(0, height - topInset - bottomInset);
+  const verticalSlots = entries.map((_, index) => top + topInset + (entries.length <= 1 ? usableHeight / 2 : usableHeight * index / (entries.length - 1)));
   return entries.map((entry, index) => {
     const startYear = entry.startPoint.year;
     const endYear = entry.endPoint.year;
@@ -183,7 +194,7 @@ function createCanvasItems(
       labelWidth,
       labelTextWidth: null,
       maxY: top + height - 42,
-      minY: top + 42,
+      minY: top + topInset - 8,
       rangeLabel,
       startX,
       startYear,
