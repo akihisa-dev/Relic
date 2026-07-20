@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { WorkspaceTable } from "../../shared/ipc";
+import { defaultWorkspaceTablePreferences, type WorkspaceTable } from "../../shared/ipc";
 import type { RelicResult } from "../../shared/result";
 import { makeRelicApi } from "../../test/rendererTestUtils";
 import { resetWorkspaceTableCache } from "./workspaceTableLoader";
@@ -46,8 +46,8 @@ describe("useWorkspaceTableState", () => {
 function table(path: string): WorkspaceTable {
   return {
     availableProperties: [],
+    preferences: defaultWorkspaceTablePreferences,
     rows: [{ frontmatterStatus: "none", name: path, path, properties: {} }],
-    selectedProperties: []
   };
 }
 

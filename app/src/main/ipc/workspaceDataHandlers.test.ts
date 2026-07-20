@@ -92,7 +92,7 @@ import {
   getWorkspaceTagsChannel,
   saveWorkspaceChartsChannel,
   saveWorkspaceFrontmatterCategoryChoicesChannel,
-  saveWorkspaceTablePropertiesChannel,
+  saveWorkspaceTablePreferencesChannel,
   updateChartEntryChannel,
 } from "../../shared/ipc";
 import { registerWorkspaceDataHandlers } from "./workspaceDataHandlers";
@@ -115,7 +115,14 @@ const workspaceSettings = {
     },
   ],
   frontmatterCategoryChoices: ["人物"],
-  tableProperties: ["status", "removed"],
+  tablePreferences: {
+    columnWidths: [],
+    fileColumnWidth: 260,
+    filters: [],
+    selectedProperties: ["status", "removed"],
+    sort: { direction: "asc" as const, property: null },
+    wrappedProperties: []
+  },
 };
 
 const providerOptions = {
@@ -176,7 +183,7 @@ describe("registerWorkspaceDataHandlers", () => {
     dependencies.readWorkspaceCards.mockResolvedValue({ ok: true, value: [] });
     dependencies.readWorkspaceTable.mockResolvedValue({
       ok: true,
-      value: { availableProperties: [], rows: [], selectedProperties: [] },
+      value: { availableProperties: [], preferences: workspaceSettings.tablePreferences, rows: [] },
     });
     dependencies.updateWorkspaceChartEntry.mockResolvedValue({
       ok: true,
@@ -278,7 +285,7 @@ describe("registerWorkspaceDataHandlers", () => {
     const table = {
       availableProperties: ["status"],
       rows: [],
-      selectedProperties: ["status"],
+      preferences: { ...workspaceSettings.tablePreferences, selectedProperties: ["status"] },
     };
     dependencies.readWorkspaceTable.mockResolvedValueOnce({ ok: true, value: table });
 
@@ -287,7 +294,7 @@ describe("registerWorkspaceDataHandlers", () => {
     expect(result).toEqual({ ok: true, value: table });
     expect(dependencies.readWorkspaceTable).toHaveBeenCalledWith(
       workspace.path,
-      workspaceSettings.tableProperties,
+      workspaceSettings.tablePreferences,
       providerOptions,
     );
     expect(dependencies.updateWorkspaceSettings).toHaveBeenCalledWith(
@@ -331,9 +338,9 @@ describe("registerWorkspaceDataHandlers", () => {
       label: "項目を欠いたチャート更新",
     },
     {
-      channel: saveWorkspaceTablePropertiesChannel,
-      input: ["status", "status"],
-      label: "重複したテーブル列",
+      channel: saveWorkspaceTablePreferencesChannel,
+      input: { ...workspaceSettings.tablePreferences, fileColumnWidth: 20 },
+      label: "不正なテーブル表示設定",
     },
   ])("$label は状態を読む前に拒否する", async ({ channel, input }) => {
     const result = await handlerFor(channel)({}, input);
@@ -404,12 +411,16 @@ describe("registerWorkspaceDataHandlers", () => {
     expect(dependencies.invalidateWorkspaceData).not.toHaveBeenCalled();
   });
 
-  it("テーブル列をワークスペース設定へ保存する", async () => {
-    const properties = ["status", "tags"];
+  it("テーブル表示設定をワークスペース設定へ保存する", async () => {
+    const preferences = {
+      ...workspaceSettings.tablePreferences,
+      filters: [{ operator: "missing" as const, property: "tags", target: "property" as const }],
+      selectedProperties: ["status", "tags"]
+    };
 
-    const result = await handlerFor(saveWorkspaceTablePropertiesChannel)({}, properties);
+    const result = await handlerFor(saveWorkspaceTablePreferencesChannel)({}, preferences);
 
-    expect(result).toEqual({ ok: true, value: properties });
+    expect(result).toEqual({ ok: true, value: preferences });
     expect(dependencies.updateWorkspaceSettings).toHaveBeenCalledWith(
       "/user-data",
       workspace.id,

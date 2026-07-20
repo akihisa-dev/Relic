@@ -4,7 +4,7 @@ import { relicApiContractVersion, relicIpcContract } from "./ipc";
 
 describe("IPC public contract", () => {
   it("契約バージョンと既存チャンネル文字列を維持する", () => {
-    expect(relicApiContractVersion).toBe(2);
+    expect(relicApiContractVersion).toBe(3);
     expect(contractChannels()).toEqual({
       applySearchAndReplace: "workspace:applySearchAndReplace",
       applyUnlinkedReference: "workspace:applyUnlinkedReference",
@@ -71,7 +71,7 @@ describe("IPC public contract", () => {
       saveWorkspaceCharts: "workspace:saveCharts",
       saveWorkspaceChronicleCalendarSettings: "workspace:saveChronicleCalendarSettings",
       saveWorkspaceFrontmatterCategoryChoices: "workspace:saveFrontmatterCategoryChoices",
-      saveWorkspaceTableProperties: "workspace:saveTableProperties",
+      saveWorkspaceTablePreferences: "workspace:saveTablePreferences",
       searchAndReplace: "workspace:searchAndReplace",
       searchWorkspace: "workspace:search",
       startWorkspaceFileDrag: "workspace:startFileDrag",

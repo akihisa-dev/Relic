@@ -55,7 +55,7 @@ import {
   revealWorkspaceItemChannel,
   startWorkspaceFileDragChannel,
   saveWorkspaceChartsChannel,
-  saveWorkspaceTablePropertiesChannel,
+  saveWorkspaceTablePreferencesChannel,
   saveWorkspaceFrontmatterCategoryChoicesChannel,
   saveWorkspaceChronicleCalendarSettingsChannel,
   updateChartEntryChannel,
@@ -148,6 +148,7 @@ import {
   type WorkspaceCard,
   type WorkspaceGraph,
   type WorkspaceTable,
+  type WorkspaceTablePreferences,
   type WorkspaceSearchResultSet,
   type WorkspaceTagSummary,
   type WriteMarkdownFileInput
@@ -282,8 +283,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(saveWorkspaceChronicleCalendarSettingsChannel, input) as Promise<RelicResult<ChronicleCalendarSettings>>,
   saveWorkspaceCharts: (input: ChartSettings[]) =>
     ipcRenderer.invoke(saveWorkspaceChartsChannel, input) as Promise<RelicResult<WorkspaceChart[]>>,
-  saveWorkspaceTableProperties: (input: string[]) =>
-    ipcRenderer.invoke(saveWorkspaceTablePropertiesChannel, input) as Promise<RelicResult<string[]>>,
+  saveWorkspaceTablePreferences: (input: WorkspaceTablePreferences) =>
+    ipcRenderer.invoke(saveWorkspaceTablePreferencesChannel, input) as Promise<RelicResult<WorkspaceTablePreferences>>,
   updateChartEntry: (input: UpdateChartEntryInput) =>
     ipcRenderer.invoke(updateChartEntryChannel, input) as Promise<RelicResult<WorkspaceChart[]>>,
   generateTitleList: (input: GenerateTitleListInput) =>

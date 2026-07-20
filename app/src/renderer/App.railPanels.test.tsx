@@ -111,7 +111,14 @@ describe("App rail panels", () => {
             path: "Note.md",
             properties: { category: { kind: "string", text: "draft" } }
           }],
-          selectedProperties: ["category"]
+          preferences: {
+            columnWidths: [],
+            fileColumnWidth: 260,
+            filters: [],
+            selectedProperties: ["category"],
+            sort: { direction: "asc", property: null },
+            wrappedProperties: []
+          }
         }
       }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
@@ -136,7 +143,7 @@ describe("App rail panels", () => {
     });
     expect(document.querySelector('.pane-tab[data-tab-id="chart-table"] .pane-tab-icon svg')).toBeInTheDocument();
     expect(tableButton).toHaveClass("active");
-    expect(await screen.findByText("1件のファイル")).toBeInTheDocument();
+    expect(await screen.findByText("1 / 1件")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "categoryの設定" }));
     expect((await screen.findAllByText("draft")).length).toBeGreaterThan(1);
 

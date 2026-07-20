@@ -1,7 +1,16 @@
-import type { WorkspaceTableRow, WorkspaceTableValue } from "../../shared/ipc";
+import {
+  workspaceTablePreferenceLimits,
+  type WorkspaceTableFilter,
+  type WorkspaceTablePreferences,
+  type WorkspaceTableRow,
+  type WorkspaceTableValue
+} from "../../shared/ipc";
 
 export type TableSort = { direction: "asc" | "desc"; property: string | null };
 export type TableColumnDropEdge = "after" | "before";
+
+export const compactTableRowHeight = 48;
+export const wrappedTableRowHeight = 80;
 
 const collator = new Intl.Collator("ja", { numeric: true, sensitivity: "base" });
 
@@ -22,6 +31,45 @@ export function sortTableRows(rows: WorkspaceTableRow[], sort: TableSort): Works
     const nameOrder = collator.compare(left.name, right.name);
     return nameOrder !== 0 ? nameOrder : collator.compare(left.path, right.path);
   });
+}
+
+export function filterTableRows(
+  rows: WorkspaceTableRow[],
+  search: string,
+  filters: WorkspaceTableFilter[],
+  selectedProperties: string[]
+): WorkspaceTableRow[] {
+  const query = normalizeSearchText(search.trim());
+  return rows.filter((row) => {
+    if (query && !searchableRowText(row, selectedProperties).some((value) => normalizeSearchText(value).includes(query))) return false;
+    return filters.every((filter) => matchesFilter(row, filter));
+  });
+}
+
+export function tableColumnWidth(preferences: WorkspaceTablePreferences, property: string): number {
+  return preferences.columnWidths.find((entry) => entry.property === property)?.width ?? workspaceTablePreferenceLimits.propertyColumnDefault;
+}
+
+export function withTableColumnWidth(
+  preferences: WorkspaceTablePreferences,
+  property: string,
+  width: number
+): WorkspaceTablePreferences {
+  const nextWidth = clamp(width, workspaceTablePreferenceLimits.propertyColumnMinimum, workspaceTablePreferenceLimits.propertyColumnMaximum);
+  return {
+    ...preferences,
+    columnWidths: [
+      ...preferences.columnWidths.filter((entry) => entry.property !== property),
+      { property, width: nextWidth }
+    ]
+  };
+}
+
+export function withFileColumnWidth(preferences: WorkspaceTablePreferences, width: number): WorkspaceTablePreferences {
+  return {
+    ...preferences,
+    fileColumnWidth: clamp(width, workspaceTablePreferenceLimits.fileColumnMinimum, workspaceTablePreferenceLimits.fileColumnMaximum)
+  };
 }
 
 export function duplicateFileNames(rows: WorkspaceTableRow[]): Set<string> {
@@ -78,4 +126,36 @@ function compareValues(left: WorkspaceTableValue, right: WorkspaceTableValue): n
     return (left.numberValue ?? 0) - (right.numberValue ?? 0);
   }
   return collator.compare(left.text, right.text);
+}
+
+function searchableRowText(row: WorkspaceTableRow, selectedProperties: string[]): string[] {
+  return [row.name, row.path, ...selectedProperties.flatMap((property) => row.properties[property]?.text ?? [])];
+}
+
+function matchesFilter(row: WorkspaceTableRow, filter: WorkspaceTableFilter): boolean {
+  if (filter.target === "frontmatter") {
+    return filter.operator === "invalid" ? row.frontmatterStatus === "invalid" : row.frontmatterStatus !== "invalid";
+  }
+  if (filter.target === "file") return matchesText(`${row.name} ${row.path}`, filter.operator, filter.value ?? "");
+  const value = filter.property ? row.properties[filter.property] : undefined;
+  if (filter.operator === "missing") return value === undefined;
+  if (filter.operator === "exists") return value !== undefined;
+  if (filter.operator === "empty") return value !== undefined && (value.kind === "empty-array" || value.kind === "empty-string" || value.kind === "null");
+  return value !== undefined && matchesText(value.text, filter.operator, filter.value ?? "");
+}
+
+function matchesText(text: string, operator: WorkspaceTableFilter["operator"], value: string): boolean {
+  const normalizedText = normalizeSearchText(text);
+  const normalizedValue = normalizeSearchText(value);
+  if (operator === "equals") return normalizedText === normalizedValue;
+  if (operator === "not-contains") return !normalizedText.includes(normalizedValue);
+  return normalizedText.includes(normalizedValue);
+}
+
+function normalizeSearchText(value: string): string {
+  return value.normalize("NFKC").toLocaleLowerCase();
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(maximum, Math.max(minimum, Math.round(value)));
 }

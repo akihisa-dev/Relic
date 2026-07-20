@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { defaultWorkspaceTablePreferences } from "../../shared/ipc";
 import type { WorkspaceFileIndex } from "./workspaceFileIndex";
 import { readWorkspaceTable, tableValueFor } from "./workspaceTable";
 
@@ -63,12 +64,15 @@ function fileIndex(): WorkspaceFileIndex {
 
 describe("workspaceTable", () => {
   it("共有索引から全Markdownとトップレベルプロパティを構造化する", async () => {
-    const result = await readWorkspaceTable("/workspace", ["status", "removed", "active"], { fileIndex: fileIndex() });
+    const result = await readWorkspaceTable("/workspace", {
+      ...defaultWorkspaceTablePreferences,
+      selectedProperties: ["status", "removed", "active"]
+    }, { fileIndex: fileIndex() });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.availableProperties).toEqual(["active", "count", "date", "empty", "items", "meta", "status", "tags"]);
-    expect(result.value.selectedProperties).toEqual(["active", "status"]);
+    expect(result.value.preferences.selectedProperties).toEqual(["status", "active"]);
     expect(result.value.rows).toHaveLength(4);
     expect(result.value.rows[0]).toMatchObject({
       frontmatterStatus: "valid",

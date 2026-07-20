@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
+import { defaultWorkspaceTablePreferences } from "../../shared/ipc";
 
 import {
   defaultCharts,
@@ -46,7 +47,7 @@ describe("workspaceSettings", () => {
     const settings = await readWorkspaceSettings(userDataPath, "workspace-id");
 
     expect(settings.pinnedPaths).toEqual([]);
-    expect(settings.tableProperties).toEqual([]);
+    expect(settings.tablePreferences).toEqual(defaultWorkspaceTablePreferences);
     expect(settings.charts).toEqual(defaultCharts);
     expect(settings.workspacePath).toBe("");
   });
@@ -61,7 +62,7 @@ describe("workspaceSettings", () => {
       ],
       frontmatterCategoryChoices: ["政治", "戦争"],
       pinnedPaths: ["notes/readme.md", "docs"],
-      tableProperties: ["status", "tags"],
+      tablePreferences: { ...defaultWorkspaceTablePreferences, selectedProperties: ["status", "tags"] },
       workspacePath: "/Users/test/notes"
     });
 
@@ -71,7 +72,7 @@ describe("workspaceSettings", () => {
     ]);
     expect(settings.frontmatterCategoryChoices).toEqual(["政治", "戦争"]);
     expect(settings.pinnedPaths).toEqual(["notes/readme.md", "docs"]);
-    expect(settings.tableProperties).toEqual(["status", "tags"]);
+    expect(settings.tablePreferences.selectedProperties).toEqual(["status", "tags"]);
     expect(settings.workspacePath).toBe("/Users/test/notes");
     if (process.platform !== "win32") {
       const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-1");
@@ -144,7 +145,36 @@ describe("workspaceSettings", () => {
 
     const settings = await readWorkspaceSettings(userDataPath, "ws-table");
 
-    expect(settings.tableProperties).toEqual(["status", "tags"]);
+    expect(settings.tablePreferences.selectedProperties).toEqual(["status", "tags"]);
+  });
+
+  it("テーブル表示設定の不正な幅と関連状態だけを除外する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-table-preferences");
+    await mkdir(path.dirname(settingsPath), { recursive: true });
+    await writeFile(settingsPath, JSON.stringify({
+      schemaVersion: 5,
+      tablePreferences: {
+        columnWidths: [{ property: "status", width: 240 }, { property: "tags", width: 20 }],
+        fileColumnWidth: 300,
+        filters: [{ operator: "missing", property: "category", target: "property" }, { operator: "unknown", target: "file" }],
+        selectedProperties: ["status", "tags"],
+        sort: { direction: "desc", property: "status" },
+        wrappedProperties: ["status", "removed"]
+      }
+    }), "utf8");
+
+    const settings = await readWorkspaceSettings(userDataPath, "ws-table-preferences");
+
+    expect(settings.tablePreferences).toEqual({
+      columnWidths: [{ property: "status", width: 240 }],
+      fileColumnWidth: 300,
+      filters: [{ operator: "missing", property: "category", target: "property" }],
+      selectedProperties: ["status", "tags"],
+      sort: { direction: "desc", property: "status" },
+      wrappedProperties: ["status"]
+    });
   });
 
   it("読み込み時にチャート対象パスをワークスペース相対パスだけに正規化する", async () => {
@@ -218,7 +248,7 @@ describe("workspaceSettings", () => {
 
     await readWorkspaceSettings(userDataPath, "ws-legacy-v0");
     const afterFirstRead = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
-    expect(afterFirstRead.schemaVersion).toBe(4);
+    expect(afterFirstRead.schemaVersion).toBe(5);
 
     await delay(1100);
     const firstMtime = (await stat(settingsPath)).mtimeMs;
@@ -236,15 +266,17 @@ describe("workspaceSettings", () => {
       charts: defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
-      tableProperties: [],
+      tablePreferences: defaultWorkspaceTablePreferences,
       workspacePath: "/Users/test/new"
     });
 
     const raw = JSON.parse(await readFile(getWorkspaceSettingsPath(userDataPath, "ws-new"), "utf8")) as Record<string, unknown>;
 
-    expect(raw.schemaVersion).toBe(4);
+    expect(raw.schemaVersion).toBe(5);
     expect(raw.charts).toEqual(defaultCharts);
     expect(raw.ganttCharts).toBeUndefined();
+    expect(raw.tableProperties).toBeUndefined();
+    expect(raw.tablePreferences).toEqual(defaultWorkspaceTablePreferences);
     await expect(readdir(path.dirname(getWorkspaceSettingsPath(userDataPath, "ws-new")))).resolves.toEqual([
       path.basename(getWorkspaceSettingsPath(userDataPath, "ws-new"))
     ]);
@@ -317,14 +349,14 @@ describe("workspaceSettings", () => {
       },
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
-      tableProperties: [],
+      tablePreferences: defaultWorkspaceTablePreferences,
       workspacePath: ""
     });
     await expect(writeWorkspaceSettings(userDataPath, "../outside", {
       charts: defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
-      tableProperties: [],
+      tablePreferences: defaultWorkspaceTablePreferences,
       workspacePath: "/tmp/workspace"
     })).rejects.toThrow("Invalid workspace settings id.");
   });
@@ -336,7 +368,7 @@ describe("workspaceSettings", () => {
       charts: defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
-      tableProperties: [],
+      tablePreferences: defaultWorkspaceTablePreferences,
       workspacePath: ""
     });
 
@@ -432,7 +464,7 @@ describe("workspaceSettings", () => {
     await Promise.all([update, readWhileUpdating]);
 
     const raw = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(4);
+    expect(raw.schemaVersion).toBe(5);
     expect(raw.workspacePath).toBe("/Users/test/new");
   });
 });

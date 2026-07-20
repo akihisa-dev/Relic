@@ -4,7 +4,11 @@ import path from "node:path";
 import {
   type ChartSettings,
   type FrontmatterCategoryChoice,
-  type ChartSource
+  type ChartSource,
+  defaultWorkspaceTablePreferences,
+  type WorkspaceTableFilter,
+  type WorkspaceTablePreferences,
+  workspaceTablePreferenceLimits
 } from "../../shared/ipc";
 import {
   defaultChronicleCalendarSettings,
@@ -23,7 +27,7 @@ export interface WorkspaceSettings {
   chronicleCalendarSettings?: ChronicleCalendarSettings;
   frontmatterCategoryChoices: FrontmatterCategoryChoice[];
   pinnedPaths: string[];
-  tableProperties: string[];
+  tablePreferences: WorkspaceTablePreferences;
   workspacePath: string;
 }
 
@@ -58,7 +62,7 @@ function createDefaultWorkspaceSettings(): WorkspaceSettings {
     },
     frontmatterCategoryChoices: [],
     pinnedPaths: [],
-    tableProperties: [],
+    tablePreferences: cloneDefaultTablePreferences(),
     workspacePath: ""
   };
 }
@@ -88,7 +92,7 @@ function parseWorkspaceSettings(raw: PersistedWorkspaceSettings): WorkspaceSetti
     chronicleCalendarSettings: parseChronicleCalendarSettings(raw.chronicleCalendarSettings),
     frontmatterCategoryChoices: parseFrontmatterCategoryChoices(raw.frontmatterCategoryChoices),
     pinnedPaths: parsePinnedPaths(raw.pinnedPaths),
-    tableProperties: parseTableProperties(raw.tableProperties),
+    tablePreferences: parseWorkspaceTablePreferences(raw.tablePreferences),
     workspacePath: typeof raw.workspacePath === "string" ? raw.workspacePath : ""
   };
 }
@@ -190,7 +194,85 @@ export function parseTableProperties(raw: unknown): string[] {
     return [item];
   });
 
-  return Array.from(new Set(properties)).slice(0, 1000);
+  return Array.from(new Set(properties)).slice(0, workspaceTablePreferenceLimits.propertyCount);
+}
+
+export function parseWorkspaceTablePreferences(raw: unknown): WorkspaceTablePreferences {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return cloneDefaultTablePreferences();
+  const candidate = raw as Record<string, unknown>;
+  const selectedProperties = parseTableProperties(candidate.selectedProperties);
+  const selectedSet = new Set(selectedProperties);
+  const columnWidths = Array.isArray(candidate.columnWidths) ? candidate.columnWidths.flatMap((entry) => {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) return [];
+    const width = entry as Record<string, unknown>;
+    if (typeof width.property !== "string" || !selectedSet.has(width.property)) return [];
+    if (!Number.isInteger(width.width) || Number(width.width) < workspaceTablePreferenceLimits.propertyColumnMinimum || Number(width.width) > workspaceTablePreferenceLimits.propertyColumnMaximum) return [];
+    return [{ property: width.property, width: Number(width.width) }];
+  }) : [];
+  const uniqueWidths = columnWidths.filter((entry, index) => columnWidths.findIndex((item) => item.property === entry.property) === index);
+  const wrappedProperties = parseTableProperties(candidate.wrappedProperties).filter((property) => selectedSet.has(property));
+  const filters = parseWorkspaceTableFilters(candidate.filters);
+  const sortCandidate = typeof candidate.sort === "object" && candidate.sort !== null && !Array.isArray(candidate.sort)
+    ? candidate.sort as Record<string, unknown>
+    : {};
+  const sortProperty = sortCandidate.property === null || (typeof sortCandidate.property === "string" && selectedSet.has(sortCandidate.property))
+    ? sortCandidate.property as string | null
+    : null;
+  return {
+    columnWidths: uniqueWidths,
+    fileColumnWidth: Number.isInteger(candidate.fileColumnWidth) && Number(candidate.fileColumnWidth) >= workspaceTablePreferenceLimits.fileColumnMinimum && Number(candidate.fileColumnWidth) <= workspaceTablePreferenceLimits.fileColumnMaximum
+      ? Number(candidate.fileColumnWidth)
+      : defaultWorkspaceTablePreferences.fileColumnWidth,
+    filters,
+    selectedProperties,
+    sort: {
+      direction: sortCandidate.direction === "desc" ? "desc" : "asc",
+      property: sortProperty
+    },
+    wrappedProperties
+  };
+}
+
+function parseWorkspaceTableFilters(raw: unknown): WorkspaceTableFilter[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, workspaceTablePreferenceLimits.filterCount).flatMap((entry): WorkspaceTableFilter[] => {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) return [];
+    const filter = entry as Record<string, unknown>;
+    if (filter.target === "frontmatter" && (filter.operator === "invalid" || filter.operator === "valid")) {
+      return [{ operator: filter.operator, target: "frontmatter" }];
+    }
+    if (filter.target === "file" && (filter.operator === "contains" || filter.operator === "not-contains" || filter.operator === "equals") && validFilterValue(filter.value)) {
+      return [{ operator: filter.operator, target: "file", value: filter.value }];
+    }
+    if (filter.target === "property" && validTableProperty(filter.property)) {
+      if ((filter.operator === "contains" || filter.operator === "not-contains" || filter.operator === "equals") && validFilterValue(filter.value)) {
+        return [{ operator: filter.operator, property: filter.property, target: "property", value: filter.value }];
+      }
+      if (filter.operator === "empty" || filter.operator === "exists" || filter.operator === "missing") {
+        return [{ operator: filter.operator, property: filter.property, target: "property" }];
+      }
+    }
+    return [];
+  });
+}
+
+function validFilterValue(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= workspaceTablePreferenceLimits.filterValueLength && !value.includes("\0");
+}
+
+function validTableProperty(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= workspaceTablePreferenceLimits.propertyNameLength && value.trim() === value && !value.includes("\0");
+}
+
+function cloneDefaultTablePreferences(): WorkspaceTablePreferences {
+  return {
+    ...defaultWorkspaceTablePreferences,
+    columnWidths: [],
+    filters: [],
+    selectedProperties: [],
+    sort: { ...defaultWorkspaceTablePreferences.sort },
+    wrappedProperties: []
+  };
 }
 
 function normalizePinnedPath(raw: string): string | null {

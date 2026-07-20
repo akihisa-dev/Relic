@@ -2,12 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import type { WorkspaceTableRow } from "../../shared/ipc";
 import {
+  filterTableRows,
   duplicateFileNames,
   nextTableSort,
   reorderTableProperties,
   sortTableRows,
-  visibleTableRange
+  tableColumnWidth,
+  visibleTableRange,
+  withTableColumnWidth
 } from "./tableViewModel";
+import { defaultWorkspaceTablePreferences } from "../../shared/ipc";
 
 const rows: WorkspaceTableRow[] = [
   { frontmatterStatus: "valid", name: "file10", path: "b/file10.md", properties: { count: { kind: "number", numberValue: 10, text: "10" } } },
@@ -55,5 +59,22 @@ describe("tableViewModel", () => {
       .toEqual(["status", "count", "tags"]);
     expect(reorderTableProperties(["count", "status"], "count", "count", "after"))
       .toEqual(["count", "status"]);
+  });
+
+  it("検索と絞り込みをAND条件で適用し、未設定と空値を区別する", () => {
+    const targetRows: WorkspaceTableRow[] = [
+      ...rows,
+      { frontmatterStatus: "invalid", name: "empty", path: "notes/empty.md", properties: { status: { kind: "empty-string", text: "\"\"" } } }
+    ];
+    expect(filterTableRows(targetRows, "FILE2", [], ["count"]).map((row) => row.path)).toEqual(["file2.md", "a/file2.md"]);
+    expect(filterTableRows(targetRows, "", [{ operator: "missing", property: "status", target: "property" }], ["status"])).toHaveLength(4);
+    expect(filterTableRows(targetRows, "", [{ operator: "empty", property: "status", target: "property" }], ["status"]).map((row) => row.path)).toEqual(["notes/empty.md"]);
+    expect(filterTableRows(targetRows, "", [{ operator: "invalid", target: "frontmatter" }], [])).toEqual([targetRows[4]]);
+  });
+
+  it("列幅を範囲内へ制限し、未設定列は既定幅にする", () => {
+    const widened = withTableColumnWidth(defaultWorkspaceTablePreferences, "status", 900);
+    expect(tableColumnWidth(widened, "status")).toBe(640);
+    expect(tableColumnWidth(widened, "count")).toBe(190);
   });
 });

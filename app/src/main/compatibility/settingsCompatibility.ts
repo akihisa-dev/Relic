@@ -1,12 +1,14 @@
 import type { SettingsMigrationResult } from "../settings/secureVersionedJsonStore";
 
 export const currentAppSettingsSchemaVersion = 6;
-export const currentWorkspaceSettingsSchemaVersion = 4;
+export const currentWorkspaceSettingsSchemaVersion = 5;
 
 export type WorkspaceSettingsMigrationRecord = {
   charts?: unknown;
   ganttCharts?: unknown;
   schemaVersion?: unknown;
+  tablePreferences?: unknown;
+  tableProperties?: unknown;
 };
 
 export function migrateAppSettings(
@@ -60,12 +62,20 @@ export function migrateWorkspaceSettings<T extends WorkspaceSettingsMigrationRec
     return { didMigrate: false, settings: raw };
   }
 
-  if (schemaVersion === 0 || schemaVersion === 1 || schemaVersion === 2 || schemaVersion === 3) {
+  if (schemaVersion === 0 || schemaVersion === 1 || schemaVersion === 2 || schemaVersion === 3 || schemaVersion === 4) {
     return {
       didMigrate: true,
       settings: {
         ...raw,
         charts: raw.charts ?? raw.ganttCharts,
+        tablePreferences: raw.tablePreferences ?? {
+          columnWidths: [],
+          fileColumnWidth: 260,
+          filters: [],
+          selectedProperties: raw.tableProperties ?? [],
+          sort: { direction: "asc", property: null },
+          wrappedProperties: []
+        },
         schemaVersion: currentWorkspaceSettingsSchemaVersion
       }
     };

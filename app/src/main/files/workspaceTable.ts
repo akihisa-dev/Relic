@@ -2,6 +2,7 @@ import * as yaml from "js-yaml";
 
 import type {
   WorkspaceTable,
+  WorkspaceTablePreferences,
   WorkspaceTableRow,
   WorkspaceTableValue
 } from "../../shared/ipc";
@@ -20,7 +21,7 @@ const propertyCollator = new Intl.Collator("ja", { numeric: true, sensitivity: "
 
 export async function readWorkspaceTable(
   workspacePath: string,
-  selectedProperties: string[],
+  preferences: WorkspaceTablePreferences,
   optionsOrOperations: WorkspaceDerivedDataOptions | WorkspaceMarkdownReadOperations = {}
 ): Promise<RelicResult<WorkspaceTable>> {
   try {
@@ -59,9 +60,7 @@ export async function readWorkspaceTable(
     return ok({
       availableProperties,
       rows,
-      selectedProperties: selectedProperties
-        .filter((property) => availableSet.has(property))
-        .sort(propertyCollator.compare)
+      preferences: normalizeTablePreferences(preferences, availableSet)
     });
   } catch (error) {
     return fail(
@@ -70,6 +69,24 @@ export async function readWorkspaceTable(
       errorDetails(error)
     );
   }
+}
+
+function normalizeTablePreferences(
+  preferences: WorkspaceTablePreferences,
+  availableProperties: Set<string>
+): WorkspaceTablePreferences {
+  const selectedProperties = preferences.selectedProperties.filter((property) => availableProperties.has(property));
+  const selectedSet = new Set(selectedProperties);
+  return {
+    columnWidths: preferences.columnWidths.filter((entry) => selectedSet.has(entry.property)),
+    fileColumnWidth: preferences.fileColumnWidth,
+    filters: preferences.filters.filter((filter) => filter.target !== "property" || (filter.property !== undefined && availableProperties.has(filter.property))),
+    selectedProperties,
+    sort: preferences.sort.property === null || selectedSet.has(preferences.sort.property)
+      ? preferences.sort
+      : { direction: "asc", property: null },
+    wrappedProperties: preferences.wrappedProperties.filter((property) => selectedSet.has(property))
+  };
 }
 
 export function tableValueFor(value: unknown): WorkspaceTableValue {

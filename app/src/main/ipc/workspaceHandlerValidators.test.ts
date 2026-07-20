@@ -8,7 +8,7 @@ import {
   isChartsInput,
   isRenameWorkspaceInput,
   isSwitchWorkspaceInput,
-  isTablePropertiesInput,
+  isWorkspaceTablePreferencesInput,
   isUpdateChartEntryInput,
   isUserDefinedFieldsInput
 } from "./workspaceHandlerValidators";
@@ -25,12 +25,20 @@ describe("workspaceHandlerValidators", () => {
     expect(isChronicleCalendarSettingsInput({ baseCalendarName: "基準暦", calendars: [], visibleCalendarNames: [] })).toBe(false);
   });
 
-  it("テーブル列は重複、空白、過大入力を拒否する", () => {
-    expect(isTablePropertiesInput(["status", "tags"])).toBe(true);
-    expect(isTablePropertiesInput(["status", "status"])).toBe(false);
-    expect(isTablePropertiesInput([" status"])).toBe(false);
-    expect(isTablePropertiesInput([""])).toBe(false);
-    expect(isTablePropertiesInput(["a".repeat(1025)])).toBe(false);
+  it("テーブル表示設定は列、幅、絞り込みの不正入力を拒否する", () => {
+    const valid = {
+      columnWidths: [{ property: "status", width: 240 }],
+      fileColumnWidth: 280,
+      filters: [{ operator: "contains", property: "status", target: "property", value: "draft" }],
+      selectedProperties: ["status", "tags"],
+      sort: { direction: "asc", property: "status" },
+      wrappedProperties: ["status"]
+    };
+    expect(isWorkspaceTablePreferencesInput(valid)).toBe(true);
+    expect(isWorkspaceTablePreferencesInput({ ...valid, selectedProperties: ["status", "status"] })).toBe(false);
+    expect(isWorkspaceTablePreferencesInput({ ...valid, fileColumnWidth: 20 })).toBe(false);
+    expect(isWorkspaceTablePreferencesInput({ ...valid, columnWidths: [{ property: "missing", width: 240 }] })).toBe(false);
+    expect(isWorkspaceTablePreferencesInput({ ...valid, filters: [{ operator: "contains", target: "property" }] })).toBe(false);
   });
   it("validates user defined fields and rejects duplicates or reserved names", () => {
     expect(isUserDefinedFieldsInput([{ name: "rating", type: "number" }])).toBe(true);

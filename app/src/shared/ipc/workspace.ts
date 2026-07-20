@@ -21,7 +21,7 @@ export const saveWorkspaceFrontmatterCategoryChoicesChannel = "workspace:saveFro
 export const getWorkspaceChronicleCalendarSettingsChannel = "workspace:getChronicleCalendarSettings";
 export const saveWorkspaceChronicleCalendarSettingsChannel = "workspace:saveChronicleCalendarSettings";
 export const saveWorkspaceChartsChannel = "workspace:saveCharts";
-export const saveWorkspaceTablePropertiesChannel = "workspace:saveTableProperties";
+export const saveWorkspaceTablePreferencesChannel = "workspace:saveTablePreferences";
 export const updateChartEntryChannel = "workspace:updateChartEntry";
 
 export interface WorkspaceSummary {
@@ -155,6 +155,58 @@ export interface WorkspaceTableValue {
   text: string;
 }
 
+export type WorkspaceTableFilterOperator =
+  | "contains"
+  | "empty"
+  | "equals"
+  | "exists"
+  | "invalid"
+  | "missing"
+  | "not-contains"
+  | "valid";
+
+export interface WorkspaceTableFilter {
+  operator: WorkspaceTableFilterOperator;
+  property?: string;
+  target: "file" | "frontmatter" | "property";
+  value?: string;
+}
+
+export interface WorkspaceTableColumnWidth {
+  property: string;
+  width: number;
+}
+
+export interface WorkspaceTablePreferences {
+  columnWidths: WorkspaceTableColumnWidth[];
+  fileColumnWidth: number;
+  filters: WorkspaceTableFilter[];
+  selectedProperties: string[];
+  sort: { direction: "asc" | "desc"; property: string | null };
+  wrappedProperties: string[];
+}
+
+export const defaultWorkspaceTablePreferences: WorkspaceTablePreferences = {
+  columnWidths: [],
+  fileColumnWidth: 260,
+  filters: [],
+  selectedProperties: [],
+  sort: { direction: "asc", property: null },
+  wrappedProperties: []
+};
+
+export const workspaceTablePreferenceLimits = {
+  fileColumnMaximum: 480,
+  fileColumnMinimum: 180,
+  filterCount: 20,
+  filterValueLength: 512,
+  propertyColumnDefault: 190,
+  propertyColumnMaximum: 640,
+  propertyColumnMinimum: 120,
+  propertyCount: 1000,
+  propertyNameLength: 1024
+} as const;
+
 export interface WorkspaceTableRow {
   frontmatterStatus: "invalid" | "none" | "valid";
   name: string;
@@ -164,8 +216,8 @@ export interface WorkspaceTableRow {
 
 export interface WorkspaceTable {
   availableProperties: string[];
+  preferences: WorkspaceTablePreferences;
   rows: WorkspaceTableRow[];
-  selectedProperties: string[];
 }
 
 export type ChartEntryEditKind = "move" | "resize-start" | "resize-end";
@@ -198,7 +250,7 @@ export interface WorkspaceApi {
   saveWorkspaceFrontmatterCategoryChoices: (input: FrontmatterCategoryChoice[]) => Promise<RelicResult<FrontmatterCategoryChoice[]>>;
   saveWorkspaceChronicleCalendarSettings: (input: ChronicleCalendarSettings) => Promise<RelicResult<ChronicleCalendarSettings>>;
   saveWorkspaceCharts: (input: ChartSettings[]) => Promise<RelicResult<WorkspaceChart[]>>;
-  saveWorkspaceTableProperties: (input: string[]) => Promise<RelicResult<string[]>>;
+  saveWorkspaceTablePreferences: (input: WorkspaceTablePreferences) => Promise<RelicResult<WorkspaceTablePreferences>>;
   updateChartEntry: (input: UpdateChartEntryInput) => Promise<RelicResult<WorkspaceChart[]>>;
   onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => () => void;
   onWorkspaceWatcherStatus: (callback: (event: WorkspaceWatcherStatusEvent) => void) => () => void;
@@ -221,7 +273,7 @@ export const workspaceIpcContract = {
   saveWorkspaceFrontmatterCategoryChoices: { channel: saveWorkspaceFrontmatterCategoryChoicesChannel, main: "handle", transport: "invoke", validatesInput: true },
   saveWorkspaceChronicleCalendarSettings: { channel: saveWorkspaceChronicleCalendarSettingsChannel, main: "handle", transport: "invoke", validatesInput: true },
   saveWorkspaceCharts: { channel: saveWorkspaceChartsChannel, main: "handle", transport: "invoke", validatesInput: true },
-  saveWorkspaceTableProperties: { channel: saveWorkspaceTablePropertiesChannel, main: "handle", transport: "invoke", validatesInput: true },
+  saveWorkspaceTablePreferences: { channel: saveWorkspaceTablePreferencesChannel, main: "handle", transport: "invoke", validatesInput: true },
   updateChartEntry: { channel: updateChartEntryChannel, main: "handle", transport: "invoke", validatesInput: true },
   onWorkspaceChanged: { channel: workspaceChangedChannel, main: "sender", transport: "subscribe", validatesInput: false },
   onWorkspaceWatcherStatus: { channel: workspaceWatcherStatusChannel, main: "sender", transport: "subscribe", validatesInput: false }

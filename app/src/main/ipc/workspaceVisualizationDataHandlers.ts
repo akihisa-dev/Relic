@@ -3,7 +3,7 @@ import {
   getWorkspaceChartsChannel,
   getWorkspaceTableChannel,
   saveWorkspaceChartsChannel,
-  saveWorkspaceTablePropertiesChannel,
+  saveWorkspaceTablePreferencesChannel,
   updateChartEntryChannel
 } from "../../shared/ipc";
 import { defaultChronicleCalendarSettings } from "../../shared/chronicleCalendar";
@@ -21,7 +21,7 @@ import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
   isChartsInput,
-  isTablePropertiesInput,
+  isWorkspaceTablePreferencesInput,
   isUpdateChartEntryInput
 } from "./workspaceHandlerValidators";
 
@@ -64,15 +64,15 @@ export function registerWorkspaceVisualizationDataHandlers(): void {
       });
       const result = await readWorkspaceTable(
         data.workspacePath,
-        workspaceSettings.tableProperties ?? [],
+        workspaceSettings.tablePreferences,
         data.options
       );
 
-      if (result.ok && !sameStrings(result.value.selectedProperties, workspaceSettings.tableProperties ?? [])) {
+      if (result.ok && !sameTablePreferences(result.value.preferences, workspaceSettings.tablePreferences)) {
         await updateWorkspaceSettings(
           context.value.userDataPath,
           context.value.activeWorkspace.id,
-          (settings) => ({ ...settings, tableProperties: result.value.selectedProperties })
+          (settings) => ({ ...settings, tablePreferences: result.value.preferences })
         );
       }
       return result;
@@ -123,10 +123,10 @@ export function registerWorkspaceVisualizationDataHandlers(): void {
       );
     }
   });
-  handleLocalizedIpc(saveWorkspaceTablePropertiesChannel, async (_event, input: unknown) => {
+  handleLocalizedIpc(saveWorkspaceTablePreferencesChannel, async (_event, input: unknown) => {
     try {
-      if (!isTablePropertiesInput(input)) {
-        return fail("INVALID_TABLE_PROPERTIES", "テーブルの列設定が正しくありません。");
+      if (!isWorkspaceTablePreferencesInput(input)) {
+        return fail("INVALID_TABLE_PREFERENCES", "テーブルの表示設定が正しくありません。");
       }
 
       const context = await getActiveWorkspaceContext();
@@ -134,13 +134,13 @@ export function registerWorkspaceVisualizationDataHandlers(): void {
       const workspaceSettings = await updateWorkspaceSettings(
         context.value.userDataPath,
         context.value.activeWorkspace.id,
-        (settings) => ({ ...settings, tableProperties: input })
+        (settings) => ({ ...settings, tablePreferences: input })
       );
-      return { ok: true as const, value: workspaceSettings.tableProperties };
+      return { ok: true as const, value: workspaceSettings.tablePreferences };
     } catch (error) {
       return fail(
-        "WORKSPACE_TABLE_PROPERTIES_SAVE_FAILED",
-        "テーブルの列設定を保存できませんでした。",
+        "WORKSPACE_TABLE_PREFERENCES_SAVE_FAILED",
+        "テーブルの表示設定を保存できませんでした。",
         ipcErrorDetails(error)
       );
     }
@@ -179,8 +179,8 @@ export function registerWorkspaceVisualizationDataHandlers(): void {
   });
 }
 
-function sameStrings(left: string[], right: string[]): boolean {
-  return left.length === right.length && left.every((value, index) => value === right[index]);
+function sameTablePreferences(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function normalizeChartSettingsForSave(charts: ChartSettings[]): ChartSettings[] {

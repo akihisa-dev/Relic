@@ -26,6 +26,7 @@ import {
   defaultEditorSettings,
   defaultFeatureToggles,
   defaultFrontmatterTemplates,
+  defaultWorkspaceTablePreferences,
   defaultUserDefinedFields,
   getBacklinksChannel,
   getWorkspaceChartsChannel,
@@ -86,7 +87,7 @@ describe("workspaceHandlers", () => {
       charts: workspaceSettings.defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: ["読書メモ.md"],
-      tableProperties: [],
+      tablePreferences: defaultWorkspaceTablePreferences,
       workspacePath
     });
 
@@ -150,7 +151,7 @@ describe("workspaceHandlers", () => {
       charts: workspaceSettings.defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: [],
-      tableProperties: [],
+      tablePreferences: defaultWorkspaceTablePreferences,
       workspacePath
     });
 
@@ -414,7 +415,7 @@ describe("workspaceHandlers", () => {
       charts: workspaceSettings.defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: ["memo.md"],
-      tableProperties: [],
+      tablePreferences: defaultWorkspaceTablePreferences,
       workspacePath: oldWorkspacePath
     });
 
@@ -479,7 +480,7 @@ describe("workspaceHandlers", () => {
       charts: workspaceSettings.defaultCharts,
       frontmatterCategoryChoices: [],
       pinnedPaths: ["memo.md"],
-      tableProperties: [],
+      tablePreferences: defaultWorkspaceTablePreferences,
       workspacePath: oldWorkspacePath
     });
     const removeWorkspaceSettingsSpy = vi.spyOn(workspaceSettings, "removeWorkspaceSettings");

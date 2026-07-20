@@ -1,7 +1,7 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { defaultFeatureToggles } from "../shared/ipc";
+import { defaultFeatureToggles, defaultWorkspaceTablePreferences } from "../shared/ipc";
 import {
   installMatchMediaMock,
   makeRelicApi,
@@ -94,7 +94,7 @@ describe("App feature toggles", () => {
       value: {
         availableProperties: [],
         rows: [{ frontmatterStatus: "none", name: "メモ", path: "メモ.md", properties: {} }],
-        selectedProperties: []
+        preferences: defaultWorkspaceTablePreferences
       }
     });
     window.relic = makeRelicApi({
@@ -111,7 +111,7 @@ describe("App feature toggles", () => {
     const tableButton = await screen.findByRole("button", { name: "テーブル" });
     expect(screen.queryByRole("button", { name: "フロントマター" })).not.toBeInTheDocument();
     fireEvent.click(tableButton);
-    expect(await screen.findByText("1件のファイル")).toBeInTheDocument();
+    expect(await screen.findByText("1 / 1件")).toBeInTheDocument();
     expect(getWorkspaceTable).toHaveBeenCalledOnce();
   });
 });
