@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic資料作成"
+  short_description: "Relicの全機能を活かすMarkdown資料を設計・作成"
+  default_prompt: "$relic-author-content を使って、Relicで読み、整理し、探索しやすい資料を作成してください。"
