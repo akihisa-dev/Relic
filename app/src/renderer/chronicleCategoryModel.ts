@@ -54,18 +54,6 @@ export function createChronicleCategoryOptions(
   return sortedOptions;
 }
 
-export function isChronicleEntryVisible(entry: ChartEntry, hiddenCategoryKeys: ReadonlySet<string>): boolean {
-  return !hiddenCategoryKeys.has(chronicleCategoryKey(entry.category));
-}
-
-export function pruneChronicleHiddenCategoryKeys(
-  hiddenCategoryKeys: Iterable<string>,
-  options: ChronicleCategoryOption[]
-): string[] {
-  const availableKeys = new Set(options.map((option) => option.key));
-  return [...hiddenCategoryKeys].filter((key) => availableKeys.has(key));
-}
-
 function uniqueNormalizedValues(values: string[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];

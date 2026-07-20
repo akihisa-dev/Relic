@@ -15,7 +15,6 @@ import {
 } from "./appTabLazyViews";
 
 interface ChroniclePaneViewState {
-  hiddenCategoryKeys: string[];
   railCollapsed: boolean;
   workspaceId: string;
 }
@@ -35,7 +34,6 @@ interface UseAppChartTabRendererInput {
 }
 
 const defaultChroniclePaneViewState = (workspaceId: string): ChroniclePaneViewState => ({
-  hiddenCategoryKeys: [],
   railCollapsed: false,
   workspaceId
 });
@@ -155,9 +153,7 @@ export function useAppChartTabRenderer({
           categoryChoices={categoryChoices}
           chart={chartId === "charts" ? null : charts.find((chart) => chart.id === chartId) ?? null}
           charts={chartId === "charts" ? charts : undefined}
-          hiddenCategoryKeys={paneViewState.hiddenCategoryKeys}
           onCalendarSettingsSave={onCalendarSettingsSave}
-          onHiddenCategoryKeysChange={(hiddenCategoryKeys: string[]) => updatePaneViewState({ hiddenCategoryKeys })}
           onOpenFile={onOpenFile}
           onRailCollapsedChange={(railCollapsed: boolean) => updatePaneViewState({ railCollapsed })}
           railCollapsed={paneViewState.railCollapsed}
@@ -179,7 +175,6 @@ function resetClosedChroniclePaneStates(
     const reset = defaultChroniclePaneViewState(workspaceId);
     if (
       current[pane].workspaceId !== reset.workspaceId ||
-      current[pane].hiddenCategoryKeys.length > 0 ||
       current[pane].railCollapsed
     ) {
       next[pane] = reset;

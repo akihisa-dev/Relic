@@ -3,10 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { ChartEntry } from "../shared/ipc";
 import {
   CHRONICLE_UNCATEGORIZED_KEY,
-  chronicleCategoryKey,
-  createChronicleCategoryOptions,
-  isChronicleEntryVisible,
-  pruneChronicleHiddenCategoryKeys
+  createChronicleCategoryOptions
 } from "./chronicleCategoryModel";
 
 function entry(path: string, category?: string): ChartEntry {
@@ -52,17 +49,4 @@ describe("chronicleCategoryModel", () => {
     expect(second.map((option) => option.hue)).toEqual(firstHues);
   });
 
-  it("非表示カテゴリを描画対象から除外し、消えたカテゴリ状態を破棄する", () => {
-    const war = entry("war.md", "戦争");
-    const uncategorized = entry("note.md");
-    const hidden = new Set([chronicleCategoryKey("戦争"), CHRONICLE_UNCATEGORIZED_KEY, "category:消滅"]);
-    const options = createChronicleCategoryOptions([war, uncategorized], [], "未分類");
-
-    expect(isChronicleEntryVisible(war, hidden)).toBe(false);
-    expect(isChronicleEntryVisible(uncategorized, hidden)).toBe(false);
-    expect(pruneChronicleHiddenCategoryKeys(hidden, options)).toEqual([
-      "category:戦争",
-      CHRONICLE_UNCATEGORIZED_KEY
-    ]);
-  });
 });

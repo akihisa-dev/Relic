@@ -17,8 +17,7 @@ import {
   type ChronicleCanvasYear
 } from "./chronicleCanvasModel";
 import {
-  chronicleCategoryKey,
-  isChronicleEntryVisible
+  chronicleCategoryKey
 } from "./chronicleCategoryModel";
 import {
   baseYearToCalendarYear,
@@ -53,9 +52,9 @@ export function drawChronicleCanvas(
   viewportWidth: number,
   viewportHeight: number,
   theme: ChronicleCanvasTheme,
-  hiddenCategoryKeys: ReadonlySet<string> = new Set(),
   categoryHues: ReadonlyMap<string, number> = new Map(),
-  calendarSettings?: ChronicleCalendarSettings
+  calendarSettings?: ChronicleCalendarSettings,
+  calendarHues: ReadonlyMap<string, number> = new Map()
 ): ChronicleCanvasDrawResult {
   context.save();
   context.clearRect(0, 0, viewportWidth, viewportHeight);
@@ -69,7 +68,6 @@ export function drawChronicleCanvas(
   const baseCalendarName = calendarSettings?.baseCalendarName ?? defaultChronicleCalendarSettings.baseCalendarName;
   const visibleCalendarNames = new Set(calendarSettings?.visibleCalendarNames ?? [baseCalendarName]);
   const drawVisibleItem = (item: ChronicleCanvasItem): void => {
-    if (!isChronicleEntryVisible(item.entry, hiddenCategoryKeys)) return;
     if (!isItemVisible(item, camera, viewportWidth, viewportHeight)) return;
     const hue = categoryHues.get(chronicleCategoryKey(item.entry.category));
     const itemColor = hue === undefined
@@ -100,7 +98,8 @@ export function drawChronicleCanvas(
     viewportHeight,
     theme,
     calendarSettings,
-    visibleCalendarNames
+    visibleCalendarNames,
+    calendarHues
   );
   for (const item of scene.items) {
     if (item.calendarName !== baseCalendarName && visibleCalendarNames.has(item.calendarName)) drawVisibleItem(item);
@@ -190,7 +189,8 @@ function drawCalendarSurfaces(
   viewportHeight: number,
   theme: ChronicleCanvasTheme,
   calendarSettings: ChronicleCalendarSettings,
-  visibleCalendarNames: ReadonlySet<string>
+  visibleCalendarNames: ReadonlySet<string>,
+  calendarHues: ReadonlyMap<string, number>
 ): void {
   for (const surface of scene.surfaces) {
     if (!visibleCalendarNames.has(surface.calendarName)) continue;
@@ -217,12 +217,16 @@ function drawCalendarSurfaces(
       return clippedRight > clippedLeft ? { left: clippedLeft, width: clippedRight - clippedLeft } : null;
     };
     const declaredRect = clippedRect(left, right);
+    const hue = calendarHues.get(surface.calendarName);
+    const surfaceColor = hue === undefined
+      ? theme.mutedText
+      : `hsl(${hue} ${theme.categorySaturation}% ${theme.categoryLightness}%)`;
     context.save();
     context.globalAlpha = 0.1;
-    context.fillStyle = theme.mutedText;
+    context.fillStyle = surfaceColor;
     if (declaredRect) context.fillRect(declaredRect.left, top, declaredRect.width, height);
     context.globalAlpha = 0.42;
-    context.strokeStyle = theme.mutedText;
+    context.strokeStyle = surfaceColor;
     context.lineWidth = 1.5;
     if (surface.rangeState === "unset" && "setLineDash" in context) context.setLineDash([8, 6]);
     if (declaredRect) context.strokeRect(declaredRect.left, top, declaredRect.width, height);
@@ -243,7 +247,7 @@ function drawCalendarSurfaces(
     }
 
     context.globalAlpha = 0.9;
-    context.fillStyle = theme.text;
+    context.fillStyle = surfaceColor;
     context.font = "750 12px -apple-system, BlinkMacSystemFont, sans-serif";
     context.textAlign = "left";
     context.textBaseline = "middle";
@@ -257,7 +261,7 @@ function drawCalendarSurfaces(
       const converted = baseYearToCalendarYear(year.value, surface.calendarName, calendarSettings);
       if (converted === null) continue;
       context.globalAlpha = 0.72;
-      context.fillStyle = theme.mutedText;
+      context.fillStyle = surfaceColor;
       context.fillText(formatYear(converted), x, top + 18);
     }
     context.restore();

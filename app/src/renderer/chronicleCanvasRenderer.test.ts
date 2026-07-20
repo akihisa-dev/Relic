@@ -78,7 +78,7 @@ describe("chronicleCanvasRenderer", () => {
     });
   });
 
-  it("非表示カテゴリを描画せず、候補外カテゴリも安定した色で描画対象にする", () => {
+  it("カテゴリごとの安定した色で項目を描画する", () => {
     const scene = createChronicleCanvasScene([
       entry("War", "war.md", 100, "戦争"),
       entry("People", "people.md", 110, "人物")
@@ -95,9 +95,9 @@ describe("chronicleCanvasRenderer", () => {
       categorySaturation: 68,
       mutedText: "#666",
       text: "#111"
-    }, new Set(["category:戦争"]), new Map([["category:人物", 137]]));
+    }, new Map([["category:戦争", 20], ["category:人物", 137]]));
 
-    expect(fillTextCalls.some((call) => call.text === "War")).toBe(false);
+    expect(fillTextCalls.some((call) => call.text === "War")).toBe(true);
     expect(fillTextCalls.some((call) => call.text === "People")).toBe(true);
     expect(fillStyleCalls).toContain("hsl(137 68% 40%)");
   });
@@ -115,7 +115,7 @@ describe("chronicleCanvasRenderer", () => {
       categorySaturation: 68,
       mutedText: "#666",
       text: "#111"
-    }, new Set(), new Map(), {
+    }, new Map(), {
       baseCalendarName: "基準暦",
       calendars: [{ name: "比較暦", range: { end: 100, start: 1 }, yearOne: 10 }],
       visibleCalendarNames: ["基準暦", "比較暦"]
@@ -148,10 +148,12 @@ describe("chronicleCanvasRenderer", () => {
       categorySaturation: 68,
       mutedText: "#666",
       text: "#111"
-    }, new Set(), new Map(), settings);
+    }, new Map(), settings, new Map([["王国暦", 210]]));
 
     expect(strokeRectCalls.length).toBeGreaterThan(0);
-    expect(fillTextCalls.some((call) => call.text === "王国暦")).toBe(true);
+    expect(fillTextCalls.find((call) => call.text === "王国暦")).toMatchObject({
+      fillStyle: "hsl(210 68% 40%)"
+    });
     expect(fillTextCalls.some((call) => call.text === "Kingdom")).toBe(true);
   });
 
@@ -172,7 +174,7 @@ describe("chronicleCanvasRenderer", () => {
       categorySaturation: 68,
       mutedText: "#666",
       text: "#111"
-    }, new Set(), new Map(), settings);
+    }, new Map(), settings);
 
     const baseLabelY = chronicleCanvasYearLabelY(camera.scale);
     const baseLabelXs = new Set(fillTextCalls.filter((call) => (
@@ -205,7 +207,7 @@ describe("chronicleCanvasRenderer", () => {
       categorySaturation: 68,
       mutedText: "#666",
       text: "#111"
-    }, new Set(), new Map(), settings);
+    }, new Map(), settings);
 
     expect(lineDashCalls).toContainEqual([6, 5]);
   });

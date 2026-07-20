@@ -108,7 +108,7 @@ describe("ChronicleCanvas cursor", () => {
     expect(screen.getByText("設定範囲外に1件の項目があります。")).toBeInTheDocument();
   });
 
-  it("非表示の追加暦面しか項目がない場合はカテゴリ非表示と区別する", () => {
+  it("非表示の追加暦面しか項目がない場合は専用の空状態を表示する", () => {
     render(
       <I18nProvider language="ja">
         <ChronicleCanvas
@@ -135,7 +135,6 @@ describe("ChronicleCanvas cursor", () => {
     );
 
     expect(screen.getByText("表示中の暦面に年表項目はありません。")).toBeInTheDocument();
-    expect(screen.queryByText("すべてのカテゴリが非表示です。")).not.toBeInTheDocument();
   });
 
   it("暦設定はパネル内の操作では維持し、外側のクリックで閉じる", () => {

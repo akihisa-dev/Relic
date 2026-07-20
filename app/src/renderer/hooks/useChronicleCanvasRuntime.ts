@@ -46,10 +46,10 @@ interface PointerSession {
 }
 
 interface UseChronicleCanvasRuntimeOptions {
+  calendarHues: ReadonlyMap<string, number>;
   calendarSettings: ChronicleCalendarSettings;
   categoryHues: Map<string, number>;
   entries: ChartEntry[];
-  hiddenCategoryKeys: Set<string>;
   onOpenFile: (path: string) => void;
   periodScale: ChroniclePeriodScale;
   scene: ChronicleCanvasScene;
@@ -68,10 +68,10 @@ interface ChronicleCanvasRuntime {
 }
 
 export function useChronicleCanvasRuntime({
+  calendarHues,
   calendarSettings,
   categoryHues,
   entries,
-  hiddenCategoryKeys,
   onOpenFile,
   periodScale,
   scene,
@@ -81,7 +81,7 @@ export function useChronicleCanvasRuntime({
   const sceneRef = useLatest(scene);
   const entriesRef = useLatest(entries);
   const categoryHuesRef = useLatest(categoryHues);
-  const hiddenCategoryKeysRef = useLatest(hiddenCategoryKeys);
+  const calendarHuesRef = useLatest(calendarHues);
   const visibleItemsRef = useLatest(visibleItems);
   const openFileRef = useLatest(onOpenFile);
   const [camera] = useState(createChronicleCanvasCamera);
@@ -160,14 +160,14 @@ export function useChronicleCanvasRuntime({
       width,
       height,
       themeRef.current,
-      hiddenCategoryKeysRef.current,
       categoryHuesRef.current,
-      calendarSettings
+      calendarSettings,
+      calendarHuesRef.current
     );
     if (simulationMoving || inertiaMoving || draggedItemId) {
       animationFrameRef.current = requestAnimationFrame(draw);
     }
-  }, [calendarSettings, camera, categoryHuesRef, entriesRef, hiddenCategoryKeysRef, sceneRef, updateTheme, visibleItemsRef]);
+  }, [calendarHuesRef, calendarSettings, camera, categoryHuesRef, entriesRef, sceneRef, updateTheme, visibleItemsRef]);
 
   useEffect(() => {
     updateTheme();

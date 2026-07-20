@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { useCallback, useMemo, useRef, useState, type ReactElement } from "react";
 
 import type { ChartEntry } from "../../shared/ipc";
 import {
@@ -6,10 +6,12 @@ import {
   type ChronicleCalendarSettings
 } from "../../shared/chronicleCalendar";
 import {
-  createChronicleCategoryOptions,
-  isChronicleEntryVisible,
-  pruneChronicleHiddenCategoryKeys
+  createChronicleCategoryOptions
 } from "../chronicleCategoryModel";
+import {
+  createChronicleCalendarHues,
+  createChronicleCalendarTree
+} from "../chronicleCalendarTreeModel";
 import {
   CHRONICLE_INITIAL_PERIOD_SCALE,
   CHRONICLE_PERIOD_SCALES,
@@ -22,37 +24,30 @@ import {
   ChronicleCalendarSettingsPanel,
   useChronicleCalendarSettingsPopover
 } from "./ChronicleCalendarSettingsPanel";
-import { ChronicleCategoryRail } from "./ChronicleCategoryRail";
+import { ChronicleCalendarTreeRail } from "./ChronicleCalendarTreeRail";
 
 interface ChronicleCanvasProps {
   calendarSettings?: ChronicleCalendarSettings;
   categoryChoices?: string[];
   entries: ChartEntry[];
-  hiddenCategoryKeys?: string[];
   onOpenFile: (path: string) => void;
-  onHiddenCategoryKeysChange?: (keys: string[]) => void;
   onCalendarSettingsSave?: (settings: ChronicleCalendarSettings) => void;
   onRailCollapsedChange?: (collapsed: boolean) => void;
   railCollapsed?: boolean;
 }
 
 const emptyCategoryChoices: string[] = [];
-const emptyHiddenCategoryKeys: string[] = [];
-
 export function ChronicleCanvas({
   calendarSettings = defaultChronicleCalendarSettings,
   categoryChoices = emptyCategoryChoices,
   entries,
-  hiddenCategoryKeys = emptyHiddenCategoryKeys,
   onOpenFile,
-  onHiddenCategoryKeysChange = () => undefined,
   onCalendarSettingsSave = () => undefined,
   onRailCollapsedChange = () => undefined,
   railCollapsed = false
 }: ChronicleCanvasProps): ReactElement {
   const t = useT();
   const calendarSettingsPopover = useChronicleCalendarSettingsPopover();
-  const hiddenCategoryKeySet = useMemo(() => new Set(hiddenCategoryKeys), [hiddenCategoryKeys]);
   const categoryOptions = useMemo(() => createChronicleCategoryOptions(
     entries,
     categoryChoices,
@@ -61,6 +56,12 @@ export function ChronicleCanvas({
   const categoryHues = useMemo(() => new Map(categoryOptions.flatMap((option) => (
     option.hue === null ? [] : [[option.key, option.hue] as const]
   ))), [categoryOptions]);
+  const calendarHues = useMemo(() => createChronicleCalendarHues(calendarSettings), [calendarSettings]);
+  const calendarTree = useMemo(() => createChronicleCalendarTree(
+    entries,
+    calendarSettings,
+    calendarHues
+  ), [calendarHues, calendarSettings, entries]);
   const [periodScaleIndex, setPeriodScaleIndex] = useState(() => CHRONICLE_PERIOD_SCALES.indexOf(CHRONICLE_INITIAL_PERIOD_SCALE));
   const periodScale = CHRONICLE_PERIOD_SCALES[periodScaleIndex] ?? CHRONICLE_INITIAL_PERIOD_SCALE;
   const sceneRandomValuesRef = useRef<number[]>([]);
@@ -82,24 +83,17 @@ export function ChronicleCanvas({
   const calendarVisibleItems = useMemo(() => scene.items.filter((item) => (
     item.calendarName === calendarSettings.baseCalendarName || calendarSettings.visibleCalendarNames.includes(item.calendarName)
   )), [calendarSettings.baseCalendarName, calendarSettings.visibleCalendarNames, scene.items]);
-  const visibleItems = useMemo(() => calendarVisibleItems.filter((item) => (
-    isChronicleEntryVisible(item.entry, hiddenCategoryKeySet)
-  )), [calendarVisibleItems, hiddenCategoryKeySet]);
+  const visibleItems = calendarVisibleItems;
   const canvasRuntime = useChronicleCanvasRuntime({
+    calendarHues,
     calendarSettings,
     categoryHues,
     entries,
-    hiddenCategoryKeys: hiddenCategoryKeySet,
     onOpenFile,
     periodScale,
     scene,
     visibleItems
   });
-
-  useEffect(() => {
-    const prunedKeys = pruneChronicleHiddenCategoryKeys(hiddenCategoryKeys, categoryOptions);
-    if (prunedKeys.length !== hiddenCategoryKeys.length) onHiddenCategoryKeysChange(prunedKeys);
-  }, [categoryOptions, hiddenCategoryKeys, onHiddenCategoryKeysChange]);
 
   const handlePeriodScaleChange = useCallback((nextIndex: number) => {
     const nextPeriodScale = CHRONICLE_PERIOD_SCALES[nextIndex] as ChroniclePeriodScale | undefined;
@@ -138,12 +132,11 @@ export function ChronicleCanvas({
         </button>
       </div>
       <div className="chronicle-body">
-        <ChronicleCategoryRail
+        <ChronicleCalendarTreeRail
           collapsed={railCollapsed}
-          hiddenCategoryKeys={hiddenCategoryKeySet}
+          nodes={calendarTree}
           onCollapsedChange={onRailCollapsedChange}
-          onHiddenCategoryKeysChange={onHiddenCategoryKeysChange}
-          options={categoryOptions}
+          onOpenFile={onOpenFile}
         />
         <div className="chronicle-canvas-wrap">
           <canvas
@@ -161,13 +154,6 @@ export function ChronicleCanvas({
           {entries.length > 0 && calendarVisibleItems.length === 0 ? (
             <div className="chronicle-filter-empty">
               <p>{t("chronicle.allCalendarSurfacesHidden")}</p>
-            </div>
-          ) : entries.length > 0 && visibleItems.length === 0 ? (
-            <div className="chronicle-filter-empty">
-              <p>{t("chronicle.allCategoriesHidden")}</p>
-              <button onClick={() => onHiddenCategoryKeysChange([])} type="button">
-                {t("chronicle.showAllCategories")}
-              </button>
             </div>
           ) : entries.length === 0 ? (
             <div className="chronicle-filter-empty"><p>{t("chronicle.empty")}</p></div>
