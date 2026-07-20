@@ -12,11 +12,14 @@ export const CHRONICLE_PERIOD_SCALES = [1, 5, 10, 50, 100, 500] as const;
 export const CHRONICLE_INITIAL_PERIOD_SCALE: ChroniclePeriodScale = 10;
 export const CHRONICLE_CANVAS_LABEL_HEIGHT = 20;
 export const CHRONICLE_CANVAS_ITEM_LABEL_OFFSET = 22;
-export const CHRONICLE_CALENDAR_SURFACE_HEADER_INSET = 86;
+export const CHRONICLE_CALENDAR_SURFACE_HEADER_INSET = 160;
 const CHRONICLE_CANVAS_TEXT_FADE_START_SCALE = 0.04;
 const CHRONICLE_CANVAS_TEXT_FADE_RANGE = 0.65;
 
 const itemHeight = 70;
+const calendarSurfaceBottomInset = 112;
+const calendarSurfaceItemStride = 140;
+const calendarSurfaceMinimumHeight = 342;
 const labelCharacterWidth = 7.4;
 const yearTickGap = 96;
 const springStrength = 0.2;
@@ -118,7 +121,13 @@ export function createChronicleCanvasScene(
   const surfaces: ChronicleCalendarSurface[] = [];
   let surfaceTop = baseHeight / 2 + 72;
   for (const group of addedEntries) {
-    const height = Math.max(216, group.entries.length * (itemHeight + 24) + 124);
+    const height = Math.max(
+      calendarSurfaceMinimumHeight,
+      CHRONICLE_CALENDAR_SURFACE_HEADER_INSET + calendarSurfaceBottomInset + Math.max(
+        itemHeight,
+        Math.max(0, group.entries.length - 1) * calendarSurfaceItemStride
+      )
+    );
     const surfaceY = surfaceTop + height / 2;
     const surfaceItems = createCanvasItems(
       group.entries,
@@ -127,7 +136,8 @@ export function createChronicleCanvasScene(
       height,
       random,
       periodScale,
-      CHRONICLE_CALENDAR_SURFACE_HEADER_INSET
+      CHRONICLE_CALENDAR_SURFACE_HEADER_INSET,
+      calendarSurfaceBottomInset
     );
     items.push(...surfaceItems);
     const declaredStartYear = group.calendar.range
@@ -167,9 +177,9 @@ function createCanvasItems(
   height: number,
   random: () => number,
   periodScale: ChroniclePeriodScale,
-  topInset = 50
+  topInset = 50,
+  bottomInset = 50
 ): ChronicleCanvasItem[] {
-  const bottomInset = 50;
   const usableHeight = Math.max(0, height - topInset - bottomInset);
   const verticalSlots = entries.map((_, index) => top + topInset + (entries.length <= 1 ? usableHeight / 2 : usableHeight * index / (entries.length - 1)));
   return entries.map((entry, index) => {
@@ -193,7 +203,7 @@ function createCanvasItems(
       id: entryKey(entry),
       labelWidth,
       labelTextWidth: null,
-      maxY: top + height - 42,
+      maxY: top + height - bottomInset + 8,
       minY: top + topInset - 8,
       rangeLabel,
       startX,

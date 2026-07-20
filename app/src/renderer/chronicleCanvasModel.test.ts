@@ -133,6 +133,34 @@ describe("chronicleCanvasModel", () => {
     );
   });
 
+  it("通常の縮小時にも暦面の見出し、項目、下端を重ねない高さを確保する", () => {
+    const settings = {
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "王国暦", range: { end: 80, start: 1 }, yearOne: 100 }],
+      visibleCalendarNames: ["基準暦", "王国暦"]
+    };
+    const scene = createChronicleCanvasScene([
+      entry("First", "first.md", 100, 120, "王国暦"),
+      entry("Second", "second.md", 130, 140, "王国暦"),
+      entry("Third", "third.md", 150, 160, "王国暦"),
+      entry("Fourth", "fourth.md", 170, 180, "王国暦")
+    ], () => 0.5, 10, settings);
+    const surface = scene.surfaces[0];
+    const items = scene.items
+      .filter((item) => item.calendarName === "王国暦")
+      .toSorted((left, right) => left.y - right.y);
+    const scale = 0.5;
+    const surfaceTop = surface.y - surface.height / 2;
+    const surfaceBottom = surface.y + surface.height / 2;
+    const firstLabelTop = (items[0].y - surfaceTop) * scale - CHRONICLE_CANVAS_ITEM_LABEL_OFFSET - CHRONICLE_CANVAS_LABEL_HEIGHT / 2;
+    const lastRangeBottom = (items.at(-1)!.y - surfaceTop) * scale + 24 + CHRONICLE_CANVAS_LABEL_HEIGHT / 2;
+    const itemScreenGaps = items.slice(1).map((item, index) => (item.y - items[index].y) * scale);
+
+    expect(firstLabelTop).toBeGreaterThan(30);
+    expect(itemScreenGaps.every((gap) => gap >= 60)).toBe(true);
+    expect(lastRangeBottom).toBeLessThan((surfaceBottom - surfaceTop) * scale - 12);
+  });
+
   it("宣言範囲外の項目を消さず警告状態へ含める", () => {
     const settings = {
       baseCalendarName: "基準暦",
