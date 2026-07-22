@@ -95,8 +95,8 @@ jobs:
     codeCi.jobs.verify["runs-on"] = "macos-latest";
     const workflows = new Map([
       [".github/workflows/ci.yml", codeCi],
-      [".github/workflows/pre-release-verification.yml", workflow("Pre-release", "workflow_dispatch", "pnpm build:mac:safe && pnpm smoke:package")],
-      [".github/workflows/draft-release.yml", workflow("Draft", "push", "pnpm build:mac:safe && pnpm smoke:package")]
+      [".github/workflows/pre-release-verification.yml", workflow("Pre-release", "workflow_dispatch", "test \"$(uname -m)\" = arm64 && pnpm build:mac:safe && pnpm smoke:package")],
+      [".github/workflows/draft-release.yml", workflow("Draft", "push", "test \"$(uname -m)\" = arm64 && pnpm build:mac:safe && pnpm smoke:package")]
     ]);
 
     expect(validateRepositoryWorkflowPolicy(workflows, {
@@ -166,6 +166,40 @@ jobs:
     );
     expect(errors).toContain(
       ".github/workflows/draft-release.yml: package build job build must run the package Electron smoke."
+    );
+  });
+
+  it("arm64確認より先にmacOS buildを実行するjobを報告する", () => {
+    const packageWorkflow = parseWorkflow(`
+name: Package
+on: workflow_dispatch
+permissions:
+  contents: read
+concurrency:
+  group: package
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - run: pnpm build:mac:safe
+      - run: test "$(uname -m)" = arm64
+      - run: pnpm smoke:package
+`);
+    const errors = validateRepositoryWorkflowPolicy(new Map([
+      [".github/workflows/ci.yml", packageWorkflow],
+      [".github/workflows/pre-release-verification.yml", packageWorkflow],
+      [".github/workflows/draft-release.yml", packageWorkflow]
+    ]), {
+      engines: { node: ">=22 <27" },
+      packageManager: "pnpm@10.10.0"
+    });
+
+    expect(errors).toContain(
+      ".github/workflows/pre-release-verification.yml: job build must verify an arm64 runner before pnpm build:mac:safe."
+    );
+    expect(errors).toContain(
+      ".github/workflows/draft-release.yml: job build must verify an arm64 runner before pnpm build:mac:safe."
     );
   });
 });

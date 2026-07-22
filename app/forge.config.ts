@@ -12,10 +12,7 @@ const config = {
     extraResource: relicPackageExtraResources(process.cwd()),
     icon: "assets/icon",
     ignore: ignoreRelicPackagePath,
-    name: "Relic",
-    osxUniversal: {
-      mergeASARs: true
-    }
+    name: "Relic"
   },
   makers: [
     new MakerZIP({}, ["darwin"]),

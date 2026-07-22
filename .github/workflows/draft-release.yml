@@ -76,6 +76,15 @@ jobs:
         working-directory: app
         run: pnpm install --frozen-lockfile
 
+      - name: Check Apple Silicon runner
+        shell: bash
+        run: |
+          if [ "$(uname -m)" != "arm64" ]; then
+            echo "macos-latest must produce the arm64 release asset." >&2
+            echo "Actual architecture: $(uname -m)" >&2
+            exit 1
+          fi
+
       - name: Build macOS app
         working-directory: app
         run: pnpm build:mac:safe
@@ -91,15 +100,6 @@ jobs:
           name: electron-smoke-macos
           path: app/artifacts/electron-smoke
           if-no-files-found: ignore
-
-      - name: Check macOS runner architecture
-        shell: bash
-        run: |
-          if [ "$(uname -m)" != "arm64" ]; then
-            echo "macos-latest must produce the arm64 release asset." >&2
-            echo "Actual architecture: $(uname -m)" >&2
-            exit 1
-          fi
 
       - name: Create macOS release ZIP
         working-directory: app

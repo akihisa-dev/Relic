@@ -32,6 +32,15 @@ jobs:
         working-directory: app
         run: pnpm install --frozen-lockfile
 
+      - name: Check Apple Silicon runner
+        shell: bash
+        run: |
+          if [ "$(uname -m)" != "arm64" ]; then
+            echo "macos-latest must verify the arm64 package." >&2
+            echo "Actual architecture: $(uname -m)" >&2
+            exit 1
+          fi
+
       - name: Build and inspect macOS package
         working-directory: app
         run: pnpm build:mac:safe
@@ -47,12 +56,3 @@ jobs:
           name: electron-smoke-macos
           path: app/artifacts/electron-smoke
           if-no-files-found: ignore
-
-      - name: Check Apple Silicon runner
-        shell: bash
-        run: |
-          if [ "$(uname -m)" != "arm64" ]; then
-            echo "macos-latest must verify the arm64 package." >&2
-            echo "Actual architecture: $(uname -m)" >&2
-            exit 1
-          fi

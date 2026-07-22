@@ -37,4 +37,4 @@
 ## プラットフォーム
 
 - **対象OS**: Apple Silicon搭載MacのmacOS。その他のOSとIntel Macは現行スタックの対象外とする
-- **配布方法**: Electron Forge の `package:mac` / `make:mac` を使用し、macOS向けZIP/DMGを生成する
+- **配布方法**: Electron Forge の `package:mac` / `make:mac` を使用し、Apple Silicon向けarm64のZIP/DMGだけを生成する。Universal Binaryとx64成果物は生成しない

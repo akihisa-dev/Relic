@@ -3,23 +3,25 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { inspectPackagedResources, renderPackageContentReport } from './package-content-report.mjs';
+import { macBuildTarget } from './mac-build-target.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const platform = process.argv[2];
-const outDir = path.resolve(__dirname, '..', 'out', platform ?? '');
+const outDir = path.resolve(__dirname, '..', macBuildTarget.outputDirectory);
 
-if (platform !== 'darwin') {
-  console.error('[check:package:safe] usage: node scripts/check-package-artifacts.mjs darwin');
+if (process.argv.length !== 2) {
+  console.error('[check:package:safe] usage: node scripts/check-package-artifacts.mjs');
   process.exit(1);
 }
 
 async function findPackagedAppDir() {
   const entries = await readdir(outDir, { withFileTypes: true });
-  const match = entries.find((entry) => entry.isDirectory() && entry.name.startsWith('Relic-darwin-'));
+  const match = entries.find(
+    (entry) => entry.isDirectory() && entry.name === macBuildTarget.packageDirectoryName
+  );
 
   if (!match) {
-    throw new Error(`packaged app directory not found for ${platform}`);
+    throw new Error(`packaged app directory not found: ${macBuildTarget.packageDirectoryName}`);
   }
 
   return path.join(outDir, match.name);

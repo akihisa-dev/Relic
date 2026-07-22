@@ -221,14 +221,15 @@ You can also run `scripts/Relicをビルド.command`, which executes `build:mac:
 
 `build:mac:safe` runs:
 
-1. Removes the previous `app/out/darwin` output.
-2. Runs Electron Forge `make` for macOS.
-3. Verifies the generated package and its contents.
+1. Verifies that the host is an Apple Silicon Mac.
+2. Removes the previous `app/out/darwin` output.
+3. Runs Electron Forge `make` for macOS arm64.
+4. Verifies the generated package and its contents.
 
 Verification checks:
 
-- Required: `out/darwin/Relic-darwin-*/Relic.app/Contents/MacOS/Relic`
-- Required: `out/darwin/Relic-darwin-*/Relic.app/Contents/Resources/app.asar`
+- Required: `out/darwin/Relic-darwin-arm64/Relic.app/Contents/MacOS/Relic`
+- Required: `out/darwin/Relic-darwin-arm64/Relic.app/Contents/Resources/app.asar`
 
 ---
 
@@ -497,14 +498,15 @@ pnpm build:mac:safe
 
 `build:mac:safe` は以下を順に実行します。
 
-1. 前回の `app/out/darwin` を削除
-2. Electron Forgeの `make` をmacOS向けに実行
-3. 生成したパッケージと内容を検証
+1. 実行環境がApple Silicon搭載Macであることを確認
+2. 前回の `app/out/darwin` を削除
+3. Electron Forgeの `make` をmacOS arm64向けに実行
+4. 生成したパッケージと内容を検証
 
 検証内容:
 
-- 必須: `out/darwin/Relic-darwin-*/Relic.app/Contents/MacOS/Relic`
-- 必須: `out/darwin/Relic-darwin-*/Relic.app/Contents/Resources/app.asar`
+- 必須: `out/darwin/Relic-darwin-arm64/Relic.app/Contents/MacOS/Relic`
+- 必須: `out/darwin/Relic-darwin-arm64/Relic.app/Contents/Resources/app.asar`
 
 ---
 

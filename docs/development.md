@@ -186,7 +186,7 @@ Node APIを使うmain・preload・shared・scriptsのテストはNode環境、re
 `skills:check` はrepository-owned Skillの構文、重複名、確定参照切れを検査する。`skills:routing:audit` は代表依頼台帳の形式と記録を監査する補助コマンドであり、過去の実行記録が残っていても現在のrouting成功を保証しない。
 変更に対して `verify` が過剰な場合も検証自体は省略せず、対象テスト、型チェック、文書確認、差分確認などへ絞る。
 E2E、配布ビルド、実アプリ操作、スクリーンショット、起動スモークは、ローカル作業ではユーザーの明示指示がない限り実行しない。未実施であることを通常変更の完了阻害条件にしない。
-macOSのsafe checkは、配布用ASARの許可内容と必須entry、`LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOM、およびElectron本体を除くアプリ固有resourcesの容量とファイル数を確認する。
+macOSのsafe buildはApple Silicon搭載Macだけで実行でき、Forgeへ`darwin`と`arm64`を固定して`out/darwin/Relic-darwin-arm64`を生成する。safe checkは、配布用ASARの許可内容と必須entry、`LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOM、およびElectron本体を除くアプリ固有resourcesの容量とファイル数を確認する。
 GitHubのCode CIはPull Request、`main`へのpush、手動実行で、macOS runner上のイベントのbase/headに対する `pnpm committed-diff:check`、`pnpm verify:ci`、`pnpm smoke:electron` を実行する。Pull Requestだけは追加でコミット範囲のバージョン規則を確認する。
 タグ作成前の配布確認は、GitHub ActionsのPre-release Verificationを手動実行する。macOS runnerでRelease workflowと同じ `build:mac:safe` と `pnpm smoke:package` を使い、タグ、Release、push、repository内容を変更しない。Draft Release workflowもZIP作成前に同じ配布版スモークを実行する。
 ユーザーが実アプリ確認を明示した場合は、`pnpm start:isolated -- --user-data-dir <absolute-temp-path>` で一時データの開発版を起動する。起動元のterminalに出る `RELIC_DEV_APP_IDENTITY` のPIDと完全な実行pathを操作対象の確認に使い、表示名だけで既存ウインドウを選ばない。この切り替えはVite開発server起動時だけ有効で、package版では既定のユーザーデータ保存先を変更しない。

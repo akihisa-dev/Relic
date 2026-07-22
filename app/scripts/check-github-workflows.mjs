@@ -159,6 +159,23 @@ export function validateRepositoryWorkflowPolicy(workflows, packageJson) {
           errors.push(`${source}: job ${jobName} must enable Corepack before pnpm install.`);
         }
       }
+
+      const macBuildIndex = commands.findIndex((command) => command.includes("pnpm build:mac:safe"));
+      if (macBuildIndex >= 0) {
+        const appleSiliconCheckIndex = commands.findIndex(
+          (command) => command.includes("uname -m") && command.includes("arm64")
+        );
+        const checkPrecedesBuild = appleSiliconCheckIndex >= 0 && (
+          appleSiliconCheckIndex < macBuildIndex
+          || (
+            appleSiliconCheckIndex === macBuildIndex
+            && commands[macBuildIndex].indexOf("uname -m") < commands[macBuildIndex].indexOf("pnpm build:mac:safe")
+          )
+        );
+        if (!checkPrecedesBuild) {
+          errors.push(`${source}: job ${jobName} must verify an arm64 runner before pnpm build:mac:safe.`);
+        }
+      }
     }
   }
 

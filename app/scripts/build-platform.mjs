@@ -3,14 +3,21 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { assertAppleSiliconHost, macBuildTarget } from './mac-build-target.mjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const appDir = path.resolve(__dirname, '..');
 
-const platform = process.argv[2];
+if (process.argv.length !== 2) {
+  console.error('[build:platform] usage: node scripts/build-platform.mjs');
+  process.exit(1);
+}
 
-if (platform !== 'darwin') {
-  console.error('[build:platform] usage: node scripts/build-platform.mjs darwin');
+try {
+  assertAppleSiliconHost();
+} catch (error) {
+  console.error(`[build:platform] ${error instanceof Error ? error.message : String(error)}`);
   process.exit(1);
 }
 
@@ -36,9 +43,9 @@ const runNodeScript = (scriptName, args) => new Promise((resolve, reject) => {
   });
 });
 
-const outputDir = path.join(appDir, 'out', platform);
+const outputDir = path.join(appDir, macBuildTarget.outputDirectory);
 await rm(outputDir, { force: true, recursive: true });
 console.log(`[build:platform] removed ${outputDir}`);
 
-await runNodeScript('run-forge-build.mjs', ['make', 'darwin']);
-await runNodeScript('check-package-artifacts.mjs', [platform]);
+await runNodeScript('run-forge-build.mjs', ['make']);
+await runNodeScript('check-package-artifacts.mjs', []);

@@ -29,6 +29,7 @@ GitタグをGitHubへpushすると、`.github/workflows/draft-release.yml` がma
 - [ ] Release tagが `app/package.json` の `version` と一致している
 - [ ] `Relic-macOS-arm64.zip` が添付されている
 - [ ] `Relic-macOS-arm64.zip.sha256` が添付されている
+- [ ] packageディレクトリが`Relic-darwin-arm64`で、Universal Binaryまたはx64成果物が混在していない
 - [ ] `THIRD_PARTY_NOTICES.md` が添付されている
 - [ ] `relic-dependencies.cdx.json` が添付されている
 - [ ] workflowが `release-assets` に集めた確認済みファイルだけが添付され、途中生成物や未確認の成果物が混ざっていない
@@ -45,7 +46,7 @@ GitタグをGitHubへpushすると、`.github/workflows/draft-release.yml` がma
 
 タグを作成する前にGitHub Actionsの `Pre-release Verification` を手動実行すると、macOS runnerでRelease workflowと同じ安全ビルドと配布版起動スモークを確認できる。このworkflowはタグ、Release、push、リポジトリ内容を変更せず、成果物も公開しない。失敗した場合はタグを作成せず、安全ビルドまたは `pnpm smoke:package` の最初の失敗を修正して再実行する。
 
-ローカルでmacOS向け成果物まで確認する場合は、`app/` で `pnpm verify:ci`、`pnpm build:mac:safe`、`pnpm smoke:package` を実行する。
+ローカルでmacOS向け成果物まで確認する場合は、Apple Silicon搭載Macの`app/`で`pnpm verify:ci`、`pnpm build:mac:safe`、`pnpm smoke:package`を実行する。`build:mac:safe`はApple Silicon以外の実行環境をビルド開始前に拒否する。
 
 ## 未署名・未公証の注意
 

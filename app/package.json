@@ -1,6 +1,6 @@
 {
   "name": "relic",
-  "version": "0.48.0",
+  "version": "0.48.1",
   "description": "Relic is a local app that extends Markdown files with editing, search, browsing, visualization, and export while keeping the information as Markdown.",
   "license": "AGPL-3.0-or-later",
   "main": ".vite/build/main.js",
@@ -28,10 +28,10 @@
     "committed-diff:check": "node scripts/check-committed-diff.mjs",
     "skills:check": "python3 ../.agents/skills/relic-audit-skills/scripts/collect_skill_evidence.py --workspace .. --root .agents/skills --format summary --fail-on-issues",
     "skills:routing:audit": "python3 ../.agents/skills/relic-audit-skills/scripts/validate_routing_ledger.py --workspace ..",
-    "package": "node scripts/run-forge-build.mjs package darwin",
-    "package:mac": "node scripts/run-forge-build.mjs package darwin",
-    "make": "node scripts/run-forge-build.mjs make darwin",
-    "make:mac": "node scripts/run-forge-build.mjs make darwin",
+    "package": "node scripts/run-forge-build.mjs package",
+    "package:mac": "node scripts/run-forge-build.mjs package",
+    "make": "node scripts/run-forge-build.mjs make",
+    "make:mac": "node scripts/run-forge-build.mjs make",
     "test": "vitest run",
     "test:node": "vitest run --project node",
     "test:renderer": "vitest run --project renderer",
@@ -55,8 +55,8 @@
     "performance:workspace:large": "node --expose-gc scripts/workspace-performance-report.mjs --files 10000 --directories 100",
     "performance:sphere": "node scripts/sphere-performance-report.mjs",
     "clean:out": "node scripts/clean-out.mjs",
-    "check:mac:safe": "node scripts/check-package-artifacts.mjs darwin",
-    "build:mac:safe": "node scripts/build-platform.mjs darwin"
+    "check:mac:safe": "node scripts/check-package-artifacts.mjs",
+    "build:mac:safe": "node scripts/build-platform.mjs"
   },
   "dependencies": {
     "3d-force-graph": "^1.80.0",

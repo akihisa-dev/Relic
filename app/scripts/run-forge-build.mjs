@@ -2,32 +2,36 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { assertAppleSiliconHost, forgeBuildArguments, macBuildTarget } from './mac-build-target.mjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const appDir = path.resolve(__dirname, '..');
 
-const [command, platform, arch] = process.argv.slice(2);
+const argumentsFromCli = process.argv.slice(2);
+const command = argumentsFromCli[0];
 
-const supportedCommands = new Set(['make', 'package']);
-
-if (!supportedCommands.has(command) || platform !== 'darwin') {
-  console.error('[run:forge] usage: node scripts/run-forge-build.mjs <make|package> darwin [arch]');
+if (argumentsFromCli.length !== 1) {
+  console.error('[run:forge] usage: node scripts/run-forge-build.mjs <make|package>');
   process.exit(1);
 }
 
-const forgeArgs = ['exec', 'electron-forge', command, '--platform', platform];
-
-if (arch) {
-  forgeArgs.push('--arch', arch);
+let forgeArgs;
+try {
+  assertAppleSiliconHost();
+  forgeArgs = forgeBuildArguments(command);
+} catch (error) {
+  console.error(`[run:forge] ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(1);
 }
 
 const pnpmCommand = 'pnpm';
 const forgeEnvironment = {
   ...process.env,
-  RELIC_FORGE_OUT_DIR: 'out/darwin'
+  RELIC_FORGE_OUT_DIR: macBuildTarget.outputDirectory
 };
 
-if (process.platform === 'darwin' && platform === 'darwin' && Number.parseInt(process.versions.node, 10) >= 25) {
+if (Number.parseInt(process.versions.node, 10) >= 25) {
   const extractorPath = path.join(__dirname, 'forge-electron-extract.cjs');
   forgeEnvironment.RELIC_ELECTRON_EXTRACTOR = 'ditto';
   forgeEnvironment.NODE_OPTIONS = [
