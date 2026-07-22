@@ -1,4 +1,4 @@
-import type { EditorState } from "@codemirror/state";
+import type { EditorState, Text } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import type { RefObject } from "react";
 
@@ -13,7 +13,7 @@ export interface EditorExtensionConfig {
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>;
   onOpenWikiLinkRef: RefObject<((target: string, heading?: string) => void) | undefined>;
   onSelectionChange: (state: EditorState) => void;
-  onTypingChangeRef: RefObject<(content: string) => void>;
+  onTypingChangeRef: RefObject<(content: Text) => void>;
   settings: EditorSettings;
   sourcePath?: string;
   sourceMode: boolean;

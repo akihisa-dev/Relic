@@ -1,3 +1,5 @@
+import { isolateHistory } from "@codemirror/commands";
+import { Transaction } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
 import {
@@ -54,11 +56,15 @@ export function focusTableWidgetCell(anchor: HTMLElement, rowIndex: number, colI
 }
 
 export function updateTableWidgetRows(view: EditorView, block: TableBlock, rows: string[][]): void {
+  const markdown = formatTable(rows);
+  if (view.state.sliceDoc(block.from, block.to) === markdown) return;
+
   view.dispatch({
+    annotations: [Transaction.userEvent.of("input.table"), isolateHistory.of("full")],
     changes: {
       from: block.from,
       to: block.to,
-      insert: formatTable(rows)
+      insert: markdown
     }
   });
 }

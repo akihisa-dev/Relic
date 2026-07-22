@@ -9,11 +9,13 @@ import { createTranslator } from "./i18nModel";
 import { diagramEditRangeField } from "./editorDiagramEditState";
 import {
   __codeBlockPreviewVisibleRangesEffectForTests,
+  __codeBlockPreviewRefreshEffectForTests,
   createLivePreviewCodeBlockField,
   livePreviewCompositionEndedEffect
 } from "./editorLivePreview";
 import {
   __tablePreviewVisibleRangesEffectForTests,
+  __tablePreviewRefreshEffectForTests,
   createLivePreviewTableField
 } from "./editorTables";
 import {
@@ -186,6 +188,7 @@ describe("live preview decoration rebuild quality gates", () => {
     state = state.update({
       changes: { from: state.doc.toString().indexOf("value"), insert: "\n" }
     }).state;
+    state = state.update({ effects: __codeBlockPreviewRefreshEffectForTests.of(null) }).state;
 
     expect(onRebuild.mock.calls.map(([reason]) => reason)).toEqual([
       "create",
@@ -223,6 +226,7 @@ describe("live preview decoration rebuild quality gates", () => {
     state = state.update({
       changes: { from: state.doc.toString().indexOf("1"), insert: "10" }
     }).state;
+    state = state.update({ effects: __tablePreviewRefreshEffectForTests.of(null) }).state;
 
     expect(onRebuild.mock.calls.map(([reason]) => reason)).toEqual([
       "create",

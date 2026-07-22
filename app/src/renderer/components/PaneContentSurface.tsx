@@ -11,7 +11,7 @@ import {
   type BufferedEditorChange
 } from "../editorInputBuffer";
 import { isLargeMarkdownContent } from "../largeMarkdown";
-import { textCount } from "../paneViewModel";
+import { updateTextCount, type TextCountSnapshot } from "../paneViewModel";
 import { useEditorStore, type PaneId, type PanelTabKind, type Tab } from "../store/editorStore";
 import { useT } from "../i18n";
 import { SourceModeButton } from "./AppMainActions";
@@ -81,10 +81,11 @@ export function PaneContentSurface({
   const activeFileTab = activeTab?.kind === "file" ? activeTab : null;
   const activeFileContent = activeFileTab?.content ?? "";
   const isLargeMarkdown = useMemo(() => isLargeMarkdownContent(activeFileContent), [activeFileContent]);
-  const textCountResult = useMemo(() => {
-    if (!activeFileTab) return null;
-    return textCount(activeFileTab.content);
-  }, [activeFileTab?.content]);
+  const textCountSnapshotRef = useRef<TextCountSnapshot | null>(null);
+  const textCountResult = activeFileTab
+    ? updateTextCount(textCountSnapshotRef.current, activeFileTab.content)
+    : null;
+  textCountSnapshotRef.current = textCountResult;
   const [frontmatterAddButtonHost, setFrontmatterAddButtonHost] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {

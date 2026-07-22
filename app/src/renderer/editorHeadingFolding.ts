@@ -4,6 +4,8 @@ import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, typ
 
 import type { Translator } from "./i18nModel";
 import { isClosingBacktickFence, parseBacktickOpeningFence } from "./markdownCodeFence";
+import { editorHeavyUpdateDelay } from "./editorComplexity";
+import { editorFrameUpdateEffect, scheduleEditorFrameEffect } from "./editorFrameUpdates";
 
 const headingPattern = /^(#{1,6})\s+\S.*$/;
 const maxHeadingFoldScanLines = 2000;
@@ -153,13 +155,40 @@ function createHeadingFoldWidgetPlugin(t: Translator): Extension {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
+      private dirty = false;
 
       constructor(view: EditorView) {
         this.decorations = buildHeadingFoldDecorations(view, t);
       }
 
       update(update: ViewUpdate): void {
-        if (update.docChanged || update.selectionSet || update.viewportChanged || update.transactions.some((transaction) => transaction.effects.length > 0)) {
+        const frameUpdate = update.transactions.some((transaction) => (
+          transaction.effects.some((effect) => effect.is(editorFrameUpdateEffect))
+        ));
+        if (update.docChanged) {
+          this.decorations = this.decorations.map(update.changes);
+          this.dirty = true;
+          scheduleEditorFrameEffect(
+            update.view,
+            "heading-folding",
+            () => null,
+            editorHeavyUpdateDelay(update.state.doc, update.view.visibleRanges)
+          );
+          return;
+        }
+        if (update.viewportChanged) {
+          this.dirty = true;
+          scheduleEditorFrameEffect(update.view, "heading-folding", () => null);
+          return;
+        }
+        if (frameUpdate && this.dirty) {
+          this.decorations = buildHeadingFoldDecorations(update.view, t);
+          this.dirty = false;
+          return;
+        }
+        if (update.transactions.some((transaction) => transaction.effects.some((effect) => (
+          effect.is(foldEffect) || effect.is(unfoldEffect)
+        )))) {
           this.decorations = buildHeadingFoldDecorations(update.view, t);
         }
       }

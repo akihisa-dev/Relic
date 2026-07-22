@@ -1,15 +1,34 @@
-import { EditorSelection, Transaction } from "@codemirror/state";
+import { isolateHistory } from "@codemirror/commands";
+import { Annotation, EditorSelection, EditorState, Transaction, type Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
+import {
+  continueListMarkersInPastedText,
+  lastOrderedMarkerNumber,
+  nextListMarker,
+  orderedListRenumberChangesNear,
+  orderedMarkerNumber,
+  parseListLine,
+  renumberFollowingOrderedItems,
+  transactionDeletesText
+} from "./editorListModel";
 import { isPositionInFencedCodeBlock } from "./markdownCodeBlockRanges";
+export const skipOrderedListRenumberAnnotation = Annotation.define<boolean>();
 
-interface ListLineMatch {
-  content: string;
-  indent: string;
-  marker: string;
+export function createOrderedListRenumberExtension(): Extension {
+  return EditorState.transactionFilter.of((transaction) => {
+    if (
+      !transaction.docChanged ||
+      transaction.annotation(skipOrderedListRenumberAnnotation) ||
+      !transactionDeletesText(transaction.changes)
+    ) return transaction;
+
+    const changes = orderedListRenumberChangesNear(transaction.newDoc, transaction.changes);
+    return changes.length === 0
+      ? transaction
+      : [transaction, { changes, sequential: true }];
+  });
 }
-
-const listLinePattern = /^(\s*)((?:[-+*]\s+(?:\[[ xX]\]\s+)?)|(?:\d+\.\s+))(.*)$/;
 
 export function handleMarkdownListEnter(view: EditorView): boolean {
   const selection = view.state.selection.main;
@@ -22,17 +41,60 @@ export function handleMarkdownListEnter(view: EditorView): boolean {
 
   if (match.content.trim().length === 0) {
     view.dispatch({
-      changes: { from: line.from, to: line.to, insert: match.indent },
-      selection: { anchor: line.from + match.indent.length }
+      annotations: isolateHistory.of("full"),
+      changes: { from: line.from, to: line.to, insert: `${match.prefix}${match.indent}` },
+      selection: { anchor: line.from + match.prefix.length + match.indent.length }
     });
     return true;
   }
 
   const marker = nextListMarker(match.marker);
-  const insert = `\n${match.indent}${marker}`;
+  const insert = `\n${match.prefix}${match.indent}${marker}`;
+  const changes = [{ from: selection.from, insert }];
+  const ordered = orderedMarkerNumber(marker);
+  if (ordered !== null) {
+    changes.push(...renumberFollowingOrderedItems(
+      view.state.doc,
+      line.number + 1,
+      match.prefix,
+      match.indent,
+      ordered + 1
+    ));
+  }
   view.dispatch({
-    changes: { from: selection.from, insert },
+    annotations: isolateHistory.of("full"),
+    changes,
     selection: { anchor: selection.from + insert.length }
+  });
+  return true;
+}
+
+export function handleMarkdownListBackspace(view: EditorView): boolean {
+  const selection = view.state.selection.main;
+  if (!selection.empty || isPositionInFencedCodeBlock(view.state, selection.from)) return false;
+
+  const line = view.state.doc.lineAt(selection.from);
+  const match = parseListLine(line.text);
+  if (!match || match.content.trim().length > 0) return false;
+
+  const markerFrom = line.from + match.prefix.length + match.indent.length;
+  const markerTo = markerFrom + match.marker.length;
+  if (selection.from !== markerTo) return false;
+
+  if (match.indent.length > 0) {
+    const removable = match.indent.endsWith("\t") ? 1 : Math.min(2, match.indent.length);
+    view.dispatch({
+      annotations: isolateHistory.of("full"),
+      changes: { from: markerFrom - removable, to: markerFrom },
+      selection: { anchor: markerTo - removable }
+    });
+    return true;
+  }
+
+  view.dispatch({
+    annotations: isolateHistory.of("full"),
+    changes: { from: markerFrom, to: markerTo },
+    selection: { anchor: markerFrom }
   });
   return true;
 }
@@ -54,9 +116,20 @@ export function handleMarkdownListPaste(view: EditorView, text: string): boolean
   if (!match) return false;
 
   const insert = continueListMarkersInPastedText(text, match);
+  const changes = [{ from: selection.from, to: selection.to, insert }];
+  const finalOrdered = lastOrderedMarkerNumber(insert, match);
+  if (finalOrdered !== null) {
+    changes.push(...renumberFollowingOrderedItems(
+      state.doc,
+      fromLine.number + 1,
+      match.prefix,
+      match.indent,
+      finalOrdered + 1
+    ));
+  }
   view.dispatch({
-    annotations: Transaction.userEvent.of("input.paste"),
-    changes: { from: selection.from, to: selection.to, insert },
+    annotations: [Transaction.userEvent.of("input.paste"), isolateHistory.of("full")],
+    changes,
     scrollIntoView: true,
     selection: { anchor: selection.from + insert.length }
   });
@@ -91,6 +164,7 @@ export function indentMarkdownListSelection(view: EditorView, direction: 1 | -1)
   if (!touched) return false;
 
   view.dispatch({
+    annotations: isolateHistory.of("full"),
     changes,
     selection: state.selection.map(state.changes(changes))
   });
@@ -109,6 +183,7 @@ export function moveSelectedLines(view: EditorView, direction: 1 | -1): boolean 
     const insert = `${blockText}\n${previousLine.text}`;
 
     view.dispatch({
+      annotations: isolateHistory.of("full"),
       changes: { from: previousLine.from, to: lastLine.to, insert },
       selection: EditorSelection.range(previousLine.from, previousLine.from + blockText.length)
     });
@@ -123,6 +198,7 @@ export function moveSelectedLines(view: EditorView, direction: 1 | -1): boolean 
   const nextSelectionFrom = firstLine.from + nextLine.text.length + 1;
 
   view.dispatch({
+    annotations: isolateHistory.of("full"),
     changes: { from: firstLine.from, to: nextLine.to, insert },
     selection: EditorSelection.range(nextSelectionFrom, nextSelectionFrom + blockText.length)
   });
@@ -134,48 +210,6 @@ export function isListInputEvent(event: KeyboardEvent, view: EditorView): boolea
   const target = event.target;
   if (target instanceof HTMLElement && target.closest(".cm-live-table")) return false;
   return true;
-}
-
-function parseListLine(text: string): ListLineMatch | null {
-  const match = text.match(listLinePattern);
-  if (!match) return null;
-
-  return {
-    content: match[3],
-    indent: match[1],
-    marker: match[2]
-  };
-}
-
-function nextListMarker(marker: string): string {
-  const ordered = marker.match(/^(\d+)\.\s+$/);
-  if (ordered) return `${Number(ordered[1]) + 1}. `;
-
-  const checkbox = marker.match(/^([-+*]\s+)\[[ xX]\]\s+$/);
-  if (checkbox) return `${checkbox[1]}[ ] `;
-
-  return marker;
-}
-
-function continueListMarkersInPastedText(text: string, list: ListLineMatch): string {
-  const normalized = text.replace(/\r\n?/g, "\n");
-  const lines = normalized.split("\n");
-  if (lines.length < 2) return text;
-
-  let marker = list.marker;
-  const continued = [lines[0]];
-
-  for (const line of lines.slice(1)) {
-    if (line.length === 0 || parseListLine(line)) {
-      continued.push(line);
-      continue;
-    }
-
-    marker = nextListMarker(marker);
-    continued.push(`${list.indent}${marker}${line}`);
-  }
-
-  return continued.join("\n");
 }
 
 function selectedListLineNumbers(

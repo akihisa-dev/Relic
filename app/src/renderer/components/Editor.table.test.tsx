@@ -141,6 +141,26 @@ describe("Editor table preview", () => {
     expect(viewRef.current?.state.doc.toString()).toBe("| Name | B |\n| --- | --- |\n| x | y |");
   });
 
+  it("同じ表セル値のblurとchangeを重複して書き戻さず、編集を1回でUndoできる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
+    const original = "| A | B |\n| --- | --- |\n| x | y |";
+    const { container } = render(
+      <Editor content={original} onChange={onChange} settings={settings} viewRef={viewRef} />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table-cell-input")).not.toBeNull());
+    const input = container.querySelector(".cm-live-table-cell-input") as HTMLTextAreaElement;
+    fireEvent.input(input, { target: { value: "Name" } });
+    fireEvent.blur(input);
+    fireEvent.change(input);
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(viewRef.current?.state.doc.toString()).toContain("| Name | B |");
+    expect(undo(viewRef.current!)).toBe(true);
+    expect(viewRef.current?.state.doc.toString()).toBe(original);
+  });
+
   it("ライブプレビューの表セルにTSVを貼り付けると複数セルへ展開する", async () => {
     const viewRef = createRef<EditorView | null>();
 

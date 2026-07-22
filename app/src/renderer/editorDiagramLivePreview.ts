@@ -14,9 +14,11 @@ import { enterDiagramSourceEdit } from "./editorDiagramEditState";
 import { createTranslator, type Translator } from "./i18nModel";
 import { buildDiagramDefaultFileName } from "./outputHtml";
 import { createCodeBlockTypeSelect } from "./editorCodeBlockType";
+import { diagramRenderDelay } from "./editorComplexity";
 
 export class DiagramBlockWidget extends WidgetType {
   readonly className = "cm-live-diagram";
+  private pendingRenderTimer: number | null = null;
 
   constructor(
     private readonly source: string,
@@ -80,22 +82,36 @@ export class DiagramBlockWidget extends WidgetType {
     const diagram = document.createElement("div");
     diagram.className = "cm-live-diagram-body";
     diagram.append(buildDiagramFallback(this.language, this.source));
-    void renderDiagramElement(diagram, this.language, this.source, this.t, { showExpandButton: false }).then((handle) => {
-      diagramHandle = handle;
-      fitButton.disabled = !handle;
-      if (handle) {
-        const renderedDiagram = diagram.querySelector<HTMLElement>(".preview-diagram-svg");
-        if (renderedDiagram) {
-          toolbar.append(createDiagramExpandButton(renderedDiagram, this.language, this.t));
+    const render = (): void => {
+      this.pendingRenderTimer = null;
+      void renderDiagramElement(diagram, this.language, this.source, this.t, { showExpandButton: false }).then((handle) => {
+        if (!container.isConnected) return;
+        diagramHandle = handle;
+        fitButton.disabled = !handle;
+        if (handle) {
+          const renderedDiagram = diagram.querySelector<HTMLElement>(".preview-diagram-svg");
+          if (renderedDiagram) {
+            toolbar.append(createDiagramExpandButton(renderedDiagram, this.language, this.t));
+          }
+          toolbar.append(
+            createDiagramSvgSaveButton(view, diagram, this.language, this.blockFrom, this.t),
+            createDiagramSvgCopyButton(diagram, this.language, this.t)
+          );
         }
-        toolbar.append(
-          createDiagramSvgSaveButton(view, diagram, this.language, this.blockFrom, this.t),
-          createDiagramSvgCopyButton(diagram, this.language, this.t)
-        );
-      }
-    });
+      });
+    };
+    const delay = diagramRenderDelay(this.source);
+    if (delay > 0) this.pendingRenderTimer = window.setTimeout(render, delay);
+    else render();
     container.append(toolbar, diagram);
     return container;
+  }
+
+  override destroy(): void {
+    if (this.pendingRenderTimer !== null) {
+      window.clearTimeout(this.pendingRenderTimer);
+      this.pendingRenderTimer = null;
+    }
   }
 
   override ignoreEvent(event: Event): boolean {

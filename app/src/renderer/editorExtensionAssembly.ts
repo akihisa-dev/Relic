@@ -1,6 +1,6 @@
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
-import { Compartment, EditorState, type Extension, type StateEffect } from "@codemirror/state";
+import { Compartment, EditorState, type Extension, type StateEffect, type Text } from "@codemirror/state";
 import { EditorView, highlightActiveLine, keymap } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
 import type { RefObject } from "react";
@@ -16,7 +16,9 @@ import {
   buildMarkdownFormattingKeymapExtension
 } from "./editorEventExtensions";
 import { createFrontmatterPropertiesField, frontmatterCollapsedField } from "./editorFrontmatter";
+import { cancelEditorFrameUpdates } from "./editorFrameUpdates";
 import { createHeadingFoldingExtension } from "./editorHeadingFolding";
+import { createOrderedListRenumberExtension } from "./editorListInput";
 import { createLivePreviewDecorationsPlugin, createLivePreviewCodeBlockField } from "./editorLivePreview";
 import { createLivePreviewTableField } from "./editorTables";
 import {
@@ -96,7 +98,7 @@ export function buildExtensions(
   typewriterMode: boolean,
   sourceMode: boolean,
   onChangeRef: RefObject<(content: string) => void>,
-  onTypingChangeRef: RefObject<(content: string) => void>,
+  onTypingChangeRef: RefObject<(content: Text) => void>,
   allFilePaths: string[],
   userDefinedFields: UserDefinedField[],
   frontmatterCandidates: Record<string, string[]>,
@@ -130,9 +132,12 @@ export function buildExtensions(
 
   return [
     history(),
+    EditorState.allowMultipleSelections.of(true),
+    EditorView.clickAddsSelectionRange.of((event) => event.metaKey || event.ctrlKey),
     keymap.of([...defaultKeymap, ...historyKeymap]),
     editorEditableCompartment.of(EditorView.editable.of(true)),
     markdown({ extensions: GFM }),
+    createOrderedListRenumberExtension(),
     createHeadingFoldingExtension(t),
     EditorView.lineWrapping,
     highlightActiveLine(),
@@ -150,6 +155,7 @@ export function buildExtensions(
 }
 
 export function destroyEditorView(view: EditorView, container: HTMLElement | null): void {
+  cancelEditorFrameUpdates(view);
   view.destroy();
   container?.replaceChildren();
 }

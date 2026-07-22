@@ -1,9 +1,11 @@
 import { syntaxTree } from "@codemirror/language";
-import { ChangeSet, StateEffect, StateField, type EditorState, type Text, type Transaction } from "@codemirror/state";
+import { ChangeSet, StateEffect, StateField, Transaction, type EditorState, type Text } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
 import { findTableBlocks, tableColumnCount } from "./editorTableModel";
 import { TableWidget } from "./editorTableWidget";
+import { editorHeavyUpdateDelay } from "./editorComplexity";
+import { scheduleEditorFrameEffect } from "./editorFrameUpdates";
 import type { Translator } from "./i18nModel";
 
 export {
@@ -54,6 +56,7 @@ export function buildTableDecorations(state: Parameters<typeof findTableBlocks>[
 
 interface TablePreviewState {
   decorations: DecorationSet;
+  dirty: boolean;
   visibleRanges: Array<{ from: number; to: number }>;
 }
 
@@ -63,9 +66,12 @@ export interface __TableDecorationTestHooks {
 }
 
 const tablePreviewVisibleRangesEffect = StateEffect.define<Array<{ from: number; to: number }>>();
+const tablePreviewRefreshEffect = StateEffect.define<null>();
 
 /** @internal Test-only access to drive visible range rebuilds without a browser viewport. */
 export const __tablePreviewVisibleRangesEffectForTests = tablePreviewVisibleRangesEffect;
+/** @internal Test-only access to complete a deferred structural rebuild. */
+export const __tablePreviewRefreshEffectForTests = tablePreviewRefreshEffect;
 
 function initialVisibleRanges(state: EditorState): Array<{ from: number; to: number }> {
   return state.doc.length === 0 ? [] : [{ from: 0, to: Math.min(state.doc.length, 1) }];
@@ -146,6 +152,7 @@ function buildSyntaxTableDecorations(
       ranges.map(({ from, to, deco }) => deco.range(from, to)),
       true
     ),
+    dirty: false,
     visibleRanges
   };
 }
@@ -195,6 +202,10 @@ function visibleRangeEffect(transaction: Transaction): Array<{ from: number; to:
   return null;
 }
 
+function requestsTableRefresh(transaction: Transaction): boolean {
+  return transaction.effects.some((effect) => effect.is(tablePreviewRefreshEffect));
+}
+
 export function createLivePreviewTableField(t: Translator, testHooks?: __TableDecorationTestHooks) {
   const field = StateField.define<TablePreviewState>({
     create: (state) => {
@@ -208,16 +219,29 @@ export function createLivePreviewTableField(t: Translator, testHooks?: __TableDe
         return buildSyntaxTableDecorations(transaction.state, t, nextVisibleRanges);
       }
 
+      if (preview.dirty && requestsTableRefresh(transaction)) {
+        testHooks?.onRebuild?.("docChanged");
+        return buildSyntaxTableDecorations(transaction.state, t, preview.visibleRanges);
+      }
+
       if (transaction.docChanged) {
+        if (transaction.annotation(Transaction.userEvent) === "input.table") {
+          testHooks?.onRebuild?.("docChanged");
+          return buildSyntaxTableDecorations(transaction.state, t, preview.visibleRanges);
+        }
         if (canMapTableDecorations(transaction, preview.decorations)) {
           return {
             decorations: preview.decorations.map(transaction.changes),
+            dirty: preview.dirty,
             visibleRanges: mapVisibleRanges(transaction.changes, preview.visibleRanges)
           };
         }
 
-        testHooks?.onRebuild?.("docChanged");
-        return buildSyntaxTableDecorations(transaction.state, t, preview.visibleRanges);
+        return {
+          decorations: preview.decorations.map(transaction.changes),
+          dirty: true,
+          visibleRanges: mapVisibleRanges(transaction.changes, preview.visibleRanges)
+        };
       }
 
       return preview;
@@ -235,6 +259,14 @@ export function createLivePreviewTableField(t: Translator, testHooks?: __TableDe
 
       update(update: ViewUpdate): void {
         if (update.viewportChanged || update.docChanged) this.scheduleVisibleRangeSync(update.view);
+        if (update.docChanged) {
+          scheduleEditorFrameEffect(
+            update.view,
+            "table-refresh",
+            () => tablePreviewRefreshEffect.of(null),
+            editorHeavyUpdateDelay(update.state.doc, update.view.visibleRanges)
+          );
+        }
       }
 
       private scheduleVisibleRangeSync(view: EditorView): void {
@@ -243,10 +275,12 @@ export function createLivePreviewTableField(t: Translator, testHooks?: __TableDe
         if (nextKey === this.visibleRangesKey) return;
 
         this.visibleRangesKey = nextKey;
-        queueMicrotask(() => {
-          if (!view.dom.isConnected) return;
-          view.dispatch({ effects: tablePreviewVisibleRangesEffect.of(visibleRangesForView(view)) });
-        });
+        scheduleEditorFrameEffect(
+          view,
+          "table-visible-ranges",
+          () => tablePreviewVisibleRangesEffect.of(visibleRangesForView(view)),
+          editorHeavyUpdateDelay(view.state.doc, visibleRanges)
+        );
       }
     }
   );

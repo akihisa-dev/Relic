@@ -5,7 +5,8 @@ import {
   extractOutlineHeadings,
   getActiveFileTabInPane,
   getActiveTabInPane,
-  outlineHeadingsMaxCount
+  outlineHeadingsMaxCount,
+  updateOutlineSnapshot
 } from "./editorDerivedState";
 
 describe("editorDerivedState", () => {
@@ -58,5 +59,15 @@ describe("editorDerivedState", () => {
       level: 2,
       text: `Heading ${outlineHeadingsMaxCount}`
     });
+  });
+
+  it("変更行の見出しだけを置換し、後続見出しの位置を差分移動する", () => {
+    const original = "# A\n本文\n## B\n末尾\n### C";
+    const initial = updateOutlineSnapshot(null, original);
+    const content = "# A\n長い本文です\n#### Changed\n末尾\n### C";
+    const updated = updateOutlineSnapshot(initial, content);
+
+    expect(updated.headings).toEqual(extractOutlineHeadings(content));
+    expect(updated.headings.at(-1)?.from).toBe(content.lastIndexOf("### C"));
   });
 });

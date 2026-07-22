@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 
 import type { Backlink, UnlinkedReference, UnlinkedReferencesResult, WorkspaceTreeNode } from "../../shared/ipc";
 import { createWikiLinkResolver, type AliasIndex, type ResolvedWikiLink } from "../../shared/links";
 import {
-  extractOutlineHeadings,
   getActiveFileTabInPane,
+  updateOutlineSnapshot,
+  type OutlineSnapshot,
   type OutlineHeading
 } from "../editorDerivedState";
 import { isLargeMarkdownContent } from "../largeMarkdown";
@@ -79,9 +80,16 @@ export function useActiveDocumentContext({
     Boolean(activeFileTabInFocusedPane)
   );
 
+  const outlineSnapshotRef = useRef<{ path: string; snapshot: OutlineSnapshot } | null>(null);
+
   let outlineHeadings: OutlineHeading[] = [];
   if (isOutlinePanelActive && activeFileTabInFocusedPane) {
-    outlineHeadings = extractOutlineHeadings(activeFileTabInFocusedPane.content);
+    const previous = outlineSnapshotRef.current?.path === activeFileTabInFocusedPane.path
+      ? outlineSnapshotRef.current.snapshot
+      : null;
+    const snapshot = updateOutlineSnapshot(previous, activeFileTabInFocusedPane.content);
+    outlineSnapshotRef.current = { path: activeFileTabInFocusedPane.path, snapshot };
+    outlineHeadings = snapshot.headings;
   }
 
   const wikiLinkResolver = useMemo(

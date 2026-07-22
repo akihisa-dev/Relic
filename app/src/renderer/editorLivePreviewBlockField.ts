@@ -18,9 +18,12 @@ import {
   MathWidget
 } from "./editorLivePreviewWidgets";
 import { createTranslator, type Translator } from "./i18nModel";
+import { editorHeavyUpdateDelay } from "./editorComplexity";
+import { scheduleEditorFrameEffect } from "./editorFrameUpdates";
 
 interface CodeBlockPreviewState {
   decorations: DecorationSet;
+  dirty: boolean;
   editorHasFocus: boolean;
   revealedRanges: SyntaxBlockRange[];
   sourceInteractionRanges: SyntaxBlockRange[];
@@ -34,9 +37,12 @@ export interface __CodeBlockDecorationTestHooks {
 
 const codeBlockPreviewVisibleRangesEffect = StateEffect.define<SyntaxBlockRange[]>();
 const codeBlockPreviewFocusEffect = StateEffect.define<boolean>();
+const codeBlockPreviewRefreshEffect = StateEffect.define<null>();
 
 /** @internal Test-only access to drive visible range rebuilds without a browser viewport. */
 export const __codeBlockPreviewVisibleRangesEffectForTests = codeBlockPreviewVisibleRangesEffect;
+/** @internal Test-only access to complete a deferred structural rebuild. */
+export const __codeBlockPreviewRefreshEffectForTests = codeBlockPreviewRefreshEffect;
 
 function initialVisibleRanges(state: EditorState): SyntaxBlockRange[] {
   return state.doc.length === 0 ? [] : [{ from: 0, to: Math.min(state.doc.length, 1) }];
@@ -110,6 +116,7 @@ function buildCodeBlockPreviewDecorations(
   return {
     editorHasFocus,
     decorations: Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true),
+    dirty: false,
     revealedRanges,
     sourceInteractionRanges,
     visibleRanges: normalizedVisibleRanges
@@ -177,6 +184,10 @@ function focusEffect(transaction: Transaction): boolean | null {
   }
 
   return null;
+}
+
+function requestsCodeBlockRefresh(transaction: Transaction): boolean {
+  return transaction.effects.some((effect) => effect.is(codeBlockPreviewRefreshEffect));
 }
 
 function sourceInteractionEffect(transaction: Transaction): SyntaxBlockRange | null {
@@ -275,10 +286,22 @@ export function createLivePreviewCodeBlockField(
         );
       }
 
+      if (preview.dirty && requestsCodeBlockRefresh(transaction)) {
+        testHooks?.onRebuild?.("docChanged");
+        return buildCodeBlockPreviewDecorations(
+          transaction.state,
+          t,
+          preview.visibleRanges,
+          preview.editorHasFocus,
+          preview.sourceInteractionRanges
+        );
+      }
+
       if (transaction.docChanged) {
         if (canMapCodeBlockDecorations(transaction, preview.decorations)) {
           return {
             decorations: preview.decorations.map(transaction.changes),
+            dirty: preview.dirty,
             editorHasFocus: preview.editorHasFocus,
             revealedRanges: mapSyntaxBlockRanges(transaction.changes, preview.revealedRanges),
             sourceInteractionRanges: mapSyntaxBlockRanges(transaction.changes, preview.sourceInteractionRanges),
@@ -286,8 +309,14 @@ export function createLivePreviewCodeBlockField(
           };
         }
 
-        testHooks?.onRebuild?.("docChanged");
-        return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges, preview.editorHasFocus, preview.sourceInteractionRanges);
+        return {
+          decorations: preview.decorations.map(transaction.changes),
+          dirty: true,
+          editorHasFocus: preview.editorHasFocus,
+          revealedRanges: mapSyntaxBlockRanges(transaction.changes, preview.revealedRanges),
+          sourceInteractionRanges: mapSyntaxBlockRanges(transaction.changes, preview.sourceInteractionRanges),
+          visibleRanges: mapSyntaxBlockRanges(transaction.changes, preview.visibleRanges)
+        };
       }
 
       if (transaction.selection && shouldRebuildCodeBlockDecorationsForSelection(transaction.state, preview)) {
@@ -316,6 +345,14 @@ export function createLivePreviewCodeBlockField(
 
       update(update: ViewUpdate): void {
         if (update.viewportChanged || update.docChanged) this.scheduleVisibleRangeSync(update.view);
+        if (update.docChanged) {
+          scheduleEditorFrameEffect(
+            update.view,
+            "code-block-refresh",
+            () => codeBlockPreviewRefreshEffect.of(null),
+            editorHeavyUpdateDelay(update.state.doc, update.view.visibleRanges)
+          );
+        }
       }
 
       private scheduleVisibleRangeSync(view: EditorView): void {
@@ -324,10 +361,12 @@ export function createLivePreviewCodeBlockField(
         if (nextKey === this.visibleRangesKey) return;
 
         this.visibleRangesKey = nextKey;
-        queueMicrotask(() => {
-          if (!view.dom.isConnected) return;
-          view.dispatch({ effects: codeBlockPreviewVisibleRangesEffect.of(visibleRangesForView(view)) });
-        });
+        scheduleEditorFrameEffect(
+          view,
+          "code-block-visible-ranges",
+          () => codeBlockPreviewVisibleRangesEffect.of(visibleRangesForView(view)),
+          editorHeavyUpdateDelay(view.state.doc, visibleRanges)
+        );
       }
     }
   );

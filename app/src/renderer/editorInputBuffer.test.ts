@@ -33,6 +33,24 @@ describe("editorInputBuffer", () => {
     });
   });
 
+  it("保留中は本文全体を文字列化せず、確定時に最新版だけを1回文字列化する", async () => {
+    vi.useFakeTimers();
+    const commit = vi.fn();
+    const oldContent = { toString: vi.fn(() => "古い本文") };
+    const latestContent = { toString: vi.fn(() => "最新本文") };
+
+    bufferEditorChange({ content: oldContent, filePath: "note.md", tabId: "tab", commit });
+    bufferEditorChange({ content: latestContent, filePath: "note.md", tabId: "tab", commit });
+
+    expect(oldContent.toString).not.toHaveBeenCalled();
+    expect(latestContent.toString).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(80);
+
+    expect(oldContent.toString).not.toHaveBeenCalled();
+    expect(latestContent.toString).toHaveBeenCalledOnce();
+    expect(commit.mock.calls[0][0].content).toBe("最新本文");
+  });
+
   it("タブごとの保留本文を取り違えず即時確定する", () => {
     vi.useFakeTimers();
     const commit = vi.fn();

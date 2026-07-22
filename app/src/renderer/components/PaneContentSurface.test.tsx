@@ -7,7 +7,6 @@ import { defaultEditorSettings } from "../../shared/ipc";
 import { makeRelicApi } from "../../test/rendererTestUtils";
 import { I18nProvider } from "../i18n";
 import type { FileTab, Tab } from "../store/editorStore";
-import * as paneViewModel from "../paneViewModel";
 import * as largeMarkdown from "../largeMarkdown";
 import { PaneContentSurface } from "./PaneContentSurface";
 
@@ -112,8 +111,7 @@ describe("PaneContentSurface", () => {
     expect(readImageFile).toHaveBeenCalledTimes(2);
   });
 
-  it("reuses text count result while file content stays unchanged", () => {
-    const textCountSpy = vi.spyOn(paneViewModel, "textCount");
+  it("keeps text counts exact across unchanged and incrementally changed content", () => {
     const fileTab: FileTab = {
       content: "one two\nthree",
       id: "tab-file",
@@ -125,7 +123,6 @@ describe("PaneContentSurface", () => {
 
     const { rerender } = renderSurface(fileTab);
     expect(screen.getByText("13 characters / 3 words")).toBeInTheDocument();
-    expect(textCountSpy).toHaveBeenCalledTimes(1);
 
     const sameContentTab: FileTab = {
       ...fileTab,
@@ -135,7 +132,6 @@ describe("PaneContentSurface", () => {
       buildSurfaceElement(sameContentTab, false)
     );
     expect(screen.getByText("13 characters / 3 words")).toBeInTheDocument();
-    expect(textCountSpy).toHaveBeenCalledTimes(1);
 
     const changedContentTab: FileTab = {
       ...fileTab,
@@ -147,11 +143,9 @@ describe("PaneContentSurface", () => {
       buildSurfaceElement(changedContentTab, false)
     );
     expect(screen.getByText("11 characters / 2 words")).toBeInTheDocument();
-    expect(textCountSpy).toHaveBeenCalledTimes(2);
   });
 
   it("treats frontmatter markdown as normal markdown", () => {
-    const textCountSpy = vi.spyOn(paneViewModel, "textCount");
     const content = "---\ntitle: Note\n---\n\n# Note";
     const fileTab: FileTab = {
       content,
@@ -165,7 +159,6 @@ describe("PaneContentSurface", () => {
     renderSurface(fileTab, false);
 
     expect(screen.getByText("27 characters / 6 words")).toBeInTheDocument();
-    expect(textCountSpy).toHaveBeenCalledTimes(1);
   });
 
   it("does not recalculate large markdown detection when content is unchanged", () => {

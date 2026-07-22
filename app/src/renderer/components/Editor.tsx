@@ -1,6 +1,5 @@
 import { relicClient } from "../relicClient";
-import { isolateHistory } from "@codemirror/commands";
-import { EditorSelection, EditorState, Transaction } from "@codemirror/state";
+import { EditorState, type Text } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { useEffect, useRef } from "react";
 import type { MutableRefObject, ReactElement } from "react";
@@ -9,6 +8,7 @@ import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import { buildEditorReconfigureEffects, buildExtensions, destroyEditorView, isEditorComposing } from "../editorExtensions";
 import { setEditorEditable } from "../editorEditable";
 import { droppedImageSourcePaths, importDroppedImagesAsMarkdown } from "../editorImageDrop";
+import { replaceExternalEditorContent } from "../editorExternalUpdate";
 import { captureEditorScrollAnchor, restoreEditorScrollAnchor } from "../editorScrollAnchor";
 import {
   frontmatterDialogRequestEvent,
@@ -30,7 +30,7 @@ interface EditorProps {
   filePath?: string;
   frontmatterCandidates?: Record<string, string[]>;
   onChange: (content: string) => void;
-  onTypingChange?: (content: string) => void;
+  onTypingChange?: (content: Text) => void;
   onEditorAction?: () => void;
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
@@ -71,7 +71,10 @@ export function Editor({
   const containerRef = useRef<HTMLDivElement>(null);
   const internalViewRef = useRef<EditorView | null>(null);
   const onChangeRef = useLatest(onChange);
-  const onTypingChangeRef = useLatest(onTypingChange ?? onChange);
+  const onTypingChangeRef = useLatest((document: Text) => {
+    if (onTypingChange) onTypingChange(document);
+    else onChange(document.toString());
+  });
   const pendingExternalContentRef = useRef<string | null>(null);
   const onOpenLinkRef = useLatest(onOpenLink);
   const onOpenWikiLinkRef = useLatest(onOpenWikiLink);
@@ -340,26 +343,4 @@ export function Editor({
       />
     </>
   );
-}
-
-function replaceExternalEditorContent(view: EditorView, content: string): void {
-  const scrollLeft = view.scrollDOM.scrollLeft;
-  const scrollTop = view.scrollDOM.scrollTop;
-  const hadFocus = view.hasFocus;
-  const selection = EditorSelection.create(
-    view.state.selection.ranges.map((range) => EditorSelection.range(
-      Math.min(range.anchor, content.length),
-      Math.min(range.head, content.length)
-    )),
-    view.state.selection.mainIndex
-  );
-
-  view.dispatch({
-    annotations: [Transaction.addToHistory.of(false), isolateHistory.of("full")],
-    changes: { from: 0, insert: content, to: view.state.doc.length },
-    selection
-  });
-  view.scrollDOM.scrollLeft = scrollLeft;
-  view.scrollDOM.scrollTop = scrollTop;
-  if (hadFocus) view.focus();
 }

@@ -11,7 +11,8 @@ import {
   PANE_TAB_DRAG_MIME,
   readPaneTabDragPayload,
   serializePaneTabDragPayload,
-  textCount
+  textCount,
+  updateTextCount
 } from "./paneViewModel";
 import type { Tab } from "./store/editorStore";
 
@@ -64,6 +65,16 @@ describe("paneViewModel", () => {
   it("counts characters and whitespace-delimited words", () => {
     expect(textCount("one two\nthree")).toEqual({ chars: 13, words: 3 });
     expect(textCount("  ")).toEqual({ chars: 2, words: 0 });
+  });
+
+  it("updates counts across changed word boundaries", () => {
+    const initial = updateTextCount(null, "one two\n三");
+
+    expect(updateTextCount(initial, "one merged word\n三四")).toMatchObject({
+      chars: "one merged word\n三四".length,
+      words: 4
+    });
+    expect(updateTextCount(initial, "onetwo\n三")).toMatchObject({ words: 2 });
   });
 
   it("formats Markdown links from file tab paths", () => {

@@ -1,4 +1,5 @@
 import type { FileTab, PaneId, PaneState, Tab } from "./store/editorStore";
+import { textChangeRange } from "./textChangeRange";
 
 export interface OutlineHeading {
   from: number;
@@ -14,6 +15,11 @@ export interface LineScrollTarget {
 export type HeadingScrollTarget = string | OutlineHeading | LineScrollTarget;
 
 export const outlineHeadingsMaxCount = 1000;
+
+export interface OutlineSnapshot {
+  content: string;
+  headings: OutlineHeading[];
+}
 
 export function getActiveTabInPane(
   pane: PaneId,
@@ -36,8 +42,41 @@ export function getActiveFileTabInPane(
 }
 
 export function extractOutlineHeadings(content: string): OutlineHeading[] {
+  return extractOutlineHeadingsFromRange(content, 0);
+}
+
+export function updateOutlineSnapshot(previous: OutlineSnapshot | null, content: string): OutlineSnapshot {
+  if (!previous) return { content, headings: extractOutlineHeadings(content) };
+  if (previous.content === content) return previous;
+  if (previous.headings.length >= outlineHeadingsMaxCount) {
+    return { content, headings: extractOutlineHeadings(content) };
+  }
+
+  const change = textChangeRange(previous.content, content);
+  if (!change) return previous;
+
+  const from = lineStart(previous.content, change.from);
+  const oldTo = lineEnd(previous.content, change.oldTo);
+  const newTo = lineEnd(content, change.newTo);
+  const delta = newTo - oldTo;
+  const before = previous.headings.filter((heading) => heading.from < from);
+  const changed = extractOutlineHeadingsFromRange(content.slice(from, newTo), from);
+  const after = previous.headings
+    .filter((heading) => heading.from >= oldTo)
+    .map((heading) => ({ ...heading, from: heading.from + delta }));
+
+  const headings = [...before, ...changed, ...after];
+  return {
+    content,
+    headings: headings.length > outlineHeadingsMaxCount
+      ? extractOutlineHeadings(content)
+      : headings
+  };
+}
+
+function extractOutlineHeadingsFromRange(content: string, offset: number): OutlineHeading[] {
   const headings: OutlineHeading[] = [];
-  let from = 0;
+  let from = offset;
 
   for (const rawLine of content.split("\n")) {
     const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
@@ -54,4 +93,13 @@ export function extractOutlineHeadings(content: string): OutlineHeading[] {
   }
 
   return headings;
+}
+
+function lineStart(content: string, position: number): number {
+  return content.lastIndexOf("\n", Math.max(0, position - 1)) + 1;
+}
+
+function lineEnd(content: string, position: number): number {
+  const newline = content.indexOf("\n", position);
+  return newline < 0 ? content.length : newline + 1;
 }

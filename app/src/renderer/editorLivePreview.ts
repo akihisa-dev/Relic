@@ -34,9 +34,12 @@ import {
 import { createTranslator, type Translator } from "./i18nModel";
 import { resolveWorkspaceImagePath } from "./previewMarkdown";
 import { previewImageContextKey } from "./previewImageLoader";
+import { editorHeavyUpdateDelay } from "./editorComplexity";
+import { editorFrameUpdateEffect, scheduleEditorFrameEffect } from "./editorFrameUpdates";
 
 export {
   __buildLivePreviewBlockDecorationsForTests,
+  __codeBlockPreviewRefreshEffectForTests,
   __codeBlockPreviewVisibleRangesEffectForTests,
   createLivePreviewCodeBlockField,
   type __CodeBlockDecorationTestHooks
@@ -59,6 +62,7 @@ export function createLivePreviewDecorationsPlugin(
 ) {
   return ViewPlugin.fromClass(class {
     decorations: DecorationSet;
+    private pendingReason: "docChanged" | "viewport" | null = null;
     private wasComposing = false;
 
     constructor(view: EditorView) {
@@ -85,20 +89,39 @@ export function createLivePreviewDecorationsPlugin(
       const compositionEnded = update.transactions.some((transaction) => (
         transaction.effects.some((effect) => effect.is(livePreviewCompositionEndedEffect))
       ));
+      const frameUpdate = update.transactions.some((transaction) => (
+        transaction.effects.some((effect) => effect.is(editorFrameUpdateEffect))
+      ));
+
+      if (update.docChanged && !this.wasComposing && !compositionEnded) {
+        this.decorations = this.decorations.map(update.changes);
+        this.pendingReason = "docChanged";
+        scheduleEditorFrameEffect(
+          update.view,
+          "inline-preview",
+          () => null,
+          editorHeavyUpdateDelay(update.state.doc, update.view.visibleRanges)
+        );
+        return;
+      }
+      if (update.viewportChanged && !compositionEnded) {
+        this.pendingReason = "viewport";
+        scheduleEditorFrameEffect(update.view, "inline-preview", () => null);
+        return;
+      }
       const reason = this.wasComposing || compositionEnded
         ? "compositionEnd"
-        : update.docChanged
-          ? "docChanged"
+        : frameUpdate && this.pendingReason
+          ? this.pendingReason
           : update.selectionSet
             ? "selection"
-            : update.viewportChanged
-              ? "viewport"
-              : update.focusChanged
+            : update.focusChanged
                 ? "focus"
                 : previousDiagramEditRange !== nextDiagramEditRange
                   ? "editorState"
                   : null;
       this.wasComposing = false;
+      this.pendingReason = null;
       if (!reason) return;
 
       testHooks?.onRebuild?.(reason);

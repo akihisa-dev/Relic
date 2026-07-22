@@ -5,6 +5,7 @@ import { EditorView, keymap } from "@codemirror/view";
 import type { EditorExtensionConfig } from "./editorExtensionTypes";
 import {
   handleMarkdownListEnter,
+  handleMarkdownListBackspace,
   handleMarkdownListPaste,
   indentMarkdownListSelection,
   isListInputEvent,
@@ -66,6 +67,10 @@ export function buildEventHandlersExtension(config: EditorExtensionConfig): Exte
           return false;
         }
         if (event.key === "Enter" && handleMarkdownListEnter(view)) {
+          event.preventDefault();
+          return true;
+        }
+        if (event.key === "Backspace" && handleMarkdownListBackspace(view)) {
           event.preventDefault();
           return true;
         }
@@ -135,10 +140,11 @@ export function buildEventHandlersExtension(config: EditorExtensionConfig): Exte
     })),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
-        const callback = update.transactions.every(isContinuousTypingTransaction)
-          ? config.onTypingChangeRef.current
-          : config.onChangeRef.current;
-        callback!(update.state.doc.toString());
+        if (update.transactions.every(isContinuousTypingTransaction)) {
+          config.onTypingChangeRef.current!(update.state.doc);
+        } else {
+          config.onChangeRef.current!(update.state.doc.toString());
+        }
       }
       if (update.selectionSet || update.docChanged) config.onSelectionChange(update.state);
     })

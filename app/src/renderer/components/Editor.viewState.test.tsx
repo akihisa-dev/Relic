@@ -1,5 +1,5 @@
 import { redo, undo } from "@codemirror/commands";
-import { Transaction } from "@codemirror/state";
+import { EditorSelection, EditorState, Transaction } from "@codemirror/state";
 import { BlockType } from "@codemirror/view";
 import { fireEvent, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -22,7 +22,7 @@ describe("Editor view state", () => {
       annotations: Transaction.userEvent.of("input.type"),
       changes: { from: view.state.doc.length, insert: "追記" }
     });
-    expect(onTypingChange).toHaveBeenLastCalledWith("本文追記");
+    expect(onTypingChange.mock.calls.at(-1)?.[0].toString()).toBe("本文追記");
     expect(onChange).not.toHaveBeenCalled();
 
     view.dispatch({
@@ -51,6 +51,37 @@ describe("Editor view state", () => {
     expect(view.scrollDOM.scrollTop).toBe(120);
     expect(view.scrollDOM.scrollLeft).toBe(9);
     expect(undo(view)).toBe(false);
+  });
+
+  it("外部更新で前方へ文章が追加されても複数の選択範囲を同じ本文位置へ追従させる", async () => {
+    const content = "alpha beta gamma";
+    const { rerender, view, viewRef } = await renderEditorWithView({ content });
+    view.dispatch({
+      selection: EditorSelection.create([
+        EditorSelection.range(content.indexOf("beta"), content.indexOf("beta") + 4),
+        EditorSelection.cursor(content.indexOf("gamma"))
+      ])
+    });
+
+    rerender(
+      <Editor content={`prefix ${content}`} onChange={() => undefined} settings={settings} viewRef={viewRef} />
+    );
+
+    await waitFor(() => expect(view.state.doc.toString()).toBe(`prefix ${content}`));
+    expect(view.state.selection.ranges).toHaveLength(2);
+    expect(view.state.sliceDoc(view.state.selection.ranges[0].from, view.state.selection.ranges[0].to)).toBe("beta");
+    expect(view.state.selection.ranges[1].head).toBe(`prefix ${content}`.indexOf("gamma"));
+    expect(view.state.facet(EditorState.allowMultipleSelections)).toBe(true);
+  });
+
+  it("外部本文に意図的な番号飛びがあっても内容を自動整形しない", async () => {
+    const { rerender, view, viewRef } = await renderEditorWithView({ content: "1. first\n2. second" });
+
+    rerender(
+      <Editor content={"1. first\n4. second"} onChange={() => undefined} settings={settings} viewRef={viewRef} />
+    );
+
+    await waitFor(() => expect(view.state.doc.toString()).toBe("1. first\n4. second"));
   });
 
   it("IME変換中の外部本文を変換終了まで反映しない", async () => {

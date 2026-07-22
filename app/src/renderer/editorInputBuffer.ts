@@ -1,3 +1,7 @@
+export interface DeferredEditorContent {
+  toString: () => string;
+}
+
 export interface BufferedEditorChange {
   content: string;
   filePath: string;
@@ -6,6 +10,7 @@ export interface BufferedEditorChange {
 }
 
 interface PendingEditorChange extends BufferedEditorChange {
+  deferredContent: DeferredEditorContent | null;
   commit: (change: BufferedEditorChange) => void;
   timer: ReturnType<typeof setTimeout>;
 }
@@ -15,7 +20,7 @@ const pendingChanges = new Map<string, PendingEditorChange>();
 let nextGeneration = 0;
 
 export function bufferEditorChange(input: {
-  content: string;
+  content: string | DeferredEditorContent;
   filePath: string;
   tabId: string;
   commit: (change: BufferedEditorChange) => void;
@@ -25,8 +30,12 @@ export function bufferEditorChange(input: {
 
   const generation = ++nextGeneration;
   const pending: PendingEditorChange = {
-    ...input,
+    content: typeof input.content === "string" ? input.content : "",
+    deferredContent: typeof input.content === "string" ? null : input.content,
+    filePath: input.filePath,
     generation,
+    tabId: input.tabId,
+    commit: input.commit,
     timer: setTimeout(() => {
       flushPendingEditorChanges([input.tabId], generation);
     }, INPUT_BUFFER_DELAY_MS)
@@ -52,7 +61,7 @@ export function flushPendingEditorChanges(tabIds?: Iterable<string>, expectedGen
     clearTimeout(pending.timer);
     pendingChanges.delete(tabId);
     pending.commit({
-      content: pending.content,
+      content: pending.deferredContent?.toString() ?? pending.content,
       filePath: pending.filePath,
       generation: pending.generation,
       tabId: pending.tabId

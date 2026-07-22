@@ -1,4 +1,5 @@
 import { completionStatus, startCompletion } from "@codemirror/autocomplete";
+import { EditorSelection, Transaction } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { redo, undo } from "@codemirror/commands";
 import { fireEvent, waitFor } from "@testing-library/react";
@@ -43,6 +44,23 @@ describe("Editor shortcuts", () => {
     fireEvent.keyDown(contentElement, { key: "i", ...modKeyInit() });
     expect(view.state.doc.toString()).toBe("**bold** *italic*");
     expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("italic");
+  });
+
+  it("複数選択へ同じMarkdown書式を一度に適用して1回で戻せる", async () => {
+    const { view } = await renderEditorWithView({ content: "first and second" });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    view.dispatch({
+      selection: EditorSelection.create([
+        EditorSelection.range(0, 5),
+        EditorSelection.range(10, 16)
+      ])
+    });
+
+    fireEvent.keyDown(contentElement, { key: "b", ...modKeyInit() });
+    expect(view.state.doc.toString()).toBe("**first** and **second**");
+    expect(view.state.selection.ranges).toHaveLength(2);
+    expect(undo(view)).toBe(true);
+    expect(view.state.doc.toString()).toBe("first and second");
   });
 
   it("同じMarkdown書式を再実行すると記法を重複させず解除し、1回のUndoで戻せる", async () => {
@@ -97,6 +115,49 @@ describe("Editor shortcuts", () => {
     view.dispatch({ selection: { anchor: view.state.doc.length } });
     fireEvent.keyDown(contentElement, { key: "Enter" });
     expect(view.state.doc.toString()).toBe("- item\n- \n1. first\n2. \n- [x] done\n- [ ] \n");
+  });
+
+  it("引用内のリストを継続し、番号付きリストの後続番号を整える", async () => {
+    const { view } = await renderEditorWithView({
+      content: "> - 引用項目\n\n1. first\n2. second\n3. third"
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: "> - 引用項目".length } });
+    fireEvent.keyDown(contentElement, { key: "Enter" });
+    expect(view.state.doc.toString()).toContain("> - 引用項目\n> - ");
+
+    const firstEnd = view.state.doc.toString().indexOf("first") + "first".length;
+    view.dispatch({ selection: { anchor: firstEnd } });
+    fireEvent.keyDown(contentElement, { key: "Enter" });
+    expect(view.state.doc.toString()).toContain("1. first\n2. \n3. second\n4. third");
+  });
+
+  it("空の入れ子リストはBackspaceで一段ずつ字下げと記号を外す", async () => {
+    const { view } = await renderEditorWithView({ content: "  - " });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: view.state.doc.length } });
+    fireEvent.keyDown(contentElement, { key: "Backspace" });
+    expect(view.state.doc.toString()).toBe("- ");
+    fireEvent.keyDown(contentElement, { key: "Backspace" });
+    expect(view.state.doc.toString()).toBe("");
+  });
+
+  it("番号付きリストの項目を削除した後も同じ階層を連番へ整える", async () => {
+    const content = "1. first\n2. second\n3. third";
+    const { view } = await renderEditorWithView({ content });
+    const secondFrom = content.indexOf("2. second");
+    const thirdFrom = content.indexOf("3. third");
+
+    view.dispatch({
+      annotations: Transaction.userEvent.of("delete.selection"),
+      changes: { from: secondFrom, to: thirdFrom }
+    });
+
+    expect(view.state.doc.toString()).toBe("1. first\n2. third");
+    expect(undo(view)).toBe(true);
+    expect(view.state.doc.toString()).toBe(content);
   });
 
   it("リスト行への複数行貼り付けは字下げと種類を継続し、1回のUndoで戻せる", async () => {

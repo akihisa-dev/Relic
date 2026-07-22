@@ -1,11 +1,11 @@
-import { useMemo } from "react";
+import { useRef } from "react";
 import type { ReactElement } from "react";
 
 import { resolveLanguage } from "../../shared/i18n";
 import type { AppLanguage } from "../../shared/ipc";
 import { useT } from "../i18n";
 import type { EditorSaveStatus } from "../hooks/useEditorAutoSave";
-import { textCount } from "../paneViewModel";
+import { updateTextCount, type TextCountSnapshot } from "../paneViewModel";
 import type { FileTab } from "../store/editorStore";
 
 interface AppStatusBarProps {
@@ -30,10 +30,9 @@ export function AppStatusBar({
   const languageSwitchLabel = isEnglish
     ? t("app.languageSwitch.toJapanese")
     : t("app.languageSwitch.toEnglish");
-  const count = useMemo(
-    () => textCount(activeFileTab?.content ?? ""),
-    [activeFileTab?.content]
-  );
+  const countSnapshotRef = useRef<TextCountSnapshot | null>(null);
+  const count = updateTextCount(countSnapshotRef.current, activeFileTab?.content ?? "");
+  countSnapshotRef.current = count;
   const saveStatusLabel = saveStatus ? {
     dirty: t("app.saveStatus.dirty"),
     error: t("app.saveStatus.error"),

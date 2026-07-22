@@ -1,5 +1,6 @@
 import type { TranslationKey, Translator } from "./i18nModel";
 import type { PaneId, PanelTabKind, Tab } from "./store/editorStore";
+import { textChangeRange } from "./textChangeRange";
 
 export const PANE_TAB_DRAG_MIME = "application/relic-tab";
 
@@ -11,6 +12,10 @@ export interface PaneTabDragPayload {
 export interface TextCount {
   chars: number;
   words: number;
+}
+
+export interface TextCountSnapshot extends TextCount {
+  content: string;
 }
 
 const CHART_TAB_LABEL_KEYS: Readonly<Record<string, TranslationKey>> = {
@@ -41,6 +46,33 @@ export function textCount(content: string): TextCount {
     chars: content.length,
     words: content.split(/\s+/).filter(Boolean).length
   };
+}
+
+export function updateTextCount(previous: TextCountSnapshot | null, content: string): TextCountSnapshot {
+  if (!previous) return { content, ...textCount(content) };
+  if (previous.content === content) return previous;
+
+  const range = textChangeRange(previous.content, content);
+  if (!range) return previous;
+
+  let from = range.from;
+  while (from > 0 && !/\s/.test(content[from - 1] ?? "")) from -= 1;
+
+  let oldTo = range.oldTo;
+  while (oldTo < previous.content.length && !/\s/.test(previous.content[oldTo] ?? "")) oldTo += 1;
+
+  let newTo = range.newTo;
+  while (newTo < content.length && !/\s/.test(content[newTo] ?? "")) newTo += 1;
+
+  return {
+    chars: content.length,
+    content,
+    words: previous.words - countWords(previous.content.slice(from, oldTo)) + countWords(content.slice(from, newTo))
+  };
+}
+
+function countWords(content: string): number {
+  return content.split(/\s+/).filter(Boolean).length;
 }
 
 export function markdownLinkForPaneTabPath(path: string): string {
