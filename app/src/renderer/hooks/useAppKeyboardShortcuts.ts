@@ -1,39 +1,13 @@
 import { useEffect } from "react";
 
+import type { AppCommandActions } from "../appCommandActions";
 import { isPrimaryShortcutEvent } from "../keyboardShortcuts";
-import type { PaneId, PaneState } from "../store/editorStore";
 
 interface UseAppKeyboardShortcutsInput {
-  closeTab: (pane: PaneId, tabId: string) => void;
-  focusedPane: PaneId;
-  leftPane: PaneState;
-  requestFileSearchFocus: () => void;
-  reopenClosedTab: () => void;
-  rightPane: PaneState;
-  setIsCreatingFile: (isCreating: boolean) => void;
-  setShowCommandPalette: (updater: boolean | ((current: boolean) => boolean)) => void;
-  setShowQuickSwitcher: (updater: boolean | ((current: boolean) => boolean)) => void;
-  setSidebarView: (view: "files") => void;
-  toggleRightPanel: () => void;
-  toggleSidebar: () => void;
-  toggleSplit: () => void;
+  actions: AppCommandActions;
 }
 
-export function useAppKeyboardShortcuts({
-  closeTab,
-  focusedPane,
-  leftPane,
-  requestFileSearchFocus,
-  reopenClosedTab,
-  rightPane,
-  setIsCreatingFile,
-  setShowCommandPalette,
-  setShowQuickSwitcher,
-  setSidebarView,
-  toggleRightPanel,
-  toggleSidebar,
-  toggleSplit
-}: UseAppKeyboardShortcutsInput): void {
+export function useAppKeyboardShortcuts({ actions }: UseAppKeyboardShortcutsInput): void {
   useEffect(() => {
     const handler = (event: KeyboardEvent): void => {
       if (!isPrimaryShortcutEvent(event)) return;
@@ -42,54 +16,36 @@ export function useAppKeyboardShortcuts({
 
       if (event.shiftKey && key === "p") {
         event.preventDefault();
-        setShowQuickSwitcher(false);
-        setShowCommandPalette((current) => !current);
+        actions["open-command-palette"]();
       } else if (!event.shiftKey && key === "p") {
         event.preventDefault();
-        setShowCommandPalette(false);
-        setShowQuickSwitcher((current) => !current);
+        actions["open-quick-switcher"]();
       } else if (key === "b" && !event.shiftKey) {
         event.preventDefault();
-        toggleSidebar();
+        actions["toggle-sidebar"]();
       } else if (event.key === "\\") {
         event.preventDefault();
-        toggleSplit();
+        actions["toggle-split"]();
       } else if (key === "b" && event.shiftKey) {
         event.preventDefault();
-        toggleRightPanel();
-      } else if (key === "w") {
+        actions["toggle-right-panel"]();
+      } else if (key === "w" && !event.shiftKey) {
         event.preventDefault();
-        const paneState = focusedPane === "left" ? leftPane : rightPane;
-        if (paneState.activeTabId) closeTab(focusedPane, paneState.activeTabId);
+        actions["close-tab"]();
       } else if (key === "f") {
         event.preventDefault();
-        requestFileSearchFocus();
+        actions["open-search"]();
       } else if (key === "n" && !event.shiftKey) {
         event.preventDefault();
-        setSidebarView("files");
-        setIsCreatingFile(true);
+        actions["new-note"]();
       } else if (key === "t" && event.shiftKey) {
         event.preventDefault();
-        reopenClosedTab();
+        actions["reopen-closed-tab"]();
       }
     };
 
     window.addEventListener("keydown", handler, true);
 
     return () => window.removeEventListener("keydown", handler, true);
-  }, [
-    closeTab,
-    focusedPane,
-    leftPane,
-    requestFileSearchFocus,
-    reopenClosedTab,
-    rightPane,
-    setIsCreatingFile,
-    setShowCommandPalette,
-    setShowQuickSwitcher,
-    setSidebarView,
-    toggleRightPanel,
-    toggleSidebar,
-    toggleSplit
-  ]);
+  }, [actions]);
 }

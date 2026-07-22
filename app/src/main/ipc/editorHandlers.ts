@@ -17,6 +17,7 @@ import {
   type WriteMarkdownFileInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { refreshApplicationMenu } from "../applicationMenu";
 import { writeMarkdownFileContent } from "../files/markdownFiles";
 import {
   createFileRecoverySnapshot,
@@ -24,8 +25,8 @@ import {
   readFileRecoverySnapshot
 } from "../files/fileRecovery";
 import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
-import { readAppSettings, updateAppSettings } from "../settings/appSettings";
 import { setMainTranslator } from "../i18n";
+import { readAppSettings, updateAppSettings } from "../settings/appSettings";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
@@ -156,6 +157,7 @@ export function registerEditorHandlers(): void {
           editorSettings: input
         }));
         setMainTranslator(input.language);
+        refreshApplicationMenu();
 
         return ok(undefined);
       } catch (error) {

@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer, webUtils } from "electron";
 import {
   applySearchAndReplaceChannel,
   applyUnlinkedReferenceChannel,
+  applicationMenuCommandChannel,
   copyEditorTextToClipboardChannel,
   copyWorkspaceItemPathChannel,
   readEditorTextFromClipboardChannel,
@@ -89,6 +90,8 @@ import {
   switchWorkspaceChannel,
   writeMarkdownFileChannel,
   type AppInfo,
+  type ApplicationMenuCommand,
+  type ApplicationMenuState,
   type ApplyUnlinkedReferenceInput,
   type ApplyUnlinkedReferenceResult,
   type CreateFolderInput,
@@ -151,6 +154,7 @@ import {
   type WorkspaceTablePreferences,
   type WorkspaceSearchResultSet,
   type WorkspaceTagSummary,
+  updateApplicationMenuStateChannel,
   type WriteMarkdownFileInput
 } from "../shared/ipc";
 import type { RelicResult } from "../shared/result";
@@ -196,6 +200,17 @@ const relicApi: RelicApi = {
   applyUnlinkedReference: (input: ApplyUnlinkedReferenceInput) =>
     ipcRenderer.invoke(applyUnlinkedReferenceChannel, input) as Promise<RelicResult<ApplyUnlinkedReferenceResult>>,
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
+  onApplicationMenuCommand: (callback: (command: ApplicationMenuCommand) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, command: ApplicationMenuCommand): void => {
+      callback(command);
+    };
+
+    ipcRenderer.on(applicationMenuCommandChannel, listener);
+    return () => ipcRenderer.removeListener(applicationMenuCommandChannel, listener);
+  },
+  updateApplicationMenuState: (input: ApplicationMenuState) => {
+    ipcRenderer.send(updateApplicationMenuStateChannel, input);
+  },
   getEditorSettings: () =>
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,
   getWorkspaceAliases: () =>

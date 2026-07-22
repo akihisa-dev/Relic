@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu, shell } from "electron";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { configureApplicationMenu } from "./applicationMenu";
 import { registerAppHandlers } from "./ipc/appHandlers";
 import { registerEditorHandlers } from "./ipc/editorHandlers";
 import { registerFileHandlers } from "./ipc/fileHandlers";
@@ -120,13 +121,15 @@ function isAllowedAppNavigation(url: string, rendererIndexUrl: string): boolean 
   return isAllowedPackagedAppNavigation(url, rendererIndexUrl);
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await getMainTranslator();
   registerAppHandlers();
   registerEditorHandlers();
   registerFileHandlers();
   registerOutputHandlers();
   registerToolHandlers();
   registerWorkspaceHandlers();
+  configureApplicationMenu(() => mainWindow);
   createWindow();
 
 

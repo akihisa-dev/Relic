@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState, type ReactElement } from "react";
 import { useShallow } from "zustand/react/shallow";
 
-import { type WorkspaceState } from "../shared/ipc";
+import { type ApplicationMenuState, type WorkspaceState } from "../shared/ipc";
+import type { AppCommandActions } from "./appCommandActions";
 import { createAppLayoutProps } from "./appLayoutProps";
 import { selectAppEditorStoreState, selectAppUiStoreState } from "./appStoreSelectors";
 import { AppLayout } from "./components/AppLayout";
@@ -9,6 +10,7 @@ import { createTranslator } from "./i18nModel";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
 import { useAppCloseGuards } from "./hooks/useAppCloseGuards";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
+import { useApplicationMenu } from "./hooks/useApplicationMenu";
 import { useAppInlineHandlers } from "./hooks/useAppInlineHandlers";
 import { useAppFileSaved } from "./hooks/useAppFileSaved";
 import { useAppLayoutWidths } from "./hooks/useAppLayoutWidths";
@@ -349,21 +351,66 @@ export function App(): ReactElement {
   });
   useWindowCloseRequest(ensureCanCloseAllTabs);
   const isDarkTheme = useAppTheme(editorSettings.theme);
-  useAppKeyboardShortcuts({
-    closeTab: closeTabWithMotion,
+  const appCommandActions = useMemo<AppCommandActions>(() => ({
+    "close-tab": () => {
+      const paneState = focusedPane === "left" ? leftPane : rightPane;
+      if (paneState.activeTabId) closeTabWithMotion(focusedPane, paneState.activeTabId);
+    },
+    "new-note": () => {
+      setSidebarView("files");
+      setIsCreatingFile(true);
+    },
+    "open-command-palette": () => {
+      setShowQuickSwitcher(false);
+      setShowCommandPalette((current) => !current);
+    },
+    "open-quick-switcher": () => {
+      setShowCommandPalette(false);
+      setShowQuickSwitcher((current) => !current);
+    },
+    "open-search": openQuickSwitcher,
+    "open-settings": () => setSidebarView("settings"),
+    "reopen-closed-tab": reopenClosedTab,
+    "toggle-right-panel": toggleRightPanelIfAvailable,
+    "toggle-sidebar": toggleSidebar,
+    "toggle-split": toggleSplitWithMotion,
+    "toggle-typewriter": toggleTypewriterMode
+  }), [
+    closeTabWithMotion,
     focusedPane,
     leftPane,
-    requestFileSearchFocus: openQuickSwitcher,
+    openQuickSwitcher,
     reopenClosedTab,
     rightPane,
     setIsCreatingFile,
     setShowCommandPalette,
     setShowQuickSwitcher,
     setSidebarView,
-    toggleRightPanel: toggleRightPanelIfAvailable,
+    toggleRightPanelIfAvailable,
     toggleSidebar,
-    toggleSplit: toggleSplitWithMotion
-  });
+    toggleSplitWithMotion,
+    toggleTypewriterMode
+  ]);
+  const applicationMenuState = useMemo<ApplicationMenuState>(() => ({
+    canCloseTab: Boolean((focusedPane === "left" ? leftPane : rightPane).activeTabId),
+    canReopenClosedTab,
+    canToggleRightPanel: true,
+    isRightPanelOpen: isEffectiveRightPanelOpen,
+    isSidebarOpen,
+    isSplit,
+    isTypewriterMode
+  }), [
+    canReopenClosedTab,
+    focusedPane,
+    isEffectiveRightPanelOpen,
+    isSidebarOpen,
+    isSplit,
+    isTypewriterMode,
+    leftPane,
+    rightPane
+  ]);
+  useApplicationMenu({ actions: appCommandActions, state: applicationMenuState });
+  useAppKeyboardShortcuts({ actions: appCommandActions });
 
   const {
     isRightPanelResizing,
@@ -436,19 +483,12 @@ export function App(): ReactElement {
   });
   const commands = useCommandPaletteCommands({
     activeFileName: activeFileTabInFocusedPane?.name ?? null,
+    appCommandActions,
     canReopenClosedTab,
     handleDeleteActiveFile,
     handleDuplicateActiveFile,
-    requestFileSearchFocus: openQuickSwitcher,
-    reopenClosedTab,
-    setIsCreatingFile,
-    setShowQuickSwitcher,
     setSidebarView,
-    t,
-    toggleRightPanel: toggleRightPanelIfAvailable,
-    toggleSidebar,
-    toggleSplit: toggleSplitWithMotion,
-    toggleTypewriterMode
+    t
   });
 
   const {

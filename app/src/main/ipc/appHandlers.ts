@@ -2,10 +2,12 @@ import { app } from "electron";
 
 import { getAppInfoChannel, type AppInfo } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { registerApplicationMenuStateHandler } from "../applicationMenu";
 import { ipcErrorDetails } from "./activeWorkspace";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
 
 export function registerAppHandlers(): void {
+  registerApplicationMenuStateHandler();
   handleLocalizedIpc(getAppInfoChannel, async (): Promise<RelicResult<AppInfo>> => {
     try {
       return ok({
