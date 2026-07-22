@@ -3,17 +3,11 @@ import path from "node:path";
 
 import { writePrivateSettingsTextFile } from "./secureSettingsFile";
 
-export interface SettingsMigrationResult<TRaw> {
-  didMigrate: boolean;
-  settings: TRaw;
-}
-
 export interface SecureVersionedJsonCodec<TRaw extends object, TValue> {
   createCorruptError: (settingsPath: string) => Error;
   createDefaultValue: () => TValue;
-  migrate: (raw: TRaw, settingsPath: string) => SettingsMigrationResult<TRaw>;
   parse: (raw: TRaw) => TValue;
-  parseObject: (raw: unknown) => TRaw | null;
+  parseObject: (raw: unknown, settingsPath: string) => TRaw | null;
   serialize: (value: TValue) => TRaw;
 }
 
@@ -27,7 +21,7 @@ export class SecureVersionedJsonStore<TRaw extends object, TValue> {
   ) {}
 
   async read(settingsPath: string): Promise<TValue> {
-    return this.readInternal(settingsPath, true);
+    return this.readInternal(settingsPath);
   }
 
   async write(settingsPath: string, value: TValue): Promise<void> {
@@ -41,14 +35,14 @@ export class SecureVersionedJsonStore<TRaw extends object, TValue> {
     update: (current: TValue) => Promise<TValue> | TValue
   ): Promise<TValue> {
     return queueSettingsUpdate(settingsPath, async () => {
-      const current = await this.readInternal(settingsPath, false);
+      const current = await this.readInternal(settingsPath);
       const next = await update(current);
       await this.writeRaw(settingsPath, this.codec.serialize(next));
       return next;
     });
   }
 
-  private async readInternal(settingsPath: string, persistMigration: boolean): Promise<TValue> {
+  private async readInternal(settingsPath: string): Promise<TValue> {
     try {
       const rawSettings = await readFile(settingsPath, "utf8");
       const parsedJson = parseSettingsJson(rawSettings);
@@ -58,39 +52,14 @@ export class SecureVersionedJsonStore<TRaw extends object, TValue> {
         throw this.codec.createCorruptError(settingsPath);
       }
 
-      const parsedObject = this.codec.parseObject(parsedJson.value);
+      const parsedObject = this.codec.parseObject(parsedJson.value, settingsPath);
       if (!parsedObject) return this.codec.createDefaultValue();
 
-      const migrated = this.codec.migrate(parsedObject, settingsPath);
-      if (migrated.didMigrate && persistMigration) {
-        try {
-          await this.persistLatestMigration(settingsPath);
-        } catch {
-          // 書き戻し失敗時も読み込み結果は捨てず、正規化した値で続行する。
-        }
-      }
-
-      return this.codec.parse(migrated.settings);
+      return this.codec.parse(parsedObject);
     } catch (error) {
       if (isMissingFileError(error)) return this.codec.createDefaultValue();
       throw error;
     }
-  }
-
-  private persistLatestMigration(settingsPath: string): Promise<void> {
-    return queueSettingsUpdate(settingsPath, async () => {
-      const rawSettings = await readFile(settingsPath, "utf8");
-      const parsedJson = parseSettingsJson(rawSettings);
-      if (!parsedJson.ok) return;
-
-      const parsedObject = this.codec.parseObject(parsedJson.value);
-      if (!parsedObject) return;
-
-      const migrated = this.codec.migrate(parsedObject, settingsPath);
-      if (!migrated.didMigrate) return;
-
-      await this.writeRaw(settingsPath, migrated.settings);
-    });
   }
 
   private async writeRaw(settingsPath: string, raw: TRaw): Promise<void> {
@@ -99,6 +68,23 @@ export class SecureVersionedJsonStore<TRaw extends object, TValue> {
       `${JSON.stringify(raw, null, 2)}\n`
     );
   }
+}
+
+export function assertCurrentSettingsSchemaVersion(
+  raw: Record<string, unknown>,
+  currentVersion: number,
+  settingsPath: string,
+  scope: string,
+  errorName: string
+): void {
+  if (raw.schemaVersion === currentVersion) return;
+
+  const error = new Error(
+    `${scope}の形式に対応していません: ${settingsPath} ` +
+    `(schemaVersion: ${String(raw.schemaVersion)}、対応version: ${currentVersion})。設定ファイルは変更していません。`
+  );
+  error.name = errorName;
+  throw error;
 }
 
 function queueSettingsUpdate<T>(settingsPath: string, task: () => Promise<T>): Promise<T> {

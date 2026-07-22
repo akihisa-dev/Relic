@@ -64,30 +64,22 @@ describe("appSettings", () => {
     expect(files[0]).toMatch(/^app-settings\.corrupt-\d+\.json$/);
   });
 
-  it("v0アプリ設定は読み込み時に現行schemaVersionで保存される", async () => {
+  it.each([undefined, 0, 5])("旧schemaVersion %s は変更せず読み込みを拒否する", async (schemaVersion) => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
-    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
-      schemaVersion: 0,
+    const settingsPath = getAppSettingsPath(userDataPath);
+    const raw = JSON.stringify({
+      ...(schemaVersion === undefined ? {} : { schemaVersion }),
       featureToggles: {
         chronicle: false,
-        frontmatter: false,
-        rightPanel: false,
         tools: false
       },
       workspaces: []
-    }), "utf8");
+    });
+    await writeFile(settingsPath, raw, "utf8");
 
-    await readAppSettings(userDataPath);
-    const afterFirstRead = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(afterFirstRead.schemaVersion).toBe(6);
-
-    await delay(1100);
-    const firstMtime = (await stat(getAppSettingsPath(userDataPath))).mtimeMs;
-    await readAppSettings(userDataPath);
-    const secondMtime = (await stat(getAppSettingsPath(userDataPath))).mtimeMs;
-
-    expect(secondMtime).toBe(firstMtime);
+    await expect(readAppSettings(userDataPath)).rejects.toHaveProperty("name", "UnsupportedSettingsVersionError");
+    await expect(readFile(settingsPath, "utf8")).resolves.toBe(raw);
   });
 
   it("同時更新は更新ヘルパーで直列化される", async () => {
@@ -172,92 +164,18 @@ describe("appSettings", () => {
     }
   });
 
-  it("移行読み込みと同時更新で更新値が上書きされない", async () => {
-    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
-    temporaryPaths.push(userDataPath);
-    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
-      schemaVersion: 0,
-      featureToggles: {
-        chronicle: false,
-        tools: false,
-        frontmatter: false
-      }
-    }), "utf8");
-
-    const update = updateAppSettings(userDataPath, async (settings) => {
-      await delay(40);
-      return {
-        ...settings,
-        featureToggles: {
-          ...settings.featureToggles,
-          tools: true
-        }
-      };
-    });
-    const readWhileUpdating = (async () => {
-      await delay(10);
-      return readAppSettings(userDataPath);
-    })();
-
-    await Promise.all([update, readWhileUpdating]);
-
-    const raw = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(6);
-    expect((raw.featureToggles as Record<string, unknown>)?.tools).toBe(true);
-  });
-
-  it("旧rightPanel機能設定は現行の機能設定から除外する", async () => {
-    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
-    temporaryPaths.push(userDataPath);
-    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
-      featureToggles: {
-        chronicle: false,
-        frontmatter: false,
-        rightPanel: false,
-        tools: false
-      }
-    }), "utf8");
-
-    const settings = await readAppSettings(userDataPath);
-    expect(settings.featureToggles).not.toHaveProperty("rightPanelLinks");
-    expect(settings.featureToggles).not.toHaveProperty("rightPanelOutline");
-    const migrated = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as {
-      featureToggles?: Record<string, unknown>;
-    };
-    expect(migrated.featureToggles).not.toHaveProperty("rightPanel");
-    expect(migrated.featureToggles).not.toHaveProperty("rightPanelLinks");
-    expect(migrated.featureToggles).not.toHaveProperty("rightPanelOutline");
-  });
-
-  it("旧設定にない主要ビューは無効のまま現行形式へ移行する", async () => {
-    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
-    temporaryPaths.push(userDataPath);
-    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
-      schemaVersion: 1,
-      featureToggles: {
-        chronicle: false,
-        frontmatter: false,
-        tools: false
-      },
-      workspaces: []
-    }), "utf8");
-
-    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      featureToggles: expect.objectContaining({ cards: false, graph: false, sphere: false })
-    });
-    const migrated = JSON.parse(await readFile(getAppSettingsPath(userDataPath), "utf8")) as Record<string, unknown>;
-    expect(migrated.schemaVersion).toBe(6);
-  });
-
   it("未知の将来schemaVersionは旧形式として誤読しない", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
-    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+    const settingsPath = getAppSettingsPath(userDataPath);
+    const raw = JSON.stringify({
       schemaVersion: 999,
       featureToggles: { graph: false }
-    }), "utf8");
+    });
+    await writeFile(settingsPath, raw, "utf8");
 
     await expect(readAppSettings(userDataPath)).rejects.toHaveProperty("name", "UnsupportedSettingsVersionError");
+    await expect(readFile(settingsPath, "utf8")).resolves.toBe(raw);
     await expect(readdir(userDataPath)).resolves.toEqual([path.basename(getAppSettingsPath(userDataPath))]);
   });
 
@@ -276,6 +194,7 @@ describe("appSettings", () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      schemaVersion: 6,
       lastWorkspaceId: "ws-valid",
       workspaces: [
         { id: "ws-valid", name: "Notes", path: "/tmp/Notes" },
@@ -300,6 +219,7 @@ describe("appSettings", () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      schemaVersion: 6,
       lastWorkspaceId: "ws-missing",
       workspaces: [{ id: "ws-valid", name: "Notes", path: "/tmp/Notes" }]
     }), "utf8");
@@ -314,6 +234,7 @@ describe("appSettings", () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      schemaVersion: 6,
       editorSettings: {
         ...defaultEditorSettings,
         fontSize: 1e999,
@@ -334,6 +255,7 @@ describe("appSettings", () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      schemaVersion: 6,
       editorSettings: {
         font: "gothic",
         fontSize: 18,
@@ -367,6 +289,7 @@ describe("appSettings", () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      schemaVersion: 6,
       editorSettings: {
         font: 1,
         fontSize: "large",
@@ -397,6 +320,7 @@ describe("appSettings", () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      schemaVersion: 6,
       frontmatterTemplates: [
         null,
         "invalid",
@@ -420,6 +344,7 @@ describe("appSettings", () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      schemaVersion: 6,
       userDefinedFields: [
         null,
         "invalid",

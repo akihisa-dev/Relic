@@ -234,7 +234,6 @@
     "src/renderer/hooks/useWorkspaceFileCreationActions.ts": 130,
     "src/renderer/editorEventExtensions.ts": 129,
     "src/main/files/workspaceFileIndexCache.ts": 127,
-    "src/main/compatibility/settingsCompatibility.ts": 126,
     "src/main/ipc/ipcContract.test.ts": 126,
     "scripts/generate-large-workspace.mjs": 125,
     "src/renderer/hooks/useCommandPaletteCommands.ts": 125,

@@ -40,13 +40,13 @@ describe("workspaceSettings", () => {
     });
   });
 
-  it("v5の追加暦は範囲を推測せず未設定としてv6へ移行する", async () => {
+  it("範囲未設定の追加暦は範囲を推測せず復元する", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
     temporaryPaths.push(userDataPath);
-    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-calendar-v5");
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-calendar");
     await mkdir(path.dirname(settingsPath), { recursive: true });
     await writeFile(settingsPath, JSON.stringify({
-      schemaVersion: 5,
+      schemaVersion: 6,
       chronicleCalendarSettings: {
         baseCalendarName: "基準暦",
         calendars: [{ name: "別暦", yearOne: 450 }],
@@ -54,14 +54,11 @@ describe("workspaceSettings", () => {
       }
     }), "utf8");
 
-    const settings = await readWorkspaceSettings(userDataPath, "ws-calendar-v5");
-    const persisted = JSON.parse(await readFile(settingsPath, "utf8"));
+    const settings = await readWorkspaceSettings(userDataPath, "ws-calendar");
 
     expect(settings.chronicleCalendarSettings?.calendars).toEqual([
       { name: "別暦", range: null, yearOne: 450 }
     ]);
-    expect(persisted.schemaVersion).toBe(6);
-    expect(persisted.chronicleCalendarSettings.calendars[0].range).toBeNull();
   });
 
   it("設定ファイルがない場合はデフォルトを返す", async () => {
@@ -110,6 +107,7 @@ describe("workspaceSettings", () => {
     await mkdir(path.dirname(settingsPath), { recursive: true });
 
     await writeFile(settingsPath, JSON.stringify({
+      schemaVersion: 6,
       charts: defaultCharts,
       frontmatterCategoryChoices: [
         " 政治 ",
@@ -136,6 +134,7 @@ describe("workspaceSettings", () => {
     await mkdir(path.dirname(settingsPath), { recursive: true });
 
     await writeFile(settingsPath, JSON.stringify({
+      schemaVersion: 6,
       charts: defaultCharts,
       pinnedPaths: [
         " notes/readme.md ",
@@ -155,28 +154,13 @@ describe("workspaceSettings", () => {
     expect(settings.pinnedPaths).toEqual(["notes/readme.md", "folder/note.md"]);
   });
 
-  it("読み込み時にテーブル列の空文字、重複、危険な値を除外する", async () => {
-    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
-    temporaryPaths.push(userDataPath);
-    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-table");
-    await mkdir(path.dirname(settingsPath), { recursive: true });
-    await writeFile(settingsPath, JSON.stringify({
-      schemaVersion: 3,
-      tableProperties: ["status", "status", " tags", "", 123, "tags"]
-    }), "utf8");
-
-    const settings = await readWorkspaceSettings(userDataPath, "ws-table");
-
-    expect(settings.tablePreferences.selectedProperties).toEqual(["status", "tags"]);
-  });
-
   it("テーブル表示設定の不正な幅と関連状態だけを除外する", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
     temporaryPaths.push(userDataPath);
     const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-table-preferences");
     await mkdir(path.dirname(settingsPath), { recursive: true });
     await writeFile(settingsPath, JSON.stringify({
-      schemaVersion: 5,
+      schemaVersion: 6,
       tablePreferences: {
         columnWidths: [{ property: "status", width: 240 }, { property: "tags", width: 20 }],
         fileColumnWidth: 300,
@@ -206,6 +190,7 @@ describe("workspaceSettings", () => {
     await mkdir(path.dirname(settingsPath), { recursive: true });
 
     await writeFile(settingsPath, JSON.stringify({
+      schemaVersion: 6,
       charts: [
         {
           filePaths: [
@@ -234,50 +219,25 @@ describe("workspaceSettings", () => {
     ]);
   });
 
-  it("旧ganttChartsキーをchartsとして読み込む", async () => {
+  it.each([undefined, 0, 5])("旧schemaVersion %s は変更せず読み込みを拒否する", async (schemaVersion) => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
     temporaryPaths.push(userDataPath);
-    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-legacy");
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-unsupported");
 
     await mkdir(path.dirname(settingsPath), { recursive: true });
-    await writeFile(settingsPath, JSON.stringify({
-      ganttCharts: [
-        { filePaths: ["history.md"], id: "chronicle", name: "歴史", source: "chronicle" }
-      ],
-      pinnedPaths: [],
-      workspacePath: "/Users/test/legacy"
-    }), "utf8");
-
-    const settings = await readWorkspaceSettings(userDataPath, "ws-legacy");
-
-    expect(settings.charts).toEqual([
-      { filePaths: ["history.md"], id: "chronicle", name: "chronicle", source: "chronicle" }
-    ]);
-  });
-
-  it("v0ワークスペース設定は読み込み時に現行schemaVersionで保存される", async () => {
-    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
-    temporaryPaths.push(userDataPath);
-    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-legacy-v0");
-
-    await mkdir(path.dirname(settingsPath), { recursive: true });
-    await writeFile(settingsPath, JSON.stringify({
-      schemaVersion: 0,
+    const raw = JSON.stringify({
+      ...(schemaVersion === undefined ? {} : { schemaVersion }),
       charts: defaultCharts,
       pinnedPaths: ["notes.md"],
       workspacePath: "/Users/test/workspace"
-    }), "utf8");
+    });
+    await writeFile(settingsPath, raw, "utf8");
 
-    await readWorkspaceSettings(userDataPath, "ws-legacy-v0");
-    const afterFirstRead = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
-    expect(afterFirstRead.schemaVersion).toBe(6);
-
-    await delay(1100);
-    const firstMtime = (await stat(settingsPath)).mtimeMs;
-    await readWorkspaceSettings(userDataPath, "ws-legacy-v0");
-    const secondMtime = (await stat(settingsPath)).mtimeMs;
-
-    expect(secondMtime).toBe(firstMtime);
+    await expect(readWorkspaceSettings(userDataPath, "ws-unsupported")).rejects.toHaveProperty(
+      "name",
+      "UnsupportedWorkspaceSettingsVersionError"
+    );
+    await expect(readFile(settingsPath, "utf8")).resolves.toBe(raw);
   });
 
   it("保存時はchartsキーだけを書き込む", async () => {
@@ -323,14 +283,16 @@ describe("workspaceSettings", () => {
     temporaryPaths.push(userDataPath);
     const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-future");
     await mkdir(path.dirname(settingsPath), { recursive: true });
-    await writeFile(settingsPath, JSON.stringify({
+    const raw = JSON.stringify({
       schemaVersion: 999,
       charts: defaultCharts,
       pinnedPaths: [],
       workspacePath: "/Users/test/future"
-    }), "utf8");
+    });
+    await writeFile(settingsPath, raw, "utf8");
 
     await expect(readWorkspaceSettings(userDataPath, "ws-future")).rejects.toHaveProperty("name", "UnsupportedWorkspaceSettingsVersionError");
+    await expect(readFile(settingsPath, "utf8")).resolves.toBe(raw);
     await expect(readdir(path.dirname(settingsPath))).resolves.toEqual([path.basename(settingsPath)]);
   });
 
@@ -459,34 +421,4 @@ describe("workspaceSettings", () => {
     }
   });
 
-  it("移行読み込みと同時更新で更新値が上書きされない", async () => {
-    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
-    temporaryPaths.push(userDataPath);
-    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-legacy-concurrent");
-    await mkdir(path.dirname(settingsPath), { recursive: true });
-    await writeFile(settingsPath, JSON.stringify({
-      schemaVersion: 0,
-      charts: defaultCharts,
-      pinnedPaths: [],
-      workspacePath: "/Users/test/legacy"
-    }), "utf8");
-
-    const update = updateWorkspaceSettings(userDataPath, "ws-legacy-concurrent", async (settings) => {
-      await delay(40);
-      return {
-        ...settings,
-        workspacePath: "/Users/test/new"
-      };
-    });
-    const readWhileUpdating = (async () => {
-      await delay(10);
-      return readWorkspaceSettings(userDataPath, "ws-legacy-concurrent");
-    })();
-
-    await Promise.all([update, readWhileUpdating]);
-
-    const raw = JSON.parse(await readFile(settingsPath, "utf8")) as Record<string, unknown>;
-    expect(raw.schemaVersion).toBe(6);
-    expect(raw.workspacePath).toBe("/Users/test/new");
-  });
 });

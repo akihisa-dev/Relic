@@ -17,11 +17,9 @@ import {
 } from "../../shared/chronicleCalendar";
 import { normalizeWorkspaceRelativeInputPath } from "../files/paths";
 import {
-  currentWorkspaceSettingsSchemaVersion,
-  migrateWorkspaceSettings,
-  type WorkspaceSettingsMigrationRecord
-} from "../compatibility/settingsCompatibility";
-import { SecureVersionedJsonStore } from "./secureVersionedJsonStore";
+  assertCurrentSettingsSchemaVersion,
+  SecureVersionedJsonStore
+} from "./secureVersionedJsonStore";
 
 export interface WorkspaceSettings {
   charts: ChartSettings[];
@@ -32,8 +30,14 @@ export interface WorkspaceSettings {
   workspacePath: string;
 }
 
-type PersistedWorkspaceSettings = Partial<Omit<WorkspaceSettings, "charts">> & WorkspaceSettingsMigrationRecord & {
+type PersistedWorkspaceSettings = {
   charts?: unknown;
+  chronicleCalendarSettings?: unknown;
+  frontmatterCategoryChoices?: unknown;
+  pinnedPaths?: unknown;
+  schemaVersion?: unknown;
+  tablePreferences?: unknown;
+  workspacePath?: unknown;
 };
 
 export const defaultCharts: ChartSettings[] = [
@@ -41,10 +45,10 @@ export const defaultCharts: ChartSettings[] = [
 ];
 
 const WORKSPACE_SETTINGS_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
+export const currentWorkspaceSettingsSchemaVersion = 6;
 const workspaceSettingsStore = new SecureVersionedJsonStore<PersistedWorkspaceSettings, WorkspaceSettings>({
   createCorruptError: createCorruptWorkspaceSettingsError,
   createDefaultValue: createDefaultWorkspaceSettings,
-  migrate: migrateWorkspaceSettings,
   parse: parseWorkspaceSettings,
   parseObject: parseSettingsObject,
   serialize: serializeWorkspaceSettings
@@ -349,12 +353,20 @@ export async function removeWorkspaceSettings(
   await rm(settingsPath, { force: true });
 }
 
-function parseSettingsObject(raw: unknown): PersistedWorkspaceSettings | null {
+function parseSettingsObject(raw: unknown, settingsPath: string): PersistedWorkspaceSettings | null {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     return null;
   }
 
-  return raw as PersistedWorkspaceSettings;
+  const settings = raw as PersistedWorkspaceSettings;
+  assertCurrentSettingsSchemaVersion(
+    settings,
+    currentWorkspaceSettingsSchemaVersion,
+    settingsPath,
+    "ワークスペース設定",
+    "UnsupportedWorkspaceSettingsVersionError"
+  );
+  return settings;
 }
 
 function serializeWorkspaceSettings(settings: WorkspaceSettings): PersistedWorkspaceSettings {

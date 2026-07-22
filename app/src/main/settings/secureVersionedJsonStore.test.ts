@@ -17,7 +17,6 @@ interface TestSettings {
 const testCodec: SecureVersionedJsonCodec<TestSettings, TestSettings> = {
   createCorruptError: () => new Error("設定ファイルが壊れています。"),
   createDefaultValue: () => ({ value: 0 }),
-  migrate: (raw) => ({ didMigrate: false, settings: raw }),
   parse: (raw) => raw,
   parseObject: (raw) => (
     typeof raw === "object"

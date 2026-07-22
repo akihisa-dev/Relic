@@ -18,10 +18,9 @@ import {
   userDefinedFieldTypeNeedsChoices
 } from "../../shared/frontmatterFields";
 import {
-  currentAppSettingsSchemaVersion,
-  migrateAppSettings
-} from "../compatibility/settingsCompatibility";
-import { SecureVersionedJsonStore } from "./secureVersionedJsonStore";
+  assertCurrentSettingsSchemaVersion,
+  SecureVersionedJsonStore
+} from "./secureVersionedJsonStore";
 
 export interface AppSettings {
   editorSettings: EditorSettings;
@@ -35,11 +34,12 @@ export interface AppSettings {
 const appSettingsStore = new SecureVersionedJsonStore<Record<string, unknown>, AppSettings>({
   createCorruptError: createCorruptSettingsError,
   createDefaultValue: createDefaultAppSettings,
-  migrate: migrateAppSettings,
   parse: parseAppSettings,
   parseObject: parseSettingsObject,
   serialize: serializeAppSettings
 });
+
+export const currentAppSettingsSchemaVersion = 6;
 
 function createDefaultAppSettings(): AppSettings {
   return {
@@ -267,12 +267,20 @@ function parseLastWorkspaceId(raw: unknown, workspaces: WorkspaceSummary[]): str
   return workspaces.some((workspace) => workspace.id === raw) ? raw : null;
 }
 
-function parseSettingsObject(raw: unknown): Record<string, unknown> | null {
+function parseSettingsObject(raw: unknown, settingsPath: string): Record<string, unknown> | null {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     return null;
   }
 
-  return raw as Record<string, unknown>;
+  const settings = raw as Record<string, unknown>;
+  assertCurrentSettingsSchemaVersion(
+    settings,
+    currentAppSettingsSchemaVersion,
+    settingsPath,
+    "アプリ設定",
+    "UnsupportedSettingsVersionError"
+  );
+  return settings;
 }
 
 function serializeAppSettings(settings: AppSettings): Record<string, unknown> {
