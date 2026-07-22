@@ -1,4 +1,4 @@
-import { useCallback, useMemo, type ComponentProps, type CSSProperties, type ReactElement } from "react";
+import { memo, useCallback, useMemo, type ComponentProps, type CSSProperties, type ReactElement } from "react";
 
 import type { AppLanguage, EditorSettings } from "../../shared/ipc";
 import { resolveAppFontFamily } from "../appFont";
@@ -24,6 +24,10 @@ export interface AppLayoutProps {
   statusBarProps: ComponentProps<typeof AppStatusBar>;
   titleBarProps: ComponentProps<typeof AppTitleBar>;
 }
+
+const StableAppFilesSidebar = memo(AppFilesSidebar);
+const StableAppOverlays = memo(AppOverlays);
+const StableAppRail = memo(AppRail);
 
 export function AppLayout({
   editorWorkspaceProps,
@@ -70,8 +74,8 @@ export function AppLayout({
           />
         </AppTitleBar>
         <div className="workspace">
-          <AppRail {...railProps} onRunFileTool={onRunFileTool} runningFileTool={runningFileTool} />
-          <AppFilesSidebar {...filesSidebarProps} onRunFileTool={onRunFileTool} runningFileTool={runningFileTool} />
+          <StableAppRail {...railProps} onRunFileTool={onRunFileTool} runningFileTool={runningFileTool} />
+          <StableAppFilesSidebar {...filesSidebarProps} onRunFileTool={onRunFileTool} runningFileTool={runningFileTool} />
           {filesSidebarProps.isSidebarOpen ? (
             <LayoutResizeBoundary
               aria-label={t("pane.resizeSidebar")}
@@ -83,7 +87,7 @@ export function AppLayout({
           <AppEditorWorkspace {...editorWorkspaceProps} />
         </div>
         <AppStatusBar {...statusBarProps} />
-        <AppOverlays {...overlaysProps} />
+        <StableAppOverlays {...overlaysProps} />
       </div>
     </I18nProvider>
   );

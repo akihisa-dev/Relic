@@ -26,8 +26,8 @@ type EditorContentActions = Pick<EditorStoreActions,
 
 export function createEditorContentActions(set: EditorStoreSet): EditorContentActions {
   return {
-    updateTabContent: (tabId, content) => {
-      set((state) => updateFileTabContentState(state, tabId, content));
+    updateTabContent: (tabId, content, update) => {
+      set((state) => updateFileTabContentState(state, tabId, content, update));
       emitEditorTabChanged(tabId);
     },
     updateTabMeta: (tabId, meta) => {

@@ -26,7 +26,7 @@ import {
 import { createLivePreviewDecorationsPlugin } from "./editorLivePreview";
 
 function complete(doc: string, allFilePaths: string[], aliases: string[] = [], position = doc.length) {
-  const state = EditorState.create({ doc });
+  const state = EditorState.create({ doc, extensions: [markdown({ extensions: GFM })] });
   const source = buildWikiLinkCompletionSource(allFilePaths, { aliases });
 
   return source(new CompletionContext(state, position, true));
@@ -237,10 +237,11 @@ describe("live preview decoration rebuild quality gates", () => {
 });
 
 describe("inline live preview decoration rebuild quality gates", () => {
-  it("本文・選択・表示範囲・フォーカスに無関係なtransactionでは再構築しない", () => {
+  it("本文・表示範囲・フォーカスに無関係なtransactionと同じ装飾範囲内の選択移動では再構築しない", () => {
     const rebuilds: string[] = [];
     const state = EditorState.create({
-      doc: "**強調**\n本文",
+      doc: "本文\n**強調**",
+      selection: { anchor: 1 },
       extensions: [
         diagramEditRangeField,
         createLivePreviewDecorationsPlugin(undefined, undefined, undefined, undefined, 0, {
@@ -256,7 +257,10 @@ describe("inline live preview decoration rebuild quality gates", () => {
     view.dispatch({ annotations: Transaction.addToHistory.of(false) });
     expect(rebuilds).toEqual(["create"]);
 
-    view.dispatch({ selection: { anchor: 1 } });
+    view.dispatch({ selection: { anchor: 0 } });
+    expect(rebuilds).toEqual(["create"]);
+
+    view.dispatch({ selection: { anchor: 4 } });
     expect(rebuilds).toEqual(["create", "selection"]);
 
     view.dispatch({ effects: livePreviewCompositionEndedEffect.of(null) });

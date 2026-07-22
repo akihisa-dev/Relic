@@ -11,10 +11,16 @@ export const __typewriterMeasureKeyForTests = {};
 
 const typewriterExtension = ViewPlugin.fromClass(
   class {
+    private lastTarget = -1;
+    private requestedCursorLineFrom = -1;
+
     update(update: ViewUpdate): void {
       if (!update.selectionSet && !update.docChanged) return;
 
       const { view } = update;
+      const cursorLineFrom = view.state.doc.lineAt(view.state.selection.main.head).from;
+      if (cursorLineFrom === this.requestedCursorLineFrom && !update.geometryChanged) return;
+      this.requestedCursorLineFrom = cursorLineFrom;
       view.requestMeasure({
         key: __typewriterMeasureKeyForTests,
         read: () => {
@@ -23,6 +29,8 @@ const typewriterExtension = ViewPlugin.fromClass(
           return Math.max(0, line.top - view.scrollDOM.clientHeight / 2 + line.height / 2);
         },
         write: (target) => {
+          if (Math.abs(this.lastTarget - target) < 0.5) return;
+          this.lastTarget = target;
           if (Math.abs(view.scrollDOM.scrollTop - target) >= 0.5) view.scrollDOM.scrollTop = target;
         }
       });

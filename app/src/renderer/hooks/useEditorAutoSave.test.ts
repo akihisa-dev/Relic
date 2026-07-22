@@ -6,6 +6,7 @@ import { makeRelicApi } from "../../test/rendererTestUtils";
 import { useEditorStore, type Tab } from "../store/editorStore";
 import {
   __getAutoSaveEvaluatedTabCountForTests,
+  __getAutoSaveStatusEvaluatedTabCountForTests,
   __resetAutoSaveEvaluatedTabCountForTests,
   useEditorAutoSave
 } from "./useEditorAutoSave";
@@ -53,6 +54,7 @@ describe("useEditorAutoSave", () => {
     act(() => useEditorStore.getState().updateTabContent("second", "second draft"));
 
     expect(__getAutoSaveEvaluatedTabCountForTests()).toBe(1);
+    expect(__getAutoSaveStatusEvaluatedTabCountForTests()).toBe(1);
   });
 
   afterEach(() => {

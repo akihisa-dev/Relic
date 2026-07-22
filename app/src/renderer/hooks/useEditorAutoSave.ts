@@ -2,28 +2,19 @@ import { relicClient } from "../relicClient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { FileTab, Tab } from "../store/editorStore";
+import {
+  initialEditorSaveStatuses,
+  updateEditorSaveStatuses,
+  type EditorSaveQueue as SaveQueue,
+  type EditorSaveRequest as SaveRequest,
+  type EditorSaveStatus
+} from "../editorAutoSaveStatus";
 import { flushPendingEditorChanges } from "../editorInputBuffer";
 import { useEditorStore } from "../store/editorStore";
 import { subscribeEditorTabChanges } from "../store/editorTabChangeEvents";
 import { useLatest } from "./useLatest";
 
-export type EditorSaveStatus = "saved" | "dirty" | "saving" | "error" | "externalConflict";
-
-interface SaveRequest {
-  content: string;
-  expectedContent: string;
-  path: string;
-  tabId: string;
-}
-
-interface SaveQueue {
-  lastError: string | null;
-  pending: SaveRequest | null;
-  saving: boolean;
-  tabId: string | null;
-  timer: ReturnType<typeof setTimeout> | null;
-  waiters: Array<() => void>;
-}
+export type { EditorSaveStatus } from "../editorAutoSaveStatus";
 
 interface UseEditorAutoSaveInput {
   conflictCloseBlockedMessage: string;
@@ -41,6 +32,7 @@ interface SaveBeforeCloseResult {
 
 const AUTO_SAVE_DELAY_MS = 1000;
 let evaluatedTabCount = 0;
+let evaluatedSaveStatusTabCount = 0;
 
 /** @internal Test-only counter for changed-tab scheduling assertions. */
 export function __getAutoSaveEvaluatedTabCountForTests(): number {
@@ -50,6 +42,12 @@ export function __getAutoSaveEvaluatedTabCountForTests(): number {
 /** @internal Test-only reset for changed-tab scheduling assertions. */
 export function __resetAutoSaveEvaluatedTabCountForTests(): void {
   evaluatedTabCount = 0;
+  evaluatedSaveStatusTabCount = 0;
+}
+
+/** @internal Test-only counter for incremental save-status assertions. */
+export function __getAutoSaveStatusEvaluatedTabCountForTests(): number {
+  return evaluatedSaveStatusTabCount;
 }
 
 export function useEditorAutoSave({
@@ -62,7 +60,9 @@ export function useEditorAutoSave({
   saveStatusByTabId: Record<string, EditorSaveStatus>;
 } {
   const [queueSnapshot, setQueueSnapshot] = useState(0);
+  const dirtyStatusTabIdsRef = useRef<Set<string>>(new Set());
   const queuesRef = useRef<Map<string, SaveQueue> | null>(null);
+  const statusByTabIdRef = useRef<Map<string, EditorSaveStatus> | null>(null);
   const onSavedRef = useLatest(onSaved);
   const onSaveErrorRef = useLatest(onSaveError);
 
@@ -71,8 +71,13 @@ export function useEditorAutoSave({
   }
 
   const queues = queuesRef.current;
+  if (statusByTabIdRef.current === null) {
+    statusByTabIdRef.current = initialEditorSaveStatuses(useEditorStore.getState().tabs);
+  }
+  const statusByTabId = statusByTabIdRef.current;
 
-  const notifyQueueChanged = useCallback((): void => {
+  const notifyQueueChanged = useCallback((tabId?: string | null): void => {
+    if (tabId) dirtyStatusTabIdsRef.current.add(tabId);
     setQueueSnapshot((value) => value + 1);
   }, []);
 
@@ -112,7 +117,7 @@ export function useEditorAutoSave({
     queue.pending = null;
     queue.saving = true;
     queue.lastError = null;
-    notifyQueueChanged();
+    notifyQueueChanged(request.tabId);
     let saveSucceeded = false;
 
     void relicClient.current.writeMarkdownFile({
@@ -149,7 +154,7 @@ export function useEditorAutoSave({
       })
       .finally(() => {
         queue.saving = false;
-        notifyQueueChanged();
+        notifyQueueChanged(request.tabId);
 
         if (queue.pending && saveSucceeded) {
           runQueue(path);
@@ -176,7 +181,7 @@ export function useEditorAutoSave({
     }
 
     if (queue.saving) {
-      notifyQueueChanged();
+      notifyQueueChanged(request.tabId);
       return;
     }
 
@@ -189,7 +194,7 @@ export function useEditorAutoSave({
       queue.timer = null;
       runQueue(request.path);
     }, delay);
-    notifyQueueChanged();
+    notifyQueueChanged(request.tabId);
   }, [notifyQueueChanged, queueForPath, runQueue]);
 
   const waitForIdle = useCallback((path: string): Promise<void> => {
@@ -203,6 +208,7 @@ export function useEditorAutoSave({
 
   const evaluateTab = useCallback((tabId: string): void => {
     evaluatedTabCount += 1;
+    dirtyStatusTabIdsRef.current.add(tabId);
     const tab = useEditorStore.getState().tabs[tabId];
     if (tab?.kind !== "file") return;
     for (const [path, existingQueue] of queues.entries()) {
@@ -221,7 +227,7 @@ export function useEditorAutoSave({
         if (queue) {
           wakeWaiters(queue);
         }
-        notifyQueueChanged();
+        notifyQueueChanged(tabId);
         return;
       }
 
@@ -244,6 +250,10 @@ export function useEditorAutoSave({
         if (queue.timer) clearTimeout(queue.timer);
         queues.delete(path);
       }
+      for (const tabId of statusByTabId.keys()) dirtyStatusTabIdsRef.current.add(tabId);
+      for (const tab of Object.values(state.tabs)) {
+        if (tab.kind === "file") dirtyStatusTabIdsRef.current.add(tab.id);
+      }
       notifyQueueChanged();
     });
 
@@ -251,7 +261,7 @@ export function useEditorAutoSave({
       unsubscribeChanges();
       unsubscribeStructure();
     };
-  }, [evaluateTab, notifyQueueChanged, queues]);
+  }, [evaluateTab, notifyQueueChanged, queues, statusByTabId]);
 
   useEffect(() => {
     return () => {
@@ -298,21 +308,16 @@ export function useEditorAutoSave({
 
   const saveStatusByTabId = useMemo(() => {
     void queueSnapshot;
-
-    const entries = Object.values(useEditorStore.getState().tabs).flatMap((tab): Array<[string, EditorSaveStatus]> => {
-      if (tab.kind !== "file") return [];
-      if (tab.externalConflict) return [[tab.id, "externalConflict" satisfies EditorSaveStatus]];
-      if (tab.content === tab.savedContent) return [[tab.id, "saved" satisfies EditorSaveStatus]];
-
-      const queue = queues.get(tab.path);
-      if (queue?.saving) return [[tab.id, "saving" satisfies EditorSaveStatus]];
-      if (queue?.lastError) return [[tab.id, "error" satisfies EditorSaveStatus]];
-
-      return [[tab.id, "dirty" satisfies EditorSaveStatus]];
-    });
-
-    return Object.fromEntries(entries);
-  }, [queueSnapshot, queues]);
+    const tabs = useEditorStore.getState().tabs;
+    evaluatedSaveStatusTabCount += updateEditorSaveStatuses(
+      statusByTabId,
+      dirtyStatusTabIdsRef.current,
+      tabs,
+      (path) => queues.get(path)
+    );
+    dirtyStatusTabIdsRef.current.clear();
+    return Object.fromEntries(statusByTabId);
+  }, [queueSnapshot, queues, statusByTabId]);
 
   return {
     flushTabsBeforeClose,

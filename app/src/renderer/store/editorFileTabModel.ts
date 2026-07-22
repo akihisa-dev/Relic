@@ -1,4 +1,6 @@
 import type { Tab } from "./editorStoreTypes";
+import type { EditorContentUpdateInput } from "../editorContentUpdate";
+import { transferEditorTabContentIndex } from "../editorTabIndexes";
 import type { EditorStoreModelState } from "./editorStoreModelTypes";
 
 type WorkspacePathTab = Extract<Tab, { kind: "file" | "image" | "pdf" }>;
@@ -6,12 +8,24 @@ type WorkspacePathTab = Extract<Tab, { kind: "file" | "image" | "pdf" }>;
 export function updateFileTabContentState(
   state: EditorStoreModelState,
   tabId: string,
-  content: string
+  content: string,
+  update?: EditorContentUpdateInput
 ): Partial<EditorStoreModelState> | EditorStoreModelState {
   const tab = state.tabs[tabId];
   if (tab?.kind !== "file") return state;
 
-  return { tabs: { ...state.tabs, [tabId]: { ...tab, content } } };
+  if (tab.content === content) return state;
+  const previousRevision = tab.contentRevision ?? 0;
+  const revision = previousRevision + 1;
+  const nextTab = {
+    ...tab,
+    content,
+    contentRevision: revision,
+    contentUpdate: update ? { ...update, previousRevision, revision } : undefined
+  };
+  const tabs = { ...state.tabs, [tabId]: nextTab };
+  transferEditorTabContentIndex(state.tabs, tabs, tab, nextTab);
+  return { tabs };
 }
 
 export function markFileTabSavedState(
@@ -22,17 +36,22 @@ export function markFileTabSavedState(
   const tab = state.tabs[tabId];
   if (tab?.kind !== "file") return state;
 
-  return {
-    tabs: {
-      ...state.tabs,
-      [tabId]: {
-        ...tab,
-        content,
-        externalConflict: undefined,
-        savedContent: content
-      }
-    }
+  const contentChanged = tab.content !== content;
+  const previousRevision = tab.contentRevision ?? 0;
+
+  const nextTab = {
+    ...tab,
+    content,
+    ...(contentChanged ? {
+      contentRevision: previousRevision + 1,
+      contentUpdate: undefined
+    } : {}),
+    externalConflict: undefined,
+    savedContent: content
   };
+  const tabs = { ...state.tabs, [tabId]: nextTab };
+  transferEditorTabContentIndex(state.tabs, tabs, tab, nextTab);
+  return { tabs };
 }
 
 export function markFileTabSavedCheckpointState(
@@ -43,15 +62,10 @@ export function markFileTabSavedCheckpointState(
   const tab = state.tabs[tabId];
   if (tab?.kind !== "file") return state;
 
-  return {
-    tabs: {
-      ...state.tabs,
-      [tabId]: {
-        ...tab,
-        savedContent
-      }
-    }
-  };
+  const nextTab = { ...tab, savedContent };
+  const tabs = { ...state.tabs, [tabId]: nextTab };
+  transferEditorTabContentIndex(state.tabs, tabs, tab, nextTab);
+  return { tabs };
 }
 
 export function updateFileTabFromExternalState(
@@ -70,15 +84,10 @@ export function setFileTabExternalConflictState(
   const tab = state.tabs[tabId];
   if (tab?.kind !== "file") return state;
 
-  return {
-    tabs: {
-      ...state.tabs,
-      [tabId]: {
-        ...tab,
-        externalConflict: { content }
-      }
-    }
-  };
+  const nextTab = { ...tab, externalConflict: { content } };
+  const tabs = { ...state.tabs, [tabId]: nextTab };
+  transferEditorTabContentIndex(state.tabs, tabs, tab, nextTab);
+  return { tabs };
 }
 
 export function resolveFileTabExternalConflictState(

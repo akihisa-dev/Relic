@@ -9,6 +9,10 @@ import {
   type OutlineHeading
 } from "../editorDerivedState";
 import { isLargeMarkdownContent } from "../largeMarkdown";
+import {
+  updateOutgoingLinksSnapshot,
+  type OutgoingLinksSnapshot
+} from "../editorOutgoingLinks";
 import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
 import { useBacklinksState } from "./useBacklinksState";
@@ -87,7 +91,12 @@ export function useActiveDocumentContext({
     const previous = outlineSnapshotRef.current?.path === activeFileTabInFocusedPane.path
       ? outlineSnapshotRef.current.snapshot
       : null;
-    const snapshot = updateOutlineSnapshot(previous, activeFileTabInFocusedPane.content);
+    const snapshot = updateOutlineSnapshot(
+      previous,
+      activeFileTabInFocusedPane.content,
+      activeFileTabInFocusedPane.contentRevision ?? 0,
+      activeFileTabInFocusedPane.contentUpdate
+    );
     outlineSnapshotRef.current = { path: activeFileTabInFocusedPane.path, snapshot };
     outlineHeadings = snapshot.headings;
   }
@@ -96,22 +105,24 @@ export function useActiveDocumentContext({
     () => createWikiLinkResolver(existingMarkdownPaths, aliasesByPath),
     [aliasesByPath, existingMarkdownPaths]
   );
-  const allOutgoingLinks = useMemo(
-    () => activeFileTabInFocusedPane && !isLargeMarkdown && isLinksPanelActive
-      ? wikiLinkResolver(activeFileTabInFocusedPane.content, activeFileTabInFocusedPane.path, { limit: maxOutgoingLinks + 1 })
-      : [],
-    [
-      activeFileTabInFocusedPane?.content,
-      activeFileTabInFocusedPane?.path,
-      isLargeMarkdown,
-      isLinksPanelActive,
-      wikiLinkResolver
-    ]
-  );
-  const outgoingLinksLimited = allOutgoingLinks.length > maxOutgoingLinks;
+  const outgoingLinksSnapshotRef = useRef<OutgoingLinksSnapshot | null>(null);
+  const allOutgoingLinks = activeFileTabInFocusedPane && !isLargeMarkdown && isLinksPanelActive
+    ? updateOutgoingLinksSnapshot(
+      outgoingLinksSnapshotRef.current,
+      activeFileTabInFocusedPane.content,
+      activeFileTabInFocusedPane.contentRevision ?? 0,
+      activeFileTabInFocusedPane.contentUpdate,
+      activeFileTabInFocusedPane.path,
+      wikiLinkResolver,
+      maxOutgoingLinks + 1
+    )
+    : null;
+  if (allOutgoingLinks) outgoingLinksSnapshotRef.current = allOutgoingLinks;
+  const resolvedOutgoingLinks = allOutgoingLinks?.links ?? [];
+  const outgoingLinksLimited = resolvedOutgoingLinks.length > maxOutgoingLinks;
   const outgoingLinks = outgoingLinksLimited
-    ? allOutgoingLinks.slice(0, maxOutgoingLinks)
-    : allOutgoingLinks;
+    ? resolvedOutgoingLinks.slice(0, maxOutgoingLinks)
+    : resolvedOutgoingLinks;
 
   const { backlinks, isLoadingBacklinks } = useBacklinksState({
     activeFilePath: activeFileTabInFocusedPane && !isLargeMarkdown && isLinksPanelActive ? activeFileTabInFocusedPane.path : null,

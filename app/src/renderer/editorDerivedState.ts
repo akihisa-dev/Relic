@@ -1,5 +1,5 @@
 import type { FileTab, PaneId, PaneState, Tab } from "./store/editorStore";
-import { textChangeRange } from "./textChangeRange";
+import { contentChangeRange, type EditorContentUpdate } from "./editorContentUpdate";
 
 export interface OutlineHeading {
   from: number;
@@ -19,6 +19,7 @@ export const outlineHeadingsMaxCount = 1000;
 export interface OutlineSnapshot {
   content: string;
   headings: OutlineHeading[];
+  revision: number;
 }
 
 export function getActiveTabInPane(
@@ -45,14 +46,19 @@ export function extractOutlineHeadings(content: string): OutlineHeading[] {
   return extractOutlineHeadingsFromRange(content, 0);
 }
 
-export function updateOutlineSnapshot(previous: OutlineSnapshot | null, content: string): OutlineSnapshot {
-  if (!previous) return { content, headings: extractOutlineHeadings(content) };
+export function updateOutlineSnapshot(
+  previous: OutlineSnapshot | null,
+  content: string,
+  revision = 0,
+  update?: EditorContentUpdate
+): OutlineSnapshot {
+  if (!previous) return { content, headings: extractOutlineHeadings(content), revision };
   if (previous.content === content) return previous;
   if (previous.headings.length >= outlineHeadingsMaxCount) {
-    return { content, headings: extractOutlineHeadings(content) };
+    return { content, headings: extractOutlineHeadings(content), revision };
   }
 
-  const change = textChangeRange(previous.content, content);
+  const change = contentChangeRange(previous.content, previous.revision, content, revision, update);
   if (!change) return previous;
 
   const from = lineStart(previous.content, change.from);
@@ -70,7 +76,8 @@ export function updateOutlineSnapshot(previous: OutlineSnapshot | null, content:
     content,
     headings: headings.length > outlineHeadingsMaxCount
       ? extractOutlineHeadings(content)
-      : headings
+      : headings,
+    revision
   };
 }
 

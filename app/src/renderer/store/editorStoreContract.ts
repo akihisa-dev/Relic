@@ -1,6 +1,7 @@
 import type { StoreApi } from "zustand";
 
 import type { EditorSettings, MarkdownFileContent } from "../../shared/ipc";
+import type { EditorContentUpdateInput } from "../editorContentUpdate";
 import type { ClosedTabEntry } from "./editorClosedTabHistoryModel";
 import type { EditorNavigationEntry } from "./editorNavigationHistoryModel";
 import type { PaneId, PaneState, PanelTabKind, Tab } from "./editorStoreTypes";
@@ -40,7 +41,7 @@ export interface EditorStore {
   setTabActive: (pane: PaneId, tabId: string) => void;
   toggleTabPinned: (tabId: string) => void;
   toggleSplit: () => void;
-  updateTabContent: (tabId: string, content: string) => void;
+  updateTabContent: (tabId: string, content: string, update?: EditorContentUpdateInput) => void;
   updateTabFromExternal: (tabId: string, content: string) => void;
   updateTabMeta: (tabId: string, meta: Pick<WorkspacePathTab, "name" | "path">) => void;
   closeAllTabs: () => void;

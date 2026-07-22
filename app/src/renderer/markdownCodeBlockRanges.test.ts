@@ -3,7 +3,12 @@ import { EditorState } from "@codemirror/state";
 import { GFM } from "@lezer/markdown";
 import { describe, expect, it } from "vitest";
 
-import { isPositionInFencedCodeBlock, rangeIntersectsFencedCodeBlock } from "./markdownCodeBlockRanges";
+import {
+  __getVisitedCodeFenceNodesForTests,
+  __resetVisitedCodeFenceNodesForTests,
+  isPositionInFencedCodeBlock,
+  rangeIntersectsFencedCodeBlock
+} from "./markdownCodeBlockRanges";
 
 function state(content: string): EditorState {
   return EditorState.create({
@@ -28,5 +33,14 @@ describe("markdownCodeBlockRanges", () => {
     expect(isPositionInFencedCodeBlock(editorState, content.indexOf("本文"))).toBe(true);
     expect(isPositionInFencedCodeBlock(editorState, content.indexOf("通常文"))).toBe(false);
     expect(rangeIntersectsFencedCodeBlock(editorState, 0, "```\n本文\n```".length)).toBe(true);
+  });
+
+  it("文書先頭の行数に関係なく対象位置の構文木祖先だけを確認する", () => {
+    const content = `${"通常文\n".repeat(1500)}\`\`\`\ncode\n\`\`\``;
+    const editorState = state(content);
+    __resetVisitedCodeFenceNodesForTests();
+
+    expect(isPositionInFencedCodeBlock(editorState, content.indexOf("code"))).toBe(true);
+    expect(__getVisitedCodeFenceNodesForTests()).toBeLessThan(20);
   });
 });

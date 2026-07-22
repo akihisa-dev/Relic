@@ -1,3 +1,4 @@
+import { ChangeSet } from "@codemirror/state";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -25,12 +26,12 @@ describe("editorInputBuffer", () => {
 
     await vi.advanceTimersByTimeAsync(1);
     expect(commit).toHaveBeenCalledOnce();
-    expect(commit).toHaveBeenCalledWith({
+    expect(commit).toHaveBeenCalledWith(expect.objectContaining({
       content: "一二",
       filePath: "note.md",
       generation,
       tabId: "tab"
-    });
+    }));
   });
 
   it("保留中は本文全体を文字列化せず、確定時に最新版だけを1回文字列化する", async () => {
@@ -49,6 +50,35 @@ describe("editorInputBuffer", () => {
     expect(oldContent.toString).not.toHaveBeenCalled();
     expect(latestContent.toString).toHaveBeenCalledOnce();
     expect(commit.mock.calls[0][0].content).toBe("最新本文");
+  });
+
+  it("連続入力のChangeSetを合成して最終本文に対する単一の変更範囲を渡す", async () => {
+    vi.useFakeTimers();
+    const commit = vi.fn();
+
+    bufferEditorChange({
+      changes: ChangeSet.of({ from: 1, insert: "B" }, 2),
+      content: "aBz",
+      filePath: "note.md",
+      sourceKey: "left:tab",
+      tabId: "tab",
+      commit
+    });
+    bufferEditorChange({
+      changes: ChangeSet.of({ from: 2, insert: "C" }, 3),
+      content: "aBCz",
+      filePath: "note.md",
+      sourceKey: "left:tab",
+      tabId: "tab",
+      commit
+    });
+
+    await vi.advanceTimersByTimeAsync(80);
+
+    expect(commit.mock.calls[0][0].contentUpdate).toMatchObject({
+      change: { from: 1, newTo: 3, oldTo: 1 },
+      sourceKey: "left:tab"
+    });
   });
 
   it("タブごとの保留本文を取り違えず即時確定する", () => {

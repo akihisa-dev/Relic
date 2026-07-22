@@ -37,6 +37,7 @@ import { useWorkspaceExternalRefresh } from "./hooks/useWorkspaceExternalRefresh
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { useEditorStore } from "./store/editorStore";
+import { editorTabIndex } from "./editorTabIndexes";
 import { useUiStore } from "./store/uiStore";
 import "./styles.css";
 
@@ -127,10 +128,7 @@ export function App(): ReactElement {
     toggleSidebar: toggleSidebarState,
     toggleTypewriterMode
   } = useUiStore(useShallow(selectAppUiStoreState));
-  const hasOpenChart = useMemo(
-    () => Object.values(tabs).some((tab) => tab.kind === "chart"),
-    [tabs]
-  );
+  const hasOpenChart = editorTabIndex(tabs).hasOpenChart;
   const { isSplitClosing, toggleSplitWithMotion } = useSplitCloseMotion(isSplit, toggleSplit);
 
   const toggleSidebar = useCallback((): void => {

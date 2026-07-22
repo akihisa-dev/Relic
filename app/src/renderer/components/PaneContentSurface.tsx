@@ -1,9 +1,14 @@
 import { EditorView } from "@codemirror/view";
+import type { ChangeSet } from "@codemirror/state";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
-import { clearLocalEditorContentEcho, markLocalEditorContentEcho } from "../editorContentEcho";
+import {
+  changeRangeFromChangeSet,
+  nextEditorContentGeneration,
+  type EditorContentUpdateInput
+} from "../editorContentUpdate";
 import { updateFrontmatterValidation, type FrontmatterValidationSnapshot } from "../editorFrontmatter";
 import {
   bufferEditorChange,
@@ -44,7 +49,7 @@ interface PaneContentSurfaceProps {
   onRenameFile: (path: string, name: string) => void;
   onSaveRelicVersion: () => void;
   onSourceModeToggle: () => void;
-  onUpdateTabContent: (tabId: string, content: string) => void;
+  onUpdateTabContent: (tabId: string, content: string, update?: EditorContentUpdateInput) => void;
 }
 
 export function PaneContentSurface({
@@ -84,12 +89,22 @@ export function PaneContentSurface({
   const isLargeMarkdown = useMemo(() => isLargeMarkdownContent(activeFileContent), [activeFileContent]);
   const textCountSnapshotRef = useRef<TextCountSnapshot | null>(null);
   const textCountResult = activeFileTab
-    ? updateTextCount(textCountSnapshotRef.current, activeFileTab.content)
+    ? updateTextCount(
+      textCountSnapshotRef.current,
+      activeFileTab.content,
+      activeFileTab.contentRevision ?? 0,
+      activeFileTab.contentUpdate
+    )
     : null;
   textCountSnapshotRef.current = textCountResult;
   const frontmatterValidationRef = useRef<FrontmatterValidationSnapshot | null>(null);
   const frontmatterValidation = activeFileTab
-    ? updateFrontmatterValidation(frontmatterValidationRef.current, activeFileTab.content)
+    ? updateFrontmatterValidation(
+      frontmatterValidationRef.current,
+      activeFileTab.content,
+      activeFileTab.contentRevision ?? 0,
+      activeFileTab.contentUpdate
+    )
     : null;
   frontmatterValidationRef.current = frontmatterValidation;
   const activeContentEchoKey = activeFileTab ? editorContentEchoKey(pane, activeFileTab.id) : null;
@@ -100,7 +115,6 @@ export function PaneContentSurface({
     const tabId = activeFileTab.id;
     return () => {
       flushPendingEditorChanges([tabId]);
-      clearLocalEditorContentEcho(editorContentEchoKey(pane, tabId));
     };
   }, [activeFileTab?.id]);
 
@@ -177,21 +191,24 @@ export function PaneContentSurface({
           <Editor
             allFilePaths={allFilePaths}
             content={activeFileTab.content}
-            contentEchoKey={activeContentEchoKey ?? undefined}
+            contentSourceKey={activeContentEchoKey ?? undefined}
+            contentUpdate={activeFileTab.contentUpdate}
             filePath={activeFileTab.path}
             frontmatterCandidates={frontmatterCandidates}
             key={activeFileTab.id}
-            onChange={(content) => {
+            onChange={() => undefined}
+            onChangeWithChanges={(content, changes) => {
               discardPendingEditorChanges([activeFileTab.id]);
-              markLocalEditorContentEcho(editorContentEchoKey(pane, activeFileTab.id), content);
-              onUpdateTabContent(activeFileTab.id, content);
+              onUpdateTabContent(activeFileTab.id, content, immediateContentUpdate(activeContentEchoKey, changes));
             }}
-            onTypingChange={(content) => {
+            onTypingChangeWithChanges={(content, changes) => {
               bufferEditorChange({
+                changes,
                 content,
                 filePath: activeFileTab.path,
+                sourceKey: activeContentEchoKey ?? undefined,
                 tabId: activeFileTab.id,
-                commit: (change) => commitBufferedEditorChange(change, pane)
+                commit: commitBufferedEditorChange
               });
             }}
             onOpenLink={onOpenLink}
@@ -265,9 +282,16 @@ function editorContentEchoKey(pane: PaneId, tabId: string): string {
   return `${pane}:${tabId}`;
 }
 
-function commitBufferedEditorChange(change: BufferedEditorChange, pane: PaneId): void {
+function commitBufferedEditorChange(change: BufferedEditorChange): void {
   const tab = useEditorStore.getState().tabs[change.tabId];
   if (tab?.kind !== "file" || tab.path !== change.filePath) return;
-  markLocalEditorContentEcho(editorContentEchoKey(pane, change.tabId), change.content);
-  useEditorStore.getState().updateTabContent(change.tabId, change.content);
+  useEditorStore.getState().updateTabContent(change.tabId, change.content, change.contentUpdate);
+}
+
+function immediateContentUpdate(sourceKey: string | null, changes?: ChangeSet): EditorContentUpdateInput {
+  return {
+    change: changes ? changeRangeFromChangeSet(changes) : null,
+    generation: nextEditorContentGeneration(),
+    sourceKey: sourceKey ?? undefined
+  };
 }

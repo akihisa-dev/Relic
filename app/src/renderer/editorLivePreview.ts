@@ -63,6 +63,7 @@ export function createLivePreviewDecorationsPlugin(
   return ViewPlugin.fromClass(class {
     decorations: DecorationSet;
     private pendingReason: "docChanged" | "viewport" | null = null;
+    private selectionSourceKey: string;
     private wasComposing = false;
 
     constructor(view: EditorView) {
@@ -75,6 +76,7 @@ export function createLivePreviewDecorationsPlugin(
         sourcePath,
         workspaceRevision
       );
+      this.selectionSourceKey = selectionSourceKey(view);
     }
 
     update(update: ViewUpdate): void {
@@ -113,16 +115,20 @@ export function createLivePreviewDecorationsPlugin(
         ? "compositionEnd"
         : frameUpdate && this.pendingReason
           ? this.pendingReason
-          : update.selectionSet
-            ? "selection"
-            : update.focusChanged
+          : previousDiagramEditRange !== nextDiagramEditRange
+            ? "editorState"
+            : update.selectionSet
+              ? "selection"
+              : update.focusChanged
                 ? "focus"
-                : previousDiagramEditRange !== nextDiagramEditRange
-                  ? "editorState"
                   : null;
       this.wasComposing = false;
       this.pendingReason = null;
       if (!reason) return;
+      if (reason === "selection") {
+        const nextSelectionSourceKey = selectionSourceKey(update.view);
+        if (nextSelectionSourceKey === this.selectionSourceKey) return;
+      }
 
       testHooks?.onRebuild?.(reason);
       this.decorations = buildLivePreviewDecorations(
@@ -133,10 +139,32 @@ export function createLivePreviewDecorationsPlugin(
         sourcePath,
         workspaceRevision
       );
+      this.selectionSourceKey = selectionSourceKey(update.view);
     }
   }, {
     decorations: (plugin) => plugin.decorations
   });
+}
+
+function selectionSourceKey(view: EditorView): string {
+  const keys: string[] = [];
+  for (const selection of view.state.selection.ranges) {
+    if (!selection.empty) {
+      keys.push(`selection:${selection.from}:${selection.to}`);
+      continue;
+    }
+    const line = view.state.doc.lineAt(selection.head);
+    if (/^(?:#{1,6}\s+|\s{0,3}([-*_])(?:\s*\1){2,}\s*$|\s*>\s?|\s*[-*+]\s+|\s*\d+[.)]\s+|\s*\[\^[^\]\n]+\]:\s?)/.test(line.text)) {
+      keys.push(`line:${line.from}:${line.to}`);
+      continue;
+    }
+    for (const match of collectInlineMatches(line.from, line.text)) {
+      if (selection.head >= match.from && selection.head <= match.to) {
+        keys.push(`inline:${match.from}:${match.to}`);
+      }
+    }
+  }
+  return keys.join("|");
 }
 
 export function buildLivePreviewDecorations(

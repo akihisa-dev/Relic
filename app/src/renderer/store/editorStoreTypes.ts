@@ -1,7 +1,11 @@
+import type { EditorContentUpdate } from "../editorContentUpdate";
+
 export type PanelTabKind = "frontmatter" | "settings";
 
 export interface FileTab {
   content: string;
+  contentRevision?: number;
+  contentUpdate?: EditorContentUpdate;
   externalConflict?: {
     content: string;
   };

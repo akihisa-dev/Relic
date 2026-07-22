@@ -1,11 +1,11 @@
 import { relicClient } from "../relicClient";
-import { EditorState, type Text } from "@codemirror/state";
+import { EditorState, type ChangeSet, type Text } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { useEffect, useRef } from "react";
 import type { MutableRefObject, ReactElement } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
-import { consumeLocalEditorContentEcho } from "../editorContentEcho";
+import type { EditorContentUpdate } from "../editorContentUpdate";
 import { buildEditorReconfigureEffects, buildExtensions, destroyEditorView, isEditorComposing } from "../editorExtensions";
 import { setEditorEditable } from "../editorEditable";
 import { droppedImageSourcePaths, importDroppedImagesAsMarkdown } from "../editorImageDrop";
@@ -28,11 +28,14 @@ import { EditorFrontmatterPropertyMenu } from "./EditorFrontmatterPropertyMenu";
 interface EditorProps {
   allFilePaths?: string[];
   content: string;
-  contentEchoKey?: string;
+  contentSourceKey?: string;
+  contentUpdate?: EditorContentUpdate;
   filePath?: string;
   frontmatterCandidates?: Record<string, string[]>;
   onChange: (content: string) => void;
+  onChangeWithChanges?: (content: string, changes?: ChangeSet) => void;
   onTypingChange?: (content: Text) => void;
+  onTypingChangeWithChanges?: (content: Text, changes?: ChangeSet) => void;
   onEditorAction?: () => void;
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
@@ -53,11 +56,14 @@ const defaultUserDefinedFields: UserDefinedField[] = [];
 export function Editor({
   allFilePaths = defaultAllFilePaths,
   content,
-  contentEchoKey,
+  contentSourceKey,
+  contentUpdate,
   filePath,
   frontmatterCandidates = defaultFrontmatterCandidates,
   onChange,
+  onChangeWithChanges,
   onTypingChange,
+  onTypingChangeWithChanges,
   onEditorAction,
   onOpenLink,
   onOpenWikiLink,
@@ -73,9 +79,13 @@ export function Editor({
   const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const internalViewRef = useRef<EditorView | null>(null);
-  const onChangeRef = useLatest(onChange);
-  const onTypingChangeRef = useLatest((document: Text) => {
-    if (onTypingChange) onTypingChange(document);
+  const onChangeRef = useLatest((nextContent: string, changes?: ChangeSet) => {
+    if (onChangeWithChanges) onChangeWithChanges(nextContent, changes);
+    else onChange(nextContent);
+  });
+  const onTypingChangeRef = useLatest((document: Text, changes?: ChangeSet) => {
+    if (onTypingChangeWithChanges) onTypingChangeWithChanges(document, changes);
+    else if (onTypingChange) onTypingChange(document);
     else onChange(document.toString());
   });
   const pendingExternalContentRef = useRef<string | null>(null);
@@ -262,7 +272,7 @@ export function Editor({
   useEffect(() => {
     const view = internalViewRef.current;
     if (!view) return;
-    if (contentEchoKey && consumeLocalEditorContentEcho(contentEchoKey, content)) return;
+    if (contentSourceKey && contentUpdate?.sourceKey === contentSourceKey) return;
 
     const currentContent = view.state.doc.toString();
     if (currentContent === content) return;
@@ -273,7 +283,7 @@ export function Editor({
 
     pendingExternalContentRef.current = null;
     replaceExternalEditorContent(view, content);
-  }, [content, contentEchoKey]);
+  }, [content, contentSourceKey, contentUpdate]);
 
   // 設定・タイプライターモード変更時はEditorViewを保ったまま拡張だけ差し替える
   useEffect(() => {

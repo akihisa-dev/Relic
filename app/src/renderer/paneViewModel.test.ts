@@ -16,6 +16,10 @@ import {
   updateTextCount
 } from "./paneViewModel";
 import type { Tab } from "./store/editorStore";
+import {
+  __getTextChangeRangeScannedCharactersForTests,
+  __resetTextChangeRangeScannedCharactersForTests
+} from "./textChangeRange";
 
 const t = createTranslator("en");
 
@@ -85,6 +89,23 @@ describe("paneViewModel", () => {
       words: 4
     });
     expect(updateTextCount(initial, "onetwo\n三")).toMatchObject({ words: 2 });
+  });
+
+  it("CodeMirror由来の変更範囲がある通常入力では本文比較走査を行わない", () => {
+    const original = "one two\n三";
+    const initial = updateTextCount(null, original, 1);
+    const content = "one two!\n三";
+    __resetTextChangeRangeScannedCharactersForTests();
+
+    const updated = updateTextCount(initial, content, 2, {
+      change: { from: 7, newTo: 8, oldTo: 7 },
+      generation: 1,
+      previousRevision: 1,
+      revision: 2
+    });
+
+    expect(updated).toMatchObject({ chars: content.length, words: 3 });
+    expect(__getTextChangeRangeScannedCharactersForTests()).toBe(0);
   });
 
   it("formats Markdown links from file tab paths", () => {

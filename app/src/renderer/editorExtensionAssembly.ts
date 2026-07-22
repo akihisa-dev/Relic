@@ -1,6 +1,6 @@
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
-import { Compartment, EditorState, type Extension, type StateEffect, type Text } from "@codemirror/state";
+import { Compartment, EditorState, type ChangeSet, type Extension, type StateEffect, type Text } from "@codemirror/state";
 import { EditorView, highlightActiveLine, keymap } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
 import type { RefObject } from "react";
@@ -97,8 +97,8 @@ export function buildExtensions(
   settings: EditorSettings,
   typewriterMode: boolean,
   sourceMode: boolean,
-  onChangeRef: RefObject<(content: string) => void>,
-  onTypingChangeRef: RefObject<(content: Text) => void>,
+  onChangeRef: RefObject<(content: string, changes?: ChangeSet) => void>,
+  onTypingChangeRef: RefObject<(content: Text, changes?: ChangeSet) => void>,
   allFilePaths: string[],
   userDefinedFields: UserDefinedField[],
   frontmatterCandidates: Record<string, string[]>,

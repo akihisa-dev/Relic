@@ -31,7 +31,12 @@ export function AppStatusBar({
     ? t("app.languageSwitch.toJapanese")
     : t("app.languageSwitch.toEnglish");
   const countSnapshotRef = useRef<TextCountSnapshot | null>(null);
-  const count = updateTextCount(countSnapshotRef.current, activeFileTab?.content ?? "");
+  const count = updateTextCount(
+    countSnapshotRef.current,
+    activeFileTab?.content ?? "",
+    activeFileTab?.contentRevision ?? 0,
+    activeFileTab?.contentUpdate
+  );
   countSnapshotRef.current = count;
   const saveStatusLabel = saveStatus ? {
     dirty: t("app.saveStatus.dirty"),

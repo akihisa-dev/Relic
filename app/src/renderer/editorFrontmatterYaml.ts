@@ -3,7 +3,7 @@ import * as yaml from "js-yaml";
 
 import type { UserDefinedField } from "../shared/ipc";
 import { fieldFor } from "./editorFrontmatterFields";
-import { textChangeRange } from "./textChangeRange";
+import { contentChangeRange, type EditorContentUpdate } from "./editorContentUpdate";
 
 export interface FrontmatterBlock {
   bodyFrom: number;
@@ -220,6 +220,7 @@ export function findFrontmatterLineRange(doc: Text): { end: number; start: numbe
 export interface FrontmatterValidationSnapshot {
   content: string;
   invalid: boolean;
+  revision: number;
   validationTo: number;
 }
 
@@ -227,19 +228,21 @@ let frontmatterYamlParseCount = 0;
 
 export function updateFrontmatterValidation(
   previous: FrontmatterValidationSnapshot | null,
-  content: string
+  content: string,
+  revision = 0,
+  update?: EditorContentUpdate
 ): FrontmatterValidationSnapshot {
   if (previous?.content === content) return previous;
   if (previous) {
-    const range = textChangeRange(previous.content, content);
-    if (range && range.from >= previous.validationTo) return { ...previous, content };
+    const range = contentChangeRange(previous.content, previous.revision, content, revision, update);
+    if (range && range.from >= previous.validationTo) return { ...previous, content, revision };
   }
 
-  return parseFrontmatterValidation(content);
+  return parseFrontmatterValidation(content, revision);
 }
 
 export function hasInvalidFrontmatterYaml(content: string): boolean {
-  return parseFrontmatterValidation(content).invalid;
+  return parseFrontmatterValidation(content, 0).invalid;
 }
 
 /** @internal Test-only counter for deterministic performance assertions. */
@@ -252,12 +255,12 @@ export function __resetFrontmatterYamlParseCountForTests(): void {
   frontmatterYamlParseCount = 0;
 }
 
-function parseFrontmatterValidation(content: string): FrontmatterValidationSnapshot {
+function parseFrontmatterValidation(content: string, revision: number): FrontmatterValidationSnapshot {
   const firstNewline = content.indexOf("\n");
   const firstLineEnd = firstNewline === -1 ? content.length : firstNewline;
   const firstLineTo = firstNewline === -1 ? content.length : firstNewline + 1;
   if (content.slice(0, firstLineEnd).trim() !== "---") {
-    return { content, invalid: false, validationTo: firstLineTo };
+    return { content, invalid: false, revision, validationTo: firstLineTo };
   }
 
   let lineFrom = firstLineTo;
@@ -268,6 +271,7 @@ function parseFrontmatterValidation(content: string): FrontmatterValidationSnaps
       return {
         content,
         invalid: invalidYamlObject(content.slice(firstLineTo, lineFrom)),
+        revision,
         validationTo: newline === -1 ? lineTo : newline + 1
       };
     }
@@ -275,7 +279,7 @@ function parseFrontmatterValidation(content: string): FrontmatterValidationSnaps
     lineFrom = newline + 1;
   }
 
-  return { content, invalid: true, validationTo: content.length };
+  return { content, invalid: true, revision, validationTo: content.length };
 }
 
 function invalidYamlObject(yamlText: string): boolean {

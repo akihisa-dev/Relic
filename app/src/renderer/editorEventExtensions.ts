@@ -141,9 +141,9 @@ export function buildEventHandlersExtension(config: EditorExtensionConfig): Exte
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         if (update.transactions.every(isContinuousTypingTransaction)) {
-          config.onTypingChangeRef.current!(update.state.doc);
+          config.onTypingChangeRef.current!(update.state.doc, update.changes);
         } else {
-          config.onChangeRef.current!(update.state.doc.toString());
+          config.onChangeRef.current!(update.state.doc.toString(), update.changes);
         }
       }
       if (update.selectionSet || update.docChanged) config.onSelectionChange(update.state);

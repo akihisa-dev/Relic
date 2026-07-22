@@ -1,20 +1,23 @@
 import type { TranslationKey, Translator } from "./i18nModel";
 import type { PaneId, PanelTabKind, Tab } from "./store/editorStore";
-import { textChangeRange } from "./textChangeRange";
+import { contentChangeRange, type EditorContentUpdate } from "./editorContentUpdate";
+import { editorTabIndex } from "./editorTabIndexes";
 
 export const PANE_TAB_DRAG_MIME = "application/relic-tab";
 
+const panePresentationKeys = new WeakMap<readonly string[], {
+  key: string;
+  presentationByTabId: ReadonlyMap<string, string>;
+}>();
+
 export function paneTabsPresentationKey(tabIds: readonly string[], tabs: Record<string, Tab>): string {
-  return tabIds.map((tabId) => {
-    const tab = tabs[tabId];
-    if (!tab) return `${tabId}:missing`;
-    const target = tab.kind === "file" || tab.kind === "image" || tab.kind === "pdf"
-      ? tab.path
-      : tab.kind === "chart"
-        ? tab.chartId
-        : tab.panel;
-    return `${tab.id}\u0000${tab.kind}\u0000${tab.name}\u0000${target}\u0000${tab.isPinned ? "1" : "0"}`;
-  }).join("\u0001");
+  const presentationByTabId = editorTabIndex(tabs).presentationByTabId;
+  const cached = panePresentationKeys.get(tabIds);
+  if (cached?.presentationByTabId === presentationByTabId) return cached.key;
+
+  const key = tabIds.map((tabId) => presentationByTabId.get(tabId) ?? `${tabId}:missing`).join("\u0001");
+  panePresentationKeys.set(tabIds, { key, presentationByTabId });
+  return key;
 }
 
 export interface PaneTabDragPayload {
@@ -29,6 +32,7 @@ export interface TextCount {
 
 export interface TextCountSnapshot extends TextCount {
   content: string;
+  revision: number;
 }
 
 const CHART_TAB_LABEL_KEYS: Readonly<Record<string, TranslationKey>> = {
@@ -61,11 +65,16 @@ export function textCount(content: string): TextCount {
   };
 }
 
-export function updateTextCount(previous: TextCountSnapshot | null, content: string): TextCountSnapshot {
-  if (!previous) return { content, ...textCount(content) };
+export function updateTextCount(
+  previous: TextCountSnapshot | null,
+  content: string,
+  revision = 0,
+  update?: EditorContentUpdate
+): TextCountSnapshot {
+  if (!previous) return { content, revision, ...textCount(content) };
   if (previous.content === content) return previous;
 
-  const range = textChangeRange(previous.content, content);
+  const range = contentChangeRange(previous.content, previous.revision, content, revision, update);
   if (!range) return previous;
 
   let from = range.from;
@@ -80,6 +89,7 @@ export function updateTextCount(previous: TextCountSnapshot | null, content: str
   return {
     chars: content.length,
     content,
+    revision,
     words: previous.words - countWords(previous.content.slice(from, oldTo)) + countWords(content.slice(from, newTo))
   };
 }

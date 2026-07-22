@@ -8,6 +8,10 @@ import {
   outlineHeadingsMaxCount,
   updateOutlineSnapshot
 } from "./editorDerivedState";
+import {
+  __getTextChangeRangeScannedCharactersForTests,
+  __resetTextChangeRangeScannedCharactersForTests
+} from "./textChangeRange";
 
 describe("editorDerivedState", () => {
   it("指定ペインのアクティブタブを返す", () => {
@@ -69,5 +73,23 @@ describe("editorDerivedState", () => {
 
     expect(updated.headings).toEqual(extractOutlineHeadings(content));
     expect(updated.headings.at(-1)?.from).toBe(content.lastIndexOf("### C"));
+  });
+
+  it("変更範囲の通知がある場合は長い前置き本文を比較走査しない", () => {
+    const original = `${"本文\n".repeat(500)}## Before\n末尾`;
+    const initial = updateOutlineSnapshot(null, original, 1);
+    const from = original.indexOf("Before");
+    const content = `${original.slice(0, from)}After${original.slice(from + "Before".length)}`;
+    __resetTextChangeRangeScannedCharactersForTests();
+
+    const updated = updateOutlineSnapshot(initial, content, 2, {
+      change: { from, newTo: from + 5, oldTo: from + 6 },
+      generation: 1,
+      previousRevision: 1,
+      revision: 2
+    });
+
+    expect(updated.headings.at(-1)?.text).toBe("After");
+    expect(__getTextChangeRangeScannedCharactersForTests()).toBe(0);
   });
 });

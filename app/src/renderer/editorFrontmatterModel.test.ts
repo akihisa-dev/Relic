@@ -17,6 +17,10 @@ import {
   updateFrontmatterValidation,
   type FrontmatterBlock
 } from "./editorFrontmatterModel";
+import {
+  __getTextChangeRangeScannedCharactersForTests,
+  __resetTextChangeRangeScannedCharactersForTests
+} from "./textChangeRange";
 
 function frontmatterBlock(yamlText: string): FrontmatterBlock {
   return {
@@ -55,6 +59,24 @@ describe("editorFrontmatterModel", () => {
     const yamlUpdated = updateFrontmatterValidation(bodyUpdated, bodyUpdated.content.replace("Note", "[broken"));
     expect(yamlUpdated.invalid).toBe(true);
     expect(__getFrontmatterYamlParseCountForTests()).toBe(2);
+  });
+
+  it("本文変更の範囲通知があればフロントマター以前の全文比較も行わない", () => {
+    const original = `---\ntitle: Note\n---\n${"本文".repeat(500)}`;
+    const initial = updateFrontmatterValidation(null, original, 1);
+    const content = `${original}!`;
+    __resetTextChangeRangeScannedCharactersForTests();
+
+    const updated = updateFrontmatterValidation(initial, content, 2, {
+      change: { from: original.length, newTo: content.length, oldTo: original.length },
+      generation: 1,
+      previousRevision: 1,
+      revision: 2
+    });
+
+    expect(updated.invalid).toBe(false);
+    expect(__getFrontmatterYamlParseCountForTests()).toBe(1);
+    expect(__getTextChangeRangeScannedCharactersForTests()).toBe(0);
   });
 
   it("YAMLのコメント、クォート、フィールド順を保持して書き戻す", () => {
