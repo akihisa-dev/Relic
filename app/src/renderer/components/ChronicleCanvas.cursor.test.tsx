@@ -9,6 +9,56 @@ afterEach(() => {
 });
 
 describe("ChronicleCanvas cursor", () => {
+  it("年表全体のカテゴリ操作を全暦の表示状態へ反映する", () => {
+    const onHiddenCategoryKeysChange = vi.fn();
+    render(
+      <I18nProvider language="ja">
+        <ChronicleCanvas
+          calendarSettings={{
+            baseCalendarName: "基準暦",
+            calendars: [{ name: "別暦", range: { end: 20, start: 1 }, yearOne: 100 }],
+            visibleCalendarNames: ["基準暦", "別暦"]
+          }}
+          entries={[
+            {
+              category: "戦役",
+              chronicleEntryIndex: 0,
+              endLabel: "1",
+              endPoint: { month: null, year: 1 },
+              endValue: 1,
+              fileName: "Base",
+              path: "base.md",
+              startLabel: "1",
+              startPoint: { month: null, year: 1 },
+              startValue: 1
+            },
+            {
+              calendarName: "別暦",
+              category: "戦役",
+              chronicleEntryIndex: 0,
+              endLabel: "1",
+              endPoint: { month: null, year: 100 },
+              endValue: 100,
+              fileName: "Other",
+              path: "other.md",
+              startLabel: "1",
+              startPoint: { month: null, year: 100 },
+              startValue: 100
+            }
+          ]}
+          onHiddenCategoryKeysChange={onHiddenCategoryKeysChange}
+          onOpenFile={vi.fn()}
+        />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "全暦の戦役カテゴリを非表示" }));
+    expect(onHiddenCategoryKeysChange).toHaveBeenCalledWith([
+      JSON.stringify(["基準暦", "category:戦役"]),
+      JSON.stringify(["別暦", "category:戦役"])
+    ]);
+  });
+
   it("暦設定を現在のツールバー内で開き、追加暦面の表示を切り替える", () => {
     const onSave = vi.fn();
     render(

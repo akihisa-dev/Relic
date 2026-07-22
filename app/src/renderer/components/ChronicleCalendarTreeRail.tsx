@@ -1,27 +1,32 @@
 import { useMemo, useState, type CSSProperties, type ReactElement } from "react";
 
+import type { ChronicleCategoryOption } from "../chronicleCategoryModel";
 import type { ChronicleCalendarTreeNode } from "../chronicleCalendarTreeModel";
 import { useT } from "../i18n";
 
 interface ChronicleCalendarTreeRailProps {
   baseCalendarName: string;
   collapsed: boolean;
+  globalCategories: ChronicleCategoryOption[];
   hiddenCategoryKeys: ReadonlySet<string>;
   nodes: ChronicleCalendarTreeNode[];
   onCalendarVisibilityChange: (calendarName: string, visible: boolean) => void;
   onCategoryVisibilityChange: (visibilityKey: string, visible: boolean) => void;
   onCollapsedChange: (collapsed: boolean) => void;
+  onGlobalCategoryVisibilityChange: (categoryKey: string, visible: boolean) => void;
   visibleCalendarNames: ReadonlySet<string>;
 }
 
 export function ChronicleCalendarTreeRail({
   baseCalendarName,
   collapsed,
+  globalCategories,
   hiddenCategoryKeys,
   nodes,
   onCalendarVisibilityChange,
   onCategoryVisibilityChange,
   onCollapsedChange,
+  onGlobalCategoryVisibilityChange,
   visibleCalendarNames
 }: ChronicleCalendarTreeRailProps): ReactElement {
   const t = useT();
@@ -33,6 +38,9 @@ export function ChronicleCalendarTreeRail({
     const categories = node.categories.filter((category) => category.label.toLocaleLowerCase().includes(normalizedQuery));
     return categories.length > 0 ? [{ ...node, categories }] : [];
   }), [nodes, normalizedQuery]);
+  const filteredGlobalCategories = useMemo(() => globalCategories.filter((category) => (
+    !normalizedQuery || category.label.toLocaleLowerCase().includes(normalizedQuery)
+  )), [globalCategories, normalizedQuery]);
 
   const toggleCalendarExpansion = (calendarName: string): void => {
     setCollapsedCalendars((current) => {
@@ -87,6 +95,44 @@ export function ChronicleCalendarTreeRail({
         />
       </div>
       <div className="chronicle-calendar-tree-list">
+        {filteredGlobalCategories.length > 0 ? (
+          <section className="chronicle-calendar-tree-global">
+            <h3>{t("chronicle.allCalendarCategories")}</h3>
+            <div className="chronicle-calendar-tree-global-categories">
+              {filteredGlobalCategories.map((category) => {
+                const matchingCategories = nodes.flatMap((node) => (
+                  node.categories.filter((candidate) => candidate.key === category.key)
+                ));
+                const visibleCount = matchingCategories.filter((candidate) => (
+                  !hiddenCategoryKeys.has(candidate.visibilityKey)
+                )).length;
+                const categoryVisible = visibleCount === matchingCategories.length;
+                const categoryPartiallyVisible = visibleCount > 0 && !categoryVisible;
+                const categoryColor = category.hue === null
+                  ? "var(--chronicle-category-uncategorized)"
+                  : `hsl(${category.hue} var(--chronicle-category-saturation) var(--chronicle-category-lightness))`;
+                return (
+                  <button
+                    aria-label={t(categoryVisible ? "chronicle.hideCategoryAcrossCalendars" : "chronicle.showCategoryAcrossCalendars", { name: category.label })}
+                    aria-pressed={categoryPartiallyVisible ? "mixed" : categoryVisible}
+                    className={`chronicle-calendar-tree-category chronicle-calendar-tree-global-category${categoryPartiallyVisible ? " chronicle-calendar-tree-category--partial" : categoryVisible ? "" : " chronicle-calendar-tree-category--hidden"}`}
+                    key={category.key}
+                    onClick={() => onGlobalCategoryVisibilityChange(category.key, !categoryVisible)}
+                    style={{ "--chronicle-tree-category-color": categoryColor } as CSSProperties}
+                    type="button"
+                  >
+                    <span aria-hidden="true" className="chronicle-calendar-tree-category-marker" />
+                    <span className="chronicle-calendar-tree-name">{category.label}</span>
+                    <span className="chronicle-calendar-tree-count">{category.count}</span>
+                    <span aria-hidden="true" className="chronicle-calendar-tree-category-visibility">
+                      {categoryVisible ? "●" : categoryPartiallyVisible ? "◐" : "○"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
         {filteredNodes.map((node) => {
           const isBaseCalendar = node.calendarName === baseCalendarName;
           const hasVisibleCategory = node.categories.some((category) => !hiddenCategoryKeys.has(category.visibilityKey));
@@ -159,7 +205,7 @@ export function ChronicleCalendarTreeRail({
             </section>
           );
         })}
-        {filteredNodes.length === 0 ? (
+        {filteredGlobalCategories.length === 0 && filteredNodes.length === 0 ? (
           <p className="chronicle-calendar-tree-no-results">{t("chronicle.noMatchingCalendarCategories")}</p>
         ) : null}
       </div>

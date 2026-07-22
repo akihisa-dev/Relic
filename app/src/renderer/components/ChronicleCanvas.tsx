@@ -70,6 +70,12 @@ export function ChronicleCanvas({
     calendarHues,
     categoryHues
   ), [calendarHues, calendarSettings, categoryChoices, categoryHues, entries, t]);
+  const globalCategories = useMemo(() => categoryOptions.flatMap((option) => {
+    const count = calendarTree.reduce((total, node) => total + (
+      node.categories.find((category) => category.key === option.key)?.count ?? 0
+    ), 0);
+    return count > 0 ? [{ ...option, count }] : [];
+  }), [calendarTree, categoryOptions]);
   const hiddenCategoryKeySet = useMemo(() => new Set(hiddenCategoryKeys), [hiddenCategoryKeys]);
   const visibleCalendarNames = useMemo(() => new Set(calendarSettings.visibleCalendarNames), [calendarSettings.visibleCalendarNames]);
   const [periodScaleIndex, setPeriodScaleIndex] = useState(() => CHRONICLE_PERIOD_SCALES.indexOf(CHRONICLE_INITIAL_PERIOD_SCALE));
@@ -122,6 +128,17 @@ export function ChronicleCanvas({
     else next.add(visibilityKey);
     onHiddenCategoryKeysChange([...next]);
   }, [hiddenCategoryKeys, onHiddenCategoryKeysChange]);
+  const handleGlobalCategoryVisibilityChange = useCallback((categoryKey: string, visible: boolean): void => {
+    const next = new Set(hiddenCategoryKeys);
+    for (const node of calendarTree) {
+      for (const category of node.categories) {
+        if (category.key !== categoryKey) continue;
+        if (visible) next.delete(category.visibilityKey);
+        else next.add(category.visibilityKey);
+      }
+    }
+    onHiddenCategoryKeysChange([...next]);
+  }, [calendarTree, hiddenCategoryKeys, onHiddenCategoryKeysChange]);
   const handleCalendarVisibilityChange = useCallback((calendarName: string, visible: boolean): void => {
     if (calendarName === calendarSettings.baseCalendarName) {
       const node = calendarTree.find((candidate) => candidate.calendarName === calendarName);
@@ -174,11 +191,13 @@ export function ChronicleCanvas({
         <ChronicleCalendarTreeRail
           baseCalendarName={calendarSettings.baseCalendarName}
           collapsed={railCollapsed}
+          globalCategories={globalCategories}
           hiddenCategoryKeys={hiddenCategoryKeySet}
           nodes={calendarTree}
           onCalendarVisibilityChange={handleCalendarVisibilityChange}
           onCategoryVisibilityChange={handleCategoryVisibilityChange}
           onCollapsedChange={onRailCollapsedChange}
+          onGlobalCategoryVisibilityChange={handleGlobalCategoryVisibilityChange}
           visibleCalendarNames={visibleCalendarNames}
         />
         <div className="chronicle-canvas-wrap">
