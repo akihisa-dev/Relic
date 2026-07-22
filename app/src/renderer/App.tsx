@@ -225,8 +225,7 @@ export function App(): ReactElement {
     conflictCloseBlockedMessage: t("pane.externalConflictCloseBlocked"),
     onSaved: handleFileSaved,
     onSaveError: setWorkspaceError,
-    saveFailedMessage: t("pane.saveFailed"),
-    tabs
+    saveFailedMessage: t("pane.saveFailed")
   });
   const {
     ensureCanCloseAllTabs,

@@ -1,9 +1,8 @@
-import { codeFolding, foldEffect, foldedRanges, foldService, unfoldEffect } from "@codemirror/language";
+import { codeFolding, foldEffect, foldedRanges, foldService, syntaxTree, unfoldEffect } from "@codemirror/language";
 import type { Extension, EditorState } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
 import type { Translator } from "./i18nModel";
-import { isClosingBacktickFence, parseBacktickOpeningFence } from "./markdownCodeFence";
 import { editorHeavyUpdateDelay } from "./editorComplexity";
 import { editorFrameUpdateEffect, scheduleEditorFrameEffect } from "./editorFrameUpdates";
 
@@ -16,64 +15,64 @@ function headingLevel(lineText: string): number | null {
   return match ? match[1].length : null;
 }
 
-function isInsideBacktickFence(state: EditorState, lineNumber: number): boolean {
-  let activeFence: { markerLength: number } | null = null;
-
-  for (let currentLineNumber = 1; currentLineNumber < lineNumber; currentLineNumber += 1) {
-    const lineText = state.doc.line(currentLineNumber).text;
-
-    if (activeFence) {
-      if (isClosingBacktickFence(lineText, activeFence.markerLength)) activeFence = null;
-      continue;
-    }
-
-    const openingFence = parseBacktickOpeningFence(lineText);
-    if (openingFence) activeFence = { markerLength: openingFence.markerLength };
-  }
-
-  return activeFence !== null;
-}
+let headingFoldVisitedNodes = 0;
 
 export function headingFoldRange(state: EditorState, lineStart: number): { from: number; to: number } | null {
   const doc = state.doc;
   const headingLine = doc.lineAt(lineStart);
   const level = headingLevel(headingLine.text);
 
-  if (level === null || isInsideBacktickFence(state, headingLine.number)) return null;
+  if (level === null) return null;
 
-  let activeFence: { markerLength: number } | null = null;
-  let sectionEndLineNumber = headingLine.number;
   const maxLineNumber = Math.min(doc.lines, headingLine.number + maxHeadingFoldScanLines);
-  let foundBoundary = false;
+  const scanTo = doc.line(maxLineNumber).to;
+  let currentHeadingFound = false;
+  let boundaryFrom: number | null = null;
+  syntaxTree(state).iterate({
+    enter: (node) => {
+      if (node.to < headingLine.from || node.from > scanTo || boundaryFrom !== null) return false;
+      headingFoldVisitedNodes += 1;
+      const nodeLevel = headingNodeLevel(node.name);
+      if (nodeLevel === null) return;
+      if (node.from === headingLine.from) {
+        currentHeadingFound = true;
+        return false;
+      }
+      if (currentHeadingFound && node.from > headingLine.from && nodeLevel <= level) {
+        boundaryFrom = node.from;
+      }
+      return false;
+    },
+    from: headingLine.from,
+    to: scanTo
+  });
 
-  for (let lineNumber = headingLine.number + 1; lineNumber <= maxLineNumber; lineNumber += 1) {
-    const line = doc.line(lineNumber);
-
-    if (activeFence) {
-      if (isClosingBacktickFence(line.text, activeFence.markerLength)) activeFence = null;
-      sectionEndLineNumber = lineNumber;
-      continue;
-    }
-
-    const nextHeadingLevel = headingLevel(line.text);
-    if (nextHeadingLevel !== null && nextHeadingLevel <= level) {
-      foundBoundary = true;
-      break;
-    }
-
-    const openingFence = parseBacktickOpeningFence(line.text);
-    if (openingFence) activeFence = { markerLength: openingFence.markerLength };
-
-    sectionEndLineNumber = lineNumber;
-  }
-
-  if (!foundBoundary && maxLineNumber < doc.lines) return null;
+  if (!currentHeadingFound) return null;
+  if (boundaryFrom === null && maxLineNumber < doc.lines) return null;
+  const sectionEndLineNumber = boundaryFrom === null
+    ? maxLineNumber
+    : doc.lineAt(boundaryFrom).number - 1;
   if (sectionEndLineNumber <= headingLine.number) return null;
 
   const from = headingLine.to;
   const to = doc.line(sectionEndLineNumber).to;
 
   return from < to ? { from, to } : null;
+}
+
+function headingNodeLevel(name: string): number | null {
+  const match = /^(?:ATX|Setext)Heading(\d)$/.exec(name);
+  return match ? Number(match[1]) : null;
+}
+
+/** @internal Test-only counter for deterministic scan assertions. */
+export function __getHeadingFoldVisitedNodesForTests(): number {
+  return headingFoldVisitedNodes;
+}
+
+/** @internal Test-only reset for deterministic scan assertions. */
+export function __resetHeadingFoldVisitedNodesForTests(): void {
+  headingFoldVisitedNodes = 0;
 }
 
 function foldedHeadingRange(state: EditorState, range: { from: number; to: number }): { from: number; to: number } | null {

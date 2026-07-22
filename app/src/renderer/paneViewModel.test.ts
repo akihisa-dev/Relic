@@ -4,6 +4,7 @@ import { createTranslator } from "./i18nModel";
 import {
   dataTransferHasPaneTab,
   markdownLinkForPaneTabPath,
+  paneTabsPresentationKey,
   paneTabDropPosition,
   paneTabLabel,
   panelTabLabel,
@@ -19,6 +20,15 @@ import type { Tab } from "./store/editorStore";
 const t = createTranslator("en");
 
 describe("paneViewModel", () => {
+  it("タブ表示キーは本文変更を無視し、名前や固定状態の変更だけを検出する", () => {
+    const tab = { content: "before", id: "tab", kind: "file" as const, name: "Note", path: "Note.md", savedContent: "saved" };
+    const initial = paneTabsPresentationKey([tab.id], { [tab.id]: tab });
+
+    expect(paneTabsPresentationKey([tab.id], { [tab.id]: { ...tab, content: "after" } })).toBe(initial);
+    expect(paneTabsPresentationKey([tab.id], { [tab.id]: { ...tab, name: "Renamed" } })).not.toBe(initial);
+    expect(paneTabsPresentationKey([tab.id], { [tab.id]: { ...tab, isPinned: true } })).not.toBe(initial);
+  });
+
   it("labels panel tabs through translations and file tabs by name", () => {
     const panelTab: Tab = { id: "panel-frontmatter", kind: "panel", name: "ignored", panel: "frontmatter" };
     const fileTab: Tab = { content: "", id: "tab-file", kind: "file", name: "Note", path: "Note.md", savedContent: "" };

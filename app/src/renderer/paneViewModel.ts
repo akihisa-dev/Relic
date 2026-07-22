@@ -4,6 +4,19 @@ import { textChangeRange } from "./textChangeRange";
 
 export const PANE_TAB_DRAG_MIME = "application/relic-tab";
 
+export function paneTabsPresentationKey(tabIds: readonly string[], tabs: Record<string, Tab>): string {
+  return tabIds.map((tabId) => {
+    const tab = tabs[tabId];
+    if (!tab) return `${tabId}:missing`;
+    const target = tab.kind === "file" || tab.kind === "image" || tab.kind === "pdf"
+      ? tab.path
+      : tab.kind === "chart"
+        ? tab.chartId
+        : tab.panel;
+    return `${tab.id}\u0000${tab.kind}\u0000${tab.name}\u0000${target}\u0000${tab.isPinned ? "1" : "0"}`;
+  }).join("\u0001");
+}
+
 export interface PaneTabDragPayload {
   fromPane: PaneId;
   tabId: string;

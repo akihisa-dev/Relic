@@ -4,6 +4,8 @@ import { findFrontmatterBlock, findFrontmatterLineRange, findTopLevelYamlFieldEn
 
 export {
   choicesFor,
+  __getFrontmatterYamlParseCountForTests,
+  __resetFrontmatterYamlParseCountForTests,
   dateInputValue,
   fieldFor,
   findFrontmatterBlock,
@@ -27,7 +29,9 @@ export {
   serializeData,
   serializeDataPreservingYaml,
   shouldSerializeArrayAsFlowSequence,
+  updateFrontmatterValidation,
   type FrontmatterBlock,
+  type FrontmatterValidationSnapshot,
   type FrontmatterDialogRequest,
   type FrontmatterPropertyMenuRequest,
   type YamlFieldEntry

@@ -8,6 +8,7 @@ import {
   formatTable,
   insertTableColumn,
   insertTableRow,
+  minimalTableMarkdownChange,
   tableColumnCount,
   type TableBlock
 } from "./editorTableModel";
@@ -57,15 +58,16 @@ export function focusTableWidgetCell(anchor: HTMLElement, rowIndex: number, colI
 
 export function updateTableWidgetRows(view: EditorView, block: TableBlock, rows: string[][]): void {
   const markdown = formatTable(rows);
-  if (view.state.sliceDoc(block.from, block.to) === markdown) return;
+  const changes = minimalTableMarkdownChange(
+    block,
+    view.state.sliceDoc(block.from, block.to),
+    markdown
+  );
+  if (!changes) return;
 
   view.dispatch({
     annotations: [Transaction.userEvent.of("input.table"), isolateHistory.of("full")],
-    changes: {
-      from: block.from,
-      to: block.to,
-      insert: markdown
-    }
+    changes
   });
 }
 

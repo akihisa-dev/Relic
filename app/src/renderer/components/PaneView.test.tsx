@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { MutableRefObject } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EditorView } from "@codemirror/view";
@@ -8,7 +8,12 @@ import { I18nProvider } from "../i18n";
 import { largeMarkdownMaxContentBytes, largeMarkdownMaxLineLength } from "../largeMarkdown";
 import { useEditorStore, type PaneState, type Tab } from "../store/editorStore";
 import { PANE_TAB_DRAG_MIME, serializePaneTabDragPayload } from "../paneViewModel";
-import { PaneView, type PaneViewProps } from "./PaneView";
+import {
+  __getPaneViewRenderCountsForTests,
+  __resetPaneViewRenderCountsForTests,
+  PaneView,
+  type PaneViewProps
+} from "./PaneView";
 
 const emptyPane = (): PaneState => ({ activeTabId: null, history: [], tabIds: [] });
 
@@ -112,9 +117,28 @@ afterEach(() => {
   cleanup();
   resetStore();
   vi.restoreAllMocks();
+  __resetPaneViewRenderCountsForTests();
 });
 
 describe("PaneView", () => {
+  it("左ペインの本文更新で右ペインと無関係なタブ表示を再描画しない", () => {
+    const rightTab = { ...fileTab, id: "tab-right", name: "Right", path: "Right.md" };
+    setPaneState(
+      { [fileTab.id]: fileTab, [rightTab.id]: rightTab },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] },
+      { activeTabId: rightTab.id, history: [rightTab.id], tabIds: [rightTab.id] }
+    );
+    renderPaneView({ pane: "left" });
+    renderPaneView({ pane: "right" });
+    const before = __getPaneViewRenderCountsForTests();
+
+    act(() => useEditorStore.getState().updateTabContent(fileTab.id, "left changed"));
+
+    const after = __getPaneViewRenderCountsForTests();
+    expect(after.left).toBeGreaterThan(before.left);
+    expect(after.right).toBe(before.right);
+  });
+
   it("renders file, panel, chart, and empty pane surfaces", () => {
     setPaneState(
       { [fileTab.id]: fileTab },

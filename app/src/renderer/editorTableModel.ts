@@ -1,10 +1,26 @@
 import type { EditorState } from "@codemirror/state";
+import { textChangeRange } from "./textChangeRange";
 
 export interface TableBlock {
   from: number;
   isAtDocumentEnd?: boolean;
   to: number;
   rows: string[][];
+}
+
+export function minimalTableMarkdownChange(
+  block: Pick<TableBlock, "from">,
+  currentMarkdown: string,
+  nextMarkdown: string
+): { from: number; insert: string; to: number } | null {
+  const range = textChangeRange(currentMarkdown, nextMarkdown);
+  if (!range) return null;
+
+  return {
+    from: block.from + range.from,
+    insert: nextMarkdown.slice(range.from, range.newTo),
+    to: block.from + range.oldTo
+  };
 }
 
 function splitTableRow(line: string): string[] {

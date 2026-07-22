@@ -1,5 +1,5 @@
 import type { EditorView } from "@codemirror/view";
-import type { Dispatch, MouseEvent as ReactMouseEvent, MutableRefObject, ReactElement, ReactNode, SetStateAction } from "react";
+import { useCallback, type Dispatch, type MouseEvent as ReactMouseEvent, type MutableRefObject, type ReactElement, type ReactNode, type SetStateAction } from "react";
 
 import type { Backlink, EditorSettings, UnlinkedReference, UnlinkedReferencesResult, UserDefinedField } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
@@ -104,9 +104,9 @@ function paneViewProps(
     closingTabIds: Set<string>;
     editorActionPulse: number;
     focusedPane: PaneId;
-    onScrollTargetHandled: (pane: PaneId) => void;
-    onSetFocusedPane: (pane: PaneId) => void;
-    onSourceModeToggle: (pane: PaneId) => void;
+    onFocus: () => void;
+    onScrollTargetHandled: () => void;
+    onSourceModeToggle: () => void;
     pane: PaneId;
     scrollTargetHeading?: HeadingScrollTarget;
     sourceMode: boolean;
@@ -117,9 +117,9 @@ function paneViewProps(
     ...common,
     closingTabIds: options.closingTabIds,
     editorActionPulse: options.focusedPane === options.pane ? options.editorActionPulse : 0,
-    onFocus: () => options.onSetFocusedPane(options.pane),
-    onScrollTargetHandled: () => options.onScrollTargetHandled(options.pane),
-    onSourceModeToggle: () => options.onSourceModeToggle(options.pane),
+    onFocus: options.onFocus,
+    onScrollTargetHandled: options.onScrollTargetHandled,
+    onSourceModeToggle: options.onSourceModeToggle,
     pane: options.pane,
     scrollTargetHeading: options.scrollTargetHeading,
     sourceMode: options.sourceMode,
@@ -197,6 +197,12 @@ export function AppEditorWorkspace({
 }: AppEditorWorkspaceProps): ReactElement {
   const t = useT();
   void showRightPanelRecoveryControl;
+  const focusLeftPane = useCallback(() => onSetFocusedPane("left"), [onSetFocusedPane]);
+  const focusRightPane = useCallback(() => onSetFocusedPane("right"), [onSetFocusedPane]);
+  const handleLeftScrollTarget = useCallback(() => onScrollTargetHandled("left"), [onScrollTargetHandled]);
+  const handleRightScrollTarget = useCallback(() => onScrollTargetHandled("right"), [onScrollTargetHandled]);
+  const toggleLeftSourceMode = useCallback(() => onSourceModeToggle("left"), [onSourceModeToggle]);
+  const toggleRightSourceMode = useCallback(() => onSourceModeToggle("right"), [onSourceModeToggle]);
 
   const commonPaneViewProps: CommonPaneViewProps = {
     allFilePaths,
@@ -237,9 +243,9 @@ export function AppEditorWorkspace({
     closingTabIds: leftClosingTabIds,
     editorActionPulse,
     focusedPane,
-    onScrollTargetHandled,
-    onSetFocusedPane,
-    onSourceModeToggle,
+    onFocus: focusLeftPane,
+    onScrollTargetHandled: handleLeftScrollTarget,
+    onSourceModeToggle: toggleLeftSourceMode,
     pane: "left",
     scrollTargetHeading: leftPaneScrollHeading,
     sourceMode: isLeftSourceMode,
@@ -249,9 +255,9 @@ export function AppEditorWorkspace({
     closingTabIds: rightClosingTabIds,
     editorActionPulse,
     focusedPane,
-    onScrollTargetHandled,
-    onSetFocusedPane,
-    onSourceModeToggle,
+    onFocus: focusRightPane,
+    onScrollTargetHandled: handleRightScrollTarget,
+    onSourceModeToggle: toggleRightSourceMode,
     pane: "right",
     scrollTargetHeading: rightPaneScrollHeading,
     sourceMode: isRightSourceMode,

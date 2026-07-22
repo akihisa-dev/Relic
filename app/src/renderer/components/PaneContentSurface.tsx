@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
-import { hasInvalidFrontmatterYaml } from "../editorFrontmatter";
+import { clearLocalEditorContentEcho, markLocalEditorContentEcho } from "../editorContentEcho";
+import { updateFrontmatterValidation, type FrontmatterValidationSnapshot } from "../editorFrontmatter";
 import {
   bufferEditorChange,
   discardPendingEditorChanges,
@@ -86,12 +87,21 @@ export function PaneContentSurface({
     ? updateTextCount(textCountSnapshotRef.current, activeFileTab.content)
     : null;
   textCountSnapshotRef.current = textCountResult;
+  const frontmatterValidationRef = useRef<FrontmatterValidationSnapshot | null>(null);
+  const frontmatterValidation = activeFileTab
+    ? updateFrontmatterValidation(frontmatterValidationRef.current, activeFileTab.content)
+    : null;
+  frontmatterValidationRef.current = frontmatterValidation;
+  const activeContentEchoKey = activeFileTab ? editorContentEchoKey(pane, activeFileTab.id) : null;
   const [frontmatterAddButtonHost, setFrontmatterAddButtonHost] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!activeFileTab) return;
     const tabId = activeFileTab.id;
-    return () => flushPendingEditorChanges([tabId]);
+    return () => {
+      flushPendingEditorChanges([tabId]);
+      clearLocalEditorContentEcho(editorContentEchoKey(pane, tabId));
+    };
   }, [activeFileTab?.id]);
 
   useEffect(() => {
@@ -105,7 +115,7 @@ export function PaneContentSurface({
   }, [activeFileTab, isLargeMarkdown, notifiedLargeMarkdownFallbacks, onLargeMarkdownFallback]);
 
   if (activeFileTab) {
-    const hasInvalidFrontmatter = hasInvalidFrontmatterYaml(activeFileTab.content);
+    const hasInvalidFrontmatter = frontmatterValidation?.invalid ?? false;
     const editorContentMaxWidth = editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth;
     const editorTitleRowStyle = {
       "--editor-file-title-max-width": editorContentMaxWidth ?? "100%"
@@ -167,11 +177,13 @@ export function PaneContentSurface({
           <Editor
             allFilePaths={allFilePaths}
             content={activeFileTab.content}
+            contentEchoKey={activeContentEchoKey ?? undefined}
             filePath={activeFileTab.path}
             frontmatterCandidates={frontmatterCandidates}
             key={activeFileTab.id}
             onChange={(content) => {
               discardPendingEditorChanges([activeFileTab.id]);
+              markLocalEditorContentEcho(editorContentEchoKey(pane, activeFileTab.id), content);
               onUpdateTabContent(activeFileTab.id, content);
             }}
             onTypingChange={(content) => {
@@ -179,7 +191,7 @@ export function PaneContentSurface({
                 content,
                 filePath: activeFileTab.path,
                 tabId: activeFileTab.id,
-                commit: commitBufferedEditorChange
+                commit: (change) => commitBufferedEditorChange(change, pane)
               });
             }}
             onOpenLink={onOpenLink}
@@ -249,8 +261,13 @@ export function PaneContentSurface({
   );
 }
 
-function commitBufferedEditorChange(change: BufferedEditorChange): void {
+function editorContentEchoKey(pane: PaneId, tabId: string): string {
+  return `${pane}:${tabId}`;
+}
+
+function commitBufferedEditorChange(change: BufferedEditorChange, pane: PaneId): void {
   const tab = useEditorStore.getState().tabs[change.tabId];
   if (tab?.kind !== "file" || tab.path !== change.filePath) return;
+  markLocalEditorContentEcho(editorContentEchoKey(pane, change.tabId), change.content);
   useEditorStore.getState().updateTabContent(change.tabId, change.content);
 }

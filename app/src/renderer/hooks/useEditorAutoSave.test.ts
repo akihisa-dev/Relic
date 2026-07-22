@@ -4,7 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defaultEditorSettings } from "../../shared/ipc";
 import { makeRelicApi } from "../../test/rendererTestUtils";
 import { useEditorStore, type Tab } from "../store/editorStore";
-import { useEditorAutoSave } from "./useEditorAutoSave";
+import {
+  __getAutoSaveEvaluatedTabCountForTests,
+  __resetAutoSaveEvaluatedTabCountForTests,
+  useEditorAutoSave
+} from "./useEditorAutoSave";
 
 function resetStore(tabs: Record<string, Tab> = {}): void {
   useEditorStore.setState({
@@ -28,10 +32,27 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
 
 describe("useEditorAutoSave", () => {
   beforeEach(() => {
+    __resetAutoSaveEvaluatedTabCountForTests();
     vi.useFakeTimers();
     window.relic = makeRelicApi({
       writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined })
     });
+  });
+
+  it("本文更新時は変更されたタブだけを保存判定する", () => {
+    resetStore({
+      first: { content: "first", id: "first", kind: "file", name: "First", path: "first.md", savedContent: "first" },
+      second: { content: "second", id: "second", kind: "file", name: "Second", path: "second.md", savedContent: "second" }
+    });
+    renderHook(() => useEditorAutoSave({
+      conflictCloseBlockedMessage: "conflict",
+      saveFailedMessage: "save failed"
+    }));
+    __resetAutoSaveEvaluatedTabCountForTests();
+
+    act(() => useEditorStore.getState().updateTabContent("second", "second draft"));
+
+    expect(__getAutoSaveEvaluatedTabCountForTests()).toBe(1);
   });
 
   afterEach(() => {

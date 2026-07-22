@@ -1,5 +1,6 @@
 import { flushPendingEditorChanges } from "../editorInputBuffer";
 import type { EditorStoreActions, EditorStoreSet } from "./editorStoreContract";
+import { emitEditorTabChanged } from "./editorTabChangeEvents";
 import {
   closeAllTabsState,
   markFileTabSavedCheckpointState,
@@ -25,24 +26,37 @@ type EditorContentActions = Pick<EditorStoreActions,
 
 export function createEditorContentActions(set: EditorStoreSet): EditorContentActions {
   return {
-    updateTabContent: (tabId, content) => set((state) => updateFileTabContentState(state, tabId, content)),
+    updateTabContent: (tabId, content) => {
+      set((state) => updateFileTabContentState(state, tabId, content));
+      emitEditorTabChanged(tabId);
+    },
     updateTabMeta: (tabId, meta) => {
       flushPendingEditorChanges([tabId]);
       set((state) => updateFileTabMetaState(state, tabId, meta));
+      emitEditorTabChanged(tabId);
     },
-    markTabSaved: (tabId, content) => set((state) => markFileTabSavedState(state, tabId, content)),
-    markTabSavedCheckpoint: (tabId, content) => set((state) => markFileTabSavedCheckpointState(state, tabId, content)),
+    markTabSaved: (tabId, content) => {
+      set((state) => markFileTabSavedState(state, tabId, content));
+      emitEditorTabChanged(tabId);
+    },
+    markTabSavedCheckpoint: (tabId, content) => {
+      set((state) => markFileTabSavedCheckpointState(state, tabId, content));
+      emitEditorTabChanged(tabId);
+    },
     setTabExternalConflict: (tabId, content) => {
       flushPendingEditorChanges([tabId]);
       set((state) => setFileTabExternalConflictState(state, tabId, content));
+      emitEditorTabChanged(tabId);
     },
     resolveTabExternalConflict: (tabId, choice) => {
       flushPendingEditorChanges([tabId]);
       set((state) => resolveFileTabExternalConflictState(state, tabId, choice));
+      emitEditorTabChanged(tabId);
     },
     updateTabFromExternal: (tabId, content) => {
       flushPendingEditorChanges([tabId]);
       set((state) => updateFileTabFromExternalState(state, tabId, content));
+      emitEditorTabChanged(tabId);
     },
     setEditorSettings: (settings) => set({ editorSettings: settings }),
     closeAllTabs: () => {

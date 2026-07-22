@@ -6,18 +6,26 @@ import type { EditorSettings } from "../shared/ipc";
 import { resolveAppFontFamily } from "./appFont";
 import type { Translator } from "./i18nModel";
 
+/** @internal Test-only identity for CodeMirror measure coalescing. */
+export const __typewriterMeasureKeyForTests = {};
+
 const typewriterExtension = ViewPlugin.fromClass(
   class {
     update(update: ViewUpdate): void {
       if (!update.selectionSet && !update.docChanged) return;
 
       const { view } = update;
-      const cursor = view.state.selection.main.head;
-      const line = view.lineBlockAt(cursor);
-      const scroller = view.scrollDOM;
-      const target = line.top - scroller.clientHeight / 2 + line.height / 2;
-
-      scroller.scrollTop = Math.max(0, target);
+      view.requestMeasure({
+        key: __typewriterMeasureKeyForTests,
+        read: () => {
+          const cursor = view.state.selection.main.head;
+          const line = view.lineBlockAt(cursor);
+          return Math.max(0, line.top - view.scrollDOM.clientHeight / 2 + line.height / 2);
+        },
+        write: (target) => {
+          if (Math.abs(view.scrollDOM.scrollTop - target) >= 0.5) view.scrollDOM.scrollTop = target;
+        }
+      });
     }
   }
 );

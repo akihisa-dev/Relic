@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import type { MutableRefObject, ReactElement } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
+import { consumeLocalEditorContentEcho } from "../editorContentEcho";
 import { buildEditorReconfigureEffects, buildExtensions, destroyEditorView, isEditorComposing } from "../editorExtensions";
 import { setEditorEditable } from "../editorEditable";
 import { droppedImageSourcePaths, importDroppedImagesAsMarkdown } from "../editorImageDrop";
@@ -27,6 +28,7 @@ import { EditorFrontmatterPropertyMenu } from "./EditorFrontmatterPropertyMenu";
 interface EditorProps {
   allFilePaths?: string[];
   content: string;
+  contentEchoKey?: string;
   filePath?: string;
   frontmatterCandidates?: Record<string, string[]>;
   onChange: (content: string) => void;
@@ -51,6 +53,7 @@ const defaultUserDefinedFields: UserDefinedField[] = [];
 export function Editor({
   allFilePaths = defaultAllFilePaths,
   content,
+  contentEchoKey,
   filePath,
   frontmatterCandidates = defaultFrontmatterCandidates,
   onChange,
@@ -259,6 +262,7 @@ export function Editor({
   useEffect(() => {
     const view = internalViewRef.current;
     if (!view) return;
+    if (contentEchoKey && consumeLocalEditorContentEcho(contentEchoKey, content)) return;
 
     const currentContent = view.state.doc.toString();
     if (currentContent === content) return;
@@ -269,7 +273,7 @@ export function Editor({
 
     pendingExternalContentRef.current = null;
     replaceExternalEditorContent(view, content);
-  }, [content]);
+  }, [content, contentEchoKey]);
 
   // 設定・タイプライターモード変更時はEditorViewを保ったまま拡張だけ差し替える
   useEffect(() => {

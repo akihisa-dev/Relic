@@ -1,7 +1,9 @@
 import { EditorState } from "@codemirror/state";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  __getFrontmatterYamlParseCountForTests,
+  __resetFrontmatterYamlParseCountForTests,
   formatDateForInput,
   findFrontmatterBlock,
   hasInvalidFrontmatterYaml,
@@ -12,6 +14,7 @@ import {
   reorderTopLevelYamlFields,
   serializeData,
   serializeDataPreservingYaml,
+  updateFrontmatterValidation,
   type FrontmatterBlock
 } from "./editorFrontmatterModel";
 
@@ -28,11 +31,30 @@ function frontmatterBlock(yamlText: string): FrontmatterBlock {
 }
 
 describe("editorFrontmatterModel", () => {
+  afterEach(() => {
+    __resetFrontmatterYamlParseCountForTests();
+  });
+
   it("空のYAMLブロックを有効なフロントマターとして扱う", () => {
     const state = EditorState.create({ doc: "---\n---\n# 本文" });
 
     expect(findFrontmatterBlock(state)?.data).toEqual({});
     expect(hasInvalidFrontmatterYaml(state.doc.toString())).toBe(false);
+  });
+
+  it("本文だけの変更ではフロントマターYAMLを再解析しない", () => {
+    const original = "---\ntitle: Note\ntags: [one]\n---\n本文";
+    const initial = updateFrontmatterValidation(null, original);
+    expect(initial.invalid).toBe(false);
+    expect(__getFrontmatterYamlParseCountForTests()).toBe(1);
+
+    const bodyUpdated = updateFrontmatterValidation(initial, `${original}追記`);
+    expect(bodyUpdated.invalid).toBe(false);
+    expect(__getFrontmatterYamlParseCountForTests()).toBe(1);
+
+    const yamlUpdated = updateFrontmatterValidation(bodyUpdated, bodyUpdated.content.replace("Note", "[broken"));
+    expect(yamlUpdated.invalid).toBe(true);
+    expect(__getFrontmatterYamlParseCountForTests()).toBe(2);
   });
 
   it("YAMLのコメント、クォート、フィールド順を保持して書き戻す", () => {

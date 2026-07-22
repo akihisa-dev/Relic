@@ -5,8 +5,13 @@ export const editorFrameUpdateEffect = StateEffect.define<null>();
 
 interface PendingEditorFrame {
   delayTimer: ReturnType<typeof setTimeout> | null;
-  effects: Map<string, () => StateEffectType<unknown> | null>;
+  effects: Map<string, PendingEditorEffect>;
   frame: number | null;
+}
+
+interface PendingEditorEffect {
+  factory: () => StateEffectType<unknown> | null;
+  readyAt: number;
 }
 
 const pendingFrames = new WeakMap<EditorView, PendingEditorFrame>();
@@ -22,22 +27,11 @@ export function scheduleEditorFrameEffect(
     pending = { delayTimer: null, effects: new Map(), frame: null };
     pendingFrames.set(view, pending);
   }
-  pending.effects.set(key, effect);
-
-  if (delay > 0 && pending.frame === null) {
-    if (pending.delayTimer) clearTimeout(pending.delayTimer);
-    pending.delayTimer = setTimeout(() => {
-      pending!.delayTimer = null;
-      requestEditorFrame(view, pending!);
-    }, delay);
-    return;
-  }
-
-  if (pending.delayTimer) {
-    clearTimeout(pending.delayTimer);
-    pending.delayTimer = null;
-  }
-  requestEditorFrame(view, pending);
+  pending.effects.set(key, {
+    factory: effect,
+    readyAt: Date.now() + Math.max(0, delay)
+  });
+  scheduleNextEditorFrame(view, pending);
 }
 
 export function cancelEditorFrameUpdates(view: EditorView): void {
@@ -58,10 +52,35 @@ function requestEditorFrame(view: EditorView, pending: PendingEditorFrame): void
       return;
     }
 
-    const effects = Array.from(pending.effects.values(), (factory) => factory()).filter(
+    const now = Date.now();
+    const ready = Array.from(pending.effects.entries()).filter(([, effect]) => effect.readyAt <= now);
+    for (const [key] of ready) pending.effects.delete(key);
+    const effects = ready.map(([, effect]) => effect.factory()).filter(
       (effect): effect is StateEffectType<unknown> => effect !== null
     );
-    pending.effects.clear();
-    view.dispatch({ effects: [editorFrameUpdateEffect.of(null), ...effects] });
+    if (ready.length > 0) {
+      view.dispatch({ effects: [editorFrameUpdateEffect.of(null), ...effects] });
+    }
+    scheduleNextEditorFrame(view, pending);
   });
+}
+
+function scheduleNextEditorFrame(view: EditorView, pending: PendingEditorFrame): void {
+  if (pending.delayTimer) {
+    clearTimeout(pending.delayTimer);
+    pending.delayTimer = null;
+  }
+  if (pending.effects.size === 0) return;
+
+  const now = Date.now();
+  const earliest = Math.min(...Array.from(pending.effects.values(), (effect) => effect.readyAt));
+  if (earliest <= now) {
+    requestEditorFrame(view, pending);
+    return;
+  }
+
+  pending.delayTimer = setTimeout(() => {
+    pending.delayTimer = null;
+    requestEditorFrame(view, pending);
+  }, earliest - now);
 }

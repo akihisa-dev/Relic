@@ -8,6 +8,7 @@ import {
   formatTable,
   insertTableColumn,
   insertTableRow,
+  minimalTableMarkdownChange,
   moveTableColumn,
   moveTableColumnTo,
   moveTableRow,
@@ -17,6 +18,19 @@ import {
 } from "./editorTableModel";
 
 describe("editorTableModel", () => {
+  it("表全体の整形結果を保ったまま1セル分だけを最小置換する", () => {
+    const current = "| A | B |\n| --- | --- |\n| x | y |";
+    const next = "| A | B |\n| --- | --- |\n| changed | y |";
+    const change = minimalTableMarkdownChange({ from: 100 }, current, next);
+
+    expect(change).toEqual({
+      from: 100 + current.indexOf("x"),
+      insert: "changed",
+      to: 100 + current.indexOf("x") + 1
+    });
+    expect(current.slice(0, change!.from - 100) + change!.insert + current.slice(change!.to - 100)).toBe(next);
+  });
+
   it("Markdown本文からテーブルブロックを検出する", () => {
     const state = EditorState.create({
       doc: [

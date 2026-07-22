@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FileTab, Tab } from "../store/editorStore";
 import { flushPendingEditorChanges } from "../editorInputBuffer";
 import { useEditorStore } from "../store/editorStore";
+import { subscribeEditorTabChanges } from "../store/editorTabChangeEvents";
 import { useLatest } from "./useLatest";
 
 export type EditorSaveStatus = "saved" | "dirty" | "saving" | "error" | "externalConflict";
@@ -19,6 +20,7 @@ interface SaveQueue {
   lastError: string | null;
   pending: SaveRequest | null;
   saving: boolean;
+  tabId: string | null;
   timer: ReturnType<typeof setTimeout> | null;
   waiters: Array<() => void>;
 }
@@ -28,7 +30,8 @@ interface UseEditorAutoSaveInput {
   onSaved?: (path: string) => void;
   onSaveError?: (message: string) => void;
   saveFailedMessage: string;
-  tabs: Record<string, Tab>;
+  /** @deprecated The hook subscribes directly to changed tabs. */
+  tabs?: Record<string, Tab>;
 }
 
 interface SaveBeforeCloseResult {
@@ -37,13 +40,23 @@ interface SaveBeforeCloseResult {
 }
 
 const AUTO_SAVE_DELAY_MS = 1000;
+let evaluatedTabCount = 0;
+
+/** @internal Test-only counter for changed-tab scheduling assertions. */
+export function __getAutoSaveEvaluatedTabCountForTests(): number {
+  return evaluatedTabCount;
+}
+
+/** @internal Test-only reset for changed-tab scheduling assertions. */
+export function __resetAutoSaveEvaluatedTabCountForTests(): void {
+  evaluatedTabCount = 0;
+}
 
 export function useEditorAutoSave({
   conflictCloseBlockedMessage,
   onSaved,
   onSaveError,
-  saveFailedMessage,
-  tabs
+  saveFailedMessage
 }: UseEditorAutoSaveInput): {
   flushTabsBeforeClose: (tabIds: string[]) => Promise<SaveBeforeCloseResult>;
   saveStatusByTabId: Record<string, EditorSaveStatus>;
@@ -71,6 +84,7 @@ export function useEditorAutoSave({
       lastError: null,
       pending: null,
       saving: false,
+      tabId: null,
       timer: null,
       waiters: []
     };
@@ -152,6 +166,7 @@ export function useEditorAutoSave({
     if (!relicClient.current) return;
 
     const queue = queueForPath(request.path);
+    queue.tabId = request.tabId;
     queue.pending = request;
     queue.lastError = null;
 
@@ -186,18 +201,15 @@ export function useEditorAutoSave({
     });
   }, [queueForPath]);
 
-  useEffect(() => {
-    const openFileTabs = Object.values(tabs).filter((tab): tab is FileTab => tab.kind === "file");
-    const openPaths = new Set(openFileTabs.map((tab) => tab.path));
-
-    for (const [path, queue] of queues.entries()) {
-      if (openPaths.has(path)) continue;
-
-      if (queue.timer) clearTimeout(queue.timer);
+  const evaluateTab = useCallback((tabId: string): void => {
+    evaluatedTabCount += 1;
+    const tab = useEditorStore.getState().tabs[tabId];
+    if (tab?.kind !== "file") return;
+    for (const [path, existingQueue] of queues.entries()) {
+      if (existingQueue.tabId !== tabId || path === tab.path) continue;
+      if (existingQueue.timer) clearTimeout(existingQueue.timer);
       queues.delete(path);
     }
-
-    for (const tab of openFileTabs) {
       const queue = queues.get(tab.path);
 
       if (tab.externalConflict || tab.content === tab.savedContent) {
@@ -209,14 +221,37 @@ export function useEditorAutoSave({
         if (queue) {
           wakeWaiters(queue);
         }
-        continue;
+        notifyQueueChanged();
+        return;
       }
 
-      if (queue?.pending?.tabId === tab.id && queue.pending.content === tab.content) continue;
+      if (queue?.pending?.tabId === tab.id && queue.pending.content === tab.content) return;
 
       scheduleSave({ content: tab.content, expectedContent: tab.savedContent, path: tab.path, tabId: tab.id }, AUTO_SAVE_DELAY_MS);
+  }, [notifyQueueChanged, queues, scheduleSave, wakeWaiters]);
+
+  useEffect(() => {
+    for (const tab of Object.values(useEditorStore.getState().tabs)) {
+      if (tab.kind === "file") evaluateTab(tab.id);
     }
-  }, [notifyQueueChanged, queues, scheduleSave, tabs, wakeWaiters]);
+
+    const unsubscribeChanges = subscribeEditorTabChanges(evaluateTab);
+    const unsubscribeStructure = useEditorStore.subscribe((state, previous) => {
+      if (state.leftPane === previous.leftPane && state.rightPane === previous.rightPane) return;
+      for (const [path, queue] of queues.entries()) {
+        const tab = queue.tabId ? state.tabs[queue.tabId] : undefined;
+        if (tab?.kind === "file" && tab.path === path) continue;
+        if (queue.timer) clearTimeout(queue.timer);
+        queues.delete(path);
+      }
+      notifyQueueChanged();
+    });
+
+    return () => {
+      unsubscribeChanges();
+      unsubscribeStructure();
+    };
+  }, [evaluateTab, notifyQueueChanged, queues]);
 
   useEffect(() => {
     return () => {
@@ -264,7 +299,7 @@ export function useEditorAutoSave({
   const saveStatusByTabId = useMemo(() => {
     void queueSnapshot;
 
-    const entries = Object.values(tabs).flatMap((tab): Array<[string, EditorSaveStatus]> => {
+    const entries = Object.values(useEditorStore.getState().tabs).flatMap((tab): Array<[string, EditorSaveStatus]> => {
       if (tab.kind !== "file") return [];
       if (tab.externalConflict) return [[tab.id, "externalConflict" satisfies EditorSaveStatus]];
       if (tab.content === tab.savedContent) return [[tab.id, "saved" satisfies EditorSaveStatus]];
@@ -277,7 +312,7 @@ export function useEditorAutoSave({
     });
 
     return Object.fromEntries(entries);
-  }, [queueSnapshot, queues, tabs]);
+  }, [queueSnapshot, queues]);
 
   return {
     flushTabsBeforeClose,

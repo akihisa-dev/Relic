@@ -3,6 +3,7 @@ import * as yaml from "js-yaml";
 
 import type { UserDefinedField } from "../shared/ipc";
 import { fieldFor } from "./editorFrontmatterFields";
+import { textChangeRange } from "./textChangeRange";
 
 export interface FrontmatterBlock {
   bodyFrom: number;
@@ -216,16 +217,70 @@ export function findFrontmatterLineRange(doc: Text): { end: number; start: numbe
   return null;
 }
 
+export interface FrontmatterValidationSnapshot {
+  content: string;
+  invalid: boolean;
+  validationTo: number;
+}
+
+let frontmatterYamlParseCount = 0;
+
+export function updateFrontmatterValidation(
+  previous: FrontmatterValidationSnapshot | null,
+  content: string
+): FrontmatterValidationSnapshot {
+  if (previous?.content === content) return previous;
+  if (previous) {
+    const range = textChangeRange(previous.content, content);
+    if (range && range.from >= previous.validationTo) return { ...previous, content };
+  }
+
+  return parseFrontmatterValidation(content);
+}
+
 export function hasInvalidFrontmatterYaml(content: string): boolean {
-  const normalized = content.replace(/\r\n/g, "\n");
-  const lines = normalized.split("\n");
-  if (lines.length < 2 || lines[0].trim() !== "---") return false;
+  return parseFrontmatterValidation(content).invalid;
+}
 
-  const endIndex = lines.findIndex((line, index) => index > 0 && line.trim() === "---");
-  if (endIndex === -1) return true;
+/** @internal Test-only counter for deterministic performance assertions. */
+export function __getFrontmatterYamlParseCountForTests(): number {
+  return frontmatterYamlParseCount;
+}
 
-  const yamlText = lines.slice(1, endIndex).join("\n");
+/** @internal Test-only reset for deterministic performance assertions. */
+export function __resetFrontmatterYamlParseCountForTests(): void {
+  frontmatterYamlParseCount = 0;
+}
+
+function parseFrontmatterValidation(content: string): FrontmatterValidationSnapshot {
+  const firstNewline = content.indexOf("\n");
+  const firstLineEnd = firstNewline === -1 ? content.length : firstNewline;
+  const firstLineTo = firstNewline === -1 ? content.length : firstNewline + 1;
+  if (content.slice(0, firstLineEnd).trim() !== "---") {
+    return { content, invalid: false, validationTo: firstLineTo };
+  }
+
+  let lineFrom = firstLineTo;
+  while (lineFrom <= content.length) {
+    const newline = content.indexOf("\n", lineFrom);
+    const lineTo = newline === -1 ? content.length : newline;
+    if (content.slice(lineFrom, lineTo).trim() === "---") {
+      return {
+        content,
+        invalid: invalidYamlObject(content.slice(firstLineTo, lineFrom)),
+        validationTo: newline === -1 ? lineTo : newline + 1
+      };
+    }
+    if (newline === -1) break;
+    lineFrom = newline + 1;
+  }
+
+  return { content, invalid: true, validationTo: content.length };
+}
+
+function invalidYamlObject(yamlText: string): boolean {
   if (yamlText.trim() === "") return false;
+  frontmatterYamlParseCount += 1;
   try {
     const parsed = yaml.load(yamlText);
     return parsed !== null && parsed !== undefined && (typeof parsed !== "object" || Array.isArray(parsed));

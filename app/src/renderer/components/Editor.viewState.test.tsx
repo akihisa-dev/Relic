@@ -2,9 +2,14 @@ import { redo, undo } from "@codemirror/commands";
 import { EditorSelection, EditorState, Transaction } from "@codemirror/state";
 import { BlockType } from "@codemirror/view";
 import { fireEvent, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { resolveAppFontFamily } from "../appFont";
+import { __typewriterMeasureKeyForTests } from "../editorThemeExtensions";
+import {
+  __resetLocalEditorContentEchoesForTests,
+  markLocalEditorContentEcho
+} from "../editorContentEcho";
 import { renderEditorWithView, settings } from "./editorTestHelpers";
 import { Editor } from "./Editor";
 import {
@@ -13,6 +18,10 @@ import {
 } from "../editorExtensions";
 
 describe("Editor view state", () => {
+  afterEach(() => {
+    __resetLocalEditorContentEchoesForTests();
+  });
+
   it("連続入力とMarkdown操作の更新元を区別する", async () => {
     const onChange = vi.fn();
     const onTypingChange = vi.fn();
@@ -29,6 +38,48 @@ describe("Editor view state", () => {
       changes: { from: view.state.doc.length, insert: "**操作**" }
     });
     expect(onChange).toHaveBeenLastCalledWith("本文追記**操作**");
+  });
+
+  it("ローカル入力を親状態から受け取ってもCodeMirror本文を再度文字列化しない", async () => {
+    const contentEchoKey = "tab-local";
+    const { rerender, view, viewRef } = await renderEditorWithView({ content: "本文", contentEchoKey });
+    view.dispatch({
+      annotations: Transaction.userEvent.of("input.type"),
+      changes: { from: view.state.doc.length, insert: "追記" }
+    });
+    const document = view.state.doc;
+    const toStringSpy = vi.spyOn(document, "toString");
+    const content = document.toString();
+    markLocalEditorContentEcho(contentEchoKey, content);
+
+    rerender(
+      <Editor
+        content={content}
+        contentEchoKey={contentEchoKey}
+        onChange={() => undefined}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+    await waitFor(() => expect(toStringSpy).toHaveBeenCalledTimes(1));
+    expect(view.state.doc).toBe(document);
+  });
+
+  it("タイプライターモードの連続更新を同じ測定キーへ集約する", async () => {
+    const { view } = await renderEditorWithView({ content: "一行目\n二行目", typewriterMode: true });
+    const requestMeasure = vi.spyOn(view, "requestMeasure");
+
+    view.dispatch({ selection: { anchor: view.state.doc.length } });
+    view.dispatch({
+      annotations: Transaction.userEvent.of("input.type"),
+      changes: { from: view.state.doc.length, insert: "追記" }
+    });
+
+    const typewriterMeasures = requestMeasure.mock.calls.filter(
+      ([request]) => request?.key === __typewriterMeasureKeyForTests
+    );
+    expect(typewriterMeasures).toHaveLength(2);
+    expect(typewriterMeasures.every(([request]) => request?.key === __typewriterMeasureKeyForTests)).toBe(true);
   });
 
   it("外部本文の反映で選択範囲とスクロールを保ち通常入力のUndo履歴から分離する", async () => {

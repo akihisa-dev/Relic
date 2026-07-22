@@ -1,12 +1,13 @@
 import { relicClient } from "../relicClient";
 import { EditorView } from "@codemirror/view";
-import type { MutableRefObject, ReactElement, ReactNode } from "react";
+import { memo, type MutableRefObject, type ReactElement, type ReactNode } from "react";
 import { useShallow } from "zustand/react/shallow";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import type { FileTab } from "../store/editorStore";
 import type { HeadingScrollTarget } from "../editorDerivedState";
 import { flushPendingEditorChanges } from "../editorInputBuffer";
+import { paneTabsPresentationKey } from "../paneViewModel";
 import { usePaneHeadingScroll } from "../hooks/usePaneHeadingScroll";
 import { useEditorStore, type PaneId, type PanelTabKind } from "../store/editorStore";
 import { PaneContentSurface } from "./PaneContentSurface";
@@ -57,7 +58,20 @@ export interface PaneViewProps {
   sourceMode: boolean;
 }
 
-export function PaneView({
+const paneViewRenderCounts: Record<PaneId, number> = { left: 0, right: 0 };
+
+/** @internal Test-only render counter for subscription boundaries. */
+export function __getPaneViewRenderCountsForTests(): Readonly<Record<PaneId, number>> {
+  return { ...paneViewRenderCounts };
+}
+
+/** @internal Test-only reset for subscription boundaries. */
+export function __resetPaneViewRenderCountsForTests(): void {
+  paneViewRenderCounts.left = 0;
+  paneViewRenderCounts.right = 0;
+}
+
+function PaneViewComponent({
   allFilePaths,
   canReopenClosedTab,
   editorActionPulse,
@@ -101,23 +115,32 @@ export function PaneView({
   onEditorAction,
   sourceMode
 }: PaneViewProps): ReactElement {
+  paneViewRenderCounts[pane] += 1;
   const {
-    leftPane,
+    activeTab,
     markTabSaved,
+    paneState,
+    presentationKey,
     resolveTabExternalConflict,
-    rightPane,
-    tabs,
     updateTabContent
   } = useEditorStore(useShallow((state) => ({
-    leftPane: state.leftPane,
+    activeTab: state.tabs[(pane === "left" ? state.leftPane : state.rightPane).activeTabId ?? ""] ?? null,
     markTabSaved: state.markTabSaved,
+    paneState: pane === "left" ? state.leftPane : state.rightPane,
+    presentationKey: paneTabsPresentationKey(
+      (pane === "left" ? state.leftPane : state.rightPane).tabIds,
+      state.tabs
+    ),
     resolveTabExternalConflict: state.resolveTabExternalConflict,
-    rightPane: state.rightPane,
-    tabs: state.tabs,
     updateTabContent: state.updateTabContent
   })));
-  const paneState = pane === "left" ? leftPane : rightPane;
-  const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
+  void presentationKey;
+  const tabs = Object.fromEntries(
+    paneState.tabIds.flatMap((tabId) => {
+      const tab = useEditorStore.getState().tabs[tabId];
+      return tab ? [[tabId, tab] as const] : [];
+    })
+  );
 
   const loadExternalVersion = (): void => {
     if (activeTab?.kind !== "file") return;
@@ -208,3 +231,5 @@ export function PaneView({
     </div>
   );
 }
+
+export const PaneView = memo(PaneViewComponent);
