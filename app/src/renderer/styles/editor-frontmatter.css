@@ -272,10 +272,16 @@ select.cm-frontmatter-input {
 .cm-frontmatter-input:focus,
 .cm-frontmatter-pill-input:focus,
 .cm-frontmatter-pill-value:focus {
-  background: var(--hover);
+  background: transparent;
   border-color: transparent;
   box-shadow: none;
   transform: none;
+}
+
+.cm-frontmatter-properties .cm-frontmatter-pill-input:focus-visible,
+.cm-frontmatter-properties .cm-frontmatter-pill-value:focus-visible {
+  outline: none;
+  outline-offset: 0;
 }
 
 .cm-frontmatter-add-input[aria-invalid="true"],
@@ -469,9 +475,9 @@ select.cm-frontmatter-input {
   display: inline-flex;
   font-size: 0.94em;
   gap: 6px;
-  max-width: min(28ch, 100%);
+  max-width: 100%;
   min-height: 26px;
-  flex: 0 1 120px;
+  flex: 0 1 auto;
   min-width: 0;
   line-height: 1.2;
   padding: 1px 4px 1px 7px;
@@ -492,7 +498,10 @@ select.cm-frontmatter-input {
   background: transparent;
   border: 0;
   color: inherit;
+  field-sizing: content;
+  flex: 0 1 auto;
   font: inherit;
+  max-width: calc(100% - 26px);
   min-width: 0;
   outline: none;
   padding: 0;
@@ -500,7 +509,7 @@ select.cm-frontmatter-input {
   transition:
     box-shadow var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
-  width: 100%;
+  width: auto;
 }
 
 .cm-frontmatter-pill-remove {

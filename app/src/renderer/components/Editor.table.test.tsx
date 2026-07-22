@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { undo, redo } from "@codemirror/commands";
 import { EditorView } from "@codemirror/view";
 import { fireEvent, render, waitFor } from "@testing-library/react";
@@ -10,6 +12,15 @@ import { Editor } from "./Editor";
 import { collectLivePreviewWidgets, settings } from "./editorTestHelpers";
 
 describe("Editor table preview", () => {
+  it("表の選択状態を枠で重ねず薄い面だけで示す", () => {
+    const css = readFileSync("src/renderer/styles/editor-table.css", "utf8");
+
+    expect(css).toMatch(/\.cm-live-table\[data-active-axis="cell"\] \.cm-live-table-active\s*\{[^}]*border-radius:\s*0;[^}]*box-shadow:\s*none;/s);
+    expect(css).toMatch(/\.cm-live-table-selected\s*\{[^}]*background:[^;]+;[^}]*box-shadow:\s*none;/s);
+    expect(css).toMatch(/\.cm-live-table-cell-input:focus-visible\s*\{[^}]*outline:\s*none;/s);
+    expect(css).not.toContain("--live-table-selection-border-width");
+  });
+
   it("ライブプレビューで表を挿入直後のカーソル位置でも表示する", async () => {
     const content = "| A | B |\n| --- | --- |\n| x | y |";
     const widgets = await collectLivePreviewWidgets(content, content.length);

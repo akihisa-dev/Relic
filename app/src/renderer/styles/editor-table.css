@@ -3,13 +3,9 @@
   --live-table-border-color: #e0e0e0;
   --live-table-control-size: 16px;
   --live-table-drag-handle-size: 16px;
-  --live-table-handle-active-color: #ffffff;
   --live-table-handle-color: #ababab;
   --live-table-selection: color-mix(in srgb, var(--text) 8%, transparent);
   --live-table-selection-blend-mode: darken;
-  --live-table-selection-border-color: var(--text);
-  --live-table-selection-border-radius: 4px;
-  --live-table-selection-border-width: 2px;
   margin: 18px 0;
   overflow: visible;
   padding: 0;
@@ -18,8 +14,6 @@
 
 .cm-live-table::before {
   background: var(--live-table-selection);
-  border-radius: var(--live-table-selection-border-radius);
-  box-shadow: inset 0 0 0 var(--live-table-selection-border-width) var(--live-table-selection-border-color);
   content: "";
   display: none;
   mix-blend-mode: var(--live-table-selection-blend-mode);
@@ -57,18 +51,18 @@
 
 .cm-live-table[data-active-axis="column"]::before {
   display: block;
-  height: calc(100% + 2px);
-  left: calc(var(--table-active-col-start) - 1px);
-  top: -1px;
-  width: calc(var(--table-active-col-width) + 2px);
+  height: 100%;
+  left: var(--table-active-col-start);
+  top: 0;
+  width: var(--table-active-col-width);
 }
 
 .cm-live-table[data-active-axis="row"]::before {
   display: block;
-  height: calc(var(--table-active-row-height) + 2px);
-  left: -1px;
-  top: calc(var(--table-active-row-start) - 1px);
-  width: calc(100% + 2px);
+  height: var(--table-active-row-height);
+  left: 0;
+  top: var(--table-active-row-start);
+  width: 100%;
 }
 
 .cm-live-table table {
@@ -147,8 +141,11 @@
   z-index: 1;
 }
 
-.cm-live-table-cell-input:focus {
+.cm-live-table-cell-input:focus,
+.cm-live-table-cell-input:focus-visible {
   background: transparent;
+  outline: none;
+  outline-offset: 0;
 }
 
 .cm-live-table-continuation {
@@ -173,8 +170,8 @@
 
 .cm-live-table[data-active-axis="cell"] .cm-live-table-active {
   background: var(--live-table-selection);
-  border-radius: var(--live-table-selection-border-radius);
-  box-shadow: inset 0 0 0 var(--live-table-selection-border-width) var(--live-table-selection-border-color);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .cm-live-table[data-active-axis="column"] .cm-live-table-active,
@@ -185,7 +182,7 @@
 
 .cm-live-table-selected {
   background: var(--live-table-selection);
-  box-shadow: inset 0 0 0 var(--live-table-selection-border-width) var(--live-table-selection-border-color);
+  box-shadow: none;
 }
 
 .cm-live-table-handle,
@@ -215,10 +212,10 @@
 }
 
 .cm-live-table-handle:active {
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-3);
   cursor: grabbing;
-  background: var(--live-table-selection-border-color);
-  box-shadow: 0 0 0 var(--live-table-selection-border-width) var(--live-table-selection-border-color);
-  color: var(--live-table-handle-active-color);
 }
 
 .cm-live-table[data-drag-axis] .cm-live-table-handle {
@@ -244,21 +241,19 @@
 }
 
 .cm-live-table-handle--column {
-  border-start-end-radius: var(--live-table-selection-border-radius);
-  border-start-start-radius: var(--live-table-selection-border-radius);
-  height: calc(var(--live-table-drag-handle-size) - var(--live-table-selection-border-width));
+  border-radius: 0;
+  height: var(--live-table-drag-handle-size);
   left: var(--table-active-col-start);
-  top: calc(-1 * (var(--live-table-drag-handle-size) - var(--live-table-selection-border-width)));
+  top: calc(-1 * var(--live-table-drag-handle-size));
   width: var(--table-active-col-width);
 }
 
 .cm-live-table-handle--row {
-  border-end-start-radius: var(--live-table-selection-border-radius);
-  border-start-start-radius: var(--live-table-selection-border-radius);
+  border-radius: 0;
   height: var(--table-active-row-height);
-  left: calc(-1 * (var(--live-table-drag-handle-size) - var(--live-table-selection-border-width)));
+  left: calc(-1 * var(--live-table-drag-handle-size));
   top: var(--table-active-row-start);
-  width: calc(var(--live-table-drag-handle-size) - var(--live-table-selection-border-width));
+  width: var(--live-table-drag-handle-size);
 }
 
 .cm-live-table-add {

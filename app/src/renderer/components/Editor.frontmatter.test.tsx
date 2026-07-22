@@ -25,6 +25,17 @@ describe("Editor frontmatter", () => {
     expect(css).toMatch(/\.cm-frontmatter-row-icon\s*\{[^}]*align-self:\s*stretch;[^}]*width:\s*100%;/s);
   });
 
+  it("複数値の入力欄へ内側のピル型フォーカス面や二重枠を付けない", () => {
+    const css = readFileSync("src/renderer/styles/editor-frontmatter.css", "utf8");
+
+    expect(css).toMatch(/\.cm-frontmatter-pill-value:focus\s*\{[^}]*background:\s*transparent;/s);
+    expect(css).toMatch(/\.cm-frontmatter-pill\s*\{[^}]*max-width:\s*100%;[^}]*flex:\s*0 1 auto;/s);
+    expect(css).toMatch(/\.cm-frontmatter-pill-value\s*\{[^}]*field-sizing:\s*content;[^}]*max-width:\s*calc\(100% - 26px\);[^}]*width:\s*auto;/s);
+    expect(css).toMatch(
+      /\.cm-frontmatter-properties \.cm-frontmatter-pill-input:focus-visible,\s*\.cm-frontmatter-properties \.cm-frontmatter-pill-value:focus-visible\s*\{[^}]*outline:\s*none;[^}]*outline-offset:\s*0;/s
+    );
+  });
+
   it("先頭フロントマターは水平線にせずメタデータとして薄く表示する", async () => {
     const content = "---\nstatus: draft\n---\n# 本文";
     const classes = await collectLivePreviewClasses(content, content.length, false);
