@@ -1,3 +1,5 @@
+import { measureLiveTableAxisSegment } from "./editorTableWidgetGeometry";
+
 export type LiveTableActiveAxis = "row" | "column" | "cell";
 
 export interface LiveTableInteractionState {
@@ -13,6 +15,7 @@ export interface LiveTableInteractionState {
 
 export function createLiveTableInteractionState(
   wrapper: HTMLElement,
+  table: HTMLTableElement,
   rowCount: number,
   colCount: number
 ): LiveTableInteractionState {
@@ -20,20 +23,32 @@ export function createLiveTableInteractionState(
   let activeCol = 0;
 
   const positionControls = (): void => {
-    const colStart = (activeCol / colCount) * 100;
-    const colCenter = ((activeCol + 0.5) / colCount) * 100;
-    const colAfter = ((activeCol + 1) / colCount) * 100;
-    const rowStart = (activeRow / rowCount) * 100;
-    const rowCenter = ((activeRow + 0.5) / rowCount) * 100;
-    const rowAfter = ((activeRow + 1) / rowCount) * 100;
-    wrapper.style.setProperty("--table-active-col-start", `${colStart}%`);
-    wrapper.style.setProperty("--table-active-col-center", `${colCenter}%`);
-    wrapper.style.setProperty("--table-active-col-after", `${colAfter}%`);
-    wrapper.style.setProperty("--table-active-col-width", `${100 / colCount}%`);
-    wrapper.style.setProperty("--table-active-row-start", `${rowStart}%`);
-    wrapper.style.setProperty("--table-active-row-center", `${rowCenter}%`);
-    wrapper.style.setProperty("--table-active-row-after", `${rowAfter}%`);
-    wrapper.style.setProperty("--table-active-row-height", `${100 / rowCount}%`);
+    const colSegment = measureLiveTableAxisSegment(wrapper, table, "column", activeCol);
+    const rowSegment = measureLiveTableAxisSegment(wrapper, table, "row", activeRow);
+    const colStart = colSegment ? `${colSegment.start}px` : `${(activeCol / colCount) * 100}%`;
+    const colCenter = colSegment
+      ? `${colSegment.start + colSegment.size / 2}px`
+      : `${((activeCol + 0.5) / colCount) * 100}%`;
+    const colAfter = colSegment
+      ? `${colSegment.start + colSegment.size}px`
+      : `${((activeCol + 1) / colCount) * 100}%`;
+    const colWidth = colSegment ? `${colSegment.size}px` : `${100 / colCount}%`;
+    const rowStart = rowSegment ? `${rowSegment.start}px` : `${(activeRow / rowCount) * 100}%`;
+    const rowCenter = rowSegment
+      ? `${rowSegment.start + rowSegment.size / 2}px`
+      : `${((activeRow + 0.5) / rowCount) * 100}%`;
+    const rowAfter = rowSegment
+      ? `${rowSegment.start + rowSegment.size}px`
+      : `${((activeRow + 1) / rowCount) * 100}%`;
+    const rowHeight = rowSegment ? `${rowSegment.size}px` : `${100 / rowCount}%`;
+    wrapper.style.setProperty("--table-active-col-start", colStart);
+    wrapper.style.setProperty("--table-active-col-center", colCenter);
+    wrapper.style.setProperty("--table-active-col-after", colAfter);
+    wrapper.style.setProperty("--table-active-col-width", colWidth);
+    wrapper.style.setProperty("--table-active-row-start", rowStart);
+    wrapper.style.setProperty("--table-active-row-center", rowCenter);
+    wrapper.style.setProperty("--table-active-row-after", rowAfter);
+    wrapper.style.setProperty("--table-active-row-height", rowHeight);
   };
 
   const clearAffordance = (): void => {

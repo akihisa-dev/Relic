@@ -1,3 +1,8 @@
+import {
+  liveTableAxisIndexFromPoint,
+  measureLiveTableAxisSegment
+} from "./editorTableWidgetGeometry";
+
 export type LiveTableDragAxis = "column" | "row";
 
 interface LiveTableDragMove {
@@ -35,8 +40,16 @@ export function createLiveTableDragController({
     if (!axis) return;
     wrapper.dataset.dragTargetRow = String(targetRow);
     wrapper.dataset.dragTargetCol = String(targetCol);
-    wrapper.style.setProperty("--table-drop-col", `${(targetCol / colCount) * 100}%`);
-    wrapper.style.setProperty("--table-drop-row", `${(targetRow / rowCount) * 100}%`);
+    const colSegment = measureLiveTableAxisSegment(wrapper, table, "column", targetCol);
+    const rowSegment = measureLiveTableAxisSegment(wrapper, table, "row", targetRow);
+    wrapper.style.setProperty(
+      "--table-drop-col",
+      colSegment ? `${colSegment.start}px` : `${(targetCol / colCount) * 100}%`
+    );
+    wrapper.style.setProperty(
+      "--table-drop-row",
+      rowSegment ? `${rowSegment.start}px` : `${(targetRow / rowCount) * 100}%`
+    );
   };
 
   const cellFromPoint = (clientX: number, clientY: number): HTMLElement | null => {
@@ -58,8 +71,10 @@ export function createLiveTableDragController({
 
     const rect = table.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return null;
-    const col = Math.max(0, Math.min(colCount - 1, Math.floor(((clientX - rect.left) / rect.width) * colCount)));
-    const row = Math.max(1, Math.min(rowCount - 1, Math.floor(((clientY - rect.top) / rect.height) * rowCount)));
+    const col = liveTableAxisIndexFromPoint(table, "column", clientX)
+      ?? Math.max(0, Math.min(colCount - 1, Math.floor(((clientX - rect.left) / rect.width) * colCount)));
+    const row = liveTableAxisIndexFromPoint(table, "row", clientY, 1)
+      ?? Math.max(1, Math.min(rowCount - 1, Math.floor(((clientY - rect.top) / rect.height) * rowCount)));
     return { row, col };
   };
 

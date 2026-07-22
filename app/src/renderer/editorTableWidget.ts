@@ -53,7 +53,7 @@ export class TableWidget extends WidgetType {
     const table = document.createElement("table");
     const colCount = tableColumnCount(this.block.rows);
     const rowCount = this.block.rows.length;
-    const state = createLiveTableInteractionState(wrapper, rowCount, colCount);
+    const state = createLiveTableInteractionState(wrapper, table, rowCount, colCount);
     let rangeSelection: { endCol: number; endRow: number; moved: boolean; startCol: number; startRow: number } | null = null;
     const focusCell = (rowIndex: number, colIndex: number): void => {
       focusTableWidgetCell(wrapper, rowIndex, colIndex);
@@ -65,6 +65,7 @@ export class TableWidget extends WidgetType {
     const resizeCellInput = (input: HTMLTextAreaElement): void => {
       input.style.height = "auto";
       input.style.height = `${input.scrollHeight}px`;
+      state.positionControls();
     };
     const startRangeSelection = (event: MouseEvent | PointerEvent, rowIndex: number, colIndex: number): void => {
       if (event.button !== 0) return;
