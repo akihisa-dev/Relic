@@ -13,7 +13,7 @@ import { toolsIpcContract } from "./tools";
 import type { WorkspaceApi } from "./workspace";
 import { workspaceIpcContract } from "./workspace";
 
-export const relicApiContractVersion = 3;
+export const relicApiContractVersion = 4;
 
 export interface RelicApi
   extends WorkspaceApi,

@@ -1,8 +1,8 @@
-import type { Dirent, Stats } from "node:fs";
+import type { Stats } from "node:fs";
 import path from "node:path";
 
 import type { MergeFilesInput, WorkspaceTreeNode } from "../../shared/ipc";
-import { hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
+import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import { parseMarkdownTags } from "../../shared/tags";
 import { parseFrontmatter } from "../files/frontmatter";
 
@@ -15,7 +15,6 @@ export interface FileCandidate {
 
 export interface ToolActionFileOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
-  readdir(directoryPath: string, options: { withFileTypes: true }): Promise<Dirent<string>[]>;
   stat(filePath: string): Promise<Stats>;
 }
 
@@ -142,26 +141,9 @@ export async function collectTitleListFiles(
 export async function collectTagIndexFiles(
   workspacePath: string,
   nodes: WorkspaceTreeNode[],
-  targetFolder: string,
-  includeSubfolders: boolean,
   operations: ToolActionFileOperations
 ): Promise<FileCandidate[]> {
-  const normalizedTarget = targetFolder.replace(/\\/g, "/").replace(/\/+$/, "");
   const collected: FileCandidate[] = [];
-
-  function isTargetPath(filePath: string): boolean {
-    const folder = filePath.includes("/") ? filePath.slice(0, filePath.lastIndexOf("/")) : "";
-
-    if (!normalizedTarget) {
-      return includeSubfolders || folder === "";
-    }
-
-    if (includeSubfolders) {
-      return filePath.startsWith(`${normalizedTarget}/`);
-    }
-
-    return folder === normalizedTarget;
-  }
 
   async function collect(items: WorkspaceTreeNode[]): Promise<void> {
     await Promise.all(items.map(async (node) => {
@@ -170,7 +152,7 @@ export async function collectTagIndexFiles(
         return;
       }
 
-      if (!hasMarkdownExtension(node.path) || !isTargetPath(node.path)) return;
+      if (!hasMarkdownExtension(node.path)) return;
 
       try {
         const s = await operations.stat(path.join(workspacePath, node.path));
@@ -188,60 +170,6 @@ export async function collectTagIndexFiles(
 
   await collect(nodes);
   return collected;
-}
-
-export async function collectTableOfContentsLines(
-  dirPath: string,
-  relBase: string,
-  indent: number,
-  includeSubfolders: boolean,
-  lines: string[],
-  wikiLinkForPath: (relativePath: string, displayName: string) => string,
-  operations: ToolActionFileOperations,
-  skipOnReadError: boolean
-): Promise<boolean> {
-  let entries: Dirent<string>[];
-
-  try {
-    entries = await operations.readdir(dirPath, { withFileTypes: true });
-  } catch (error) {
-    if (skipOnReadError) return false;
-    throw error;
-  }
-
-  entries.sort((a, b) => {
-    if (a.isDirectory() !== b.isDirectory()) return a.isDirectory() ? -1 : 1;
-    return a.name.localeCompare(b.name, "ja");
-  });
-  for (const entry of entries) {
-    const prefix = "  ".repeat(indent) + "- ";
-    if (entry.isDirectory()) {
-      if (includeSubfolders) {
-        const childLines: string[] = [];
-        const childRead = await collectTableOfContentsLines(
-          path.join(dirPath, entry.name),
-          path.posix.join(relBase, entry.name),
-          indent + 1,
-          includeSubfolders,
-          childLines,
-          wikiLinkForPath,
-          operations,
-          true
-        );
-
-        if (childRead) {
-          lines.push(`${prefix}**${entry.name}/**`);
-          lines.push(...childLines);
-        }
-      }
-    } else if (hasMarkdownExtension(entry.name)) {
-      const displayName = stripMarkdownExtension(entry.name);
-      const fileRelativePath = path.posix.join(relBase, entry.name);
-      lines.push(`${prefix}${wikiLinkForPath(fileRelativePath, displayName)}`);
-    }
-  }
-
-  return true;
 }
 
 function matchesFrontmatterField(value: unknown, query: string): boolean {

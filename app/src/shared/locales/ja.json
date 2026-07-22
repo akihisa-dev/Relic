@@ -484,7 +484,6 @@
   "settings.removeChoice": "{{choice}} を削除",
   "tools.actionsLabel": "ファイル加工アクション",
   "tools.filter": "フィルター",
-  "tools.includeSubfolders": "サブフォルダを含める",
   "tools.includeUntagged": "タグなしを含める",
   "tools.fileName": "ファイル名",
   "tools.fileNameHeading": "ファイル名見出しを挿入",

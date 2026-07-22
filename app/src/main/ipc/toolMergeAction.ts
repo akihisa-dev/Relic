@@ -18,7 +18,7 @@ import {
 } from "./toolActionRuntime";
 import { formatGeneratedMarkdownHeadingText } from "./toolMarkdownFormat";
 import { writeToolMarkdownOutput } from "./toolOutputFiles";
-import { defaultToolTarget, resolveToolTargetPaths } from "./toolTargets";
+import { resolveToolTargetPaths } from "./toolTargets";
 
 export async function mergeFiles(
   input: MergeFilesInput,
@@ -30,10 +30,7 @@ export async function mergeFiles(
 
   const { workspacePath } = context.value;
   const fileTree = await readWorkspaceFileTree(workspacePath);
-  const target = input.target ?? (input.filterType === "folder" && input.filterValue
-    ? { kind: "folder" as const, path: input.filterValue }
-    : defaultToolTarget());
-  const targetPaths = await resolveToolTargetPaths(workspacePath, fileTree, target);
+  const targetPaths = await resolveToolTargetPaths(workspacePath, fileTree, input.target);
   if (!targetPaths.ok) return targetPaths;
   const candidates = await collectMergeCandidates(workspacePath, fileTree, fileOperations);
   const targeted = candidates.filter((candidate) => targetPaths.value.has(candidate.relPath));

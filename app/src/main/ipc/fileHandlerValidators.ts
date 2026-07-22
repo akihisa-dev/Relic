@@ -27,8 +27,6 @@ import { maxExpectedFileSnapshots, maxReplacementBytes, maxSearchQueryLength } f
 import { isWorkspaceRelativeInputPath, isWorkspaceRelativeInputPathOrRoot } from "../files/paths";
 import { isWorkspaceIdInput } from "./workspaceHandlerValidators";
 
-export { normalizeSearchWorkspaceInput } from "../compatibility/searchInputCompatibility";
-
 export function isCreateMarkdownFileInput(input: unknown): input is CreateMarkdownFileInput {
   return isNameInput(input);
 }

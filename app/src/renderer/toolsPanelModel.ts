@@ -17,19 +17,15 @@ export interface TitleListDraft {
 }
 
 export interface TocDraft {
-  includeSubfolders: boolean;
   outputFolder: string;
   outputName: string;
-  targetFolder: string;
 }
 
 export interface TagIndexDraft {
-  includeSubfolders: boolean;
   includeUntagged: boolean;
   outputFolder: string;
   outputName: string;
   sortBy: "name" | "mtime";
-  targetFolder: string;
 }
 
 export interface MergeFilesDraft {
@@ -53,21 +49,17 @@ export function createDefaultTitleListDraft(t: Translator): TitleListDraft {
 
 export function createDefaultTocDraft(t: Translator): TocDraft {
   return {
-    includeSubfolders: true,
     outputFolder: "",
-    outputName: t("tools.tocDefaultName"),
-    targetFolder: ""
+    outputName: t("tools.tocDefaultName")
   };
 }
 
 export function createDefaultTagIndexDraft(t: Translator): TagIndexDraft {
   return {
-    includeSubfolders: true,
     includeUntagged: false,
     outputFolder: "",
     outputName: t("tools.tagIndexDefaultName"),
-    sortBy: "name",
-    targetFolder: ""
+    sortBy: "name"
   };
 }
 
@@ -83,36 +75,35 @@ export function createDefaultMergeFilesDraft(t: Translator): MergeFilesDraft {
   };
 }
 
-export function buildTitleListInput(draft: TitleListDraft, t: Translator): GenerateTitleListInput {
+export function buildTitleListInput(draft: TitleListDraft, t: Translator, target: GenerateTitleListInput["target"]): GenerateTitleListInput {
   return {
     filterFolder: draft.filterFolder || undefined,
     outputFolder: draft.outputFolder || "",
     outputName: draft.outputName || t("tools.titleListDefaultName"),
-    sortBy: draft.sortBy
+    sortBy: draft.sortBy,
+    target
   };
 }
 
-export function buildTocInput(draft: TocDraft, t: Translator): GenerateTableOfContentsInput {
+export function buildTocInput(draft: TocDraft, t: Translator, target: GenerateTableOfContentsInput["target"]): GenerateTableOfContentsInput {
   return {
-    includeSubfolders: draft.includeSubfolders,
     outputFolder: draft.outputFolder || "",
     outputName: draft.outputName || t("tools.tocDefaultName"),
-    targetFolder: draft.targetFolder || ""
+    target
   };
 }
 
-export function buildTagIndexInput(draft: TagIndexDraft, t: Translator): GenerateTagIndexInput {
+export function buildTagIndexInput(draft: TagIndexDraft, t: Translator, target: GenerateTagIndexInput["target"]): GenerateTagIndexInput {
   return {
-    includeSubfolders: draft.includeSubfolders,
     includeUntagged: draft.includeUntagged,
     outputFolder: draft.outputFolder || "",
     outputName: draft.outputName || t("tools.tagIndexDefaultName"),
     sortBy: draft.sortBy,
-    targetFolder: draft.targetFolder || ""
+    target
   };
 }
 
-export function buildMergeFilesInput(draft: MergeFilesDraft, t: Translator): MergeFilesInput {
+export function buildMergeFilesInput(draft: MergeFilesDraft, t: Translator, target: MergeFilesInput["target"]): MergeFilesInput {
   return {
     frontmatterField: draft.filterType === "frontmatter" ? draft.frontmatterField : undefined,
     filterType: draft.filterType,
@@ -120,7 +111,8 @@ export function buildMergeFilesInput(draft: MergeFilesDraft, t: Translator): Mer
     insertFilenameHeading: draft.insertFilenameHeading,
     outputFolder: draft.outputFolder || "",
     outputName: draft.outputName || t("tools.mergeDefaultName"),
-    sortBy: draft.sortBy
+    sortBy: draft.sortBy,
+    target
   };
 }
 

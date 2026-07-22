@@ -25,21 +25,19 @@ import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordin
 import { applyUnlinkedReference, readUnlinkedReferences } from "../files/unlinkedReferences";
 import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
 import { workspaceDataProvider } from "../files/workspaceDataProvider";
-import { normalizeSearchWorkspaceInput } from "../compatibility/searchInputCompatibility";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import {
   isPathInput,
   isApplyUnlinkedReferenceInput,
   isReplaceInFileInput,
-  isSearchAndReplaceInput
+  isSearchAndReplaceInput,
+  isSearchWorkspaceInput
 } from "./fileHandlerValidators";
 
 export function registerFileSearchHandlers(): void {
-  handleLocalizedIpc(searchWorkspaceChannel, async (_event, ...args: unknown[]) => {
+  handleLocalizedIpc(searchWorkspaceChannel, async (_event, input: unknown) => {
     try {
-      const searchInput = normalizeSearchWorkspaceInput(args.length === 1 ? args[0] : args);
-
-      if (!searchInput) {
+      if (!isSearchWorkspaceInput(input)) {
         return fail("SEARCH_INVALID_INPUT", "検索リクエストが正しくありません。");
       }
 
@@ -47,10 +45,10 @@ export function registerFileSearchHandlers(): void {
         { code: "SEARCH_FAILED", message: "検索できませんでした。" },
         async (context) => {
           if (
-            searchInput.mode === "frontmatter" &&
-            searchInput.frontmatterField?.trim() &&
+            input.mode === "frontmatter" &&
+            input.frontmatterField?.trim() &&
             !isRegisteredFrontmatterSearchField(
-              searchInput.frontmatterField,
+              input.frontmatterField,
               context.settings.userDefinedFields
             )
           ) {
@@ -59,7 +57,7 @@ export function registerFileSearchHandlers(): void {
 
           return workspaceSearchRequestCoordinator.run(
             context.activeWorkspace.id,
-            searchRequestKey(searchInput),
+            searchRequestKey(input),
             async ({ shouldContinue }) => {
               const data = await workspaceDataProvider.get({
                 maxSearchFileBytes: workspaceSearchMaxFileBytes,
@@ -70,9 +68,9 @@ export function registerFileSearchHandlers(): void {
 
               return searchWorkspace(
                 data.workspacePath,
-                searchInput.query,
-                searchInput.mode,
-                searchInput.frontmatterField,
+                input.query,
+                input.mode,
+                input.frontmatterField,
                 {
                   ...data.options,
                   shouldContinue

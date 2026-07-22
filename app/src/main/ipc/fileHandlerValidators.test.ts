@@ -28,8 +28,7 @@ import {
   isSearchAndReplaceInput,
   isSearchWorkspaceInput,
   isStartWorkspaceFileDragInput,
-  isWriteMarkdownFileInput,
-  normalizeSearchWorkspaceInput
+  isWriteMarkdownFileInput
 } from "./fileHandlerValidators";
 
 describe("fileHandlerValidators", () => {
@@ -162,68 +161,6 @@ describe("fileHandlerValidators", () => {
     expect(isSearchWorkspaceInput({ mode: "regex", query: "relic" })).toBe(false);
     expect(isSearchWorkspaceInput({ mode: "fullText", query: 1 })).toBe(false);
     expect(isSearchWorkspaceInput({ frontmatterField: 1, mode: "frontmatter", query: "draft" })).toBe(false);
-  });
-
-  it("normalizes workspace search input to the current shape", () => {
-    expect(normalizeSearchWorkspaceInput({ mode: "fileName", query: "note" })).toEqual({
-      mode: "fileName",
-      query: "note"
-    });
-    expect(normalizeSearchWorkspaceInput({
-      frontmatterField: undefined,
-      mode: "fullText",
-      query: "ファイル"
-    })).toEqual({
-      mode: "fullText",
-      query: "ファイル"
-    });
-    expect(normalizeSearchWorkspaceInput({
-      frontmatterField: "status",
-      searchMode: "frontmatter",
-      searchQuery: "draft"
-    })).toEqual({
-      frontmatterField: "status",
-      mode: "frontmatter",
-      query: "draft"
-    });
-    expect(normalizeSearchWorkspaceInput(["ファイル", "fullText"])).toEqual({
-      frontmatterField: undefined,
-      mode: "fullText",
-      query: "ファイル"
-    });
-    expect(normalizeSearchWorkspaceInput(["ファイル", "全文"])).toEqual({
-      frontmatterField: undefined,
-      mode: "fullText",
-      query: "ファイル"
-    });
-    expect(normalizeSearchWorkspaceInput({ mode: "全文", query: "ファイル" })).toEqual({
-      mode: "fullText",
-      query: "ファイル"
-    });
-    expect(normalizeSearchWorkspaceInput(["tag", "資料"])).toEqual({
-      frontmatterField: undefined,
-      mode: "tag",
-      query: "資料"
-    });
-    expect(normalizeSearchWorkspaceInput(["タグ", "資料"])).toEqual({
-      frontmatterField: undefined,
-      mode: "tag",
-      query: "資料"
-    });
-    expect(normalizeSearchWorkspaceInput(["regex", "^# "])).toBeNull();
-    expect(normalizeSearchWorkspaceInput({ searchMode: "正規表現", searchQuery: "^# " })).toBeNull();
-    expect(normalizeSearchWorkspaceInput("ファイル")).toEqual({
-      mode: "fullText",
-      query: "ファイル"
-    });
-    expect(normalizeSearchWorkspaceInput({ searchTerm: "ファイル", type: "fullText" })).toEqual({
-      mode: "fullText",
-      query: "ファイル"
-    });
-    expect(normalizeSearchWorkspaceInput({ searchMode: "unknown", searchQuery: "draft" })).toBeNull();
-    expect(normalizeSearchWorkspaceInput("x".repeat(maxSearchQueryLength + 1))).toBeNull();
-    expect(normalizeSearchWorkspaceInput(["x".repeat(maxSearchQueryLength + 1), "fullText"])).toBeNull();
-    expect(normalizeSearchWorkspaceInput(["frontmatter", "draft", "x".repeat(maxSearchQueryLength + 1)])).toBeNull();
   });
 
   it("validates move and trash inputs without accepting partial objects", () => {

@@ -2,9 +2,7 @@ import type { GenerateTableOfContentsInput } from "../../shared/ipc";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, type RelicResult } from "../../shared/result";
 import { readWorkspaceFileTree } from "../files/fileTree";
-import { resolveExistingWorkspacePathOrRoot } from "../files/paths";
-import { collectTableOfContentsLines, type ToolActionFileOperations } from "./toolCandidateCollectors";
-import { getToolWorkspaceContext, toolActionFileOperations } from "./toolActionRuntime";
+import { getToolWorkspaceContext } from "./toolActionRuntime";
 import { formatGeneratedMarkdownHeadingText } from "./toolMarkdownFormat";
 import { writeToolMarkdownOutput } from "./toolOutputFiles";
 import { resolveToolTargetPaths } from "./toolTargets";
@@ -16,39 +14,19 @@ interface TocPathNode {
 }
 
 export async function generateTableOfContents(
-  input: GenerateTableOfContentsInput,
-  operations: Partial<ToolActionFileOperations> = {}
+  input: GenerateTableOfContentsInput
 ): Promise<RelicResult<string>> {
-  const fileOperations = toolActionFileOperations(operations);
   const context = await getToolWorkspaceContext();
   if (!context.ok) return context;
 
   const { workspacePath } = context.value;
   const fileTree = await readWorkspaceFileTree(workspacePath);
   const wikiLinkForPath = createWikiLinkFormatter(collectMarkdownPathsFromTree(fileTree));
-  let lines: string[];
-  if (input.target) {
-    const targetPaths = await resolveToolTargetPaths(workspacePath, fileTree, input.target);
-    if (!targetPaths.ok) return targetPaths;
-    const baseFolder = input.target.kind === "folder" ? input.target.path : "";
-    lines = tableOfContentsLinesForPaths(targetPaths.value, baseFolder, wikiLinkForPath);
-  } else {
-    const legacyTargetFolder = input.targetFolder === "." ? "" : input.targetFolder;
-    const targetAbsPath = await resolveExistingWorkspacePathOrRoot(workspacePath, legacyTargetFolder);
-    if (!targetAbsPath.ok) return targetAbsPath;
-    lines = [];
-    await collectTableOfContentsLines(
-      targetAbsPath.value,
-      legacyTargetFolder,
-      0,
-      input.includeSubfolders,
-      lines,
-      wikiLinkForPath,
-      fileOperations,
-      false
-    );
-    if (lines.length === 0) return fail("TOOL_TARGET_EMPTY", "対象になるMarkdownファイルがありません。");
-  }
+  const targetPaths = await resolveToolTargetPaths(workspacePath, fileTree, input.target);
+  if (!targetPaths.ok) return targetPaths;
+  const baseFolder = input.target.kind === "folder" ? input.target.path : "";
+  const lines = tableOfContentsLinesForPaths(targetPaths.value, baseFolder, wikiLinkForPath);
+  if (lines.length === 0) return fail("TOOL_TARGET_EMPTY", "対象になるMarkdownファイルがありません。");
 
   return writeToolMarkdownOutput(
     workspacePath,

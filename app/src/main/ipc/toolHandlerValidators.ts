@@ -28,8 +28,8 @@ function hasOptionalString(input: Record<string, unknown>, key: string): boolean
   return !(key in input) || input[key] === undefined || typeof input[key] === "string";
 }
 
-function hasOptionalToolTarget(input: Record<string, unknown>): boolean {
-  if (!("target" in input) || input.target === undefined) return true;
+function hasToolTarget(input: Record<string, unknown>): boolean {
+  if (!("target" in input)) return false;
   if (!isRecord(input.target)) return false;
   if (input.target.kind === "workspace") return Object.keys(input.target).length === 1;
   if (input.target.kind === "folder") {
@@ -56,31 +56,27 @@ export function isGenerateTitleListInput(input: unknown): input is GenerateTitle
     hasWorkspaceFolder(input, "outputFolder") &&
     hasString(input, "outputName") &&
     (input.sortBy === "name" || input.sortBy === "mtime") &&
-    hasOptionalToolTarget(input)
+    hasToolTarget(input)
   );
 }
 
 export function isGenerateTableOfContentsInput(input: unknown): input is GenerateTableOfContentsInput {
   return (
     isRecord(input) &&
-    typeof input.includeSubfolders === "boolean" &&
     hasWorkspaceFolder(input, "outputFolder") &&
     hasString(input, "outputName") &&
-    hasWorkspaceFolder(input, "targetFolder") &&
-    hasOptionalToolTarget(input)
+    hasToolTarget(input)
   );
 }
 
 export function isGenerateTagIndexInput(input: unknown): input is GenerateTagIndexInput {
   return (
     isRecord(input) &&
-    typeof input.includeSubfolders === "boolean" &&
     typeof input.includeUntagged === "boolean" &&
     hasWorkspaceFolder(input, "outputFolder") &&
     hasString(input, "outputName") &&
     (input.sortBy === "name" || input.sortBy === "mtime") &&
-    hasWorkspaceFolder(input, "targetFolder") &&
-    hasOptionalToolTarget(input)
+    hasToolTarget(input)
   );
 }
 
@@ -98,6 +94,6 @@ export function isMergeFilesInput(input: unknown): input is MergeFilesInput {
     hasWorkspaceFolder(input, "outputFolder") &&
     hasString(input, "outputName") &&
     (input.sortBy === "name" || input.sortBy === "mtime" || input.sortBy === "ctime") &&
-    hasOptionalToolTarget(input)
+    hasToolTarget(input)
   );
 }

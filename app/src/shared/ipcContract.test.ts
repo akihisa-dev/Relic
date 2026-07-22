@@ -4,7 +4,7 @@ import { relicApiContractVersion, relicIpcContract } from "./ipc";
 
 describe("IPC public contract", () => {
   it("契約バージョンと既存チャンネル文字列を維持する", () => {
-    expect(relicApiContractVersion).toBe(3);
+    expect(relicApiContractVersion).toBe(4);
     expect(contractChannels()).toEqual({
       applySearchAndReplace: "workspace:applySearchAndReplace",
       applyUnlinkedReference: "workspace:applyUnlinkedReference",

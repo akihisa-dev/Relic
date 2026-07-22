@@ -61,24 +61,20 @@ describe("toolActions", () => {
     const tocWorkspace = await prepareActiveWorkspace();
     await writeFile(path.join(tocWorkspace.workspacePath, "note.md"), source, "utf8");
     await expect(generateTableOfContents({
-      includeSubfolders: true,
       outputFolder: "",
       outputName: "Toc",
       target: { kind: "workspace" },
-      targetFolder: ""
     })).resolves.toMatchObject({ ok: true, value: "Toc.md" });
     await expect(readFile(path.join(tocWorkspace.workspacePath, "note.md"), "utf8")).resolves.toBe(source);
 
     const tagWorkspace = await prepareActiveWorkspace();
     await writeFile(path.join(tagWorkspace.workspacePath, "note.md"), source, "utf8");
     await expect(generateTagIndex({
-      includeSubfolders: true,
       includeUntagged: false,
       outputFolder: "",
       outputName: "Tags",
       sortBy: "name",
       target: { kind: "workspace" },
-      targetFolder: ""
     })).resolves.toMatchObject({ ok: true, value: "Tags.md" });
     await expect(readFile(path.join(tagWorkspace.workspacePath, "note.md"), "utf8")).resolves.toBe(source);
 
@@ -144,11 +140,9 @@ describe("toolActions", () => {
     await writeFile(path.join(workspacePath, "notes", "child", "b.md"), "B", "utf8");
 
     const result = await generateTableOfContents({
-      includeSubfolders: true,
       outputFolder: "",
       outputName: "Toc",
       target: { kind: "folder", path: "notes" },
-      targetFolder: ""
     });
 
     expect(result).toEqual({ ok: true, value: "Toc.md" });
@@ -164,13 +158,11 @@ describe("toolActions", () => {
     await writeFile(path.join(workspacePath, "other.md"), "---\ntags: [other]\n---\n", "utf8");
 
     const result = await generateTagIndex({
-      includeSubfolders: true,
       includeUntagged: false,
       outputFolder: "",
       outputName: "Tags",
       sortBy: "name",
       target: { kind: "files", paths: ["a.md", "b.md"] },
-      targetFolder: ""
     });
 
     expect(result).toEqual({ ok: true, value: "Tags.md" });
@@ -184,13 +176,11 @@ describe("toolActions", () => {
     await mkdir(path.join(workspacePath, "empty"));
 
     const result = await generateTagIndex({
-      includeSubfolders: true,
       includeUntagged: false,
       outputFolder: "",
       outputName: "Tags",
       sortBy: "name",
       target: { kind: "folder", path: "empty" },
-      targetFolder: ""
     });
 
     expect(result).toMatchObject({ error: { code: "TOOL_TARGET_EMPTY" }, ok: false });
@@ -204,7 +194,8 @@ describe("toolActions", () => {
     const result = await generateTitleList({
       outputFolder: ".",
       outputName: "Titles",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     });
 
     expect(result).toEqual({ ok: true, value: "Titles.md" });
@@ -219,7 +210,8 @@ describe("toolActions", () => {
     const result = await generateTitleList({
       outputFolder: ".",
       outputName: "Titles.md",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     });
 
     expect(result).toEqual({ ok: true, value: "Titles.md" });
@@ -273,7 +265,8 @@ describe("toolActions", () => {
     const result = await generateTitleList({
       outputFolder: ".",
       outputName: "Titles",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     });
 
     expect(result).toEqual({ ok: true, value: "Titles-1.md" });
@@ -290,7 +283,8 @@ describe("toolActions", () => {
     await expect(generateTitleList({
       outputFolder: ".",
       outputName: "Bad\u0000Name",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     })).resolves.toMatchObject({
       error: { code: "TOOL_OUTPUT_NAME_INVALID" },
       ok: false
@@ -298,7 +292,8 @@ describe("toolActions", () => {
     await expect(generateTitleList({
       outputFolder: ".",
       outputName: "Bad:Name",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     })).resolves.toMatchObject({
       error: { code: "TOOL_OUTPUT_NAME_INVALID" },
       ok: false
@@ -317,7 +312,8 @@ describe("toolActions", () => {
       {
         outputFolder: ".",
         outputName: "Titles",
-        sortBy: "name"
+        sortBy: "name",
+        target: { kind: "workspace" }
       },
       {
         async stat(filePath) {
@@ -343,7 +339,8 @@ describe("toolActions", () => {
     const result = await generateTitleList({
       outputFolder: "indexes",
       outputName: "Titles",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     });
 
     expect(result).toEqual({ ok: true, value: "indexes/Titles.md" });
@@ -366,7 +363,8 @@ describe("toolActions", () => {
     const result = await generateTitleList({
       outputFolder: "indexes",
       outputName: "Titles",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     });
 
     expect(result).toEqual({ ok: true, value: "indexes/Titles.md" });
@@ -395,7 +393,8 @@ describe("toolActions", () => {
         insertFilenameHeading: false,
         outputFolder: ".",
         outputName: "Merged",
-        sortBy: "name"
+        sortBy: "name",
+        target: { kind: "workspace" }
       },
       {
         async stat(filePath) {
@@ -424,7 +423,8 @@ describe("toolActions", () => {
         insertFilenameHeading: false,
         outputFolder: ".",
         outputName: "Merged",
-        sortBy: "name"
+        sortBy: "name",
+        target: { kind: "workspace" }
       },
       {
         async readFile(filePath, encoding) {
@@ -455,7 +455,8 @@ describe("toolActions", () => {
         insertFilenameHeading: false,
         outputFolder: ".",
         outputName: "Merged",
-        sortBy: "name"
+        sortBy: "name",
+        target: { kind: "workspace" }
       },
       {
         async readFile(filePath, encoding) {
@@ -485,7 +486,8 @@ describe("toolActions", () => {
         insertFilenameHeading: false,
         outputFolder: ".",
         outputName: "Merged",
-        sortBy: "name"
+        sortBy: "name",
+        target: { kind: "workspace" }
       },
       {
         async readFile(filePath, encoding) {
@@ -517,7 +519,8 @@ describe("toolActions", () => {
       insertFilenameHeading: false,
       outputFolder: ".",
       outputName: "Merged",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     });
 
     expect(result).toEqual({ ok: true, value: "Merged.md" });
@@ -535,7 +538,8 @@ describe("toolActions", () => {
       insertFilenameHeading: true,
       outputFolder: ".",
       outputName: "Merged",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     });
 
     expect(result).toEqual({ ok: true, value: "Merged.md" });
@@ -552,7 +556,8 @@ describe("toolActions", () => {
     const result = await generateTitleList({
       outputFolder: "linked-out",
       outputName: "Titles",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     });
 
     expect(result).toMatchObject({
@@ -570,10 +575,9 @@ describe("toolActions", () => {
     await symlink(outsidePath, path.join(workspacePath, "linked-out"), "dir");
 
     const result = await generateTableOfContents({
-      includeSubfolders: true,
       outputFolder: ".",
       outputName: "Toc",
-      targetFolder: "linked-out"
+      target: { kind: "folder", path: "linked-out" }
     });
 
     expect(result).toMatchObject({
@@ -585,38 +589,6 @@ describe("toolActions", () => {
     });
   });
 
-  it("再帰中に読めない子フォルダはスキップして目次生成を続行する", async () => {
-    const { workspacePath } = await prepareActiveWorkspace();
-    await mkdir(path.join(workspacePath, "blocked"));
-    await mkdir(path.join(workspacePath, "visible"));
-    await writeFile(path.join(workspacePath, "root.md"), "# Root\n", "utf8");
-    await writeFile(path.join(workspacePath, "blocked", "hidden.md"), "# Hidden\n", "utf8");
-    await writeFile(path.join(workspacePath, "visible", "note.md"), "# Note\n", "utf8");
-
-    const result = await generateTableOfContents(
-      {
-        includeSubfolders: true,
-        outputFolder: ".",
-        outputName: "Toc",
-        targetFolder: "."
-      },
-      {
-        async readdir(directoryPath, options) {
-          if (path.basename(directoryPath) === "blocked") {
-            throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
-          }
-
-          return readdir(directoryPath, options);
-        }
-      }
-    );
-
-    expect(result).toEqual({ ok: true, value: "Toc.md" });
-    await expect(readFile(path.join(workspacePath, "Toc.md"), "utf8")).resolves.toBe(
-      "- **visible/**\n  - [[note]]\n- [[root]]\n"
-    );
-  });
-
   it("目次生成はサブフォルダ内の既存ファイルへのリンクを生成する", async () => {
     const { workspacePath } = await prepareActiveWorkspace();
     await mkdir(path.join(workspacePath, "notes"));
@@ -624,10 +596,9 @@ describe("toolActions", () => {
     await writeFile(path.join(workspacePath, "notes", "child.md"), "# Child\n", "utf8");
 
     const result = await generateTableOfContents({
-      includeSubfolders: true,
       outputFolder: "indexes",
       outputName: "Toc",
-      targetFolder: "."
+      target: { kind: "workspace" }
     });
 
     expect(result).toEqual({ ok: true, value: "indexes/Toc.md" });
@@ -648,10 +619,9 @@ describe("toolActions", () => {
     await writeFile(path.join(workspacePath, "root.md"), "# Root\n", "utf8");
 
     const result = await generateTableOfContents({
-      includeSubfolders: true,
       outputFolder: "indexes",
       outputName: "Toc",
-      targetFolder: "."
+      target: { kind: "workspace" }
     });
 
     expect(result).toEqual({ ok: true, value: "indexes/Toc.md" });
@@ -673,12 +643,11 @@ describe("toolActions", () => {
     await writeFile(path.join(workspacePath, "notes", "untagged.md"), "# Untagged\n", "utf8");
 
     const result = await generateTagIndex({
-      includeSubfolders: true,
       includeUntagged: true,
       outputFolder: "indexes",
       outputName: "Tags",
       sortBy: "name",
-      targetFolder: "notes"
+      target: { kind: "folder", path: "notes" }
     });
 
     expect(result).toEqual({ ok: true, value: "indexes/Tags.md" });
@@ -704,12 +673,11 @@ describe("toolActions", () => {
     await writeFile(path.join(workspacePath, "notes", "会議.md"), "# Meeting\n", "utf8");
 
     const result = await generateTagIndex({
-      includeSubfolders: true,
       includeUntagged: true,
       outputFolder: ".",
       outputName: "Index",
       sortBy: "name",
-      targetFolder: "notes"
+      target: { kind: "folder", path: "notes" }
     }, {}, createTranslator("en"));
 
     expect(result).toEqual({ ok: true, value: "Index.md" });
@@ -726,12 +694,11 @@ describe("toolActions", () => {
     await writeFile(path.join(workspacePath, "notes", "normal.md"), "---\ntags: [通常]\n---\n# Normal\n", "utf8");
 
     const result = await generateTagIndex({
-      includeSubfolders: true,
       includeUntagged: false,
       outputFolder: ".",
       outputName: "Tags",
       sortBy: "name",
-      targetFolder: "notes"
+      target: { kind: "folder", path: "notes" }
     });
 
     expect(result).toEqual({ ok: true, value: "Tags.md" });
@@ -740,7 +707,7 @@ describe("toolActions", () => {
     );
   });
 
-  it("タグ別索引はサブフォルダを含めない指定と読めない候補の除外を扱う", async () => {
+  it("タグ別索引は明示された対象だけを使い読めない候補を除外する", async () => {
     const { workspacePath } = await prepareActiveWorkspace();
     await mkdir(path.join(workspacePath, "notes"));
     await mkdir(path.join(workspacePath, "notes", "child"));
@@ -750,12 +717,11 @@ describe("toolActions", () => {
 
     const result = await generateTagIndex(
       {
-        includeSubfolders: false,
         includeUntagged: false,
         outputFolder: "",
         outputName: "Tags",
         sortBy: "name",
-        targetFolder: "notes"
+        target: { kind: "files", paths: ["notes/visible.md", "notes/blocked.md"] }
       },
       {
         async readFile(filePath, encoding) {
@@ -780,12 +746,11 @@ describe("toolActions", () => {
     await symlink(outsidePath, path.join(workspacePath, "linked-out"), "dir");
 
     const result = await generateTagIndex({
-      includeSubfolders: true,
       includeUntagged: false,
       outputFolder: "",
       outputName: "Tags",
       sortBy: "name",
-      targetFolder: "linked-out"
+      target: { kind: "folder", path: "linked-out" }
     });
 
     expect(result).toMatchObject({

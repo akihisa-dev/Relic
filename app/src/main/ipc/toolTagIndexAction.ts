@@ -6,7 +6,6 @@ import { fail, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
 import { mapWithConcurrency } from "../files/concurrency";
 import { readWorkspaceFileTree } from "../files/fileTree";
-import { resolveExistingWorkspacePathOrRoot } from "../files/paths";
 import {
   collectTagIndexFiles,
   type FileCandidate,
@@ -33,24 +32,10 @@ export async function generateTagIndex(
 
   const { workspacePath } = context.value;
   const fileTree = await readWorkspaceFileTree(workspacePath);
-  let collected: FileCandidate[];
-  if (input.target) {
-    const targetPaths = await resolveToolTargetPaths(workspacePath, fileTree, input.target);
-    if (!targetPaths.ok) return targetPaths;
-    collected = (await collectTagIndexFiles(workspacePath, fileTree, "", true, fileOperations))
-      .filter((file) => targetPaths.value.has(file.relPath));
-  } else {
-    const legacyTargetFolder = input.targetFolder === "." ? "" : input.targetFolder;
-    const targetAbsPath = await resolveExistingWorkspacePathOrRoot(workspacePath, legacyTargetFolder);
-    if (!targetAbsPath.ok) return targetAbsPath;
-    collected = await collectTagIndexFiles(
-      workspacePath,
-      fileTree,
-      legacyTargetFolder,
-      input.includeSubfolders,
-      fileOperations
-    );
-  }
+  const targetPaths = await resolveToolTargetPaths(workspacePath, fileTree, input.target);
+  if (!targetPaths.ok) return targetPaths;
+  const collected: FileCandidate[] = (await collectTagIndexFiles(workspacePath, fileTree, fileOperations))
+    .filter((file) => targetPaths.value.has(file.relPath));
   if (collected.length === 0) return fail("TOOL_TARGET_EMPTY", "対象になるMarkdownファイルがありません。");
 
   const wikiLinkForPath = createWikiLinkFormatter(collectMarkdownPathsFromTree(fileTree));

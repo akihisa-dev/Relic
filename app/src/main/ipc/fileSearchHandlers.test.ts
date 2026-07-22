@@ -203,6 +203,18 @@ describe("fileSearchHandlers", () => {
     expect(electronMock.getPath).not.toHaveBeenCalled();
   });
 
+  it.each([
+    "needle",
+    ["needle", "fullText"],
+    { searchMode: "fullText", searchQuery: "needle" },
+    { mode: "全文", query: "needle" }
+  ])("rejects a retired search input shape before accessing the workspace", async (input) => {
+    const result = await handlerFor(searchWorkspaceChannel)(undefined, input);
+
+    expect(result).toMatchObject({ error: { code: "SEARCH_INVALID_INPUT" }, ok: false });
+    expect(electronMock.getPath).not.toHaveBeenCalled();
+  });
+
   it("returns WORKSPACE_NOT_SELECTED when a valid request has no active workspace", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-search-handler-user-"));
     temporaryPaths.push(userDataPath);

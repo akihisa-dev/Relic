@@ -38,15 +38,15 @@ export function useFileToolActions({ onOpenFile, onShowToast, t }: UseFileToolAc
 
     const execute = async () => {
       if (toolId === "titleList") {
-        return relicClient.current!.generateTitleList({ ...buildTitleListInput(createDefaultTitleListDraft(callbacks.t), callbacks.t), target });
+        return relicClient.current!.generateTitleList(buildTitleListInput(createDefaultTitleListDraft(callbacks.t), callbacks.t, target));
       }
       if (toolId === "toc") {
-        return relicClient.current!.generateTableOfContents({ ...buildTocInput(createDefaultTocDraft(callbacks.t), callbacks.t), target });
+        return relicClient.current!.generateTableOfContents(buildTocInput(createDefaultTocDraft(callbacks.t), callbacks.t, target));
       }
       if (toolId === "tagIndex") {
-        return relicClient.current!.generateTagIndex({ ...buildTagIndexInput(createDefaultTagIndexDraft(callbacks.t), callbacks.t), target });
+        return relicClient.current!.generateTagIndex(buildTagIndexInput(createDefaultTagIndexDraft(callbacks.t), callbacks.t, target));
       }
-      return relicClient.current!.mergeFiles({ ...buildMergeFilesInput(createDefaultMergeFilesDraft(callbacks.t), callbacks.t), target });
+      return relicClient.current!.mergeFiles(buildMergeFilesInput(createDefaultMergeFilesDraft(callbacks.t), callbacks.t, target));
     };
 
     void execute()

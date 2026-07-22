@@ -14,82 +14,72 @@ describe("toolHandlerValidators", () => {
       filterFolder: "Notes",
       outputFolder: "",
       outputName: "Titles",
-      sortBy: "mtime"
+      sortBy: "mtime",
+      target: { kind: "workspace" }
     })).toBe(true);
     expect(isGenerateTitleListInput({
       outputFolder: "",
       outputName: "Titles",
-      sortBy: "ctime"
+      sortBy: "ctime",
+      target: { kind: "workspace" }
     })).toBe(false);
     expect(isGenerateTitleListInput({
       filterFolder: " Notes ",
       outputFolder: "",
       outputName: "Titles",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     })).toBe(false);
     expect(isGenerateTitleListInput({
       outputFolder: "../outside",
       outputName: "Titles",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     })).toBe(false);
     expect(isGenerateTableOfContentsInput({
-      includeSubfolders: true,
       outputFolder: "",
       outputName: "Toc",
-      targetFolder: "Notes"
+      target: { kind: "folder", path: "Notes" }
     })).toBe(true);
     expect(isGenerateTableOfContentsInput({
-      includeSubfolders: true,
       outputFolder: "",
-      outputName: "Toc",
-      targetFolder: ""
-    })).toBe(true);
-    expect(isGenerateTableOfContentsInput({
-      includeSubfolders: true,
-      outputFolder: "",
-      outputName: "Toc",
-      targetFolder: "."
+      outputName: "Toc"
     })).toBe(false);
     expect(isGenerateTableOfContentsInput({
-      includeSubfolders: "true",
       outputFolder: "",
       outputName: "Toc",
-      targetFolder: "Notes"
+      target: { kind: "folder", path: "../Notes" }
     })).toBe(false);
   });
 
   it("validates tag index inputs", () => {
     expect(isGenerateTagIndexInput({
-      includeSubfolders: true,
       includeUntagged: false,
       outputFolder: "",
       outputName: "Tags",
       sortBy: "name",
-      targetFolder: "Notes"
+      target: { kind: "folder", path: "Notes" }
     })).toBe(true);
     expect(isGenerateTagIndexInput({
-      includeSubfolders: true,
       includeUntagged: false,
       outputFolder: "",
       outputName: "Tags",
       sortBy: "ctime",
-      targetFolder: "Notes"
+      target: { kind: "folder", path: "Notes" }
     })).toBe(false);
     expect(isGenerateTagIndexInput({
-      includeSubfolders: true,
       includeUntagged: false,
       outputFolder: "../outside",
       outputName: "Tags",
       sortBy: "name",
-      targetFolder: "Notes"
+      target: { kind: "folder", path: "Notes" }
     })).toBe(false);
     expect(isGenerateTagIndexInput({
-      includeSubfolders: true,
       includeUntagged: "false",
       outputFolder: "",
       outputName: "Tags",
       sortBy: "name",
-      targetFolder: "Notes"
+      target: { kind: "folder", path: "Notes" }
     })).toBe(false);
   });
 
@@ -101,7 +91,8 @@ describe("toolHandlerValidators", () => {
       insertFilenameHeading: true,
       outputFolder: "",
       outputName: "Merged",
-      sortBy: "ctime"
+      sortBy: "ctime",
+      target: { kind: "workspace" }
     })).toBe(true);
     expect(isMergeFilesInput({
       filterType: "all",
@@ -109,7 +100,8 @@ describe("toolHandlerValidators", () => {
       insertFilenameHeading: true,
       outputFolder: "",
       outputName: "Merged",
-      sortBy: "created"
+      sortBy: "created",
+      target: { kind: "workspace" }
     })).toBe(false);
     expect(isMergeFilesInput({
       filterType: "folder",
@@ -117,7 +109,8 @@ describe("toolHandlerValidators", () => {
       insertFilenameHeading: true,
       outputFolder: "",
       outputName: "Merged",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     })).toBe(false);
   });
 

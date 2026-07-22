@@ -19,25 +19,21 @@ export interface GenerateTitleListInput {
   outputFolder: string;
   outputName: string;
   sortBy: "name" | "mtime";
-  target?: ToolTarget;
+  target: ToolTarget;
 }
 
 export interface GenerateTableOfContentsInput {
-  includeSubfolders: boolean;
   outputFolder: string;
   outputName: string;
-  targetFolder: string;
-  target?: ToolTarget;
+  target: ToolTarget;
 }
 
 export interface GenerateTagIndexInput {
-  includeSubfolders: boolean;
   includeUntagged: boolean;
   outputFolder: string;
   outputName: string;
   sortBy: "name" | "mtime";
-  targetFolder: string;
-  target?: ToolTarget;
+  target: ToolTarget;
 }
 
 export type MergeFilterType = "folder" | "frontmatter" | "tag" | "all";
@@ -51,7 +47,7 @@ export interface MergeFilesInput {
   outputFolder: string;
   outputName: string;
   sortBy: MergeSortBy;
-  target?: ToolTarget;
+  target: ToolTarget;
 }
 
 export interface ToolsApi {

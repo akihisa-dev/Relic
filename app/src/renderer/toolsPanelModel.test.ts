@@ -19,17 +19,17 @@ const t = createTranslator("en");
 
 describe("toolsPanelModel", () => {
   it("builds title list and toc inputs with existing fallback defaults", () => {
-    expect(buildTitleListInput(createDefaultTitleListDraft(t), t)).toEqual({
+    expect(buildTitleListInput(createDefaultTitleListDraft(t), t, { kind: "workspace" })).toEqual({
       filterFolder: undefined,
       outputFolder: "",
       outputName: "Title List",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     });
-    expect(buildTocInput(createDefaultTocDraft(t), t)).toEqual({
-      includeSubfolders: true,
+    expect(buildTocInput(createDefaultTocDraft(t), t, { kind: "folder", path: "Notes" })).toEqual({
       outputFolder: "",
       outputName: "Table of Contents",
-      targetFolder: ""
+      target: { kind: "folder", path: "Notes" }
     });
   });
 
@@ -38,17 +38,15 @@ describe("toolsPanelModel", () => {
       ...createDefaultTagIndexDraft(t),
       includeUntagged: true,
       outputName: "",
-      sortBy: "mtime" as const,
-      targetFolder: "Notes"
+      sortBy: "mtime" as const
     };
 
-    expect(buildTagIndexInput(draft, t)).toEqual({
-      includeSubfolders: true,
+    expect(buildTagIndexInput(draft, t, { kind: "folder", path: "Notes" })).toEqual({
       includeUntagged: true,
       outputFolder: "",
       outputName: "Tag Index",
       sortBy: "mtime",
-      targetFolder: "Notes"
+      target: { kind: "folder", path: "Notes" }
     });
   });
 
@@ -61,16 +59,17 @@ describe("toolsPanelModel", () => {
       outputName: ""
     };
 
-    expect(buildMergeFilesInput(draft, t)).toEqual({
+    expect(buildMergeFilesInput(draft, t, { kind: "workspace" })).toEqual({
       filterType: "frontmatter",
       filterValue: "draft",
       frontmatterField: "status",
       insertFilenameHeading: true,
       outputFolder: "",
       outputName: "Merged Result",
-      sortBy: "name"
+      sortBy: "name",
+      target: { kind: "workspace" }
     });
-    expect(buildMergeFilesInput({ ...draft, filterType: "tag" }, t).frontmatterField).toBeUndefined();
+    expect(buildMergeFilesInput({ ...draft, filterType: "tag" }, t, { kind: "workspace" }).frontmatterField).toBeUndefined();
   });
 
   it("formats tool statuses", () => {

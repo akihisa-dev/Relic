@@ -4,7 +4,7 @@ import { readWorkspaceFileTree } from "../files/fileTree";
 import { collectTitleListFiles, type ToolActionFileOperations } from "./toolCandidateCollectors";
 import { getToolWorkspaceContext, toolActionFileOperations } from "./toolActionRuntime";
 import { writeToolMarkdownOutput } from "./toolOutputFiles";
-import { defaultToolTarget, resolveToolTargetPaths } from "./toolTargets";
+import { resolveToolTargetPaths } from "./toolTargets";
 import { collectMarkdownPathsFromTree, createWikiLinkFormatter } from "./toolWikiLinks";
 
 export async function generateTitleList(
@@ -17,10 +17,7 @@ export async function generateTitleList(
 
   const { workspacePath } = context.value;
   const fileTree = await readWorkspaceFileTree(workspacePath);
-  const target = input.target ?? (input.filterFolder
-    ? { kind: "folder" as const, path: input.filterFolder }
-    : defaultToolTarget());
-  const targetPaths = await resolveToolTargetPaths(workspacePath, fileTree, target);
+  const targetPaths = await resolveToolTargetPaths(workspacePath, fileTree, input.target);
   if (!targetPaths.ok) return targetPaths;
   const collected = (await collectTitleListFiles(workspacePath, fileTree, undefined, fileOperations))
     .filter((file) => targetPaths.value.has(file.path));

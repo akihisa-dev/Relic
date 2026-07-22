@@ -1,5 +1,4 @@
-import type { Dirent } from "node:fs";
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 
 import { app } from "electron";
 
@@ -14,7 +13,6 @@ interface ToolWorkspaceContext {
 
 const defaultToolActionFileOperations: ToolActionFileOperations = {
   readFile,
-  readdir: (directoryPath, options) => readdir(directoryPath, options) as Promise<Dirent<string>[]>,
   stat
 };
 
