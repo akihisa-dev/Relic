@@ -44,7 +44,6 @@ export interface UseAppRailNavigationResult {
   panelRailViews: Array<AppRailView<ReactElement>>;
   primaryRailViews: Array<AppRailView<ReactElement>>;
   renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
-  sidebarViews: Array<AppRailView<ReactElement>>;
 }
 
 export function useAppRailNavigation({
@@ -157,8 +156,7 @@ export function useAppRailNavigation({
     panelLabels,
     panelRailViews,
     primaryRailViews,
-    renderPanelTabIcon,
-    sidebarViews
+    renderPanelTabIcon
   };
 }
 

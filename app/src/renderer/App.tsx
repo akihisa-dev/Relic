@@ -19,7 +19,6 @@ import { useAppPanePresentationState } from "./hooks/useAppPanePresentationState
 import { useAppPaneFileActions } from "./hooks/useAppPaneFileActions";
 import { useAppPreviewOutputActions } from "./hooks/useAppPreviewOutputActions";
 import { useAppRailNavigation } from "./hooks/useAppRailNavigation";
-import { useAppRailSidebarSelection } from "./hooks/useAppRailSidebarSelection";
 import { useAppRightPanel } from "./hooks/useAppRightPanel";
 import { useAppSettingsState } from "./hooks/useAppSettingsState";
 import { useAppTabRenderers } from "./hooks/useAppTabRenderers";
@@ -368,7 +367,7 @@ export function App(): ReactElement {
       setShowQuickSwitcher((current) => !current);
     },
     "open-search": openQuickSwitcher,
-    "open-settings": () => setSidebarView("settings"),
+    "open-settings": () => openPanelInPane(focusedPane, "settings", t("nav.settings")),
     "reopen-closed-tab": reopenClosedTab,
     "toggle-right-panel": toggleRightPanelIfAvailable,
     "toggle-sidebar": toggleSidebar,
@@ -379,12 +378,14 @@ export function App(): ReactElement {
     focusedPane,
     leftPane,
     openQuickSwitcher,
+    openPanelInPane,
     reopenClosedTab,
     rightPane,
     setIsCreatingFile,
     setShowCommandPalette,
     setShowQuickSwitcher,
     setSidebarView,
+    t,
     toggleRightPanelIfAvailable,
     toggleSidebar,
     toggleSplitWithMotion,
@@ -498,11 +499,9 @@ export function App(): ReactElement {
     handleRailPanelButton,
     openChartIds,
     openPanelTabIds,
-    panelLabels,
     panelRailViews,
     primaryRailViews,
-    renderPanelTabIcon,
-    sidebarViews
+    renderPanelTabIcon
   } = useAppRailNavigation({
     clearRailTabFlight,
     closeSidebar,
@@ -517,12 +516,7 @@ export function App(): ReactElement {
     tabs
   });
 
-  const setRailSidebarView = useAppRailSidebarSelection({
-    focusedPane,
-    openPanelInPane,
-    panelLabels,
-    setSidebarView
-  });
+  const setRailSidebarView = setSidebarView;
 
   const handleOpenGraphTagSearch = useCallback((tag: string): void => {
     setSearchMode("tag");
@@ -620,8 +614,6 @@ export function App(): ReactElement {
       workspaceState
     },
     filesSidebar: {
-      activeSidebarView,
-      closeSidebar,
       fileSelectionCount,
       handleCreateFileFromSidebar,
       handleCreateFileInFolder,
@@ -661,7 +653,6 @@ export function App(): ReactElement {
       searchQuery,
       searchResults,
       setFileSelectionCount,
-      sidebarViews,
       sidebarWidth,
       startSidebarResize,
       t,

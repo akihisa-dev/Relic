@@ -3,7 +3,7 @@ import type { Translator } from "./i18nModel";
 import type { PaneState, PanelTabKind, Tab } from "./store/editorStore";
 import type { SidebarView } from "./store/uiStore";
 
-export type AppRailViewId = SidebarView | PanelTabKind | "cards" | "graph" | "sphere" | "table";
+export type AppRailViewId = SidebarView | PanelTabKind | "cards" | "graph" | "sphere" | "table" | "chronicle";
 
 export interface AppRailView<TIcon = unknown> {
   icon: TIcon;

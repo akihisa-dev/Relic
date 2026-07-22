@@ -68,6 +68,27 @@ describe("App navigation and shortcuts", () => {
     });
   });
 
+  it("コマンドパレットの設定は空のサイドバーではなく設定タブを開く", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+    fireEvent.keyDown(window, { key: "P", metaKey: true, shiftKey: true });
+
+    const input = await screen.findByRole("textbox", { name: "コマンドパレット" });
+    fireEvent.change(input, { target: { value: "設定" } });
+    const palette = container.querySelector(".command-palette");
+    if (!(palette instanceof HTMLElement)) throw new Error("command palette was not rendered");
+    fireEvent.click(within(palette).getByRole("button", { name: "設定を開く" }));
+
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-settings");
+    expect(useUiStore.getState().activeSidebarView).toBe("files");
+    expect(container.querySelector(".sidebar-view-content--settings")).not.toBeInTheDocument();
+  });
+
   it("別の画面タブを開いた後でも開いているレールボタンを押すと対象タブをアクティブにする", async () => {
     window.relic = makeRelicApi({
       getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),

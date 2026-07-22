@@ -13,7 +13,7 @@ import {
   IconTable
 } from "./RailNavigationIcons";
 
-type RailViewId = SidebarView | PanelTabKind | "cards" | "graph" | "sphere" | "table";
+type RailViewId = SidebarView | PanelTabKind | "cards" | "graph" | "sphere" | "table" | "chronicle";
 
 export const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; icon: ReactElement }> = [
   { id: "files", labelKey: "nav.files", icon: <IconFiles /> },
