@@ -1,5 +1,6 @@
 export {
   markFileTabSavedState,
+  markFileTabSavedCheckpointState,
   resolveFileTabExternalConflictState,
   setFileTabExternalConflictState,
   updateFileTabContentState,

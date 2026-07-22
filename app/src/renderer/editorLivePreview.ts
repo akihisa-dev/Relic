@@ -1,4 +1,5 @@
-import { Decoration, EditorView, WidgetType, type DecorationSet } from "@codemirror/view";
+import { StateEffect } from "@codemirror/state";
+import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
 import { diagramLanguageFor } from "./diagramLanguage";
 import { diagramEditRangeField } from "./editorDiagramEditState";
@@ -41,6 +42,79 @@ export {
   type __CodeBlockDecorationTestHooks
 } from "./editorLivePreviewBlockField";
 export { findClickableLinkAtPosition, type ClickableLinkAtPosition } from "./editorLivePreviewModel";
+
+export const livePreviewCompositionEndedEffect = StateEffect.define<null>();
+
+export interface LivePreviewDecorationTestHooks {
+  onRebuild?: (reason: "create" | "compositionEnd" | "docChanged" | "selection" | "viewport" | "focus" | "editorState") => void;
+}
+
+export function createLivePreviewDecorationsPlugin(
+  onOpenClickableLink?: (link: ClickableLinkAtPosition) => void,
+  t: Translator = createTranslator("system"),
+  workspacePath?: string | null,
+  sourcePath?: string,
+  workspaceRevision = 0,
+  testHooks?: LivePreviewDecorationTestHooks
+) {
+  return ViewPlugin.fromClass(class {
+    decorations: DecorationSet;
+    private wasComposing = false;
+
+    constructor(view: EditorView) {
+      testHooks?.onRebuild?.("create");
+      this.decorations = buildLivePreviewDecorations(
+        view,
+        onOpenClickableLink,
+        t,
+        workspacePath,
+        sourcePath,
+        workspaceRevision
+      );
+    }
+
+    update(update: ViewUpdate): void {
+      if (update.view.composing) {
+        if (update.docChanged) this.decorations = this.decorations.map(update.changes);
+        this.wasComposing = true;
+        return;
+      }
+
+      const previousDiagramEditRange = update.startState.field(diagramEditRangeField, false);
+      const nextDiagramEditRange = update.state.field(diagramEditRangeField, false);
+      const compositionEnded = update.transactions.some((transaction) => (
+        transaction.effects.some((effect) => effect.is(livePreviewCompositionEndedEffect))
+      ));
+      const reason = this.wasComposing || compositionEnded
+        ? "compositionEnd"
+        : update.docChanged
+          ? "docChanged"
+          : update.selectionSet
+            ? "selection"
+            : update.viewportChanged
+              ? "viewport"
+              : update.focusChanged
+                ? "focus"
+                : previousDiagramEditRange !== nextDiagramEditRange
+                  ? "editorState"
+                  : null;
+      this.wasComposing = false;
+      if (!reason) return;
+
+      testHooks?.onRebuild?.(reason);
+      this.decorations = buildLivePreviewDecorations(
+        update.view,
+        onOpenClickableLink,
+        t,
+        workspacePath,
+        sourcePath,
+        workspaceRevision
+      );
+    }
+  }, {
+    decorations: (plugin) => plugin.decorations
+  });
+}
 
 export function buildLivePreviewDecorations(
   view: EditorView,

@@ -1,11 +1,17 @@
 import { CompletionContext } from "@codemirror/autocomplete";
 import { markdown } from "@codemirror/lang-markdown";
-import { EditorState } from "@codemirror/state";
+import { EditorState, Transaction } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
 import { describe, expect, it, vi } from "vitest";
 
 import { createTranslator } from "./i18nModel";
-import { __codeBlockPreviewVisibleRangesEffectForTests, createLivePreviewCodeBlockField } from "./editorLivePreview";
+import { diagramEditRangeField } from "./editorDiagramEditState";
+import {
+  __codeBlockPreviewVisibleRangesEffectForTests,
+  createLivePreviewCodeBlockField,
+  livePreviewCompositionEndedEffect
+} from "./editorLivePreview";
 import {
   __tablePreviewVisibleRangesEffectForTests,
   createLivePreviewTableField
@@ -15,6 +21,7 @@ import {
   __getWikiCompletionBuildStats,
   buildWikiLinkCompletionSource
 } from "./editorExtensions";
+import { createLivePreviewDecorationsPlugin } from "./editorLivePreview";
 
 function complete(doc: string, allFilePaths: string[], aliases: string[] = [], position = doc.length) {
   const state = EditorState.create({ doc });
@@ -222,5 +229,35 @@ describe("live preview decoration rebuild quality gates", () => {
       "visibleRanges",
       "docChanged"
     ]);
+  });
+});
+
+describe("inline live preview decoration rebuild quality gates", () => {
+  it("本文・選択・表示範囲・フォーカスに無関係なtransactionでは再構築しない", () => {
+    const rebuilds: string[] = [];
+    const state = EditorState.create({
+      doc: "**強調**\n本文",
+      extensions: [
+        diagramEditRangeField,
+        createLivePreviewDecorationsPlugin(undefined, undefined, undefined, undefined, 0, {
+          onRebuild: (reason) => rebuilds.push(reason)
+        })
+      ]
+    });
+    const parent = document.createElement("div");
+    document.body.append(parent);
+    const view = new EditorView({ parent, state });
+
+    expect(rebuilds).toEqual(["create"]);
+    view.dispatch({ annotations: Transaction.addToHistory.of(false) });
+    expect(rebuilds).toEqual(["create"]);
+
+    view.dispatch({ selection: { anchor: 1 } });
+    expect(rebuilds).toEqual(["create", "selection"]);
+
+    view.dispatch({ effects: livePreviewCompositionEndedEffect.of(null) });
+    expect(rebuilds).toEqual(["create", "selection", "compositionEnd"]);
+    view.destroy();
+    parent.remove();
   });
 });

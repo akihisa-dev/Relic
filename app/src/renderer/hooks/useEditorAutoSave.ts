@@ -99,6 +99,7 @@ export function useEditorAutoSave({
     queue.saving = true;
     queue.lastError = null;
     notifyQueueChanged();
+    let saveSucceeded = false;
 
     void relicClient.current.writeMarkdownFile({
       content: request.content,
@@ -112,14 +113,18 @@ export function useEditorAutoSave({
           return;
         }
 
+        saveSucceeded = true;
+
         const currentTab = useEditorStore.getState().tabs[request.tabId];
         if (
           currentTab?.kind === "file" &&
           !currentTab.externalConflict &&
-          currentTab.path === request.path &&
-          currentTab.content === request.content
+          currentTab.path === request.path
         ) {
-          useEditorStore.getState().markTabSaved(request.tabId, request.content);
+          useEditorStore.getState().markTabSavedCheckpoint(request.tabId, request.content);
+          if (queue.pending?.tabId === request.tabId && queue.pending.path === request.path) {
+            queue.pending = { ...queue.pending, expectedContent: request.content };
+          }
           onSavedRef.current?.(request.path);
         }
       })
@@ -132,10 +137,12 @@ export function useEditorAutoSave({
         queue.saving = false;
         notifyQueueChanged();
 
-        if (queue.pending) {
+        if (queue.pending && saveSucceeded) {
           runQueue(path);
           return;
         }
+
+        if (!saveSucceeded) queue.pending = null;
 
         wakeWaiters(queue);
       });

@@ -35,6 +35,25 @@ export function markFileTabSavedState(
   };
 }
 
+export function markFileTabSavedCheckpointState(
+  state: EditorStoreModelState,
+  tabId: string,
+  savedContent: string
+): Partial<EditorStoreModelState> | EditorStoreModelState {
+  const tab = state.tabs[tabId];
+  if (tab?.kind !== "file") return state;
+
+  return {
+    tabs: {
+      ...state.tabs,
+      [tabId]: {
+        ...tab,
+        savedContent
+      }
+    }
+  };
+}
+
 export function updateFileTabFromExternalState(
   state: EditorStoreModelState,
   tabId: string,

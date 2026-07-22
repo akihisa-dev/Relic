@@ -82,7 +82,25 @@ export class TableWidget extends WidgetType {
       state.markActive("cell", rowIndex, colIndex);
       state.setAddAffordance(rowIndex, colIndex);
       wrapper.focus();
-      const endRangeSelection = (): void => {
+      const pointerId = "pointerId" in event ? event.pointerId : null;
+      const captureTarget = event.currentTarget instanceof HTMLElement
+        ? event.currentTarget
+        : null;
+      if (captureTarget?.setPointerCapture && pointerId !== null) {
+        try {
+          captureTarget.setPointerCapture(pointerId);
+        } catch {
+          // Document listeners remain the fallback when capture is unavailable.
+        }
+      }
+      const cleanupRangeSelection = (): void => {
+        document.removeEventListener("pointerup", endRangeSelection);
+        document.removeEventListener("pointercancel", cancelRangeSelection);
+        document.removeEventListener("mouseup", endRangeSelection);
+        captureTarget?.removeEventListener("lostpointercapture", lostRangeSelectionCapture);
+      };
+      const endRangeSelection = (endEvent: MouseEvent | PointerEvent): void => {
+        if (pointerId !== null && "pointerId" in endEvent && endEvent.pointerId !== pointerId) return;
         if (!rangeSelection) return;
         const selection = rangeSelection;
         rangeSelection = null;
@@ -92,11 +110,23 @@ export class TableWidget extends WidgetType {
         } else {
           focusCell(rowIndex, colIndex);
         }
-        document.removeEventListener("pointerup", endRangeSelection);
-        document.removeEventListener("mouseup", endRangeSelection);
+        cleanupRangeSelection();
+      };
+      const cancelRangeSelection = (cancelEvent: PointerEvent): void => {
+        if (pointerId !== null && cancelEvent.pointerId !== pointerId) return;
+        rangeSelection = null;
+        state.markActive("cell", rowIndex, colIndex);
+        cleanupRangeSelection();
+      };
+      const lostRangeSelectionCapture = (): void => {
+        rangeSelection = null;
+        state.markActive("cell", rowIndex, colIndex);
+        cleanupRangeSelection();
       };
       document.addEventListener("pointerup", endRangeSelection);
+      document.addEventListener("pointercancel", cancelRangeSelection);
       document.addEventListener("mouseup", endRangeSelection);
+      captureTarget?.addEventListener("lostpointercapture", lostRangeSelectionCapture);
     };
     const extendRangeSelection = (rowIndex: number, colIndex: number): void => {
       if (!rangeSelection) return;

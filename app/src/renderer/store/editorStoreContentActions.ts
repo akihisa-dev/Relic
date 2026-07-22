@@ -2,6 +2,7 @@ import { flushPendingEditorChanges } from "../editorInputBuffer";
 import type { EditorStoreActions, EditorStoreSet } from "./editorStoreContract";
 import {
   closeAllTabsState,
+  markFileTabSavedCheckpointState,
   markFileTabSavedState,
   resolveFileTabExternalConflictState,
   setFileTabExternalConflictState,
@@ -13,6 +14,7 @@ import {
 type EditorContentActions = Pick<EditorStoreActions,
   | "closeAllTabs"
   | "markTabSaved"
+  | "markTabSavedCheckpoint"
   | "resolveTabExternalConflict"
   | "setEditorSettings"
   | "setTabExternalConflict"
@@ -29,6 +31,7 @@ export function createEditorContentActions(set: EditorStoreSet): EditorContentAc
       set((state) => updateFileTabMetaState(state, tabId, meta));
     },
     markTabSaved: (tabId, content) => set((state) => markFileTabSavedState(state, tabId, content)),
+    markTabSavedCheckpoint: (tabId, content) => set((state) => markFileTabSavedCheckpointState(state, tabId, content)),
     setTabExternalConflict: (tabId, content) => {
       flushPendingEditorChanges([tabId]);
       set((state) => setFileTabExternalConflictState(state, tabId, content));

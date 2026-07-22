@@ -1,9 +1,16 @@
+import { completionStatus } from "@codemirror/autocomplete";
 import { Prec, Transaction, type Extension } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 
 import type { EditorExtensionConfig } from "./editorExtensionTypes";
-import { handleMarkdownListEnter, indentMarkdownListSelection, isListInputEvent, moveSelectedLines } from "./editorListInput";
-import { findClickableLinkAtPosition } from "./editorLivePreview";
+import {
+  handleMarkdownListEnter,
+  handleMarkdownListPaste,
+  indentMarkdownListSelection,
+  isListInputEvent,
+  moveSelectedLines
+} from "./editorListInput";
+import { findClickableLinkAtPosition, livePreviewCompositionEndedEffect } from "./editorLivePreview";
 import type { Translator } from "./i18nModel";
 import { insertMarkdownLink, wrapSelection } from "./toolbarCommands";
 
@@ -55,6 +62,9 @@ export function buildEventHandlersExtension(config: EditorExtensionConfig): Exte
         if (!isListInputEvent(event, view)) {
           return false;
         }
+        if (event.key === "Tab" && completionStatus(view.state) !== null) {
+          return false;
+        }
         if (event.key === "Enter" && handleMarkdownListEnter(view)) {
           event.preventDefault();
           return true;
@@ -73,12 +83,26 @@ export function buildEventHandlersExtension(config: EditorExtensionConfig): Exte
         }
         return false;
       },
+      paste: (event, view) => {
+        if (isEditorComposing(view)) return false;
+
+        const text = event.clipboardData?.getData("text/plain") ?? "";
+        if (!handleMarkdownListPaste(view, text)) return false;
+
+        event.preventDefault();
+        return true;
+      },
       compositionstart: (_event, view) => {
         markEditorCompositionStarted(view);
         return false;
       },
       compositionend: (_event, view) => {
         markEditorCompositionEnded(view);
+        queueMicrotask(() => {
+          if (view.dom.isConnected) {
+            view.dispatch({ effects: livePreviewCompositionEndedEffect.of(null) });
+          }
+        });
         return false;
       },
       click: (event, view) => {

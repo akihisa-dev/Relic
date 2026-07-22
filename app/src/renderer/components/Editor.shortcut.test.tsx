@@ -1,6 +1,7 @@
+import { completionStatus, startCompletion } from "@codemirror/autocomplete";
 import { EditorView } from "@codemirror/view";
 import { redo, undo } from "@codemirror/commands";
-import { fireEvent } from "@testing-library/react";
+import { fireEvent, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -44,6 +45,20 @@ describe("Editor shortcuts", () => {
     expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("italic");
   });
 
+  it("同じMarkdown書式を再実行すると記法を重複させず解除し、1回のUndoで戻せる", async () => {
+    const { view } = await renderEditorWithView({ content: "bold" });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: 0, head: 4 } });
+    fireEvent.keyDown(contentElement, { key: "b", ...modKeyInit() });
+    expect(view.state.doc.toString()).toBe("**bold**");
+
+    fireEvent.keyDown(contentElement, { key: "b", ...modKeyInit() });
+    expect(view.state.doc.toString()).toBe("bold");
+    expect(undo(view)).toBe(true);
+    expect(view.state.doc.toString()).toBe("**bold**");
+  });
+
   it("Mod+Kで選択範囲へMarkdownリンクを適用し、Undoで戻せる", async () => {
     const { view } = await renderEditorWithView({
       content: "open link"
@@ -84,6 +99,54 @@ describe("Editor shortcuts", () => {
     expect(view.state.doc.toString()).toBe("- item\n- \n1. first\n2. \n- [x] done\n- [ ] \n");
   });
 
+  it("リスト行への複数行貼り付けは字下げと種類を継続し、1回のUndoで戻せる", async () => {
+    const { view } = await renderEditorWithView({
+      content: "  3. 前後\n  - [x] 完了"
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: "  3. 前".length } });
+    fireEvent.paste(contentElement, {
+      clipboardData: {
+        getData: (type: string) => type === "text/plain" ? "一\n二\n\n三" : "",
+        types: ["text/plain"]
+      }
+    });
+
+    expect(view.state.doc.toString()).toBe("  3. 前一\n  4. 二\n\n  5. 三後\n  - [x] 完了");
+    expect(undo(view)).toBe(true);
+    expect(view.state.doc.toString()).toBe("  3. 前後\n  - [x] 完了");
+
+    const checkboxPosition = view.state.doc.toString().indexOf("完了") + "完了".length;
+    view.dispatch({ selection: { anchor: checkboxPosition } });
+    fireEvent.paste(contentElement, {
+      clipboardData: {
+        getData: (type: string) => type === "text/plain" ? "済み\n次" : "",
+        types: ["text/plain"]
+      }
+    });
+
+    expect(view.state.doc.toString()).toBe("  3. 前後\n  - [x] 完了済み\n  - [ ] 次");
+  });
+
+  it("コードブロック内の複数行貼り付けはリスト記号を補わない", async () => {
+    const { view } = await renderEditorWithView({
+      content: "```md\n- 前後\n```"
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    const position = view.state.doc.toString().indexOf("前") + 1;
+
+    view.dispatch({ selection: { anchor: position } });
+    fireEvent.paste(contentElement, {
+      clipboardData: {
+        getData: (type: string) => type === "text/plain" ? "一\n二" : "",
+        types: ["text/plain"]
+      }
+    });
+
+    expect(view.state.doc.toString()).toBe("```md\n- 前一\n二後\n```");
+  });
+
   it("コードブロック内のリスト風テキストではEnterのリスト補完を実行しない", async () => {
     const { view } = await renderEditorWithView({
       content: "```md\n- item\n```"
@@ -114,6 +177,21 @@ describe("Editor shortcuts", () => {
     view.dispatch({ selection: { anchor: plainStart, head: view.state.doc.length } });
     fireEvent.keyDown(contentElement, { key: "Tab" });
     expect(view.state.doc.toString()).toBe("- one\n- two\n  plain");
+  });
+
+  it("補完候補が開いている間はTabをリストの字下げに使わない", async () => {
+    const { view } = await renderEditorWithView({
+      allFilePaths: ["alpha.md"],
+      content: "- [[a"
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    view.dispatch({ selection: { anchor: view.state.doc.length } });
+
+    startCompletion(view);
+    await waitFor(() => expect(completionStatus(view.state)).not.toBeNull());
+    fireEvent.keyDown(contentElement, { key: "Tab" });
+
+    expect(view.state.doc.toString()).toBe("- [[a");
   });
 
   it("Alt+上下で選択中の行を移動する", async () => {

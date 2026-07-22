@@ -99,9 +99,15 @@ describe("useEditorAutoSave", () => {
     await vi.advanceTimersByTimeAsync(0);
 
     expect(window.relic!.writeMarkdownFile).toHaveBeenCalledTimes(2);
+    const checkpoint = useEditorStore.getState().tabs.tab;
+    expect(checkpoint?.kind).toBe("file");
+    if (checkpoint?.kind === "file") {
+      expect(checkpoint.content).toBe("改稿");
+      expect(checkpoint.savedContent).toBe("初稿");
+    }
     expect(window.relic!.writeMarkdownFile).toHaveBeenLastCalledWith({
       content: "改稿",
-      expectedContent: "",
+      expectedContent: "初稿",
       path: "memo.md"
     });
 
@@ -111,6 +117,61 @@ describe("useEditorAutoSave", () => {
     const tab = useEditorStore.getState().tabs.tab;
     expect(tab?.kind).toBe("file");
     if (tab?.kind === "file") expect(tab.savedContent).toBe("改稿");
+  });
+
+  it("保存失敗後は保存中に追加された本文を続けて書き込まず次の編集から再試行する", async () => {
+    const failedSave = deferred<{ ok: false; error: { code: string; message: string } }>();
+    window.relic = makeRelicApi({
+      writeMarkdownFile: vi.fn()
+        .mockReturnValueOnce(failedSave.promise)
+        .mockResolvedValue({ ok: true, value: undefined })
+    });
+    resetStore({
+      tab: { content: "初稿", id: "tab", kind: "file", name: "Memo", path: "memo.md", savedContent: "Base" }
+    });
+
+    const { rerender, result } = renderHook(({ tabs }) => useEditorAutoSave({
+      conflictCloseBlockedMessage: "conflict",
+      saveFailedMessage: "save failed",
+      tabs
+    }), {
+      initialProps: { tabs: useEditorStore.getState().tabs }
+    });
+
+    await vi.advanceTimersByTimeAsync(1000);
+    act(() => {
+      useEditorStore.getState().updateTabContent("tab", "改稿");
+    });
+    rerender({ tabs: useEditorStore.getState().tabs });
+
+    await act(async () => {
+      failedSave.resolve({ ok: false, error: { code: "WRITE_FAILED", message: "save failed" } });
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(window.relic!.writeMarkdownFile).toHaveBeenCalledTimes(1);
+    expect(result.current.saveStatusByTabId.tab).toBe("error");
+    const failedTab = useEditorStore.getState().tabs.tab;
+    expect(failedTab?.kind).toBe("file");
+    if (failedTab?.kind === "file") {
+      expect(failedTab.content).toBe("改稿");
+      expect(failedTab.savedContent).toBe("Base");
+    }
+
+    act(() => {
+      useEditorStore.getState().updateTabContent("tab", "最終稿");
+    });
+    rerender({ tabs: useEditorStore.getState().tabs });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(window.relic!.writeMarkdownFile).toHaveBeenCalledTimes(2);
+    expect(window.relic!.writeMarkdownFile).toHaveBeenLastCalledWith({
+      content: "最終稿",
+      expectedContent: "Base",
+      path: "memo.md"
+    });
   });
 
   it("保存中に外部変更と衝突した場合は保存待ち本文を追加保存せず衝突を維持する", async () => {

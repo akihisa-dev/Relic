@@ -24,6 +24,7 @@ export interface EditorStore {
   closeAllTabsInPane: (pane: PaneId) => void;
   moveTab: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
   markTabSaved: (tabId: string, content: string) => void;
+  markTabSavedCheckpoint: (tabId: string, content: string) => void;
   navigateBack: () => void;
   navigateForward: () => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;

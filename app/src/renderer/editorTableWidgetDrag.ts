@@ -94,34 +94,64 @@ export function createLiveTableDragController({
     const firstTarget = targetFromPoint(event.clientX, event.clientY);
     if (firstTarget) setDropTarget(firstTarget.row, firstTarget.col);
 
+    const pointerId = "pointerId" in event ? event.pointerId : null;
+    const captureTarget = event.currentTarget instanceof HTMLElement
+      ? event.currentTarget
+      : null;
+    if (captureTarget?.setPointerCapture && pointerId !== null) {
+      try {
+        captureTarget.setPointerCapture(pointerId);
+      } catch {
+        // Pointer capture is an optimization. Document listeners remain the fallback.
+      }
+    }
+
     const move = (moveEvent: MouseEvent | PointerEvent): void => {
+      if (pointerId !== null && "pointerId" in moveEvent && moveEvent.pointerId !== pointerId) return;
       moveEvent.preventDefault();
       const target = targetFromEvent(moveEvent);
       if (target) {
         setDropTarget(target.row, target.col);
       }
     };
-    const up = (upEvent: MouseEvent | PointerEvent): void => {
-      upEvent.preventDefault();
-      const target = targetFromEvent(upEvent);
-      if (target) {
-        moveDraggedSelection(target.row, target.col);
-      }
+
+    const cleanup = (): void => {
       delete wrapper.dataset.dragAxis;
       delete wrapper.dataset.dragSourceRow;
       delete wrapper.dataset.dragSourceCol;
       delete wrapper.dataset.dragTargetRow;
       delete wrapper.dataset.dragTargetCol;
+      wrapper.style.removeProperty("--table-drop-col");
+      wrapper.style.removeProperty("--table-drop-row");
       document.removeEventListener("pointermove", move);
       document.removeEventListener("pointerup", up);
+      document.removeEventListener("pointercancel", cancel);
       document.removeEventListener("mousemove", move);
       document.removeEventListener("mouseup", up);
+      captureTarget?.removeEventListener("lostpointercapture", lostCapture);
+    };
+    const up = (upEvent: MouseEvent | PointerEvent): void => {
+      if (pointerId !== null && "pointerId" in upEvent && upEvent.pointerId !== pointerId) return;
+      upEvent.preventDefault();
+      const target = targetFromEvent(upEvent);
+      if (target) moveDraggedSelection(target.row, target.col);
+      cleanup();
+    };
+    const cancel = (cancelEvent: PointerEvent): void => {
+      if (pointerId !== null && cancelEvent.pointerId !== pointerId) return;
+      cancelEvent.preventDefault();
+      cleanup();
+    };
+    const lostCapture = (): void => {
+      cleanup();
     };
 
     document.addEventListener("pointermove", move);
     document.addEventListener("pointerup", up);
+    document.addEventListener("pointercancel", cancel);
     document.addEventListener("mousemove", move);
     document.addEventListener("mouseup", up);
+    captureTarget?.addEventListener("lostpointercapture", lostCapture);
   };
 
   return {

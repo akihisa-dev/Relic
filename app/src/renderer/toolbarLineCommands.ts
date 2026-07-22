@@ -1,3 +1,4 @@
+import { isolateHistory } from "@codemirror/commands";
 import { EditorSelection, type ChangeSpec, type EditorState, type SelectionRange } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 
@@ -40,7 +41,7 @@ export function insertAtLineStart(view: EditorView, prefix: string, placeholder:
     };
   });
 
-  view.dispatch(changes);
+  view.dispatch({ ...changes, annotations: isolateHistory.of("full") });
   view.focus();
 }
 
@@ -107,7 +108,7 @@ export function insertListAtSelectedLines(
     };
   });
 
-  view.dispatch(changes);
+  view.dispatch({ ...changes, annotations: isolateHistory.of("full") });
   view.focus();
 }
 

@@ -1,4 +1,4 @@
-import { EditorSelection } from "@codemirror/state";
+import { EditorSelection, Transaction } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
 import { isPositionInFencedCodeBlock } from "./markdownCodeBlockRanges";
@@ -32,6 +32,32 @@ export function handleMarkdownListEnter(view: EditorView): boolean {
   const insert = `\n${match.indent}${marker}`;
   view.dispatch({
     changes: { from: selection.from, insert },
+    selection: { anchor: selection.from + insert.length }
+  });
+  return true;
+}
+
+export function handleMarkdownListPaste(view: EditorView, text: string): boolean {
+  const { state } = view;
+  if (!/\r|\n/.test(text) || state.selection.ranges.length !== 1) return false;
+
+  const selection = state.selection.main;
+  if (isPositionInFencedCodeBlock(state, selection.from) || isPositionInFencedCodeBlock(state, selection.to)) {
+    return false;
+  }
+
+  const fromLine = state.doc.lineAt(selection.from);
+  const toLine = state.doc.lineAt(selection.to);
+  if (fromLine.number !== toLine.number) return false;
+
+  const match = parseListLine(fromLine.text);
+  if (!match) return false;
+
+  const insert = continueListMarkersInPastedText(text, match);
+  view.dispatch({
+    annotations: Transaction.userEvent.of("input.paste"),
+    changes: { from: selection.from, to: selection.to, insert },
+    scrollIntoView: true,
     selection: { anchor: selection.from + insert.length }
   });
   return true;
@@ -129,6 +155,27 @@ function nextListMarker(marker: string): string {
   if (checkbox) return `${checkbox[1]}[ ] `;
 
   return marker;
+}
+
+function continueListMarkersInPastedText(text: string, list: ListLineMatch): string {
+  const normalized = text.replace(/\r\n?/g, "\n");
+  const lines = normalized.split("\n");
+  if (lines.length < 2) return text;
+
+  let marker = list.marker;
+  const continued = [lines[0]];
+
+  for (const line of lines.slice(1)) {
+    if (line.length === 0 || parseListLine(line)) {
+      continued.push(line);
+      continue;
+    }
+
+    marker = nextListMarker(marker);
+    continued.push(`${list.indent}${marker}${line}`);
+  }
+
+  return continued.join("\n");
 }
 
 function selectedListLineNumbers(

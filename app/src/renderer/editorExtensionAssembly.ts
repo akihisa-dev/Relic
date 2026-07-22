@@ -17,10 +17,7 @@ import {
 } from "./editorEventExtensions";
 import { createFrontmatterPropertiesField, frontmatterCollapsedField } from "./editorFrontmatter";
 import { createHeadingFoldingExtension } from "./editorHeadingFolding";
-import {
-  buildLivePreviewDecorations,
-  createLivePreviewCodeBlockField
-} from "./editorLivePreview";
+import { createLivePreviewDecorationsPlugin, createLivePreviewCodeBlockField } from "./editorLivePreview";
 import { createLivePreviewTableField } from "./editorTables";
 import {
   buildContentAttributesExtension,
@@ -38,7 +35,7 @@ function createLivePreviewPlugin(
   sourcePath?: string,
   workspaceRevision = 0
 ) {
-  return EditorView.decorations.of((view) => buildLivePreviewDecorations(view, (link) => {
+  return createLivePreviewDecorationsPlugin((link) => {
     if (link.type === "markdown" && link.href) {
       onOpenLinkRef.current?.(link.href);
       return;
@@ -47,7 +44,7 @@ function createLivePreviewPlugin(
     if (link.type === "wiki" && link.target) {
       onOpenWikiLinkRef.current?.(link.target, link.heading ?? undefined);
     }
-  }, t, workspacePath, sourcePath, workspaceRevision));
+  }, t, workspacePath, sourcePath, workspaceRevision);
 }
 
 const autocompleteCompartment = new Compartment();

@@ -658,6 +658,70 @@ describe("Editor table preview", () => {
     expect(viewRef.current?.state.doc.toString()).toBe("| C | A | B |\n| --- | --- | --- |\n| z | x | y |");
   });
 
+  it("ライブプレビューの表ドラッグはpointercancelで移動を確定せず次の操作へ戻る", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const original = "| A | B | C |\n| --- | --- | --- |\n| x | y | z |";
+    const { container } = render(
+      <Editor content={original} onChange={vi.fn()} settings={settings} viewRef={viewRef} />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table-handle--column")).not.toBeNull());
+    (container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="2"]') as HTMLInputElement).focus();
+    const handle = container.querySelector(".cm-live-table-handle--column") as HTMLButtonElement;
+    fireEvent.pointerDown(handle, { clientX: 250, clientY: 40, pointerId: 7 });
+    fireEvent.pointerMove(document, { clientX: 110, clientY: 70, pointerId: 7 });
+    fireEvent.pointerCancel(document, { pointerId: 7 });
+
+    expect(viewRef.current?.state.doc.toString()).toBe(original);
+    expect(container.querySelector(".cm-live-table")?.getAttribute("data-drag-axis")).toBeNull();
+
+    fireEvent.pointerDown(handle, { clientX: 250, clientY: 40, pointerId: 8 });
+    fireEvent.pointerUp(container.querySelector('td[data-row="1"][data-column="0"]') as HTMLTableCellElement, {
+      clientX: 110,
+      clientY: 70,
+      pointerId: 8
+    });
+
+    expect(viewRef.current?.state.doc.toString()).toBe("| C | A | B |\n| --- | --- | --- |\n| z | x | y |");
+  });
+
+  it("ライブプレビューの表範囲選択はpointercancelで確定しない", async () => {
+    const { container } = render(
+      <Editor
+        content={"| A | B |\n| --- | --- |\n| x | y |\n| z | w |"}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector('td[data-row="1"][data-column="0"]')).not.toBeNull());
+    const startCell = container.querySelector('td[data-row="1"][data-column="0"]') as HTMLTableCellElement;
+    const endCell = container.querySelector('td[data-row="2"][data-column="1"]') as HTMLTableCellElement;
+    fireEvent.pointerDown(startCell, { button: 0, pointerId: 11 });
+    fireEvent.pointerEnter(endCell, { pointerId: 11 });
+    fireEvent.pointerCancel(document, { pointerId: 11 });
+
+    expect(container.querySelectorAll(".cm-live-table-selected")).toHaveLength(0);
+  });
+
+  it("ライブプレビューの表ドラッグはpointer capture喪失でも移動を確定しない", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const original = "| A | B | C |\n| --- | --- | --- |\n| x | y | z |";
+    const { container } = render(
+      <Editor content={original} onChange={vi.fn()} settings={settings} viewRef={viewRef} />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table-handle--column")).not.toBeNull());
+    (container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="2"]') as HTMLInputElement).focus();
+    const handle = container.querySelector(".cm-live-table-handle--column") as HTMLButtonElement;
+    fireEvent.pointerDown(handle, { clientX: 250, clientY: 40, pointerId: 13 });
+    fireEvent.pointerMove(document, { clientX: 110, clientY: 70, pointerId: 13 });
+    fireEvent.lostPointerCapture(handle, { pointerId: 13 });
+
+    expect(viewRef.current?.state.doc.toString()).toBe(original);
+    expect(container.querySelector(".cm-live-table")?.getAttribute("data-drag-axis")).toBeNull();
+  });
+
   it("ライブプレビューの表で行ハンドルを左側の帯のままドラッグして移動できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const originalElementFromPoint = document.elementFromPoint;

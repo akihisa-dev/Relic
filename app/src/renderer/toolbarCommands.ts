@@ -1,3 +1,4 @@
+import { isolateHistory } from "@codemirror/commands";
 import { EditorSelection } from "@codemirror/state";
 import type { ChangeSpec, EditorState, SelectionRange } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
@@ -38,7 +39,7 @@ export function wrapSelection(view: EditorView, before: string, after: string, p
     };
   });
 
-  view.dispatch(changes);
+  view.dispatch({ ...changes, annotations: isolateHistory.of("full") });
   view.focus();
 }
 
@@ -49,6 +50,7 @@ export function insertBlock(view: EditorView, text: string): void {
   const prefix = line.from > 0 ? "\n" : "";
 
   view.dispatch({
+    annotations: isolateHistory.of("full"),
     changes: { from: line.to, insert: `${prefix}\n${text}\n` },
     selection: { anchor: line.to + prefix.length + 1 + text.length + 1 }
   });
@@ -71,7 +73,7 @@ export function insertCodeBlock(view: EditorView): void {
       };
     });
 
-    view.dispatch(changes);
+    view.dispatch({ ...changes, annotations: isolateHistory.of("full") });
     view.focus();
     return;
   }
@@ -93,7 +95,7 @@ export function insertCodeBlock(view: EditorView): void {
     };
   });
 
-  view.dispatch(changes);
+  view.dispatch({ ...changes, annotations: isolateHistory.of("full") });
   view.focus();
 }
 
@@ -117,7 +119,7 @@ export function insertMarkdownLink(view: EditorView, url: string, placeholderLin
     };
   });
 
-  view.dispatch(changes);
+  view.dispatch({ ...changes, annotations: isolateHistory.of("full") });
   view.focus();
 }
 
@@ -141,7 +143,7 @@ export function insertInternalLink(view: EditorView): void {
     };
   });
 
-  view.dispatch(changes);
+  view.dispatch({ ...changes, annotations: isolateHistory.of("full") });
   view.focus();
 }
 
@@ -160,7 +162,7 @@ export function insertBlockIds(view: EditorView, createId: BlockIdFactory = () =
     .filter((change): change is { from: number; insert: string } => change !== null);
 
   if (changes.length > 0) {
-    view.dispatch({ changes });
+    view.dispatch({ annotations: isolateHistory.of("full"), changes });
   }
 
   view.focus();
