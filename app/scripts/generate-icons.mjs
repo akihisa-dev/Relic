@@ -1,6 +1,5 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -11,7 +10,6 @@ const sourcePng = path.join(repoDir, "docs", "logo", "Logo.png");
 const assetsDir = path.join(appDir, "assets");
 const iconsetDir = path.join(assetsDir, "icon.iconset");
 const icnsPath = path.join(assetsDir, "icon.icns");
-const icoPath = path.join(assetsDir, "icon.ico");
 
 if (process.platform !== "darwin") {
   throw new Error("Icon generation currently requires macOS because it uses the built-in sips command.");
@@ -30,7 +28,6 @@ const iconsetImages = [
   ["icon_512x512@2x.png", 1024]
 ];
 
-const icoSizes = [16, 24, 32, 48, 64, 128, 256];
 const icnsImages = [
   ["icp4", "icon_16x16.png"],
   ["icp5", "icon_32x32.png"],
@@ -59,32 +56,6 @@ function resizePng(size, outputPath) {
   execFileSync("sips", ["-z", String(size), String(size), sourcePng, "--out", outputPath], {
     stdio: "ignore"
   });
-}
-
-function writeIco(entries, outputPath) {
-  const headerSize = 6;
-  const entrySize = 16;
-  let imageOffset = headerSize + entries.length * entrySize;
-  const header = Buffer.alloc(imageOffset);
-
-  header.writeUInt16LE(0, 0);
-  header.writeUInt16LE(1, 2);
-  header.writeUInt16LE(entries.length, 4);
-
-  entries.forEach(({ size, buffer }, index) => {
-    const entryOffset = headerSize + index * entrySize;
-    header.writeUInt8(size >= 256 ? 0 : size, entryOffset);
-    header.writeUInt8(size >= 256 ? 0 : size, entryOffset + 1);
-    header.writeUInt8(0, entryOffset + 2);
-    header.writeUInt8(0, entryOffset + 3);
-    header.writeUInt16LE(1, entryOffset + 4);
-    header.writeUInt16LE(32, entryOffset + 6);
-    header.writeUInt32LE(buffer.length, entryOffset + 8);
-    header.writeUInt32LE(imageOffset, entryOffset + 12);
-    imageOffset += buffer.length;
-  });
-
-  fs.writeFileSync(outputPath, Buffer.concat([header, ...entries.map((entry) => entry.buffer)]));
 }
 
 function writeIcns(entries, outputPath) {
@@ -118,17 +89,5 @@ writeIcns(
   })),
   icnsPath
 );
-
-const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "relic-icons-"));
-try {
-  const icoEntries = icoSizes.map((size) => {
-    const outputPath = path.join(tempDir, `icon-${size}.png`);
-    resizePng(size, outputPath);
-    return { size, buffer: fs.readFileSync(outputPath) };
-  });
-  writeIco(icoEntries, icoPath);
-} finally {
-  fs.rmSync(tempDir, { recursive: true, force: true });
-}
 
 console.log(`Generated icons from ${path.relative(repoDir, sourcePng)}`);

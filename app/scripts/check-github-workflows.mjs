@@ -172,10 +172,8 @@ export function validateRepositoryWorkflowPolicy(workflows, packageJson) {
     errors.push(".github/workflows/ci.yml: Code CI must check the committed diff range.");
   } else if (!workflowCommands(codeCi).some((command) => command.includes("pnpm smoke:electron"))) {
     errors.push(".github/workflows/ci.yml: Code CI must run the development Electron smoke.");
-  } else if (!workflowCommands(codeCi).some((command) => (
-    command.includes("chrome-sandbox") && command.includes("chmod 4755")
-  ))) {
-    errors.push(".github/workflows/ci.yml: Code CI must configure the Electron sandbox helper before startup smoke.");
+  } else if (codeCi.jobs?.verify?.["runs-on"] !== "macos-latest") {
+    errors.push(".github/workflows/ci.yml: Code CI verify must run on macos-latest.");
   }
 
   const preRelease = workflows.get(".github/workflows/pre-release-verification.yml");
@@ -184,7 +182,7 @@ export function validateRepositoryWorkflowPolicy(workflows, packageJson) {
     errors.push(".github/workflows/pre-release-verification.yml: pre-release verification must be manual-only.");
   }
   const draftRelease = workflows.get(".github/workflows/draft-release.yml");
-  for (const command of ["pnpm build:mac:safe", "pnpm build:win:safe"]) {
+  for (const command of ["pnpm build:mac:safe"]) {
     if (!preRelease || !workflowCommands(preRelease).some((entry) => entry.includes(command))) {
       errors.push(`.github/workflows/pre-release-verification.yml: missing shared safe build command ${command}.`);
     }

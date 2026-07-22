@@ -90,12 +90,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: ${command}
 `);
-    const codeCi = workflow("Code CI", "push", "pnpm committed-diff:check -- base head && pnpm verify:ci && pnpm smoke:electron && sudo chmod 4755 node_modules/electron/dist/chrome-sandbox");
+    const codeCi = workflow("Code CI", "push", "pnpm committed-diff:check -- base head && pnpm verify:ci && pnpm smoke:electron");
     codeCi.on.push = { branches: ["main"] };
+    codeCi.jobs.verify["runs-on"] = "macos-latest";
     const workflows = new Map([
       [".github/workflows/ci.yml", codeCi],
-      [".github/workflows/pre-release-verification.yml", workflow("Pre-release", "workflow_dispatch", "pnpm build:mac:safe && pnpm build:win:safe && pnpm smoke:package")],
-      [".github/workflows/draft-release.yml", workflow("Draft", "push", "pnpm build:mac:safe && pnpm build:win:safe && pnpm smoke:package")]
+      [".github/workflows/pre-release-verification.yml", workflow("Pre-release", "workflow_dispatch", "pnpm build:mac:safe && pnpm smoke:package")],
+      [".github/workflows/draft-release.yml", workflow("Draft", "push", "pnpm build:mac:safe && pnpm smoke:package")]
     ]);
 
     expect(validateRepositoryWorkflowPolicy(workflows, {

@@ -27,7 +27,7 @@ describe("updateLinksForFileRename", () => {
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("[[new]]");
   });
 
-  it.runIf(process.platform !== "win32")("内部リンク更新後も既存Markdownのmodeを保持する", async () => {
+  it("内部リンク更新後も既存Markdownのmodeを保持する", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-mode-"));
     temporaryPaths.push(ws);
     const sourcePath = path.join(ws, "source.md");
@@ -54,7 +54,7 @@ describe("updateLinksForFileRename", () => {
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("[[folder/new]]");
   });
 
-  it("Windows風の区切りが混ざった更新元パスでもパス付きリンクを更新する", async () => {
+  it("バックスラッシュ区切りが混ざった更新元パスでもパス付きリンクを更新する", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
     temporaryPaths.push(ws);
     await mkdir(path.join(ws, "folder"));
@@ -431,7 +431,7 @@ describe("updateLinksForFolderRename", () => {
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("[[new-folder/note]]");
   });
 
-  it("Windows風の区切りが混ざったフォルダパスでもリンクをスラッシュ区切りで更新する", async () => {
+  it("バックスラッシュ区切りが混ざったフォルダパスでもリンクをスラッシュ区切りで更新する", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
     temporaryPaths.push(ws);
     await mkdir(path.join(ws, "new-folder"));

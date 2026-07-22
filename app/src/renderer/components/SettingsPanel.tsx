@@ -6,39 +6,10 @@ import {
   type FeatureToggles
 } from "../../shared/ipc";
 import { useT } from "../i18n";
-import type { TranslationKey } from "../i18nModel";
 import { SettingsSegmentedControl } from "./SettingsSegmentedControl";
 import { SettingsToggleSwitch } from "./SettingsToggleSwitch";
 
 const publicRepositoryUrl = "https://github.com/akihisa-dev/Relic";
-
-function getEditorFontLabelKeys(platform?: NodeJS.Platform): { gothic: TranslationKey; mincho: TranslationKey; mono: TranslationKey } {
-  if (platform === "win32") {
-    return {
-      gothic: "settings.fontSansWindows",
-      mincho: "settings.fontSerifWindows",
-      mono: "settings.fontMonoWindows"
-    };
-  }
-
-  return {
-    gothic: "settings.fontSansMac",
-    mincho: "settings.fontSerifMac",
-    mono: "settings.fontMonoMac"
-  };
-}
-
-function formatPlatformLabel(platform?: NodeJS.Platform): string {
-  if (!platform) return "-";
-
-  const labels: Partial<Record<NodeJS.Platform, string>> = {
-    darwin: "macOS",
-    linux: "Linux",
-    win32: "Windows"
-  };
-
-  return labels[platform] ?? platform;
-}
 
 export function SettingsPanel({
   appInfo,
@@ -54,8 +25,6 @@ export function SettingsPanel({
   onFeatureTogglesSave: (t: FeatureToggles) => void;
 }): ReactElement {
   const t = useT();
-  const fontLabelKeys = getEditorFontLabelKeys(appInfo?.platform);
-
   const update = <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]): void => {
     const next = { ...settings, [key]: value };
     onSave(next);
@@ -77,9 +46,9 @@ export function SettingsPanel({
               onChange={(value) => update("font", value)}
               options={[
                 { label: t("settings.fontSystem"), value: "system" },
-                { label: t(fontLabelKeys.gothic), value: "gothic" },
-                { label: t(fontLabelKeys.mincho), value: "mincho" },
-                { label: t(fontLabelKeys.mono), value: "mono" }
+                { label: t("settings.fontSansMac"), value: "gothic" },
+                { label: t("settings.fontSerifMac"), value: "mincho" },
+                { label: t("settings.fontMonoMac"), value: "mono" }
               ]}
               value={settings.font}
             />
@@ -185,7 +154,7 @@ export function SettingsPanel({
         <div className="links-panel-subheading">{t("settings.sectionAppInfo")}</div>
         <div className="settings-info">
           <div>Relic {appInfo?.version ?? "0.0.0"}</div>
-          <div>{formatPlatformLabel(appInfo?.platform)}</div>
+          <div>macOS</div>
           <div>
             <a href={publicRepositoryUrl} rel="noreferrer" target="_blank">
               {t("settings.repository", { url: publicRepositoryUrl })}

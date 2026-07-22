@@ -9,13 +9,8 @@ const appDir = path.resolve(__dirname, '..');
 
 const platform = process.argv[2];
 
-const targets = new Map([
-  ['darwin', { command: 'make', args: ['darwin'] }],
-  ['win32', { command: 'package', args: ['win32', 'x64'] }]
-]);
-
-if (!targets.has(platform)) {
-  console.error('[build:platform] usage: node scripts/build-platform.mjs <darwin|win32>');
+if (platform !== 'darwin') {
+  console.error('[build:platform] usage: node scripts/build-platform.mjs darwin');
   process.exit(1);
 }
 
@@ -45,6 +40,5 @@ const outputDir = path.join(appDir, 'out', platform);
 await rm(outputDir, { force: true, recursive: true });
 console.log(`[build:platform] removed ${outputDir}`);
 
-const target = targets.get(platform);
-await runNodeScript('run-forge-build.mjs', [target.command, ...target.args]);
+await runNodeScript('run-forge-build.mjs', ['make', 'darwin']);
 await runNodeScript('check-package-artifacts.mjs', [platform]);

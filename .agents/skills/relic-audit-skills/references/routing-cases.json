@@ -135,13 +135,13 @@
     },
     {
       "id": "packaging-vs-release",
-      "request": "Windows配布物のapp.asar欠落を修正してください。タグやReleaseは作らないでください",
+      "request": "macOS配布物のapp.asar欠落を修正してください。タグやReleaseは作らないでください",
       "expectedEntrySkill": "relic-debug-packaging",
       "expectedSpecialistSkills": ["relic-guard-task", "relic-test-code", "relic-maintain-docs"],
       "forbiddenSkills": ["relic-release", "relic-publish-github"],
       "requiredDocs": ["docs/development.md", ".github/RELEASE_CHECKLIST.md"],
       "permissionMode": "local-change-no-release",
-      "expectedEndState": "対象OSの安全ビルドと成果物検査",
+      "expectedEndState": "macOSの安全ビルドと成果物検査",
       "misrouteImpact": "未検証成果物の公開やタグ作成につながる"
     },
     {

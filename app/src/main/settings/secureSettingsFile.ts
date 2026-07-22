@@ -18,6 +18,5 @@ export async function writePrivateSettingsTextFile(filePath: string, content: st
 }
 
 async function chmodPrivate(targetPath: string, mode: number): Promise<void> {
-  if (process.platform === "win32") return;
   await chmod(targetPath, mode).catch(() => undefined);
 }

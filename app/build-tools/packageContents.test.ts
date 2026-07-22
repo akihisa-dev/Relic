@@ -17,7 +17,6 @@ describe("packageContents", () => {
     "/.vite/renderer/main_window/index.html",
     "/.vite/renderer/main_window/assets/index.js",
     "/.vite/renderer/main_window/assets/KaTeX_Main-Regular.woff2",
-    "/assets/icon.ico",
     "/assets/icon.iconset/icon_32x32.png"
   ])("実行に必要なpackage内容を維持する: %s", (filePath) => {
     expect(ignoreRelicPackagePath(filePath)).toBe(false);
@@ -41,8 +40,8 @@ describe("packageContents", () => {
     expect(ignoreRelicPackagePath(filePath)).toBe(true);
   });
 
-  it("Windows形式をPackagerの相対pathへ正規化する", () => {
-    expect(normalizePackagerPath(".vite\\build\\main.js")).toBe("/.vite/build/main.js");
+  it("Packagerの相対pathを絶対形式へ正規化する", () => {
+    expect(normalizePackagerPath(".vite/build/main.js")).toBe("/.vite/build/main.js");
   });
 
   it("LICENSE、第三者通知、SBOMを追加resourcesとして維持する", async () => {

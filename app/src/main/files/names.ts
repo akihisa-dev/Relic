@@ -2,8 +2,8 @@ import path from "node:path";
 
 import { fail, ok, type RelicResult } from "../../shared/result";
 
-const windowsReservedBaseNames = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i;
-const windowsInvalidNameCharacters = /[<>:"/\\|?*\x00-\x1F]/;
+const portableReservedBaseNames = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i;
+const portableInvalidNameCharacters = /[<>:"/\\|?*\x00-\x1F]/;
 
 export function hasHiddenPathSegment(filePath: string): boolean {
   return filePath.replace(/\\/g, "/").split("/").some((segment) => (
@@ -26,7 +26,7 @@ export function validateBaseName(name: string, emptyMessage: string): RelicResul
     return fail("FILE_NAME_INVALID", "名前の末尾に . や空白は使えません。");
   }
 
-  if (windowsInvalidNameCharacters.test(trimmedName)) {
+  if (portableInvalidNameCharacters.test(trimmedName)) {
     return fail("FILE_NAME_INVALID", "名前に使えない文字が含まれています。");
   }
 
@@ -36,7 +36,7 @@ export function validateBaseName(name: string, emptyMessage: string): RelicResul
 
   const baseNameWithoutExtension = trimmedName.split(".")[0]?.trimEnd() ?? "";
 
-  if (windowsReservedBaseNames.test(baseNameWithoutExtension)) {
+  if (portableReservedBaseNames.test(baseNameWithoutExtension)) {
     return fail("FILE_NAME_INVALID", "この名前はシステムで予約されているため使えません。");
   }
 

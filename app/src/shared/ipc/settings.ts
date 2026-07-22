@@ -12,7 +12,6 @@ export const saveFrontmatterTemplatesChannel = "app:saveFrontmatterTemplates";
 export interface AppInfo {
   name: "Relic";
   version: string;
-  platform: NodeJS.Platform;
 }
 
 export interface FeatureToggles {

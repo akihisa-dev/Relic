@@ -57,7 +57,7 @@ description: Relicの内部リンク・Markdown相対リンク・ファイル埋
 ## 検証する
 
 1. 同folder優先、一意basename、aliases、一意性の衝突、path付きlink、見出し、block、表示text、未作成を確認する。
-2. Markdown相対linkでsource folder、拡張子補完、外部URL、anchor、traversal、Windows区切りを確認する。
+2. Markdown相対linkでsource folder、拡張子補完、外部URL、anchor、traversal、バックスラッシュ区切りを確認する。
 3. 埋め込みで一段階、容量上限、nested、非Markdown、読込失敗、内部link操作を確認する。
 4. バックリンク、outgoing、未リンク参照、tagsについて重複集約、上限、code除外、読込失敗、snapshot競合、曖昧pathを確認する。
 5. 共有索引で初期構築、変更pathだけの再読込、全体再構築、破損復旧、workspace世代、consumer間parse共有を確認する。

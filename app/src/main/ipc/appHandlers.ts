@@ -10,8 +10,7 @@ export function registerAppHandlers(): void {
     try {
       return ok({
         name: "Relic",
-        version: app.getVersion(),
-        platform: process.platform
+        version: app.getVersion()
       });
     } catch (error) {
       return fail(

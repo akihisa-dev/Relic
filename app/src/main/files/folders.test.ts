@@ -42,7 +42,7 @@ describe("createFolder", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("Windows予約名や末尾ドットを含むフォルダ名を拒否する", async () => {
+  it("可搬性を損なう予約名や末尾ドットを含むフォルダ名を拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-folder-"));
     temporaryPaths.push(workspacePath);
 

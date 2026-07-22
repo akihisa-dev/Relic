@@ -62,7 +62,7 @@ describe("normalizeMarkdownFileName", () => {
     expect(normalizeMarkdownFileName("notes/読書メモ").ok).toBe(false);
   });
 
-  it("Windows予約名や扱えない文字を含むファイル名を拒否する", () => {
+  it("可搬性を損なう予約名や扱えない文字を含むファイル名を拒否する", () => {
     expect(normalizeMarkdownFileName("CON.md")).toMatchObject({
       error: { code: "FILE_NAME_INVALID" },
       ok: false
@@ -399,7 +399,7 @@ describe("writeMarkdownFileContent", () => {
     );
   });
 
-  it.runIf(process.platform !== "win32")("既存Markdownのmodeを保存後も保持する", async () => {
+  it("既存Markdownのmodeを保存後も保持する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-write-markdown-mode-"));
     temporaryPaths.push(workspacePath);
     const filePath = path.join(workspacePath, "private.md");

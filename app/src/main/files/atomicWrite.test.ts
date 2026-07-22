@@ -71,12 +71,10 @@ describe("atomicWriteTextFile", () => {
     }, { mode: 0o600 });
 
     expect(seenOptions).toEqual([{ encoding: "utf8", mode: 0o600 }]);
-    if (process.platform !== "win32") {
-      expect((await stat(filePath)).mode & 0o777).toBe(0o600);
-    }
+    expect((await stat(filePath)).mode & 0o777).toBe(0o600);
   });
 
-  it.runIf(process.platform !== "win32")("既存ファイルのmodeを安全書き込み後も保持する", async () => {
+  it("既存ファイルのmodeを安全書き込み後も保持する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-atomic-write-existing-mode-"));
     temporaryPaths.push(workspacePath);
     const filePath = path.join(workspacePath, "note.md");
@@ -90,7 +88,7 @@ describe("atomicWriteTextFile", () => {
     await expect(readdir(workspacePath)).resolves.toEqual(["note.md"]);
   });
 
-  it.runIf(process.platform !== "win32")("置換失敗時は元内容と元modeを保持して一時ファイルを残さない", async () => {
+  it("置換失敗時は元内容と元modeを保持して一時ファイルを残さない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-atomic-write-failed-mode-"));
     temporaryPaths.push(workspacePath);
     const filePath = path.join(workspacePath, "note.md");

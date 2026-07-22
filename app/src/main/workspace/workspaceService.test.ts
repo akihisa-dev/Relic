@@ -81,14 +81,13 @@ describe("workspaceService", () => {
   });
 
   it("大文字小文字を区別しない環境では大小文字違いの同じワークスペースを重複登録しない", () => {
-    const workspace = createWorkspaceSummary("/tmp/Relic-Notes", "darwin");
-    const sameWorkspaceDifferentCase = createWorkspaceSummary("/tmp/relic-notes", "darwin");
+    const workspace = createWorkspaceSummary("/tmp/Relic-Notes");
+    const sameWorkspaceDifferentCase = createWorkspaceSummary("/tmp/relic-notes");
     const firstSettings = addOrActivateWorkspace(
       { ...baseSettings, lastWorkspaceId: null, workspaces: [] },
-      workspace,
-      "darwin"
+      workspace
     );
-    const nextSettings = addOrActivateWorkspace(firstSettings, sameWorkspaceDifferentCase, "darwin");
+    const nextSettings = addOrActivateWorkspace(firstSettings, sameWorkspaceDifferentCase);
 
     expect(nextSettings.workspaces).toHaveLength(1);
     expect(nextSettings.lastWorkspaceId).toBe(workspace.id);
@@ -96,13 +95,6 @@ describe("workspaceService", () => {
       ...sameWorkspaceDifferentCase,
       id: workspace.id
     });
-  });
-
-  it("大文字小文字を区別する環境では大小文字違いのワークスペースIDを分ける", () => {
-    const upperWorkspace = createWorkspaceSummary("/tmp/Relic-Notes", "linux");
-    const lowerWorkspace = createWorkspaceSummary("/tmp/relic-notes", "linux");
-
-    expect(upperWorkspace.id).not.toBe(lowerWorkspace.id);
   });
 
   it("登録済みワークスペースをアクティブに切り替える", () => {
@@ -443,7 +435,7 @@ describe("workspaceService", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("Windows予約名のワークスペース名は拒否する", async () => {
+  it("可搬性を損なう予約名のワークスペース名は拒否する", async () => {
     const workspace = createWorkspaceSummary("/tmp/relic-notes");
     const result = await renameWorkspaceRegistration(
       { ...baseSettings, lastWorkspaceId: workspace.id, workspaces: [workspace] },

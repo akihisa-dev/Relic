@@ -5,36 +5,32 @@ const scriptPath = fileURLToPath(import.meta.url);
 const scriptDir = path.dirname(scriptPath);
 const appRoot = path.resolve(scriptDir, "..");
 
-function pathApi(platform) {
-  return platform === "win32" ? path.win32 : path.posix;
-}
-
-export function parseStartDevelopmentArgs(rawArgs, platform = process.platform) {
+export function parseStartDevelopmentArgs(rawArgs) {
   const args = rawArgs[0] === "--" ? rawArgs.slice(1) : rawArgs;
   if (args.length !== 2 || args[0] !== "--user-data-dir") {
     throw new Error("Usage: pnpm start:isolated -- --user-data-dir <absolute-path>");
   }
 
   const userDataDir = args[1];
-  if (!pathApi(platform).isAbsolute(userDataDir)) {
+  if (!path.isAbsolute(userDataDir)) {
     throw new Error("--user-data-dir must be an absolute path.");
   }
 
   return { userDataDir };
 }
 
-export function developmentAppIdentity(child, platform = process.platform) {
+export function developmentAppIdentity(child) {
   if (!Number.isInteger(child.pid) || child.pid <= 0) {
     throw new Error("Electron did not return a usable process ID.");
   }
 
   const executablePath = child.spawnfile;
-  if (typeof executablePath !== "string" || !pathApi(platform).isAbsolute(executablePath)) {
+  if (typeof executablePath !== "string" || !path.isAbsolute(executablePath)) {
     throw new Error("Electron did not return an absolute executable path.");
   }
 
   const marker = ".app/Contents/MacOS/";
-  const markerIndex = platform === "darwin" ? executablePath.indexOf(marker) : -1;
+  const markerIndex = executablePath.indexOf(marker);
   const appPath = markerIndex >= 0
     ? executablePath.slice(0, markerIndex + ".app".length)
     : executablePath;
@@ -43,10 +39,7 @@ export function developmentAppIdentity(child, platform = process.platform) {
 }
 
 export async function startDevelopmentApp(rawArgs, dependencies = {}) {
-  const { userDataDir } = parseStartDevelopmentArgs(
-    rawArgs,
-    dependencies.platform ?? process.platform,
-  );
+  const { userDataDir } = parseStartDevelopmentArgs(rawArgs);
   const environment = dependencies.environment ?? process.env;
   environment.RELIC_DEV_USER_DATA_DIR = userDataDir;
 
@@ -55,7 +48,7 @@ export async function startDevelopmentApp(rawArgs, dependencies = {}) {
     return api.start({ dir: appRoot, interactive: true });
   });
   const child = await start();
-  const identity = developmentAppIdentity(child, dependencies.platform ?? process.platform);
+  const identity = developmentAppIdentity(child);
   (dependencies.writeLine ?? console.info)(`RELIC_DEV_APP_IDENTITY=${JSON.stringify(identity)}`);
   return child;
 }

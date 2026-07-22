@@ -9,13 +9,9 @@ const appDir = path.resolve(__dirname, '..');
 const [command, platform, arch] = process.argv.slice(2);
 
 const supportedCommands = new Set(['make', 'package']);
-const outputDirs = new Map([
-  ['darwin', 'out/darwin'],
-  ['win32', 'out/win32']
-]);
 
-if (!supportedCommands.has(command) || !outputDirs.has(platform)) {
-  console.error('[run:forge] usage: node scripts/run-forge-build.mjs <make|package> <darwin|win32> [arch]');
+if (!supportedCommands.has(command) || platform !== 'darwin') {
+  console.error('[run:forge] usage: node scripts/run-forge-build.mjs <make|package> darwin [arch]');
   process.exit(1);
 }
 
@@ -28,7 +24,7 @@ if (arch) {
 const pnpmCommand = 'pnpm';
 const forgeEnvironment = {
   ...process.env,
-  RELIC_FORGE_OUT_DIR: outputDirs.get(platform)
+  RELIC_FORGE_OUT_DIR: 'out/darwin'
 };
 
 if (process.platform === 'darwin' && platform === 'darwin' && Number.parseInt(process.versions.node, 10) >= 25) {
@@ -43,7 +39,7 @@ if (process.platform === 'darwin' && platform === 'darwin' && Number.parseInt(pr
 const spawnOptions = {
   cwd: appDir,
   env: forgeEnvironment,
-  shell: process.platform === 'win32',
+  shell: false,
   stdio: 'inherit'
 };
 

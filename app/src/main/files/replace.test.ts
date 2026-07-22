@@ -34,7 +34,7 @@ describe("replaceInFile", () => {
     await expect(readdir(ws)).resolves.toEqual(["note.md"]);
   });
 
-  it.runIf(process.platform !== "win32")("単一置換後も既存Markdownのmodeを保持する", async () => {
+  it("単一置換後も既存Markdownのmodeを保持する", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-mode-"));
     temporaryPaths.push(ws);
     const notePath = path.join(ws, "note.md");

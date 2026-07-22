@@ -19,8 +19,7 @@ const config = {
   },
   makers: [
     new MakerZIP({}, ["darwin"]),
-    new MakerDMG({}),
-    new MakerZIP({}, ["win32"])
+    new MakerDMG({})
   ],
   plugins: [
     new VitePlugin({

@@ -23,22 +23,19 @@ export function parseElectronSmokeArgs(rawArgs) {
 }
 
 export async function findPackagedExecutable(platform, applicationDirectory = appDirectory) {
-  if (platform !== "darwin" && platform !== "win32") {
-    throw new Error(`Package smoke is supported only on macOS and Windows. Actual platform: ${platform}`);
+  if (platform !== "darwin") {
+    throw new Error(`Package smoke is supported only on macOS. Actual platform: ${platform}`);
   }
 
   const outputDirectory = path.join(applicationDirectory, "out", platform);
-  const prefix = platform === "darwin" ? "Relic-darwin-" : "Relic-win32-";
   const entries = await readdir(outputDirectory, { withFileTypes: true });
-  const packagedDirectory = entries.find((entry) => entry.isDirectory() && entry.name.startsWith(prefix));
+  const packagedDirectory = entries.find((entry) => entry.isDirectory() && entry.name.startsWith("Relic-darwin-"));
   if (!packagedDirectory) {
     throw new Error(`Packaged application was not found under ${outputDirectory}.`);
   }
 
   const root = path.join(outputDirectory, packagedDirectory.name);
-  return platform === "darwin"
-    ? path.join(root, "Relic.app", "Contents", "MacOS", "Relic")
-    : path.join(root, "Relic.exe");
+  return path.join(root, "Relic.app", "Contents", "MacOS", "Relic");
 }
 
 function mirrorOutput(stream, target, chunks) {

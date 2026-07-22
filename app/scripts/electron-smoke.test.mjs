@@ -32,18 +32,14 @@ describe("electron-smoke", () => {
     expect(() => parseElectronSmokeArgs(["all"])).toThrow("Usage: pnpm smoke:electron");
   });
 
-  it("OS別packageの実行ファイルを特定する", async () => {
+  it("macOS packageの実行ファイルを特定する", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "relic-smoke-test-"));
     temporaryDirectories.push(root);
     const macExecutable = path.join(root, "out", "darwin", "Relic-darwin-arm64", "Relic.app", "Contents", "MacOS", "Relic");
-    const windowsExecutable = path.join(root, "out", "win32", "Relic-win32-x64", "Relic.exe");
     await mkdir(path.dirname(macExecutable), { recursive: true });
-    await mkdir(path.dirname(windowsExecutable), { recursive: true });
     await writeFile(macExecutable, "");
-    await writeFile(windowsExecutable, "");
 
     await expect(findPackagedExecutable("darwin", root)).resolves.toBe(macExecutable);
-    await expect(findPackagedExecutable("win32", root)).resolves.toBe(windowsExecutable);
     await expect(findPackagedExecutable("linux", root)).rejects.toThrow("supported only");
   });
 });

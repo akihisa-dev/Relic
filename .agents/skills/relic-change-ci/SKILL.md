@@ -29,7 +29,7 @@ description: RelicのGitHub Actions workflow、trigger、permissions、concurren
 2. `pull_request_target`、fork由来コードとwrite tokenの同居、未信頼入力のshell展開を、明示的な安全設計なしに導入しない。
 3. checkoutでは履歴深度の必要性を決め、認証情報が後続stepに不要なら `persist-credentials: false` を保つ。
 4. `concurrency` のgroupをworkflow・PR・ref単位で衝突しない値にし、検証workflowとrelease workflowでcancel方針を分ける。
-5. runnerとshellのOS差を確認し、bash専用構文をPowerShell stepへ、POSIX専用コマンドをWindows既定shellへ持ち込まない。
+5. runnerとshellをmacOS向けに保ち、bash専用構文と既定shellの差を確認する。
 6. GitHub式とshell変数を混同せず、外部入力は `env` 経由で渡し、command injectionにつながる直接展開を避ける。
 
 ## Actionと検査scriptを変更する

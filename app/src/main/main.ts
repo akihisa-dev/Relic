@@ -28,7 +28,10 @@ import {
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-const APP_ID = "app.relic.desktop";
+if (process.platform !== "darwin") {
+  throw new Error(`Relic supports only macOS. Actual platform: ${process.platform}`);
+}
+
 const APP_NAME = "Relic";
 let isDevelopmentQuitInProgress = false;
 let mainWindow: BrowserWindow | null = null;
@@ -38,14 +41,8 @@ app.setName(APP_NAME);
 configureDevelopmentUserDataPath(app, MAIN_WINDOW_VITE_DEV_SERVER_URL, process.env.RELIC_DEV_USER_DATA_DIR);
 configureElectronSmokeUserDataPath(app, electronSmokeConfig);
 
-if (process.platform === "win32") {
-  app.setAppUserModelId(APP_ID);
-}
-
 function createWindow(): void {
   const windowOptions = createMainWindowOptions({
-    appPath: app.getAppPath(),
-    platform: process.platform,
     preloadPath: path.join(__dirname, "preload.js")
   });
   const window = new BrowserWindow(windowOptions);
@@ -138,12 +135,6 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
-});
-
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
 });
 
 app.on("before-quit", () => {

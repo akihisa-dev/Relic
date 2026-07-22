@@ -10,12 +10,9 @@ import { validateBaseName } from "../files/names";
 
 const DEFAULT_MAX_RENAME_TEMPORARY_PATH_CANDIDATES = 1000;
 
-export function createWorkspaceSummary(
-  workspacePath: string,
-  platform: NodeJS.Platform = process.platform
-): WorkspaceSummary {
+export function createWorkspaceSummary(workspacePath: string): WorkspaceSummary {
   const normalizedPath = path.resolve(workspacePath);
-  const idPath = normalizeWorkspacePathForId(normalizedPath, platform);
+  const idPath = normalizeWorkspacePathForId(normalizedPath);
 
   return {
     id: createHash("sha256").update(idPath).digest("hex").slice(0, 16),
@@ -24,15 +21,9 @@ export function createWorkspaceSummary(
   };
 }
 
-export function normalizeWorkspacePathForId(
-  workspacePath: string,
-  platform: NodeJS.Platform = process.platform
-): string {
+export function normalizeWorkspacePathForId(workspacePath: string): string {
   const normalizedPath = path.resolve(workspacePath);
-
-  return platform === "darwin" || platform === "win32"
-    ? normalizedPath.toLocaleLowerCase("en-US")
-    : normalizedPath;
+  return normalizedPath.toLocaleLowerCase("en-US");
 }
 
 export async function prepareWorkspace(workspacePath: string): Promise<void> {
@@ -41,13 +32,12 @@ export async function prepareWorkspace(workspacePath: string): Promise<void> {
 
 export function addOrActivateWorkspace(
   settings: AppSettings,
-  workspace: WorkspaceSummary,
-  platform: NodeJS.Platform = process.platform
+  workspace: WorkspaceSummary
 ): AppSettings {
-  const incomingWorkspaceKey = normalizeWorkspacePathForId(workspace.path, platform);
+  const incomingWorkspaceKey = normalizeWorkspacePathForId(workspace.path);
   const existingIndex = settings.workspaces.findIndex((item) => (
     item.id === workspace.id ||
-    normalizeWorkspacePathForId(item.path, platform) === incomingWorkspaceKey
+    normalizeWorkspacePathForId(item.path) === incomingWorkspaceKey
   ));
   const workspaces = [...settings.workspaces];
   const savedWorkspace = existingIndex >= 0

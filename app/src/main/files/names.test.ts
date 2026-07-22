@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { validateBaseName } from "./names";
 
 describe("validateBaseName", () => {
-  it("Windows予約名を拡張子付きでも拒否する", () => {
+  it("可搬性を損なう予約名を拡張子付きでも拒否する", () => {
     for (const name of ["CON", "CON.md", "aux", "LPT1.md", "COM9.txt", "NUL"]) {
       expect(validateBaseName(name, "名前を入力してください。")).toMatchObject({
         error: { code: "FILE_NAME_INVALID" },
@@ -12,7 +12,7 @@ describe("validateBaseName", () => {
     }
   });
 
-  it("Windowsで扱えない文字と制御文字を拒否する", () => {
+  it("可搬性を損なう記号と制御文字を拒否する", () => {
     for (const name of ["a:b", "a*b", "a?b", "a<b", "a>b", "a|b", "a\"b", "a\u0000b"]) {
       expect(validateBaseName(name, "名前を入力してください。")).toMatchObject({
         error: { code: "FILE_NAME_INVALID" },

@@ -154,7 +154,7 @@ UI文言は辞書へ集約し、コンポーネント内へ散在させない。
 | 正本文書の追加、削除、移動 | `pnpm docs:index:check` |
 | GitHub Actions、Git hook、秘密情報検査の変更 | `pnpm ci:workflows:check` と [SECURITY.md](../SECURITY.md) の対象検査 |
 | 依存関係変更 | [engineering/dependency-licenses.md](engineering/dependency-licenses.md) の確認一式 |
-| 配布物に影響する変更 | 対象OSの安全ビルドまたはパッケージ確認 |
+| 配布物に影響する変更 | macOSの安全ビルドまたはパッケージ確認 |
 
 `pnpm` コマンドは `app/` で実行する。
 
@@ -178,17 +178,17 @@ pnpm verify:ci
 Node APIを使うmain・preload・shared・scriptsのテストはNode環境、rendererのテストはjsdom環境で分離して実行する。
 `test:coverage` は全テストを実行して製品コードの未実行箇所を測定する。割合そのものはCIの合否条件にせず、測定用・診断用の `scripts/` はテスト対象に含めるが製品コードの集計からは除外する。未実行箇所は数値を埋めるためではなく、保存、拒否、状態遷移など重要な失敗経路の不足を判断する材料にする。
 `architecture:check` はプロセス境界、循環依存、未解決相対import、module alias禁止方針を確認する。保証範囲は [engineering/architecture.md](engineering/architecture.md) を正とする。
-`test:inventory` は全テストファイルを失敗責務の層へ分類し、Electron実行とOS別packageがVitest外の責務であることも表示する。
-`smoke:electron` は一時ユーザーデータを使って開発版Electronを起動し、メインウインドウ、Renderer、Preload API、初期IPC接続を確認して自動終了する。macOSまたはWindowsで安全ビルド済みの配布版を確認する場合は `pnpm smoke:package` を使う。ローカルではユーザーが実行を明示した場合だけ使い、どちらも必要に応じて `-- --artifacts-dir <path>` でJSON reportとプロセスログの保存先を指定できる。
+`test:inventory` は全テストファイルを失敗責務の層へ分類し、Electron実行とmacOS packageがVitest外の責務であることも表示する。
+`smoke:electron` は一時ユーザーデータを使ってmacOSの開発版Electronを起動し、メインウインドウ、Renderer、Preload API、初期IPC接続を確認して自動終了する。安全ビルド済みのmacOS配布版を確認する場合は `pnpm smoke:package` を使う。ローカルではユーザーが実行を明示した場合だけ使い、どちらも必要に応じて `-- --artifacts-dir <path>` でJSON reportとプロセスログの保存先を指定できる。
 `verify` は日常変更向けにNode.js環境、型、全テスト、依存通知・SBOM整合を確認する。
 `verify:full` はローカルで再現可能な包括確認として、Node.js環境、型、全テストとカバレッジ測定、アーキテクチャ境界、文書索引、workflow安全条件、Skill構造、依存通知・SBOM整合を確認する。
 `verify:ci` は `verify:full` にrendererのproduction buildと初期静的import境界の検査を追加し、Code CIの再現可能部分をまとめる。Pull Requestのbase/headを使うバージョン検査はGitHubイベント固有のため別stepで実行する。
 `skills:check` はrepository-owned Skillの構文、重複名、確定参照切れを検査する。`skills:routing:audit` は代表依頼台帳の形式と記録を監査する補助コマンドであり、過去の実行記録が残っていても現在のrouting成功を保証しない。
 変更に対して `verify` が過剰な場合も検証自体は省略せず、対象テスト、型チェック、文書確認、差分確認などへ絞る。
 E2E、配布ビルド、実アプリ操作、スクリーンショット、起動スモークは、ローカル作業ではユーザーの明示指示がない限り実行しない。未実施であることを通常変更の完了阻害条件にしない。
-macOS／Windowsのsafe checkは、配布用ASARの許可内容と必須entry、`LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOM、およびElectron本体を除くアプリ固有resourcesの容量とファイル数を確認する。
-GitHubのCode CIはPull Request、`main`へのpush、手動実行で、イベントのbase/headに対する `pnpm committed-diff:check`、`pnpm verify:ci`、仮想表示server上の `pnpm smoke:electron` を実行する。Pull Requestだけは追加でコミット範囲のバージョン規則を確認する。
-タグ作成前のOS別配布確認は、GitHub ActionsのPre-release Verificationを手動実行する。macOSとWindowsのrunnerでRelease workflowと同じ `build:mac:safe`／`build:win:safe` と `pnpm smoke:package` を使い、タグ、Release、push、repository内容を変更しない。Draft Release workflowもZIP作成前に同じ配布版スモークを実行する。
+macOSのsafe checkは、配布用ASARの許可内容と必須entry、`LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOM、およびElectron本体を除くアプリ固有resourcesの容量とファイル数を確認する。
+GitHubのCode CIはPull Request、`main`へのpush、手動実行で、macOS runner上のイベントのbase/headに対する `pnpm committed-diff:check`、`pnpm verify:ci`、`pnpm smoke:electron` を実行する。Pull Requestだけは追加でコミット範囲のバージョン規則を確認する。
+タグ作成前の配布確認は、GitHub ActionsのPre-release Verificationを手動実行する。macOS runnerでRelease workflowと同じ `build:mac:safe` と `pnpm smoke:package` を使い、タグ、Release、push、repository内容を変更しない。Draft Release workflowもZIP作成前に同じ配布版スモークを実行する。
 ユーザーが実アプリ確認を明示した場合は、`pnpm start:isolated -- --user-data-dir <absolute-temp-path>` で一時データの開発版を起動する。起動元のterminalに出る `RELIC_DEV_APP_IDENTITY` のPIDと完全な実行pathを操作対象の確認に使い、表示名だけで既存ウインドウを選ばない。この切り替えはVite開発server起動時だけ有効で、package版では既定のユーザーデータ保存先を変更しない。
 
 ### 優先してテストする領域

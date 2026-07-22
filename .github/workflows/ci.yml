@@ -17,7 +17,7 @@ concurrency:
 jobs:
   verify:
     name: Verify
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -37,15 +37,6 @@ jobs:
         working-directory: app
         run: pnpm install --frozen-lockfile
 
-      - name: Configure Electron sandbox helper
-        working-directory: app
-        run: |
-          electron_path="$(node -p "require('electron')" | tail -n 1)"
-          sandbox_path="$(dirname "$electron_path")/chrome-sandbox"
-          sudo chown root:root "$sandbox_path"
-          sudo chmod 4755 "$sandbox_path"
-          test "$(stat -c '%u:%g:%a' "$sandbox_path")" = "0:0:4755"
-
       - name: Check committed diff
         working-directory: app
         env:
@@ -59,13 +50,13 @@ jobs:
 
       - name: Run isolated Electron startup smoke
         working-directory: app
-        run: xvfb-run --auto-servernum pnpm smoke:electron -- --artifacts-dir artifacts/electron-smoke
+        run: pnpm smoke:electron -- --artifacts-dir artifacts/electron-smoke
 
       - name: Upload Electron smoke evidence on failure
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: electron-smoke-linux
+          name: electron-smoke-macos
           path: app/artifacts/electron-smoke
           if-no-files-found: ignore
 

@@ -11,7 +11,7 @@
 | カテゴリ | 技術 | 備考 |
 |---------|------|------|
 | 言語 | TypeScript 6 | 型安全な開発のため |
-| デスクトップフレームワーク | Electron 43 | macOS / Windows 向けデスクトップアプリを Web 技術で構築 |
+| デスクトップフレームワーク | Electron 43 | macOS向けデスクトップアプリとしてWeb UIとローカルファイル操作を統合 |
 | エディタエンジン | CodeMirror 6 | 詳細は [editor-engine.md](editor-engine.md) |
 | Markdownパーサー | marked | プレビューHTML生成に使用 |
 | Markdown脚注拡張 | marked-footnote | 脚注記法をmarkedへ追加 |
@@ -36,5 +36,5 @@
 
 ## プラットフォーム
 
-- **対象OS**: macOS / Windows。iOS は現行スタックの対象外とし、必要になった場合はデスクトップ版とは別に検討する
-- **配布方法**: Electron Forge の `package:mac` / `package:win`、`make:mac` / `make:win` を使用する。macOSはZIP/DMG、WindowsはZIP makerを設定済み
+- **対象OS**: Apple Silicon搭載MacのmacOS。その他のOSとIntel Macは現行スタックの対象外とする
+- **配布方法**: Electron Forge の `package:mac` / `make:mac` を使用し、macOS向けZIP/DMGを生成する

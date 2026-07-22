@@ -13,19 +13,17 @@ describe("SettingsPanel", () => {
     featureToggles = defaultFeatureToggles,
     language = "en",
     onFeatureTogglesSave = vi.fn(),
-    onSave = vi.fn(),
-    platform = "darwin"
+    onSave = vi.fn()
   }: {
     featureToggles?: typeof defaultFeatureToggles;
     language?: "en" | "ja";
     onFeatureTogglesSave?: (toggles: typeof defaultFeatureToggles) => void;
     onSave?: (settings: typeof defaultEditorSettings) => void;
-    platform?: NodeJS.Platform;
   } = {}) {
     render(
       <I18nProvider language={language}>
         <SettingsPanel
-          appInfo={{ name: "Relic", platform, version: "1.2.3" }}
+          appInfo={{ name: "Relic", version: "1.2.3" }}
           featureToggles={featureToggles}
           onFeatureTogglesSave={onFeatureTogglesSave}
           onSave={onSave}
@@ -53,15 +51,8 @@ describe("SettingsPanel", () => {
     expect(screen.queryByText("darwin")).not.toBeInTheDocument();
   });
 
-  it("アプリ情報では内部プラットフォーム名ではなくユーザー向けOS名を表示する", () => {
-    renderSettingsPanel({ platform: "win32" });
-
-    expect(screen.getByText("Windows")).toBeInTheDocument();
-    expect(screen.queryByText("win32")).not.toBeInTheDocument();
-  });
-
   it("英語のmacOSでは英語向けフォントを表示する", () => {
-    renderSettingsPanel({ platform: "darwin" });
+    renderSettingsPanel();
 
     expect(screen.getByRole("button", { name: "System font" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Arial" })).toBeInTheDocument();
@@ -69,22 +60,13 @@ describe("SettingsPanel", () => {
     expect(screen.getByRole("button", { name: "Menlo" })).toBeInTheDocument();
   });
 
-  it("英語のWindowsでは英語向けフォントを表示する", () => {
-    renderSettingsPanel({ platform: "win32" });
-
-    expect(screen.getByRole("button", { name: "System font" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Arial" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Georgia" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Consolas" })).toBeInTheDocument();
-  });
-
   it("日本語UIではフォント選択肢をローカライズした元フォント名で表示する", () => {
-    renderSettingsPanel({ language: "ja", platform: "win32" });
+    renderSettingsPanel({ language: "ja" });
 
     expect(screen.getByRole("button", { name: "システムフォント" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "游ゴシック" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "游明朝" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Consolas" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "ヒラギノ角ゴシック" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "ヒラギノ明朝" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Menlo" })).toBeInTheDocument();
   });
 
   it("設定変更時に既存のEditorSettings形式で保存する", () => {

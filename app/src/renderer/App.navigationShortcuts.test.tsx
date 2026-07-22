@@ -279,31 +279,6 @@ describe("App navigation and shortcuts", () => {
     expect(useUiStore.getState().activeSidebarView).toBe("files");
   });
 
-  it("WindowsではCtrlキーで主要ショートカットを実行できる", async () => {
-    setNavigatorPlatform("Win32");
-    window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
-    });
-    useUiStore.setState({
-      activeSidebarView: "files",
-      isSidebarOpen: false
-    });
-
-    await renderApp();
-
-    await screen.findByRole("main");
-
-    fireEvent.keyDown(window, { key: "f", ctrlKey: true });
-
-    expect(await screen.findByPlaceholderText("ファイル名を検索...")).toBeInTheDocument();
-
-    fireEvent.keyDown(window, { key: "P", ctrlKey: true, shiftKey: true });
-
-    expect(await screen.findByPlaceholderText("コマンドを検索...")).toBeInTheDocument();
-    expect(screen.getByText("Ctrl+P")).toBeInTheDocument();
-    expect(screen.getByText("Ctrl+N")).toBeInTheDocument();
-  });
-
   it("閉じたタブがある場合はコマンドとショートカットで最後のタブを開ける", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })

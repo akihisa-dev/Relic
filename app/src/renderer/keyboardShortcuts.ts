@@ -1,27 +1,17 @@
 type ShortcutKey = "mod" | "shift" | "alt" | string;
 
-function getPlatform(): string {
-  return typeof navigator === "undefined" ? "" : navigator.platform;
+export function isPrimaryShortcutEvent(event: KeyboardEvent): boolean {
+  return event.metaKey;
 }
 
-export function isMacPlatform(platform = getPlatform()): boolean {
-  return /^(Mac|iPhone|iPad|iPod)/i.test(platform);
-}
-
-export function isPrimaryShortcutEvent(event: KeyboardEvent, platform = getPlatform()): boolean {
-  return isMacPlatform(platform) ? event.metaKey : event.ctrlKey;
-}
-
-export function formatShortcut(keys: ShortcutKey[], platform = getPlatform()): string {
-  const isMac = isMacPlatform(platform);
-
+export function formatShortcut(keys: ShortcutKey[]): string {
   return keys
     .map((key) => {
       const normalized = key.toLowerCase();
-      if (normalized === "mod") return isMac ? "⌘" : "Ctrl";
-      if (normalized === "shift") return isMac ? "⇧" : "Shift";
-      if (normalized === "alt") return isMac ? "⌥" : "Alt";
+      if (normalized === "mod") return "⌘";
+      if (normalized === "shift") return "⇧";
+      if (normalized === "alt") return "⌥";
       return key;
     })
-    .join(isMac ? "" : "+");
+    .join("");
 }

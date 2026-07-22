@@ -13,7 +13,7 @@ describe("forge-electron-extract", () => {
   it("Node.js 25以降のmacOS配布時だけdittoへ切り替える", () => {
     expect(shouldUseDitto({ enabled: "ditto", nodeVersion: "26.4.0", platform: "darwin" })).toBe(true);
     expect(shouldUseDitto({ enabled: "ditto", nodeVersion: "24.14.0", platform: "darwin" })).toBe(false);
-    expect(shouldUseDitto({ enabled: "ditto", nodeVersion: "26.4.0", platform: "win32" })).toBe(false);
+    expect(shouldUseDitto({ enabled: "ditto", nodeVersion: "26.4.0", platform: "linux" })).toBe(false);
     expect(shouldUseDitto({ enabled: "extract-zip", nodeVersion: "26.4.0", platform: "darwin" })).toBe(false);
   });
 });

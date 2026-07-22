@@ -9,7 +9,6 @@ const requiredAsarEntries = [
   "/.vite/build/main.js",
   "/.vite/build/preload.js",
   "/.vite/renderer/main_window/index.html",
-  "/assets/icon.ico",
   "/assets/icon.iconset/icon_32x32.png"
 ];
 
@@ -24,8 +23,7 @@ export function auditAsarEntries(entries) {
 }
 
 export function normalizeAsarEntry(entry) {
-  const normalized = entry.replaceAll("\\", "/");
-  return normalized.startsWith("/") ? normalized : `/${normalized}`;
+  return entry.startsWith("/") ? entry : `/${entry}`;
 }
 
 export function isForbiddenAsarEntry(entry) {
@@ -42,7 +40,6 @@ export function isForbiddenAsarEntry(entry) {
     "/package.json",
     "/.vite/build/main.js",
     "/.vite/build/preload.js",
-    "/assets/icon.ico",
     "/assets/icon.iconset/icon_32x32.png"
   ].includes(entry)) return false;
   return !entry.startsWith("/.vite/renderer/main_window/");

@@ -98,10 +98,9 @@ Front matter settings, Card view, Graph view, Sphere view, Chronicle view, and f
 
 ## Platforms
 
-- macOS
-- Windows
+- macOS on Apple Silicon
 
-Relic is an Electron app. OS-specific handling is kept to the places where it is necessary, and normal file operations are treated as operations on each OS's local folders.
+Relic is a macOS-only Electron app. Electron keeps the TypeScript, React, CodeMirror, visualization, and local-file boundaries in one desktop architecture; it is not used to provide other operating-system builds.
 
 ---
 
@@ -150,19 +149,17 @@ pnpm install
 pnpm start
 ```
 
-OS-specific start aliases:
+macOS start alias:
 
 ```sh
 pnpm start:mac
-pnpm start:win
 ```
 
-`start:mac` and `start:win` are aliases for the same Electron development start command. Use the alias that matches the OS you are running on.
+`start:mac` is an alias for the Electron development start command.
 
 If you prefer not to use terminal commands directly, helper scripts are available in `scripts/`.
 
-- macOS: `scripts/Relicを起動.command`
-- Windows: `scripts/Relicを起動.bat`
+- `scripts/Relicを起動.command`
 
 ---
 
@@ -203,14 +200,13 @@ Print the current Git-tracked file tree without changing documentation:
 pnpm docs:tree
 ```
 
-OS-specific test aliases:
+macOS test alias:
 
 ```sh
 pnpm test:mac
-pnpm test:win
 ```
 
-Pull Requests, pushes to `main`, and manual Code CI runs execute `verify:ci`. Pull Requests additionally validate version policy against their base and head commits. The packaged app under `app/out/` is checked only when distribution build verification is explicitly requested. Before creating a release tag, the manual Pre-release Verification workflow can run the existing safe builds on macOS and Windows without creating a tag, Release, push, or repository change.
+Pull Requests, pushes to `main`, and manual Code CI runs execute `verify:ci` on macOS. Pull Requests additionally validate version policy against their base and head commits. The packaged app under `app/out/` is checked only when distribution build verification is explicitly requested. Before creating a release tag, the manual Pre-release Verification workflow can run the macOS safe build without creating a tag, Release, push, or repository change.
 
 ---
 
@@ -233,34 +229,6 @@ Verification checks:
 
 - Required: `out/darwin/Relic-darwin-*/Relic.app/Contents/MacOS/Relic`
 - Required: `out/darwin/Relic-darwin-*/Relic.app/Contents/Resources/app.asar`
-- Forbidden: `Setup*.exe` / `Update.exe` / `*.nupkg` / `RELEASES`
-
----
-
-## Windows Build
-
-The Windows build is distributed without an installer. After extracting the ZIP, run `Relic.exe` directly.
-
-```sh
-cd app
-pnpm build:win:safe
-```
-
-You can also run `scripts/Relicをビルド.bat`, which executes `build:win:safe`.
-
-`build:win:safe` runs:
-
-1. Removes the previous `app/out/win32` output.
-2. Runs Electron Forge `package` for 64-bit Windows.
-3. Verifies the generated package and its contents.
-
-Verification checks:
-
-- Required: `out/win32/Relic-win32-x64/Relic.exe`
-- Required: `out/win32/Relic-win32-x64/resources/app.asar`
-- Forbidden: `Setup*.exe` / `Update.exe` / `*.nupkg` / `RELEASES`
-
-For distribution, provide the `out/win32/Relic-win32-x64/` folder as-is or zip it.
 
 ---
 
@@ -406,10 +374,9 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 
 ## プラットフォーム
 
-- macOS
-- Windows
+- Apple Silicon搭載MacのmacOS
 
-RelicはElectronアプリです。OS固有処理は必要な箇所だけに限定し、通常のファイル操作は各OSのローカルフォルダとして扱います。
+RelicはmacOS専用のElectronアプリです。ElectronはTypeScript、React、CodeMirror、可視化、ローカルファイル操作の境界を一つのデスクトップ構成で維持するために使い、他OS向けビルドは提供しません。
 
 ---
 
@@ -458,19 +425,17 @@ pnpm install
 pnpm start
 ```
 
-OS別の起動エイリアス:
+macOS向けの起動エイリアス:
 
 ```sh
 pnpm start:mac
-pnpm start:win
 ```
 
-`start:mac` / `start:win` は同じElectron開発起動をOS別名で呼ぶためのエイリアスです。実行するOS上で使います。
+`start:mac` はElectron開発起動のエイリアスです。
 
 ターミナル操作を避けたい場合は、`scripts/` 配下の補助スクリプトで開発版を起動できます。
 
-- macOS: `scripts/Relicを起動.command`
-- Windows: `scripts/Relicを起動.bat`
+- `scripts/Relicを起動.command`
 
 ---
 
@@ -511,14 +476,13 @@ git -C .. diff --check
 pnpm docs:tree
 ```
 
-OS別のテストエイリアス:
+macOS向けのテストエイリアス:
 
 ```sh
 pnpm test:mac
-pnpm test:win
 ```
 
-Pull Request、`main`へのpush、手動のCode CIは `verify:ci` を実行します。Pull Requestではbase/head間のバージョン規則も追加確認します。`app/out/` 配下のパッケージ版アプリは、配布ビルド確認を明示した場合だけ確認対象にします。Releaseタグ作成前は手動のPre-release Verification workflowで、タグ、Release、push、リポジトリ変更を行わずにmacOSとWindowsの既存safe buildを実行できます。
+Pull Request、`main`へのpush、手動のCode CIはmacOSで `verify:ci` を実行します。Pull Requestではbase/head間のバージョン規則も追加確認します。`app/out/` 配下のパッケージ版アプリは、配布ビルド確認を明示した場合だけ確認対象にします。Releaseタグ作成前は手動のPre-release Verification workflowで、タグ、Release、push、リポジトリ変更を行わずにmacOSのsafe buildを実行できます。
 
 ---
 
@@ -541,34 +505,6 @@ pnpm build:mac:safe
 
 - 必須: `out/darwin/Relic-darwin-*/Relic.app/Contents/MacOS/Relic`
 - 必須: `out/darwin/Relic-darwin-*/Relic.app/Contents/Resources/app.asar`
-- 禁止: `Setup*.exe` / `Update.exe` / `*.nupkg` / `RELEASES`
-
----
-
-## Windowsビルド
-
-Windows版はインストーラーを使わず、ZIP展開後に `Relic.exe` を直接起動する運用です。
-
-```sh
-cd app
-pnpm build:win:safe
-```
-
-補助スクリプトを使う場合は `scripts/Relicをビルド.bat` を実行します。このスクリプトも `build:win:safe` を実行します。
-
-`build:win:safe` は以下を順に実行します。
-
-1. 前回の `app/out/win32` を削除
-2. Electron Forgeの `package` を64-bit Windows向けに実行
-3. 生成したパッケージと内容を検証
-
-検証内容:
-
-- 必須: `out/win32/Relic-win32-x64/Relic.exe`
-- 必須: `out/win32/Relic-win32-x64/resources/app.asar`
-- 禁止: `Setup*.exe` / `Update.exe` / `*.nupkg` / `RELEASES`
-
-配布する場合は、`out/win32/Relic-win32-x64/` フォルダをそのまま配布するかZIP化します。
 
 ---
 

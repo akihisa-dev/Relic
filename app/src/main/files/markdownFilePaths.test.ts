@@ -11,7 +11,7 @@ import {
 } from "./markdownFilePaths";
 
 describe("markdown workspace paths", () => {
-  it("Windows風の区切りが混ざってもワークスペース相対パスはスラッシュ区切りで作る", () => {
+  it("バックスラッシュ区切りが混ざってもワークスペース相対パスはスラッシュ区切りで作る", () => {
     expect(markdownPathInFolder("資料\\読書メモ.md", "archive")).toBe("archive/読書メモ.md");
     expect(markdownPathInFolder("資料\\読書メモ.md", "archive\\2026")).toBe("archive/2026/読書メモ.md");
     expect(renamedMarkdownPath("資料\\読書メモ.md", "読書ログ")).toEqual({
@@ -48,7 +48,7 @@ describe("createCopyRelativePath", () => {
     );
   });
 
-  it("Windows風の区切りが混ざった複製元でもコピー候補をスラッシュ区切りで返す", async () => {
+  it("バックスラッシュ区切りが混ざった複製元でもコピー候補をスラッシュ区切りで返す", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-copy-path-"));
     temporaryPaths.push(workspacePath);
 

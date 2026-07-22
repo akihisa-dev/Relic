@@ -1,7 +1,6 @@
 import path from "node:path";
 
 const exactPackagedFiles = new Set([
-  "/assets/icon.ico",
   "/assets/icon.iconset/icon_32x32.png",
   "/package.json"
 ]);
@@ -35,7 +34,6 @@ export function ignoreRelicPackagePath(filePath: string): boolean {
 }
 
 export function normalizePackagerPath(filePath: string): string {
-  const normalized = filePath.replace(/\\/g, "/");
-  if (normalized === "" || normalized === "/") return "";
-  return normalized.startsWith("/") ? normalized : `/${normalized}`;
+  if (filePath === "" || filePath === "/") return "";
+  return filePath.startsWith("/") ? filePath : `/${filePath}`;
 }
