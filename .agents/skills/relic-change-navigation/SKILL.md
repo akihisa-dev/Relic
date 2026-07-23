@@ -1,6 +1,6 @@
 ---
 name: relic-change-navigation
-description: Relicのコマンドパレット、クイックスイッチャー、ショートカット、左レール、サイドバー、タブ、分割ペイン、右パネル、オーバーレイの状態遷移を追加・修正する。コマンド登録、候補選択、タブ開閉・移動・ピン留め、ペイン統合、フォーカス、入口表示の変更に使う。見た目だけはrelic-change-ui、ファイル処理はrelic-change-workspace-files、全文・タグ検索規則はrelic-change-search-replace、エディタ保存はrelic-change-markdown-editorを優先する。
+description: Relicのコマンドパレット、クイックスイッチャー、ショートカット、左レール、サイドバー、タブ、分割ペイン、右パネル、オーバーレイの状態遷移を追加・修正する。コマンド登録、候補選択、タブ開閉・移動・ピン留め、ペイン統合、フォーカス、入口表示の変更に使う。カード・テーブル・グラフ・スフィア・クロニクルのタブ内挙動は対応する機能Skill、見た目だけはrelic-change-ui、ファイル処理はrelic-change-workspace-files、検索規則はrelic-change-search-replaceを優先する。
 ---
 
 # Relic Navigation Change

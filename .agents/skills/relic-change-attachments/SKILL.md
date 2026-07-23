@@ -1,6 +1,6 @@
 ---
 name: relic-change-attachments
-description: Relicのワークスペース内の画像・PDF添付について、対応形式の認識、ファイルツリー列挙、外部画像の取込、Markdown画像記法とエディタへのドロップ、安全な読込、data URL生成、画像・PDFタブ表示を一貫して追加・修正する。画像またはPDF添付の取込・表示・安全性・不具合に使う。通常のファイル作成・移動・削除・監視はrelic-change-workspace-files、一般のCodeMirror状態はrelic-change-markdown-editor、プレビューHTML安全化とPDF・SVG出力はrelic-change-markdown-output、タブ・ペイン遷移はrelic-change-navigation、グラフの添付ノード生成はrelic-change-graphを優先または併用する。
+description: Relicのワークスペース内の画像・PDF添付について、対応形式の認識、ファイルツリー列挙、外部画像の取込、Markdown画像記法とエディタへのドロップ、安全な読込、data URL生成、画像・PDFタブ表示を一貫して追加・修正する。画像またはPDF添付の取込・表示・安全性・不具合に使う。カードの対象抽出・選択・伸縮表示はrelic-change-card-view、通常のファイル操作はrelic-change-workspace-files、CodeMirrorはrelic-change-markdown-editor、HTML・PDF・SVG出力はrelic-change-markdown-output、タブ遷移はrelic-change-navigation、添付ノードはrelic-change-graphを優先または併用する。
 ---
 
 # Relic Attachment Change

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Sphere"
+  short_description: "スフィアの3D描画・視点・WebGL性能を安全に変更する"
+  default_prompt: "Use $relic-change-sphere to update Relic sphere data, WebGL rendering, camera interactions, and performance safely."

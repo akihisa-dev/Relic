@@ -101,6 +101,39 @@
       "misrouteImpact": "派生データの二重実装や不整合になる"
     },
     {
+      "id": "sphere-view",
+      "request": "スフィアの天球グリッド、視点操作、WebGL停止時の表示を修正してください",
+      "expectedEntrySkill": "relic-change-sphere",
+      "expectedSpecialistSkills": ["relic-guard-task", "relic-change-ui", "relic-test-code"],
+      "forbiddenSkills": ["relic-change-graph", "relic-test-development-app"],
+      "requiredDocs": ["docs/features/navigation.md", "docs/design/DESIGN.md"],
+      "permissionMode": "local-change-no-gui",
+      "expectedEndState": "3次元runtime、camera、補助表現、障害状態を自動テストで整合する",
+      "misrouteImpact": "2次元Canvasの契約を誤って変更するか、GPU資源と古い状態を残す"
+    },
+    {
+      "id": "table-view",
+      "request": "テーブルの列ドラッグ、仮想表示、表示設定の保存失敗をまとめて修正してください",
+      "expectedEntrySkill": "relic-change-table-view",
+      "expectedSpecialistSkills": ["relic-guard-task", "relic-change-settings", "relic-change-ui", "relic-test-code"],
+      "forbiddenSkills": ["relic-change-frontmatter", "relic-test-development-app"],
+      "requiredDocs": ["docs/features/frontmatter.md", "docs/features/navigation.md"],
+      "permissionMode": "local-change-no-gui",
+      "expectedEndState": "列の一時状態、drop確定、固定高仮想表示、設定保存を一貫して検証する",
+      "misrouteImpact": "YAML編集へ責務が漏れるか、列ずれ・設定消失・古い応答反映が再発する"
+    },
+    {
+      "id": "card-view",
+      "request": "カードの再選択動作、古い画像読込結果、低い画面でのはみ出しを修正してください",
+      "expectedEntrySkill": "relic-change-card-view",
+      "expectedSpecialistSkills": ["relic-guard-task", "relic-change-attachments", "relic-change-ui", "relic-test-code"],
+      "forbiddenSkills": ["relic-change-navigation", "relic-test-development-app"],
+      "requiredDocs": ["docs/features/navigation.md", "docs/engineering/data-model.md"],
+      "permissionMode": "local-change-no-gui",
+      "expectedEndState": "選択、非同期画像、縦横レスポンシブをカード固有の契約として検証する",
+      "misrouteImpact": "画像安全性だけを直して選択回帰や古い画像表示、画面外へのはみ出しが残る"
+    },
+    {
       "id": "search-and-tools",
       "request": "全文検索結果を安全に一括置換し、タグ別索引ファイルも生成してください",
       "expectedEntrySkill": "relic-change-search-replace",

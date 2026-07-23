@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Card View"
+  short_description: "カードの派生値・選択・画像読込・伸縮表示を安全に変更する"
+  default_prompt: "Use $relic-change-card-view to update Relic card data, selection, image loading, and responsive presentation safely."

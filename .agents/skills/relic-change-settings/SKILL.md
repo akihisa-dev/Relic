@@ -1,6 +1,6 @@
 ---
 name: relic-change-settings
-description: Relicのアプリ設定・ワークスペース別設定について、schema、既定値、入力検証、互換移行、安全書き込み、設定ファイル単位の更新queue、IPC、設定パネルの保存挙動を変更する。テーマ、表示言語の選択・保存・system解決、エディタ設定、機能トグル、登録ワークスペース情報、ピン留め、チャート・フロントマター候補、同時更新・保存失敗などの永続化追加・修正に使う。翻訳内容・用語はrelic-change-localization、見た目だけはrelic-change-ui、実ファイル操作はrelic-change-workspace-files、グラフ・クロニクル固有設定は対応するrelic-change-graph・relic-change-chronicle、IPC境界はrelic-change-electron-boundariesを併用する。調査・レビューだけでは編集しない。
+description: Relicのアプリ設定・ワークスペース別設定について、schema、既定値、入力検証、互換移行、安全書き込み、設定ファイル単位の更新queue、IPC、設定パネルの保存挙動を変更する。テーマ、表示言語、エディタ設定、機能トグル、登録ワークスペース、ピン留め、チャート・テーブル・フロントマター候補、同時更新・保存失敗などの永続化追加・修正に使う。各ビュー固有の設定操作はrelic-change-table-view・relic-change-graph・relic-change-sphere・relic-change-chronicle、翻訳はrelic-change-localization、実ファイル操作はrelic-change-workspace-files、IPC境界はrelic-change-electron-boundariesを優先または併用する。
 ---
 
 # Relic Settings Change

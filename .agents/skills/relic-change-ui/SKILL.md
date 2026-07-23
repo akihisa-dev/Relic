@@ -1,6 +1,6 @@
 ---
 name: relic-change-ui
-description: RelicのUI、デザイン、画面構成、操作感、表示状態を実装または修正し、関連仕様と状態別テストを安全に整合させる。開発版での実画面確認と説明画像の取得はユーザーが明示した場合だけ扱う。見た目、レイアウト、テーマ、hover・focus・drag・zoom・pointerup・pointercancel・lost capture・狭幅、アニメーション、README掲載画像の変更依頼に使う。UI用語・日英翻訳はrelic-change-localization、グラフ・クロニクル固有操作はrelic-change-graph・relic-change-chronicle、機能固有の状態遷移やデータ規則は対応する機能変更Skillを優先または併用し、調査・レビューだけでは読み取り専用、Issue起点はrelic-issue、コミットだけはrelic-commitを優先する。
+description: RelicのUI、デザイン、画面構成、操作感、表示状態を実装または修正し、関連仕様と状態別テストを安全に整合させる。開発版での実画面確認と説明画像の取得はユーザーが明示した場合だけ扱う。見た目、レイアウト、テーマ、hover・focus・drag・zoom・pointerup・pointercancel・lost capture・狭幅、アニメーション、README掲載画像の変更依頼に使う。UI用語はrelic-change-localization、カード・テーブル・グラフ・スフィア・クロニクル固有操作は対応する機能Skillを優先または併用し、調査・レビューだけでは読み取り専用とする。
 ---
 
 # Relic UI Change

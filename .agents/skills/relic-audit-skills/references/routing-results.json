@@ -8,7 +8,7 @@
     "sameNameVariants": false,
     "historyScope": "full",
     "executionAvailable": true,
-    "notes": "headはルーティング台帳を再評価した変更前HEAD。各実行結果はexecution.headで観測時点を記録する。Repository-owned 31件は収集済み。外部Skillはカタログ名を記録し、今回使用したskill-creatorだけ内容を確認。"
+    "notes": "headは既存ルーティング台帳を再評価した変更前HEAD。各実行結果はexecution.headで観測時点を記録する。Repository-owned 31件は既存観測時点の件数であり、追加3件は静的整合だけを確認して独立routing実行を未実施とした。外部Skillはカタログ名を記録し、今回使用したskill-creatorだけ内容を確認。"
   },
   "cases": [
     {"caseId":"issue-all-open","staticStatus":"static-pass","execution":{"status":"execution-fail","actualSkills":["relic-issue","relic-change-ci","relic-test-code","relic-debug-packaging","relic-audit-code-health","relic-audit-skills","relic-maintain-docs"],"head":"17bdf3ffb08a8eb1bb4e8a696f1ca7b7d2035b96","reason":"過去の観測では現行ケースが期待するguard・commit・version Skillの選択を確認できない"}},
@@ -20,6 +20,9 @@
     {"caseId":"workspace-file-settings","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"markdown-stack","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"derived-views","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
+    {"caseId":"sphere-view","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設Skillのdescriptionと台帳の静的整合だけを確認し、独立したモデルrouting実行は未実施"}},
+    {"caseId":"table-view","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設Skillのdescriptionと台帳の静的整合だけを確認し、独立したモデルrouting実行は未実施"}},
+    {"caseId":"card-view","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設Skillのdescriptionと台帳の静的整合だけを確認し、独立したモデルrouting実行は未実施"}},
     {"caseId":"search-and-tools","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"ci-vs-publish","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"ci-remote-log-diagnosis","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境は使用していない。GitHub連携によるrun・job・log取得は実接続で確認済み"}},

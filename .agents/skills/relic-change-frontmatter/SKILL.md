@@ -1,6 +1,6 @@
 ---
 name: relic-change-frontmatter
-description: Relicのフロントマターについて、先頭YAMLの解析、フォーム表示、固定プロパティ、追加・編集・削除・ドラッグ並べ替え、候補、YAML往復、タグ・別名・クロニクルへの派生を本文と既存YAMLを保護しながら変更する。parser、serializer、drop・cancel、フォーム入力、壊れたYAML、aliases・category・tags・chronicleの依頼に使う。一般のMarkdown編集はrelic-change-markdown-editor、クロニクル表示・配置はrelic-change-chronicle、出力はrelic-change-markdown-output、見た目だけはrelic-change-ui、Issue起点はrelic-issue、コミットだけはrelic-commitを優先する。
+description: Relicのフロントマターについて、先頭YAMLの解析、フォーム表示、固定プロパティ、追加・編集・削除・ドラッグ並べ替え、候補、YAML往復、タグ・別名・カード・テーブル・クロニクルへの派生元を本文と既存YAMLを保護しながら変更する。parser、serializer、drop・cancel、フォーム入力、壊れたYAML、aliases・card・category・tags・chronicleの依頼に使う。一般のMarkdown編集はrelic-change-markdown-editor、カード表示はrelic-change-card-view、テーブル表示はrelic-change-table-view、クロニクル表示はrelic-change-chronicle、出力はrelic-change-markdown-output、見た目だけはrelic-change-uiを優先する。
 ---
 
 # Relic Frontmatter Change

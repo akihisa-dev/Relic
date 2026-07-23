@@ -1,0 +1,4 @@
+interface:
+  display_name: "Relic Table View"
+  short_description: "テーブルの派生値・列操作・仮想表示・設定保存を安全に変更する"
+  default_prompt: "Use $relic-change-table-view to update Relic table data, columns, virtualized rows, and persisted preferences safely."

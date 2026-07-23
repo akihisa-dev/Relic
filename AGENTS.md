@@ -90,6 +90,8 @@
 - UI用語、日本語・英語の翻訳、翻訳キー、未翻訳、言語別の見切れでは `.agents/skills/relic-change-localization/SKILL.md` に従う
 - Markdownエディタ、ライブプレビュー、選択範囲、編集履歴、自動保存接続の変更では `.agents/skills/relic-change-markdown-editor/SKILL.md` に従う
 - フロントマターYAML、固定プロパティ、フォーム、往復保持の変更では `.agents/skills/relic-change-frontmatter/SKILL.md` に従う
+- カードビューの対象抽出、選択、画像読込、レスポンシブ表示の変更では `.agents/skills/relic-change-card-view/SKILL.md` に従う
+- テーブルビューの派生値、列操作、検索、仮想表示、設定保存の変更では `.agents/skills/relic-change-table-view/SKILL.md` に従う
 - Markdown描画、HTML・PDF・SVG出力、安全化の変更では `.agents/skills/relic-change-markdown-output/SKILL.md` に従う
 - ワークスペース、ファイル、フォルダ、保存、移動、削除、外部変更の変更では `.agents/skills/relic-change-workspace-files/SKILL.md` に従う
 - 添付画像・PDFの対応形式、取込、安全な読込、Markdownへの画像追加、画像・PDF表示では `.agents/skills/relic-change-attachments/SKILL.md` に従う
@@ -98,6 +100,7 @@
 - 内部リンク、Markdown相対リンク、埋め込み、バックリンク、未リンク参照、aliases、共有派生索引では `.agents/skills/relic-change-links-index/SKILL.md` に従う
 - コマンド、クイックスイッチャー、ショートカット、タブ、ペイン、画面移動の変更では `.agents/skills/relic-change-navigation/SKILL.md` に従う
 - グラフの派生データ、Canvas描画、検索、強調、物理演算では `.agents/skills/relic-change-graph/SKILL.md` に従う
+- スフィアの3次元派生、WebGL描画、視点操作、星表現、性能では `.agents/skills/relic-change-sphere/SKILL.md` に従う
 - クロニクルのfrontmatter解析、暦換算、配置、Canvas描画、操作では `.agents/skills/relic-change-chronicle/SKILL.md` に従う
 - アプリ設定、ワークスペース設定、schema、互換移行、設定保存の変更では `.agents/skills/relic-change-settings/SKILL.md` に従う
 - IPC、preload、main handler、BrowserWindow、CSPの変更では `.agents/skills/relic-change-electron-boundaries/SKILL.md` に従う

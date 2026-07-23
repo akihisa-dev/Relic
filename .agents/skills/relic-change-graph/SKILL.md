@@ -1,6 +1,6 @@
 ---
 name: relic-change-graph
-description: Relicのグラフビューについて、Markdown由来のfile・tag・添付・未解決nodeとedge、共有索引consumer、検索・filter・group、Canvas 2D描画、Web Worker物理演算、pan・zoom・drag・hit判定・再描画停止を追加・修正する。グラフ固有の派生データ、操作、性能変更に使う。リンク・共有索引はrelic-change-links-index、添付形式はrelic-change-attachments、タブ遷移はrelic-change-navigation、見た目だけはrelic-change-uiを優先または併用する。クロニクルCanvasはrelic-change-chronicleが所有し、両Canvasで共有するinteraction helperや契約を変える場合は両Skillを使う。
+description: Relicの2次元グラフビューについて、Markdown由来のfile・tag・添付・未解決nodeとedge、共有索引consumer、検索・filter・group、Canvas 2D描画、Web Worker物理演算、pan・zoom・drag・hit判定・再描画停止を追加・修正する。2次元グラフ固有の派生データ、操作、性能変更に使う。リンク・共有索引はrelic-change-links-index、3次元スフィアのWebGL・camera・星表現はrelic-change-sphere、添付形式はrelic-change-attachments、タブ遷移はrelic-change-navigation、クロニクルCanvasはrelic-change-chronicleを優先または併用する。
 ---
 
 # Relic Graph Change

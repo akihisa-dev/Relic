@@ -1,6 +1,6 @@
 ---
 name: relic-change-links-index
-description: Relicの内部リンク・Markdown相対リンク・ファイル埋め込み、別名、バックリンク、アウトゴーイングリンク、未リンク参照、タグ派生データと、検索・リンク・グラフ・クロニクルが共有するワークスペースMarkdown索引・解析キャッシュを追加・修正する。リンク解決、解析、派生一覧、索引構造、増分更新、再構築の変更に使う。検索・置換のqueryと書込はrelic-change-search-replace、ファイル移動・renameの実操作はrelic-change-workspace-files、添付形式はrelic-change-attachments、グラフ固有派生はrelic-change-graph、年表固有派生はrelic-change-chronicleを優先または併用する。
+description: Relicの内部リンク・Markdown相対リンク・ファイル埋め込み、別名、バックリンク、アウトゴーイングリンク、未リンク参照、タグ派生データと、検索・カード・テーブル・グラフ・スフィア・クロニクルが共有するワークスペースMarkdown索引・解析キャッシュを追加・修正する。リンク解決、解析、派生一覧、索引構造、増分更新、再構築の変更に使う。各consumer固有の表示はrelic-change-card-view・relic-change-table-view・relic-change-graph・relic-change-sphere・relic-change-chronicle、検索・置換はrelic-change-search-replace、ファイル実操作はrelic-change-workspace-filesを優先または併用する。
 ---
 
 # Relic Links and Shared Index Change
