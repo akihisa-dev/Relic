@@ -8,7 +8,7 @@ import {
   type GraphHighlightState
 } from "./graphInteractionModel";
 import {
-  graphCategoryRadius,
+  graphCategoryLayouts,
   normalizeGraphCategory
 } from "./graphCategoryModel";
 import type {
@@ -53,7 +53,7 @@ export function drawGraph(
   const highlightProgress = graphHighlightProgress(animationTimeMs);
   const highlightOpacity = graphHighlightOpacity(animationTimeMs);
   const focusedColor = focused ? theme.accent : null;
-  drawGraphCategoryBubbles(context, nodes, options, view.scale, theme);
+  drawGraphCategoryBubbles(context, nodes, view.scale, theme);
   if (focused && focusedColor) {
     drawGraphNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, highlightOpacity);
   }
@@ -270,6 +270,8 @@ export function nodeColor(
   node: WorkspaceGraphNode,
   theme: GraphDrawTheme
 ): string {
+  const category = normalizeGraphCategory(node.category);
+  if (node.type === "file" && category) return graphCategoryColor(category, theme);
   if (node.type === "tag") return theme.accent;
   if (node.type === "attachment") return theme.textMuted;
   if (node.type === "unresolved") return theme.textMuted;
@@ -284,62 +286,49 @@ export interface GraphCategoryBubble {
   y: number;
 }
 
-export function graphCategoryBubbles(
-  nodes: GraphSimNode[],
-  options: GraphOptions,
-  scale: number
-): GraphCategoryBubble[] {
-  const nodesByCategory = new Map<string, GraphSimNode[]>();
-  for (const node of nodes) {
-    const category = normalizeGraphCategory(node.category);
-    if (!category) continue;
-    const categoryNodes = nodesByCategory.get(category) ?? [];
-    categoryNodes.push(node);
-    nodesByCategory.set(category, categoryNodes);
+export function graphCategoryBubbles(nodes: GraphSimNode[]): GraphCategoryBubble[] {
+  return graphCategoryLayouts(nodes).map(({ category, radius, x, y }) => ({
+    category,
+    radius,
+    x,
+    y
+  }));
+}
+
+export function graphCategoryColor(category: string, theme: GraphDrawTheme): string {
+  let hash = 2_166_136_261;
+  for (let index = 0; index < category.length; index += 1) {
+    hash ^= category.charCodeAt(index);
+    hash = Math.imul(hash, 16_777_619);
   }
 
-  return [...nodesByCategory.entries()]
-    .toSorted(([left], [right]) => left.localeCompare(right, "ja"))
-    .map(([category, categoryNodes]) => {
-      const x = categoryNodes.reduce((sum, node) => sum + node.x, 0) / categoryNodes.length;
-      const y = categoryNodes.reduce((sum, node) => sum + node.y, 0) / categoryNodes.length;
-      const padding = 30 / Math.max(scale, 0.01);
-      const contentRadius = Math.max(...categoryNodes.map((node) =>
-        Math.hypot(node.x - x, node.y - y) +
-        graphNodeVisualRadius(node, options, scale)
-      ));
-
-      return {
-        category,
-        radius: Math.max(graphCategoryRadius(categoryNodes.length), contentRadius + padding),
-        x,
-        y
-      };
-    });
+  const hue = Math.abs(hash) % 360;
+  const lightness = graphThemeIsDark(theme.background) ? 68 : 40;
+  return `hsl(${hue} 62% ${lightness}%)`;
 }
 
 function drawGraphCategoryBubbles(
   context: CanvasRenderingContext2D,
   nodes: GraphSimNode[],
-  options: GraphOptions,
   scale: number,
   theme: GraphDrawTheme
 ): void {
-  for (const bubble of graphCategoryBubbles(nodes, options, scale)) {
+  for (const bubble of graphCategoryBubbles(nodes)) {
+    const color = graphCategoryColor(bubble.category, theme);
     context.save();
-    context.fillStyle = theme.accent;
-    context.globalAlpha = 0.055;
+    context.fillStyle = color;
+    context.globalAlpha = 0.075;
     context.beginPath();
     context.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
     context.fill();
 
-    context.globalAlpha = 0.32;
-    context.strokeStyle = theme.accent;
+    context.globalAlpha = 0.46;
+    context.strokeStyle = color;
     context.lineWidth = 1.4 / scale;
     context.stroke();
 
-    context.globalAlpha = 0.82;
-    context.fillStyle = theme.textSecondary;
+    context.globalAlpha = 0.92;
+    context.fillStyle = color;
     context.font = `650 ${13 / scale}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
     context.textAlign = "center";
     context.textBaseline = "top";
@@ -351,6 +340,28 @@ function drawGraphCategoryBubbles(
     );
     context.restore();
   }
+}
+
+function graphThemeIsDark(background: string): boolean {
+  const normalized = background.trim();
+  const hexadecimal = normalized.match(/^#([\da-f]{3}|[\da-f]{6})$/i);
+  if (hexadecimal) {
+    const value = hexadecimal[1]!;
+    const expanded = value.length === 3
+      ? [...value].map((character) => `${character}${character}`).join("")
+      : value;
+    const red = Number.parseInt(expanded.slice(0, 2), 16);
+    const green = Number.parseInt(expanded.slice(2, 4), 16);
+    const blue = Number.parseInt(expanded.slice(4, 6), 16);
+    return red * 0.2126 + green * 0.7152 + blue * 0.0722 < 128;
+  }
+
+  const rgb = normalized.match(/^rgba?\(\s*(\d+)\D+(\d+)\D+(\d+)/i);
+  if (!rgb) return false;
+  const red = Number(rgb[1]);
+  const green = Number(rgb[2]);
+  const blue = Number(rgb[3]);
+  return red * 0.2126 + green * 0.7152 + blue * 0.0722 < 128;
 }
 
 export function graphHighlightAlpha(

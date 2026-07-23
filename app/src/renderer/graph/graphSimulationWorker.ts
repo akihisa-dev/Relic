@@ -15,6 +15,7 @@ import {
   graphNodeWeight
 } from "./graphLayout";
 import {
+  applyGraphCategoryBoundary,
   graphCategoryAttractionStrength,
   graphCategoryLayouts,
   graphCategoryTarget
@@ -155,6 +156,10 @@ function updateSimulationForces(): void {
       forceCollide<WorkerNode>()
         .radius((node) => graphNodeBaseRadiusFromWeight(graphNodeWeight(node), currentOptions) + 6)
         .strength(0.34)
+    )
+    .force(
+      "category-boundary",
+      (alpha) => applyGraphCategoryBoundary(workerNodes, categoryLayouts, alpha)
     );
 }
 

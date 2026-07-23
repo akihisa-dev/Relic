@@ -15,6 +15,7 @@ import {
   graphNodeWeight
 } from "./graphLayout";
 import {
+  applyGraphCategoryBoundary,
   graphCategoryAttractionStrength,
   graphCategoryLayouts,
   graphCategoryTarget
@@ -181,6 +182,10 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
         forceCollide<FallbackNode>()
           .radius((node) => graphNodeBaseRadiusFromWeight(graphNodeWeight(node), currentOptions) + 6)
           .strength(0.34)
+      )
+      .force(
+        "category-boundary",
+        (alpha) => applyGraphCategoryBoundary(fallbackNodes, categoryLayouts, alpha)
       );
   };
 

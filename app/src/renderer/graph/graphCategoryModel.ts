@@ -10,11 +10,20 @@ export interface GraphCategoryLayout {
   y: number;
 }
 
+export interface GraphCategoryForceNode extends GraphCategoryNode {
+  vx?: number;
+  vy?: number;
+  x?: number;
+  y?: number;
+}
+
 export const graphCategoryAttractionStrength = 0.22;
 
 const graphCategoryMinimumRadius = 96;
 const graphCategoryNodeSpacing = 48;
 const graphCategoryGap = 72;
+const graphCategoryBoundaryPadding = 36;
+const graphCategoryBoundaryStrength = 0.42;
 
 export function normalizeGraphCategory(category: unknown): string | null {
   if (typeof category !== "string") return null;
@@ -68,4 +77,32 @@ export function graphCategoryTarget(
 ): GraphCategoryLayout | null {
   const category = normalizeGraphCategory(node.category);
   return category ? layouts.get(category) ?? null : null;
+}
+
+export function applyGraphCategoryBoundary(
+  nodes: Iterable<GraphCategoryForceNode>,
+  layouts: ReadonlyMap<string, GraphCategoryLayout>,
+  alpha: number
+): void {
+  for (const node of nodes) {
+    const target = graphCategoryTarget(node, layouts);
+    if (!target || node.x === undefined || node.y === undefined) continue;
+
+    const dx = node.x - target.x;
+    const dy = node.y - target.y;
+    const distance = Math.hypot(dx, dy);
+    const maximumDistance = Math.max(
+      graphCategoryMinimumRadius / 2,
+      target.radius - graphCategoryBoundaryPadding
+    );
+    if (distance <= maximumDistance || distance === 0) continue;
+
+    const correction = (
+      (distance - maximumDistance) *
+      graphCategoryBoundaryStrength *
+      Math.max(0, alpha)
+    );
+    node.vx = (node.vx ?? 0) - dx / distance * correction;
+    node.vy = (node.vy ?? 0) - dy / distance * correction;
+  }
 }

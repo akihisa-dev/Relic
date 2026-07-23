@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { WorkspaceGraphNode } from "../../shared/ipc";
-import { graphCategoryBubbles, nodeColor } from "./graphDrawingModel";
-import { defaultGraphDrawTheme, defaultGraphOptions, type GraphSimNode } from "./graphTypes";
+import {
+  graphCategoryBubbles,
+  graphCategoryColor,
+  nodeColor
+} from "./graphDrawingModel";
+import { defaultGraphDrawTheme, type GraphSimNode } from "./graphTypes";
 
 function graphNode(type: WorkspaceGraphNode["type"]): WorkspaceGraphNode {
   return {
@@ -52,11 +56,29 @@ describe("graphDrawingModel", () => {
     const bubbles = graphCategoryBubbles([
       createNode("A.md", 10, 20, "人物"),
       createNode("B.md", 50, 20, "人物"),
-      createNode("C.md", -80, 0)
-    ], defaultGraphOptions, 1);
+      createNode("C.md", -80, 0),
+      createNode("D.md", 0, 0, "資料")
+    ]);
 
-    expect(bubbles).toHaveLength(1);
-    expect(bubbles[0]).toMatchObject({ category: "人物", x: 30, y: 20 });
-    expect(bubbles[0]!.radius).toBeGreaterThan(20);
+    expect(bubbles).toHaveLength(2);
+    expect(bubbles.map((bubble) => bubble.category)).toEqual(["資料", "人物"]);
+    const distance = Math.hypot(
+      bubbles[0]!.x - bubbles[1]!.x,
+      bubbles[0]!.y - bubbles[1]!.y
+    );
+    expect(distance).toBeGreaterThan(bubbles[0]!.radius + bubbles[1]!.radius);
+  });
+
+  it("カテゴリ名とテーマから安定した色を割り当てる", () => {
+    const darkTheme = { ...defaultGraphDrawTheme, background: "#11120f" };
+    const personColor = graphCategoryColor("人物", defaultGraphDrawTheme);
+
+    expect(graphCategoryColor("人物", defaultGraphDrawTheme)).toBe(personColor);
+    expect(graphCategoryColor("資料", defaultGraphDrawTheme)).not.toBe(personColor);
+    expect(graphCategoryColor("人物", darkTheme)).not.toBe(personColor);
+    expect(nodeColor({ ...graphNode("file"), category: "人物" }, defaultGraphDrawTheme))
+      .toBe(personColor);
+    expect(nodeColor(graphNode("file"), defaultGraphDrawTheme))
+      .toBe(defaultGraphDrawTheme.textSecondary);
   });
 });
