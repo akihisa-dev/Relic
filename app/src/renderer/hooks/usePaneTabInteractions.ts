@@ -12,6 +12,7 @@ import { contextMenuPosition } from "../fileTreeUi";
 import type { PaneId } from "../store/editorStore";
 
 export interface PaneTabDropTarget {
+  gapWidth: number;
   position: "after" | "before";
   tabId: string | null;
 }
@@ -21,6 +22,14 @@ export interface PaneTabContextMenuState {
   x: number;
   y: number;
 }
+
+interface PaneTabDragSession {
+  fromPane: PaneId;
+  tabId: string;
+  width: number;
+}
+
+let activePaneTabDrag: PaneTabDragSession | null = null;
 
 export function usePaneTabInteractions({
   onTabMove,
@@ -38,9 +47,11 @@ export function usePaneTabInteractions({
   handleTabDragStart: (e: DragEvent<HTMLElement>, tabId: string, isClosing: boolean) => void;
   handleTabDrop: (e: DragEvent<HTMLElement>, targetTabId?: string | null) => void;
   openContextMenu: (tabId: string, x: number, y: number) => void;
+  draggedTabId: string | null;
   tabDropTarget: PaneTabDropTarget | null;
 } {
   const [contextMenu, setContextMenu] = useState<PaneTabContextMenuState | null>(null);
+  const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [tabDropTarget, setTabDropTarget] = useState<PaneTabDropTarget | null>(null);
 
   useEffect(() => {
@@ -69,6 +80,8 @@ export function usePaneTabInteractions({
 
     e.preventDefault();
     e.stopPropagation();
+    activePaneTabDrag = null;
+    setDraggedTabId(null);
     setTabDropTarget(null);
     onTabMove(
       draggedTab.fromPane,
@@ -87,7 +100,11 @@ export function usePaneTabInteractions({
     if (!dataTransferHasPaneTab(e.dataTransfer.types)) return;
     e.preventDefault();
     if (e.target === e.currentTarget) {
-      setTabDropTarget({ position: "after", tabId: null });
+      setTabDropTarget({
+        gapWidth: activePaneTabDrag?.width ?? 0,
+        position: "after",
+        tabId: null
+      });
     }
   };
 
@@ -95,7 +112,12 @@ export function usePaneTabInteractions({
     if (!dataTransferHasPaneTab(e.dataTransfer.types)) return;
     e.preventDefault();
     e.stopPropagation();
+    if (activePaneTabDrag?.fromPane === pane && activePaneTabDrag.tabId === tabId) {
+      setTabDropTarget(null);
+      return;
+    }
     setTabDropTarget({
+      gapWidth: activePaneTabDrag?.width ?? e.currentTarget.getBoundingClientRect().width,
       position: paneTabDropPosition(e.clientX, e.currentTarget.getBoundingClientRect()),
       tabId
     });
@@ -103,16 +125,26 @@ export function usePaneTabInteractions({
 
   const handleTabDragStart = (e: DragEvent<HTMLElement>, tabId: string, isClosing: boolean): void => {
     if (isClosing) return;
+    const width = e.currentTarget.getBoundingClientRect().width;
+    activePaneTabDrag = { fromPane: pane, tabId, width };
+    setDraggedTabId(tabId);
     e.dataTransfer.setData(PANE_TAB_DRAG_MIME, serializePaneTabDragPayload({ fromPane: pane, tabId }));
     e.dataTransfer.effectAllowed = "move";
+  };
+
+  const finishTabDrag = (): void => {
+    activePaneTabDrag = null;
+    setDraggedTabId(null);
+    setTabDropTarget(null);
   };
 
   return {
     closeContextMenu,
     contextMenu,
+    draggedTabId,
     handleTabBarDragLeave,
     handleTabBarDragOver,
-    handleTabDragEnd: () => setTabDropTarget(null),
+    handleTabDragEnd: finishTabDrag,
     handleTabDragOver,
     handleTabDragStart,
     handleTabDrop,

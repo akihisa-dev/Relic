@@ -292,6 +292,12 @@
   min-width: 0;
   padding: 7px 10px;
   position: relative;
+  transform: translateX(var(--table-column-drag-offset, 0));
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    opacity var(--motion-fast) var(--ease-standard),
+    transform var(--motion-normal) var(--ease-standard);
+  will-change: transform;
 }
 
 .table-view-header .table-view-cell {
@@ -299,8 +305,9 @@
   padding-block: 0;
 }
 
+.table-view-cell--dragging,
 .table-view-header .table-view-cell--dragging {
-  opacity: 0.55;
+  opacity: 0;
 }
 
 .table-view-header .table-view-cell--drop-before {
@@ -682,6 +689,10 @@
 @media (prefers-reduced-motion: reduce) {
   .table-toolbar-button,
   .table-file-link {
+    transition-duration: 1ms;
+  }
+
+  .table-view-cell {
     transition-duration: 1ms;
   }
 }

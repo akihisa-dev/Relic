@@ -7,6 +7,7 @@ import {
   nextTableSort,
   reorderTableProperties,
   sortTableRows,
+  tableColumnDragOffsets,
   tableColumnWidth,
   visibleTableRange,
   withTableColumnWidth
@@ -59,6 +60,32 @@ describe("tableViewModel", () => {
       .toEqual(["status", "count", "tags"]);
     expect(reorderTableProperties(["count", "status"], "count", "count", "after"))
       .toEqual(["count", "status"]);
+  });
+
+  it("可変列幅からドラッグ中の周囲列だけを移動する距離を求める", () => {
+    const widths = { count: 120, status: 200, tags: 160 };
+
+    expect(tableColumnDragOffsets(
+      ["count", "status", "tags"],
+      widths,
+      "count",
+      "tags",
+      "after"
+    )).toEqual({ status: -120, tags: -120 });
+    expect(tableColumnDragOffsets(
+      ["count", "status", "tags"],
+      widths,
+      "tags",
+      "count",
+      "before"
+    )).toEqual({ count: 160, status: 160 });
+    expect(tableColumnDragOffsets(
+      ["count", "status", "tags"],
+      widths,
+      "count",
+      "status",
+      "before"
+    )).toEqual({});
   });
 
   it("検索と絞り込みをAND条件で適用し、未設定と空値を区別する", () => {

@@ -102,6 +102,25 @@ export function reorderTableProperties(
   return next;
 }
 
+export function tableColumnDragOffsets(
+  properties: string[],
+  widths: Readonly<Record<string, number>>,
+  source: string,
+  target: string,
+  edge: TableColumnDropEdge
+): Readonly<Record<string, number>> {
+  const reordered = reorderTableProperties(properties, source, target, edge);
+  if (reordered === properties || reordered.every((property, index) => property === properties[index])) return {};
+
+  const originalPositions = columnPositions(properties, widths);
+  const reorderedPositions = columnPositions(reordered, widths);
+  return Object.fromEntries(properties.flatMap((property) => {
+    if (property === source) return [];
+    const offset = (reorderedPositions[property] ?? 0) - (originalPositions[property] ?? 0);
+    return offset === 0 ? [] : [[property, offset]];
+  }));
+}
+
 export function visibleTableRange(
   rowCount: number,
   scrollTop: number,
@@ -112,6 +131,18 @@ export function visibleTableRange(
   const start = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
   const end = Math.min(rowCount, Math.ceil((scrollTop + viewportHeight) / rowHeight) + overscan);
   return { end, start };
+}
+
+function columnPositions(
+  properties: string[],
+  widths: Readonly<Record<string, number>>
+): Record<string, number> {
+  let position = 0;
+  return Object.fromEntries(properties.map((property) => {
+    const entry: [string, number] = [property, position];
+    position += widths[property] ?? 0;
+    return entry;
+  }));
 }
 
 function compareMissing(left: WorkspaceTableValue | undefined | null, right: WorkspaceTableValue | undefined | null): number {

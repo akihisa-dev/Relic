@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 describe("DESIGN.md compliance", () => {
   const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
   const settingsCss = readFileSync("src/renderer/styles/settings.css", "utf8");
+  const tableCss = readFileSync("src/renderer/styles/table-view.css", "utf8");
   const motionCss = readFileSync("src/renderer/styles/theme-motion.css", "utf8");
+  const workspaceEditorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
   it("uses the DESIGN.md color tokens", () => {
     expect(designCss).toContain("--color-primary: #1a1b17;");
@@ -60,6 +62,21 @@ describe("DESIGN.md compliance", () => {
     expect(settingsCss).toMatch(/\.settings-toggle-switch\.on \.switch-knob\s*\{[^}]*transform:\s*translateX\(22px\);/s);
     expect(motionCss).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.settings-toggle-switch,\s*\.settings-toggle-switch \.switch-knob[\s\S]*?transition-duration:\s*1ms;/s
+    );
+  });
+
+  it("reduces tab and table reorder motion when requested", () => {
+    expect(motionCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.pane-tab,[\s\S]*?transition-duration:\s*1ms;/s
+    );
+    expect(workspaceEditorCss).toMatch(
+      /\.pane-tab\s*\{[^}]*transform var\(--motion-normal\) var\(--ease-standard\);/s
+    );
+    expect(tableCss).toMatch(
+      /\.table-view-cell\s*\{[^}]*transform var\(--motion-normal\) var\(--ease-standard\);/s
+    );
+    expect(tableCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.table-view-cell\s*\{[^}]*transition-duration:\s*1ms;/s
     );
   });
 

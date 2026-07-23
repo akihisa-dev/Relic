@@ -223,6 +223,79 @@ describe("PaneView", () => {
     expect(onTabMove).toHaveBeenCalledWith("left", "right", fileTab.id, null, "after");
   });
 
+  it("タブドラッグ中は実幅の挿入空間を作り、中断時に元へ戻す", () => {
+    const secondTab: Tab = {
+      ...fileTab,
+      id: "tab-second",
+      name: "Second",
+      path: "Second.md"
+    };
+    setPaneState(
+      { [fileTab.id]: fileTab, [secondTab.id]: secondTab },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id, secondTab.id] }
+    );
+    renderPaneView();
+    const draggedTab = document.querySelector(`[data-tab-id="${fileTab.id}"]`) as HTMLElement;
+    const targetTab = document.querySelector(`[data-tab-id="${secondTab.id}"]`) as HTMLElement;
+    Object.defineProperty(draggedTab, "getBoundingClientRect", {
+      configurable: true,
+      value: () => ({ bottom: 40, height: 40, left: 0, right: 132, top: 0, width: 132, x: 0, y: 0 })
+    });
+    Object.defineProperty(targetTab, "getBoundingClientRect", {
+      configurable: true,
+      value: () => ({ bottom: 40, height: 40, left: 132, right: 264, top: 0, width: 132, x: 132, y: 0 })
+    });
+    const dataTransfer = paneTabDataTransfer();
+
+    fireEvent.dragStart(draggedTab, { dataTransfer });
+    fireEvent.dragOver(targetTab, { clientX: 250, dataTransfer });
+
+    expect(draggedTab).toHaveClass("pane-tab--dragging");
+    expect(targetTab).toHaveClass("pane-tab--drop-after");
+    expect(targetTab).toHaveStyle("--pane-tab-drop-gap: 132px");
+
+    fireEvent.dragEnd(draggedTab, { dataTransfer });
+    expect(draggedTab).not.toHaveClass("pane-tab--dragging");
+    expect(targetTab).not.toHaveClass("pane-tab--drop-after");
+  });
+
+  it("左右ペイン間でも移動先に実幅の空間を作って一度だけ確定する", () => {
+    const rightTab: Tab = {
+      ...fileTab,
+      id: "tab-right",
+      name: "Right",
+      path: "Right.md"
+    };
+    setPaneState(
+      { [fileTab.id]: fileTab, [rightTab.id]: rightTab },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] },
+      { activeTabId: rightTab.id, history: [rightTab.id], tabIds: [rightTab.id] }
+    );
+    const onTabMove = vi.fn();
+    renderPaneView({ onTabMove, pane: "left" });
+    renderPaneView({ onTabMove, pane: "right" });
+    const draggedTab = document.querySelector(`[data-tab-id="${fileTab.id}"]`) as HTMLElement;
+    const targetTab = document.querySelector(`[data-tab-id="${rightTab.id}"]`) as HTMLElement;
+    Object.defineProperty(draggedTab, "getBoundingClientRect", {
+      configurable: true,
+      value: () => ({ bottom: 40, height: 40, left: 0, right: 104, top: 0, width: 104, x: 0, y: 0 })
+    });
+    Object.defineProperty(targetTab, "getBoundingClientRect", {
+      configurable: true,
+      value: () => ({ bottom: 40, height: 40, left: 100, right: 220, top: 0, width: 120, x: 100, y: 0 })
+    });
+    const dataTransfer = paneTabDataTransfer();
+
+    fireEvent.dragStart(draggedTab, { dataTransfer });
+    fireEvent.dragOver(targetTab, { clientX: 110, dataTransfer });
+    expect(targetTab).toHaveClass("pane-tab--drop-after");
+    expect(targetTab).toHaveStyle("--pane-tab-drop-gap: 104px");
+
+    fireEvent.drop(targetTab, { clientX: 110, dataTransfer });
+    expect(onTabMove).toHaveBeenCalledTimes(1);
+    expect(onTabMove).toHaveBeenCalledWith("left", "right", fileTab.id, rightTab.id, "after");
+  });
+
   it("shows a warning for unreadable frontmatter while keeping the editor editable", () => {
     setPaneState(
       {
@@ -438,3 +511,20 @@ describe("PaneView", () => {
     expect(screen.queryByRole("img", { name: "World" })).not.toBeInTheDocument();
   });
 });
+
+function paneTabDataTransfer(): {
+  effectAllowed: string;
+  getData: (type: string) => string;
+  setData: (type: string, value: string) => void;
+  types: string[];
+} {
+  const values = new Map<string, string>();
+  return {
+    effectAllowed: "none",
+    getData: (type) => values.get(type) ?? "",
+    setData: (type, value) => {
+      values.set(type, value);
+    },
+    types: [PANE_TAB_DRAG_MIME]
+  };
+}

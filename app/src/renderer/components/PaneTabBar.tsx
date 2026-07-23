@@ -1,4 +1,4 @@
-import type { DragEvent, ReactElement, ReactNode } from "react";
+import type { CSSProperties, DragEvent, ReactElement, ReactNode } from "react";
 
 import { paneTabLabel } from "../paneViewModel";
 import type { PaneId, PaneState, PanelTabKind, Tab } from "../store/editorStore";
@@ -7,6 +7,7 @@ import type { PaneTabDropTarget } from "../hooks/usePaneTabInteractions";
 
 interface PaneTabBarProps {
   closingTabIds: Set<string>;
+  draggedTabId: string | null;
   pane: PaneId;
   paneState: PaneState;
   renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
@@ -25,6 +26,7 @@ interface PaneTabBarProps {
 
 export function PaneTabBar({
   closingTabIds,
+  draggedTabId,
   pane,
   paneState,
   renderPanelTabIcon,
@@ -42,6 +44,9 @@ export function PaneTabBar({
 }: PaneTabBarProps): ReactElement {
   const t = useT();
   const hasTabs = paneState.tabIds.length > 0;
+  const dropGapStyle = tabDropTarget
+    ? { "--pane-tab-drop-gap": `${tabDropTarget.gapWidth}px` } as CSSProperties
+    : undefined;
 
   void pane;
 
@@ -52,6 +57,7 @@ export function PaneTabBar({
         onDragLeave={onTabBarDragLeave}
         onDragOver={onTabBarDragOver}
         onDrop={(e) => onTabDrop(e, null)}
+        style={tabDropTarget?.tabId === null ? dropGapStyle : undefined}
       >
         {paneState.tabIds.map((tabId) => {
           const tab = tabs[tabId];
@@ -66,7 +72,7 @@ export function PaneTabBar({
 
           return (
             <div
-              className={`pane-tab pane-tab--${tab.kind}${paneState.activeTabId === tabId ? " pane-tab--active" : ""}${isClosing ? " pane-tab--closing" : ""}${tabDropTarget?.tabId === tabId ? ` pane-tab--drop-${tabDropTarget.position}` : ""}`}
+              className={`pane-tab pane-tab--${tab.kind}${paneState.activeTabId === tabId ? " pane-tab--active" : ""}${isClosing ? " pane-tab--closing" : ""}${draggedTabId === tabId ? " pane-tab--dragging" : ""}${tabDropTarget?.tabId === tabId ? ` pane-tab--drop-${tabDropTarget.position}` : ""}`}
               data-tab-id={tabId}
               draggable={!isClosing}
               key={tabId}
@@ -93,6 +99,7 @@ export function PaneTabBar({
                 onTabSelect(tabId);
               }}
               role="tab"
+              style={tabDropTarget?.tabId === tabId ? dropGapStyle : undefined}
               tabIndex={0}
             >
               {tab.isPinned ? (

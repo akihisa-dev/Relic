@@ -29,6 +29,7 @@ import {
   nextTableSort,
   reorderTableProperties,
   sortTableRows,
+  tableColumnDragOffsets,
   tableColumnWidth,
   visibleTableRange,
   withFileColumnWidth,
@@ -118,6 +119,7 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table 
   const columnMenuTriggerRef = useRef<HTMLButtonElement>(null);
   const filterMenuTriggerRef = useRef<HTMLButtonElement>(null);
   const saveRevisionRef = useRef(0);
+  const failedPreferencesRef = useRef<WorkspaceTablePreferences | null>(null);
 
   const selectedProperties = preferences.selectedProperties;
   const filteredRows = useMemo(
@@ -135,6 +137,15 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table 
   const range = visibleTableRange(rows.length, scrollTop, viewportHeight, rowHeight);
   const visibleRows = rows.slice(range.start, range.end);
   const widths = selectedProperties.map((property) => tableColumnWidth(preferences, property));
+  const columnDragOffsets = draggedProperty && columnDropTarget
+    ? tableColumnDragOffsets(
+      selectedProperties,
+      Object.fromEntries(selectedProperties.map((property, index) => [property, widths[index] ?? 0])),
+      draggedProperty,
+      columnDropTarget.property,
+      columnDropTarget.edge
+    )
+    : {};
   const gridStyle = {
     gridTemplateColumns: `${preferences.fileColumnWidth}px ${widths.map((width) => `${width}px`).join(" ")}`.trim(),
     minWidth: `${preferences.fileColumnWidth + widths.reduce((sum, width) => sum + width, 0)}px`
@@ -164,7 +175,10 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table 
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [preferences.filters, search]);
 
-  const persist = async (next: WorkspaceTablePreferences): Promise<void> => {
+  const persist = async (
+    next: WorkspaceTablePreferences,
+    rollback?: WorkspaceTablePreferences
+  ): Promise<void> => {
     const revision = ++saveRevisionRef.current;
     setPreferences(next);
     setSaveError(null);
@@ -172,13 +186,20 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table 
       const result = await relicClient.current?.saveWorkspaceTablePreferences(next);
       if (revision !== saveRevisionRef.current) return;
       if (!result?.ok) {
+        failedPreferencesRef.current = next;
+        if (rollback) setPreferences(rollback);
         setSaveError(result?.error.message ?? t("table.saveFailed"));
         return;
       }
+      failedPreferencesRef.current = null;
       setPreferences(result.value);
       resetWorkspaceTableCache();
     } catch {
-      if (revision === saveRevisionRef.current) setSaveError(t("table.saveFailed"));
+      if (revision === saveRevisionRef.current) {
+        failedPreferencesRef.current = next;
+        if (rollback) setPreferences(rollback);
+        setSaveError(t("table.saveFailed"));
+      }
     }
   };
 
@@ -248,7 +269,9 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table 
     const edge = columnDropTarget?.property === property ? columnDropTarget.edge : "before";
     const next = reorderTableProperties(selectedProperties, draggedProperty, property, edge);
     finishColumnDrag();
-    if (next !== selectedProperties) void persist({ ...preferences, selectedProperties: next });
+    if (next !== selectedProperties) {
+      void persist({ ...preferences, selectedProperties: next }, preferences);
+    }
   };
 
   return (
@@ -328,7 +351,7 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table 
         </div>
         {saveError ? (
           <span className="table-view-save-error" role="alert">
-            {saveError} <button onClick={() => void persist(preferences)} type="button">{t("common.retry")}</button>
+            {saveError} <button onClick={() => void persist(failedPreferencesRef.current ?? preferences, preferences)} type="button">{t("common.retry")}</button>
           </span>
         ) : null}
       </header>
@@ -366,6 +389,7 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table 
                   : columnDropTarget?.property === property
                     ? `drop-${columnDropTarget.edge}`
                     : undefined}
+                dragOffset={columnDragOffsets[property]}
                 key={property}
                 label={property}
                 onColumnDragEnd={finishColumnDrag}
@@ -418,6 +442,8 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table 
               row={row}
               rowHeight={rowHeight}
               rowIndex={range.start + visibleIndex}
+              columnDragOffsets={columnDragOffsets}
+              draggedProperty={draggedProperty}
               selectedProperties={selectedProperties}
               style={gridStyle}
               wrappedProperties={preferences.wrappedProperties}
@@ -432,6 +458,7 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table 
 function TableHeader({
   active,
   direction,
+  dragOffset = 0,
   dragState,
   first = false,
   label,
@@ -461,6 +488,7 @@ function TableHeader({
 }: {
   active: boolean;
   direction: "asc" | "desc";
+  dragOffset?: number;
   dragState?: "dragging" | "drop-after" | "drop-before";
   first?: boolean;
   label: string;
@@ -508,6 +536,7 @@ function TableHeader({
       onDrop={onColumnDrop}
       ref={rootRef}
       role="columnheader"
+      style={{ "--table-column-drag-offset": `${dragOffset}px` } as CSSProperties}
     >
       {onColumnDragStart ? (
         <button
@@ -633,7 +662,9 @@ function ColumnResizeHandle({ label, maximum, minimum, onCancel, onCommit, onPre
   );
 }
 
-function TableRow({ duplicateName, onOpenFile, row, rowHeight, rowIndex, selectedProperties, style, wrappedProperties }: {
+function TableRow({ columnDragOffsets, draggedProperty, duplicateName, onOpenFile, row, rowHeight, rowIndex, selectedProperties, style, wrappedProperties }: {
+  columnDragOffsets: Readonly<Record<string, number>>;
+  draggedProperty: string | null;
   duplicateName: boolean;
   onOpenFile: (path: string) => void;
   row: WorkspaceTableRow;
@@ -654,16 +685,29 @@ function TableRow({ duplicateName, onOpenFile, row, rowHeight, rowIndex, selecte
         {row.frontmatterStatus === "invalid" ? <span aria-label={t("table.invalidFrontmatter")} className="table-frontmatter-warning">!</span> : null}
       </div>
       {selectedProperties.map((property) => (
-        <ValueCell key={property} value={row.properties[property]} wrapped={wrappedProperties.includes(property)} />
+        <ValueCell
+          dragOffset={columnDragOffsets[property] ?? 0}
+          dragging={draggedProperty === property}
+          key={property}
+          value={row.properties[property]}
+          wrapped={wrappedProperties.includes(property)}
+        />
       ))}
     </div>
   );
 }
 
-function ValueCell({ value, wrapped }: { value?: WorkspaceTableValue; wrapped: boolean }): ReactElement {
-  if (!value) return <div aria-label="" className="table-view-cell table-view-cell--empty" role="cell" />;
+function ValueCell({ dragOffset, dragging, value, wrapped }: {
+  dragOffset: number;
+  dragging: boolean;
+  value?: WorkspaceTableValue;
+  wrapped: boolean;
+}): ReactElement {
+  const style = { "--table-column-drag-offset": `${dragOffset}px` } as CSSProperties;
+  const className = `table-view-cell${dragging ? " table-view-cell--dragging" : ""}`;
+  if (!value) return <div aria-label="" className={`${className} table-view-cell--empty`} role="cell" style={style} />;
   return (
-    <div className="table-view-cell" role="cell">
+    <div className={className} role="cell" style={style}>
       <span aria-label={value.text} className={`table-value table-value--${value.kind}${wrapped ? " table-value--wrapped" : ""}`}>
         {value.kind === "boolean" ? <span aria-hidden="true">{value.booleanValue ? "☑" : "☐"} </span> : null}
         {value.text}

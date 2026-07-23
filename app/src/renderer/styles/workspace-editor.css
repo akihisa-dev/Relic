@@ -458,12 +458,14 @@
     background-color 140ms ease,
     border-color 140ms ease,
     color 140ms ease,
+    margin var(--motion-normal) var(--ease-standard),
     max-width var(--motion-fast) var(--ease-standard),
     min-width var(--motion-fast) var(--ease-standard),
     opacity var(--motion-fast) var(--ease-standard),
-    padding var(--motion-fast) var(--ease-standard);
+    padding var(--motion-fast) var(--ease-standard),
+    transform var(--motion-normal) var(--ease-standard);
   user-select: none;
-  will-change: max-width, min-width, opacity, padding;
+  will-change: margin, max-width, min-width, opacity, padding, transform;
   z-index: 1;
 }
 
@@ -507,15 +509,38 @@
   left: calc(var(--pane-tab-drop-indicator-width) * -1);
 }
 
+.pane-tab--drop-before {
+  margin-left: var(--pane-tab-drop-gap, 0);
+}
+
 .pane-tab--drop-after::after {
   right: calc(var(--pane-tab-drop-indicator-width) * -1);
 }
 
+.pane-tab--drop-after {
+  margin-right: var(--pane-tab-drop-gap, 0);
+}
+
 .pane-tab-bar--drop-end::after {
   align-self: stretch;
-  flex: 0 0 var(--pane-tab-drop-indicator-width);
+  background: transparent;
+  box-shadow: inset var(--pane-tab-drop-indicator-width) 0 var(--accent);
+  flex: 0 0 var(--pane-tab-drop-gap, var(--pane-tab-drop-indicator-width));
   margin: var(--pane-tab-drop-indicator-inset) 0;
   position: static;
+}
+
+.pane-tab--dragging,
+.panes-container--split .pane-tab--dragging {
+  flex-basis: 0;
+  flex-grow: 0;
+  max-width: 0;
+  min-width: 0;
+  opacity: 0;
+  padding-left: 0;
+  padding-right: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
 }
 
 .pane-tab:active {

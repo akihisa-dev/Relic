@@ -135,13 +135,51 @@ describe("TableView", () => {
     const dataTransfer = { dropEffect: "none", effectAllowed: "none", setData: vi.fn() };
 
     fireEvent.dragStart(countHandle, { dataTransfer });
+    fireEvent.dragOver(statusHeader, { clientX: 190, dataTransfer });
+    expect(statusHeader).toHaveStyle("--table-column-drag-offset: -190px");
+    expect(screen.getByText("draft").closest(".table-view-cell")).toHaveStyle("--table-column-drag-offset: -190px");
+    expect(screen.getByLabelText("2").closest(".table-view-cell")).toHaveClass("table-view-cell--dragging");
     fireEvent.dragEnd(countHandle, { dataTransfer });
     expect(save).not.toHaveBeenCalled();
+    expect(statusHeader).toHaveStyle("--table-column-drag-offset: 0px");
+    expect(screen.getByLabelText("2").closest(".table-view-cell")).not.toHaveClass("table-view-cell--dragging");
 
     fireEvent.dragStart(countHandle, { dataTransfer });
     fireEvent.dragOver(statusHeader, { clientX: 190, dataTransfer });
     fireEvent.drop(statusHeader, { clientX: 190, dataTransfer });
     await waitFor(() => expect(save.mock.calls.at(-1)?.[0].selectedProperties).toEqual(["status", "count"]));
+  });
+
+  it("列順の保存に失敗した場合は確定前の順へ戻して再試行できる", async () => {
+    const save = vi.fn()
+      .mockResolvedValueOnce({ error: { code: "WRITE_FAILED", message: "保存できません" }, ok: false })
+      .mockImplementation(async (input: WorkspaceTablePreferences) => ({ ok: true as const, value: input }));
+    renderTable({ saveWorkspaceTablePreferences: save }, {
+      ...table,
+      preferences: preferences({ selectedProperties: ["count", "status"] })
+    });
+
+    await screen.findByText("2 / 2件");
+    const countHandle = screen.getByRole("button", { name: "count列を移動" });
+    const statusHeader = screen.getByRole("columnheader", { name: /status/ });
+    Object.defineProperty(statusHeader, "getBoundingClientRect", {
+      configurable: true,
+      value: () => ({ bottom: 40, height: 40, left: 100, right: 200, top: 0, width: 100, x: 100, y: 0 })
+    });
+    const dataTransfer = { dropEffect: "none", effectAllowed: "none", setData: vi.fn() };
+
+    fireEvent.dragStart(countHandle, { dataTransfer });
+    fireEvent.dragOver(statusHeader, { clientX: 190, dataTransfer });
+    fireEvent.drop(statusHeader, { clientX: 190, dataTransfer });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("保存できません");
+    const headers = screen.getAllByRole("columnheader");
+    expect(headers.findIndex((header) => header.textContent?.includes("count")))
+      .toBeLessThan(headers.findIndex((header) => header.textContent?.includes("status")));
+
+    fireEvent.click(screen.getByRole("button", { name: "再試行" }));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(2));
+    expect(save.mock.calls[1]?.[0].selectedProperties).toEqual(["status", "count"]);
   });
 
   it("列幅ドラッグの中断では保存せず、次の操作を確定できる", async () => {

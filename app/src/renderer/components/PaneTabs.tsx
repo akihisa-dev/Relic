@@ -52,6 +52,7 @@ export function PaneTabs({
   const {
     closeContextMenu,
     contextMenu,
+    draggedTabId,
     handleTabBarDragLeave,
     handleTabBarDragOver,
     handleTabDragEnd,
@@ -68,6 +69,7 @@ export function PaneTabs({
     <div className={`pane-tabs pane-tabs--${pane}${hasTabs ? " pane-tabs--has-tabs" : " pane-tabs--empty"}`}>
       <PaneTabBar
         closingTabIds={closingTabIds}
+        draggedTabId={draggedTabId}
         pane={pane}
         paneState={paneState}
         renderPanelTabIcon={renderPanelTabIcon}
