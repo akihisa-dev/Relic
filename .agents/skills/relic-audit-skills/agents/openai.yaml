@@ -1,4 +1,4 @@
 interface:
   display_name: "Relic Skill Audit"
-  short_description: "Skill集合を監査し、許可範囲の改善を安全に適用する"
-  default_prompt: "Use $relic-audit-skills to audit the available Skill set, report evidence-backed routing and maintenance findings first, and apply authorized non-HOLD improvements when the request explicitly includes implementation."
+  short_description: "Skill集合と監査Skill自身を独立二役で監査する"
+  default_prompt: "Use $relic-audit-skills to audit the available Skill set or the audit Skill itself, separate the independent auditor from the remediation responder, falsify deletion and merge proposals, report evidence freshness, and apply only authorized non-HOLD improvements."

@@ -1,6 +1,6 @@
 ---
 name: relic-audit-skills
-description: Relicリポジトリで利用可能なSkill集合を一覧化し、責務・発火条件・補助資源・相互関係・Git履歴・現行HEAD・代表依頼のルーティングを監査して、維持・修正・改名・統合・分割・廃止・新設・保留を根拠付きで提案または適用する。Skill群全体の品質監査、重複や曖昧なdescription、広すぎる・狭すぎる発火、矛盾、古いコマンドやパス、不足領域、誤発火の調査に使う。監査だけの依頼は読み取り専用とし、監査と適用を明示した依頼は中間レポート後に許可範囲の非HOLD変更を同一ターンで適用する。個別機能の実装や単一Skillの新規作成だけには使わない。
+description: Relicリポジトリで利用可能なSkill集合と本監査Skill自身を、責務・発火条件・補助資源・相互関係・Git履歴・証拠の鮮度・代表依頼のルーティングから監査し、不要Skillの有無を含む維持・修正・改名・統合・分割・廃止・新設・保留を反証付きで提案または適用する。Skill群全体の棚卸し、不要Skill確認、監査Skillのメタ監査、重複・曖昧なdescription・古い手順・不足領域・誤発火の調査に使う。監査だけは読み取り専用とし、監査と適用を明示した依頼は独立した監査役と対応役の中間レポート後に許可範囲の非HOLD変更を適用する。個別機能の実装や単一Skillの新規作成だけには使わない。
 ---
 
 # Relic Skill Audit
@@ -17,10 +17,17 @@ description: Relicリポジトリで利用可能なSkill集合を一覧化し、
 5. 監査時のHEAD、対象リポジトリ、利用可能なSkillカタログ、探索したSkill root、取得できない外部情報を記録する。リポジトリ内Skillだけを「全Skill」と呼ばない。
 6. 本Skillも通常の1 Skillとして一覧へ一度だけ含める。実行中は自己監査済みかを記録し、自己監査を起点に再度全体監査を開始しない。
 
+## 独立した役割で反証する
+
+1. 本Skill自身のメタ監査、または `merge`、`split`、`deprecate`、`delete`、`create` を含む監査では、結論を先に共有しない読み取り専用の**メタ監査官**と、独立した**監査対応者**を分ける。
+2. メタ監査官は現状維持を含む仮説を反証し、問題、根拠、反対証拠、代替説明、重大度を示す。監査対応者は同じ生の対象から、最小修正、強い修正、失われる知識、検証方法を設計する。
+3. 統合役は両者の一致と不一致を明示する。不一致が残る高影響候補、独立役を用意できない高影響候補、反対証拠を検討できない候補は `hold` にする。利用可能な実行環境が1つだけなら、同じ結論を見ない2回の独立passで代替し、保証水準を下げたことを記録する。
+4. 変更適用後は、変更を設計した役ではなくメタ監査官側が、所見ID、差分、失われた知識、代表case、残る不一致を再確認する。再帰的な全体監査は開始しない。
+
 ## 証拠を収集する
 
 1. `AGENTS.md`、`README.md`、`CONTRIBUTING.md`、`docs/INDEX.md` と、Skillに関係する現行文書だけを確認する。上位文書から未読の詳細を推測しない。
-2. 利用可能なSkillカタログに示された全Skillの名前と場所を記録する。リポジトリの `.agents/skills/` に加え、カタログで利用可能とされた外部Skillも対象にし、読めないものは未確認として明示する。
+2. 利用可能なSkillカタログに示された全Skillの名前と場所を機械的に記録する。repository-ownedは全件を確認する。externalは名前、場所、descriptionを収集し、深い読解は責務競合候補、実際に選択されたSkill、高影響候補へ絞る。読めない・深掘りしていない対象は未確認として明示する。
 3. 次のコマンドを基本形として、決定的な台帳、frontmatter、補助資源、参照切れ、参照切れ候補、重複名、description類似候補を収集する。コードフェンス外のローカルMarkdownリンクは確定参照として検査し、HTTP URLとサイト内routeはローカルファイル参照にしない。インラインコードのパスは説明例を含み得る候補として分離する。追加rootは `--root`、個別の `SKILL.md` は `--skill` を繰り返して渡す。カタログ名がfolder内のnameと異なるSkillは `--catalog-entry 'catalog-name=/path/to/SKILL.md'` で渡し、名前空間を失わない。同名entryを複数回渡してよく、同一Skillパッケージは全所在地を保持して統合し、異なる内容はvariantとして分ける。結果は候補抽出であり、問題の確定判定にしない。
 
    ```sh
@@ -31,7 +38,7 @@ description: Relicリポジトリで利用可能なSkill集合を一覧化し、
    ```
 
 4. ワークスペース内をrepository-owned、外部カタログだけから得たSkillをexternalとして分離する。`--fail-on-issues` はrepository-ownedの構造、重複名、確定参照切れだけで失敗させ、外部Skillの追加frontmatter、folder規約差、未解決ローカル参照はinformational findingとして残す。
-5. 各 `SKILL.md` と `agents/openai.yaml` を読み、必要な `references/` と `scripts/` も確認する。各Skillについて、名前、description、主目的、発火条件、入力、出力、使用ツール、参照ファイル、実行スクリプト、他Skillとの関係を収集する。
+5. repository-ownedの各 `SKILL.md` と `agents/openai.yaml` を読み、必要な `references/` と `scripts/` も確認する。各Skillについて、名前、description、主目的、発火条件、入力、出力、使用ツール、参照ファイル、実行スクリプト、他Skillとの関係を収集する。
 6. descriptionを発火判定の一次根拠とする。本文だけに発火条件や除外条件がある場合は、読み込まれる前に選択へ寄与しないためrouting上の問題候補とする。
 7. パス、コマンド、API、workflow、設定名は現行HEADのファイル、`package.json`、実装、公式設定と照合する。生成時だけ存在する成果物、glob、説明用の架空例を欠落パスと誤判定しない。
 8. 分類前に [監査基準](references/audit-criteria.md) を読み、構造上の類似と意図的な併用、単なる語彙の一致と責務重複を分ける。
@@ -50,13 +57,14 @@ description: Relicリポジトリで利用可能なSkill集合を一覧化し、
 2. 行数、類似度、参照数だけで問題を確定しない。具体的な依頼で誤選択、手順停止、安全条件の衝突、保守時の二重更新が起きる証拠を示す。
 3. 現行の機能領域、Git履歴、繰り返し手作業から不足領域を探す。想像上の将来作業だけを新規Skillの根拠にしない。
 4. 代表依頼には、正例、対象外、監査と変更、隣接Skillの境界、入口Skill、出口Skillを含める。期待Skill、実際に選ばれそうなSkill、誤発火、未発火、description改善案を評価する。
-5. repository-owned Skill全体の代表依頼は `references/routing-cases.json` を正本とし、`references/routing-results.json` で静的判定と実行判定を分ける。実行判定には観測時の完全なcommit hashを記録し、`execution-pass` は期待する入口・専門Skillをすべて含み、禁止Skillを含まない場合だけ使う。実行できないcaseは `not-executed` と理由を記録し、成功扱いしない。`scripts/validate_routing_ledger.py` は台帳の形式と参照整合だけを確認し、古い観測結果を現在のrouting成功とは扱わない。現在の品質を主張する場合は対象caseを現行HEADで実行し直す。
+5. repository-owned Skill全体の代表依頼は `references/routing-cases.json` を正本とし、`references/routing-results.json` で静的判定と実行判定を分ける。実行判定には実在する観測commitとrouting surface digestを記録し、`execution-pass` は期待する入口・専門Skillをすべて含み、禁止Skillを含まない場合だけ使う。実行できないcaseは `not-executed` と理由を記録し、成功扱いしない。`scripts/validate_routing_ledger.py` で台帳の形式、正例としての網羅、commit実在、証拠鮮度を確認する。現在の品質を主張する場合は `--require-current-execution <case-id>` を使い、対象caseの現行surfaceに対する実行証拠を終了条件にする。
 6. `critical`、`high`、`medium`、`low` の重要度と、`keep`、`revise`、`rename`、`merge`、`split`、`deprecate`、`delete`、`create`、`hold` の変更種別を [監査基準](references/audit-criteria.md) に従って使う。不確かな推論は断定しない。
-7. 最後に本Skill自身を一度だけ同じ基準で評価し、責務、description、重複、手順量、現行構成への適合を確認する。
+7. 各変更候補について、残す根拠、反対証拠、何もしない案、より小さい修正案、失われ得る固有知識を先に埋める。変更件数を作ることを目的にしない。
+8. 最後に本Skill自身を一度だけ同じ基準で評価し、独立役の所見を統合して、責務、description、重複、手順量、現行構成への適合を確認する。
 
 ## 監査結果を変更より先に示す
 
-1. [監査レポート雛形](references/report-template.md) を読み、監査範囲と制約、現在のSkill一覧、収集台帳、問題一覧、変更候補、ルーティング評価、最終提案、自己監査をこの順で出す。
+1. [監査レポート雛形](references/report-template.md) を読み、監査範囲と保証水準、現在のSkill一覧、問題一覧、独立二役の所見、変更候補、ルーティング評価、最終提案、自己監査をこの順で出す。全件の詳細を本文へ反復せず、問題・未確認・変更候補を深掘りする。
 2. 各判断にファイル、行、コマンド結果、またはコミットを対応させる。候補抽出スクリプトの点数だけを根拠にしない。
 3. 問題がない分類も省略せず、`keep` または「該当なし」と明示する。変更案と実施済み変更を混同しない。
 4. 監査のみモードはレポート提示で完了し、既存Skillへ書き込まない。監査と適用モードは同じ構成の中間レポートを提示してから、明示された許可範囲の変更へ進む。評価ケース自体を確認する依頼では [評価ケース](references/evaluation-cases.md) を使う。
@@ -64,7 +72,7 @@ description: Relicリポジトリで利用可能なSkill集合を一覧化し、
 ## 承認された変更だけを適用する
 
 1. 監査と適用モードでは中間レポート後、候補指定の適用モードではターン冒頭に対象ファイルを再読し、現行HEADに対する対象候補、理由、影響範囲を短く再監査してから編集する。
-2. 固有知識を失わない。削除前に必要な知識を移し、改名では全参照、description変更では正例・誤発火・未発火、統合では双方の固有情報、分割では責務境界と入口を確認する。
+2. 固有知識を失わない。削除前に現行利用なし、後継、知識移行、参照移行、独立役の一致を確認する。統合では同じ結果とrouting、双方の知識移行表、統合後の正例と境界例を確認する。分割・廃止・新設も [監査基準](references/audit-criteria.md) の高影響ゲートを満たさなければ `hold` にする。
 3. 現行の命名、frontmatter、`agents/openai.yaml`、補助ディレクトリ、ルーティング文書へ合わせる。単一Skillの新規作成手順そのものは `$skill-creator`、文書更新とコミットはリポジトリの対応Skill・規則も使う。
-4. 対象Skillごとの構文、参照、script、代表routing caseを再検証し、`pnpm skills:check` でrepository-ownedの確定参照、構文、重複名を終了条件として確認する。routing監査では追加で `pnpm skills:routing:audit` を実行し、台帳の網羅、静的・実行結果の分離、未実行理由を確認するが、その成功を現在のrouting品質の証明にはしない。外部informational findingと参照切れ候補は目視で分類する。利用可能なら公式Skill validatorも実行し、未実行なら理由と代替確認を示す。
+4. 対象Skillごとの構文、参照、script、代表routing caseを再検証し、監査Skill変更時はcollectorとrouting validatorのself-testおよび [評価ケース](references/evaluation-cases.md) の該当caseを必須にする。`pnpm skills:check` でrepository-ownedの確定参照、構文、重複名を終了条件として確認し、`pnpm skills:routing:audit` で台帳の網羅、証拠鮮度、未実行理由を確認する。通常成功を現在のrouting品質の証明にはしない。外部informational findingと参照切れ候補は目視で分類する。利用可能なら公式Skill validatorも実行し、未実行なら理由と代替確認を示す。
 5. `git diff --check` と全差分を確認し、最終差分、検証結果、残る不確実性、他Skillへの影響を報告する。承認されていない追加変更、削除、外部書き込み、pushを行わない。

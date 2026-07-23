@@ -181,9 +181,9 @@ Node APIを使うmain・preload・shared・scriptsのテストはNode環境、re
 `test:inventory` は全テストファイルを失敗責務の層へ分類し、Electron実行とmacOS packageがVitest外の責務であることも表示する。
 `smoke:electron` は一時ユーザーデータを使ってmacOSの開発版Electronを起動し、メインウインドウ、Renderer、Preload API、初期IPC接続を確認して自動終了する。安全ビルド済みのmacOS配布版を確認する場合は `pnpm smoke:package` を使う。ローカルではユーザーが実行を明示した場合だけ使い、どちらも必要に応じて `-- --artifacts-dir <path>` でJSON reportとプロセスログの保存先を指定できる。
 `verify` は日常変更向けにNode.js環境、型、全テスト、依存通知・SBOM整合を確認する。
-`verify:full` はローカルで再現可能な包括確認として、Node.js環境、型、全テストとカバレッジ測定、アーキテクチャ境界、文書索引、workflow安全条件、Skill構造、依存通知・SBOM整合を確認する。
+`verify:full` はローカルで再現可能な包括確認として、Node.js環境、型、全テストとカバレッジ測定、アーキテクチャ境界、文書索引、workflow安全条件、Skill構造と監査器の自己テスト、依存通知・SBOM整合を確認する。
 `verify:ci` は `verify:full` にrendererのproduction build、初期静的import境界の検査、production依存関係の脆弱性監査を追加し、Code CIの再現可能部分をまとめる。依存関係監査はhigh以上の検出で失敗し、低・中リスクも監査出力で確認できる。Pull Requestのbase/headを使うバージョン検査はGitHubイベント固有のため別stepで実行する。
-`skills:check` はrepository-owned Skillの構文、重複名、確定参照切れを検査する。`skills:routing:audit` は代表依頼台帳の形式と記録を監査する補助コマンドであり、過去の実行記録が残っていても現在のrouting成功を保証しない。
+`skills:check` はrepository-owned Skillの構文、重複名、確定参照切れを検査する。`skills:audit:self-test` はSkill証拠収集器とrouting台帳検査器の回帰fixtureを実行する。`skills:routing:audit` は代表依頼台帳の形式、正例としての網羅、観測commit、証拠鮮度を監査する補助コマンドであり、通常成功だけでは現在のrouting成功を保証しない。特定caseの現在有効な実行証拠を必須にする場合は、validatorへ `--require-current-execution <case-id>` を渡す。
 変更に対して `verify` が過剰な場合も検証自体は省略せず、対象テスト、型チェック、文書確認、差分確認などへ絞る。
 E2E、配布ビルド、実アプリ操作、スクリーンショット、起動スモークは、ローカル作業ではユーザーの明示指示がない限り実行しない。未実施であることを通常変更の完了阻害条件にしない。
 macOSのsafe buildはApple Silicon搭載Macだけで実行でき、Forgeへ`darwin`と`arm64`を固定して`out/darwin/Relic-darwin-arm64`を生成する。safe checkは、配布用ASARの許可内容と必須entry、`LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOM、およびElectron本体を除くアプリ固有resourcesの容量とファイル数を確認する。

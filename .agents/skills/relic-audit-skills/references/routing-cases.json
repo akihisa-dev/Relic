@@ -200,15 +200,70 @@
       "misrouteImpact": "残存入口または保存データ破壊になる"
     },
     {
+      "id": "skill-audit-read-only",
+      "request": "利用可能なSkillを棚卸しし、重複と不足だけを監査してください",
+      "expectedEntrySkill": "relic-audit-skills",
+      "expectedSpecialistSkills": [],
+      "forbiddenSkills": ["relic-commit", "relic-manage-version"],
+      "requiredDocs": ["AGENTS.md", ".agents/skills/relic-audit-skills/references/audit-criteria.md"],
+      "permissionMode": "read-only",
+      "expectedEndState": "証拠鮮度と未確認を含む監査レポートだけを提示する",
+      "misrouteImpact": "監査依頼でSkillやversionを無断変更する"
+    },
+    {
+      "id": "skill-audit-unused",
+      "request": "いらないSkillがないか確認してください",
+      "expectedEntrySkill": "relic-audit-skills",
+      "expectedSpecialistSkills": [],
+      "forbiddenSkills": ["relic-retire-feature", "relic-commit"],
+      "requiredDocs": ["AGENTS.md", ".agents/skills/relic-audit-skills/references/audit-criteria.md"],
+      "permissionMode": "read-only",
+      "expectedEndState": "残す根拠と削除ゲートを評価し、根拠不足の削除をholdにする",
+      "misrouteImpact": "利用頻度や類似だけで固有知識を持つSkillを削除する"
+    },
+    {
       "id": "skill-audit",
       "request": "利用可能なSkillを監査し、必要な修正を適用してください",
       "expectedEntrySkill": "relic-audit-skills",
-      "expectedSpecialistSkills": ["relic-guard-task", "relic-maintain-docs"],
+      "expectedSpecialistSkills": ["relic-guard-task", "relic-maintain-docs", "relic-manage-version", "relic-commit"],
       "forbiddenSkills": ["relic-issue"],
       "requiredDocs": ["AGENTS.md", ".agents/skills/relic-audit-skills/references/audit-criteria.md"],
       "permissionMode": "audit-then-local-change",
-      "expectedEndState": "中間レポート後に非hold候補だけ適用する",
+      "expectedEndState": "独立二役の中間レポート後に非hold候補を適用して検証・コミットする",
       "misrouteImpact": "根拠なしの統合・削除または未承認変更になる"
+    },
+    {
+      "id": "skill-audit-meta",
+      "request": "監査Skill自身が古くないか、メタ監査官と監査対応者に分かれて監査し修正してください",
+      "expectedEntrySkill": "relic-audit-skills",
+      "expectedSpecialistSkills": ["relic-guard-task", "relic-maintain-docs", "relic-manage-version", "relic-commit"],
+      "forbiddenSkills": ["relic-retire-feature", "relic-issue"],
+      "requiredDocs": ["AGENTS.md", ".agents/skills/relic-audit-skills/references/evaluation-cases.md"],
+      "permissionMode": "independent-meta-audit-then-local-change",
+      "expectedEndState": "独立二役が反証と改善案を照合し、適用後に別役が再監査してコミットする",
+      "misrouteImpact": "監査Skillが自分の前提を追認し、古い証拠や危険な削除判断を残す"
+    },
+    {
+      "id": "skill-audit-candidate-apply",
+      "request": "前回のSkill監査で示したC-003だけを適用してください",
+      "expectedEntrySkill": "relic-audit-skills",
+      "expectedSpecialistSkills": ["relic-guard-task", "relic-maintain-docs", "relic-manage-version", "relic-commit"],
+      "forbiddenSkills": ["relic-issue", "relic-publish-github"],
+      "requiredDocs": ["AGENTS.md", ".agents/skills/relic-audit-skills/references/audit-criteria.md"],
+      "permissionMode": "specified-candidate-local-change",
+      "expectedEndState": "現行HEADへ再照合した指定候補だけを適用して検証・コミットする",
+      "misrouteImpact": "指定外候補の適用または古い監査結果の無検証適用になる"
+    },
+    {
+      "id": "skill-audit-explicit-delete",
+      "request": "Skillを監査して改善してください。不要と確定したSkillの削除も許可します",
+      "expectedEntrySkill": "relic-audit-skills",
+      "expectedSpecialistSkills": ["relic-guard-task", "relic-maintain-docs", "relic-manage-version", "relic-commit"],
+      "forbiddenSkills": ["relic-release", "relic-publish-github"],
+      "requiredDocs": ["AGENTS.md", ".agents/skills/relic-audit-skills/references/audit-criteria.md"],
+      "permissionMode": "audit-then-explicit-local-delete",
+      "expectedEndState": "独立二役が削除ゲートを満たした対象だけ知識移行後に削除する",
+      "misrouteImpact": "hold候補、外部Skill、固有知識を持つSkillの過剰削除になる"
     },
     {
       "id": "commit-and-version",

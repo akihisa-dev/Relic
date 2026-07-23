@@ -1,19 +1,20 @@
 {
-  "version": 1,
+  "version": 2,
   "environment": {
     "repository": "akihisa-dev/Relic",
-    "head": "271c4595c23768e903e265a7f707786fa6873329",
+    "head": "a4fce3cc2202b0e3853ff5b4c70d108759f6fb1e",
     "skillRoot": ".agents/skills",
     "externalCatalogs": ["openai-system", "openai-bundled", "openai-curated-remote", "workspace-local"],
     "sameNameVariants": false,
     "historyScope": "full",
     "executionAvailable": true,
-    "notes": "headは既存ルーティング台帳を再評価した変更前HEAD。各実行結果はexecution.headで観測時点を記録する。Repository-owned 31件は既存観測時点の件数であり、追加3件は静的整合だけを確認して独立routing実行を未実施とした。外部Skillはカタログ名を記録し、今回使用したskill-creatorだけ内容を確認。"
+    "routingSurfaceDigest": "e8398f37fd2ee83d54b1c668f20fd1267700366e1194802c60735dd2e3276482",
+    "notes": "headはメタ監査を開始した変更前HEAD。routingSurfaceDigestはAGENTS.md、全repository-owned SKILL.md、routing-cases.jsonの現行内容を表す。過去の実行観測はsurface digestを記録していないためenvironment-mismatchとし、legacyObservationへ保持して現在成功には数えない。外部Skillはdigest対象外のため現在性を主張せず、カタログ名を収集して責務競合候補だけを深掘りする。"
   },
   "cases": [
-    {"caseId":"issue-all-open","staticStatus":"static-pass","execution":{"status":"execution-fail","actualSkills":["relic-issue","relic-change-ci","relic-test-code","relic-debug-packaging","relic-audit-code-health","relic-audit-skills","relic-maintain-docs"],"head":"17bdf3ffb08a8eb1bb4e8a696f1ca7b7d2035b96","reason":"過去の観測では現行ケースが期待するguard・commit・version Skillの選択を確認できない"}},
+    {"caseId":"issue-all-open","staticStatus":"static-pass","execution":{"status":"environment-mismatch","reason":"過去の失敗観測にはrouting surface digestがなく、現行caseの実行証拠として再利用できない"},"legacyObservation":{"status":"execution-fail","actualSkills":["relic-issue","relic-change-ci","relic-test-code","relic-debug-packaging","relic-audit-code-health","relic-audit-skills","relic-maintain-docs"],"head":"17bdf3ffb08a8eb1bb4e8a696f1ca7b7d2035b96"}},
     {"caseId":"code-health-vs-refactor","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"task-target-mismatch","staticStatus":"static-pass","execution":{"status":"execution-pass","actualSkills":["relic-guard-task"],"head":"f59b197d1a710cf2584ee42bba9cfe47cd022cb5","reason":"独立した読み取り専用forward-testで対象不一致時の停止を確認"}},
+    {"caseId":"task-target-mismatch","staticStatus":"static-pass","execution":{"status":"environment-mismatch","reason":"過去の成功観測にはrouting surface digestがなく、現行caseの成功証拠として再利用できない"},"legacyObservation":{"status":"execution-pass","actualSkills":["relic-guard-task"],"head":"f59b197d1a710cf2584ee42bba9cfe47cd022cb5"}},
     {"caseId":"reference-first-ui","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"guardの見本限定判断はforward-test済み。entry Skillの独立routing実行は未実施"}},
     {"caseId":"full-refactor","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"ui-localization-navigation","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
@@ -29,7 +30,12 @@
     {"caseId":"packaging-vs-release","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"dependency-update","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"retire-feature","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"skill-audit","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
+    {"caseId":"skill-audit-read-only","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設した監査のみcaseの独立routing実行は未実施"}},
+    {"caseId":"skill-audit-unused","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設した不要Skill確認caseの独立routing実行は未実施"}},
+    {"caseId":"skill-audit","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"変更適用caseの独立routing実行は未実施"}},
+    {"caseId":"skill-audit-meta","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設したメタ監査caseの独立routing実行は未実施"}},
+    {"caseId":"skill-audit-candidate-apply","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設した候補指定適用caseの独立routing実行は未実施"}},
+    {"caseId":"skill-audit-explicit-delete","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設した削除許可境界caseの独立routing実行は未実施"}},
     {"caseId":"commit-and-version","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"publish-vs-release","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
     {"caseId":"release-explicit","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}}
