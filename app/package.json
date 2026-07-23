@@ -1,6 +1,6 @@
 {
   "name": "relic",
-  "version": "0.50.2",
+  "version": "0.50.3",
   "description": "Relic is a local app that extends Markdown files with editing, search, browsing, visualization, and export while keeping the information as Markdown.",
   "license": "AGPL-3.0-or-later",
   "main": ".vite/build/main.js",
@@ -18,7 +18,7 @@
     "runtime:check": "node scripts/runtime-policy.mjs",
     "verify": "pnpm runtime:check && pnpm typecheck && pnpm test && pnpm licenses:check",
     "verify:full": "pnpm runtime:check && pnpm typecheck && pnpm test:coverage && pnpm architecture:check && pnpm docs:index:check && pnpm ci:workflows:check && pnpm skills:check && pnpm licenses:check",
-    "verify:ci": "pnpm verify:full && pnpm renderer:production:check",
+    "verify:ci": "pnpm verify:full && pnpm renderer:production:check && pnpm security:audit",
     "version:next": "node scripts/version-policy.mjs next",
     "version:check": "node scripts/version-policy.mjs check-range",
     "version:check-staged": "node scripts/version-policy.mjs check-staged",

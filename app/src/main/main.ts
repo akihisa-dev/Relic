@@ -9,6 +9,7 @@ import { registerFileHandlers } from "./ipc/fileHandlers";
 import { registerOutputHandlers } from "./ipc/outputHandlers";
 import { registerToolHandlers } from "./ipc/toolHandlers";
 import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
+import { configureIpcSenderAuthorization } from "./ipc/ipcSenderAuthorization";
 import { devServerLoadUrls, loadDevServerUrlWithRetry } from "./devServerLoader";
 import { configureDevelopmentUserDataPath } from "./developmentUserData";
 import {
@@ -123,6 +124,12 @@ function isAllowedAppNavigation(url: string, rendererIndexUrl: string): boolean 
 
 app.whenReady().then(async () => {
   await getMainTranslator();
+  configureIpcSenderAuthorization((sender) => Boolean(
+    mainWindow
+    && !mainWindow.isDestroyed()
+    && !mainWindow.webContents.isDestroyed()
+    && sender === mainWindow.webContents
+  ));
   registerAppHandlers();
   registerEditorHandlers();
   registerFileHandlers();

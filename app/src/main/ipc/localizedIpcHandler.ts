@@ -3,6 +3,7 @@ import { ipcMain, type IpcMainInvokeEvent } from "electron";
 import { createTranslator, type TranslationKey } from "../../shared/i18n";
 import { fail, type RelicResult } from "../../shared/result";
 import { getCachedMainLanguage, getCachedMainTranslator } from "../i18n";
+import { isAuthorizedIpcSender } from "./ipcSenderAuthorization";
 
 type IpcHandler<Args extends unknown[], Result> = (
   event: IpcMainInvokeEvent,
@@ -69,7 +70,12 @@ export function handleLocalizedIpc<Args extends unknown[], Result>(
   handler: IpcHandler<Args, Result>
 ): void {
   ipcMain.handle(channel, async (event, ...args: Args) => {
-    const result = await handler(event, ...args);
+    const result = isAuthorizedIpcSender(event?.sender)
+      ? await handler(event, ...args)
+      : fail(
+        "IPC_UNAUTHORIZED_SENDER",
+        "IPC要求の送信元を確認できませんでした。"
+      ) as Result;
     if (!needsLocalization(result)) return result;
     const language = typeof getCachedMainLanguage === "function"
       ? getCachedMainLanguage()

@@ -27,7 +27,8 @@ export default defineConfig({
             "src/preload/**/*.{test,spec}.{ts,tsx}",
             "src/shared/**/*.{test,spec}.{ts,tsx}"
           ],
-          name: "node"
+          name: "node",
+          setupFiles: ["src/test/nodeSetup.ts"]
         }
       },
       {

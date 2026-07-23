@@ -30,8 +30,13 @@ export function configureWindowCloseProtection(
       clearTimeout(timer);
       ipcMain.removeListener(windowCloseResponseChannel, handleCloseResponse);
     };
-    const handleCloseResponse = (_event: Electron.IpcMainEvent, input: unknown): void => {
-      if (settled || !isWindowCloseResponseInput(input) || input.requestId !== requestId) return;
+    const handleCloseResponse = (responseEvent: Electron.IpcMainEvent, input: unknown): void => {
+      if (
+        settled
+        || responseEvent.sender !== window.webContents
+        || !isWindowCloseResponseInput(input)
+        || input.requestId !== requestId
+      ) return;
 
       cleanup();
 

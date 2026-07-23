@@ -48,8 +48,13 @@ function createWindow() {
   };
 }
 
-function sendCloseResponse(input: WindowCloseResponseInput): void {
-  ipcListeners.get(windowCloseResponseChannel)?.forEach((listener) => listener({}, input));
+function sendCloseResponse(
+  window: ReturnType<typeof createWindow>,
+  input: WindowCloseResponseInput
+): void {
+  ipcListeners.get(windowCloseResponseChannel)?.forEach((listener) => {
+    listener({ sender: window.webContents }, input);
+  });
 }
 
 function sentRequestId(window: ReturnType<typeof createWindow>): string {
@@ -68,7 +73,7 @@ describe("configureWindowCloseProtection", () => {
     configureWindowCloseProtection(window as never, () => false);
 
     const event = window.triggerClose();
-    sendCloseResponse({ ok: true, requestId: sentRequestId(window) });
+    sendCloseResponse(window, { ok: true, requestId: sentRequestId(window) });
 
     expect(event.preventDefault).toHaveBeenCalled();
     expect(window.webContents.send).toHaveBeenCalledWith(windowCloseRequestedChannel, expect.any(Object));
@@ -84,7 +89,7 @@ describe("configureWindowCloseProtection", () => {
     configureWindowCloseProtection(window as never, () => false);
 
     window.triggerClose();
-    sendCloseResponse({ ok: false, requestId: sentRequestId(window) });
+    sendCloseResponse(window, { ok: false, requestId: sentRequestId(window) });
 
     expect(window.close).not.toHaveBeenCalled();
     expect(electronMock.removeListener).toHaveBeenCalledWith(windowCloseResponseChannel, expect.any(Function));
@@ -97,6 +102,20 @@ describe("configureWindowCloseProtection", () => {
 
     window.triggerClose();
     ipcListeners.get(windowCloseResponseChannel)?.forEach((listener) => listener({}, undefined));
+
+    expect(window.close).not.toHaveBeenCalled();
+    expect(electronMock.removeListener).not.toHaveBeenCalled();
+    expect(ipcListeners.get(windowCloseResponseChannel)?.size).toBe(1);
+  });
+
+  it("別のwebContentsから届いた正常形式の応答も拒否する", () => {
+    const window = createWindow();
+    configureWindowCloseProtection(window as never, () => false);
+
+    window.triggerClose();
+    ipcListeners.get(windowCloseResponseChannel)?.forEach((listener) => {
+      listener({ sender: {} }, { ok: true, requestId: sentRequestId(window) });
+    });
 
     expect(window.close).not.toHaveBeenCalled();
     expect(electronMock.removeListener).not.toHaveBeenCalled();
@@ -128,7 +147,7 @@ describe("configureWindowCloseProtection", () => {
     window.triggerClose();
     const requestId = sentRequestId(window);
     vi.advanceTimersByTime(CLOSE_CONFIRM_TIMEOUT_MS);
-    sendCloseResponse({ ok: true, requestId });
+    sendCloseResponse(window, { ok: true, requestId });
 
     expect(window.close).not.toHaveBeenCalled();
   });

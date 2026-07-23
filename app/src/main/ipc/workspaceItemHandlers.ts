@@ -23,6 +23,7 @@ import {
   isRevealWorkspaceItemInput,
   isStartWorkspaceFileDragInput
 } from "./fileHandlerValidators";
+import { isAuthorizedIpcSender } from "./ipcSenderAuthorization";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
 
 export function registerWorkspaceItemHandlers(): void {
@@ -49,6 +50,7 @@ export function registerWorkspaceItemHandlers(): void {
     startWorkspaceFileDragChannel,
     async (event, input: StartWorkspaceFileDragInput): Promise<void> => {
       try {
+        if (!isAuthorizedIpcSender(event.sender)) return;
         if (!isStartWorkspaceFileDragInput(input)) return;
         const context = await getActiveWorkspaceContext();
         if (!context.ok) return;

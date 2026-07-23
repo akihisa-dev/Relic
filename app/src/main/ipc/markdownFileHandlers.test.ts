@@ -66,12 +66,14 @@ import { writeAppSettings } from "../settings/appSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
 import { setMainTranslator } from "../i18n";
 import { registerFolderItemHandlers } from "./folderItemHandlers";
+import { configureIpcSenderAuthorization } from "./ipcSenderAuthorization";
 import { registerMarkdownFileHandlers } from "./markdownFileHandlers";
 
 describe("markdownFileHandlers", () => {
   const temporaryPaths: string[] = [];
 
   afterEach(async () => {
+    configureIpcSenderAuthorization(() => true);
     workspaceDerivedDataSession.invalidate();
     vi.restoreAllMocks();
     vi.clearAllMocks();
@@ -83,6 +85,25 @@ describe("markdownFileHandlers", () => {
         })
       )
     );
+  });
+
+  it("不正な送信元からのファイル作成要求は処理せず拒否する", async () => {
+    const { workspacePath } = await createActiveWorkspace({});
+    configureIpcSenderAuthorization(() => false);
+    registerMarkdownFileHandlers();
+
+    const result = await handlerFor(createMarkdownFileChannel)(
+      { sender: {} },
+      { name: "Unauthorized" }
+    );
+
+    expect(result).toMatchObject({
+      error: { code: "IPC_UNAUTHORIZED_SENDER" },
+      ok: false
+    });
+    await expect(readFile(path.join(workspacePath, "Unauthorized.md"), "utf8")).rejects.toMatchObject({
+      code: "ENOENT"
+    });
   });
 
   beforeEach(() => {
