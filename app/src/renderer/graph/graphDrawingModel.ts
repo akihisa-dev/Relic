@@ -8,9 +8,12 @@ import {
   type GraphHighlightState
 } from "./graphInteractionModel";
 import {
+  graphCategoryContour,
   graphCategoryLayouts,
+  graphCategoryRegions,
   normalizeGraphCategory
 } from "./graphCategoryModel";
+import type { GraphCategoryPoint } from "./graphCategoryModel";
 import type {
   GraphDrawTheme,
   GraphLinkEndpointNode,
@@ -281,17 +284,20 @@ export function nodeColor(
 
 export interface GraphCategoryBubble {
   category: string;
+  points: GraphCategoryPoint[];
   radius: number;
   x: number;
   y: number;
 }
 
 export function graphCategoryBubbles(nodes: GraphSimNode[]): GraphCategoryBubble[] {
-  return graphCategoryLayouts(nodes).map(({ category, radius, x, y }) => ({
-    category,
-    radius,
-    x,
-    y
+  const regions = graphCategoryRegions(graphCategoryLayouts(nodes));
+  return [...regions.values()].map((region) => ({
+    category: region.category,
+    points: graphCategoryContour(region),
+    radius: region.radius,
+    x: region.x,
+    y: region.y
   }));
 }
 
@@ -318,8 +324,7 @@ function drawGraphCategoryBubbles(
     context.save();
     context.fillStyle = color;
     context.globalAlpha = 0.075;
-    context.beginPath();
-    context.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
+    traceSmoothBubble(context, bubble.points);
     context.fill();
 
     context.globalAlpha = 0.46;
@@ -335,11 +340,33 @@ function drawGraphCategoryBubbles(
     context.fillText(
       bubble.category,
       bubble.x,
-      bubble.y - bubble.radius + 12 / scale,
+      Math.min(...bubble.points.map((point) => point.y)) + 12 / scale,
       Math.max(80 / scale, bubble.radius * 1.5)
     );
     context.restore();
   }
+}
+
+function traceSmoothBubble(
+  context: CanvasRenderingContext2D,
+  points: readonly GraphCategoryPoint[]
+): void {
+  if (points.length === 0) return;
+  const last = points.at(-1)!;
+  const first = points[0]!;
+  context.beginPath();
+  context.moveTo((last.x + first.x) / 2, (last.y + first.y) / 2);
+  for (let index = 0; index < points.length; index += 1) {
+    const point = points[index]!;
+    const next = points[(index + 1) % points.length]!;
+    context.quadraticCurveTo(
+      point.x,
+      point.y,
+      (point.x + next.x) / 2,
+      (point.y + next.y) / 2
+    );
+  }
+  context.closePath();
 }
 
 function graphThemeIsDark(background: string): boolean {

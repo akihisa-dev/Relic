@@ -62,11 +62,10 @@ describe("graphDrawingModel", () => {
 
     expect(bubbles).toHaveLength(2);
     expect(bubbles.map((bubble) => bubble.category)).toEqual(["資料", "人物"]);
-    const distance = Math.hypot(
-      bubbles[0]!.x - bubbles[1]!.x,
-      bubbles[0]!.y - bubbles[1]!.y
-    );
-    expect(distance).toBeGreaterThan(bubbles[0]!.radius + bubbles[1]!.radius);
+    expect(bubbles.every((bubble) => bubble.points.length === 72)).toBe(true);
+    expect(bubbles.some((bubble) => bubble.points.some((point) =>
+      Math.hypot(point.x - bubble.x, point.y - bubble.y) < bubble.radius - 1
+    ))).toBe(true);
   });
 
   it("カテゴリ名とテーマから安定した色を割り当てる", () => {

@@ -7,6 +7,11 @@ import {
   graphSimulationNodes,
   syncGraphLayout
 } from "./graphLayout";
+import {
+  graphCategoryBoundaryRadius,
+  graphCategoryLayouts,
+  graphCategoryRegions
+} from "./graphCategoryModel";
 import type { GraphSimNode } from "./graphTypes";
 
 function graphNode(patch: Partial<WorkspaceGraphNode> & Pick<WorkspaceGraphNode, "id">): WorkspaceGraphNode {
@@ -42,6 +47,12 @@ describe("graphLayout", () => {
     expect(links[0]).toMatchObject({ count: 2, source: "A.md", target: "B.md" });
     expect(links[0]?.sourceNode).toBe(nodes.get("A.md"));
     expect(links[0]?.targetNode).toBe(nodes.get("B.md"));
+
+    const categoryNode = nodes.get("A.md")!;
+    const region = graphCategoryRegions(graphCategoryLayouts(nodes.values())).get("人物")!;
+    const angle = Math.atan2(categoryNode.y - region.y, categoryNode.x - region.x);
+    expect(Math.hypot(categoryNode.x - region.x, categoryNode.y - region.y))
+      .toBeLessThan(graphCategoryBoundaryRadius(region, angle));
   });
 
   it("Workerへ渡すスナップショットと戻り座標を同じ順序で扱う", () => {

@@ -1,4 +1,9 @@
 import type { WorkspaceGraph } from "../../shared/ipc";
+import {
+  constrainGraphCategoryPoint,
+  graphCategoryLayouts,
+  graphCategoryRegions
+} from "./graphCategoryModel";
 import type {
   GraphOptions,
   GraphSimLink,
@@ -7,6 +12,7 @@ import type {
   GraphSimulationNodeSnapshot,
   GraphSimulationPositionsMessage
 } from "./graphTypes";
+import { defaultGraphOptions } from "./graphTypes";
 
 const graphSpiralAngle = 2.399963229728653;
 
@@ -38,6 +44,20 @@ export function syncGraphLayout(
       y: position.y
     });
   });
+
+  const categoryRegions = graphCategoryRegions(graphCategoryLayouts(nodes.values()));
+  for (const node of nodes.values()) {
+    const constrained = constrainGraphCategoryPoint(
+      node,
+      categoryRegions,
+      node,
+      graphNodeBaseRadiusFromWeight(graphNodeWeight(node), defaultGraphOptions) + 6
+    );
+    node.x = constrained.x;
+    node.y = constrained.y;
+    if (node.fx !== null) node.fx = constrained.x;
+    if (node.fy !== null) node.fy = constrained.y;
+  }
 
   return graph.links.flatMap((link) => {
     const sourceNode = nodes.get(link.source);

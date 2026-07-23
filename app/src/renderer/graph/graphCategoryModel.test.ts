@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyGraphCategoryBoundary,
+  constrainGraphCategoryPoint,
+  graphCategoryBoundaryRadius,
+  graphCategoryContour,
   graphCategoryLayouts,
+  graphCategoryRegions,
   graphCategoryTarget,
   normalizeGraphCategory
 } from "./graphCategoryModel";
@@ -14,7 +18,7 @@ describe("graphCategoryModel", () => {
     expect(normalizeGraphCategory(["人物"])).toBeNull();
   });
 
-  it("カテゴリだけへ重ならない決定的な配置先を割り当てる", () => {
+  it("カテゴリだけへ接触する決定的な配置先を割り当てる", () => {
     const nodes = [
       { category: "資料" },
       { category: "人物" },
@@ -24,7 +28,7 @@ describe("graphCategoryModel", () => {
     ];
     const layouts = graphCategoryLayouts(nodes);
     const layoutsAgain = graphCategoryLayouts(nodes);
-    const byCategory = new Map(layouts.map((layout) => [layout.category, layout]));
+    const byCategory = graphCategoryRegions(layouts);
 
     expect(layouts.map((layout) => [layout.category, layout.count])).toEqual([
       ["資料", 1],
@@ -38,12 +42,32 @@ describe("graphCategoryModel", () => {
       layouts[0]!.x - layouts[1]!.x,
       layouts[0]!.y - layouts[1]!.y
     );
-    expect(distance).toBeGreaterThan(layouts[0]!.radius + layouts[1]!.radius);
+    expect(distance).toBeLessThan(layouts[0]!.radius + layouts[1]!.radius);
+    expect(byCategory.get("資料")?.contacts).toHaveLength(1);
   });
 
-  it("カテゴリ領域の外へ出たノードだけを内側へ戻す", () => {
+  it("接触方向だけを滑らかに凹ませ、輪郭同士を重ねない", () => {
+    const regions = graphCategoryRegions(graphCategoryLayouts([
+      { category: "資料" },
+      { category: "人物" }
+    ]));
+    const material = regions.get("資料")!;
+    const person = regions.get("人物")!;
+    const contact = material.contacts[0]!;
+    const materialRadius = graphCategoryBoundaryRadius(material, contact.angle);
+    const personRadius = graphCategoryBoundaryRadius(person, contact.angle + Math.PI);
+    const oppositeRadius = graphCategoryBoundaryRadius(material, contact.angle + Math.PI);
+    const contour = graphCategoryContour(material);
+
+    expect(materialRadius).toBeLessThan(material.radius);
+    expect(oppositeRadius).toBe(material.radius);
+    expect(materialRadius + personRadius).toBeLessThan(contact.distance);
+    expect(contour).toHaveLength(72);
+  });
+
+  it("カテゴリ領域の外へ出る座標と速度を必ず内側へ収める", () => {
     const layouts = graphCategoryLayouts([{ category: "人物" }]);
-    const byCategory = new Map(layouts.map((layout) => [layout.category, layout]));
+    const byCategory = graphCategoryRegions(layouts);
     const layout = layouts[0]!;
     const outside = {
       category: "人物",
@@ -67,5 +91,14 @@ describe("graphCategoryModel", () => {
     expect(outside.vy).toBe(0);
     expect(inside).toMatchObject({ vx: 0, vy: 0 });
     expect(uncategorized).toMatchObject({ vx: 0, vy: 0 });
+
+    const constrained = constrainGraphCategoryPoint(
+      { category: "人物" },
+      byCategory,
+      { x: layout.x + layout.radius * 3, y: layout.y },
+      24
+    );
+    expect(Math.hypot(constrained.x - layout.x, constrained.y - layout.y))
+      .toBeLessThanOrEqual(layout.radius - 24);
   });
 });

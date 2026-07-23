@@ -16,8 +16,10 @@ import {
 } from "./graphLayout";
 import {
   applyGraphCategoryBoundary,
+  constrainGraphCategoryPoint,
   graphCategoryAttractionStrength,
   graphCategoryLayouts,
+  graphCategoryRegions,
   graphCategoryTarget
 } from "./graphCategoryModel";
 import {
@@ -149,9 +151,7 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
 
   const updateForces = () => {
     if (!simulation) return;
-    const categoryLayouts = new Map(
-      graphCategoryLayouts(fallbackNodes).map((layout) => [layout.category, layout])
-    );
+    const categoryLayouts = graphCategoryRegions(graphCategoryLayouts(fallbackNodes));
 
     simulation
       .force(
@@ -212,10 +212,14 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
       const node = fallbackNodes.find((candidate) => candidate.id === id);
       if (!node || !simulation) return;
 
-      node.fx = x;
-      node.fy = y;
-      if (x !== null) node.x = x;
-      if (y !== null) node.y = y;
+      const regions = graphCategoryRegions(graphCategoryLayouts(fallbackNodes));
+      const constrained = x === null || y === null
+        ? null
+        : constrainGraphCategoryPoint(node, regions, { x, y });
+      node.fx = constrained?.x ?? x;
+      node.fy = constrained?.y ?? y;
+      if (node.fx !== null) node.x = node.fx;
+      if (node.fy !== null) node.y = node.fy;
 
       if (x === null && y === null) {
         simulation.alphaTarget(0);

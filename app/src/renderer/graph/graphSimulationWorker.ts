@@ -16,8 +16,10 @@ import {
 } from "./graphLayout";
 import {
   applyGraphCategoryBoundary,
+  constrainGraphCategoryPoint,
   graphCategoryAttractionStrength,
   graphCategoryLayouts,
+  graphCategoryRegions,
   graphCategoryTarget
 } from "./graphCategoryModel";
 import {
@@ -123,9 +125,7 @@ function updateSimulationOptions(options: GraphOptions, alpha = 0.18): void {
 
 function updateSimulationForces(): void {
   if (!simulation) return;
-  const categoryLayouts = new Map(
-    graphCategoryLayouts(workerNodes).map((layout) => [layout.category, layout])
-  );
+  const categoryLayouts = graphCategoryRegions(graphCategoryLayouts(workerNodes));
 
   simulation
     .force(
@@ -167,10 +167,14 @@ function updateFixedNode(id: string, x: number | null, y: number | null, alpha =
   const node = workerNodes.find((candidate) => candidate.id === id);
   if (!node || !simulation) return;
 
-  node.fx = x;
-  node.fy = y;
-  if (x !== null) node.x = x;
-  if (y !== null) node.y = y;
+  const regions = graphCategoryRegions(graphCategoryLayouts(workerNodes));
+  const constrained = x === null || y === null
+    ? null
+    : constrainGraphCategoryPoint(node, regions, { x, y });
+  node.fx = constrained?.x ?? x;
+  node.fy = constrained?.y ?? y;
+  if (node.fx !== null) node.x = node.fx;
+  if (node.fy !== null) node.y = node.fy;
 
   if (x === null && y === null) {
     simulation.alphaTarget(0);

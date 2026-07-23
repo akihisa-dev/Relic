@@ -10,11 +10,17 @@ import {
 
 import type { GraphSimulationClient } from "../graph/graphSimulationClient";
 import {
+  constrainGraphCategoryPoint,
+  graphCategoryLayouts,
+  graphCategoryRegions
+} from "../graph/graphCategoryModel";
+import {
   type GraphHighlightState,
   type GraphHoverFocusState,
   clampGraphScale,
   finishGraphPanVelocity,
   graphNodeAtCanvasPoint,
+  graphNodeVisualRadius,
   graphNodePrimaryAction,
   graphPointerMovedBeyondClickThreshold,
   graphWheelZoomPoint,
@@ -157,8 +163,23 @@ export function useGraphCanvasInteractions({
     );
 
     if (pointer.dragNode) {
-      pointer.dragNode.fx = (pointer.dragNode.fx ?? pointer.dragNode.x) + dx / viewRef.current.scale;
-      pointer.dragNode.fy = (pointer.dragNode.fy ?? pointer.dragNode.y) + dy / viewRef.current.scale;
+      const desiredPoint = {
+        x: (pointer.dragNode.fx ?? pointer.dragNode.x) + dx / viewRef.current.scale,
+        y: (pointer.dragNode.fy ?? pointer.dragNode.y) + dy / viewRef.current.scale
+      };
+      const regions = graphCategoryRegions(graphCategoryLayouts(nodesRef.current.values()));
+      const constrainedPoint = constrainGraphCategoryPoint(
+        pointer.dragNode,
+        regions,
+        desiredPoint,
+        graphNodeVisualRadius(
+          pointer.dragNode,
+          latestOptionsRef.current,
+          viewRef.current.scale
+        ) + 6 / viewRef.current.scale
+      );
+      pointer.dragNode.fx = constrainedPoint.x;
+      pointer.dragNode.fy = constrainedPoint.y;
       pointer.dragNode.x = pointer.dragNode.fx;
       pointer.dragNode.y = pointer.dragNode.fy;
       simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, pointer.dragNode.x, pointer.dragNode.y);
