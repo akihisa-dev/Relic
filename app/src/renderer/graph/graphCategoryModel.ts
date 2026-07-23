@@ -56,7 +56,7 @@ const graphCategoryDesiredOverlap = 28;
 const graphCategoryClusterClearance = 120;
 const graphCategoryBoundaryPadding = 36;
 const graphCategoryCollisionStrength = 0.16;
-const graphCategoryExteriorCompression = 16;
+const graphCategoryExteriorMaximumIndentationRatio = 0.75;
 const graphCategoryExteriorReactionStrength = 0.16;
 const graphCategoryMaximumBulge = 52;
 const graphCategoryPressureHalfAngle = Math.PI / 5;
@@ -176,7 +176,7 @@ export function graphCategoryRegions(
       const dx = node.x - layout.x;
       const dy = node.y - layout.y;
       const distance = Math.hypot(dx, dy);
-      const radius = graphCategoryNodeClearance(node) + graphCategoryExteriorCompression;
+      const radius = graphCategoryNodeClearance(node);
       if (distance >= layout.radius + radius) return [];
       return [{ angle: Math.atan2(dy, dx), distance, radius }];
     });
@@ -225,16 +225,10 @@ export function graphCategoryBoundaryRadius(
     boundaryRadius = Math.min(boundaryRadius, Math.max(0, planeRadius));
   }
   for (const obstacle of region.obstacles) {
-    const directionProjection = Math.cos(normalizeAngle(angle - obstacle.angle));
-    if (directionProjection <= 0) continue;
-    const contactDistance = (
-      obstacle.distance +
-      region.radius -
-      obstacle.radius
-    ) / 2;
-    const planeRadius = contactDistance / directionProjection;
-    if (planeRadius >= boundaryRadius) continue;
-    boundaryRadius = Math.min(boundaryRadius, Math.max(0, planeRadius));
+    boundaryRadius = Math.min(
+      boundaryRadius,
+      graphCategoryObstacleBoundaryRadius(region, obstacle, angle)
+    );
   }
   return boundaryRadius;
 }
@@ -465,16 +459,37 @@ function graphCategoryDeformableBoundaryRadius(
     radius = Math.min(radius, Math.max(0, contactDistance / directionProjection));
   }
   for (const obstacle of region.obstacles) {
-    const directionProjection = Math.cos(normalizeAngle(angle - obstacle.angle));
-    if (directionProjection <= 0) continue;
-    const contactDistance = (
-      obstacle.distance +
-      region.radius -
-      obstacle.radius
-    ) / 2;
-    radius = Math.min(radius, Math.max(0, contactDistance / directionProjection));
+    radius = Math.min(
+      radius,
+      graphCategoryObstacleBoundaryRadius(region, obstacle, angle)
+    );
   }
   return radius;
+}
+
+function graphCategoryObstacleBoundaryRadius(
+  region: Pick<GraphCategoryRegion, "radius">,
+  obstacle: GraphCategoryObstacle,
+  angle: number
+): number {
+  const indentation = Math.min(
+    obstacle.radius * graphCategoryExteriorMaximumIndentationRatio,
+    Math.max(0, region.radius + obstacle.radius - obstacle.distance)
+  );
+  if (indentation === 0) return region.radius;
+
+  const delta = Math.abs(normalizeAngle(angle - obstacle.angle));
+  const obstacleAngularRadius = Math.asin(Math.min(
+    1,
+    obstacle.radius / Math.max(obstacle.distance, obstacle.radius)
+  ));
+  const halfAngle = Math.max(
+    0.18,
+    Math.min(graphCategoryPressureHalfAngle, obstacleAngularRadius * 1.4)
+  );
+  const progress = Math.max(0, 1 - delta / halfAngle);
+  const smoothIndentation = progress * progress * (3 - 2 * progress);
+  return Math.max(0, region.radius - indentation * smoothIndentation);
 }
 
 function applyGraphCategoryExteriorReaction(
@@ -491,8 +506,7 @@ function applyGraphCategoryExteriorReaction(
       const dy = region.y - node.y;
       const distance = Math.hypot(dx, dy);
       const responseDistance = region.radius +
-        graphCategoryNodeClearance(node) +
-        graphCategoryExteriorCompression;
+        graphCategoryNodeClearance(node);
       if (distance >= responseDistance) continue;
 
       const fallbackAngle = stableCategoryAngle(

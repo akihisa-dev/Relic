@@ -216,7 +216,15 @@ export function useGraphCanvasInteractions({
         y: (pointer.dragNode.fy ?? pointer.dragNode.y) + dy / viewRef.current.scale
       };
       const graphNodes = [...nodesRef.current.values()];
-      const regions = graphCategoryRegions(graphCategoryDynamicLayouts(graphNodes), graphNodes);
+      const projectedNodes = graphNodes.map((node) => (
+        node.id === pointer.dragNode?.id
+          ? { ...node, x: desiredPoint.x, y: desiredPoint.y }
+          : node
+      ));
+      const regions = graphCategoryRegions(
+        graphCategoryDynamicLayouts(graphNodes),
+        projectedNodes
+      );
       const constrainedPoint = constrainGraphNodeToCategoryRegions(
         pointer.dragNode,
         regions,

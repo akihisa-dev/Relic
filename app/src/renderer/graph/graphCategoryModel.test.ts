@@ -144,20 +144,78 @@ describe("graphCategoryModel", () => {
     expect(moved).toEqual({ x: 60, y: 20 });
   });
 
+  it("所属ノードが1件だけでも移動先を先読みしてバブルごと動かせる", () => {
+    const nodes = [{ category: "人物", fx: null, fy: null, x: 0, y: 0 }];
+    const projectedNodes = [{ ...nodes[0]!, x: 60, y: 20 }];
+    const regions = graphCategoryRegions(
+      graphCategoryDynamicLayouts(nodes),
+      projectedNodes
+    );
+    const moved = constrainGraphNodeToCategoryRegions(
+      nodes[0]!,
+      regions,
+      { x: 60, y: 20 },
+      18
+    );
+
+    expect(moved).toEqual({ x: 60, y: 20 });
+    expect(translateGraphCategoryNodesWithPush(nodes, "人物", 40, 30))
+      .toHaveLength(1);
+    expect(nodes[0]).toMatchObject({ fx: 40, fy: 30, x: 40, y: 30 });
+  });
+
   it("外部ノードが接触した方向の膜をへこませ、バブルへ反力を与える", () => {
     const nodes = [
       { category: "人物", vx: 0, vy: 0, x: -10, y: 0 },
       { category: "人物", vx: 0, vy: 0, x: 10, y: 0 },
-      { category: null, vx: 0, vy: 0, x: 115, y: 0 }
+      { category: null, vx: 0, vy: 0, x: 110, y: 0 }
     ];
 
     const regions = applyGraphCategoryMotion(nodes, 0.5);
     const person = regions.get("人物")!;
+    const contactRadius = graphCategoryBoundaryRadius(person, 0);
 
-    expect(graphCategoryBoundaryRadius(person, 0)).toBeLessThan(person.radius);
+    expect(contactRadius).toBeLessThan(person.radius);
+    expect(contactRadius + 18).toBeCloseTo(110, 6);
     expect(graphCategoryBoundaryRadius(person, Math.PI)).toBe(person.radius);
-    expect(nodes[0]!.vx).toBeLessThan(0);
-    expect(nodes[1]!.vx).toBeLessThan(0);
+    expect((nodes[0]!.vx + nodes[1]!.vx) / 2).toBeLessThan(0);
+  });
+
+  it("外部ノードが触れる前は膜を引き込まない", () => {
+    const region = graphCategoryRegions([{
+      category: "人物",
+      count: 1,
+      radius: 96,
+      x: 0,
+      y: 0
+    }], [{
+      category: null,
+      x: 115,
+      y: 0
+    }]).get("人物")!;
+
+    expect(region.obstacles).toHaveLength(0);
+    expect(graphCategoryBoundaryRadius(region, 0)).toBe(region.radius);
+  });
+
+  it("外部ノードを深く押しても局所変形の上限でバブル外へ留める", () => {
+    const node = { category: null, x: 20, y: 0 };
+    const region = graphCategoryRegions([{
+      category: "人物",
+      count: 1,
+      radius: 96,
+      x: 0,
+      y: 0
+    }], [node]);
+    const constrained = constrainGraphNodeToCategoryRegions(
+      node,
+      region,
+      { x: 20, y: 0 },
+      18
+    );
+
+    expect(constrained.x).toBeGreaterThan(96);
+    expect(constrained.y).toBe(0);
   });
 
   it("未分類と別カテゴリのノードをカテゴリーバブルの外へ押し戻す", () => {
