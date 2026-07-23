@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import type { WorkspaceGraph } from "../../shared/ipc";
-import { defaultGraphOptions } from "./graphTypes";
 import { deriveVisibleGraph } from "./graphDisplayModel";
 
 const graph: WorkspaceGraph = {
@@ -18,25 +17,25 @@ const graph: WorkspaceGraph = {
 
 describe("deriveVisibleGraph", () => {
   it("2Dと3Dで共有する表示条件から同じノードとリンクを導出する", () => {
-    const visible = deriveVisibleGraph(graph, defaultGraphOptions);
+    const visible = deriveVisibleGraph(graph);
 
     expect(visible.nodes.map((node) => node.id)).toEqual(["A.md", "B.md"]);
     expect(visible.links).toEqual([
       { count: 1, source: "A.md", target: "B.md", type: "link" }
     ]);
-    expect(visible.tagsByNode.get("A.md")).toEqual(["project"]);
   });
 
-  it("タグ表示と検索を共通条件として適用する", () => {
-    const visible = deriveVisibleGraph(graph, {
-      ...defaultGraphOptions,
-      search: "tag:project",
-      showTags: true
+  it("固定表示条件ではタグと添付を除き、未解決と孤立ファイルを残す", () => {
+    const visible = deriveVisibleGraph({
+      links: [],
+      nodes: [
+        ...graph.nodes,
+        { backlinkCount: 0, exists: false, id: "Missing.md", label: "Missing", linkCount: 0, path: null, type: "unresolved" },
+        { backlinkCount: 0, exists: true, id: "image.png", label: "image", linkCount: 0, path: null, type: "attachment" }
+      ]
     });
 
-    expect(visible.nodes.map((node) => node.id)).toEqual(["A.md", "#project"]);
-    expect(visible.links).toEqual([
-      { count: 1, source: "A.md", target: "#project", type: "tag" }
-    ]);
+    expect(visible.nodes.map((node) => node.id)).toEqual(["A.md", "B.md", "Missing.md"]);
+    expect(visible.links).toEqual([]);
   });
 });

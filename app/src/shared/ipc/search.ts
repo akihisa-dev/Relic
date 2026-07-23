@@ -122,6 +122,7 @@ export type WorkspaceGraphNodeType = "attachment" | "file" | "tag" | "unresolved
 
 export interface WorkspaceGraphNode {
   backlinkCount: number;
+  category?: string;
   exists: boolean;
   id: string;
   label: string;

@@ -24,9 +24,9 @@ describe("readWorkspaceGraph", () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-graph-"));
     temporaryPaths.push(workspacePath);
     await mkdir(path.join(workspacePath, "folder"));
-    await writeFile(path.join(workspacePath, "A.md"), "---\ntags: [project]\n---\n[[B]]\n[Folder](folder/C.md)\n[[Missing]]", "utf8");
-    await writeFile(path.join(workspacePath, "B.md"), "# B", "utf8");
-    await writeFile(path.join(workspacePath, "folder", "C.md"), "# C", "utf8");
+    await writeFile(path.join(workspacePath, "A.md"), "---\ncategory: \"  人物  \"\ntags: [project]\n---\n[[B]]\n[Folder](folder/C.md)\n[[Missing]]", "utf8");
+    await writeFile(path.join(workspacePath, "B.md"), "---\ncategory: [人物]\n---\n# B", "utf8");
+    await writeFile(path.join(workspacePath, "folder", "C.md"), "---\ncategory: \"\"\n---\n# C", "utf8");
 
     const result = await readWorkspaceGraph(workspacePath);
 
@@ -34,7 +34,7 @@ describe("readWorkspaceGraph", () => {
     if (!result.ok) return;
 
     expect(result.value.nodes).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: "A.md", label: "A", type: "file" }),
+      expect.objectContaining({ category: "人物", id: "A.md", label: "A", type: "file" }),
       expect.objectContaining({ id: "B.md", label: "B", type: "file" }),
       expect.objectContaining({ id: "folder/C.md", label: "C", type: "file" }),
       expect.objectContaining({ id: "Missing.md", label: "Missing", type: "unresolved" }),
@@ -47,6 +47,8 @@ describe("readWorkspaceGraph", () => {
       { count: 1, source: "A.md", target: "#project", type: "tag" }
     ]));
     expect(result.value.nodes.find((node) => node.id === "A.md")).toMatchObject({ linkCount: 4 });
+    expect(result.value.nodes.find((node) => node.id === "B.md")).not.toHaveProperty("category");
+    expect(result.value.nodes.find((node) => node.id === "folder/C.md")).not.toHaveProperty("category");
     expect(result.value.nodes.find((node) => node.id === "B.md")).toMatchObject({ backlinkCount: 1 });
   });
 

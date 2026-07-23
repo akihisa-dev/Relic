@@ -39,32 +39,20 @@ afterEach(() => {
 });
 
 describe("GraphView", () => {
-  it("shows graph controls in English", () => {
+  it("英語表示でも設定メニューを表示しない", () => {
     renderGraphView("en");
 
     expect(screen.getByLabelText("Graph")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Close graph settings" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Play graph timelapse" })).not.toHaveAttribute("title");
-    expect(screen.getByRole("button", { name: "Reset graph settings" })).not.toHaveAttribute("title");
-    expect(screen.getByText("0 nodes")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
-    expect(screen.getByPlaceholderText("Search nodes...")).toBeInTheDocument();
-    expect(screen.getByText("Tags")).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
 
-  it("shows graph controls in Japanese", () => {
+  it("日本語表示でも設定メニューを表示しない", () => {
     renderGraphView("ja");
 
     expect(screen.getByLabelText("グラフ")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "グラフ設定を閉じる" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "グラフのタイムラプスを再生" })).not.toHaveAttribute("title");
-    expect(screen.getByRole("button", { name: "グラフ設定をリセット" })).not.toHaveAttribute("title");
-    expect(screen.getByText("0件のノード")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "フィルタ" }));
-    expect(screen.getByPlaceholderText("ノードを検索...")).toBeInTheDocument();
-    expect(screen.getByText("タグ")).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
 
   it("グラフを押している間はgrabbingカーソルを表示する", () => {

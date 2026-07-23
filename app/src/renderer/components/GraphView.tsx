@@ -10,6 +10,7 @@ import {
 } from "../graph/graphLayout";
 import { createGraphSimulationClient, type GraphSimulationClient } from "../graph/graphSimulationClient";
 import {
+  defaultGraphOptions,
   defaultGraphDrawTheme,
   type GraphSimLink,
   type GraphSimNode,
@@ -17,12 +18,9 @@ import {
 } from "../graph/graphTypes";
 import { useT } from "../i18n";
 import { graphCanvasSizeFallback, useGraphCanvasInteractions } from "../hooks/useGraphCanvasInteractions";
-import { useGraphControlsState } from "../hooks/useGraphControlsState";
 import { useLatest } from "../hooks/useLatest";
 import { useWorkspaceGraphState } from "../hooks/useWorkspaceGraphState";
-import { GraphControls } from "./GraphControls";
 import {
-  animateGraph,
   applyGraphKeyboardNavigation,
   applyGraphKeyboardZoom,
   applyGraphPanInertia,
@@ -65,31 +63,13 @@ export function GraphView({
   const linksRef = useRef<GraphSimLink[]>(initialLinks);
   const viewRef = useRef<GraphViewTransform>(initialView);
   const simulationClientRef = useRef<GraphSimulationClient | null>(null);
-  const {
-    addColorGroup,
-    changeColorGroup,
-    changeOptions,
-    changeSectionCollapsed,
-    colorGroups,
-    controlsOpen,
-    deleteColorGroup,
-    draggingColorGroupId,
-    endColorGroupDrag,
-    moveColorGroup,
-    options,
-    resetControls,
-    sectionCollapsed,
-    startColorGroupDrag,
-    toggleControls
-  } = useGraphControlsState();
   const graphState = useWorkspaceGraphState({
     loadFailedMessage: t("graph.loadFailed"),
     refreshRevision,
     workspaceCacheKey
   });
   const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
-  const latestOptionsRef = useLatest(options);
-  const colorGroupsRef = useLatest(colorGroups);
+  const latestOptionsRef = useLatest(defaultGraphOptions);
 
   const requestDraw = useCallback(() => {
     requestGraphFrameOnce(frameRef, () => drawRef.current());
@@ -109,8 +89,7 @@ export function GraphView({
     hoverPointRef,
     keyboardRef,
     panVelocityRef,
-    pointerRef,
-    resetInteractionState
+    pointerRef
   } = useGraphCanvasInteractions({
     canvasRef,
     latestOptionsRef,
@@ -160,8 +139,8 @@ export function GraphView({
   }, [requestDraw]);
 
   const filteredGraph = useMemo(() => {
-    return deriveVisibleGraph(graphState.graph, options);
-  }, [graphState.graph, options.hideUnresolved, options.search, options.showAttachments, options.showOrphans, options.showTags]);
+    return deriveVisibleGraph(graphState.graph);
+  }, [graphState.graph]);
 
   useEffect(() => {
     const links = syncGraphLayout(filteredGraph, nodesRef.current);
@@ -173,18 +152,6 @@ export function GraphView({
     );
     requestDraw();
   }, [filteredGraph, requestDraw]);
-
-  useEffect(() => {
-    simulationClientRef.current?.updateOptions(options);
-    requestDraw();
-  }, [
-    options.centerStrength,
-    options.linkDistance,
-    options.linkStrength,
-    options.nodeSizeMultiplier,
-    options.repelStrength,
-    requestDraw
-  ]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -229,8 +196,6 @@ export function GraphView({
       linksRef.current,
       viewRef.current,
       latestOptionsRef.current,
-      colorGroupsRef.current,
-      filteredGraph.tagsByNode,
       highlight,
       themeRef.current,
       cssWidth,
@@ -247,13 +212,13 @@ export function GraphView({
     })) {
       requestDraw();
     }
-  }, [filteredGraph.tagsByNode, pinnedNodeId, requestDraw]);
+  }, [pinnedNodeId, requestDraw]);
 
   drawRef.current = draw;
 
   useEffect(() => {
     requestDraw();
-  }, [colorGroups, draw, options, requestDraw]);
+  }, [draw, requestDraw]);
 
   useEffect(() => {
     const resizeObserver = typeof ResizeObserver === "undefined"
@@ -270,11 +235,6 @@ export function GraphView({
     if (frameRef.current !== null) cancelGraphFrame(frameRef.current);
     frameRef.current = null;
   }, []);
-
-  const resetView = useCallback(() => {
-    resetControls();
-    resetInteractionState();
-  }, [resetControls, resetInteractionState]);
 
   return (
     <div className="graph-view-shell">
@@ -297,29 +257,6 @@ export function GraphView({
       {graphState.error ? (
         <div className="graph-view-status graph-view-status--error">{graphState.error}</div>
       ) : null}
-      <GraphControls
-        colorGroups={colorGroups}
-        controlsOpen={controlsOpen}
-        nodeCount={filteredGraph.nodes.length}
-        onAddColorGroup={addColorGroup}
-        onColorGroupChange={changeColorGroup}
-        onColorGroupDelete={deleteColorGroup}
-        onColorGroupDragEnd={endColorGroupDrag}
-        onColorGroupDragStart={startColorGroupDrag}
-        onColorGroupMove={moveColorGroup}
-        onAnimate={() => {
-          animateGraph(nodesRef.current, linksRef.current, viewRef, simulationClientRef.current, latestOptionsRef.current);
-          requestDraw();
-        }}
-        onOptionsChange={changeOptions}
-        onReset={resetView}
-        onSectionCollapsedChange={changeSectionCollapsed}
-        onToggleControls={toggleControls}
-        options={options}
-        draggingColorGroupId={draggingColorGroupId}
-        sectionCollapsed={sectionCollapsed}
-        t={t}
-      />
     </div>
   );
 }

@@ -30,7 +30,7 @@ describe("graphLayout", () => {
         { count: 1, source: "A.md", target: "Missing.md", type: "link" }
       ],
       nodes: [
-        graphNode({ id: "A.md", label: "A", linkCount: 1 }),
+        graphNode({ category: "人物", id: "A.md", label: "A", linkCount: 1 }),
         graphNode({ backlinkCount: 1, id: "B.md", label: "B" })
       ]
     };
@@ -49,7 +49,7 @@ describe("graphLayout", () => {
     const graph: WorkspaceGraph = {
       links: [{ count: 1, source: "A.md", target: "B.md", type: "link" }],
       nodes: [
-        graphNode({ id: "A.md", label: "A", linkCount: 1 }),
+        graphNode({ category: "人物", id: "A.md", label: "A", linkCount: 1 }),
         graphNode({ backlinkCount: 1, id: "B.md", label: "B" })
       ]
     };
@@ -67,6 +67,10 @@ describe("graphLayout", () => {
     });
 
     expect(linkSnapshots).toEqual([{ count: 1, source: "A.md", target: "B.md" }]);
+    expect(snapshots.map((node) => ({ category: node.category, id: node.id }))).toEqual([
+      { category: "人物", id: "A.md" },
+      { category: null, id: "B.md" }
+    ]);
     expect(nodes.get("A.md")).toMatchObject({ vx: 1.5, vy: -0.5, x: 12, y: 34 });
     expect(nodes.get("B.md")).toMatchObject({ vx: 0, vy: 2, x: -20, y: 8 });
   });

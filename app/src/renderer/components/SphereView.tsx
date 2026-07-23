@@ -5,8 +5,8 @@ import { createSphereData, sphereNodeColors } from "../sphere/sphereModel";
 import { createSphereRuntime, type SphereRuntime } from "../sphere/sphereRuntime";
 import { deriveVisibleGraph } from "../graph/graphDisplayModel";
 import { graphNodePrimaryAction } from "../graph/graphSearchModel";
-import { defaultGraphDrawTheme, type GraphDrawTheme, type GraphOptions } from "../graph/graphTypes";
-import { loadGraphColorGroups, loadGraphOptions, readGraphDrawTheme } from "../graph/graphViewRuntime";
+import { defaultGraphDrawTheme, type GraphDrawTheme } from "../graph/graphTypes";
+import { readGraphDrawTheme } from "../graph/graphViewRuntime";
 import { useLatest } from "../hooks/useLatest";
 import { useWorkspaceGraphState } from "../hooks/useWorkspaceGraphState";
 import { useT } from "../i18n";
@@ -61,33 +61,28 @@ export function disposeParkedSphereRuntime(): void {
 let cachedSphereModel: {
   cacheKey: string;
   graph: WorkspaceGraph;
-  optionsSignature: string;
   sphereData: ReturnType<typeof createSphereData>;
   visibleGraph: ReturnType<typeof deriveVisibleGraph>;
 } | null = null;
 
 function sphereModelFor(
   graph: WorkspaceGraph | null,
-  options: GraphOptions,
   cacheKey: string
 ): Pick<NonNullable<typeof cachedSphereModel>, "sphereData" | "visibleGraph"> {
   if (!graph) {
-    const visibleGraph = deriveVisibleGraph(null, options);
+    const visibleGraph = deriveVisibleGraph(null);
     return { sphereData: createSphereData(visibleGraph), visibleGraph };
   }
-  const optionsSignature = JSON.stringify(options);
   if (
     cachedSphereModel?.cacheKey === cacheKey &&
-    cachedSphereModel.graph === graph &&
-    cachedSphereModel.optionsSignature === optionsSignature
+    cachedSphereModel.graph === graph
   ) {
     return cachedSphereModel;
   }
-  const visibleGraph = deriveVisibleGraph(graph, options);
+  const visibleGraph = deriveVisibleGraph(graph);
   cachedSphereModel = {
     cacheKey,
     graph,
-    optionsSignature,
     sphereData: createSphereData(visibleGraph),
     visibleGraph
   };
@@ -115,20 +110,17 @@ export function SphereView({
   const selectedNodeIdRef = useRef<string | null>(null);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
   const [theme, setTheme] = useState<GraphDrawTheme>(defaultGraphDrawTheme);
-  const options = useMemo(loadGraphOptions, []);
-  const colorGroups = useMemo(loadGraphColorGroups, []);
   const sphereModel = useMemo(
     () => sphereModelFor(
       graphState.graph,
-      options,
       `${workspaceCacheKey}:${refreshRevision}`
     ),
-    [graphState.graph, options, refreshRevision, workspaceCacheKey]
+    [graphState.graph, refreshRevision, workspaceCacheKey]
   );
   const { sphereData, visibleGraph: filteredGraph } = sphereModel;
   const nodeColors = useMemo(
-    () => sphereNodeColors(filteredGraph, colorGroups, theme),
-    [colorGroups, filteredGraph, theme]
+    () => sphereNodeColors(filteredGraph, theme),
+    [filteredGraph, theme]
   );
   const focusId = selectedNodeId ?? hoveredNodeId;
   const focusedNode = focusId

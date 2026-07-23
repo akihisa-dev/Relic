@@ -57,25 +57,10 @@ export function initialGraphNodePosition(index: number): { x: number; y: number 
   };
 }
 
-export function resetGraphTimelapsePositions(nodes: Iterable<GraphSimNode>): void {
-  let index = 0;
-
-  for (const node of nodes) {
-    const angle = index * graphSpiralAngle;
-    const radius = 18 + Math.sqrt(index) * 4;
-    node.fx = null;
-    node.fy = null;
-    node.x = Math.cos(angle) * radius;
-    node.y = Math.sin(angle) * radius;
-    node.vx = Math.cos(angle) * 3.2;
-    node.vy = Math.sin(angle) * 3.2;
-    index += 1;
-  }
-}
-
 export function graphSimulationNodes(nodes: Iterable<GraphSimNode>): GraphSimulationNodeSnapshot[] {
   return [...nodes].map((node) => ({
     backlinkCount: node.backlinkCount,
+    category: node.category ?? null,
     fx: node.fx,
     fy: node.fy,
     id: node.id,

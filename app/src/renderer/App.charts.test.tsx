@@ -75,17 +75,12 @@ function kamakuraEntry() {
 
 const graphTestOptions = {
   centerStrength: 0.1,
-  hideUnresolved: false,
   lineSizeMultiplier: 1,
   linkDistance: 250,
   linkStrength: 1,
   nodeSizeMultiplier: 1,
   repelStrength: 10,
-  search: "",
   showArrows: false,
-  showAttachments: false,
-  showOrphans: true,
-  showTags: false,
   textFadeMultiplier: 0
 };
 
@@ -146,41 +141,8 @@ describe("App charts", () => {
     expect(graphCanvas).toHaveAttribute("tabindex", "0");
     expect(fireEvent.keyDown(graphCanvas, { key: "ArrowRight" })).toBe(false);
     expect(fireEvent.keyDown(graphCanvas, { key: "=", shiftKey: true })).toBe(false);
-    expect(container.querySelector(".graph-controls")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "グラフ設定を閉じる" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "グラフ設定をリセット" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "グラフのタイムラプスを再生" })).toBeInTheDocument();
-    const filtersHeader = screen.getByRole("button", { name: "フィルタ" });
-    expect(filtersHeader).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(filtersHeader);
-    expect(filtersHeader).toHaveAttribute("aria-expanded", "true");
-    const filterInput = screen.getByRole("searchbox", { name: "ノードをフィルタ" });
-    fireEvent.change(filterInput, { target: { value: "tag:project" } });
-    expect(screen.getByText("1件のノード")).toBeInTheDocument();
-    fireEvent.change(filterInput, { target: { value: "" } });
-    expect(screen.getByText("2件のノード")).toBeInTheDocument();
-    const groupsHeader = screen.getByRole("button", { name: "グループ" });
-    fireEvent.click(groupsHeader);
-    fireEvent.click(screen.getByRole("button", { name: "新規グループ" }));
-    fireEvent.click(screen.getByRole("button", { name: "新規グループ" }));
-
-    const groupQueries = screen.getAllByLabelText("グループ検索") as HTMLInputElement[];
-    fireEvent.change(groupQueries[0]!, { target: { value: "first" } });
-    fireEvent.change(groupQueries[1]!, { target: { value: "second" } });
-
-    const dragHandles = screen.getAllByRole("button", { name: "グループを並べ替え" });
-    const dataTransfer = {
-      effectAllowed: "move",
-      setData: vi.fn()
-    };
-    fireEvent.dragStart(dragHandles[0]!, { dataTransfer });
-    fireEvent.dragOver(dragHandles[1]!.closest(".graph-color-group")!);
-    fireEvent.dragEnd(dragHandles[0]!);
-
-    expect((screen.getAllByLabelText("グループ検索") as HTMLInputElement[]).map((input) => input.value)).toEqual([
-      "second",
-      "first"
-    ]);
+    expect(container.querySelector(".graph-controls")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "グラフ設定を閉じる" })).not.toBeInTheDocument();
   });
 
   it("レールのスフィアボタンから独立したスフィアビューを表示できる", async () => {

@@ -3,7 +3,7 @@ import type { LinkObject, NodeObject } from "3d-force-graph";
 import type { WorkspaceGraphLink, WorkspaceGraphNode } from "../../shared/ipc";
 import { nodeColor } from "../graph/graphDrawingModel";
 import type { VisibleGraph } from "../graph/graphDisplayModel";
-import type { GraphColorGroup, GraphDrawTheme } from "../graph/graphTypes";
+import type { GraphDrawTheme } from "../graph/graphTypes";
 
 export type SphereNode = WorkspaceGraphNode & NodeObject & {
   val: number;
@@ -168,12 +168,11 @@ export function createSphereData(
 
 export function sphereNodeColors(
   graph: VisibleGraph,
-  colorGroups: GraphColorGroup[],
   theme: GraphDrawTheme
 ): ReadonlyMap<string, string> {
   return new Map(graph.nodes.map((node) => [
     node.id,
-    nodeColor(node, colorGroups, graph.tagsByNode.get(node.id) ?? [], theme)
+    nodeColor(node, theme)
   ]));
 }
 

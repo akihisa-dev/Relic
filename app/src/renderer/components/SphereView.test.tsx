@@ -2,7 +2,6 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { makeRelicApi } from "../../test/rendererTestUtils";
-import { graphOptionsStorageKey } from "../graph/graphViewRuntime";
 import { I18nProvider } from "../i18n";
 import { disposeParkedSphereRuntime, SphereView } from "./SphereView";
 
@@ -145,8 +144,8 @@ describe("SphereView", () => {
     expect(runtimeMocks.setFocus).toHaveBeenLastCalledWith("A.md");
   });
 
-  it("別ノードへの切替では開かず、選択中のタグを再クリックすると検索する", async () => {
-    window.localStorage.setItem(graphOptionsStorageKey, JSON.stringify({ showTags: true }));
+  it("廃止した保存設定を無視し、タグノードを表示対象へ戻さない", async () => {
+    window.localStorage.setItem("relic.graphView.options.v1", JSON.stringify({ showTags: true }));
     const tagNode = {
       backlinkCount: 1,
       exists: true,
@@ -156,28 +155,12 @@ describe("SphereView", () => {
       type: "tag",
       val: 4
     };
-    const { onOpenFile, onOpenTagSearch } = renderSphereView("ja", [tagNode]);
-    await waitFor(() => expect(runtimeMocks.callbacks).not.toBeNull());
-    const fileNode = {
-      backlinkCount: 0,
-      exists: true,
-      id: "A.md",
-      label: "A",
-      linkCount: 1,
-      path: "A.md",
-      type: "file",
-      val: 4
-    };
+    renderSphereView("ja", [tagNode]);
 
-    act(() => runtimeMocks.callbacks?.onNodeClick(fileNode));
-    act(() => runtimeMocks.callbacks?.onNodeClick(tagNode));
-
-    expect(onOpenFile).not.toHaveBeenCalled();
-    expect(onOpenTagSearch).not.toHaveBeenCalled();
-    expect(runtimeMocks.setFocus).toHaveBeenLastCalledWith("#topic");
-
-    act(() => runtimeMocks.callbacks?.onNodeClick(tagNode));
-    expect(onOpenTagSearch).toHaveBeenCalledWith("topic");
+    await waitFor(() => {
+      const latestData = runtimeMocks.setData.mock.calls.at(-1)?.[0];
+      expect(latestData.nodes.map((node: { id: string }) => node.id)).toEqual(["A.md", "B.md"]);
+    });
   });
 
   it("WebGL停止をスフィア内のエラーに限定してruntimeを破棄する", async () => {

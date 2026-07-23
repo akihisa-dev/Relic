@@ -25,8 +25,7 @@ describe("sphereModel", () => {
     nodes: [
       { backlinkCount: 0, exists: true, id: "A.md", label: "A", linkCount: 1, path: "A.md", type: "file" as const },
       { backlinkCount: 1, exists: true, id: "B.md", label: "B", linkCount: 0, path: "B.md", type: "file" as const }
-    ],
-    tagsByNode: new Map<string, string[]>()
+    ]
   };
 
   it("共有グラフを変更しない3D専用データを生成する", () => {
@@ -51,7 +50,7 @@ describe("sphereModel", () => {
 
   it("テーマ色をトポロジーと別に生成する", () => {
     const data = createSphereData(visibleGraph);
-    const colors = sphereNodeColors(visibleGraph, [], defaultGraphDrawTheme);
+    const colors = sphereNodeColors(visibleGraph, defaultGraphDrawTheme);
 
     expect(colors.get("A.md")).toBeTruthy();
     expect(data.nodes[0]).not.toHaveProperty("baseColor");

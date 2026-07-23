@@ -1,18 +1,11 @@
-import type React from "react";
-
 import type { WorkspaceGraphNode } from "../../shared/ipc";
 import {
   graphNodeBaseRadiusFromWeight,
-  graphNodeWeight,
-  graphSimulationLinks,
-  graphSimulationNodes,
-  resetGraphTimelapsePositions
+  graphNodeWeight
 } from "./graphLayout";
-import type { GraphSimulationClient } from "./graphSimulationClient";
 import type {
   GraphKeyboardState,
   GraphOptions,
-  GraphSimLink,
   GraphSimNode,
   GraphViewTransform
 } from "./graphTypes";
@@ -67,23 +60,6 @@ export function shouldContinueGraphFrame(activity: GraphFrameActivity): boolean 
   const highlightActive = activity.targetHighlightId !== null || activity.highlight.strength > 0;
 
   return activity.pointerActive || keyboardActive || panActive || zoomActive || highlightActive;
-}
-
-export function animateGraph(
-  nodes: Map<string, GraphSimNode>,
-  links: GraphSimLink[],
-  viewRef: React.MutableRefObject<GraphViewTransform>,
-  simulationClient: GraphSimulationClient | null,
-  options: GraphOptions
-): void {
-  viewRef.current = initialGraphViewTransform();
-  resetGraphTimelapsePositions(nodes.values());
-  simulationClient?.sync(
-    graphSimulationNodes(nodes.values()),
-    graphSimulationLinks(links),
-    options,
-    0.8
-  );
 }
 
 export function graphNodeBaseRadius(node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">, options: GraphOptions): number {

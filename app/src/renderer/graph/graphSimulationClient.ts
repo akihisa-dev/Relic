@@ -15,6 +15,11 @@ import {
   graphNodeWeight
 } from "./graphLayout";
 import {
+  graphCategoryAttractionStrength,
+  graphCategoryLayouts,
+  graphCategoryTarget
+} from "./graphCategoryModel";
+import {
   defaultGraphOptions,
   type GraphOptions,
   type GraphSimulationLinkSnapshot,
@@ -42,6 +47,7 @@ type GraphSimulationErrorHandler = (message: string) => void;
 
 interface FallbackNode extends SimulationNodeDatum {
   backlinkCount: number;
+  category: string | null;
   id: string;
   linkCount: number;
 }
@@ -142,10 +148,21 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
 
   const updateForces = () => {
     if (!simulation) return;
+    const categoryLayouts = new Map(
+      graphCategoryLayouts(fallbackNodes).map((layout) => [layout.category, layout])
+    );
 
     simulation
-      .force("x", forceX<FallbackNode>(0).strength(currentOptions.centerStrength))
-      .force("y", forceY<FallbackNode>(0).strength(currentOptions.centerStrength))
+      .force(
+        "x",
+        forceX<FallbackNode>((node) => graphCategoryTarget(node, categoryLayouts)?.x ?? 0)
+          .strength((node) => node.category ? graphCategoryAttractionStrength : currentOptions.centerStrength)
+      )
+      .force(
+        "y",
+        forceY<FallbackNode>((node) => graphCategoryTarget(node, categoryLayouts)?.y ?? 0)
+          .strength((node) => node.category ? graphCategoryAttractionStrength : currentOptions.centerStrength)
+      )
       .force(
         "charge",
         forceManyBody<FallbackNode>()
@@ -208,6 +225,7 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
       currentOptions = options;
       fallbackNodes = nodes.map((node) => ({
         backlinkCount: node.backlinkCount,
+        category: node.category,
         fx: node.fx,
         fy: node.fy,
         id: node.id,

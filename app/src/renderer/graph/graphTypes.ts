@@ -2,33 +2,23 @@ import type { WorkspaceGraphLink, WorkspaceGraphNode } from "../../shared/ipc";
 
 export interface GraphOptions {
   centerStrength: number;
-  hideUnresolved: boolean;
   lineSizeMultiplier: number;
   linkDistance: number;
   linkStrength: number;
   nodeSizeMultiplier: number;
   repelStrength: number;
-  search: string;
   showArrows: boolean;
-  showAttachments: boolean;
-  showOrphans: boolean;
-  showTags: boolean;
   textFadeMultiplier: number;
 }
 
 export const defaultGraphOptions: GraphOptions = {
   centerStrength: 0.1,
-  hideUnresolved: false,
   lineSizeMultiplier: 1,
   linkDistance: 250,
   linkStrength: 1,
   nodeSizeMultiplier: 1,
   repelStrength: 10,
-  search: "",
   showArrows: false,
-  showAttachments: false,
-  showOrphans: true,
-  showTags: false,
   textFadeMultiplier: 0
 };
 
@@ -96,17 +86,9 @@ export type GraphLinkEndpointNode = Pick<WorkspaceGraphNode, "backlinkCount" | "
   y: number;
 };
 
-export interface GraphColorGroup {
-  color: string;
-  id: string;
-  query: string;
-}
-
-export type GraphControlSectionId = "display" | "filter" | "forces" | "groups";
-export type GraphSectionCollapsedState = Record<GraphControlSectionId, boolean>;
-
 export interface GraphSimulationNodeSnapshot {
   backlinkCount: number;
+  category: string | null;
   fx: number | null;
   fy: number | null;
   id: string;

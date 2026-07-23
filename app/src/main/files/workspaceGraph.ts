@@ -19,6 +19,7 @@ import { readWorkspaceAliases } from "./aliases";
 import { errorDetails } from "./fileSystem";
 import {
   createWorkspaceDerivedDataCache,
+  frontmatterForRecord,
   markdownContentForRecord,
   normalizeWorkspaceDerivedDataOptions,
   readableWorkspaceMarkdownRecords,
@@ -27,6 +28,7 @@ import {
   type WorkspaceDerivedDataOptions,
   type WorkspaceMarkdownReadOperations
 } from "./workspaceDerivedData";
+import { extractFrontmatterCategory } from "./chronicleData";
 import { readWorkspaceFileTree } from "./fileTree";
 import { finishPerformanceMeasure, startPerformanceMeasure } from "./performanceLog";
 
@@ -56,8 +58,15 @@ export async function readWorkspaceGraph(
     const nodeMap = new Map<string, WorkspaceGraphNode>();
     const linkCounts = new Map<string, WorkspaceGraphLink>();
 
+    const categoryByPath = new Map(
+      readableWorkspaceMarkdownRecords(fileIndex).flatMap((record) => {
+        const category = extractFrontmatterCategory(frontmatterForRecord(record, parseCache).data);
+        return category ? [[record.path, category] as const] : [];
+      })
+    );
+
     for (const entry of fileIndex.entries) {
-      addFileNode(nodeMap, entry.path);
+      addFileNode(nodeMap, entry.path, categoryByPath.get(entry.path));
     }
 
     for (const record of readableWorkspaceMarkdownRecords(fileIndex)) {
@@ -148,11 +157,16 @@ export async function readWorkspaceGraph(
   }
 }
 
-function addFileNode(nodeMap: Map<string, WorkspaceGraphNode>, filePath: string): void {
+function addFileNode(
+  nodeMap: Map<string, WorkspaceGraphNode>,
+  filePath: string,
+  category?: string
+): void {
   if (nodeMap.has(filePath)) return;
 
   nodeMap.set(filePath, {
     backlinkCount: 0,
+    ...(category ? { category } : {}),
     exists: true,
     id: filePath,
     label: stripMarkdownExtension(path.posix.basename(filePath)),

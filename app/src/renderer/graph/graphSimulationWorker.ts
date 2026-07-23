@@ -15,6 +15,11 @@ import {
   graphNodeWeight
 } from "./graphLayout";
 import {
+  graphCategoryAttractionStrength,
+  graphCategoryLayouts,
+  graphCategoryTarget
+} from "./graphCategoryModel";
+import {
   defaultGraphOptions,
   type GraphOptions,
   type GraphSimulationRequest,
@@ -23,6 +28,7 @@ import {
 
 interface WorkerNode extends SimulationNodeDatum {
   backlinkCount: number;
+  category: string | null;
   id: string;
   linkCount: number;
 }
@@ -82,6 +88,7 @@ function syncSimulation(message: Extract<GraphSimulationRequest, { type: "sync" 
   currentOptions = message.options;
   workerNodes = message.nodes.map((node) => ({
     backlinkCount: node.backlinkCount,
+    category: node.category,
     fx: node.fx,
     fy: node.fy,
     id: node.id,
@@ -115,10 +122,21 @@ function updateSimulationOptions(options: GraphOptions, alpha = 0.18): void {
 
 function updateSimulationForces(): void {
   if (!simulation) return;
+  const categoryLayouts = new Map(
+    graphCategoryLayouts(workerNodes).map((layout) => [layout.category, layout])
+  );
 
   simulation
-    .force("x", forceX<WorkerNode>(0).strength(currentOptions.centerStrength))
-    .force("y", forceY<WorkerNode>(0).strength(currentOptions.centerStrength))
+    .force(
+      "x",
+      forceX<WorkerNode>((node) => graphCategoryTarget(node, categoryLayouts)?.x ?? 0)
+        .strength((node) => node.category ? graphCategoryAttractionStrength : currentOptions.centerStrength)
+    )
+    .force(
+      "y",
+      forceY<WorkerNode>((node) => graphCategoryTarget(node, categoryLayouts)?.y ?? 0)
+        .strength((node) => node.category ? graphCategoryAttractionStrength : currentOptions.centerStrength)
+    )
     .force(
       "charge",
       forceManyBody<WorkerNode>()

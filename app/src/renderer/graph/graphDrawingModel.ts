@@ -7,9 +7,11 @@ import {
   graphNodeVisualRadius,
   type GraphHighlightState
 } from "./graphInteractionModel";
-import { graphNodeMatchesQuery } from "./graphSearchModel";
+import {
+  graphCategoryRadius,
+  normalizeGraphCategory
+} from "./graphCategoryModel";
 import type {
-  GraphColorGroup,
   GraphDrawTheme,
   GraphLinkEndpointNode,
   GraphOptions,
@@ -28,8 +30,6 @@ export function drawGraph(
   links: GraphSimLink[],
   view: { panX: number; panY: number; scale: number },
   options: GraphOptions,
-  colorGroups: GraphColorGroup[],
-  tagsByNode: Map<string, string[]>,
   highlight: GraphHighlightState,
   theme: GraphDrawTheme,
   width: number,
@@ -53,6 +53,7 @@ export function drawGraph(
   const highlightProgress = graphHighlightProgress(animationTimeMs);
   const highlightOpacity = graphHighlightOpacity(animationTimeMs);
   const focusedColor = focused ? theme.accent : null;
+  drawGraphCategoryBubbles(context, nodes, options, view.scale, theme);
   if (focused && focusedColor) {
     drawGraphNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, highlightOpacity);
   }
@@ -94,7 +95,7 @@ export function drawGraph(
   for (const node of nodes) {
     const active = !focused || node.id === focused.id || neighbors.has(node.id);
     const radius = graphNodeVisualRadius(node, options, view.scale);
-    const color = nodeColor(node, colorGroups, tagsByNode.get(node.id) ?? [], theme);
+    const color = nodeColor(node, theme);
     context.globalAlpha = graphHighlightAlpha(active, highlightStrength, 1, graphDimmedNodeAlpha);
     context.fillStyle = color;
     context.beginPath();
@@ -267,18 +268,89 @@ export function drawArrow(context: CanvasRenderingContext2D, source: GraphSimNod
 
 export function nodeColor(
   node: WorkspaceGraphNode,
-  groups: GraphColorGroup[],
-  tags: string[],
   theme: GraphDrawTheme
 ): string {
-  const group = groups.find((candidate) => graphNodeMatchesQuery(node, candidate.query, tags));
-  if (group) return group.color;
-
   if (node.type === "tag") return theme.accent;
   if (node.type === "attachment") return theme.textMuted;
   if (node.type === "unresolved") return theme.textMuted;
 
   return theme.textSecondary;
+}
+
+export interface GraphCategoryBubble {
+  category: string;
+  radius: number;
+  x: number;
+  y: number;
+}
+
+export function graphCategoryBubbles(
+  nodes: GraphSimNode[],
+  options: GraphOptions,
+  scale: number
+): GraphCategoryBubble[] {
+  const nodesByCategory = new Map<string, GraphSimNode[]>();
+  for (const node of nodes) {
+    const category = normalizeGraphCategory(node.category);
+    if (!category) continue;
+    const categoryNodes = nodesByCategory.get(category) ?? [];
+    categoryNodes.push(node);
+    nodesByCategory.set(category, categoryNodes);
+  }
+
+  return [...nodesByCategory.entries()]
+    .toSorted(([left], [right]) => left.localeCompare(right, "ja"))
+    .map(([category, categoryNodes]) => {
+      const x = categoryNodes.reduce((sum, node) => sum + node.x, 0) / categoryNodes.length;
+      const y = categoryNodes.reduce((sum, node) => sum + node.y, 0) / categoryNodes.length;
+      const padding = 30 / Math.max(scale, 0.01);
+      const contentRadius = Math.max(...categoryNodes.map((node) =>
+        Math.hypot(node.x - x, node.y - y) +
+        graphNodeVisualRadius(node, options, scale)
+      ));
+
+      return {
+        category,
+        radius: Math.max(graphCategoryRadius(categoryNodes.length), contentRadius + padding),
+        x,
+        y
+      };
+    });
+}
+
+function drawGraphCategoryBubbles(
+  context: CanvasRenderingContext2D,
+  nodes: GraphSimNode[],
+  options: GraphOptions,
+  scale: number,
+  theme: GraphDrawTheme
+): void {
+  for (const bubble of graphCategoryBubbles(nodes, options, scale)) {
+    context.save();
+    context.fillStyle = theme.accent;
+    context.globalAlpha = 0.055;
+    context.beginPath();
+    context.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
+    context.fill();
+
+    context.globalAlpha = 0.32;
+    context.strokeStyle = theme.accent;
+    context.lineWidth = 1.4 / scale;
+    context.stroke();
+
+    context.globalAlpha = 0.82;
+    context.fillStyle = theme.textSecondary;
+    context.font = `650 ${13 / scale}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+    context.textAlign = "center";
+    context.textBaseline = "top";
+    context.fillText(
+      bubble.category,
+      bubble.x,
+      bubble.y - bubble.radius + 12 / scale,
+      Math.max(80 / scale, bubble.radius * 1.5)
+    );
+    context.restore();
+  }
 }
 
 export function graphHighlightAlpha(
