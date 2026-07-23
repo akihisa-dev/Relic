@@ -18,6 +18,7 @@ import {
   applyGraphCategoryMotion,
   graphCategoryDriftCenterStrength
 } from "./graphCategoryModel";
+import { graphLinkAttractionStrength } from "./graphPhysicsModel";
 import {
   defaultGraphOptions,
   graphSimulationVelocityDecay,
@@ -187,7 +188,7 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
         forceLink<FallbackNode, FallbackLink>(fallbackLinks)
           .id((node) => node.id)
           .distance(currentOptions.linkDistance)
-          .strength((link) => Math.min(1, currentOptions.linkStrength * Math.sqrt(Math.max(1, link.count))))
+          .strength((link) => graphLinkAttractionStrength(currentOptions.linkStrength, link.count))
       )
       .force(
         "collide",

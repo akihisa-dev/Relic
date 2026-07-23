@@ -77,7 +77,7 @@ const graphTestOptions = {
   centerStrength: 0.1,
   lineSizeMultiplier: 1,
   linkDistance: 250,
-  linkStrength: 1,
+  linkStrength: 0.72,
   nodeSizeMultiplier: 1,
   repelStrength: 10,
   showArrows: false,

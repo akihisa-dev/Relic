@@ -1,3 +1,9 @@
+import {
+  graphCategoryAttractionImpulse,
+  graphCategoryCollisionImpulses,
+  graphCategoryExteriorImpulse
+} from "./graphPhysicsModel";
+
 export interface GraphCategoryNode {
   category?: string | null;
 }
@@ -49,7 +55,6 @@ export interface GraphCategoryForceNode extends GraphCategoryNode {
   y?: number;
 }
 
-export const graphCategoryAttractionStrength = 0.22;
 export const graphCategoryDriftCenterStrength = 0.012;
 
 const graphCategoryMinimumRadius = 96;
@@ -57,9 +62,7 @@ const graphCategoryNodeSpacing = 48;
 const graphCategoryDesiredOverlap = 28;
 const graphCategoryClusterClearance = 120;
 const graphCategoryBoundaryPadding = 36;
-const graphCategoryCollisionStrength = 0.16;
 const graphCategoryExteriorMaximumIndentationRatio = 0.75;
-const graphCategoryExteriorReactionStrength = 0.16;
 const graphCategoryMaximumBulge = 52;
 const graphCategoryPressureHalfAngle = Math.PI / 5;
 const graphCategoryTranslationStep = 32;
@@ -398,13 +401,22 @@ export function applyGraphCategoryMotion(
         Math.max(2, orderedRegions.length);
       const unitX = distance === 0 ? Math.cos(fallbackAngle) : dx / distance;
       const unitY = distance === 0 ? Math.sin(fallbackAngle) : dy / distance;
-      const correction = (
-        (minimumDistance - distance) *
-        graphCategoryCollisionStrength *
-        Math.max(0, alpha)
+      const impulses = graphCategoryCollisionImpulses(
+        minimumDistance - distance,
+        alpha,
+        left.count,
+        right.count
       );
-      shiftCategoryVelocity(nodesByCategory.get(left.category), -unitX * correction, -unitY * correction);
-      shiftCategoryVelocity(nodesByCategory.get(right.category), unitX * correction, unitY * correction);
+      shiftCategoryVelocity(
+        nodesByCategory.get(left.category),
+        -unitX * impulses.left,
+        -unitY * impulses.left
+      );
+      shiftCategoryVelocity(
+        nodesByCategory.get(right.category),
+        unitX * impulses.right,
+        unitY * impulses.right
+      );
     }
   }
 
@@ -412,10 +424,13 @@ export function applyGraphCategoryMotion(
     const region = graphCategoryTarget(node, regions);
     if (!region || node.x === undefined || node.y === undefined) continue;
     if (region.count === 1) continue;
-    node.vx = (node.vx ?? 0) +
-      (region.x - node.x) * graphCategoryAttractionStrength * Math.max(0, alpha);
-    node.vy = (node.vy ?? 0) +
-      (region.y - node.y) * graphCategoryAttractionStrength * Math.max(0, alpha);
+    const impulse = graphCategoryAttractionImpulse(
+      region.x - node.x,
+      region.y - node.y,
+      alpha
+    );
+    node.vx = (node.vx ?? 0) + impulse.x;
+    node.vy = (node.vy ?? 0) + impulse.y;
   }
   applyGraphCategoryExteriorReaction(
     orderedNodes,
@@ -574,10 +589,10 @@ function applyGraphCategoryExteriorReaction(
       );
       const unitX = distance === 0 ? Math.cos(fallbackAngle) : dx / distance;
       const unitY = distance === 0 ? Math.sin(fallbackAngle) : dy / distance;
-      const correction = (
-        (responseDistance - distance) *
-        graphCategoryExteriorReactionStrength *
-        Math.max(0, alpha)
+      const correction = graphCategoryExteriorImpulse(
+        responseDistance - distance,
+        alpha,
+        region.count
       );
       shiftCategoryVelocity(
         nodesByCategory.get(region.category),
