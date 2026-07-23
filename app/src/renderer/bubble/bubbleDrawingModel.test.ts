@@ -2,13 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import type { WorkspaceGraphNode } from "../../shared/ipc";
 import {
-  graphCategoryAtWorldPoint,
-  graphCategoryBubbles,
+  bubbleCategoryAtWorldPoint,
+  bubbleCategoryBubbles,
+  bubbleNodeBubbleHighlight
+} from "./bubbleDrawingModel";
+import {
+  defaultGraphDrawTheme,
   graphCategoryColor,
-  graphNodeBubbleHighlight,
-  nodeColor
-} from "./graphDrawingModel";
-import { defaultGraphDrawTheme, type GraphSimNode } from "./graphTypes";
+  graphNodeColor
+} from "../graph/graphThemeModel";
+import type { BubbleSimNode } from "./bubbleTypes";
 
 function graphNode(type: WorkspaceGraphNode["type"]): WorkspaceGraphNode {
   return {
@@ -22,7 +25,7 @@ function graphNode(type: WorkspaceGraphNode["type"]): WorkspaceGraphNode {
   };
 }
 
-describe("graphDrawingModel", () => {
+describe("bubbleDrawingModel", () => {
   it("描画時はキャッシュ済みテーマだけを使う", () => {
     const theme = {
       ...defaultGraphDrawTheme,
@@ -30,10 +33,10 @@ describe("graphDrawingModel", () => {
       textMuted: "#222222",
       textSecondary: "#333333"
     };
-    expect(nodeColor(graphNode("tag"), theme)).toBe("#111111");
-    expect(nodeColor(graphNode("attachment"), theme)).toBe("#222222");
-    expect(nodeColor(graphNode("unresolved"), theme)).toBe("#222222");
-    expect(nodeColor(graphNode("file"), theme)).toBe("#333333");
+    expect(graphNodeColor(graphNode("tag"), theme)).toBe("#111111");
+    expect(graphNodeColor(graphNode("attachment"), theme)).toBe("#222222");
+    expect(graphNodeColor(graphNode("unresolved"), theme)).toBe("#222222");
+    expect(graphNodeColor(graphNode("file"), theme)).toBe("#333333");
   });
 
   it("カテゴリを持つファイルだけを所属バブルへ含める", () => {
@@ -42,7 +45,7 @@ describe("graphDrawingModel", () => {
       x: number,
       y: number,
       category?: string
-    ): GraphSimNode => ({
+    ): BubbleSimNode => ({
       ...graphNode("file"),
       ...(category ? { category } : {}),
       fx: null,
@@ -55,7 +58,7 @@ describe("graphDrawingModel", () => {
       x,
       y
     });
-    const bubbles = graphCategoryBubbles([
+    const bubbles = bubbleCategoryBubbles([
       createNode("A.md", 10, 20, "人物"),
       createNode("B.md", 50, 20, "人物"),
       createNode("C.md", -80, 0),
@@ -77,13 +80,13 @@ describe("graphDrawingModel", () => {
     expect(graphCategoryColor("人物", defaultGraphDrawTheme)).toBe(personColor);
     expect(graphCategoryColor("資料", defaultGraphDrawTheme)).not.toBe(personColor);
     expect(graphCategoryColor("人物", darkTheme)).not.toBe(personColor);
-    expect(nodeColor({ ...graphNode("file"), category: "人物" }, defaultGraphDrawTheme))
+    expect(graphNodeColor({ ...graphNode("file"), category: "人物" }, defaultGraphDrawTheme))
       .toBe(personColor);
-    expect(nodeColor(graphNode("file"), defaultGraphDrawTheme))
+    expect(graphNodeColor(graphNode("file"), defaultGraphDrawTheme))
       .toBe(defaultGraphDrawTheme.textSecondary);
-    expect(graphNodeBubbleHighlight(defaultGraphDrawTheme))
+    expect(bubbleNodeBubbleHighlight(defaultGraphDrawTheme))
       .toBe(defaultGraphDrawTheme.background);
-    expect(graphNodeBubbleHighlight(darkTheme)).toBe(darkTheme.text);
+    expect(bubbleNodeBubbleHighlight(darkTheme)).toBe(darkTheme.text);
   });
 
   it("動いたバブルの輪郭内だけを操作対象として判定する", () => {
@@ -96,9 +99,9 @@ describe("graphDrawingModel", () => {
       vy: 0,
       x: 240,
       y: -30
-    } satisfies GraphSimNode;
+    } satisfies BubbleSimNode;
 
-    expect(graphCategoryAtWorldPoint([node], { x: 240, y: -30 })).toBe("人物");
-    expect(graphCategoryAtWorldPoint([node], { x: 500, y: -30 })).toBeNull();
+    expect(bubbleCategoryAtWorldPoint([node], { x: 240, y: -30 })).toBe("人物");
+    expect(bubbleCategoryAtWorldPoint([node], { x: 500, y: -30 })).toBeNull();
   });
 });

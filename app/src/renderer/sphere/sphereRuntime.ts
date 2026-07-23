@@ -1,7 +1,7 @@
 import ForceGraph3D, { type ForceGraph3DInstance } from "3d-force-graph";
 import { Quaternion, Vector3 } from "three";
 
-import { defaultGraphDrawTheme, type GraphDrawTheme } from "../graph/graphTypes";
+import { defaultGraphDrawTheme, type GraphDrawTheme } from "../graph/graphThemeModel";
 import {
   createSphereGuides,
   type SphereGuides

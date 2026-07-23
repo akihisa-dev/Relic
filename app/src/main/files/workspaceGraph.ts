@@ -151,7 +151,7 @@ export async function readWorkspaceGraph(
     finishPerformanceMeasure("readWorkspaceGraph", startedAt, { failed: true });
     return fail(
       "WORKSPACE_GRAPH_FAILED",
-      "グラフを読み込めませんでした。",
+      "関係データを読み込めませんでした。",
       errorDetails(error)
     );
   }

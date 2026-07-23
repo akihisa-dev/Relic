@@ -25,33 +25,33 @@ import {
   testWorkspaceState as withWorkspace
 } from "../test/rendererTestUtils";
 import {
-  applyGraphKeyboardNavigation,
-  applyGraphKeyboardZoom,
-  applyGraphPanInertia,
-  applyGraphZoomTransition,
-  graphHoveredNodeContainsPoint,
-  graphConnectionPulsePoint,
-  graphLabelOpacity,
-  graphLinkEndpoints,
-  graphLinkScaleOpacity,
-  graphNodeAtCanvasPoint,
-  graphNodeBaseRadius,
-  graphNodeScale,
-  graphPointerMovedBeyondClickThreshold,
-  graphWheelZoomPoint,
-  graphHighlightOpacity,
-  graphHighlightProgress,
+  applyBubbleKeyboardNavigation,
+  applyBubbleKeyboardZoom,
+  applyBubblePanInertia,
+  applyBubbleZoomTransition,
+  bubbleHoveredNodeContainsPoint,
+  bubbleConnectionPulsePoint,
+  bubbleLabelOpacity,
+  bubbleLinkEndpoints,
+  bubbleLinkScaleOpacity,
+  bubbleNodeAtCanvasPoint,
+  bubbleNodeBaseRadius,
+  bubbleNodeScale,
+  bubblePointerMovedBeyondClickThreshold,
+  bubbleWheelZoomPoint,
+  bubbleHighlightOpacity,
+  bubbleHighlightProgress,
   graphNodePrimaryAction,
-  isGraphNodePrimaryPointerButton,
-  finishGraphPanVelocity,
-  graphHighlightAlpha,
-  nextGraphPanVelocity,
-  nextGraphPanSampleMs,
-  resolveGraphHoverFocusId,
-  shouldContinueGraphFrame,
-  stepGraphHighlightState,
-  zoomGraphAtPoint
-} from "./graph/graphViewModel";
+  isBubbleNodePrimaryPointerButton,
+  finishBubblePanVelocity,
+  bubbleHighlightAlpha,
+  nextBubblePanVelocity,
+  nextBubblePanSampleMs,
+  resolveBubbleHoverFocusId,
+  shouldContinueBubbleFrame,
+  stepBubbleHighlightState,
+  zoomBubbleAtPoint
+} from "./bubble/bubbleViewModel";
 import { useEditorStore } from "./store/editorStore";
 import { useUiStore } from "./store/uiStore";
 
@@ -73,7 +73,7 @@ function kamakuraEntry() {
   };
 }
 
-const graphTestOptions = {
+const bubbleTestOptions = {
   centerStrength: 0.1,
   lineSizeMultiplier: 1,
   linkDistance: 250,
@@ -97,7 +97,7 @@ describe("App charts", () => {
     resetRendererStores();
   });
 
-  it("レールのグラフボタンからグラフビューを表示できる", async () => {
+  it("レールのバブルボタンからバブルビューを表示できる", async () => {
     const getWorkspaceGraph = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -126,7 +126,7 @@ describe("App charts", () => {
 
     await screen.findByText("Notes");
     expect(getWorkspaceGraph).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "グラフ" }));
+    fireEvent.click(screen.getByRole("button", { name: "バブル" }));
 
     await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledTimes(1));
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
@@ -136,13 +136,13 @@ describe("App charts", () => {
       kind: "chart"
     });
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
-    const graphCanvas = container.querySelector(".graph-view-canvas") as HTMLCanvasElement;
-    expect(graphCanvas).toBeInTheDocument();
-    expect(graphCanvas).toHaveAttribute("tabindex", "0");
-    expect(fireEvent.keyDown(graphCanvas, { key: "ArrowRight" })).toBe(false);
-    expect(fireEvent.keyDown(graphCanvas, { key: "=", shiftKey: true })).toBe(false);
+    const bubbleCanvas = container.querySelector(".bubble-view-canvas") as HTMLCanvasElement;
+    expect(bubbleCanvas).toBeInTheDocument();
+    expect(bubbleCanvas).toHaveAttribute("tabindex", "0");
+    expect(fireEvent.keyDown(bubbleCanvas, { key: "ArrowRight" })).toBe(false);
+    expect(fireEvent.keyDown(bubbleCanvas, { key: "=", shiftKey: true })).toBe(false);
     expect(container.querySelector(".graph-controls")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "グラフ設定を閉じる" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "バブル設定を閉じる" })).not.toBeInTheDocument();
   });
 
   it("レールのスフィアボタンから独立したスフィアビューを表示できる", async () => {
@@ -171,12 +171,12 @@ describe("App charts", () => {
     });
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
 
-    fireEvent.click(screen.getByRole("button", { name: "グラフ" }));
-    await waitFor(() => expect(container.querySelector(".graph-view-canvas")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "バブル" }));
+    await waitFor(() => expect(container.querySelector(".bubble-view-canvas")).toBeInTheDocument());
     expect(getWorkspaceGraph).toHaveBeenCalledOnce();
   });
 
-  it("グラフビューのタグノードクリックはタグ検索アクションになる", () => {
+  it("バブルビューのタグノードクリックはタグ検索アクションになる", () => {
     expect(graphNodePrimaryAction({
       backlinkCount: 0,
       exists: true,
@@ -186,33 +186,33 @@ describe("App charts", () => {
       path: null,
       type: "tag"
     })).toStrictEqual({ tag: "project", type: "tagSearch" });
-    expect(isGraphNodePrimaryPointerButton(0)).toBe(true);
-    expect(isGraphNodePrimaryPointerButton(1)).toBe(true);
-    expect(isGraphNodePrimaryPointerButton(2)).toBe(false);
+    expect(isBubbleNodePrimaryPointerButton(0)).toBe(true);
+    expect(isBubbleNodePrimaryPointerButton(1)).toBe(true);
+    expect(isBubbleNodePrimaryPointerButton(2)).toBe(false);
   });
 
-  it("グラフビューのノードクリックは5px超過でドラッグ扱いになる", () => {
-    expect(graphPointerMovedBeyondClickThreshold(3, 4)).toBe(false);
-    expect(graphPointerMovedBeyondClickThreshold(4, 4)).toBe(true);
+  it("バブルビューのノードクリックは5px超過でドラッグ扱いになる", () => {
+    expect(bubblePointerMovedBeyondClickThreshold(3, 4)).toBe(false);
+    expect(bubblePointerMovedBeyondClickThreshold(4, 4)).toBe(true);
   });
 
-  it("グラフビューのズームはカーソル下の位置を保つ", () => {
+  it("バブルビューのズームはカーソル下の位置を保つ", () => {
     const view = { panX: 0, panY: 0, scale: 1 };
 
-    zoomGraphAtPoint(view, 100, 150, 900, 600, 2);
+    zoomBubbleAtPoint(view, 100, 150, 900, 600, 2);
 
     expect(view).toStrictEqual({ panX: 350, panY: 150, scale: 2 });
   });
 
-  it("グラフビューのホイール縮小は表示中央を基準にする", () => {
-    expect(graphWheelZoomPoint(2, 1, 100, 150, 900, 600)).toStrictEqual({ x: 450, y: 300 });
-    expect(graphWheelZoomPoint(1, 2, 100, 150, 900, 600)).toStrictEqual({ x: 100, y: 150 });
+  it("バブルビューのホイール縮小は表示中央を基準にする", () => {
+    expect(bubbleWheelZoomPoint(2, 1, 100, 150, 900, 600)).toStrictEqual({ x: 450, y: 300 });
+    expect(bubbleWheelZoomPoint(1, 2, 100, 150, 900, 600)).toStrictEqual({ x: 100, y: 150 });
   });
 
-  it("グラフビューのキーボード移動は押下状態から継続移動する", () => {
+  it("バブルビューのキーボード移動は押下状態から継続移動する", () => {
     const view = { panX: 0, panY: 0, scale: 1 };
 
-    applyGraphKeyboardNavigation(view, {
+    applyBubbleKeyboardNavigation(view, {
       down: false,
       left: false,
       right: true,
@@ -225,7 +225,7 @@ describe("App charts", () => {
     expect(view.panY).toBeCloseTo(1000 / 60);
     expect(view.scale).toBe(1);
 
-    applyGraphKeyboardNavigation(view, {
+    applyBubbleKeyboardNavigation(view, {
       down: false,
       left: true,
       right: false,
@@ -239,10 +239,10 @@ describe("App charts", () => {
     expect(view.scale).toBe(1);
   });
 
-  it("グラフビューのズームキーは押下状態から継続ズームする", () => {
+  it("バブルビューのズームキーは押下状態から継続ズームする", () => {
     const view = { panX: 0, panY: 0, scale: 1, targetScale: 1, zoomCenterX: 0, zoomCenterY: 0 };
 
-    applyGraphKeyboardZoom(view, {
+    applyBubbleKeyboardZoom(view, {
       down: false,
       left: false,
       right: false,
@@ -256,10 +256,10 @@ describe("App charts", () => {
     expect(view.zoomCenterX).toBe(450);
     expect(view.zoomCenterY).toBe(300);
 
-    applyGraphZoomTransition(view, 900, 600);
+    applyBubbleZoomTransition(view, 900, 600);
     expect(view.scale).toBeCloseTo(1.0045);
 
-    applyGraphKeyboardZoom(view, {
+    applyBubbleKeyboardZoom(view, {
       down: false,
       left: false,
       right: false,
@@ -272,25 +272,25 @@ describe("App charts", () => {
     expect(view.scale).toBeCloseTo(1.0045);
   });
 
-  it("グラフビューの背景パンは離したあと慣性で減速する", () => {
+  it("バブルビューの背景パンは離したあと慣性で減速する", () => {
     const view = { panX: 0, panY: 0, scale: 1 };
-    const velocity = nextGraphPanVelocity({ x: 0, y: 0 }, 20, -10);
-    const sampleMs = nextGraphPanSampleMs(0, 20);
+    const velocity = nextBubblePanVelocity({ x: 0, y: 0 }, 20, -10);
+    const sampleMs = nextBubblePanSampleMs(0, 20);
 
     expect(velocity).toStrictEqual({ x: 4, y: -2 });
     expect(sampleMs).toBe(4);
 
-    const releasedVelocity = finishGraphPanVelocity(velocity, sampleMs, 20);
+    const releasedVelocity = finishBubblePanVelocity(velocity, sampleMs, 20);
     expect(releasedVelocity).toStrictEqual({ x: 1, y: -0.5 });
 
-    applyGraphPanInertia(view, releasedVelocity);
+    applyBubblePanInertia(view, releasedVelocity);
     expect(view).toStrictEqual({ panX: 1000 / 60, panY: -500 / 60, scale: 1 });
     expect(releasedVelocity).toStrictEqual({ x: 0.9, y: -0.45 });
 
-    expect(finishGraphPanVelocity(velocity, sampleMs, 101)).toStrictEqual({ x: 0, y: 0 });
+    expect(finishBubblePanVelocity(velocity, sampleMs, 101)).toStrictEqual({ x: 0, y: 0 });
   });
 
-  it("グラフビューのホバー強調はノードがマウス下から外れたら解除対象になる", () => {
+  it("バブルビューのホバー強調はノードがマウス下から外れたら解除対象になる", () => {
     const node = {
       backlinkCount: 0,
       linkCount: 0,
@@ -300,11 +300,11 @@ describe("App charts", () => {
     };
     const view = { panX: 0, panY: 0, scale: 1 };
 
-    expect(graphHoveredNodeContainsPoint(node, { x: 450, y: 300 }, view, graphTestOptions, 900, 600)).toBe(true);
-    expect(graphHoveredNodeContainsPoint(node, { x: 500, y: 300 }, view, graphTestOptions, 900, 600)).toBe(false);
+    expect(bubbleHoveredNodeContainsPoint(node, { x: 450, y: 300 }, view, bubbleTestOptions, 900, 600)).toBe(true);
+    expect(bubbleHoveredNodeContainsPoint(node, { x: 500, y: 300 }, view, bubbleTestOptions, 900, 600)).toBe(false);
   });
 
-  it("グラフビューのノード取得はキャンバス座標から判定する", () => {
+  it("バブルビューのノード取得はキャンバス座標から判定する", () => {
     const node = {
       backlinkCount: 0,
       linkCount: 0,
@@ -313,11 +313,11 @@ describe("App charts", () => {
     };
     const view = { panX: 0, panY: 0, scale: 1 };
 
-    expect(graphNodeAtCanvasPoint([node], { x: 450, y: 300 }, view, graphTestOptions, 900, 600)).toBe(node);
-    expect(graphNodeAtCanvasPoint([node], { x: 520, y: 300 }, view, graphTestOptions, 900, 600)).toBeNull();
+    expect(bubbleNodeAtCanvasPoint([node], { x: 450, y: 300 }, view, bubbleTestOptions, 900, 600)).toBe(node);
+    expect(bubbleNodeAtCanvasPoint([node], { x: 520, y: 300 }, view, bubbleTestOptions, 900, 600)).toBeNull();
   });
 
-  it("グラフビューのホバー強調は一瞬外れても短時間保持する", () => {
+  it("バブルビューのホバー強調は一瞬外れても短時間保持する", () => {
     const node = {
       backlinkCount: 0,
       exists: true,
@@ -336,10 +336,10 @@ describe("App charts", () => {
     const state = { id: null, releaseAt: 0 };
     const view = { panX: 0, panY: 0, scale: 1 };
 
-    expect(resolveGraphHoverFocusId([node], { x: 450, y: 300 }, view, graphTestOptions, 900, 600, state, 0)).toBe("A.md");
-    expect(resolveGraphHoverFocusId([node], { x: 520, y: 300 }, view, graphTestOptions, 900, 600, state, 20)).toBe("A.md");
+    expect(resolveBubbleHoverFocusId([node], { x: 450, y: 300 }, view, bubbleTestOptions, 900, 600, state, 0)).toBe("A.md");
+    expect(resolveBubbleHoverFocusId([node], { x: 520, y: 300 }, view, bubbleTestOptions, 900, 600, state, 20)).toBe("A.md");
     expect(state.releaseAt).toBe(160);
-    expect(resolveGraphHoverFocusId([node], { x: 520, y: 300 }, view, graphTestOptions, 900, 600, state, 200)).toBeNull();
+    expect(resolveBubbleHoverFocusId([node], { x: 520, y: 300 }, view, bubbleTestOptions, 900, 600, state, 200)).toBeNull();
   });
 
   it("同じ位置でホバー中は全ノードを再走査しない", () => {
@@ -362,30 +362,30 @@ describe("App charts", () => {
     const state = { id: null, releaseAt: 0 };
     const view = { panX: 0, panY: 0, scale: 1 };
 
-    expect(resolveGraphHoverFocusId(nodes, { x: 450, y: 300 }, view, graphTestOptions, 900, 600, state, 0)).toBe("A.md");
+    expect(resolveBubbleHoverFocusId(nodes, { x: 450, y: 300 }, view, bubbleTestOptions, 900, 600, state, 0)).toBe("A.md");
     const valuesSpy = vi.spyOn(nodes, "values");
 
-    expect(resolveGraphHoverFocusId(nodes, { x: 450, y: 300 }, view, graphTestOptions, 900, 600, state, 16)).toBe("A.md");
+    expect(resolveBubbleHoverFocusId(nodes, { x: 450, y: 300 }, view, bubbleTestOptions, 900, 600, state, 16)).toBe("A.md");
     expect(valuesSpy).not.toHaveBeenCalled();
   });
 
-  it("グラフビューのハイライト透明度は段階的に収束する", () => {
+  it("バブルビューのハイライト透明度は段階的に収束する", () => {
     const state = { id: null, strength: 0 };
 
-    expect(stepGraphHighlightState(state, "A.md")).toStrictEqual({ id: "A.md", strength: 0.2 });
-    expect(stepGraphHighlightState(state, "A.md").strength).toBeCloseTo(0.36);
-    expect(stepGraphHighlightState(state, null)).toStrictEqual({ id: "A.md", strength: 0.28800000000000003 });
-    expect(graphHighlightAlpha(false, 0, 1, 0.34)).toBe(1);
-    expect(graphHighlightAlpha(false, 0.5, 1, 0.34)).toBeCloseTo(0.67);
-    expect(graphHighlightAlpha(false, 1, 1, 0.34)).toBeCloseTo(0.34);
+    expect(stepBubbleHighlightState(state, "A.md")).toStrictEqual({ id: "A.md", strength: 0.2 });
+    expect(stepBubbleHighlightState(state, "A.md").strength).toBeCloseTo(0.36);
+    expect(stepBubbleHighlightState(state, null)).toStrictEqual({ id: "A.md", strength: 0.28800000000000003 });
+    expect(bubbleHighlightAlpha(false, 0, 1, 0.34)).toBe(1);
+    expect(bubbleHighlightAlpha(false, 0.5, 1, 0.34)).toBeCloseTo(0.67);
+    expect(bubbleHighlightAlpha(false, 1, 1, 0.34)).toBeCloseTo(0.34);
 
     for (let index = 0; index < 20; index += 1) {
-      stepGraphHighlightState(state, null);
+      stepBubbleHighlightState(state, null);
     }
     expect(state).toStrictEqual({ id: null, strength: 0 });
   });
 
-  it("グラフビューは静止時だけ描画ループを停止する", () => {
+  it("バブルビューは静止時だけ描画ループを停止する", () => {
     const activity = {
       highlight: { id: null, strength: 0 },
       keyboard: {
@@ -403,38 +403,38 @@ describe("App charts", () => {
       view: { scale: 1, targetScale: 1 }
     };
 
-    expect(shouldContinueGraphFrame(activity)).toBe(false);
-    expect(shouldContinueGraphFrame({ ...activity, pointerActive: true })).toBe(true);
-    expect(shouldContinueGraphFrame({ ...activity, panVelocity: { x: 0.1, y: 0 } })).toBe(true);
-    expect(shouldContinueGraphFrame({
+    expect(shouldContinueBubbleFrame(activity)).toBe(false);
+    expect(shouldContinueBubbleFrame({ ...activity, pointerActive: true })).toBe(true);
+    expect(shouldContinueBubbleFrame({ ...activity, panVelocity: { x: 0.1, y: 0 } })).toBe(true);
+    expect(shouldContinueBubbleFrame({
       ...activity,
       keyboard: { ...activity.keyboard, right: true }
     })).toBe(true);
-    expect(shouldContinueGraphFrame({ ...activity, view: { scale: 1, targetScale: 2 } })).toBe(true);
-    expect(shouldContinueGraphFrame({ ...activity, targetHighlightId: "A.md" })).toBe(true);
-    expect(shouldContinueGraphFrame({
+    expect(shouldContinueBubbleFrame({ ...activity, view: { scale: 1, targetScale: 2 } })).toBe(true);
+    expect(shouldContinueBubbleFrame({ ...activity, targetHighlightId: "A.md" })).toBe(true);
+    expect(shouldContinueBubbleFrame({
       ...activity,
       highlight: { id: "A.md", strength: 0.1 }
     })).toBe(true);
   });
 
-  it("グラフビューの接続線発光は周期内を一方向に進む", () => {
-    expect(graphHighlightProgress(0)).toBe(0);
-    expect(graphHighlightProgress(425)).toBeCloseTo(0.25);
-    expect(graphHighlightProgress(850)).toBeCloseTo(0.5);
-    expect(graphHighlightProgress(1_275)).toBeCloseTo(0.75);
-    expect(graphHighlightProgress(1_700)).toBe(0);
+  it("バブルビューの接続線発光は周期内を一方向に進む", () => {
+    expect(bubbleHighlightProgress(0)).toBe(0);
+    expect(bubbleHighlightProgress(425)).toBeCloseTo(0.25);
+    expect(bubbleHighlightProgress(850)).toBeCloseTo(0.5);
+    expect(bubbleHighlightProgress(1_275)).toBeCloseTo(0.75);
+    expect(bubbleHighlightProgress(1_700)).toBe(0);
   });
 
-  it("グラフビューのハローは周期的に穏やかに明滅する", () => {
-    expect(graphHighlightOpacity(0)).toBeCloseTo(0.5);
-    expect(graphHighlightOpacity(425)).toBeCloseTo(1);
-    expect(graphHighlightOpacity(850)).toBeCloseTo(0.5);
-    expect(graphHighlightOpacity(1_275)).toBeCloseTo(0);
-    expect(graphHighlightOpacity(1_700)).toBeCloseTo(0.5);
+  it("バブルビューのハローは周期的に穏やかに明滅する", () => {
+    expect(bubbleHighlightOpacity(0)).toBeCloseTo(0.5);
+    expect(bubbleHighlightOpacity(425)).toBeCloseTo(1);
+    expect(bubbleHighlightOpacity(850)).toBeCloseTo(0.5);
+    expect(bubbleHighlightOpacity(1_275)).toBeCloseTo(0);
+    expect(bubbleHighlightOpacity(1_700)).toBeCloseTo(0.5);
   });
 
-  it("グラフビューの接続線発光は注目ノードから進み、リンクごとに位置をずらす", () => {
+  it("バブルビューの接続線発光は注目ノードから進み、リンクごとに位置をずらす", () => {
     const endpoints = {
       sourceX: 10,
       sourceY: 20,
@@ -443,41 +443,41 @@ describe("App charts", () => {
       visible: true
     };
 
-    expect(graphConnectionPulsePoint(endpoints, true, 0.25, 0)).toStrictEqual({ x: 35, y: 70 });
-    expect(graphConnectionPulsePoint(endpoints, false, 0.25, 0)).toStrictEqual({ x: 85, y: 170 });
-    expect(graphConnectionPulsePoint(endpoints, true, 0.25, 1)).toStrictEqual({ x: 54, y: 108 });
+    expect(bubbleConnectionPulsePoint(endpoints, true, 0.25, 0)).toStrictEqual({ x: 35, y: 70 });
+    expect(bubbleConnectionPulsePoint(endpoints, false, 0.25, 0)).toStrictEqual({ x: 85, y: 170 });
+    expect(bubbleConnectionPulsePoint(endpoints, true, 0.25, 1)).toStrictEqual({ x: 54, y: 108 });
   });
 
-  it("グラフビューのノードと文字はズーム係数で描画する", () => {
+  it("バブルビューのノードと文字はズーム係数で描画する", () => {
     const node = {
       backlinkCount: 8,
       linkCount: 8
     };
 
-    expect(graphNodeBaseRadius({ backlinkCount: 0, linkCount: 0 }, graphTestOptions)).toBe(8);
-    expect(graphNodeBaseRadius(node, graphTestOptions)).toBeCloseTo(3 * Math.sqrt(17));
-    expect(graphNodeBaseRadius({ backlinkCount: 200, linkCount: 200 }, graphTestOptions)).toBe(30);
-    expect(graphNodeBaseRadius(node, { ...graphTestOptions, nodeSizeMultiplier: 2 })).toBeCloseTo(6 * Math.sqrt(17));
+    expect(bubbleNodeBaseRadius({ backlinkCount: 0, linkCount: 0 }, bubbleTestOptions)).toBe(8);
+    expect(bubbleNodeBaseRadius(node, bubbleTestOptions)).toBeCloseTo(3 * Math.sqrt(17));
+    expect(bubbleNodeBaseRadius({ backlinkCount: 200, linkCount: 200 }, bubbleTestOptions)).toBe(30);
+    expect(bubbleNodeBaseRadius(node, { ...bubbleTestOptions, nodeSizeMultiplier: 2 })).toBeCloseTo(6 * Math.sqrt(17));
 
-    expect(graphNodeScale(1)).toBe(1);
-    expect(graphNodeScale(4)).toBe(0.5);
-    expect(graphNodeScale(0.25)).toBe(2);
+    expect(bubbleNodeScale(1)).toBe(1);
+    expect(bubbleNodeScale(4)).toBe(0.5);
+    expect(bubbleNodeScale(0.25)).toBe(2);
 
-    expect(graphLabelOpacity(0.5, 0)).toBe(0);
-    expect(graphLabelOpacity(1, 0)).toBe(1);
-    expect(graphLabelOpacity(2, 1)).toBe(1);
+    expect(bubbleLabelOpacity(0.5, 0)).toBe(0);
+    expect(bubbleLabelOpacity(1, 0)).toBe(1);
+    expect(bubbleLabelOpacity(2, 1)).toBe(1);
 
-    expect(graphLinkScaleOpacity(0.04)).toBe(0);
-    expect(graphLinkScaleOpacity(0.12)).toBeCloseTo(0.2222);
-    expect(graphLinkScaleOpacity(0.3)).toBeCloseTo(0.7222);
-    expect(graphLinkScaleOpacity(0.4)).toBe(1);
+    expect(bubbleLinkScaleOpacity(0.04)).toBe(0);
+    expect(bubbleLinkScaleOpacity(0.12)).toBeCloseTo(0.2222);
+    expect(bubbleLinkScaleOpacity(0.3)).toBeCloseTo(0.7222);
+    expect(bubbleLinkScaleOpacity(0.4)).toBe(1);
   });
 
-  it("グラフビューのリンク線はノード外周で止める", () => {
-    expect(graphLinkEndpoints(
+  it("バブルビューのリンク線はノード外周で止める", () => {
+    expect(bubbleLinkEndpoints(
       { backlinkCount: 0, linkCount: 0, x: 0, y: 0 },
       { backlinkCount: 0, linkCount: 0, x: 100, y: 0 },
-      graphTestOptions,
+      bubbleTestOptions,
       1
     )).toStrictEqual({
       sourceX: 8,
@@ -487,10 +487,10 @@ describe("App charts", () => {
       visible: true
     });
 
-    expect(graphLinkEndpoints(
+    expect(bubbleLinkEndpoints(
       { backlinkCount: 0, linkCount: 0, x: 0, y: 0 },
       { backlinkCount: 0, linkCount: 0, x: 10, y: 0 },
-      graphTestOptions,
+      bubbleTestOptions,
       1
     )).toStrictEqual({
       sourceX: 0,

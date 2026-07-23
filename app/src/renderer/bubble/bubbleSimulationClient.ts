@@ -11,26 +11,26 @@ import {
 } from "d3-force";
 
 import {
-  graphNodeBaseRadiusFromWeight,
-  graphNodeWeight
-} from "./graphLayout";
+  bubbleNodeBaseRadiusFromWeight,
+  bubbleNodeWeight
+} from "./bubbleLayout";
 import {
-  applyGraphCategoryMotion,
-  graphCategoryDriftCenterStrength
-} from "./graphCategoryModel";
-import { graphLinkAttractionStrength } from "./graphPhysicsModel";
+  applyBubbleCategoryMotion,
+  bubbleCategoryDriftCenterStrength
+} from "./bubbleCategoryModel";
+import { bubbleLinkAttractionStrength } from "./bubblePhysicsModel";
 import {
-  defaultGraphOptions,
-  graphSimulationVelocityDecay,
-  type GraphOptions,
-  type GraphSimulationLinkSnapshot,
-  type GraphSimulationNodeSnapshot,
-  type GraphSimulationPositionsMessage,
-  type GraphSimulationRequest,
-  type GraphSimulationResponse
-} from "./graphTypes";
+  defaultBubbleOptions,
+  bubbleSimulationVelocityDecay,
+  type BubbleOptions,
+  type BubbleSimulationLinkSnapshot,
+  type BubbleSimulationNodeSnapshot,
+  type BubbleSimulationPositionsMessage,
+  type BubbleSimulationRequest,
+  type BubbleSimulationResponse
+} from "./bubbleTypes";
 
-export interface GraphSimulationClient {
+export interface BubbleSimulationClient {
   dispose: () => void;
   restart: (alpha?: number) => void;
   setNodeCategoryCenterOffset: (id: string, offsetX: number, offsetY: number) => void;
@@ -43,16 +43,16 @@ export interface GraphSimulationClient {
     velocityY?: number
   ) => void;
   sync: (
-    nodes: GraphSimulationNodeSnapshot[],
-    links: GraphSimulationLinkSnapshot[],
-    options: GraphOptions,
+    nodes: BubbleSimulationNodeSnapshot[],
+    links: BubbleSimulationLinkSnapshot[],
+    options: BubbleOptions,
     alpha?: number
   ) => void;
-  updateOptions: (options: GraphOptions, alpha?: number) => void;
+  updateOptions: (options: BubbleOptions, alpha?: number) => void;
 }
 
-type GraphSimulationPositionHandler = (message: GraphSimulationPositionsMessage) => void;
-type GraphSimulationErrorHandler = (message: string) => void;
+type BubbleSimulationPositionHandler = (message: BubbleSimulationPositionsMessage) => void;
+type BubbleSimulationErrorHandler = (message: string) => void;
 
 interface FallbackNode extends SimulationNodeDatum {
   backlinkCount: number;
@@ -69,32 +69,32 @@ interface FallbackLink extends SimulationLinkDatum<FallbackNode> {
   target: string | FallbackNode;
 }
 
-export function createGraphSimulationClient(
-  onPositions: GraphSimulationPositionHandler,
-  onError: GraphSimulationErrorHandler = () => undefined
-): GraphSimulationClient {
+export function createBubbleSimulationClient(
+  onPositions: BubbleSimulationPositionHandler,
+  onError: BubbleSimulationErrorHandler = () => undefined
+): BubbleSimulationClient {
   if (typeof Worker === "function") {
     try {
-      return createWorkerGraphSimulationClient(onPositions, onError);
+      return createWorkerBubbleSimulationClient(onPositions, onError);
     } catch (error) {
-      onError(error instanceof Error ? error.message : "グラフのWorkerを起動できませんでした。");
+      onError(error instanceof Error ? error.message : "バブルのWorkerを起動できませんでした。");
     }
   }
 
-  return createFallbackGraphSimulationClient(onPositions);
+  return createFallbackBubbleSimulationClient(onPositions);
 }
 
-function createWorkerGraphSimulationClient(
-  onPositions: GraphSimulationPositionHandler,
-  onError: GraphSimulationErrorHandler
-): GraphSimulationClient {
-  const worker = new Worker(new URL("./graphSimulationWorker.ts", import.meta.url), {
-    name: "Relic Graph Simulation",
+function createWorkerBubbleSimulationClient(
+  onPositions: BubbleSimulationPositionHandler,
+  onError: BubbleSimulationErrorHandler
+): BubbleSimulationClient {
+  const worker = new Worker(new URL("./bubbleSimulationWorker.ts", import.meta.url), {
+    name: "Relic Bubble Simulation",
     type: "module"
   });
   let disposed = false;
 
-  worker.onmessage = (event: MessageEvent<GraphSimulationResponse>) => {
+  worker.onmessage = (event: MessageEvent<BubbleSimulationResponse>) => {
     if (disposed) return;
 
     const message = event.data;
@@ -106,10 +106,10 @@ function createWorkerGraphSimulationClient(
     onError(message.message);
   };
   worker.onerror = (event) => {
-    if (!disposed) onError(event.message || "グラフのWorkerでエラーが発生しました。");
+    if (!disposed) onError(event.message || "バブルのWorkerでエラーが発生しました。");
   };
 
-  const post = (message: GraphSimulationRequest) => {
+  const post = (message: BubbleSimulationRequest) => {
     if (!disposed) worker.postMessage(message);
   };
 
@@ -119,7 +119,7 @@ function createWorkerGraphSimulationClient(
 
       disposed = true;
       try {
-        worker.postMessage({ type: "dispose" } satisfies GraphSimulationRequest);
+        worker.postMessage({ type: "dispose" } satisfies BubbleSimulationRequest);
       } finally {
         worker.terminate();
       }
@@ -136,8 +136,8 @@ function createWorkerGraphSimulationClient(
   };
 }
 
-function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositionHandler): GraphSimulationClient {
-  let currentOptions: GraphOptions = defaultGraphOptions;
+function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPositionHandler): BubbleSimulationClient {
+  let currentOptions: BubbleOptions = defaultBubbleOptions;
   let disposed = false;
   let fallbackLinks: FallbackLink[] = [];
   let fallbackNodes: FallbackNode[] = [];
@@ -170,12 +170,12 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
       .force(
         "x",
         forceX<FallbackNode>(0)
-          .strength((node) => node.category ? graphCategoryDriftCenterStrength : currentOptions.centerStrength)
+          .strength((node) => node.category ? bubbleCategoryDriftCenterStrength : currentOptions.centerStrength)
       )
       .force(
         "y",
         forceY<FallbackNode>(0)
-          .strength((node) => node.category ? graphCategoryDriftCenterStrength : currentOptions.centerStrength)
+          .strength((node) => node.category ? bubbleCategoryDriftCenterStrength : currentOptions.centerStrength)
       )
       .force(
         "charge",
@@ -188,18 +188,18 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
         forceLink<FallbackNode, FallbackLink>(fallbackLinks)
           .id((node) => node.id)
           .distance(currentOptions.linkDistance)
-          .strength((link) => graphLinkAttractionStrength(currentOptions.linkStrength, link.count))
+          .strength((link) => bubbleLinkAttractionStrength(currentOptions.linkStrength, link.count))
       )
       .force(
         "collide",
         forceCollide<FallbackNode>()
-          .radius((node) => graphNodeBaseRadiusFromWeight(graphNodeWeight(node), currentOptions) + 6)
+          .radius((node) => bubbleNodeBaseRadiusFromWeight(bubbleNodeWeight(node), currentOptions) + 6)
           .strength(0.34)
       )
       .force(
         "category-boundary",
         (alpha) => {
-          applyGraphCategoryMotion(fallbackNodes, alpha);
+          applyBubbleCategoryMotion(fallbackNodes, alpha);
         }
       );
   };
@@ -274,7 +274,7 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
       simulation?.stop();
       simulation = forceSimulation<FallbackNode, FallbackLink>(fallbackNodes)
         .alphaDecay(1 - Math.pow(0.001, 1 / 300))
-        .velocityDecay(graphSimulationVelocityDecay)
+        .velocityDecay(bubbleSimulationVelocityDecay)
         .on("tick", postPositions);
       updateForces();
       restart(alpha);

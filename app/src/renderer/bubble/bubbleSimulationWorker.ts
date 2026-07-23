@@ -11,21 +11,21 @@ import {
 } from "d3-force";
 
 import {
-  graphNodeBaseRadiusFromWeight,
-  graphNodeWeight
-} from "./graphLayout";
+  bubbleNodeBaseRadiusFromWeight,
+  bubbleNodeWeight
+} from "./bubbleLayout";
 import {
-  applyGraphCategoryMotion,
-  graphCategoryDriftCenterStrength
-} from "./graphCategoryModel";
-import { graphLinkAttractionStrength } from "./graphPhysicsModel";
+  applyBubbleCategoryMotion,
+  bubbleCategoryDriftCenterStrength
+} from "./bubbleCategoryModel";
+import { bubbleLinkAttractionStrength } from "./bubblePhysicsModel";
 import {
-  defaultGraphOptions,
-  graphSimulationVelocityDecay,
-  type GraphOptions,
-  type GraphSimulationRequest,
-  type GraphSimulationResponse
-} from "./graphTypes";
+  defaultBubbleOptions,
+  bubbleSimulationVelocityDecay,
+  type BubbleOptions,
+  type BubbleSimulationRequest,
+  type BubbleSimulationResponse
+} from "./bubbleTypes";
 
 interface WorkerNode extends SimulationNodeDatum {
   backlinkCount: number;
@@ -42,28 +42,28 @@ interface WorkerLink extends SimulationLinkDatum<WorkerNode> {
   target: string | WorkerNode;
 }
 
-type GraphSimulationWorkerScope = {
-  onmessage: ((event: MessageEvent<GraphSimulationRequest>) => void) | null;
-  postMessage: (message: GraphSimulationResponse, transfer?: Transferable[]) => void;
+type BubbleSimulationWorkerScope = {
+  onmessage: ((event: MessageEvent<BubbleSimulationRequest>) => void) | null;
+  postMessage: (message: BubbleSimulationResponse, transfer?: Transferable[]) => void;
 };
 
-const ctx = self as unknown as GraphSimulationWorkerScope;
+const ctx = self as unknown as BubbleSimulationWorkerScope;
 
-let currentOptions: GraphOptions = defaultGraphOptions;
+let currentOptions: BubbleOptions = defaultBubbleOptions;
 let simulation: Simulation<WorkerNode, WorkerLink> | null = null;
 let workerLinks: WorkerLink[] = [];
 let workerNodes: WorkerNode[] = [];
 
-ctx.onmessage = (event: MessageEvent<GraphSimulationRequest>) => {
+ctx.onmessage = (event: MessageEvent<BubbleSimulationRequest>) => {
   try {
-    handleGraphSimulationRequest(event.data);
+    handleBubbleSimulationRequest(event.data);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "グラフの物理演算に失敗しました。";
-    postGraphSimulationMessage({ message, type: "error" });
+    const message = error instanceof Error ? error.message : "バブルの物理演算に失敗しました。";
+    postBubbleSimulationMessage({ message, type: "error" });
   }
 };
 
-function handleGraphSimulationRequest(message: GraphSimulationRequest): void {
+function handleBubbleSimulationRequest(message: BubbleSimulationRequest): void {
   if (message.type === "sync") {
     syncSimulation(message);
     return;
@@ -99,7 +99,7 @@ function handleGraphSimulationRequest(message: GraphSimulationRequest): void {
   disposeSimulation();
 }
 
-function syncSimulation(message: Extract<GraphSimulationRequest, { type: "sync" }>): void {
+function syncSimulation(message: Extract<BubbleSimulationRequest, { type: "sync" }>): void {
   currentOptions = message.options;
   workerNodes = message.nodes.map((node) => ({
     backlinkCount: node.backlinkCount,
@@ -124,8 +124,8 @@ function syncSimulation(message: Extract<GraphSimulationRequest, { type: "sync" 
   simulation?.stop();
   simulation = forceSimulation<WorkerNode, WorkerLink>(workerNodes)
     .alphaDecay(1 - Math.pow(0.001, 1 / 300))
-    .velocityDecay(graphSimulationVelocityDecay)
-    .on("tick", postGraphPositions);
+    .velocityDecay(bubbleSimulationVelocityDecay)
+    .on("tick", postBubblePositions);
 
   updateSimulationForces();
   restartSimulation(message.alpha ?? 0.3);
@@ -138,7 +138,7 @@ function updateCategoryCenterOffset(id: string, offsetX: number, offsetY: number
   node.categoryCenterOffsetY = offsetY;
 }
 
-function updateSimulationOptions(options: GraphOptions, alpha = 0.18): void {
+function updateSimulationOptions(options: BubbleOptions, alpha = 0.18): void {
   currentOptions = options;
   updateSimulationForces();
   restartSimulation(alpha);
@@ -150,12 +150,12 @@ function updateSimulationForces(): void {
     .force(
       "x",
       forceX<WorkerNode>(0)
-        .strength((node) => node.category ? graphCategoryDriftCenterStrength : currentOptions.centerStrength)
+        .strength((node) => node.category ? bubbleCategoryDriftCenterStrength : currentOptions.centerStrength)
     )
     .force(
       "y",
       forceY<WorkerNode>(0)
-        .strength((node) => node.category ? graphCategoryDriftCenterStrength : currentOptions.centerStrength)
+        .strength((node) => node.category ? bubbleCategoryDriftCenterStrength : currentOptions.centerStrength)
     )
     .force(
       "charge",
@@ -168,18 +168,18 @@ function updateSimulationForces(): void {
       forceLink<WorkerNode, WorkerLink>(workerLinks)
         .id((node) => node.id)
         .distance(currentOptions.linkDistance)
-        .strength((link) => graphLinkAttractionStrength(currentOptions.linkStrength, link.count))
+        .strength((link) => bubbleLinkAttractionStrength(currentOptions.linkStrength, link.count))
     )
     .force(
       "collide",
       forceCollide<WorkerNode>()
-        .radius((node) => graphNodeBaseRadiusFromWeight(graphNodeWeight(node), currentOptions) + 6)
+        .radius((node) => bubbleNodeBaseRadiusFromWeight(bubbleNodeWeight(node), currentOptions) + 6)
         .strength(0.34)
     )
     .force(
       "category-boundary",
       (alpha) => {
-        applyGraphCategoryMotion(workerNodes, alpha);
+        applyBubbleCategoryMotion(workerNodes, alpha);
       }
     );
 }
@@ -214,12 +214,12 @@ function updateFixedNode(
 
 function restartSimulation(alpha = 0.3): void {
   if (!simulation) {
-    postGraphPositions();
+    postBubblePositions();
     return;
   }
 
   simulation.alpha(Math.max(simulation.alpha(), alpha)).restart();
-  postGraphPositions();
+  postBubblePositions();
 }
 
 function disposeSimulation(): void {
@@ -229,7 +229,7 @@ function disposeSimulation(): void {
   workerNodes = [];
 }
 
-function postGraphPositions(): void {
+function postBubblePositions(): void {
   const buffer = new ArrayBuffer(workerNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
   const values = new Float32Array(buffer);
   const ids: string[] = [];
@@ -245,9 +245,9 @@ function postGraphPositions(): void {
     values[offset + 5] = node.categoryCenterOffsetY;
   });
 
-  postGraphSimulationMessage({ buffer, ids, type: "positions" }, [buffer]);
+  postBubbleSimulationMessage({ buffer, ids, type: "positions" }, [buffer]);
 }
 
-function postGraphSimulationMessage(message: GraphSimulationResponse, transfer: Transferable[] = []): void {
+function postBubbleSimulationMessage(message: BubbleSimulationResponse, transfer: Transferable[] = []): void {
   ctx.postMessage(message, transfer);
 }

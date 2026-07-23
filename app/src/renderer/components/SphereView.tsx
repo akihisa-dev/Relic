@@ -5,8 +5,11 @@ import { createSphereData, sphereNodeColors } from "../sphere/sphereModel";
 import { createSphereRuntime, type SphereRuntime } from "../sphere/sphereRuntime";
 import { deriveVisibleGraph } from "../graph/graphDisplayModel";
 import { graphNodePrimaryAction } from "../graph/graphSearchModel";
-import { defaultGraphDrawTheme, type GraphDrawTheme } from "../graph/graphTypes";
-import { readGraphDrawTheme } from "../graph/graphViewRuntime";
+import {
+  defaultGraphDrawTheme,
+  readGraphDrawTheme,
+  type GraphDrawTheme
+} from "../graph/graphThemeModel";
 import { useLatest } from "../hooks/useLatest";
 import { useWorkspaceGraphState } from "../hooks/useWorkspaceGraphState";
 import { useT } from "../i18n";
@@ -227,7 +230,7 @@ export function SphereView({
         ref={hostRef}
       />
       <div className="sphere-view-meta">
-        <span>{t("graph.nodeCount", { count: filteredGraph.nodes.length })}</span>
+        <span>{t("visualization.nodeCount", { count: filteredGraph.nodes.length })}</span>
         <span>{t("sphere.instructions")}</span>
       </div>
       <button
@@ -241,15 +244,15 @@ export function SphereView({
         <span className="sphere-view-reset-label">{t("sphere.resetView")}</span>
       </button>
       {focusedNode ? <div className="sphere-view-focus">{focusedNode.label}</div> : null}
-      {graphState.loading ? <div className="graph-view-status">{t("sphere.loading")}</div> : null}
+      {graphState.loading ? <div className="chart-view-status">{t("sphere.loading")}</div> : null}
       {graphState.error ? (
-        <div className="graph-view-status graph-view-status--error">{graphState.error}</div>
+        <div className="chart-view-status chart-view-status--error">{graphState.error}</div>
       ) : null}
       {!graphState.loading && !graphState.error && filteredGraph.nodes.length === 0 ? (
-        <div className="graph-view-status">{t("sphere.empty")}</div>
+        <div className="chart-view-status">{t("sphere.empty")}</div>
       ) : null}
       {runtimeError ? (
-        <div className="graph-view-status graph-view-status--error">{runtimeError}</div>
+        <div className="chart-view-status chart-view-status--error">{runtimeError}</div>
       ) : null}
     </div>
   );

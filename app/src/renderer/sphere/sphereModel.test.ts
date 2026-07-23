@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { defaultGraphDrawTheme } from "../graph/graphTypes";
+import { defaultGraphDrawTheme } from "../graph/graphThemeModel";
 import {
   createSphereData,
   SPHERE_MIN_GUIDE_RADIUS,

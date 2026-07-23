@@ -966,7 +966,7 @@ textarea {
   background: color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
-.graph-view-status,
+.chart-view-status,
 .preview-diagram-overlay-panel {
   border-radius: var(--radius-md);
   box-shadow: none;

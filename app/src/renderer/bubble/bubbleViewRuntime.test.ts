@@ -1,11 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  readGraphDrawTheme,
-  requestGraphFrameOnce
-} from "./graphViewRuntime";
+import { readGraphDrawTheme } from "../graph/graphThemeModel";
+import { requestBubbleFrameOnce } from "./bubbleViewRuntime";
 
-describe("graphViewRuntime", () => {
+describe("bubbleViewRuntime", () => {
   it("描画用のCSS変数を1回のスタイル取得で読み込む", () => {
     const getPropertyValue = vi.fn((name: string) => ({
       "--color-accent": " #111111 ",
@@ -46,8 +44,8 @@ describe("graphViewRuntime", () => {
     const frameRef = { current: null as number | null };
     const callback = vi.fn();
 
-    requestGraphFrameOnce(frameRef, callback);
-    requestGraphFrameOnce(frameRef, callback);
+    requestBubbleFrameOnce(frameRef, callback);
+    requestBubbleFrameOnce(frameRef, callback);
     expect(requestAnimationFrame).toHaveBeenCalledOnce();
     expect(frameRef.current).toBe(42);
 
@@ -55,7 +53,7 @@ describe("graphViewRuntime", () => {
     expect(callback).toHaveBeenCalledWith(16);
     expect(frameRef.current).toBeNull();
 
-    requestGraphFrameOnce(frameRef, callback);
+    requestBubbleFrameOnce(frameRef, callback);
     expect(requestAnimationFrame).toHaveBeenCalledTimes(2);
   });
 });

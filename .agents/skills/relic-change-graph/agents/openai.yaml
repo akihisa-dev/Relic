@@ -1,4 +1,0 @@
-interface:
-  display_name: "Relic Graph"
-  short_description: "グラフ派生データ・物理演算・Canvas操作を安全に変更する"
-  default_prompt: "Use $relic-change-graph to update Relic graph data, simulation, Canvas rendering, and interactions safely."

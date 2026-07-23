@@ -7,7 +7,7 @@ import {
   IconChronicle,
   IconCards,
   IconFiles,
-  IconGraph,
+  IconBubble,
   IconSphere,
   IconSettings,
   IconTable
@@ -19,7 +19,7 @@ export const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; 
   { id: "files", labelKey: "nav.files", icon: <IconFiles /> },
   { id: "cards", labelKey: "nav.cards", icon: <IconCards /> },
   { id: "table", labelKey: "nav.table", icon: <IconTable /> },
-  { id: "graph", labelKey: "nav.graph", icon: <IconGraph /> },
+  { id: "graph", labelKey: "nav.bubble", icon: <IconBubble /> },
   { id: "sphere", labelKey: "nav.sphere", icon: <IconSphere /> },
   { id: "chronicle", labelKey: "nav.chronicle", icon: <IconChronicle /> },
   { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }

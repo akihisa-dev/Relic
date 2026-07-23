@@ -93,7 +93,7 @@ describe("appShellModel", () => {
       { icon: null, id: "files", label: "Files" },
       { icon: null, id: "cards", label: "Cards" },
       { icon: null, id: "table", label: "Table" },
-      { icon: null, id: "graph", label: "Graph" },
+      { icon: null, id: "graph", label: "Bubble" },
       { icon: null, id: "sphere", label: "Sphere" },
       { icon: null, id: "chronicle", label: "Chronicle" },
       { icon: null, id: "settings", label: "Settings" }

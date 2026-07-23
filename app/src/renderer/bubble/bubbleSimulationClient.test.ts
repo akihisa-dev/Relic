@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createGraphSimulationClient } from "./graphSimulationClient";
-import { graphSimulationVelocityDecay } from "./graphTypes";
+import { createBubbleSimulationClient } from "./bubbleSimulationClient";
+import { bubbleSimulationVelocityDecay } from "./bubbleTypes";
 
 class MockWorker {
   static instances: MockWorker[] = [];
@@ -16,19 +16,19 @@ class MockWorker {
   }
 }
 
-describe("createGraphSimulationClient", () => {
+describe("createBubbleSimulationClient", () => {
   afterEach(() => {
     MockWorker.instances = [];
     vi.unstubAllGlobals();
   });
 
   it("移動速度を毎回強く減衰させて長い滑走を防ぐ", () => {
-    expect(graphSimulationVelocityDecay).toBe(0.68);
+    expect(bubbleSimulationVelocityDecay).toBe(0.68);
   });
 
   it("単一ノードのバブル中心差分をWorkerへ通知する", () => {
     vi.stubGlobal("Worker", MockWorker);
-    const client = createGraphSimulationClient(vi.fn());
+    const client = createBubbleSimulationClient(vi.fn());
     const worker = MockWorker.instances[0]!;
 
     client.setNodeCategoryCenterOffset("A.md", -24, 8);
@@ -55,7 +55,7 @@ describe("createGraphSimulationClient", () => {
     vi.stubGlobal("Worker", MockWorker);
     const onPositions = vi.fn();
     const onError = vi.fn();
-    const client = createGraphSimulationClient(onPositions, onError);
+    const client = createBubbleSimulationClient(onPositions, onError);
     const worker = MockWorker.instances[0];
 
     client.dispose();
@@ -73,7 +73,7 @@ describe("createGraphSimulationClient", () => {
 
   it("終了メッセージの送信に失敗してもWorkerを終了する", () => {
     vi.stubGlobal("Worker", MockWorker);
-    const client = createGraphSimulationClient(vi.fn());
+    const client = createBubbleSimulationClient(vi.fn());
     const worker = MockWorker.instances[0];
     worker.postMessage.mockImplementation(() => {
       throw new Error("post failed");

@@ -1,24 +1,24 @@
 import type { WorkspaceGraph } from "../../shared/ipc";
 import {
-  graphCategoryLayouts,
-  graphCategoryTarget,
-  normalizeGraphCategory
-} from "./graphCategoryModel";
+  bubbleCategoryLayouts,
+  bubbleCategoryTarget,
+  normalizeBubbleCategory
+} from "./bubbleCategoryModel";
 import type {
-  GraphOptions,
-  GraphSimLink,
-  GraphSimNode,
-  GraphSimulationLinkSnapshot,
-  GraphSimulationNodeSnapshot,
-  GraphSimulationPositionsMessage
-} from "./graphTypes";
+  BubbleOptions,
+  BubbleSimLink,
+  BubbleSimNode,
+  BubbleSimulationLinkSnapshot,
+  BubbleSimulationNodeSnapshot,
+  BubbleSimulationPositionsMessage
+} from "./bubbleTypes";
 
-const graphSpiralAngle = 2.399963229728653;
+const bubbleSpiralAngle = 2.399963229728653;
 
-export function syncGraphLayout(
+export function syncBubbleLayout(
   graph: WorkspaceGraph,
-  nodes: Map<string, GraphSimNode>
-): GraphSimLink[] {
+  nodes: Map<string, BubbleSimNode>
+): BubbleSimLink[] {
   const nextIds = new Set(graph.nodes.map((node) => node.id));
   const addedIds = new Set<string>();
 
@@ -29,16 +29,16 @@ export function syncGraphLayout(
   graph.nodes.forEach((node, index) => {
     const current = nodes.get(node.id);
     if (current) {
-      const previousCategory = normalizeGraphCategory(current.category);
+      const previousCategory = normalizeBubbleCategory(current.category);
       Object.assign(current, node);
-      if (previousCategory !== normalizeGraphCategory(node.category)) {
+      if (previousCategory !== normalizeBubbleCategory(node.category)) {
         current.categoryCenterOffsetX = 0;
         current.categoryCenterOffsetY = 0;
       }
       return;
     }
 
-    const position = initialGraphNodePosition(index);
+    const position = initialBubbleNodePosition(index);
     addedIds.add(node.id);
     nodes.set(node.id, {
       ...node,
@@ -55,26 +55,26 @@ export function syncGraphLayout(
 
   const categoryCounts = new Map<string, number>();
   for (const node of nodes.values()) {
-    const category = normalizeGraphCategory(node.category);
+    const category = normalizeBubbleCategory(node.category);
     if (category) categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
   }
   for (const node of nodes.values()) {
-    const category = normalizeGraphCategory(node.category);
+    const category = normalizeBubbleCategory(node.category);
     if (!category || categoryCounts.get(category) === 1) continue;
     node.categoryCenterOffsetX = 0;
     node.categoryCenterOffsetY = 0;
   }
 
   const seedLayouts = new Map(
-    graphCategoryLayouts(nodes.values()).map((layout) => [layout.category, layout])
+    bubbleCategoryLayouts(nodes.values()).map((layout) => [layout.category, layout])
   );
   const categoryIndexes = new Map<string, number>();
   for (const id of addedIds) {
     const node = nodes.get(id);
-    const target = node ? graphCategoryTarget(node, seedLayouts) : null;
+    const target = node ? bubbleCategoryTarget(node, seedLayouts) : null;
     if (!node || !target) continue;
     const index = categoryIndexes.get(target.category) ?? 0;
-    const angle = index * graphSpiralAngle;
+    const angle = index * bubbleSpiralAngle;
     const radius = Math.min(target.radius - 42, 14 * Math.sqrt(index));
     node.x = target.x + Math.cos(angle) * radius;
     node.y = target.y + Math.sin(angle) * radius;
@@ -89,8 +89,8 @@ export function syncGraphLayout(
   });
 }
 
-export function initialGraphNodePosition(index: number): { x: number; y: number } {
-  const angle = index * graphSpiralAngle;
+export function initialBubbleNodePosition(index: number): { x: number; y: number } {
+  const angle = index * bubbleSpiralAngle;
   const radius = 80 + 9 * Math.sqrt(index);
 
   return {
@@ -99,7 +99,7 @@ export function initialGraphNodePosition(index: number): { x: number; y: number 
   };
 }
 
-export function graphSimulationNodes(nodes: Iterable<GraphSimNode>): GraphSimulationNodeSnapshot[] {
+export function bubbleSimulationNodes(nodes: Iterable<BubbleSimNode>): BubbleSimulationNodeSnapshot[] {
   return [...nodes].map((node) => ({
     backlinkCount: node.backlinkCount,
     category: node.category ?? null,
@@ -116,7 +116,7 @@ export function graphSimulationNodes(nodes: Iterable<GraphSimNode>): GraphSimula
   }));
 }
 
-export function graphSimulationLinks(links: GraphSimLink[]): GraphSimulationLinkSnapshot[] {
+export function bubbleSimulationLinks(links: BubbleSimLink[]): BubbleSimulationLinkSnapshot[] {
   return links.map((link) => ({
     count: link.count,
     source: link.source,
@@ -124,9 +124,9 @@ export function graphSimulationLinks(links: GraphSimLink[]): GraphSimulationLink
   }));
 }
 
-export function applyGraphSimulationPositions(
-  nodes: Map<string, GraphSimNode>,
-  message: GraphSimulationPositionsMessage
+export function applyBubbleSimulationPositions(
+  nodes: Map<string, BubbleSimNode>,
+  message: BubbleSimulationPositionsMessage
 ): void {
   const values = new Float32Array(message.buffer);
 
@@ -144,10 +144,10 @@ export function applyGraphSimulationPositions(
   });
 }
 
-export function graphNodeWeight(node: Pick<GraphSimNode, "backlinkCount" | "linkCount">): number {
+export function bubbleNodeWeight(node: Pick<BubbleSimNode, "backlinkCount" | "linkCount">): number {
   return node.backlinkCount + node.linkCount;
 }
 
-export function graphNodeBaseRadiusFromWeight(weight: number, options: Pick<GraphOptions, "nodeSizeMultiplier">): number {
+export function bubbleNodeBaseRadiusFromWeight(weight: number, options: Pick<BubbleOptions, "nodeSizeMultiplier">): number {
   return options.nodeSizeMultiplier * Math.max(8, Math.min(3 * Math.sqrt(weight + 1), 30));
 }

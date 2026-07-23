@@ -2,17 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import type { WorkspaceGraph, WorkspaceGraphNode } from "../../shared/ipc";
 import {
-  applyGraphSimulationPositions,
-  graphSimulationLinks,
-  graphSimulationNodes,
-  syncGraphLayout
-} from "./graphLayout";
+  applyBubbleSimulationPositions,
+  bubbleSimulationLinks,
+  bubbleSimulationNodes,
+  syncBubbleLayout
+} from "./bubbleLayout";
 import {
-  graphCategoryBoundaryRadius,
-  graphCategoryLayouts,
-  graphCategoryRegions
-} from "./graphCategoryModel";
-import type { GraphSimNode } from "./graphTypes";
+  bubbleCategoryBoundaryRadius,
+  bubbleCategoryLayouts,
+  bubbleCategoryRegions
+} from "./bubbleCategoryModel";
+import type { BubbleSimNode } from "./bubbleTypes";
 
 function graphNode(patch: Partial<WorkspaceGraphNode> & Pick<WorkspaceGraphNode, "id">): WorkspaceGraphNode {
   return {
@@ -26,9 +26,9 @@ function graphNode(patch: Partial<WorkspaceGraphNode> & Pick<WorkspaceGraphNode,
   };
 }
 
-describe("graphLayout", () => {
+describe("bubbleLayout", () => {
   it("グラフの差分を既存ノードへ同期し、有効なリンクだけを返す", () => {
-    const nodes = new Map<string, GraphSimNode>();
+    const nodes = new Map<string, BubbleSimNode>();
     const graph: WorkspaceGraph = {
       links: [
         { count: 2, source: "A.md", target: "B.md", type: "link" },
@@ -40,7 +40,7 @@ describe("graphLayout", () => {
       ]
     };
 
-    const links = syncGraphLayout(graph, nodes);
+    const links = syncBubbleLayout(graph, nodes);
 
     expect([...nodes.keys()]).toEqual(["A.md", "B.md"]);
     expect(links).toHaveLength(1);
@@ -49,14 +49,14 @@ describe("graphLayout", () => {
     expect(links[0]?.targetNode).toBe(nodes.get("B.md"));
 
     const categoryNode = nodes.get("A.md")!;
-    const region = graphCategoryRegions(graphCategoryLayouts(nodes.values())).get("人物")!;
+    const region = bubbleCategoryRegions(bubbleCategoryLayouts(nodes.values())).get("人物")!;
     const angle = Math.atan2(categoryNode.y - region.y, categoryNode.x - region.x);
     expect(Math.hypot(categoryNode.x - region.x, categoryNode.y - region.y))
-      .toBeLessThan(graphCategoryBoundaryRadius(region, angle));
+      .toBeLessThan(bubbleCategoryBoundaryRadius(region, angle));
   });
 
   it("Workerへ渡すスナップショットと戻り座標を同じ順序で扱う", () => {
-    const nodes = new Map<string, GraphSimNode>();
+    const nodes = new Map<string, BubbleSimNode>();
     const graph: WorkspaceGraph = {
       links: [{ count: 1, source: "A.md", target: "B.md", type: "link" }],
       nodes: [
@@ -64,9 +64,9 @@ describe("graphLayout", () => {
         graphNode({ backlinkCount: 1, id: "B.md", label: "B" })
       ]
     };
-    const links = syncGraphLayout(graph, nodes);
-    const snapshots = graphSimulationNodes(nodes.values());
-    const linkSnapshots = graphSimulationLinks(links);
+    const links = syncBubbleLayout(graph, nodes);
+    const snapshots = bubbleSimulationNodes(nodes.values());
+    const linkSnapshots = bubbleSimulationLinks(links);
     const buffer = new ArrayBuffer(snapshots.length * 6 * Float32Array.BYTES_PER_ELEMENT);
     const values = new Float32Array(buffer);
     values.set([
@@ -74,7 +74,7 @@ describe("graphLayout", () => {
       -20, 8, 0, 2, 0, 0
     ]);
 
-    applyGraphSimulationPositions(nodes, {
+    applyBubbleSimulationPositions(nodes, {
       buffer,
       ids: snapshots.map((node) => node.id),
       type: "positions"
@@ -101,23 +101,23 @@ describe("graphLayout", () => {
   });
 
   it("単一ノードのバブル中心差分を維持し、同カテゴリが増えた場合は解除する", () => {
-    const nodes = new Map<string, GraphSimNode>();
+    const nodes = new Map<string, BubbleSimNode>();
     const firstGraph: WorkspaceGraph = {
       links: [],
       nodes: [graphNode({ category: "人物", id: "A.md" })]
     };
-    syncGraphLayout(firstGraph, nodes);
+    syncBubbleLayout(firstGraph, nodes);
     const first = nodes.get("A.md")!;
     first.categoryCenterOffsetX = -40;
     first.categoryCenterOffsetY = 12;
 
-    syncGraphLayout(firstGraph, nodes);
-    expect(graphSimulationNodes(nodes.values())[0]).toMatchObject({
+    syncBubbleLayout(firstGraph, nodes);
+    expect(bubbleSimulationNodes(nodes.values())[0]).toMatchObject({
       categoryCenterOffsetX: -40,
       categoryCenterOffsetY: 12
     });
 
-    syncGraphLayout({
+    syncBubbleLayout({
       links: [],
       nodes: [
         graphNode({ category: "人物", id: "A.md" }),

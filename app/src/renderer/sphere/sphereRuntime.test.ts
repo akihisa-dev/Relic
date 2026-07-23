@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Vector3 } from "three";
 
-import { defaultGraphDrawTheme } from "../graph/graphTypes";
+import { defaultGraphDrawTheme } from "../graph/graphThemeModel";
 import { SPHERE_MIN_GUIDE_RADIUS, type SphereData } from "./sphereModel";
 
 const forceGraphMocks = vi.hoisted(() => ({

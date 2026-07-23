@@ -9,8 +9,8 @@ export const LazyChartView = lazy(async () => ({
 export const LazyCardView = lazy(async () => ({
   default: (await import("../components/CardView")).CardView
 }));
-export const LazyGraphView = lazy(async () => ({
-  default: (await import("../components/GraphView")).GraphView
+export const LazyBubbleView = lazy(async () => ({
+  default: (await import("../components/BubbleView")).BubbleView
 }));
 export const LazySphereView = lazy(async () => ({
   default: (await import("../components/SphereView")).SphereView
@@ -25,11 +25,13 @@ export const LazySettingsPanel = lazy(async () => ({
   default: (await import("../components/SettingsPanel")).SettingsPanel
 }));
 
-export function LazyTabFallback({ graph = false }: { graph?: boolean }): ReactElement {
+export function LazyTabFallback(
+  { visualization = false }: { visualization?: boolean }
+): ReactElement {
   const t = useT();
   return (
-    <div className={graph ? "graph-view-status" : "list-loading-note"}>
-      {t(graph ? "graph.loading" : "common.loading")}
+    <div className={visualization ? "chart-view-status" : "list-loading-note"}>
+      {t(visualization ? "visualization.loading" : "common.loading")}
     </div>
   );
 }

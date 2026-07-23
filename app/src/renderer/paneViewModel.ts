@@ -38,7 +38,7 @@ export interface TextCountSnapshot extends TextCount {
 const CHART_TAB_LABEL_KEYS: Readonly<Record<string, TranslationKey>> = {
   cards: "nav.cards",
   chronicle: "nav.chronicle",
-  graph: "nav.graph",
+  graph: "nav.bubble",
   sphere: "nav.sphere",
   table: "nav.table"
 };

@@ -145,7 +145,7 @@ describe("SphereView", () => {
   });
 
   it("廃止した保存設定を無視し、タグノードを表示対象へ戻さない", async () => {
-    window.localStorage.setItem("relic.graphView.options.v1", JSON.stringify({ showTags: true }));
+    window.localStorage.setItem("relic.bubbleView.options.v1", JSON.stringify({ showTags: true }));
     const tagNode = {
       backlinkCount: 1,
       exists: true,
@@ -170,7 +170,7 @@ describe("SphereView", () => {
     act(() => runtimeMocks.callbacks?.onContextLost());
 
     expect(runtimeMocks.dispose).toHaveBeenCalled();
-    expect(screen.getByText("3D描画が停止しました。2Dのグラフは引き続き利用できます。")).toBeInTheDocument();
+    expect(screen.getByText("3D描画が停止しました。バブルは引き続き利用できます。")).toBeInTheDocument();
   });
 
   it("短時間の再表示では停止中のruntimeを再利用する", async () => {

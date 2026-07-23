@@ -43,7 +43,7 @@ describe("SettingsPanel", () => {
     expect(screen.queryByRole("button", { name: "Dark" })).not.toBeInTheDocument();
     expect(screen.getByText("Editor")).toBeInTheDocument();
     expect(screen.getByText("Features")).toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: "Graph" })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Bubble" })).toBeInTheDocument();
     expect(screen.getByText("App Info")).toBeInTheDocument();
     expect(screen.getByText("Relic 1.2.3")).toBeInTheDocument();
     expect(screen.getByText("macOS")).toBeInTheDocument();
@@ -99,7 +99,7 @@ describe("SettingsPanel", () => {
     expect(screen.queryByRole("switch", { name: "File tools" })).not.toBeInTheDocument();
     expect(screen.queryByRole("switch", { name: "Right panel: Links" })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText("Graph"));
+    fireEvent.click(screen.getByLabelText("Bubble"));
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ graph: true, tools: true }));
 
     fireEvent.click(screen.getByLabelText("Cards"));

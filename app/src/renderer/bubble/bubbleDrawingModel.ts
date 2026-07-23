@@ -1,39 +1,42 @@
-import type { WorkspaceGraphNode } from "../../shared/ipc";
+import {
+  graphCategoryColor,
+  graphNodeColor,
+  graphThemeIsDark,
+  type GraphDrawTheme
+} from "../graph/graphThemeModel";
 import {
   clamp,
-  graphLabelOpacity,
-  graphLinkScaleOpacity,
-  graphNodeScale,
-  graphNodeVisualRadius,
-  type GraphHighlightState
-} from "./graphInteractionModel";
+  bubbleLabelOpacity,
+  bubbleLinkScaleOpacity,
+  bubbleNodeScale,
+  bubbleNodeVisualRadius,
+  type BubbleHighlightState
+} from "./bubbleInteractionModel";
 import {
-  graphCategoryContour,
-  graphCategoryDynamicLayouts,
-  graphCategoryRegions,
-  normalizeGraphCategory
-} from "./graphCategoryModel";
-import type { GraphCategoryPoint } from "./graphCategoryModel";
+  bubbleCategoryContour,
+  bubbleCategoryDynamicLayouts,
+  bubbleCategoryRegions
+} from "./bubbleCategoryModel";
+import type { BubbleCategoryPoint } from "./bubbleCategoryModel";
 import type {
-  GraphDrawTheme,
-  GraphLinkEndpointNode,
-  GraphOptions,
-  GraphSimLink,
-  GraphSimNode
-} from "./graphTypes";
+  BubbleLinkEndpointNode,
+  BubbleOptions,
+  BubbleSimLink,
+  BubbleSimNode
+} from "./bubbleTypes";
 
-const graphDimmedLinkAlpha = 0.18;
-const graphDimmedNodeAlpha = 0.34;
-const graphDimmedLabelAlpha = 0.32;
-const graphHighlightPulsePeriodMs = 1_700;
+const bubbleDimmedLinkAlpha = 0.18;
+const bubbleDimmedNodeAlpha = 0.34;
+const bubbleDimmedLabelAlpha = 0.32;
+const bubbleHighlightPulsePeriodMs = 1_700;
 
-export function drawGraph(
+export function drawBubble(
   context: CanvasRenderingContext2D,
-  nodes: GraphSimNode[],
-  links: GraphSimLink[],
+  nodes: BubbleSimNode[],
+  links: BubbleSimLink[],
   view: { panX: number; panY: number; scale: number },
-  options: GraphOptions,
-  highlight: GraphHighlightState,
+  options: BubbleOptions,
+  highlight: BubbleHighlightState,
   theme: GraphDrawTheme,
   width: number,
   height: number
@@ -53,21 +56,21 @@ export function drawGraph(
   }
 
   const animationTimeMs = typeof performance === "undefined" ? 0 : performance.now();
-  const highlightProgress = graphHighlightProgress(animationTimeMs);
-  const highlightOpacity = graphHighlightOpacity(animationTimeMs);
+  const highlightProgress = bubbleHighlightProgress(animationTimeMs);
+  const highlightOpacity = bubbleHighlightOpacity(animationTimeMs);
   const focusedColor = focused ? theme.accent : null;
-  drawGraphCategoryBubbles(context, nodes, view.scale, theme);
+  drawBubbleCategoryBubbles(context, nodes, view.scale, theme);
   if (focused && focusedColor) {
-    drawGraphNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, highlightOpacity);
+    drawBubbleNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, highlightOpacity);
   }
 
-  const linkScaleOpacity = graphLinkScaleOpacity(view.scale);
+  const linkScaleOpacity = bubbleLinkScaleOpacity(view.scale);
   for (const [index, link] of links.entries()) {
-    const endpoints = graphLinkEndpoints(link.sourceNode, link.targetNode, options, view.scale);
+    const endpoints = bubbleLinkEndpoints(link.sourceNode, link.targetNode, options, view.scale);
     if (!endpoints.visible) continue;
 
     const active = !focused || link.source === focused.id || link.target === focused.id;
-    context.globalAlpha = graphHighlightAlpha(active, highlightStrength, 0.65, graphDimmedLinkAlpha) * linkScaleOpacity;
+    context.globalAlpha = bubbleHighlightAlpha(active, highlightStrength, 0.65, bubbleDimmedLinkAlpha) * linkScaleOpacity;
     context.strokeStyle = active ? theme.borderStrong : theme.border;
     context.lineWidth = Math.max(0.4 / view.scale, options.lineSizeMultiplier * Math.sqrt(link.count) / view.scale);
     context.beginPath();
@@ -76,7 +79,7 @@ export function drawGraph(
     context.stroke();
 
     if (focused && focusedColor && active && highlightStrength > 0.05) {
-      drawGraphConnectionPulse(
+      drawBubbleConnectionPulse(
         context,
         endpoints,
         link.source === focused.id,
@@ -97,10 +100,10 @@ export function drawGraph(
   context.globalAlpha = 1;
   for (const node of nodes) {
     const active = !focused || node.id === focused.id || neighbors.has(node.id);
-    const radius = graphNodeVisualRadius(node, options, view.scale);
-    const color = nodeColor(node, theme);
-    const nodeAlpha = graphHighlightAlpha(active, highlightStrength, 1, graphDimmedNodeAlpha);
-    drawGraphBubbleNode(context, node, radius, color, theme, view.scale, nodeAlpha);
+    const radius = bubbleNodeVisualRadius(node, options, view.scale);
+    const color = graphNodeColor(node, theme);
+    const nodeAlpha = bubbleHighlightAlpha(active, highlightStrength, 1, bubbleDimmedNodeAlpha);
+    drawBubbleBubbleNode(context, node, radius, color, theme, view.scale, nodeAlpha);
 
     if (node.id === focused?.id && highlightStrength > 0) {
       context.globalAlpha = 0.36 * highlightStrength;
@@ -116,11 +119,11 @@ export function drawGraph(
       context.stroke();
     }
 
-    const labelAlpha = graphLabelOpacity(view.scale, options.textFadeMultiplier);
+    const labelAlpha = bubbleLabelOpacity(view.scale, options.textFadeMultiplier);
     if (labelAlpha > 0.02) {
-      context.globalAlpha = graphHighlightAlpha(active, highlightStrength, 1, graphDimmedLabelAlpha) * labelAlpha;
+      context.globalAlpha = bubbleHighlightAlpha(active, highlightStrength, 1, bubbleDimmedLabelAlpha) * labelAlpha;
       context.fillStyle = theme.text;
-      const labelScale = node.id === focused?.id && view.scale < 1 ? 1 / view.scale : graphNodeScale(view.scale);
+      const labelScale = node.id === focused?.id && view.scale < 1 ? 1 / view.scale : bubbleNodeScale(view.scale);
       context.font = `${Math.max(10 / view.scale, 13 * labelScale)}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
       context.textAlign = "center";
       context.textBaseline = "top";
@@ -130,20 +133,20 @@ export function drawGraph(
   context.restore();
 }
 
-export function graphNodeBubbleHighlight(theme: GraphDrawTheme): string {
+export function bubbleNodeBubbleHighlight(theme: GraphDrawTheme): string {
   return graphThemeIsDark(theme.background) ? theme.text : theme.background;
 }
 
-function drawGraphBubbleNode(
+function drawBubbleBubbleNode(
   context: CanvasRenderingContext2D,
-  node: GraphSimNode,
+  node: BubbleSimNode,
   radius: number,
   color: string,
   theme: GraphDrawTheme,
   scale: number,
   alpha: number
 ): void {
-  const highlight = graphNodeBubbleHighlight(theme);
+  const highlight = bubbleNodeBubbleHighlight(theme);
   context.save();
   context.globalAlpha = alpha * 0.8;
   context.fillStyle = color;
@@ -195,24 +198,24 @@ function drawGraphBubbleNode(
   context.restore();
 }
 
-export function graphHighlightProgress(timeMs: number): number {
-  return (timeMs % graphHighlightPulsePeriodMs) / graphHighlightPulsePeriodMs;
+export function bubbleHighlightProgress(timeMs: number): number {
+  return (timeMs % bubbleHighlightPulsePeriodMs) / bubbleHighlightPulsePeriodMs;
 }
 
-export function graphHighlightOpacity(timeMs: number): number {
-  return 0.5 + Math.sin(graphHighlightProgress(timeMs) * Math.PI * 2) * 0.5;
+export function bubbleHighlightOpacity(timeMs: number): number {
+  return 0.5 + Math.sin(bubbleHighlightProgress(timeMs) * Math.PI * 2) * 0.5;
 }
 
-function drawGraphNodeHalo(
+function drawBubbleNodeHalo(
   context: CanvasRenderingContext2D,
-  node: GraphSimNode,
+  node: BubbleSimNode,
   color: string,
-  options: GraphOptions,
+  options: BubbleOptions,
   scale: number,
   strength: number,
   opacity: number
 ): void {
-  const radius = graphNodeVisualRadius(node, options, scale);
+  const radius = bubbleNodeVisualRadius(node, options, scale);
   const outerRadius = radius + (10 + opacity * 6) / scale;
   const gradient = context.createRadialGradient(
     node.x,
@@ -235,9 +238,9 @@ function drawGraphNodeHalo(
   context.restore();
 }
 
-function drawGraphConnectionPulse(
+function drawBubbleConnectionPulse(
   context: CanvasRenderingContext2D,
-  endpoints: ReturnType<typeof graphLinkEndpoints>,
+  endpoints: ReturnType<typeof bubbleLinkEndpoints>,
   sourceIsFocused: boolean,
   color: string,
   scale: number,
@@ -246,7 +249,7 @@ function drawGraphConnectionPulse(
   linkIndex: number,
   linkOpacity: number
 ): void {
-  const point = graphConnectionPulsePoint(endpoints, sourceIsFocused, progress, linkIndex);
+  const point = bubbleConnectionPulsePoint(endpoints, sourceIsFocused, progress, linkIndex);
   const radius = Math.max(1.4 / scale, 2.4 / scale);
 
   context.save();
@@ -258,8 +261,8 @@ function drawGraphConnectionPulse(
   context.restore();
 }
 
-export function graphConnectionPulsePoint(
-  endpoints: ReturnType<typeof graphLinkEndpoints>,
+export function bubbleConnectionPulsePoint(
+  endpoints: ReturnType<typeof bubbleLinkEndpoints>,
   sourceIsFocused: boolean,
   progress: number,
   linkIndex: number
@@ -275,10 +278,10 @@ export function graphConnectionPulsePoint(
   };
 }
 
-export function graphLinkEndpoints(
-  source: GraphLinkEndpointNode,
-  target: GraphLinkEndpointNode,
-  options: GraphOptions,
+export function bubbleLinkEndpoints(
+  source: BubbleLinkEndpointNode,
+  target: BubbleLinkEndpointNode,
+  options: BubbleOptions,
   scale: number
 ): {
   sourceX: number;
@@ -290,8 +293,8 @@ export function graphLinkEndpoints(
   const dx = target.x - source.x;
   const dy = target.y - source.y;
   const length = Math.hypot(dx, dy);
-  const sourceRadius = graphNodeVisualRadius(source, options, scale);
-  const targetRadius = graphNodeVisualRadius(target, options, scale);
+  const sourceRadius = bubbleNodeVisualRadius(source, options, scale);
+  const targetRadius = bubbleNodeVisualRadius(target, options, scale);
 
   if (length <= sourceRadius + targetRadius) {
     return {
@@ -315,9 +318,9 @@ export function graphLinkEndpoints(
   };
 }
 
-export function drawArrow(context: CanvasRenderingContext2D, source: GraphSimNode, target: GraphSimNode, options: GraphOptions, scale = 1): void {
+export function drawArrow(context: CanvasRenderingContext2D, source: BubbleSimNode, target: BubbleSimNode, options: BubbleOptions, scale = 1): void {
   const angle = Math.atan2(target.y - source.y, target.x - source.x);
-  const radius = graphNodeVisualRadius(target, options, scale) + 3 / scale;
+  const radius = bubbleNodeVisualRadius(target, options, scale) + 3 / scale;
   const x = target.x - Math.cos(angle) * radius;
   const y = target.y - Math.sin(angle) * radius;
   const size = 6 / scale;
@@ -331,43 +334,30 @@ export function drawArrow(context: CanvasRenderingContext2D, source: GraphSimNod
   context.fill();
 }
 
-export function nodeColor(
-  node: WorkspaceGraphNode,
-  theme: GraphDrawTheme
-): string {
-  const category = normalizeGraphCategory(node.category);
-  if (node.type === "file" && category) return graphCategoryColor(category, theme);
-  if (node.type === "tag") return theme.accent;
-  if (node.type === "attachment") return theme.textMuted;
-  if (node.type === "unresolved") return theme.textMuted;
-
-  return theme.textSecondary;
-}
-
-export interface GraphCategoryBubble {
+export interface BubbleCategoryBubble {
   category: string;
-  points: GraphCategoryPoint[];
+  points: BubbleCategoryPoint[];
   radius: number;
   x: number;
   y: number;
 }
 
-export function graphCategoryBubbles(nodes: GraphSimNode[]): GraphCategoryBubble[] {
-  const regions = graphCategoryRegions(graphCategoryDynamicLayouts(nodes), nodes);
+export function bubbleCategoryBubbles(nodes: BubbleSimNode[]): BubbleCategoryBubble[] {
+  const regions = bubbleCategoryRegions(bubbleCategoryDynamicLayouts(nodes), nodes);
   return [...regions.values()].map((region) => ({
     category: region.category,
-    points: graphCategoryContour(region),
+    points: bubbleCategoryContour(region),
     radius: region.radius,
     x: region.x,
     y: region.y
   }));
 }
 
-export function graphCategoryAtWorldPoint(
-  nodes: GraphSimNode[],
-  point: GraphCategoryPoint
+export function bubbleCategoryAtWorldPoint(
+  nodes: BubbleSimNode[],
+  point: BubbleCategoryPoint
 ): string | null {
-  const bubbles = graphCategoryBubbles(nodes);
+  const bubbles = bubbleCategoryBubbles(nodes);
   for (let index = bubbles.length - 1; index >= 0; index -= 1) {
     const bubble = bubbles[index]!;
     if (pointInPolygon(point, bubble.points)) return bubble.category;
@@ -375,25 +365,13 @@ export function graphCategoryAtWorldPoint(
   return null;
 }
 
-export function graphCategoryColor(category: string, theme: GraphDrawTheme): string {
-  let hash = 2_166_136_261;
-  for (let index = 0; index < category.length; index += 1) {
-    hash ^= category.charCodeAt(index);
-    hash = Math.imul(hash, 16_777_619);
-  }
-
-  const hue = Math.abs(hash) % 360;
-  const lightness = graphThemeIsDark(theme.background) ? 68 : 40;
-  return `hsl(${hue} 62% ${lightness}%)`;
-}
-
-function drawGraphCategoryBubbles(
+function drawBubbleCategoryBubbles(
   context: CanvasRenderingContext2D,
-  nodes: GraphSimNode[],
+  nodes: BubbleSimNode[],
   scale: number,
   theme: GraphDrawTheme
 ): void {
-  for (const bubble of graphCategoryBubbles(nodes)) {
+  for (const bubble of bubbleCategoryBubbles(nodes)) {
     const color = graphCategoryColor(bubble.category, theme);
     context.save();
     context.fillStyle = color;
@@ -423,7 +401,7 @@ function drawGraphCategoryBubbles(
 
 function traceSmoothBubble(
   context: CanvasRenderingContext2D,
-  points: readonly GraphCategoryPoint[]
+  points: readonly BubbleCategoryPoint[]
 ): void {
   if (points.length === 0) return;
   const last = points.at(-1)!;
@@ -444,8 +422,8 @@ function traceSmoothBubble(
 }
 
 function pointInPolygon(
-  point: GraphCategoryPoint,
-  polygon: readonly GraphCategoryPoint[]
+  point: BubbleCategoryPoint,
+  polygon: readonly BubbleCategoryPoint[]
 ): boolean {
   let inside = false;
   for (
@@ -467,29 +445,7 @@ function pointInPolygon(
   return inside;
 }
 
-function graphThemeIsDark(background: string): boolean {
-  const normalized = background.trim();
-  const hexadecimal = normalized.match(/^#([\da-f]{3}|[\da-f]{6})$/i);
-  if (hexadecimal) {
-    const value = hexadecimal[1]!;
-    const expanded = value.length === 3
-      ? [...value].map((character) => `${character}${character}`).join("")
-      : value;
-    const red = Number.parseInt(expanded.slice(0, 2), 16);
-    const green = Number.parseInt(expanded.slice(2, 4), 16);
-    const blue = Number.parseInt(expanded.slice(4, 6), 16);
-    return red * 0.2126 + green * 0.7152 + blue * 0.0722 < 128;
-  }
-
-  const rgb = normalized.match(/^rgba?\(\s*(\d+)\D+(\d+)\D+(\d+)/i);
-  if (!rgb) return false;
-  const red = Number(rgb[1]);
-  const green = Number(rgb[2]);
-  const blue = Number(rgb[3]);
-  return red * 0.2126 + green * 0.7152 + blue * 0.0722 < 128;
-}
-
-export function graphHighlightAlpha(
+export function bubbleHighlightAlpha(
   active: boolean,
   strength: number,
   normalAlpha: number,

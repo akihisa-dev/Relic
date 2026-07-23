@@ -130,7 +130,7 @@ export function SettingsPanel({
             [
               { key: "cards", label: t("settings.featureCards") },
               { key: "table", label: t("settings.featureTable") },
-              { key: "graph", label: t("settings.featureGraph") },
+              { key: "graph", label: t("settings.featureBubble") },
               { key: "sphere", label: t("settings.featureSphere") },
               { key: "chronicle", label: t("settings.featureChronicle") }
             ] as { key: keyof FeatureToggles; label: string }[]

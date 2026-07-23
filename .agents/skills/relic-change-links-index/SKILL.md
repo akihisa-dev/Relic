@@ -1,6 +1,6 @@
 ---
 name: relic-change-links-index
-description: Relicの内部リンク・Markdown相対リンク・ファイル埋め込み、別名、バックリンク、アウトゴーイングリンク、未リンク参照、タグ派生データと、検索・カード・テーブル・グラフ・スフィア・クロニクルが共有するワークスペースMarkdown索引・解析キャッシュを追加・修正する。リンク解決、解析、派生一覧、索引構造、増分更新、再構築の変更に使う。各consumer固有の表示はrelic-change-card-view・relic-change-table-view・relic-change-graph・relic-change-sphere・relic-change-chronicle、検索・置換はrelic-change-search-replace、ファイル実操作はrelic-change-workspace-filesを優先または併用する。
+description: Relicの内部リンク・Markdown相対リンク・ファイル埋め込み、別名、バックリンク、アウトゴーイングリンク、未リンク参照、タグ派生データと、検索・カード・テーブル・グラフ・スフィア・クロニクルが共有するワークスペースMarkdown索引・解析キャッシュを追加・修正する。リンク解決、解析、派生一覧、索引構造、増分更新、再構築の変更に使う。各consumer固有の表示はrelic-change-card-view・relic-change-table-view・relic-change-bubble・relic-change-sphere・relic-change-chronicle、検索・置換はrelic-change-search-replace、ファイル実操作はrelic-change-workspace-filesを優先または併用する。
 ---
 
 # Relic Links and Shared Index Change
@@ -43,14 +43,14 @@ description: Relicの内部リンク・Markdown相対リンク・ファイル埋
 5. 未リンク参照のlink化時にsourceが外部変更されていれば古い位置へ書き込まず、再読込を要求する。
 6. 同名fileが曖昧な場合は、表示文字列を保つpath付き内部リンクとしてlink化する。
 7. 通常のtagsはフロントマター固定プロパティ `tags` だけから集め、階層、日本語、先頭 `#` の正規化を現行規則に合わせる。
-8. 本文中の `#タグ` は通常のtag一覧、候補、検索へ混ぜず、グラフ専用派生として `$relic-change-graph` に渡す。
+8. 本文中の `#タグ` は通常のtag一覧、候補、検索へ混ぜず、バブル専用派生として `$relic-change-bubble` に渡す。
 
 ## 書換えとconsumer境界を整合させる
 
 1. rename・moveの実行順、保存flush、実path操作、rollbackは `$relic-change-workspace-files` に委ね、本Skillはリンクparse、対象特定、書換え規則を所有する。
 2. 複数fileのリンク書換えでは内容snapshotを確認し、安全書込と外部変更を保護する。途中失敗のrollbackでも新しい外部内容を上書きしない。
 3. 全文・file名・tag・frontmatter検索と置換のquery契約は `$relic-change-search-replace` に委ね、索引recordまたは無効化を変えた場合だけ両Skillを併用する。
-4. グラフはlink・tag・attachmentの解析結果をconsumerとして利用し、node・edge集約、描画、simulationは `$relic-change-graph` に委ねる。
+4. グラフはlink・tag・attachmentの解析結果をconsumerとして利用し、node・edge集約、描画、simulationは `$relic-change-bubble` に委ねる。
 5. クロニクルはfrontmatter parse結果とfile recordをconsumerとして利用し、chronicle値の解釈と年表生成は `$relic-change-chronicle` に委ねる。
 6. IPC型、preload、main handlerを変える場合は `$relic-change-electron-boundaries` を併用する。
 

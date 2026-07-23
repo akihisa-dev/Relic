@@ -90,7 +90,7 @@ export function registerWorkspaceIndexDataHandlers(): void {
     } catch (error) {
       return fail(
         "WORKSPACE_GRAPH_FAILED",
-        "グラフを読み込めませんでした。",
+        "関係データを読み込めませんでした。",
         ipcErrorDetails(error)
       );
     }

@@ -8,57 +8,57 @@ import {
   type WheelEvent as ReactWheelEvent
 } from "react";
 
-import type { GraphSimulationClient } from "../graph/graphSimulationClient";
+import type { BubbleSimulationClient } from "../bubble/bubbleSimulationClient";
 import {
-  constrainGraphNodeToCategoryRegions,
-  graphCategoryCenterOffsetForNodeDrag,
-  graphCategoryDynamicLayouts,
-  graphCategoryRegions,
-  normalizeGraphCategory,
-  translateGraphCategoryNodes,
-  translateGraphCategoryNodesWithPush
-} from "../graph/graphCategoryModel";
+  constrainBubbleNodeToCategoryRegions,
+  bubbleCategoryCenterOffsetForNodeDrag,
+  bubbleCategoryDynamicLayouts,
+  bubbleCategoryRegions,
+  normalizeBubbleCategory,
+  translateBubbleCategoryNodes,
+  translateBubbleCategoryNodesWithPush
+} from "../bubble/bubbleCategoryModel";
 import {
-  type GraphHighlightState,
-  type GraphHoverFocusState,
-  clampGraphScale,
-  finishGraphPanVelocity,
-  graphCategoryAtWorldPoint,
-  graphNodeAtCanvasPoint,
+  type BubbleHighlightState,
+  type BubbleHoverFocusState,
+  clampBubbleScale,
+  finishBubblePanVelocity,
+  bubbleCategoryAtWorldPoint,
+  bubbleNodeAtCanvasPoint,
   graphNodePrimaryAction,
-  graphNodeVisualRadius,
-  graphPointerMovedBeyondClickThreshold,
-  graphWheelZoomPoint,
-  initialGraphViewTransform,
-  isGraphNodePrimaryPointerButton,
-  nextGraphPanSampleMs,
-  nextGraphPanVelocity,
-  requestGraphZoom,
+  bubbleNodeVisualRadius,
+  bubblePointerMovedBeyondClickThreshold,
+  bubbleWheelZoomPoint,
+  initialBubbleViewTransform,
+  isBubbleNodePrimaryPointerButton,
+  nextBubblePanSampleMs,
+  nextBubblePanVelocity,
+  requestBubbleZoom,
   screenToWorld
-} from "../graph/graphViewModel";
+} from "../bubble/bubbleViewModel";
 import type {
-  GraphKeyboardState,
-  GraphOptions,
-  GraphSimNode,
-  GraphViewTransform
-} from "../graph/graphTypes";
+  BubbleKeyboardState,
+  BubbleOptions,
+  BubbleSimNode,
+  BubbleViewTransform
+} from "../bubble/bubbleTypes";
 import { useLatest } from "./useLatest";
 
-export const graphCanvasSizeFallback = { height: 600, width: 900 };
+export const bubbleCanvasSizeFallback = { height: 600, width: 900 };
 
-interface UseGraphCanvasInteractionsOptions {
+interface UseBubbleCanvasInteractionsOptions {
   canvasRef: RefObject<HTMLCanvasElement | null>;
-  latestOptionsRef: RefObject<GraphOptions>;
-  nodesRef: RefObject<Map<string, GraphSimNode>>;
+  latestOptionsRef: RefObject<BubbleOptions>;
+  nodesRef: RefObject<Map<string, BubbleSimNode>>;
   onOpenFile: (path: string) => void;
   onOpenTagSearch: (tag: string) => void;
   requestDraw: () => void;
   setPinnedNodeId: (nodeId: string | null) => void;
-  simulationClientRef: RefObject<GraphSimulationClient | null>;
-  viewRef: RefObject<GraphViewTransform>;
+  simulationClientRef: RefObject<BubbleSimulationClient | null>;
+  viewRef: RefObject<BubbleViewTransform>;
 }
 
-export function useGraphCanvasInteractions({
+export function useBubbleCanvasInteractions({
   canvasRef,
   latestOptionsRef,
   nodesRef,
@@ -68,13 +68,13 @@ export function useGraphCanvasInteractions({
   setPinnedNodeId,
   simulationClientRef,
   viewRef
-}: UseGraphCanvasInteractionsOptions) {
+}: UseBubbleCanvasInteractionsOptions) {
   const panVelocityRef = useRef({ x: 0, y: 0 });
   const panSampleMsRef = useRef(0);
   const hoverPointRef = useRef<{ x: number; y: number } | null>(null);
-  const hoverFocusRef = useRef<GraphHoverFocusState>({ id: null, releaseAt: 0 });
-  const highlightRef = useRef<GraphHighlightState>({ id: null, strength: 0 });
-  const keyboardRef = useRef<GraphKeyboardState>({
+  const hoverFocusRef = useRef<BubbleHoverFocusState>({ id: null, releaseAt: 0 });
+  const highlightRef = useRef<BubbleHighlightState>({ id: null, strength: 0 });
+  const keyboardRef = useRef<BubbleKeyboardState>({
     down: false,
     left: false,
     right: false,
@@ -86,7 +86,7 @@ export function useGraphCanvasInteractions({
   const pointerRef = useRef<{
     dragCategory: string | null;
     dragFixedNodeIds: Set<string>;
-    dragNode: GraphSimNode | null;
+    dragNode: BubbleSimNode | null;
     lastX: number;
     lastY: number;
     moved: boolean;
@@ -101,18 +101,18 @@ export function useGraphCanvasInteractions({
   const openFileRef = useLatest(onOpenFile);
   const openTagSearchRef = useLatest(onOpenTagSearch);
 
-  const nodeAtPoint = useCallback((clientX: number, clientY: number): GraphSimNode | null => {
+  const nodeAtPoint = useCallback((clientX: number, clientY: number): BubbleSimNode | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
     const rect = canvas.getBoundingClientRect();
-    return graphNodeAtCanvasPoint(
+    return bubbleNodeAtCanvasPoint(
       nodesRef.current.values(),
       { x: clientX - rect.left, y: clientY - rect.top },
       viewRef.current,
       latestOptionsRef.current,
-      rect.width || graphCanvasSizeFallback.width,
-      rect.height || graphCanvasSizeFallback.height
+      rect.width || bubbleCanvasSizeFallback.width,
+      rect.height || bubbleCanvasSizeFallback.height
     );
   }, [canvasRef, latestOptionsRef, nodesRef, viewRef]);
 
@@ -124,16 +124,16 @@ export function useGraphCanvasInteractions({
     const point = screenToWorld(
       clientX - rect.left,
       clientY - rect.top,
-      rect.width || graphCanvasSizeFallback.width,
-      rect.height || graphCanvasSizeFallback.height,
+      rect.width || bubbleCanvasSizeFallback.width,
+      rect.height || bubbleCanvasSizeFallback.height,
       viewRef.current
     );
-    return graphCategoryAtWorldPoint([...nodesRef.current.values()], point);
+    return bubbleCategoryAtWorldPoint([...nodesRef.current.values()], point);
   }, [canvasRef, nodesRef, viewRef]);
 
   const setCategoryNodesFixed = useCallback((category: string) => {
     const fixedNodeIds = new Set<string>();
-    for (const node of translateGraphCategoryNodes(nodesRef.current.values(), category, 0, 0)) {
+    for (const node of translateBubbleCategoryNodes(nodesRef.current.values(), category, 0, 0)) {
       fixedNodeIds.add(node.id);
       simulationClientRef.current?.setNodeFixed(
         node.id,
@@ -162,7 +162,7 @@ export function useGraphCanvasInteractions({
     const node = nodeAtPoint(event.clientX, event.clientY);
     const category = node ? null : categoryAtPoint(event.clientX, event.clientY);
     if (!node && event.button !== 0) return;
-    if (node && !isGraphNodePrimaryPointerButton(event.button)) return;
+    if (node && !isBubbleNodePrimaryPointerButton(event.button)) return;
 
     event.currentTarget.setPointerCapture(event.pointerId);
     event.currentTarget.style.cursor = "grabbing";
@@ -211,7 +211,7 @@ export function useGraphCanvasInteractions({
     pointer.time = now;
     pointer.lastX = event.clientX;
     pointer.lastY = event.clientY;
-    pointer.moved ||= graphPointerMovedBeyondClickThreshold(
+    pointer.moved ||= bubblePointerMovedBeyondClickThreshold(
       event.clientX - pointer.startX,
       event.clientY - pointer.startY
     );
@@ -221,14 +221,14 @@ export function useGraphCanvasInteractions({
         x: (pointer.dragNode.fx ?? pointer.dragNode.x) + dx / viewRef.current.scale,
         y: (pointer.dragNode.fy ?? pointer.dragNode.y) + dy / viewRef.current.scale
       };
-      const dragPadding = graphNodeVisualRadius(
+      const dragPadding = bubbleNodeVisualRadius(
         pointer.dragNode,
         latestOptionsRef.current,
         viewRef.current.scale
       ) + 6 / viewRef.current.scale;
       const graphNodes = [...nodesRef.current.values()];
-      const layouts = graphCategoryDynamicLayouts(graphNodes);
-      const categoryCenterOffset = graphCategoryCenterOffsetForNodeDrag(
+      const layouts = bubbleCategoryDynamicLayouts(graphNodes);
+      const categoryCenterOffset = bubbleCategoryCenterOffsetForNodeDrag(
         pointer.dragNode,
         layouts,
         desiredPoint,
@@ -236,7 +236,7 @@ export function useGraphCanvasInteractions({
       );
       const singletonLayout = categoryCenterOffset
         ? layouts.find((layout) =>
-            layout.category === normalizeGraphCategory(pointer.dragNode?.category)
+            layout.category === normalizeBubbleCategory(pointer.dragNode?.category)
           )
         : null;
       const projectedNodes = graphNodes.map((node) => (
@@ -252,20 +252,20 @@ export function useGraphCanvasInteractions({
             }
           : node
       ));
-      const regions = graphCategoryRegions(
+      const regions = bubbleCategoryRegions(
         categoryCenterOffset
-          ? graphCategoryDynamicLayouts(projectedNodes)
+          ? bubbleCategoryDynamicLayouts(projectedNodes)
           : layouts,
         projectedNodes
       );
-      const constrainedPoint = constrainGraphNodeToCategoryRegions(
+      const constrainedPoint = constrainBubbleNodeToCategoryRegions(
         pointer.dragNode,
         regions,
         desiredPoint,
         dragPadding
       );
       if (categoryCenterOffset && singletonLayout) {
-        const finalCenterOffset = graphCategoryCenterOffsetForNodeDrag(
+        const finalCenterOffset = bubbleCategoryCenterOffsetForNodeDrag(
           pointer.dragNode,
           layouts,
           constrainedPoint,
@@ -283,7 +283,7 @@ export function useGraphCanvasInteractions({
       pointer.dragNode.fy = constrainedPoint.y;
       pointer.dragNode.x = pointer.dragNode.fx;
       pointer.dragNode.y = pointer.dragNode.fy;
-      const releaseVelocity = graphNodeReleaseVelocity(
+      const releaseVelocity = bubbleNodeReleaseVelocity(
         dx / viewRef.current.scale,
         dy / viewRef.current.scale,
         elapsed
@@ -296,7 +296,7 @@ export function useGraphCanvasInteractions({
     }
 
     if (pointer.dragCategory) {
-      const translated = translateGraphCategoryNodesWithPush(
+      const translated = translateBubbleCategoryNodesWithPush(
         nodesRef.current.values(),
         pointer.dragCategory,
         dx / viewRef.current.scale,
@@ -312,8 +312,8 @@ export function useGraphCanvasInteractions({
 
     viewRef.current.panX += dx;
     viewRef.current.panY += dy;
-    panSampleMsRef.current = nextGraphPanSampleMs(panSampleMsRef.current, elapsed);
-    panVelocityRef.current = nextGraphPanVelocity(panVelocityRef.current, dx, dy);
+    panSampleMsRef.current = nextBubblePanSampleMs(panSampleMsRef.current, elapsed);
+    panVelocityRef.current = nextBubblePanVelocity(panVelocityRef.current, dx, dy);
     requestDraw();
   }, [requestDraw, simulationClientRef, viewRef]);
 
@@ -344,7 +344,7 @@ export function useGraphCanvasInteractions({
     if (pointer.dragCategory) releaseBubbleNodes(pointer.dragFixedNodeIds);
 
     if (pointer.type === "pan") {
-      panVelocityRef.current = finishGraphPanVelocity(
+      panVelocityRef.current = finishBubblePanVelocity(
         panVelocityRef.current,
         panSampleMsRef.current,
         performance.now() - pointer.time
@@ -394,16 +394,16 @@ export function useGraphCanvasInteractions({
     event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
     const delta = event.deltaMode === 1 ? event.deltaY * 40 : event.deltaY;
-    const nextScale = clampGraphScale(viewRef.current.targetScale * Math.pow(1.5, -delta / 120));
-    const zoomPoint = graphWheelZoomPoint(
+    const nextScale = clampBubbleScale(viewRef.current.targetScale * Math.pow(1.5, -delta / 120));
+    const zoomPoint = bubbleWheelZoomPoint(
       viewRef.current.scale,
       nextScale,
       event.clientX - rect.left,
       event.clientY - rect.top,
-      rect.width || graphCanvasSizeFallback.width,
-      rect.height || graphCanvasSizeFallback.height
+      rect.width || bubbleCanvasSizeFallback.width,
+      rect.height || bubbleCanvasSizeFallback.height
     );
-    requestGraphZoom(viewRef.current, zoomPoint.x, zoomPoint.y, nextScale);
+    requestBubbleZoom(viewRef.current, zoomPoint.x, zoomPoint.y, nextScale);
     requestDraw();
   }, [requestDraw, viewRef]);
 
@@ -413,7 +413,7 @@ export function useGraphCanvasInteractions({
     keyboard.shift = event.shiftKey;
     requestDraw();
 
-    const keyMap: Partial<Record<string, keyof GraphKeyboardState>> = {
+    const keyMap: Partial<Record<string, keyof BubbleKeyboardState>> = {
       "-": "zoomOut",
       "_": "zoomOut",
       "+": "zoomIn",
@@ -434,7 +434,7 @@ export function useGraphCanvasInteractions({
     keyboard.shift = event.shiftKey;
     requestDraw();
 
-    const keyMap: Partial<Record<string, keyof GraphKeyboardState>> = {
+    const keyMap: Partial<Record<string, keyof BubbleKeyboardState>> = {
       "-": "zoomOut",
       "_": "zoomOut",
       "+": "zoomIn",
@@ -451,7 +451,7 @@ export function useGraphCanvasInteractions({
   }, [requestDraw]);
 
   const resetInteractionState = useCallback(() => {
-    viewRef.current = initialGraphViewTransform();
+    viewRef.current = initialBubbleViewTransform();
     panVelocityRef.current = { x: 0, y: 0 };
     panSampleMsRef.current = 0;
     hoverPointRef.current = null;
@@ -490,7 +490,7 @@ export function useGraphCanvasInteractions({
   };
 }
 
-function graphNodeReleaseVelocity(
+function bubbleNodeReleaseVelocity(
   dx: number,
   dy: number,
   elapsedMs: number

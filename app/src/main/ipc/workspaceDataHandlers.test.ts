@@ -227,7 +227,7 @@ describe("registerWorkspaceDataHandlers", () => {
     },
     {
       channel: getWorkspaceGraphChannel,
-      label: "グラフ",
+      label: "関係データ",
       reader: dependencies.readWorkspaceGraph,
       value: { edges: [], nodes: [{ id: "index.md" }] },
     },
@@ -260,7 +260,7 @@ describe("registerWorkspaceDataHandlers", () => {
       error: {
         code: "WORKSPACE_GRAPH_FAILED",
         details: "workspace snapshot unavailable",
-        message: "グラフを読み込めませんでした。",
+        message: "関係データを読み込めませんでした。",
       },
     });
     expect(dependencies.readWorkspaceGraph).not.toHaveBeenCalled();

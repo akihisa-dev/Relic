@@ -8,7 +8,7 @@ import { useEditorStore, type PaneId } from "../store/editorStore";
 import {
   LazyCardView,
   LazyChartView,
-  LazyGraphView,
+  LazyBubbleView,
   LazySphereView,
   LazyTableView,
   LazyTabFallback
@@ -108,9 +108,9 @@ export function useAppChartTabRenderer({
       );
     }
     if (chartId === "graph" || chartId === "sphere") {
-      const View = chartId === "graph" ? LazyGraphView : LazySphereView;
+      const View = chartId === "graph" ? LazyBubbleView : LazySphereView;
       return (
-        <Suspense fallback={<LazyTabFallback graph />}>
+        <Suspense fallback={<LazyTabFallback visualization />}>
           <View
             onOpenFile={onOpenFile}
             onOpenTagSearch={onOpenTagSearch}

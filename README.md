@@ -55,14 +55,12 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 
 - Internal links using `[[...]]` and relative Markdown links.
 - Backlinks, outgoing links, and unlinked references.
-- Optional Graph view for Markdown, tags, attachments, and unresolved links.
+- Optional Bubble view for Markdown, tags, attachments, and unresolved links.
 - Optional experimental Sphere view for exploring the workspace graph in 3D.
 - Outline view.
 - Quick switcher.
 - Command palette.
 - Full-text search, filename search, tag search, and front matter search.
-
-![Relic graph view screenshot](assets/relic-graph-screenshot.png)
 
 ![Relic Sphere view screenshot](assets/relic-sphere-screenshot.png)
 
@@ -92,7 +90,7 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 - Generate tables of contents.
 - Generate tag indexes.
 
-Front matter settings, Card view, Graph view, Sphere view, Chronicle view, and file processing tools are implemented but hidden by default. They can be enabled from Settings feature toggles.
+Front matter settings, Card view, Bubble view, Sphere view, Chronicle view, and file processing tools are implemented but hidden by default. They can be enabled from Settings feature toggles.
 
 ---
 
@@ -332,14 +330,12 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 
 - 内部リンク `[[...]]` とMarkdown相対リンク
 - バックリンク、アウトゴーイングリンク、未リンク参照
-- Markdown、タグ、添付画像、未解決リンクの関係を表示する、任意で有効化できるグラフビュー
+- Markdown、タグ、添付画像、未解決リンクの関係を表示する、任意で有効化できるバブルビュー
 - ワークスペースグラフを3次元で見渡す、任意で有効化できる試験的なスフィアビュー
 - アウトライン表示
 - クイックスイッチャー
 - コマンドパレット
 - 全文検索、ファイル名検索、タグ検索、フロントマター検索
-
-![Relicグラフビューのスクリーンショット](assets/relic-graph-screenshot.png)
 
 ![Relicスフィアビューのスクリーンショット](assets/relic-sphere-screenshot.png)
 
@@ -369,7 +365,7 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 - 目次生成
 - タグ別索引生成
 
-フロントマター設定、カードビュー、グラフビュー、スフィアビュー、クロニクルビュー、ファイル加工ツールは実装済みですが、初期状態では非表示です。設定の機能トグルから有効化できます。
+フロントマター設定、カードビュー、バブルビュー、スフィアビュー、クロニクルビュー、ファイル加工ツールは実装済みですが、初期状態では非表示です。設定の機能トグルから有効化できます。
 
 ---
 

@@ -1,21 +1,21 @@
 ---
-name: relic-change-graph
-description: Relicの2次元グラフビューについて、Markdown由来のfile・tag・添付・未解決nodeとedge、共有索引consumer、検索・filter・group、Canvas 2D描画、Web Worker物理演算、pan・zoom・drag・hit判定・再描画停止を追加・修正する。2次元グラフ固有の派生データ、操作、性能変更に使う。リンク・共有索引はrelic-change-links-index、3次元スフィアのWebGL・camera・星表現はrelic-change-sphere、添付形式はrelic-change-attachments、タブ遷移はrelic-change-navigation、クロニクルCanvasはrelic-change-chronicleを優先または併用する。
+name: relic-change-bubble
+description: Relicのバブルビューについて、Markdown由来のfile・tag・添付・未解決nodeとedge、共有索引consumer、検索・filter・group、Canvas 2D描画、Web Worker物理演算、pan・zoom・drag・hit判定・再描画停止を追加・修正する。バブル固有の派生データ、操作、性能変更に使う。リンク・共有索引はrelic-change-links-index、3次元スフィアのWebGL・camera・星表現はrelic-change-sphere、添付形式はrelic-change-attachments、タブ遷移はrelic-change-navigation、クロニクルCanvasはrelic-change-chronicleを優先または併用する。
 ---
 
-# Relic Graph Change
+# Relic Bubble Change
 
 ## 対象と正本を確定する
 
 1. 調査、説明、レビュー、性能診断だけの依頼では編集せず、追加、変更、修正が明示された場合だけ実装する。
 2. `git status --short` を確認し、派生graph、検索・filter、描画model、interaction、simulation、表示設定のどこを変えるか限定する。
-3. `docs/features/links.md`、`docs/features/navigation.md`、`docs/engineering/data-model.md`、`docs/engineering/decisions.md`、`docs/design/DESIGN.md` のグラフ節を読む。
+3. `docs/features/links.md`、`docs/features/navigation.md`、`docs/engineering/data-model.md`、`docs/engineering/decisions.md`、`docs/design/DESIGN.md` のバブル節を読む。
 4. process境界へ触れる場合は `docs/engineering/architecture.md`、性能を変える場合は `docs/development.md` の検証節も読む。
 5. Markdownとフロントマターを正本、グラフdata、座標、simulation、hover、drag、cameraを再生成可能な派生状態として扱う。
 
 ## グラフ派生データを守る
 
-1. nodeをワークスペース内Markdown、フロントマター `tags`、グラフ専用の本文 `#タグ`、参照された対応画像、未解決linkから生成する。
+1. nodeをワークスペース内Markdown、フロントマター `tags`、バブル専用の本文 `#タグ`、参照された対応画像、未解決linkから生成する。
 2. edgeをfile間・fileと添付を結ぶ `link`、fileとtagを結ぶ `tag` に分け、同じ始点・終点・種別を件数付きの一件へ集約する。
 3. code block内の記法、外部URL、workspace外参照、非対応画像をnode・edgeへ追加しない。
 4. link・aliases・tags・Markdown parseと共有workspace索引の変更は `$relic-change-links-index`、対応画像形式とpath安全性は `$relic-change-attachments` に委ねる。

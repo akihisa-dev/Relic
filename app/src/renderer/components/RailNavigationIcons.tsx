@@ -46,7 +46,7 @@ export const IconTable = (): ReactElement => (
   </svg>
 );
 
-export const IconGraph = (): ReactElement => (
+export const IconBubble = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
     <circle cx="6" cy="6" r="2.5" />
     <circle cx="18" cy="6" r="2.5" />

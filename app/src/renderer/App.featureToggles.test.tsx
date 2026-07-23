@@ -57,7 +57,7 @@ describe("App feature toggles", () => {
     expect(screen.queryByRole("button", { name: "クロニクル" })).toBeNull();
   });
 
-  it("機能トグルでグラフのナビを非表示にし、ファイルと設定は残す", async () => {
+  it("機能トグルでバブルのナビを非表示にし、ファイルと設定は残す", async () => {
     window.relic = makeRelicApi({
       getFeatureToggles: vi.fn().mockResolvedValue({
         ok: true,
@@ -69,7 +69,7 @@ describe("App feature toggles", () => {
     await renderApp();
 
     await screen.findByRole("button", { name: "ファイル" });
-    expect(screen.queryByRole("button", { name: "グラフ" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "バブル" })).toBeNull();
     expect(screen.getByRole("button", { name: "設定" })).toBeInTheDocument();
   });
 

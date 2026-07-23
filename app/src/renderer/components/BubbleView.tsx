@@ -3,76 +3,75 @@ import type { ReactElement } from "react";
 
 import { deriveVisibleGraph } from "../graph/graphDisplayModel";
 import {
-  applyGraphSimulationPositions,
-  graphSimulationLinks,
-  graphSimulationNodes,
-  syncGraphLayout
-} from "../graph/graphLayout";
-import { createGraphSimulationClient, type GraphSimulationClient } from "../graph/graphSimulationClient";
+  applyBubbleSimulationPositions,
+  bubbleSimulationLinks,
+  bubbleSimulationNodes,
+  syncBubbleLayout
+} from "../bubble/bubbleLayout";
+import { createBubbleSimulationClient, type BubbleSimulationClient } from "../bubble/bubbleSimulationClient";
 import {
-  defaultGraphOptions,
-  defaultGraphDrawTheme,
-  type GraphSimLink,
-  type GraphSimNode,
-  type GraphViewTransform
-} from "../graph/graphTypes";
+  defaultBubbleOptions,
+  type BubbleSimLink,
+  type BubbleSimNode,
+  type BubbleViewTransform
+} from "../bubble/bubbleTypes";
+import { defaultGraphDrawTheme, readGraphDrawTheme } from "../graph/graphThemeModel";
 import { useT } from "../i18n";
-import { graphCanvasSizeFallback, useGraphCanvasInteractions } from "../hooks/useGraphCanvasInteractions";
+import { bubbleCanvasSizeFallback, useBubbleCanvasInteractions } from "../hooks/useBubbleCanvasInteractions";
 import { useLatest } from "../hooks/useLatest";
 import { useWorkspaceGraphState } from "../hooks/useWorkspaceGraphState";
 import {
-  applyGraphKeyboardNavigation,
-  applyGraphKeyboardZoom,
-  applyGraphPanInertia,
-  applyGraphZoomTransition,
-  drawGraph,
-  initialGraphViewTransform,
-  resolveGraphHoverFocusId,
-  shouldContinueGraphFrame,
-  stepGraphHighlightState
-} from "../graph/graphViewModel";
+  applyBubbleKeyboardNavigation,
+  applyBubbleKeyboardZoom,
+  applyBubblePanInertia,
+  applyBubbleZoomTransition,
+  drawBubble,
+  initialBubbleViewTransform,
+  resolveBubbleHoverFocusId,
+  shouldContinueBubbleFrame,
+  stepBubbleHighlightState
+} from "../bubble/bubbleViewModel";
 import {
-  cancelGraphFrame,
+  cancelBubbleFrame,
   getCanvas2dContext,
-  readGraphDrawTheme,
-  requestGraphFrameOnce
-} from "../graph/graphViewRuntime";
+  requestBubbleFrameOnce
+} from "../bubble/bubbleViewRuntime";
 
-interface GraphViewProps {
+interface BubbleViewProps {
   onOpenFile: (path: string) => void;
   onOpenTagSearch: (tag: string) => void;
   refreshRevision?: number;
   workspaceCacheKey?: string;
 }
 
-export function GraphView({
+export function BubbleView({
   onOpenFile,
   onOpenTagSearch,
   refreshRevision = 0,
   workspaceCacheKey = "current"
-}: GraphViewProps): ReactElement {
+}: BubbleViewProps): ReactElement {
   const t = useT();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<number | null>(null);
   const drawRef = useRef<() => void>(() => undefined);
   const themeRef = useRef(defaultGraphDrawTheme);
-  const initialNodes = useMemo(() => new Map<string, GraphSimNode>(), []);
-  const initialLinks = useMemo<GraphSimLink[]>(() => [], []);
-  const initialView = useMemo(() => initialGraphViewTransform(), []);
-  const nodesRef = useRef<Map<string, GraphSimNode>>(initialNodes);
-  const linksRef = useRef<GraphSimLink[]>(initialLinks);
-  const viewRef = useRef<GraphViewTransform>(initialView);
-  const simulationClientRef = useRef<GraphSimulationClient | null>(null);
+  const initialNodes = useMemo(() => new Map<string, BubbleSimNode>(), []);
+  const initialLinks = useMemo<BubbleSimLink[]>(() => [], []);
+  const initialView = useMemo(() => initialBubbleViewTransform(), []);
+  const nodesRef = useRef<Map<string, BubbleSimNode>>(initialNodes);
+  const linksRef = useRef<BubbleSimLink[]>(initialLinks);
+  const viewRef = useRef<BubbleViewTransform>(initialView);
+  const simulationClientRef = useRef<BubbleSimulationClient | null>(null);
   const graphState = useWorkspaceGraphState({
-    loadFailedMessage: t("graph.loadFailed"),
+    loadFailedMessage: t("bubble.loadFailed"),
     refreshRevision,
     workspaceCacheKey
   });
   const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
-  const latestOptionsRef = useLatest(defaultGraphOptions);
+  const latestOptionsRef = useLatest(defaultBubbleOptions);
 
   const requestDraw = useCallback(() => {
-    requestGraphFrameOnce(frameRef, () => drawRef.current());
+    requestBubbleFrameOnce(frameRef, () => drawRef.current());
   }, []);
   const {
     handleContextMenu,
@@ -90,7 +89,7 @@ export function GraphView({
     keyboardRef,
     panVelocityRef,
     pointerRef
-  } = useGraphCanvasInteractions({
+  } = useBubbleCanvasInteractions({
     canvasRef,
     latestOptionsRef,
     nodesRef,
@@ -126,8 +125,8 @@ export function GraphView({
   }, [updateTheme]);
 
   useEffect(() => {
-    const client = createGraphSimulationClient((message) => {
-      applyGraphSimulationPositions(nodesRef.current, message);
+    const client = createBubbleSimulationClient((message) => {
+      applyBubbleSimulationPositions(nodesRef.current, message);
       requestDraw();
     });
     simulationClientRef.current = client;
@@ -143,11 +142,11 @@ export function GraphView({
   }, [graphState.graph]);
 
   useEffect(() => {
-    const links = syncGraphLayout(filteredGraph, nodesRef.current);
+    const links = syncBubbleLayout(filteredGraph, nodesRef.current);
     linksRef.current = links;
     simulationClientRef.current?.sync(
-      graphSimulationNodes(nodesRef.current.values()),
-      graphSimulationLinks(links),
+      bubbleSimulationNodes(nodesRef.current.values()),
+      bubbleSimulationLinks(links),
       latestOptionsRef.current
     );
     requestDraw();
@@ -162,8 +161,8 @@ export function GraphView({
 
     const rect = canvas.getBoundingClientRect();
     const pixelRatio = window.devicePixelRatio || 1;
-    const cssWidth = rect.width || graphCanvasSizeFallback.width;
-    const cssHeight = rect.height || graphCanvasSizeFallback.height;
+    const cssWidth = rect.width || bubbleCanvasSizeFallback.width;
+    const cssHeight = rect.height || bubbleCanvasSizeFallback.height;
     if (canvas.width !== Math.floor(cssWidth * pixelRatio) || canvas.height !== Math.floor(cssHeight * pixelRatio)) {
       canvas.width = Math.floor(cssWidth * pixelRatio);
       canvas.height = Math.floor(cssHeight * pixelRatio);
@@ -172,13 +171,13 @@ export function GraphView({
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     context.clearRect(0, 0, cssWidth, cssHeight);
     if (pointerRef.current?.type !== "pan") {
-      applyGraphPanInertia(viewRef.current, panVelocityRef.current);
+      applyBubblePanInertia(viewRef.current, panVelocityRef.current);
     }
-    applyGraphKeyboardNavigation(viewRef.current, keyboardRef.current);
-    applyGraphKeyboardZoom(viewRef.current, keyboardRef.current, cssWidth, cssHeight);
-    applyGraphZoomTransition(viewRef.current, cssWidth, cssHeight);
+    applyBubbleKeyboardNavigation(viewRef.current, keyboardRef.current);
+    applyBubbleKeyboardZoom(viewRef.current, keyboardRef.current, cssWidth, cssHeight);
+    applyBubbleZoomTransition(viewRef.current, cssWidth, cssHeight);
     const nodes = [...nodesRef.current.values()];
-    const hoverFocusId = pointerRef.current ? null : resolveGraphHoverFocusId(
+    const hoverFocusId = pointerRef.current ? null : resolveBubbleHoverFocusId(
       nodesRef.current,
       hoverPointRef.current,
       viewRef.current,
@@ -189,8 +188,8 @@ export function GraphView({
       performance.now()
     );
     const targetHighlightId = pinnedNodeId && nodesRef.current.has(pinnedNodeId) ? pinnedNodeId : hoverFocusId;
-    const highlight = stepGraphHighlightState(highlightRef.current, targetHighlightId);
-    drawGraph(
+    const highlight = stepBubbleHighlightState(highlightRef.current, targetHighlightId);
+    drawBubble(
       context,
       nodes,
       linksRef.current,
@@ -202,7 +201,7 @@ export function GraphView({
       cssHeight
     );
 
-    if (shouldContinueGraphFrame({
+    if (shouldContinueBubbleFrame({
       highlight,
       keyboard: keyboardRef.current,
       panVelocity: panVelocityRef.current,
@@ -232,15 +231,15 @@ export function GraphView({
   }, [requestDraw]);
 
   useEffect(() => () => {
-    if (frameRef.current !== null) cancelGraphFrame(frameRef.current);
+    if (frameRef.current !== null) cancelBubbleFrame(frameRef.current);
     frameRef.current = null;
   }, []);
 
   return (
-    <div className="graph-view-shell">
+    <div className="bubble-view-shell">
       <canvas
-        aria-label={t("graph.canvasLabel")}
-        className="graph-view-canvas"
+        aria-label={t("bubble.canvasLabel")}
+        className="bubble-view-canvas"
         onContextMenu={handleContextMenu}
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
@@ -254,9 +253,9 @@ export function GraphView({
         ref={canvasRef}
         tabIndex={0}
       />
-      {graphState.loading ? <div className="graph-view-status">{t("graph.loading")}</div> : null}
+      {graphState.loading ? <div className="chart-view-status">{t("bubble.loading")}</div> : null}
       {graphState.error ? (
-        <div className="graph-view-status graph-view-status--error">{graphState.error}</div>
+        <div className="chart-view-status chart-view-status--error">{graphState.error}</div>
       ) : null}
     </div>
   );

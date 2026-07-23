@@ -57,14 +57,14 @@ describe("paneViewModel", () => {
     expect(chartTabs.map((tab) => paneTabLabel(tab, ja))).toEqual([
       "カード",
       "テーブル",
-      "グラフ",
+      "バブル",
       "スフィア",
       "クロニクル"
     ]);
     expect(chartTabs.map((tab) => paneTabLabel(tab, t))).toEqual([
       "Cards",
       "Table",
-      "Graph",
+      "Bubble",
       "Sphere",
       "Chronicle"
     ]);

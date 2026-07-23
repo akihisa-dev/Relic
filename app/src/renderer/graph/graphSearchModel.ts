@@ -1,5 +1,8 @@
 import type { WorkspaceGraphNode } from "../../shared/ipc";
-import type { GraphNodePrimaryAction } from "./graphTypes";
+
+export type GraphNodePrimaryAction =
+  | { path: string; type: "file" }
+  | { tag: string; type: "tagSearch" };
 
 export function tagSearchQueryFromNode(node: WorkspaceGraphNode): string {
   return node.label.replace(/^#/, "") || node.id.replace(/^#/, "");

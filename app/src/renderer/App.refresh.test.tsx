@@ -185,7 +185,7 @@ describe("App workspace refresh", () => {
     await waitFor(() => expect(getWorkspaceState).toHaveBeenCalledTimes(2));
   });
 
-  it("グラフを開いたまま再同期すると派生データを再取得する", async () => {
+  it("バブルを開いたまま再同期すると派生データを再取得する", async () => {
     const getWorkspaceGraph = vi.fn().mockResolvedValue({
       ok: true,
       value: { links: [], nodes: [] }
@@ -201,7 +201,7 @@ describe("App workspace refresh", () => {
     });
 
     await renderApp();
-    fireEvent.click(await screen.findByRole("button", { name: "グラフ" }));
+    fireEvent.click(await screen.findByRole("button", { name: "バブル" }));
     await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledTimes(1));
 
     fireEvent.click(screen.getByRole("button", { name: "リフレッシュ" }));

@@ -1,6 +1,6 @@
 ---
 name: relic-change-chronicle
-description: Relicのクロニクルビューについて、frontmatter `chronicle` の暦・単年・期間、基準暦と追加暦の設定・換算・暦面、暦ツリーとカテゴリ集約、共有索引consumer、年軸・配置、Canvas 2D描画、pan・zoom・drag・hit判定・再描画停止を追加・修正する。年表の解析、表示、操作、性能変更に使う。YAML往復はrelic-change-frontmatter、共有索引はrelic-change-links-index、暦設定schemaはrelic-change-settings、タブ遷移はrelic-change-navigationを優先または併用する。グラフCanvasはrelic-change-graphが所有し、両Canvasで共有するinteraction helperや契約を変える場合は両Skillを使う。
+description: Relicのクロニクルビューについて、frontmatter `chronicle` の暦・単年・期間、基準暦と追加暦の設定・換算・暦面、暦ツリーとカテゴリ集約、共有索引consumer、年軸・配置、Canvas 2D描画、pan・zoom・drag・hit判定・再描画停止を追加・修正する。年表の解析、表示、操作、性能変更に使う。YAML往復はrelic-change-frontmatter、共有索引はrelic-change-links-index、暦設定schemaはrelic-change-settings、タブ遷移はrelic-change-navigationを優先または併用する。グラフCanvasはrelic-change-bubbleが所有し、両Canvasで共有するinteraction helperや契約を変える場合は両Skillを使う。
 ---
 
 # Relic Chronicle Change

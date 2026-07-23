@@ -1,44 +1,44 @@
 import type { WorkspaceGraphNode } from "../../shared/ipc";
 import {
-  graphNodeBaseRadiusFromWeight,
-  graphNodeWeight
-} from "./graphLayout";
+  bubbleNodeBaseRadiusFromWeight,
+  bubbleNodeWeight
+} from "./bubbleLayout";
 import type {
-  GraphKeyboardState,
-  GraphOptions,
-  GraphSimNode,
-  GraphViewTransform
-} from "./graphTypes";
+  BubbleKeyboardState,
+  BubbleOptions,
+  BubbleSimNode,
+  BubbleViewTransform
+} from "./bubbleTypes";
 
-const graphMinScale = 1 / 128;
-const graphMaxScale = 8;
-const graphNodeClickMovementThresholdSq = 25;
-const graphHoverReleaseDelayMs = 140;
-const graphHighlightTransitionRate = 0.2;
-const graphHighlightMinimumStrength = 0.01;
+const bubbleMinScale = 1 / 128;
+const bubbleMaxScale = 8;
+const bubbleNodeClickMovementThresholdSq = 25;
+const bubbleHoverReleaseDelayMs = 140;
+const bubbleHighlightTransitionRate = 0.2;
+const bubbleHighlightMinimumStrength = 0.01;
 
-export interface GraphHoverFocusState {
+export interface BubbleHoverFocusState {
   id: string | null;
   pointX?: number;
   pointY?: number;
   releaseAt: number;
 }
 
-export interface GraphHighlightState {
+export interface BubbleHighlightState {
   id: string | null;
   strength: number;
 }
 
-export interface GraphFrameActivity {
-  highlight: GraphHighlightState;
-  keyboard: GraphKeyboardState;
+export interface BubbleFrameActivity {
+  highlight: BubbleHighlightState;
+  keyboard: BubbleKeyboardState;
   panVelocity: { x: number; y: number };
   pointerActive: boolean;
   targetHighlightId: string | null;
-  view: Pick<GraphViewTransform, "scale" | "targetScale">;
+  view: Pick<BubbleViewTransform, "scale" | "targetScale">;
 }
 
-export function initialGraphViewTransform(): GraphViewTransform {
+export function initialBubbleViewTransform(): BubbleViewTransform {
   return {
     panX: 0,
     panY: 0,
@@ -49,7 +49,7 @@ export function initialGraphViewTransform(): GraphViewTransform {
   };
 }
 
-export function shouldContinueGraphFrame(activity: GraphFrameActivity): boolean {
+export function shouldContinueBubbleFrame(activity: BubbleFrameActivity): boolean {
   const keyboardActive = activity.keyboard.left || activity.keyboard.right || activity.keyboard.up ||
     activity.keyboard.down || activity.keyboard.zoomIn || activity.keyboard.zoomOut;
   const panActive = activity.panVelocity.x !== 0 || activity.panVelocity.y !== 0;
@@ -62,35 +62,35 @@ export function shouldContinueGraphFrame(activity: GraphFrameActivity): boolean 
   return activity.pointerActive || keyboardActive || panActive || zoomActive || highlightActive;
 }
 
-export function graphNodeBaseRadius(node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">, options: GraphOptions): number {
-  return graphNodeBaseRadiusFromWeight(graphNodeWeight(node), options);
+export function bubbleNodeBaseRadius(node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">, options: BubbleOptions): number {
+  return bubbleNodeBaseRadiusFromWeight(bubbleNodeWeight(node), options);
 }
 
-export function graphNodeScale(scale: number): number {
-  return Math.sqrt(1 / Math.max(graphMinScale, scale));
+export function bubbleNodeScale(scale: number): number {
+  return Math.sqrt(1 / Math.max(bubbleMinScale, scale));
 }
 
-export function graphLinkScaleOpacity(scale: number): number {
+export function bubbleLinkScaleOpacity(scale: number): number {
   return clamp((scale - 0.04) / 0.36, 0, 1);
 }
 
-export function graphNodeVisualRadius(
+export function bubbleNodeVisualRadius(
   node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">,
-  options: GraphOptions,
+  options: BubbleOptions,
   scale: number
 ): number {
-  return graphNodeBaseRadius(node, options) * graphNodeScale(scale);
+  return bubbleNodeBaseRadius(node, options) * bubbleNodeScale(scale);
 }
 
-export function isGraphNodePrimaryPointerButton(button: number): boolean {
+export function isBubbleNodePrimaryPointerButton(button: number): boolean {
   return button === 0 || button === 1;
 }
 
-export function graphPointerMovedBeyondClickThreshold(dx: number, dy: number): boolean {
-  return dx * dx + dy * dy > graphNodeClickMovementThresholdSq;
+export function bubblePointerMovedBeyondClickThreshold(dx: number, dy: number): boolean {
+  return dx * dx + dy * dy > bubbleNodeClickMovementThresholdSq;
 }
 
-export function graphLabelOpacity(scale: number, textFadeMultiplier: number): number {
+export function bubbleLabelOpacity(scale: number, textFadeMultiplier: number): number {
   return clamp(Math.log(scale) / Math.log(2) + 1 - textFadeMultiplier, 0, 1);
 }
 
@@ -107,7 +107,7 @@ export function screenToWorld(
   };
 }
 
-export function zoomGraphAtPoint(
+export function zoomBubbleAtPoint(
   view: { panX: number; panY: number; scale: number },
   x: number,
   y: number,
@@ -116,12 +116,12 @@ export function zoomGraphAtPoint(
   nextScale: number
 ): void {
   const before = screenToWorld(x, y, width, height, view);
-  view.scale = clampGraphScale(nextScale);
+  view.scale = clampBubbleScale(nextScale);
   view.panX = x - width / 2 - before.x * view.scale;
   view.panY = y - height / 2 - before.y * view.scale;
 }
 
-export function graphWheelZoomPoint(
+export function bubbleWheelZoomPoint(
   currentScale: number,
   nextScale: number,
   pointerX: number,
@@ -134,9 +134,9 @@ export function graphWheelZoomPoint(
   return { x: pointerX, y: pointerY };
 }
 
-export function applyGraphKeyboardNavigation(
+export function applyBubbleKeyboardNavigation(
   view: { panX: number; panY: number; scale: number },
-  keyboard: GraphKeyboardState
+  keyboard: BubbleKeyboardState
 ): void {
   const step = keyboard.shift ? 3 : 1;
   let dx = 0;
@@ -151,9 +151,9 @@ export function applyGraphKeyboardNavigation(
   view.panY += dy * 1000 / 60;
 }
 
-export function applyGraphKeyboardZoom(
-  view: GraphViewTransform,
-  keyboard: GraphKeyboardState,
+export function applyBubbleKeyboardZoom(
+  view: BubbleViewTransform,
+  keyboard: BubbleKeyboardState,
   width: number,
   height: number
 ): void {
@@ -164,26 +164,26 @@ export function applyGraphKeyboardZoom(
   if (keyboard.zoomIn) nextScale *= step;
   if (keyboard.zoomOut) nextScale /= step;
 
-  requestGraphZoom(view, width / 2, height / 2, nextScale);
+  requestBubbleZoom(view, width / 2, height / 2, nextScale);
 }
 
-export function requestGraphZoom(
-  view: GraphViewTransform,
+export function requestBubbleZoom(
+  view: BubbleViewTransform,
   x: number,
   y: number,
   nextScale: number
 ): void {
-  view.targetScale = clampGraphScale(nextScale);
+  view.targetScale = clampBubbleScale(nextScale);
   view.zoomCenterX = x;
   view.zoomCenterY = y;
 }
 
-export function applyGraphZoomTransition(
-  view: GraphViewTransform,
+export function applyBubbleZoomTransition(
+  view: BubbleViewTransform,
   width: number,
   height: number
 ): void {
-  view.targetScale = clampGraphScale(view.targetScale);
+  view.targetScale = clampBubbleScale(view.targetScale);
 
   const currentScale = view.scale;
   const ratio = currentScale > view.targetScale ? currentScale / view.targetScale : view.targetScale / currentScale;
@@ -193,10 +193,10 @@ export function applyGraphZoomTransition(
   const zoomCenterY = view.zoomCenterX === 0 && view.zoomCenterY === 0 ? height / 2 : view.zoomCenterY;
   const nextScale = currentScale * 0.85 + view.targetScale * 0.15;
 
-  zoomGraphAtPoint(view, zoomCenterX, zoomCenterY, width, height, nextScale);
+  zoomBubbleAtPoint(view, zoomCenterX, zoomCenterY, width, height, nextScale);
 }
 
-export function nextGraphPanVelocity(
+export function nextBubblePanVelocity(
   current: { x: number; y: number },
   dx: number,
   dy: number
@@ -207,11 +207,11 @@ export function nextGraphPanVelocity(
   };
 }
 
-export function nextGraphPanSampleMs(current: number, elapsedMs: number): number {
+export function nextBubblePanSampleMs(current: number, elapsedMs: number): number {
   return current * 0.8 + elapsedMs * 0.2;
 }
 
-export function finishGraphPanVelocity(
+export function finishBubblePanVelocity(
   velocity: { x: number; y: number },
   sampleMs: number,
   releaseElapsedMs: number
@@ -224,7 +224,7 @@ export function finishGraphPanVelocity(
   };
 }
 
-export function applyGraphPanInertia(
+export function applyBubblePanInertia(
   view: { panX: number; panY: number; scale: number },
   velocity: { x: number; y: number }
 ): void {
@@ -238,25 +238,25 @@ export function applyGraphPanInertia(
   velocity.y *= 0.9;
 }
 
-export function graphHoveredNodeContainsPoint(
-  node: Pick<GraphSimNode, "backlinkCount" | "linkCount" | "type" | "x" | "y">,
+export function bubbleHoveredNodeContainsPoint(
+  node: Pick<BubbleSimNode, "backlinkCount" | "linkCount" | "type" | "x" | "y">,
   point: { x: number; y: number } | null,
   view: { panX: number; panY: number; scale: number },
-  options: GraphOptions,
+  options: BubbleOptions,
   width: number,
   height: number
 ): boolean {
   if (!point) return false;
 
   const world = screenToWorld(point.x, point.y, width, height, view);
-  return distance(world.x, world.y, node.x, node.y) <= graphNodeVisualRadius(node, options, view.scale) + 4 / view.scale;
+  return distance(world.x, world.y, node.x, node.y) <= bubbleNodeVisualRadius(node, options, view.scale) + 4 / view.scale;
 }
 
-export function graphNodeAtCanvasPoint<T extends Pick<GraphSimNode, "backlinkCount" | "linkCount" | "x" | "y">>(
+export function bubbleNodeAtCanvasPoint<T extends Pick<BubbleSimNode, "backlinkCount" | "linkCount" | "x" | "y">>(
   nodes: Iterable<T>,
   point: { x: number; y: number },
   view: { panX: number; panY: number; scale: number },
-  options: GraphOptions,
+  options: BubbleOptions,
   width: number,
   height: number
 ): T | null {
@@ -264,7 +264,7 @@ export function graphNodeAtCanvasPoint<T extends Pick<GraphSimNode, "backlinkCou
   const nodeList = [...nodes].toReversed();
 
   for (const node of nodeList) {
-    if (distance(world.x, world.y, node.x, node.y) <= graphNodeVisualRadius(node, options, view.scale) + 4 / view.scale) {
+    if (distance(world.x, world.y, node.x, node.y) <= bubbleNodeVisualRadius(node, options, view.scale) + 4 / view.scale) {
       return node;
     }
   }
@@ -272,14 +272,14 @@ export function graphNodeAtCanvasPoint<T extends Pick<GraphSimNode, "backlinkCou
   return null;
 }
 
-export function resolveGraphHoverFocusId(
-  nodes: GraphSimNode[] | ReadonlyMap<string, GraphSimNode>,
+export function resolveBubbleHoverFocusId(
+  nodes: BubbleSimNode[] | ReadonlyMap<string, BubbleSimNode>,
   point: { x: number; y: number } | null,
   view: { panX: number; panY: number; scale: number },
-  options: GraphOptions,
+  options: BubbleOptions,
   width: number,
   height: number,
-  state: GraphHoverFocusState,
+  state: BubbleHoverFocusState,
   now: number
 ): string | null {
   if (point) {
@@ -291,7 +291,7 @@ export function resolveGraphHoverFocusId(
     if (
       pointUnchanged &&
       current &&
-      distance(world.x, world.y, current.x, current.y) <= graphNodeVisualRadius(current, options, view.scale) + 4 / view.scale
+      distance(world.x, world.y, current.x, current.y) <= bubbleNodeVisualRadius(current, options, view.scale) + 4 / view.scale
     ) {
       state.releaseAt = 0;
       return current.id;
@@ -304,7 +304,7 @@ export function resolveGraphHoverFocusId(
       const candidate = nodeList[index];
       if (
         candidate &&
-        distance(world.x, world.y, candidate.x, candidate.y) <= graphNodeVisualRadius(candidate, options, view.scale) + 4 / view.scale
+        distance(world.x, world.y, candidate.x, candidate.y) <= bubbleNodeVisualRadius(candidate, options, view.scale) + 4 / view.scale
       ) {
         state.id = candidate.id;
         state.releaseAt = 0;
@@ -323,7 +323,7 @@ export function resolveGraphHoverFocusId(
   }
 
   if (state.releaseAt === 0) {
-    state.releaseAt = now + graphHoverReleaseDelayMs;
+    state.releaseAt = now + bubbleHoverReleaseDelayMs;
   }
   if (now <= state.releaseAt) {
     return state.id;
@@ -334,11 +334,11 @@ export function resolveGraphHoverFocusId(
   return null;
 }
 
-export function stepGraphHighlightState(
-  state: GraphHighlightState,
+export function stepBubbleHighlightState(
+  state: BubbleHighlightState,
   targetId: string | null,
-  rate = graphHighlightTransitionRate
-): GraphHighlightState {
+  rate = bubbleHighlightTransitionRate
+): BubbleHighlightState {
   if (targetId && state.id !== targetId) {
     state.id = targetId;
   }
@@ -346,7 +346,7 @@ export function stepGraphHighlightState(
   const targetStrength = targetId ? 1 : 0;
   state.strength += (targetStrength - state.strength) * rate;
 
-  if (!targetId && state.strength < graphHighlightMinimumStrength) {
+  if (!targetId && state.strength < bubbleHighlightMinimumStrength) {
     state.id = null;
     state.strength = 0;
   }
@@ -357,8 +357,8 @@ export function stepGraphHighlightState(
   };
 }
 
-export function clampGraphScale(scale: number): number {
-  return clamp(scale, graphMinScale, graphMaxScale);
+export function clampBubbleScale(scale: number): number {
+  return clamp(scale, bubbleMinScale, bubbleMaxScale);
 }
 
 export function distance(ax: number, ay: number, bx: number, by: number): number {

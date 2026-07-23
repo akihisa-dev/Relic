@@ -1,14 +1,14 @@
 import {
-  graphCategoryAttractionImpulse,
-  graphCategoryCollisionImpulses,
-  graphCategoryExteriorImpulse
-} from "./graphPhysicsModel";
+  bubbleCategoryAttractionImpulse,
+  bubbleCategoryCollisionImpulses,
+  bubbleCategoryExteriorImpulse
+} from "./bubblePhysicsModel";
 
-export interface GraphCategoryNode {
+export interface BubbleCategoryNode {
   category?: string | null;
 }
 
-export interface GraphCategoryLayout {
+export interface BubbleCategoryLayout {
   category: string;
   count: number;
   radius: number;
@@ -16,35 +16,35 @@ export interface GraphCategoryLayout {
   y: number;
 }
 
-export interface GraphCategoryContact {
+export interface BubbleCategoryContact {
   angle: number;
   distance: number;
   radius: number;
 }
 
-export interface GraphCategoryPressure {
+export interface BubbleCategoryPressure {
   angle: number;
   radius: number;
 }
 
-export interface GraphCategoryObstacle {
+export interface BubbleCategoryObstacle {
   angle: number;
   distance: number;
   radius: number;
 }
 
-export interface GraphCategoryRegion extends GraphCategoryLayout {
-  contacts: GraphCategoryContact[];
-  obstacles: GraphCategoryObstacle[];
-  pressures: GraphCategoryPressure[];
+export interface BubbleCategoryRegion extends BubbleCategoryLayout {
+  contacts: BubbleCategoryContact[];
+  obstacles: BubbleCategoryObstacle[];
+  pressures: BubbleCategoryPressure[];
 }
 
-export interface GraphCategoryPoint {
+export interface BubbleCategoryPoint {
   x: number;
   y: number;
 }
 
-export interface GraphCategoryForceNode extends GraphCategoryNode {
+export interface BubbleCategoryForceNode extends BubbleCategoryNode {
   backlinkCount?: number;
   categoryCenterOffsetX?: number;
   categoryCenterOffsetY?: number;
@@ -55,50 +55,50 @@ export interface GraphCategoryForceNode extends GraphCategoryNode {
   y?: number;
 }
 
-export const graphCategoryDriftCenterStrength = 0.012;
+export const bubbleCategoryDriftCenterStrength = 0.012;
 
-const graphCategoryMinimumRadius = 96;
-const graphCategoryNodeSpacing = 48;
-const graphCategoryDesiredOverlap = 28;
-const graphCategoryClusterClearance = 120;
-const graphCategoryBoundaryPadding = 36;
-const graphCategoryExteriorMaximumIndentationRatio = 0.75;
-const graphCategoryMaximumBulge = 52;
-const graphCategoryPressureHalfAngle = Math.PI / 5;
-const graphCategoryTranslationStep = 32;
+const bubbleCategoryMinimumRadius = 96;
+const bubbleCategoryNodeSpacing = 48;
+const bubbleCategoryDesiredOverlap = 28;
+const bubbleCategoryClusterClearance = 120;
+const bubbleCategoryBoundaryPadding = 36;
+const bubbleCategoryExteriorMaximumIndentationRatio = 0.75;
+const bubbleCategoryMaximumBulge = 52;
+const bubbleCategoryPressureHalfAngle = Math.PI / 5;
+const bubbleCategoryTranslationStep = 32;
 
-export function normalizeGraphCategory(category: unknown): string | null {
+export function normalizeBubbleCategory(category: unknown): string | null {
   if (typeof category !== "string") return null;
   const normalized = category.trim();
   return normalized || null;
 }
 
-export function graphCategoryRadius(nodeCount: number): number {
+export function bubbleCategoryRadius(nodeCount: number): number {
   return Math.max(
-    graphCategoryMinimumRadius,
-    Math.sqrt(Math.max(1, nodeCount)) * graphCategoryNodeSpacing
+    bubbleCategoryMinimumRadius,
+    Math.sqrt(Math.max(1, nodeCount)) * bubbleCategoryNodeSpacing
   );
 }
 
-export function graphCategoryLayouts(nodes: Iterable<GraphCategoryNode>): GraphCategoryLayout[] {
+export function bubbleCategoryLayouts(nodes: Iterable<BubbleCategoryNode>): BubbleCategoryLayout[] {
   const counts = new Map<string, number>();
   for (const node of nodes) {
-    const category = normalizeGraphCategory(node.category);
+    const category = normalizeBubbleCategory(node.category);
     if (category) counts.set(category, (counts.get(category) ?? 0) + 1);
   }
 
   const categories = [...counts.keys()].toSorted((left, right) => left.localeCompare(right, "ja"));
   if (categories.length === 0) return [];
 
-  const radii = categories.map((category) => graphCategoryRadius(counts.get(category) ?? 0));
+  const radii = categories.map((category) => bubbleCategoryRadius(counts.get(category) ?? 0));
   const maximumRadius = Math.max(...radii);
   const ringRadius = categories.length === 1
     ? maximumRadius + 180
-    : (maximumRadius - graphCategoryDesiredOverlap / 2) /
+    : (maximumRadius - bubbleCategoryDesiredOverlap / 2) /
       Math.sin(Math.PI / categories.length);
   const clusterX = categories.length === 1
     ? 0
-    : ringRadius + maximumRadius + graphCategoryClusterClearance;
+    : ringRadius + maximumRadius + bubbleCategoryClusterClearance;
 
   return categories.map((category, index) => {
     const angle = categories.length === 1
@@ -114,17 +114,17 @@ export function graphCategoryLayouts(nodes: Iterable<GraphCategoryNode>): GraphC
   });
 }
 
-export function graphCategoryDynamicLayouts(
-  nodes: Iterable<GraphCategoryForceNode>
-): GraphCategoryLayout[] {
+export function bubbleCategoryDynamicLayouts(
+  nodes: Iterable<BubbleCategoryForceNode>
+): BubbleCategoryLayout[] {
   const groups = new Map<string, {
     count: number;
-    singleNode: GraphCategoryForceNode;
+    singleNode: BubbleCategoryForceNode;
     sumX: number;
     sumY: number;
   }>();
   for (const node of nodes) {
-    const category = normalizeGraphCategory(node.category);
+    const category = normalizeBubbleCategory(node.category);
     if (!category || node.x === undefined || node.y === undefined) continue;
     const group = groups.get(category) ?? {
       count: 0,
@@ -146,7 +146,7 @@ export function graphCategoryDynamicLayouts(
       return {
         category,
         count: group.count,
-        radius: graphCategoryRadius(group.count),
+        radius: bubbleCategoryRadius(group.count),
         x: group.sumX / group.count +
           (useSingletonCenter ? group.singleNode.categoryCenterOffsetX ?? 0 : 0),
         y: group.sumY / group.count +
@@ -155,13 +155,13 @@ export function graphCategoryDynamicLayouts(
     });
 }
 
-export function graphCategoryCenterOffsetForNodeDrag(
-  node: GraphCategoryForceNode,
-  layouts: Iterable<GraphCategoryLayout>,
-  point: GraphCategoryPoint,
-  padding = graphCategoryBoundaryPadding
-): GraphCategoryPoint | null {
-  const category = normalizeGraphCategory(node.category);
+export function bubbleCategoryCenterOffsetForNodeDrag(
+  node: BubbleCategoryForceNode,
+  layouts: Iterable<BubbleCategoryLayout>,
+  point: BubbleCategoryPoint,
+  padding = bubbleCategoryBoundaryPadding
+): BubbleCategoryPoint | null {
+  const category = normalizeBubbleCategory(node.category);
   if (!category) return null;
   const layout = [...layouts].find((candidate) => candidate.category === category);
   if (!layout || layout.count !== 1) return null;
@@ -181,14 +181,14 @@ export function graphCategoryCenterOffsetForNodeDrag(
   };
 }
 
-export function graphCategoryRegions(
-  layouts: Iterable<GraphCategoryLayout>,
-  nodes: Iterable<GraphCategoryForceNode> = []
-): Map<string, GraphCategoryRegion> {
+export function bubbleCategoryRegions(
+  layouts: Iterable<BubbleCategoryLayout>,
+  nodes: Iterable<BubbleCategoryForceNode> = []
+): Map<string, BubbleCategoryRegion> {
   const ordered = [...layouts];
   const orderedNodes = [...nodes];
   return new Map(ordered.map((layout) => {
-    const contacts = ordered.flatMap((other): GraphCategoryContact[] => {
+    const contacts = ordered.flatMap((other): BubbleCategoryContact[] => {
       if (other.category === layout.category) return [];
       const dx = other.x - layout.x;
       const dy = other.y - layout.y;
@@ -200,26 +200,26 @@ export function graphCategoryRegions(
         radius: other.radius
       }];
     });
-    const pressures = orderedNodes.flatMap((node): GraphCategoryPressure[] => {
-      if (normalizeGraphCategory(node.category) !== layout.category ||
+    const pressures = orderedNodes.flatMap((node): BubbleCategoryPressure[] => {
+      if (normalizeBubbleCategory(node.category) !== layout.category ||
           node.x === undefined || node.y === undefined) return [];
       const dx = node.x - layout.x;
       const dy = node.y - layout.y;
       const distance = Math.hypot(dx, dy);
       const pressureRadius = Math.min(
-        layout.radius + graphCategoryMaximumBulge,
-        distance + graphCategoryNodeClearance(node)
+        layout.radius + bubbleCategoryMaximumBulge,
+        distance + bubbleCategoryNodeClearance(node)
       );
       if (pressureRadius <= layout.radius) return [];
       return [{ angle: Math.atan2(dy, dx), radius: pressureRadius }];
     });
-    const obstacles = orderedNodes.flatMap((node): GraphCategoryObstacle[] => {
-      if (normalizeGraphCategory(node.category) === layout.category ||
+    const obstacles = orderedNodes.flatMap((node): BubbleCategoryObstacle[] => {
+      if (normalizeBubbleCategory(node.category) === layout.category ||
           node.x === undefined || node.y === undefined) return [];
       const dx = node.x - layout.x;
       const dy = node.y - layout.y;
       const distance = Math.hypot(dx, dy);
-      const radius = graphCategoryNodeClearance(node);
+      const radius = bubbleCategoryNodeClearance(node);
       if (distance >= layout.radius + radius) return [];
       return [{ angle: Math.atan2(dy, dx), distance, radius }];
     });
@@ -227,23 +227,23 @@ export function graphCategoryRegions(
   }));
 }
 
-export function graphCategoryTarget<T extends GraphCategoryLayout>(
-  node: GraphCategoryNode,
+export function bubbleCategoryTarget<T extends BubbleCategoryLayout>(
+  node: BubbleCategoryNode,
   layouts: ReadonlyMap<string, T>
 ): T | null {
-  const category = normalizeGraphCategory(node.category);
+  const category = normalizeBubbleCategory(node.category);
   return category ? layouts.get(category) ?? null : null;
 }
 
-export function graphCategoryBoundaryRadius(
-  region: GraphCategoryRegion,
+export function bubbleCategoryBoundaryRadius(
+  region: BubbleCategoryRegion,
   angle: number
 ): number {
   let boundaryRadius = region.radius;
   for (const pressure of region.pressures) {
     const progress = Math.max(
       0,
-      1 - Math.abs(normalizeAngle(angle - pressure.angle)) / graphCategoryPressureHalfAngle
+      1 - Math.abs(normalizeAngle(angle - pressure.angle)) / bubbleCategoryPressureHalfAngle
     );
     const smoothPressure = progress * progress * (3 - 2 * progress);
     boundaryRadius = Math.max(
@@ -270,20 +270,20 @@ export function graphCategoryBoundaryRadius(
   for (const obstacle of region.obstacles) {
     boundaryRadius = Math.min(
       boundaryRadius,
-      graphCategoryObstacleBoundaryRadius(region, obstacle, angle)
+      bubbleCategoryObstacleBoundaryRadius(region, obstacle, angle)
     );
   }
   return boundaryRadius;
 }
 
-export function graphCategoryContour(
-  region: GraphCategoryRegion,
+export function bubbleCategoryContour(
+  region: BubbleCategoryRegion,
   pointCount = 72
-): GraphCategoryPoint[] {
+): BubbleCategoryPoint[] {
   const count = Math.max(12, Math.floor(pointCount));
   return Array.from({ length: count }, (_, index) => {
     const angle = index * Math.PI * 2 / count;
-    const radius = graphCategoryBoundaryRadius(region, angle);
+    const radius = bubbleCategoryBoundaryRadius(region, angle);
     return {
       x: region.x + Math.cos(angle) * radius,
       y: region.y + Math.sin(angle) * radius
@@ -291,13 +291,13 @@ export function graphCategoryContour(
   });
 }
 
-export function constrainGraphCategoryPoint(
-  node: GraphCategoryNode,
-  regions: ReadonlyMap<string, GraphCategoryRegion>,
-  point: GraphCategoryPoint,
-  padding = graphCategoryBoundaryPadding
-): GraphCategoryPoint {
-  const region = graphCategoryTarget(node, regions);
+export function constrainBubbleCategoryPoint(
+  node: BubbleCategoryNode,
+  regions: ReadonlyMap<string, BubbleCategoryRegion>,
+  point: BubbleCategoryPoint,
+  padding = bubbleCategoryBoundaryPadding
+): BubbleCategoryPoint {
+  const region = bubbleCategoryTarget(node, regions);
   if (!region) return point;
 
   const dx = point.x - region.x;
@@ -309,8 +309,8 @@ export function constrainGraphCategoryPoint(
   const maximumDistance = Math.max(
     0,
     Math.max(
-      graphCategoryBoundaryRadius(region, angle),
-      graphCategoryDeformableBoundaryRadius(region, angle)
+      bubbleCategoryBoundaryRadius(region, angle),
+      bubbleCategoryDeformableBoundaryRadius(region, angle)
     ) - Math.max(0, padding)
   );
   if (distance <= maximumDistance) return point;
@@ -320,9 +320,9 @@ export function constrainGraphCategoryPoint(
   };
 }
 
-export function applyGraphCategoryBoundary(
-  nodes: Iterable<GraphCategoryForceNode>,
-  regions: ReadonlyMap<string, GraphCategoryRegion>,
+export function applyBubbleCategoryBoundary(
+  nodes: Iterable<BubbleCategoryForceNode>,
+  regions: ReadonlyMap<string, BubbleCategoryRegion>,
   _alpha: number
 ): void {
   for (const node of nodes) {
@@ -331,19 +331,19 @@ export function applyGraphCategoryBoundary(
       x: node.x + (node.vx ?? 0),
       y: node.y + (node.vy ?? 0)
     };
-    const ownRegion = graphCategoryTarget(node, regions);
+    const ownRegion = bubbleCategoryTarget(node, regions);
     const tracksSingletonCenter = ownRegion?.count === 1 &&
       node.categoryCenterOffsetX !== undefined &&
       node.categoryCenterOffsetY !== undefined;
     const constrained = tracksSingletonCenter
-      ? constrainGraphCategoryExteriorPoint(node, regions, predicted)
-      : constrainGraphNodeToCategoryRegions(node, regions, predicted);
+      ? constrainBubbleCategoryExteriorPoint(node, regions, predicted)
+      : constrainBubbleNodeToCategoryRegions(node, regions, predicted);
     if (tracksSingletonCenter) {
-      const centerOffset = graphCategoryCenterOffsetForNodeDrag(
+      const centerOffset = bubbleCategoryCenterOffsetForNodeDrag(
         node,
         regions.values(),
         constrained,
-        graphCategoryNodeClearance(node)
+        bubbleCategoryNodeClearance(node)
       );
       if (centerOffset) {
         node.categoryCenterOffsetX = centerOffset.x;
@@ -355,31 +355,31 @@ export function applyGraphCategoryBoundary(
   }
 }
 
-export function constrainGraphNodeToCategoryRegions(
-  node: GraphCategoryForceNode,
-  regions: ReadonlyMap<string, GraphCategoryRegion>,
-  point: GraphCategoryPoint,
-  padding = graphCategoryBoundaryPadding
-): GraphCategoryPoint {
-  return constrainGraphCategoryExteriorPoint(
+export function constrainBubbleNodeToCategoryRegions(
+  node: BubbleCategoryForceNode,
+  regions: ReadonlyMap<string, BubbleCategoryRegion>,
+  point: BubbleCategoryPoint,
+  padding = bubbleCategoryBoundaryPadding
+): BubbleCategoryPoint {
+  return constrainBubbleCategoryExteriorPoint(
     node,
     regions,
-    constrainGraphCategoryPoint(node, regions, point, padding)
+    constrainBubbleCategoryPoint(node, regions, point, padding)
   );
 }
 
-export function applyGraphCategoryMotion(
-  nodes: Iterable<GraphCategoryForceNode>,
+export function applyBubbleCategoryMotion(
+  nodes: Iterable<BubbleCategoryForceNode>,
   alpha: number
-): Map<string, GraphCategoryRegion> {
+): Map<string, BubbleCategoryRegion> {
   const orderedNodes = [...nodes];
-  const regions = graphCategoryRegions(
-    graphCategoryDynamicLayouts(orderedNodes),
+  const regions = bubbleCategoryRegions(
+    bubbleCategoryDynamicLayouts(orderedNodes),
     orderedNodes
   );
-  const nodesByCategory = new Map<string, GraphCategoryForceNode[]>();
+  const nodesByCategory = new Map<string, BubbleCategoryForceNode[]>();
   for (const node of orderedNodes) {
-    const category = normalizeGraphCategory(node.category);
+    const category = normalizeBubbleCategory(node.category);
     if (!category) continue;
     const categoryNodes = nodesByCategory.get(category) ?? [];
     categoryNodes.push(node);
@@ -394,14 +394,14 @@ export function applyGraphCategoryMotion(
       const dx = right.x - left.x;
       const dy = right.y - left.y;
       const distance = Math.hypot(dx, dy);
-      const minimumDistance = left.radius + right.radius - graphCategoryDesiredOverlap;
+      const minimumDistance = left.radius + right.radius - bubbleCategoryDesiredOverlap;
       if (distance >= minimumDistance) continue;
 
       const fallbackAngle = (leftIndex + rightIndex * 0.5) * Math.PI * 2 /
         Math.max(2, orderedRegions.length);
       const unitX = distance === 0 ? Math.cos(fallbackAngle) : dx / distance;
       const unitY = distance === 0 ? Math.sin(fallbackAngle) : dy / distance;
-      const impulses = graphCategoryCollisionImpulses(
+      const impulses = bubbleCategoryCollisionImpulses(
         minimumDistance - distance,
         alpha,
         left.count,
@@ -421,10 +421,10 @@ export function applyGraphCategoryMotion(
   }
 
   for (const node of orderedNodes) {
-    const region = graphCategoryTarget(node, regions);
+    const region = bubbleCategoryTarget(node, regions);
     if (!region || node.x === undefined || node.y === undefined) continue;
     if (region.count === 1) continue;
-    const impulse = graphCategoryAttractionImpulse(
+    const impulse = bubbleCategoryAttractionImpulse(
       region.x - node.x,
       region.y - node.y,
       alpha
@@ -432,28 +432,28 @@ export function applyGraphCategoryMotion(
     node.vx = (node.vx ?? 0) + impulse.x;
     node.vy = (node.vy ?? 0) + impulse.y;
   }
-  applyGraphCategoryExteriorReaction(
+  applyBubbleCategoryExteriorReaction(
     orderedNodes,
     nodesByCategory,
     orderedRegions,
     alpha
   );
-  applyGraphCategoryBoundary(orderedNodes, regions, alpha);
+  applyBubbleCategoryBoundary(orderedNodes, regions, alpha);
   return regions;
 }
 
-export function translateGraphCategoryNodes<T extends GraphCategoryForceNode>(
+export function translateBubbleCategoryNodes<T extends BubbleCategoryForceNode>(
   nodes: Iterable<T>,
   category: string,
   dx: number,
   dy: number
 ): T[] {
-  const normalizedCategory = normalizeGraphCategory(category);
+  const normalizedCategory = normalizeBubbleCategory(category);
   if (!normalizedCategory) return [];
 
   const translated: T[] = [];
   for (const node of nodes) {
-    if (normalizeGraphCategory(node.category) !== normalizedCategory ||
+    if (normalizeBubbleCategory(node.category) !== normalizedCategory ||
         node.x === undefined || node.y === undefined) continue;
     node.x += dx;
     node.y += dy;
@@ -467,21 +467,21 @@ export function translateGraphCategoryNodes<T extends GraphCategoryForceNode>(
   return translated;
 }
 
-export function translateGraphCategoryNodesWithPush<T extends GraphCategoryForceNode>(
+export function translateBubbleCategoryNodesWithPush<T extends BubbleCategoryForceNode>(
   nodes: Iterable<T>,
   category: string,
   dx: number,
   dy: number
 ): T[] {
   const orderedNodes = [...nodes];
-  const normalizedCategory = normalizeGraphCategory(category);
+  const normalizedCategory = normalizeBubbleCategory(category);
   if (!normalizedCategory || (dx === 0 && dy === 0)) return [];
 
   const distance = Math.hypot(dx, dy);
-  const stepCount = Math.max(1, Math.ceil(distance / graphCategoryTranslationStep));
+  const stepCount = Math.max(1, Math.ceil(distance / bubbleCategoryTranslationStep));
   const movedNodes = new Set<T>();
   for (let step = 0; step < stepCount; step += 1) {
-    for (const node of translateGraphCategoryStep(
+    for (const node of translateBubbleCategoryStep(
       orderedNodes,
       normalizedCategory,
       dx / stepCount,
@@ -494,7 +494,7 @@ export function translateGraphCategoryNodesWithPush<T extends GraphCategoryForce
 }
 
 function shiftCategoryVelocity(
-  nodes: GraphCategoryForceNode[] | undefined,
+  nodes: BubbleCategoryForceNode[] | undefined,
   dx: number,
   dy: number
 ): void {
@@ -512,16 +512,16 @@ function stableCategoryAngle(left: string, right: string): number {
   return (Math.abs(hash) % 360) * Math.PI / 180;
 }
 
-function graphCategoryNodeClearance(node: GraphCategoryForceNode): number {
+function bubbleCategoryNodeClearance(node: BubbleCategoryForceNode): number {
   const weight = Math.max(0, (node.backlinkCount ?? 0) + (node.linkCount ?? 0));
   return Math.max(18, Math.min(36, 3 * Math.sqrt(weight + 1) + 10));
 }
 
-function graphCategoryDeformableBoundaryRadius(
-  region: GraphCategoryRegion,
+function bubbleCategoryDeformableBoundaryRadius(
+  region: BubbleCategoryRegion,
   angle: number
 ): number {
-  let radius = region.radius + graphCategoryMaximumBulge;
+  let radius = region.radius + bubbleCategoryMaximumBulge;
   for (const contact of region.contacts) {
     const directionProjection = Math.cos(normalizeAngle(angle - contact.angle));
     if (directionProjection <= 0) continue;
@@ -535,19 +535,19 @@ function graphCategoryDeformableBoundaryRadius(
   for (const obstacle of region.obstacles) {
     radius = Math.min(
       radius,
-      graphCategoryObstacleBoundaryRadius(region, obstacle, angle)
+      bubbleCategoryObstacleBoundaryRadius(region, obstacle, angle)
     );
   }
   return radius;
 }
 
-function graphCategoryObstacleBoundaryRadius(
-  region: Pick<GraphCategoryRegion, "radius">,
-  obstacle: GraphCategoryObstacle,
+function bubbleCategoryObstacleBoundaryRadius(
+  region: Pick<BubbleCategoryRegion, "radius">,
+  obstacle: BubbleCategoryObstacle,
   angle: number
 ): number {
   const indentation = Math.min(
-    obstacle.radius * graphCategoryExteriorMaximumIndentationRatio,
+    obstacle.radius * bubbleCategoryExteriorMaximumIndentationRatio,
     Math.max(0, region.radius + obstacle.radius - obstacle.distance)
   );
   if (indentation === 0) return region.radius;
@@ -559,37 +559,37 @@ function graphCategoryObstacleBoundaryRadius(
   ));
   const halfAngle = Math.max(
     0.18,
-    Math.min(graphCategoryPressureHalfAngle, obstacleAngularRadius * 1.4)
+    Math.min(bubbleCategoryPressureHalfAngle, obstacleAngularRadius * 1.4)
   );
   const progress = Math.max(0, 1 - delta / halfAngle);
   const smoothIndentation = progress * progress * (3 - 2 * progress);
   return Math.max(0, region.radius - indentation * smoothIndentation);
 }
 
-function applyGraphCategoryExteriorReaction(
-  nodes: GraphCategoryForceNode[],
-  nodesByCategory: ReadonlyMap<string, GraphCategoryForceNode[]>,
-  regions: GraphCategoryRegion[],
+function applyBubbleCategoryExteriorReaction(
+  nodes: BubbleCategoryForceNode[],
+  nodesByCategory: ReadonlyMap<string, BubbleCategoryForceNode[]>,
+  regions: BubbleCategoryRegion[],
   alpha: number
 ): void {
   for (const region of regions) {
     for (const node of nodes) {
-      if (normalizeGraphCategory(node.category) === region.category ||
+      if (normalizeBubbleCategory(node.category) === region.category ||
           node.x === undefined || node.y === undefined) continue;
       const dx = region.x - node.x;
       const dy = region.y - node.y;
       const distance = Math.hypot(dx, dy);
       const responseDistance = region.radius +
-        graphCategoryNodeClearance(node);
+        bubbleCategoryNodeClearance(node);
       if (distance >= responseDistance) continue;
 
       const fallbackAngle = stableCategoryAngle(
         region.category,
-        normalizeGraphCategory(node.category) ?? "uncategorized"
+        normalizeBubbleCategory(node.category) ?? "uncategorized"
       );
       const unitX = distance === 0 ? Math.cos(fallbackAngle) : dx / distance;
       const unitY = distance === 0 ? Math.sin(fallbackAngle) : dy / distance;
-      const correction = graphCategoryExteriorImpulse(
+      const correction = bubbleCategoryExteriorImpulse(
         responseDistance - distance,
         alpha,
         region.count
@@ -603,12 +603,12 @@ function applyGraphCategoryExteriorReaction(
   }
 }
 
-function constrainGraphCategoryExteriorPoint(
-  node: GraphCategoryForceNode,
-  regions: ReadonlyMap<string, GraphCategoryRegion>,
-  point: GraphCategoryPoint
-): GraphCategoryPoint {
-  const ownCategory = normalizeGraphCategory(node.category);
+function constrainBubbleCategoryExteriorPoint(
+  node: BubbleCategoryForceNode,
+  regions: ReadonlyMap<string, BubbleCategoryRegion>,
+  point: BubbleCategoryPoint
+): BubbleCategoryPoint {
+  const ownCategory = normalizeBubbleCategory(node.category);
   let constrained = point;
   for (let pass = 0; pass < 2; pass += 1) {
     for (const region of regions.values()) {
@@ -618,8 +618,8 @@ function constrainGraphCategoryExteriorPoint(
       const distance = Math.hypot(dx, dy);
       const fallbackAngle = stableCategoryAngle(ownCategory ?? "uncategorized", region.category);
       const angle = distance === 0 ? fallbackAngle : Math.atan2(dy, dx);
-      const minimumDistance = graphCategoryBoundaryRadius(region, angle) +
-        graphCategoryNodeClearance(node);
+      const minimumDistance = bubbleCategoryBoundaryRadius(region, angle) +
+        bubbleCategoryNodeClearance(node);
       if (distance >= minimumDistance) continue;
       const unitX = distance === 0 ? Math.cos(angle) : dx / distance;
       const unitY = distance === 0 ? Math.sin(angle) : dy / distance;
@@ -632,17 +632,17 @@ function constrainGraphCategoryExteriorPoint(
   return constrained;
 }
 
-function translateGraphCategoryStep<T extends GraphCategoryForceNode>(
+function translateBubbleCategoryStep<T extends BubbleCategoryForceNode>(
   nodes: T[],
   category: string,
   dx: number,
   dy: number
 ): T[] {
-  const layouts = graphCategoryDynamicLayouts(nodes);
+  const layouts = bubbleCategoryDynamicLayouts(nodes);
   const layoutByCategory = new Map(layouts.map((layout) => [layout.category, layout]));
   if (!layoutByCategory.has(category)) return [];
 
-  const translations = new Map<string, GraphCategoryPoint>([
+  const translations = new Map<string, BubbleCategoryPoint>([
     [category, { x: dx, y: dy }]
   ]);
   const queue = [category];
@@ -664,7 +664,7 @@ function translateGraphCategoryStep<T extends GraphCategoryForceNode>(
       const offsetX = otherX - movingX;
       const offsetY = otherY - movingY;
       const distance = Math.hypot(offsetX, offsetY);
-      const minimumDistance = moving.radius + other.radius - graphCategoryDesiredOverlap;
+      const minimumDistance = moving.radius + other.radius - bubbleCategoryDesiredOverlap;
       if (distance >= minimumDistance) continue;
 
       const movementDistance = Math.hypot(movingTranslation.x, movingTranslation.y);
@@ -684,7 +684,7 @@ function translateGraphCategoryStep<T extends GraphCategoryForceNode>(
 
   const moved: T[] = [];
   for (const [movingCategory, translation] of translations) {
-    for (const node of translateGraphCategoryNodes(
+    for (const node of translateBubbleCategoryNodes(
       nodes,
       movingCategory,
       translation.x,

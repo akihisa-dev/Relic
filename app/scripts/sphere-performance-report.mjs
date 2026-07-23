@@ -298,7 +298,7 @@ async function runScenario(executable, fixture, port, cycles) {
     if (!openedAt) throw new Error("Sphere navigation button was not found.");
     const readyAt = await waitForValue(client, `(() => {
       const canvas = document.querySelector('.sphere-view-canvas canvas');
-      const status = document.querySelector('.graph-view-status');
+      const status = document.querySelector('.chart-view-status');
       return canvas && !status ? performance.now() : 0;
     })()`, 60_000);
     process.stderr.write("[sphere-performance] Sphere ready; waiting for layout warmup.\n");
@@ -400,7 +400,7 @@ async function runScenario(executable, fixture, port, cycles) {
         sphereCanvasCount: await evaluate(client, "document.querySelectorAll('.sphere-view-canvas canvas').length")
       };
     }
-    const contextLost = await evaluate(client, `([...document.querySelectorAll('.graph-view-status')]
+    const contextLost = await evaluate(client, `([...document.querySelectorAll('.chart-view-status')]
       .some((element) => /3D描画が停止|3D rendering stopped/i.test(element.textContent ?? '')))`);
     return {
       contextLost,

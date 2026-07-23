@@ -4,37 +4,37 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { WorkspaceGraph } from "../../shared/ipc";
 import { makeRelicApi } from "../../test/rendererTestUtils";
 import { I18nProvider } from "../i18n";
-import { GraphView } from "./GraphView";
+import { BubbleView } from "./BubbleView";
 
-const graphViewModelMocks = vi.hoisted(() => ({
-  graphCategoryAtWorldPoint: vi.fn(),
-  graphNodeAtCanvasPoint: vi.fn()
+const bubbleViewModelMocks = vi.hoisted(() => ({
+  bubbleCategoryAtWorldPoint: vi.fn(),
+  bubbleNodeAtCanvasPoint: vi.fn()
 }));
-const graphSimulationMocks = vi.hoisted(() => ({
+const bubbleSimulationMocks = vi.hoisted(() => ({
   setNodeCategoryCenterOffset: vi.fn(),
   setNodeFixed: vi.fn(),
   sync: vi.fn()
 }));
 
-vi.mock("../graph/graphViewModel", async (importOriginal) => ({
-  ...await importOriginal<typeof import("../graph/graphViewModel")>(),
-  graphCategoryAtWorldPoint: graphViewModelMocks.graphCategoryAtWorldPoint,
-  graphNodeAtCanvasPoint: graphViewModelMocks.graphNodeAtCanvasPoint
+vi.mock("../bubble/bubbleViewModel", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../bubble/bubbleViewModel")>(),
+  bubbleCategoryAtWorldPoint: bubbleViewModelMocks.bubbleCategoryAtWorldPoint,
+  bubbleNodeAtCanvasPoint: bubbleViewModelMocks.bubbleNodeAtCanvasPoint
 }));
 
-vi.mock("../graph/graphSimulationClient", async (importOriginal) => ({
-  ...await importOriginal<typeof import("../graph/graphSimulationClient")>(),
-  createGraphSimulationClient: () => ({
+vi.mock("../bubble/bubbleSimulationClient", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../bubble/bubbleSimulationClient")>(),
+  createBubbleSimulationClient: () => ({
     dispose: vi.fn(),
     restart: vi.fn(),
-    setNodeCategoryCenterOffset: graphSimulationMocks.setNodeCategoryCenterOffset,
-    setNodeFixed: graphSimulationMocks.setNodeFixed,
-    sync: graphSimulationMocks.sync,
+    setNodeCategoryCenterOffset: bubbleSimulationMocks.setNodeCategoryCenterOffset,
+    setNodeFixed: bubbleSimulationMocks.setNodeFixed,
+    sync: bubbleSimulationMocks.sync,
     updateOptions: vi.fn()
   })
 }));
 
-function renderGraphView(
+function renderBubbleView(
   language: "en" | "ja",
   onOpenFile = vi.fn(),
   onOpenTagSearch = vi.fn(),
@@ -48,7 +48,7 @@ function renderGraphView(
 
   render(
     <I18nProvider language={language}>
-      <GraphView onOpenFile={onOpenFile} onOpenTagSearch={onOpenTagSearch} />
+      <BubbleView onOpenFile={onOpenFile} onOpenTagSearch={onOpenTagSearch} />
     </I18nProvider>
   );
 
@@ -60,34 +60,34 @@ afterEach(() => {
   document.documentElement.removeAttribute("data-theme");
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
-  graphViewModelMocks.graphCategoryAtWorldPoint.mockReset();
-  graphViewModelMocks.graphNodeAtCanvasPoint.mockReset();
-  graphSimulationMocks.setNodeFixed.mockReset();
-  graphSimulationMocks.setNodeCategoryCenterOffset.mockReset();
-  graphSimulationMocks.sync.mockReset();
+  bubbleViewModelMocks.bubbleCategoryAtWorldPoint.mockReset();
+  bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReset();
+  bubbleSimulationMocks.setNodeFixed.mockReset();
+  bubbleSimulationMocks.setNodeCategoryCenterOffset.mockReset();
+  bubbleSimulationMocks.sync.mockReset();
 });
 
-describe("GraphView", () => {
+describe("BubbleView", () => {
   it("英語表示でも設定メニューを表示しない", () => {
-    renderGraphView("en");
+    renderBubbleView("en");
 
-    expect(screen.getByLabelText("Graph")).toBeInTheDocument();
+    expect(screen.getByLabelText("Bubble")).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
 
   it("日本語表示でも設定メニューを表示しない", () => {
-    renderGraphView("ja");
+    renderBubbleView("ja");
 
-    expect(screen.getByLabelText("グラフ")).toBeInTheDocument();
+    expect(screen.getByLabelText("バブル")).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
 
-  it("グラフを押している間はgrabbingカーソルを表示する", () => {
-    renderGraphView("en");
+  it("バブルを押している間はgrabbingカーソルを表示する", () => {
+    renderBubbleView("en");
 
-    const canvas = screen.getByLabelText("Graph");
+    const canvas = screen.getByLabelText("Bubble");
     Object.defineProperty(canvas, "setPointerCapture", { configurable: true, value: vi.fn() });
     Object.defineProperty(canvas, "hasPointerCapture", { configurable: true, value: vi.fn(() => true) });
     Object.defineProperty(canvas, "releasePointerCapture", { configurable: true, value: vi.fn() });
@@ -103,8 +103,8 @@ describe("GraphView", () => {
   });
 
   it("背景パンのpointercancelでは操作を確定せず、次の操作を開始できる", () => {
-    const { onOpenFile, onOpenTagSearch } = renderGraphView("ja");
-    const canvas = screen.getByLabelText("グラフ");
+    const { onOpenFile, onOpenTagSearch } = renderBubbleView("ja");
+    const canvas = screen.getByLabelText("バブル");
     const setPointerCapture = vi.fn();
     const releasePointerCapture = vi.fn();
     Object.defineProperty(canvas, "setPointerCapture", { configurable: true, value: setPointerCapture });
@@ -129,8 +129,8 @@ describe("GraphView", () => {
   it("ノードのpointercancelでは固定だけを解除し、通常のpointerup動作を維持する", () => {
     const onOpenFile = vi.fn();
     const onOpenTagSearch = vi.fn();
-    renderGraphView("ja", onOpenFile, onOpenTagSearch);
-    const canvas = screen.getByLabelText("グラフ");
+    renderBubbleView("ja", onOpenFile, onOpenTagSearch);
+    const canvas = screen.getByLabelText("バブル");
     Object.defineProperty(canvas, "setPointerCapture", { configurable: true, value: vi.fn() });
     Object.defineProperty(canvas, "hasPointerCapture", { configurable: true, value: vi.fn(() => true) });
     Object.defineProperty(canvas, "releasePointerCapture", { configurable: true, value: vi.fn() });
@@ -159,7 +159,7 @@ describe("GraphView", () => {
       type: "tag" as const
     };
 
-    graphViewModelMocks.graphNodeAtCanvasPoint.mockReturnValue(fileNode);
+    bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReturnValue(fileNode);
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
     expect(fileNode).toMatchObject({ fx: 20, fy: 30 });
     fireEvent(canvas, new MouseEvent("pointermove", { bubbles: true, clientX: 30, clientY: 40 }));
@@ -168,12 +168,12 @@ describe("GraphView", () => {
     expect(fileNode).toMatchObject({ fx: null, fy: null });
     expect(onOpenFile).not.toHaveBeenCalled();
 
-    graphViewModelMocks.graphNodeAtCanvasPoint.mockReturnValue(tagNode);
+    bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReturnValue(tagNode);
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
     fireEvent(canvas, new MouseEvent("pointercancel", { bubbles: true, clientX: 20, clientY: 30 }));
     expect(onOpenTagSearch).not.toHaveBeenCalled();
 
-    graphViewModelMocks.graphNodeAtCanvasPoint.mockReturnValue(fileNode);
+    bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReturnValue(fileNode);
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
     fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 20, clientY: 30 }));
     expect(onOpenFile).toHaveBeenCalledWith("note.md");
@@ -224,9 +224,9 @@ describe("GraphView", () => {
         }
       ]
     };
-    const { getWorkspaceGraph } = renderGraphView("ja", vi.fn(), vi.fn(), graph);
+    const { getWorkspaceGraph } = renderBubbleView("ja", vi.fn(), vi.fn(), graph);
     await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledOnce());
-    await waitFor(() => expect(graphSimulationMocks.sync).toHaveBeenCalledWith(
+    await waitFor(() => expect(bubbleSimulationMocks.sync).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({ id: "A.md" }),
         expect.objectContaining({ id: "B.md" }),
@@ -237,12 +237,12 @@ describe("GraphView", () => {
       expect.any(Object)
     ));
 
-    const canvas = screen.getByLabelText("グラフ");
+    const canvas = screen.getByLabelText("バブル");
     Object.defineProperty(canvas, "setPointerCapture", { configurable: true, value: vi.fn() });
     Object.defineProperty(canvas, "hasPointerCapture", { configurable: true, value: vi.fn(() => true) });
     Object.defineProperty(canvas, "releasePointerCapture", { configurable: true, value: vi.fn() });
-    graphViewModelMocks.graphNodeAtCanvasPoint.mockReturnValue(null);
-    graphViewModelMocks.graphCategoryAtWorldPoint.mockReturnValue("人物");
+    bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReturnValue(null);
+    bubbleViewModelMocks.bubbleCategoryAtWorldPoint.mockReturnValue("人物");
 
     fireEvent(canvas, new MouseEvent("pointerdown", {
       bubbles: true,
@@ -257,25 +257,25 @@ describe("GraphView", () => {
     }));
     fireEvent.lostPointerCapture(canvas, { pointerId: 1 });
 
-    expect(graphSimulationMocks.setNodeFixed).toHaveBeenCalledWith(
+    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith(
       "A.md",
       expect.any(Number),
       expect.any(Number)
     );
-    expect(graphSimulationMocks.setNodeFixed).toHaveBeenCalledWith(
+    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith(
       "B.md",
       expect.any(Number),
       expect.any(Number)
     );
-    expect(graphSimulationMocks.setNodeFixed).toHaveBeenCalledWith("A.md", null, null, 0.08);
-    expect(graphSimulationMocks.setNodeFixed).toHaveBeenCalledWith("B.md", null, null, 0.08);
-    expect(graphSimulationMocks.setNodeFixed).toHaveBeenCalledWith(
+    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith("A.md", null, null, 0.08);
+    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith("B.md", null, null, 0.08);
+    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith(
       "C.md",
       expect.any(Number),
       expect.any(Number)
     );
-    expect(graphSimulationMocks.setNodeFixed).toHaveBeenCalledWith("C.md", null, null, 0.08);
-    expect(graphSimulationMocks.setNodeFixed.mock.calls.some(([id]) => id === "D.md")).toBe(false);
+    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith("C.md", null, null, 0.08);
+    expect(bubbleSimulationMocks.setNodeFixed.mock.calls.some(([id]) => id === "D.md")).toBe(false);
   });
 
   it("単一ノードをドラッグしてもバブル中心を同じ位置に保つ", async () => {
@@ -292,11 +292,11 @@ describe("GraphView", () => {
         type: "file"
       }]
     };
-    const { getWorkspaceGraph } = renderGraphView("ja", vi.fn(), vi.fn(), graph);
+    const { getWorkspaceGraph } = renderBubbleView("ja", vi.fn(), vi.fn(), graph);
     await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledOnce());
-    await waitFor(() => expect(graphSimulationMocks.sync).toHaveBeenCalled());
+    await waitFor(() => expect(bubbleSimulationMocks.sync).toHaveBeenCalled());
 
-    const canvas = screen.getByLabelText("グラフ");
+    const canvas = screen.getByLabelText("バブル");
     Object.defineProperty(canvas, "setPointerCapture", {
       configurable: true,
       value: vi.fn()
@@ -309,7 +309,7 @@ describe("GraphView", () => {
       configurable: true,
       value: vi.fn()
     });
-    graphViewModelMocks.graphNodeAtCanvasPoint.mockImplementation(
+    bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockImplementation(
       (nodes: Iterable<unknown>) => [...nodes][0] ?? null
     );
 
@@ -325,7 +325,7 @@ describe("GraphView", () => {
       clientY: 20
     }));
 
-    expect(graphSimulationMocks.setNodeCategoryCenterOffset)
+    expect(bubbleSimulationMocks.setNodeCategoryCenterOffset)
       .toHaveBeenCalledWith("guide.md", -20, 0);
 
     fireEvent(canvas, new MouseEvent("pointerup", {
@@ -333,7 +333,7 @@ describe("GraphView", () => {
       clientX: 40,
       clientY: 20
     }));
-    expect(graphSimulationMocks.setNodeFixed).toHaveBeenCalledWith(
+    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith(
       "guide.md",
       null,
       null,
@@ -360,8 +360,8 @@ describe("GraphView", () => {
     })));
     const computedStyle = vi.spyOn(window, "getComputedStyle");
 
-    renderGraphView("ja");
-    const canvas = screen.getByLabelText("グラフ");
+    renderBubbleView("ja");
+    const canvas = screen.getByLabelText("バブル");
     await waitFor(() => expect(computedStyle).toHaveBeenCalledWith(canvas));
 
     computedStyle.mockClear();
@@ -387,8 +387,8 @@ describe("GraphView", () => {
     });
     vi.stubGlobal("requestAnimationFrame", requestAnimationFrame);
 
-    renderGraphView("ja");
-    const canvas = screen.getByLabelText("グラフ");
+    renderBubbleView("ja");
+    const canvas = screen.getByLabelText("バブル");
     expect(requestAnimationFrame).toHaveBeenCalledOnce();
 
     act(() => scheduled[0]?.(16));

@@ -1,25 +1,4 @@
-.graph-view-shell {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  background: var(--color-bg);
-}
-
-.graph-view-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  cursor: grab;
-  touch-action: none;
-}
-
-.graph-view-canvas:active {
-  cursor: grabbing;
-}
-
-.graph-view-status {
+.chart-view-status {
   position: absolute;
   inset-inline-start: 16px;
   bottom: 16px;
@@ -33,6 +12,6 @@
   box-shadow: var(--shadow-popover, 0 12px 34px rgba(15, 23, 42, 0.14));
 }
 
-.graph-view-status--error {
+.chart-view-status--error {
   color: var(--color-danger, #b42318);
 }
