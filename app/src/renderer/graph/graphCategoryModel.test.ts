@@ -6,6 +6,7 @@ import {
   constrainGraphCategoryPoint,
   constrainGraphNodeToCategoryRegions,
   graphCategoryBoundaryRadius,
+  graphCategoryCenterOffsetForNodeDrag,
   graphCategoryContour,
   graphCategoryDynamicLayouts,
   graphCategoryLayouts,
@@ -145,10 +146,33 @@ describe("graphCategoryModel", () => {
   });
 
   it("所属ノードが1件だけでも移動先を先読みしてバブルごと動かせる", () => {
-    const nodes = [{ category: "人物", fx: null, fy: null, x: 0, y: 0 }];
-    const projectedNodes = [{ ...nodes[0]!, x: 60, y: 20 }];
+    const nodes = [{
+      category: "人物",
+      categoryCenterOffsetX: 0,
+      categoryCenterOffsetY: 0,
+      fx: null,
+      fy: null,
+      vx: 0,
+      vy: 0,
+      x: 0,
+      y: 0
+    }];
+    const initialLayouts = graphCategoryDynamicLayouts(nodes);
+    const centerOffset = graphCategoryCenterOffsetForNodeDrag(
+      nodes[0]!,
+      initialLayouts,
+      { x: 60, y: 20 },
+      18
+    )!;
+    const projectedNodes = [{
+      ...nodes[0]!,
+      categoryCenterOffsetX: centerOffset.x,
+      categoryCenterOffsetY: centerOffset.y,
+      x: 60,
+      y: 20
+    }];
     const regions = graphCategoryRegions(
-      graphCategoryDynamicLayouts(nodes),
+      initialLayouts,
       projectedNodes
     );
     const moved = constrainGraphNodeToCategoryRegions(
@@ -159,9 +183,42 @@ describe("graphCategoryModel", () => {
     );
 
     expect(moved).toEqual({ x: 60, y: 20 });
+    nodes[0]!.categoryCenterOffsetX = centerOffset.x;
+    nodes[0]!.categoryCenterOffsetY = centerOffset.y;
+    nodes[0]!.x = moved.x;
+    nodes[0]!.y = moved.y;
+    expect(graphCategoryDynamicLayouts(nodes)[0]).toMatchObject({ x: 0, y: 0 });
+
+    applyGraphCategoryMotion(nodes, 0.5);
+    expect(nodes[0]).toMatchObject({ vx: 0, vy: 0 });
+
     expect(translateGraphCategoryNodesWithPush(nodes, "人物", 40, 30))
       .toHaveLength(1);
-    expect(nodes[0]).toMatchObject({ fx: 40, fy: 30, x: 40, y: 30 });
+    expect(nodes[0]).toMatchObject({ fx: 100, fy: 50, x: 100, y: 50 });
+    expect(graphCategoryDynamicLayouts(nodes)[0]).toMatchObject({ x: 40, y: 30 });
+  });
+
+  it("単一ノードが内壁へ達した後の移動量をバブル中心へ渡す", () => {
+    const node = {
+      category: "人物",
+      categoryCenterOffsetX: 0,
+      categoryCenterOffsetY: 0,
+      vx: 100,
+      vy: 0,
+      x: 0,
+      y: 0
+    };
+    const regions = graphCategoryRegions(graphCategoryDynamicLayouts([node]), [node]);
+
+    applyGraphCategoryBoundary([node], regions, 0.5);
+
+    expect(node.vx).toBe(100);
+    expect(node.categoryCenterOffsetX).toBe(-78);
+    expect(graphCategoryDynamicLayouts([{
+      ...node,
+      x: node.x + node.vx,
+      y: node.y + node.vy
+    }])[0]).toMatchObject({ x: 22, y: 0 });
   });
 
   it("外部ノードが接触した方向の膜をへこませ、バブルへ反力を与える", () => {

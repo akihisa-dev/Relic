@@ -29,6 +29,8 @@ import {
 interface WorkerNode extends SimulationNodeDatum {
   backlinkCount: number;
   category: string | null;
+  categoryCenterOffsetX: number;
+  categoryCenterOffsetY: number;
   id: string;
   linkCount: number;
 }
@@ -72,7 +74,19 @@ function handleGraphSimulationRequest(message: GraphSimulationRequest): void {
   }
 
   if (message.type === "fixedNode") {
-    updateFixedNode(message.id, message.x, message.y, message.alpha);
+    updateFixedNode(
+      message.id,
+      message.x,
+      message.y,
+      message.alpha,
+      message.velocityX,
+      message.velocityY
+    );
+    return;
+  }
+
+  if (message.type === "categoryCenterOffset") {
+    updateCategoryCenterOffset(message.id, message.offsetX, message.offsetY);
     return;
   }
 
@@ -89,6 +103,8 @@ function syncSimulation(message: Extract<GraphSimulationRequest, { type: "sync" 
   workerNodes = message.nodes.map((node) => ({
     backlinkCount: node.backlinkCount,
     category: node.category,
+    categoryCenterOffsetX: node.categoryCenterOffsetX,
+    categoryCenterOffsetY: node.categoryCenterOffsetY,
     fx: node.fx,
     fy: node.fy,
     id: node.id,
@@ -112,6 +128,13 @@ function syncSimulation(message: Extract<GraphSimulationRequest, { type: "sync" 
 
   updateSimulationForces();
   restartSimulation(message.alpha ?? 0.3);
+}
+
+function updateCategoryCenterOffset(id: string, offsetX: number, offsetY: number): void {
+  const node = workerNodes.find((candidate) => candidate.id === id);
+  if (!node) return;
+  node.categoryCenterOffsetX = offsetX;
+  node.categoryCenterOffsetY = offsetY;
 }
 
 function updateSimulationOptions(options: GraphOptions, alpha = 0.18): void {
@@ -160,7 +183,14 @@ function updateSimulationForces(): void {
     );
 }
 
-function updateFixedNode(id: string, x: number | null, y: number | null, alpha = 0.3): void {
+function updateFixedNode(
+  id: string,
+  x: number | null,
+  y: number | null,
+  alpha = 0.3,
+  velocityX?: number,
+  velocityY?: number
+): void {
   const node = workerNodes.find((candidate) => candidate.id === id);
   if (!node || !simulation) return;
 
@@ -170,6 +200,8 @@ function updateFixedNode(id: string, x: number | null, y: number | null, alpha =
   if (node.fy !== null) node.y = node.fy;
 
   if (x === null && y === null) {
+    node.vx = velocityX ?? node.vx;
+    node.vy = velocityY ?? node.vy;
     simulation.alphaTarget(0);
     restartSimulation(0.08);
     return;
@@ -197,17 +229,19 @@ function disposeSimulation(): void {
 }
 
 function postGraphPositions(): void {
-  const buffer = new ArrayBuffer(workerNodes.length * 4 * Float32Array.BYTES_PER_ELEMENT);
+  const buffer = new ArrayBuffer(workerNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
   const values = new Float32Array(buffer);
   const ids: string[] = [];
 
   workerNodes.forEach((node, index) => {
-    const offset = index * 4;
+    const offset = index * 6;
     ids.push(node.id);
     values[offset] = node.x ?? 0;
     values[offset + 1] = node.y ?? 0;
     values[offset + 2] = node.vx ?? 0;
     values[offset + 3] = node.vy ?? 0;
+    values[offset + 4] = node.categoryCenterOffsetX;
+    values[offset + 5] = node.categoryCenterOffsetY;
   });
 
   postGraphSimulationMessage({ buffer, ids, type: "positions" }, [buffer]);

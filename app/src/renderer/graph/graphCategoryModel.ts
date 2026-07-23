@@ -40,6 +40,8 @@ export interface GraphCategoryPoint {
 
 export interface GraphCategoryForceNode extends GraphCategoryNode {
   backlinkCount?: number;
+  categoryCenterOffsetX?: number;
+  categoryCenterOffsetY?: number;
   linkCount?: number;
   vx?: number;
   vy?: number;
@@ -114,14 +116,21 @@ export function graphCategoryDynamicLayouts(
 ): GraphCategoryLayout[] {
   const groups = new Map<string, {
     count: number;
+    singleNode: GraphCategoryForceNode;
     sumX: number;
     sumY: number;
   }>();
   for (const node of nodes) {
     const category = normalizeGraphCategory(node.category);
     if (!category || node.x === undefined || node.y === undefined) continue;
-    const group = groups.get(category) ?? { count: 0, sumX: 0, sumY: 0 };
+    const group = groups.get(category) ?? {
+      count: 0,
+      singleNode: node,
+      sumX: 0,
+      sumY: 0
+    };
     group.count += 1;
+    group.singleNode = node;
     group.sumX += node.x;
     group.sumY += node.y;
     groups.set(category, group);
@@ -129,13 +138,44 @@ export function graphCategoryDynamicLayouts(
 
   return [...groups.entries()]
     .toSorted(([left], [right]) => left.localeCompare(right, "ja"))
-    .map(([category, group]) => ({
-      category,
-      count: group.count,
-      radius: graphCategoryRadius(group.count),
-      x: group.sumX / group.count,
-      y: group.sumY / group.count
-    }));
+    .map(([category, group]) => {
+      const useSingletonCenter = group.count === 1;
+      return {
+        category,
+        count: group.count,
+        radius: graphCategoryRadius(group.count),
+        x: group.sumX / group.count +
+          (useSingletonCenter ? group.singleNode.categoryCenterOffsetX ?? 0 : 0),
+        y: group.sumY / group.count +
+          (useSingletonCenter ? group.singleNode.categoryCenterOffsetY ?? 0 : 0)
+      };
+    });
+}
+
+export function graphCategoryCenterOffsetForNodeDrag(
+  node: GraphCategoryForceNode,
+  layouts: Iterable<GraphCategoryLayout>,
+  point: GraphCategoryPoint,
+  padding = graphCategoryBoundaryPadding
+): GraphCategoryPoint | null {
+  const category = normalizeGraphCategory(node.category);
+  if (!category) return null;
+  const layout = [...layouts].find((candidate) => candidate.category === category);
+  if (!layout || layout.count !== 1) return null;
+  const dx = point.x - layout.x;
+  const dy = point.y - layout.y;
+  const distance = Math.hypot(dx, dy);
+  const maximumDistance = Math.max(0, layout.radius - Math.max(0, padding));
+  if (distance > maximumDistance && distance > 0) {
+    return {
+      x: -dx / distance * maximumDistance,
+      y: -dy / distance * maximumDistance
+    };
+  }
+  return {
+    x: layout.x - point.x,
+    y: layout.y - point.y
+  };
 }
 
 export function graphCategoryRegions(
@@ -288,7 +328,25 @@ export function applyGraphCategoryBoundary(
       x: node.x + (node.vx ?? 0),
       y: node.y + (node.vy ?? 0)
     };
-    const constrained = constrainGraphNodeToCategoryRegions(node, regions, predicted);
+    const ownRegion = graphCategoryTarget(node, regions);
+    const tracksSingletonCenter = ownRegion?.count === 1 &&
+      node.categoryCenterOffsetX !== undefined &&
+      node.categoryCenterOffsetY !== undefined;
+    const constrained = tracksSingletonCenter
+      ? constrainGraphCategoryExteriorPoint(node, regions, predicted)
+      : constrainGraphNodeToCategoryRegions(node, regions, predicted);
+    if (tracksSingletonCenter) {
+      const centerOffset = graphCategoryCenterOffsetForNodeDrag(
+        node,
+        regions.values(),
+        constrained,
+        graphCategoryNodeClearance(node)
+      );
+      if (centerOffset) {
+        node.categoryCenterOffsetX = centerOffset.x;
+        node.categoryCenterOffsetY = centerOffset.y;
+      }
+    }
     node.vx = constrained.x - node.x;
     node.vy = constrained.y - node.y;
   }
@@ -353,6 +411,7 @@ export function applyGraphCategoryMotion(
   for (const node of orderedNodes) {
     const region = graphCategoryTarget(node, regions);
     if (!region || node.x === undefined || node.y === undefined) continue;
+    if (region.count === 1) continue;
     node.vx = (node.vx ?? 0) +
       (region.x - node.x) * graphCategoryAttractionStrength * Math.max(0, alpha);
     node.vy = (node.vy ?? 0) +

@@ -26,6 +26,31 @@ describe("createGraphSimulationClient", () => {
     expect(graphSimulationVelocityDecay).toBe(0.68);
   });
 
+  it("単一ノードのバブル中心差分をWorkerへ通知する", () => {
+    vi.stubGlobal("Worker", MockWorker);
+    const client = createGraphSimulationClient(vi.fn());
+    const worker = MockWorker.instances[0]!;
+
+    client.setNodeCategoryCenterOffset("A.md", -24, 8);
+    client.setNodeFixed("A.md", null, null, 0.08, 4, -2);
+
+    expect(worker.postMessage).toHaveBeenCalledWith({
+      id: "A.md",
+      offsetX: -24,
+      offsetY: 8,
+      type: "categoryCenterOffset"
+    });
+    expect(worker.postMessage).toHaveBeenCalledWith({
+      alpha: 0.08,
+      id: "A.md",
+      type: "fixedNode",
+      velocityX: 4,
+      velocityY: -2,
+      x: null,
+      y: null
+    });
+  });
+
   it("Workerは一度だけ終了し、終了後の通知や要求を無視する", () => {
     vi.stubGlobal("Worker", MockWorker);
     const onPositions = vi.fn();

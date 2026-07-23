@@ -32,7 +32,15 @@ import {
 export interface GraphSimulationClient {
   dispose: () => void;
   restart: (alpha?: number) => void;
-  setNodeFixed: (id: string, x: number | null, y: number | null, alpha?: number) => void;
+  setNodeCategoryCenterOffset: (id: string, offsetX: number, offsetY: number) => void;
+  setNodeFixed: (
+    id: string,
+    x: number | null,
+    y: number | null,
+    alpha?: number,
+    velocityX?: number,
+    velocityY?: number
+  ) => void;
   sync: (
     nodes: GraphSimulationNodeSnapshot[],
     links: GraphSimulationLinkSnapshot[],
@@ -48,6 +56,8 @@ type GraphSimulationErrorHandler = (message: string) => void;
 interface FallbackNode extends SimulationNodeDatum {
   backlinkCount: number;
   category: string | null;
+  categoryCenterOffsetX: number;
+  categoryCenterOffsetY: number;
   id: string;
   linkCount: number;
 }
@@ -114,7 +124,12 @@ function createWorkerGraphSimulationClient(
       }
     },
     restart: (alpha) => post({ alpha, type: "restart" }),
-    setNodeFixed: (id, x, y, alpha) => post({ alpha, id, type: "fixedNode", x, y }),
+    setNodeCategoryCenterOffset: (id, offsetX, offsetY) => {
+      post({ id, offsetX, offsetY, type: "categoryCenterOffset" });
+    },
+    setNodeFixed: (id, x, y, alpha, velocityX, velocityY) => {
+      post({ alpha, id, type: "fixedNode", velocityX, velocityY, x, y });
+    },
     sync: (nodes, links, options, alpha) => post({ alpha, links, nodes, options, type: "sync" }),
     updateOptions: (options, alpha) => post({ alpha, options, type: "options" })
   };
@@ -130,17 +145,19 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
   const postPositions = () => {
     if (disposed) return;
 
-    const buffer = new ArrayBuffer(fallbackNodes.length * 4 * Float32Array.BYTES_PER_ELEMENT);
+    const buffer = new ArrayBuffer(fallbackNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
     const values = new Float32Array(buffer);
     const ids: string[] = [];
 
     fallbackNodes.forEach((node, index) => {
-      const offset = index * 4;
+      const offset = index * 6;
       ids.push(node.id);
       values[offset] = node.x ?? 0;
       values[offset + 1] = node.y ?? 0;
       values[offset + 2] = node.vx ?? 0;
       values[offset + 3] = node.vy ?? 0;
+      values[offset + 4] = node.categoryCenterOffsetX;
+      values[offset + 5] = node.categoryCenterOffsetY;
     });
 
     onPositions({ buffer, ids, type: "positions" });
@@ -205,7 +222,13 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
       fallbackNodes = [];
     },
     restart,
-    setNodeFixed: (id, x, y, alpha = 0.3) => {
+    setNodeCategoryCenterOffset: (id, offsetX, offsetY) => {
+      const node = fallbackNodes.find((candidate) => candidate.id === id);
+      if (!node) return;
+      node.categoryCenterOffsetX = offsetX;
+      node.categoryCenterOffsetY = offsetY;
+    },
+    setNodeFixed: (id, x, y, alpha = 0.3, velocityX, velocityY) => {
       const node = fallbackNodes.find((candidate) => candidate.id === id);
       if (!node || !simulation) return;
 
@@ -215,6 +238,8 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
       if (node.fy !== null) node.y = node.fy;
 
       if (x === null && y === null) {
+        node.vx = velocityX ?? node.vx;
+        node.vy = velocityY ?? node.vy;
         simulation.alphaTarget(0);
         restart(0.08);
         return;
@@ -228,6 +253,8 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
       fallbackNodes = nodes.map((node) => ({
         backlinkCount: node.backlinkCount,
         category: node.category,
+        categoryCenterOffsetX: node.categoryCenterOffsetX,
+        categoryCenterOffsetY: node.categoryCenterOffsetY,
         fx: node.fx,
         fy: node.fy,
         id: node.id,

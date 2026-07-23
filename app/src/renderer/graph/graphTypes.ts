@@ -47,6 +47,8 @@ export const defaultGraphDrawTheme: GraphDrawTheme = {
 };
 
 export interface GraphSimNode extends WorkspaceGraphNode {
+  categoryCenterOffsetX?: number;
+  categoryCenterOffsetY?: number;
   fx: number | null;
   fy: number | null;
   vx: number;
@@ -91,6 +93,8 @@ export type GraphLinkEndpointNode = Pick<WorkspaceGraphNode, "backlinkCount" | "
 export interface GraphSimulationNodeSnapshot {
   backlinkCount: number;
   category: string | null;
+  categoryCenterOffsetX: number;
+  categoryCenterOffsetY: number;
   fx: number | null;
   fy: number | null;
   id: string;
@@ -125,8 +129,17 @@ export interface GraphSimulationFixedNodeMessage {
   alpha?: number;
   id: string;
   type: "fixedNode";
+  velocityX?: number;
+  velocityY?: number;
   x: number | null;
   y: number | null;
+}
+
+export interface GraphSimulationCategoryCenterOffsetMessage {
+  id: string;
+  offsetX: number;
+  offsetY: number;
+  type: "categoryCenterOffset";
 }
 
 export interface GraphSimulationRestartMessage {
@@ -139,6 +152,7 @@ export interface GraphSimulationDisposeMessage {
 }
 
 export type GraphSimulationRequest =
+  | GraphSimulationCategoryCenterOffsetMessage
   | GraphSimulationDisposeMessage
   | GraphSimulationFixedNodeMessage
   | GraphSimulationOptionsMessage

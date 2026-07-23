@@ -1,5 +1,9 @@
 import type { WorkspaceGraph } from "../../shared/ipc";
-import { graphCategoryLayouts, graphCategoryTarget } from "./graphCategoryModel";
+import {
+  graphCategoryLayouts,
+  graphCategoryTarget,
+  normalizeGraphCategory
+} from "./graphCategoryModel";
 import type {
   GraphOptions,
   GraphSimLink,
@@ -25,7 +29,12 @@ export function syncGraphLayout(
   graph.nodes.forEach((node, index) => {
     const current = nodes.get(node.id);
     if (current) {
+      const previousCategory = normalizeGraphCategory(current.category);
       Object.assign(current, node);
+      if (previousCategory !== normalizeGraphCategory(node.category)) {
+        current.categoryCenterOffsetX = 0;
+        current.categoryCenterOffsetY = 0;
+      }
       return;
     }
 
@@ -33,6 +42,8 @@ export function syncGraphLayout(
     addedIds.add(node.id);
     nodes.set(node.id, {
       ...node,
+      categoryCenterOffsetX: 0,
+      categoryCenterOffsetY: 0,
       fx: null,
       fy: null,
       vx: 0,
@@ -41,6 +52,18 @@ export function syncGraphLayout(
       y: position.y
     });
   });
+
+  const categoryCounts = new Map<string, number>();
+  for (const node of nodes.values()) {
+    const category = normalizeGraphCategory(node.category);
+    if (category) categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
+  }
+  for (const node of nodes.values()) {
+    const category = normalizeGraphCategory(node.category);
+    if (!category || categoryCounts.get(category) === 1) continue;
+    node.categoryCenterOffsetX = 0;
+    node.categoryCenterOffsetY = 0;
+  }
 
   const seedLayouts = new Map(
     graphCategoryLayouts(nodes.values()).map((layout) => [layout.category, layout])
@@ -80,6 +103,8 @@ export function graphSimulationNodes(nodes: Iterable<GraphSimNode>): GraphSimula
   return [...nodes].map((node) => ({
     backlinkCount: node.backlinkCount,
     category: node.category ?? null,
+    categoryCenterOffsetX: node.categoryCenterOffsetX ?? 0,
+    categoryCenterOffsetY: node.categoryCenterOffsetY ?? 0,
     fx: node.fx,
     fy: node.fy,
     id: node.id,
@@ -109,11 +134,13 @@ export function applyGraphSimulationPositions(
     const node = nodes.get(id);
     if (!node) return;
 
-    const offset = index * 4;
+    const offset = index * 6;
     node.x = values[offset] ?? node.x;
     node.y = values[offset + 1] ?? node.y;
     node.vx = values[offset + 2] ?? node.vx;
     node.vy = values[offset + 3] ?? node.vy;
+    node.categoryCenterOffsetX = values[offset + 4] ?? node.categoryCenterOffsetX;
+    node.categoryCenterOffsetY = values[offset + 5] ?? node.categoryCenterOffsetY;
   });
 }
 

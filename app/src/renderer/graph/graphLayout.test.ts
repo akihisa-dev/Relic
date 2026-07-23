@@ -67,9 +67,12 @@ describe("graphLayout", () => {
     const links = syncGraphLayout(graph, nodes);
     const snapshots = graphSimulationNodes(nodes.values());
     const linkSnapshots = graphSimulationLinks(links);
-    const buffer = new ArrayBuffer(snapshots.length * 4 * Float32Array.BYTES_PER_ELEMENT);
+    const buffer = new ArrayBuffer(snapshots.length * 6 * Float32Array.BYTES_PER_ELEMENT);
     const values = new Float32Array(buffer);
-    values.set([12, 34, 1.5, -0.5, -20, 8, 0, 2]);
+    values.set([
+      12, 34, 1.5, -0.5, -24, 8,
+      -20, 8, 0, 2, 0, 0
+    ]);
 
     applyGraphSimulationPositions(nodes, {
       buffer,
@@ -82,7 +85,48 @@ describe("graphLayout", () => {
       { category: "人物", id: "A.md" },
       { category: null, id: "B.md" }
     ]);
-    expect(nodes.get("A.md")).toMatchObject({ vx: 1.5, vy: -0.5, x: 12, y: 34 });
+    expect(snapshots[0]).toMatchObject({
+      categoryCenterOffsetX: 0,
+      categoryCenterOffsetY: 0
+    });
+    expect(nodes.get("A.md")).toMatchObject({
+      categoryCenterOffsetX: -24,
+      categoryCenterOffsetY: 8,
+      vx: 1.5,
+      vy: -0.5,
+      x: 12,
+      y: 34
+    });
     expect(nodes.get("B.md")).toMatchObject({ vx: 0, vy: 2, x: -20, y: 8 });
+  });
+
+  it("単一ノードのバブル中心差分を維持し、同カテゴリが増えた場合は解除する", () => {
+    const nodes = new Map<string, GraphSimNode>();
+    const firstGraph: WorkspaceGraph = {
+      links: [],
+      nodes: [graphNode({ category: "人物", id: "A.md" })]
+    };
+    syncGraphLayout(firstGraph, nodes);
+    const first = nodes.get("A.md")!;
+    first.categoryCenterOffsetX = -40;
+    first.categoryCenterOffsetY = 12;
+
+    syncGraphLayout(firstGraph, nodes);
+    expect(graphSimulationNodes(nodes.values())[0]).toMatchObject({
+      categoryCenterOffsetX: -40,
+      categoryCenterOffsetY: 12
+    });
+
+    syncGraphLayout({
+      links: [],
+      nodes: [
+        graphNode({ category: "人物", id: "A.md" }),
+        graphNode({ category: "人物", id: "B.md" })
+      ]
+    }, nodes);
+    expect(nodes.get("A.md")).toMatchObject({
+      categoryCenterOffsetX: 0,
+      categoryCenterOffsetY: 0
+    });
   });
 });

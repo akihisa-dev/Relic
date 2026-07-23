@@ -11,8 +11,10 @@ import {
 import type { GraphSimulationClient } from "../graph/graphSimulationClient";
 import {
   constrainGraphNodeToCategoryRegions,
+  graphCategoryCenterOffsetForNodeDrag,
   graphCategoryDynamicLayouts,
   graphCategoryRegions,
+  normalizeGraphCategory,
   translateGraphCategoryNodes,
   translateGraphCategoryNodesWithPush
 } from "../graph/graphCategoryModel";
@@ -88,6 +90,8 @@ export function useGraphCanvasInteractions({
     lastX: number;
     lastY: number;
     moved: boolean;
+    nodeVelocityX: number;
+    nodeVelocityY: number;
     pointerId: number;
     startX: number;
     startY: number;
@@ -178,6 +182,8 @@ export function useGraphCanvasInteractions({
       lastX: event.clientX,
       lastY: event.clientY,
       moved: false,
+      nodeVelocityX: 0,
+      nodeVelocityY: 0,
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
@@ -215,30 +221,75 @@ export function useGraphCanvasInteractions({
         x: (pointer.dragNode.fx ?? pointer.dragNode.x) + dx / viewRef.current.scale,
         y: (pointer.dragNode.fy ?? pointer.dragNode.y) + dy / viewRef.current.scale
       };
+      const dragPadding = graphNodeVisualRadius(
+        pointer.dragNode,
+        latestOptionsRef.current,
+        viewRef.current.scale
+      ) + 6 / viewRef.current.scale;
       const graphNodes = [...nodesRef.current.values()];
+      const layouts = graphCategoryDynamicLayouts(graphNodes);
+      const categoryCenterOffset = graphCategoryCenterOffsetForNodeDrag(
+        pointer.dragNode,
+        layouts,
+        desiredPoint,
+        dragPadding
+      );
+      const singletonLayout = categoryCenterOffset
+        ? layouts.find((layout) =>
+            layout.category === normalizeGraphCategory(pointer.dragNode?.category)
+          )
+        : null;
       const projectedNodes = graphNodes.map((node) => (
         node.id === pointer.dragNode?.id
-          ? { ...node, x: desiredPoint.x, y: desiredPoint.y }
+          ? {
+              ...node,
+              categoryCenterOffsetX: categoryCenterOffset?.x ??
+                node.categoryCenterOffsetX,
+              categoryCenterOffsetY: categoryCenterOffset?.y ??
+                node.categoryCenterOffsetY,
+              x: desiredPoint.x,
+              y: desiredPoint.y
+            }
           : node
       ));
       const regions = graphCategoryRegions(
-        graphCategoryDynamicLayouts(graphNodes),
+        categoryCenterOffset
+          ? graphCategoryDynamicLayouts(projectedNodes)
+          : layouts,
         projectedNodes
       );
       const constrainedPoint = constrainGraphNodeToCategoryRegions(
         pointer.dragNode,
         regions,
         desiredPoint,
-        graphNodeVisualRadius(
-          pointer.dragNode,
-          latestOptionsRef.current,
-          viewRef.current.scale
-        ) + 6 / viewRef.current.scale
+        dragPadding
       );
+      if (categoryCenterOffset && singletonLayout) {
+        const finalCenterOffset = graphCategoryCenterOffsetForNodeDrag(
+          pointer.dragNode,
+          layouts,
+          constrainedPoint,
+          dragPadding
+        )!;
+        pointer.dragNode.categoryCenterOffsetX = finalCenterOffset.x;
+        pointer.dragNode.categoryCenterOffsetY = finalCenterOffset.y;
+        simulationClientRef.current?.setNodeCategoryCenterOffset(
+          pointer.dragNode.id,
+          pointer.dragNode.categoryCenterOffsetX,
+          pointer.dragNode.categoryCenterOffsetY
+        );
+      }
       pointer.dragNode.fx = constrainedPoint.x;
       pointer.dragNode.fy = constrainedPoint.y;
       pointer.dragNode.x = pointer.dragNode.fx;
       pointer.dragNode.y = pointer.dragNode.fy;
+      const releaseVelocity = graphNodeReleaseVelocity(
+        dx / viewRef.current.scale,
+        dy / viewRef.current.scale,
+        elapsed
+      );
+      pointer.nodeVelocityX = releaseVelocity.x;
+      pointer.nodeVelocityY = releaseVelocity.y;
       simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, pointer.dragNode.x, pointer.dragNode.y);
       requestDraw();
       return;
@@ -276,7 +327,14 @@ export function useGraphCanvasInteractions({
     if (pointer.dragNode) {
       pointer.dragNode.fx = null;
       pointer.dragNode.fy = null;
-      simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, null, null, 0.08);
+      simulationClientRef.current?.setNodeFixed(
+        pointer.dragNode.id,
+        null,
+        null,
+        0.08,
+        pointer.nodeVelocityX,
+        pointer.nodeVelocityY
+      );
       if (!pointer.moved) {
         const action = graphNodePrimaryAction(pointer.dragNode);
         if (action?.type === "file") openFileRef.current(action.path);
@@ -430,4 +488,17 @@ export function useGraphCanvasInteractions({
     pointerRef,
     resetInteractionState
   };
+}
+
+function graphNodeReleaseVelocity(
+  dx: number,
+  dy: number,
+  elapsedMs: number
+): { x: number; y: number } {
+  const timeScale = Math.min(1, 16 / Math.max(1, elapsedMs));
+  const x = dx * timeScale * 0.28;
+  const y = dy * timeScale * 0.28;
+  const speed = Math.hypot(x, y);
+  if (speed <= 8 || speed === 0) return { x, y };
+  return { x: x / speed * 8, y: y / speed * 8 };
 }

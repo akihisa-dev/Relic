@@ -11,6 +11,7 @@ const graphViewModelMocks = vi.hoisted(() => ({
   graphNodeAtCanvasPoint: vi.fn()
 }));
 const graphSimulationMocks = vi.hoisted(() => ({
+  setNodeCategoryCenterOffset: vi.fn(),
   setNodeFixed: vi.fn(),
   sync: vi.fn()
 }));
@@ -26,6 +27,7 @@ vi.mock("../graph/graphSimulationClient", async (importOriginal) => ({
   createGraphSimulationClient: () => ({
     dispose: vi.fn(),
     restart: vi.fn(),
+    setNodeCategoryCenterOffset: graphSimulationMocks.setNodeCategoryCenterOffset,
     setNodeFixed: graphSimulationMocks.setNodeFixed,
     sync: graphSimulationMocks.sync,
     updateOptions: vi.fn()
@@ -61,6 +63,7 @@ afterEach(() => {
   graphViewModelMocks.graphCategoryAtWorldPoint.mockReset();
   graphViewModelMocks.graphNodeAtCanvasPoint.mockReset();
   graphSimulationMocks.setNodeFixed.mockReset();
+  graphSimulationMocks.setNodeCategoryCenterOffset.mockReset();
   graphSimulationMocks.sync.mockReset();
 });
 
@@ -273,6 +276,71 @@ describe("GraphView", () => {
     );
     expect(graphSimulationMocks.setNodeFixed).toHaveBeenCalledWith("C.md", null, null, 0.08);
     expect(graphSimulationMocks.setNodeFixed.mock.calls.some(([id]) => id === "D.md")).toBe(false);
+  });
+
+  it("単一ノードをドラッグしてもバブル中心を同じ位置に保つ", async () => {
+    const graph: WorkspaceGraph = {
+      links: [],
+      nodes: [{
+        backlinkCount: 0,
+        category: "案内",
+        exists: true,
+        id: "guide.md",
+        label: "guide",
+        linkCount: 0,
+        path: "guide.md",
+        type: "file"
+      }]
+    };
+    const { getWorkspaceGraph } = renderGraphView("ja", vi.fn(), vi.fn(), graph);
+    await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledOnce());
+    await waitFor(() => expect(graphSimulationMocks.sync).toHaveBeenCalled());
+
+    const canvas = screen.getByLabelText("グラフ");
+    Object.defineProperty(canvas, "setPointerCapture", {
+      configurable: true,
+      value: vi.fn()
+    });
+    Object.defineProperty(canvas, "hasPointerCapture", {
+      configurable: true,
+      value: vi.fn(() => true)
+    });
+    Object.defineProperty(canvas, "releasePointerCapture", {
+      configurable: true,
+      value: vi.fn()
+    });
+    graphViewModelMocks.graphNodeAtCanvasPoint.mockImplementation(
+      (nodes: Iterable<unknown>) => [...nodes][0] ?? null
+    );
+
+    fireEvent(canvas, new MouseEvent("pointerdown", {
+      bubbles: true,
+      button: 0,
+      clientX: 20,
+      clientY: 20
+    }));
+    fireEvent(canvas, new MouseEvent("pointermove", {
+      bubbles: true,
+      clientX: 40,
+      clientY: 20
+    }));
+
+    expect(graphSimulationMocks.setNodeCategoryCenterOffset)
+      .toHaveBeenCalledWith("guide.md", -20, 0);
+
+    fireEvent(canvas, new MouseEvent("pointerup", {
+      bubbles: true,
+      clientX: 40,
+      clientY: 20
+    }));
+    expect(graphSimulationMocks.setNodeFixed).toHaveBeenCalledWith(
+      "guide.md",
+      null,
+      null,
+      0.08,
+      expect.any(Number),
+      0
+    );
   });
 
   it("テーマ属性とOSの配色変更時だけ描画色を更新する", async () => {
