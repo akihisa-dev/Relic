@@ -1,4 +1,4 @@
 interface:
   display_name: "Relic Markdown Editor"
-  short_description: "Markdown編集・図表・ページプレビュー・見出し折りたたみを変更する"
-  default_prompt: "Use $relic-change-markdown-editor to change Relic editing, Mermaid/D2 live preview, page preview, or heading folding while preserving Markdown, selection, history, and save safety."
+  short_description: "Markdown編集・入力差分・プレビュー・折りたたみを変更する"
+  default_prompt: "Use $relic-change-markdown-editor to change Relic editing, incremental input updates, live preview, page preview, or heading folding while preserving Markdown, selection, history, performance, and save safety."

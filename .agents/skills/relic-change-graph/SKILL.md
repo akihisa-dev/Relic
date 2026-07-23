@@ -62,7 +62,7 @@ description: Relicの2次元グラフビューについて、Markdown由来のfi
 5. frame loopでidle停止、全restart契機、重複予約なし、theme cache無効化、unmount cleanupを確認する。
 6. `app/` で対象のnode・rendererテストと `pnpm typecheck` を実行し、process境界へ触れた場合は `pnpm architecture:check`、影響が広い場合は `pnpm verify` を実行する。
 7. 大規模dataへの影響は `pnpm performance:workspace` またはlarge版を同条件で比較し、Rendererのbuildまたは初期読込境界へ影響する場合は `pnpm renderer:production:check` を実行する。
-8. 見た目や操作を変えた場合は `$relic-change-ui` と `$relic-test-development-app` に従い、空data、テーマ、resize、実操作を確認する。
+8. 見た目や操作を変えた場合は `$relic-change-ui` を併用し、ユーザーが実画面確認を明示した場合だけ `$relic-test-development-app` に従う。
 9. 仕様をlinks、navigation、design、data-model、decisionsの該当正本へ同期し、`git diff --check` と全差分を確認する。
 
 ## 完了する

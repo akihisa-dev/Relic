@@ -1,4 +1,4 @@
 interface:
   display_name: "Relic Settings"
-  short_description: "設定schema・移行・path別更新queueを安全に変更する"
-  default_prompt: "Use $relic-change-settings to evolve Relic settings schemas and per-path update queues without losing compatibility, deadlocking, or corrupting stored state."
+  short_description: "設定schema・version拒否・path別更新queueを安全に変更する"
+  default_prompt: "Use $relic-change-settings to evolve Relic settings schemas and per-path update queues while rejecting unsupported versions without overwriting stored state."

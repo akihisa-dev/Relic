@@ -22,6 +22,8 @@ EXECUTION_STATUSES = {
 STATIC_STATUSES = {"static-pass", "static-fail", "not-reviewed"}
 COMMIT_HASH_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+LOCAL_MUTATION_MARKERS = ("local-change", "local-commit")
+GUI_REQUEST_MARKERS = ("実画面", "起動", "操作確認", "スクリーンショット")
 
 
 def load_json(path: Path) -> dict:
@@ -111,6 +113,36 @@ def validate(
         if unknown:
             errors.append(f"{case_id}: unknown skills: {', '.join(sorted(unknown))}")
         covered_skills.update(name for name in expected if name in skills)
+        permission_mode = case.get("permissionMode", "")
+        expected_skills = {name for name in expected if name}
+        forbidden_skills = set(case.get("forbiddenSkills", []))
+        if any(marker in permission_mode for marker in LOCAL_MUTATION_MARKERS):
+            missing_exit_skills = {
+                "relic-guard-task", "relic-manage-version", "relic-commit"
+            } - expected_skills
+            if missing_exit_skills:
+                errors.append(
+                    f"{case_id}: local mutation case is missing required workflow skills: "
+                    f"{', '.join(sorted(missing_exit_skills))}"
+                )
+        if permission_mode.startswith("read-only"):
+            missing_forbidden = {
+                "relic-manage-version", "relic-commit"
+            } - forbidden_skills
+            if missing_forbidden:
+                errors.append(
+                    f"{case_id}: read-only case must forbid: "
+                    f"{', '.join(sorted(missing_forbidden))}"
+                )
+        if "relic-test-development-app" in expected_skills:
+            request = case.get("request", "")
+            if (
+                "explicit" not in permission_mode
+                or not any(marker in request for marker in GUI_REQUEST_MARKERS)
+            ):
+                errors.append(
+                    f"{case_id}: development-app testing requires an explicit GUI request"
+                )
         for required_doc in case.get("requiredDocs", []):
             if not (workspace / required_doc).exists():
                 errors.append(f"{case_id}: required document does not exist: {required_doc}")
@@ -210,7 +242,7 @@ def self_test() -> None:
     with tempfile.TemporaryDirectory(prefix="relic-routing-ledger-") as directory:
         workspace = Path(directory)
         (workspace / "AGENTS.md").write_text("# Test rules\n", encoding="utf-8")
-        for name in ("example", "specialist", "forbidden"):
+        for name in ("example", "specialist", "forbidden", "relic-test-development-app"):
             skill_dir = workspace / f".agents/skills/{name}"
             skill_dir.mkdir(parents=True)
             (skill_dir / "SKILL.md").write_text(
@@ -221,13 +253,15 @@ def self_test() -> None:
             {
                 "id": "case", "request": "request", "expectedEntrySkill": "example",
                 "expectedSpecialistSkills": ["specialist"], "forbiddenSkills": ["forbidden"],
-                "requiredDocs": [], "permissionMode": "read-only",
+                "requiredDocs": [], "permissionMode": "analysis-only",
                 "expectedEndState": "reported", "misrouteImpact": "none",
             },
             {
-                "id": "forbidden-positive", "request": "positive request",
-                "expectedEntrySkill": "forbidden", "expectedSpecialistSkills": [],
-                "forbiddenSkills": [], "requiredDocs": [], "permissionMode": "read-only",
+                "id": "forbidden-positive", "request": "実画面を操作確認する",
+                "expectedEntrySkill": "forbidden",
+                "expectedSpecialistSkills": ["relic-test-development-app"],
+                "forbiddenSkills": [], "requiredDocs": [],
+                "permissionMode": "explicit-gui-check",
                 "expectedEndState": "reported", "misrouteImpact": "none",
             },
         ]}
@@ -254,6 +288,16 @@ def self_test() -> None:
             workspace, ledger_path, results_path, known_commits={valid_head}
         )
         assert initial_errors == [], initial_errors
+        ledger["cases"][1]["request"] = "positive request"
+        ledger["cases"][1]["permissionMode"] = "gui-check"
+        ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
+        assert any(
+            "development-app testing requires an explicit GUI request" in error
+            for error in validate(workspace, ledger_path, results_path, known_commits={valid_head})
+        )
+        ledger["cases"][1]["request"] = "実画面を操作確認する"
+        ledger["cases"][1]["permissionMode"] = "explicit-gui-check"
+        ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
         assert evidence_freshness(surface_digest, routing_surface_digest(workspace, ledger_path)) == "current"
         (workspace / ".agents/skills/example/SKILL.md").write_text(
             "---\nname: example\ndescription: changed\n---\n",
@@ -337,6 +381,14 @@ def self_test() -> None:
             "repository-owned skills missing from routing cases: forbidden" in error
             for error in validate(workspace, ledger_path, results_path, known_commits={valid_head})
         )
+        ledger["cases"][0]["permissionMode"] = "local-change"
+        ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
+        assert any(
+            "local mutation case is missing required workflow skills" in error
+            for error in validate(workspace, ledger_path, results_path, known_commits={valid_head})
+        )
+        ledger["cases"][0]["permissionMode"] = "analysis-only"
+        ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
         results["cases"] = [results["cases"][0], results["cases"][0]]
         results_path.write_text(json.dumps(results), encoding="utf-8")
         assert any(

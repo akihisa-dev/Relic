@@ -1,4 +1,4 @@
 interface:
   display_name: "Relic Electron Boundaries"
-  short_description: "IPC入力・preload・ウインドウ境界を契約テストまで変更する"
-  default_prompt: "Use $relic-change-electron-boundaries to modify Relic Electron boundaries while preserving typed IPC contracts, pre-processing validation, and security conditions."
+  short_description: "IPC送信元・入力・preload・ウインドウ境界を安全に変更する"
+  default_prompt: "Use $relic-change-electron-boundaries to modify Relic Electron boundaries while preserving typed IPC contracts, sender authorization, input validation, and security conditions."

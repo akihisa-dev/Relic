@@ -1,6 +1,6 @@
 ---
 name: relic-change-chronicle
-description: Relicのクロニクルビューについて、frontmatter `chronicle` の単年・期間と旧形式互換、共有索引consumer、年軸・配置・衝突回避、Canvas 2D描画、pan・zoom・drag・hit判定・再描画停止を追加・修正する。年表の解析、表示、操作、性能変更に使う。YAML往復はrelic-change-frontmatter、共有索引はrelic-change-links-index、機能トグル・設定schemaはrelic-change-settings、タブ遷移はrelic-change-navigationを優先または併用する。グラフCanvasはrelic-change-graphが所有し、両Canvasで共有するinteraction helperや契約を変える場合は両Skillを使う。
+description: Relicのクロニクルビューについて、frontmatter `chronicle` の暦・単年・期間、基準暦と追加暦の設定・換算・暦面、暦ツリーとカテゴリ集約、共有索引consumer、年軸・配置、Canvas 2D描画、pan・zoom・drag・hit判定・再描画停止を追加・修正する。年表の解析、表示、操作、性能変更に使う。YAML往復はrelic-change-frontmatter、共有索引はrelic-change-links-index、暦設定schemaはrelic-change-settings、タブ遷移はrelic-change-navigationを優先または併用する。グラフCanvasはrelic-change-graphが所有し、両Canvasで共有するinteraction helperや契約を変える場合は両Skillを使う。
 ---
 
 # Relic Chronicle Change
@@ -15,22 +15,30 @@ description: Relicのクロニクルビューについて、frontmatter `chronic
 
 ## Chronicle値を安全に解釈する
 
-1. 現行形式では0以外の整数を単年、`start` と `end` の0以外の整数mappingを期間として扱う。
-2. 期間は `start <= end` の場合だけ有効とし、負の年を保持する。小数、文字列、0、空、不完全mapping、逆転期間を表示対象にしない。
+1. 標準形式を、設定済みの `calendar` と0以外の整数 `start`・`end` を持つmappingとする。単年も `start` と `end` を同じ年にして保存する。
+2. 期間は `start <= end` の場合だけ有効とし、負の年を保持する。どの暦にも0年を設けず、小数、文字列、0、空、不完全mapping、逆転期間を表示対象にしない。
 3. 無効な既存値を勝手に修正・削除せず、formではerror、年表では非表示にする。
-4. 旧配列・暦形式と旧設定は互換読込へ隔離し、新しいUIや保存形式へ戻さない。form編集後は単年scalarまたは `start` / `end` mappingへ書き戻す。
-5. 現行年表を単一の年軸として扱い、旧暦名、月、換算規則を新機能の前提にしない。正本と互換実装が食い違う場合は、現行形式と既存データ保護を分けて整合させる。
+4. 整数scalarは基準暦の単年、`end` 省略mappingは単年として互換読込し、form編集後は標準形式へ書き戻す。旧配列形式は表示・編集対象にせず、そのまま保持する。
+5. 設定にない暦名はMarkdown内で保持し、formではerror、年表では非表示にする。互換値と無効値を現行標準として新規保存しない。
 6. YAML parse、対象propertyの書換え、comment・quote・他fieldの保持は `$relic-change-frontmatter` に委ねる。
 7. main側共有索引のfile recordとfrontmatter parse結果を利用し、独自の第二索引を作らない。索引構造を変える場合は `$relic-change-links-index` を併用する。
 8. workspace切替、外部変更、連続読込後の古いentryを現在の年表へ反映しない。
 
+## 暦設定と派生状態を構成する
+
+1. 基準暦名と追加暦の `yearOne`・`range` をワークスペース設定から読み、追加暦の1年を対応する基準暦年へ換算する。追加暦の保存範囲は自身の1年から終了年までとし、0年をまたぐ換算は連続する序数で扱う。
+2. 基準暦と追加暦を暦ツリーの親、その暦で使われるカテゴリを子として派生し、「年表全体」では同名カテゴリを暦横断で集約する。
+3. 追加暦面の表示切替は既存のワークスペース設定へ保存する。カテゴリ表示、基準暦側のカテゴリ一括表示、検索、ツリー開閉、中間状態、カテゴリ色、追加暦色はRendererの一時的な派生状態とし、Markdownやワークスペース設定へ書き戻さない。
+4. 追加暦を基準暦Canvas上の暦面として設定順に置き、暦自身の年目盛りを表示する。設定範囲外の既存項目を消さず、警告領域と件数で示す。
+5. 暦ツリー検索だけではCanvasの表示対象、年代位置、camera、zoom、期間scaleを変更しない。ワークスペース切替やタブ終了時には一時状態を初期化する。
+
 ## 年軸とsceneを構成する
 
 1. 単年を一つの節点、期間を開始・終了節点と接続線として、左を過去、右を未来に固定する。
-2. startまたはendとして存在する年だけを年軸へ置き、順序を保つ圧縮距離で長い空白を縮める。年数差をそのままpixel距離にしない。
+2. 基準暦の連続する時間軸を項目の有無から独立して構成し、期間scaleと順序を保つ圧縮規則で長い空白を縮める。年数差をそのままpixel距離にしない。
 3. 縦位置に時間上の意味を持たせず、item、label、期間lineの衝突回避にだけ使う。
 4. scene生成、時間変換、layout、hit判定、opacity、label配置を純粋modelへ置き、React componentと描画処理から分離する。
-5. 初期表示を収束済みscene、固定初期zoom、item数中央の年を画面中央とし、自動全体表示や前回camera復元を追加しない。
+5. 初期表示、camera、期間scaleは現行のnavigation・design正本と実装を照合し、項目数だけから独自に決めたり一時状態を永続化したりしない。
 6. 配置に乱数を使う場合は一回の表示中に位置と色を安定させ、テストではseedまたは純粋入力を固定する。
 7. itemの一時drag、配置、pan、zoom、hover、色をMarkdown、frontmatter、workspace設定へ書き戻さない。
 
@@ -64,15 +72,17 @@ description: Relicのクロニクルビューについて、frontmatter `chronic
 
 ## 検証する
 
-1. chronicle parseで単年、期間、負の年、0、小数、文字列、空、逆転期間、旧形式互換、不正値の非破壊を確認する。
-2. 年軸・scene modelで順序保持、距離圧縮、中央初期位置、衝突回避、期間line、seed固定、空dataを確認する。
-3. Canvas modelとrendererでDPR、resize、header、年label間引き、opacity、hit判定、低・高倍率、themeを確認する。
-4. interactionでitem click、drag復帰、background pan、慣性、pointer中心zoom、pointercancel、lost capture、中断後の再操作を確認する。
-5. frame loopで収束後停止、全restart契機、重複予約なし、theme cache無効化、unmount cleanupを確認する。
-6. `app/` で対象のnode・rendererテストと `pnpm typecheck` を実行し、process境界へ触れた場合は `pnpm architecture:check`、影響が広い場合は `pnpm verify` を実行する。
-7. 大規模dataへの影響は `pnpm performance:workspace` またはlarge版を同条件で比較し、Rendererのbuildまたは初期読込境界へ影響する場合は `pnpm renderer:production:check` を実行する。
-8. 見た目や操作を変えた場合は `$relic-change-ui` と `$relic-test-development-app` に従い、空data、theme、resize、実操作を確認する。
-9. 仕様をfrontmatter、navigation、design、data-modelの該当正本へ同期し、`git diff --check` と全差分を確認する。
+1. chronicle parseで標準mapping、単年、期間、負の年、0、小数、文字列、空、逆転期間、scalar・`end`省略互換、旧配列と不正値の非破壊を確認する。
+2. 暦設定・換算で基準暦、追加暦、0年なし、範囲未設定・範囲外、未知の暦、暦面を確認する。
+3. 暦ツリーで暦・カテゴリ検索、個別・全体表示、中間状態、件数、色、ワークスペース切替時の初期化を確認する。
+4. 年軸・scene modelで順序保持、距離圧縮、期間scale、衝突回避、期間line、seed固定、空dataを確認する。
+5. Canvas modelとrendererでDPR、resize、header、暦面、年label間引き、opacity、hit判定、低・高倍率、themeを確認する。
+6. interactionでitem click、drag復帰、background pan、慣性、pointer中心zoom、pointercancel、lost capture、中断後の再操作を確認する。
+7. frame loopで収束後停止、全restart契機、重複予約なし、theme cache無効化、unmount cleanupを確認する。
+8. `app/` で対象のnode・rendererテストと `pnpm typecheck` を実行し、process境界へ触れた場合は `pnpm architecture:check`、影響が広い場合は `pnpm verify` を実行する。
+9. 大規模dataへの影響は `pnpm performance:workspace` またはlarge版を同条件で比較し、Rendererのbuildまたは初期読込境界へ影響する場合は `pnpm renderer:production:check` を実行する。
+10. 見た目や操作を変えた場合は `$relic-change-ui` を併用し、ユーザーが実画面確認を明示した場合だけ `$relic-test-development-app` に従う。
+11. 仕様をfrontmatter、navigation、design、data-modelの該当正本へ同期し、`git diff --check` と全差分を確認する。
 
 ## 完了する
 

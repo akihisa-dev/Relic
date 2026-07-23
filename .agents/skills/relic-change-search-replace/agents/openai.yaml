@@ -1,4 +1,4 @@
 interface:
   display_name: "Relic Search and Replace"
   short_description: "全文検索・置換と共有索引連携を安全かつ正確に変更する"
-  default_prompt: "Use $relic-change-search-replace to update Relic search and replacement behavior while preserving index and write safety."
+  default_prompt: "Use $relic-change-search-replace to update Relic search and replacement behavior while strictly validating current IPC input and preserving index and write safety."

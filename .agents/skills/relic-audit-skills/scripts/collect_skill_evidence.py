@@ -37,9 +37,9 @@ NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+?)\s*$", re.MULTILINE)
 INLINE_CODE_PATTERN = re.compile(r"`([^`\n]+)`")
 SKILL_REFERENCE_PATTERN = re.compile(
-    r"\$([a-z][a-z0-9]*(?:-[a-z0-9]+)*)"
-    r"|(?<![A-Za-z0-9_./:-])((?:relic|gh)-[a-z0-9-]+|skill-creator)"
-    r"(?![A-Za-z0-9_.-])"
+    r"\$([a-z][a-z0-9]*(?:-[a-z0-9]+)*)(?![A-Za-z0-9_-]|\.\*|系Skill)"
+    r"|(?<![A-Za-z0-9_./:-])((?:relic|gh)(?:-[a-z0-9]+)+|skill-creator)"
+    r"(?![A-Za-z0-9_-]|\.\*|系Skill)"
 )
 ALLOWED_FRONTMATTER_KEYS = {
     "name",
@@ -706,6 +706,12 @@ def has_repository_issues(evidence: dict[str, object]) -> bool:
 
 
 def run_self_test() -> None:
+    assert extract_skill_references(
+        "$relic-change-uiを使い、relic-change-settingsも使う。skill-creatorを使う。"
+    ) == {"relic-change-ui", "relic-change-settings", "skill-creator"}
+    assert extract_skill_references(
+        "relic-change-*、relic-change系Skill、$relic-change系Skill、relic-change-"
+    ) == set()
     parsed, _, parse_issues = parse_frontmatter(
         "---\nname: 123\ndescription: 'unterminated\n---\n# Invalid\n"
     )
