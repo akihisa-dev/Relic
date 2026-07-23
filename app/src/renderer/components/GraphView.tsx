@@ -248,6 +248,7 @@ export function GraphView({
         onPointerLeave={handlePointerLeave}
         onPointerMove={handlePointerMove}
         onPointerCancel={handlePointerCancel}
+        onLostPointerCapture={handlePointerCancel}
         onPointerUp={handlePointerUp}
         onWheel={handleWheel}
         ref={canvasRef}

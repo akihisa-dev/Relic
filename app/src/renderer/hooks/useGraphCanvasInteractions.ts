@@ -10,25 +10,29 @@ import {
 
 import type { GraphSimulationClient } from "../graph/graphSimulationClient";
 import {
+  constrainGraphCategoryTranslation,
   constrainGraphCategoryPoint,
-  graphCategoryLayouts,
-  graphCategoryRegions
+  graphCategoryDynamicLayouts,
+  graphCategoryRegions,
+  translateGraphCategoryNodes
 } from "../graph/graphCategoryModel";
 import {
   type GraphHighlightState,
   type GraphHoverFocusState,
   clampGraphScale,
   finishGraphPanVelocity,
+  graphCategoryAtWorldPoint,
   graphNodeAtCanvasPoint,
-  graphNodeVisualRadius,
   graphNodePrimaryAction,
+  graphNodeVisualRadius,
   graphPointerMovedBeyondClickThreshold,
   graphWheelZoomPoint,
   initialGraphViewTransform,
   isGraphNodePrimaryPointerButton,
   nextGraphPanSampleMs,
   nextGraphPanVelocity,
-  requestGraphZoom
+  requestGraphZoom,
+  screenToWorld
 } from "../graph/graphViewModel";
 import type {
   GraphKeyboardState,
@@ -78,6 +82,7 @@ export function useGraphCanvasInteractions({
     zoomOut: false
   });
   const pointerRef = useRef<{
+    dragCategory: string | null;
     dragNode: GraphSimNode | null;
     lastX: number;
     lastY: number;
@@ -86,7 +91,7 @@ export function useGraphCanvasInteractions({
     startX: number;
     startY: number;
     time: number;
-    type: "node" | "pan";
+    type: "bubble" | "node" | "pan";
   } | null>(null);
   const openFileRef = useLatest(onOpenFile);
   const openTagSearchRef = useLatest(onOpenTagSearch);
@@ -106,12 +111,43 @@ export function useGraphCanvasInteractions({
     );
   }, [canvasRef, latestOptionsRef, nodesRef, viewRef]);
 
+  const categoryAtPoint = useCallback((clientX: number, clientY: number): string | null => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+
+    const rect = canvas.getBoundingClientRect();
+    const point = screenToWorld(
+      clientX - rect.left,
+      clientY - rect.top,
+      rect.width || graphCanvasSizeFallback.width,
+      rect.height || graphCanvasSizeFallback.height,
+      viewRef.current
+    );
+    return graphCategoryAtWorldPoint([...nodesRef.current.values()], point);
+  }, [canvasRef, nodesRef, viewRef]);
+
+  const setCategoryNodesFixed = useCallback((category: string, fixed: boolean) => {
+    for (const node of translateGraphCategoryNodes(nodesRef.current.values(), category, 0, 0)) {
+      if (!fixed) {
+        node.fx = null;
+        node.fy = null;
+      }
+      simulationClientRef.current?.setNodeFixed(
+        node.id,
+        fixed ? node.x : null,
+        fixed ? node.y : null,
+        fixed ? undefined : 0.08
+      );
+    }
+  }, [nodesRef, simulationClientRef]);
+
   const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     event.currentTarget.focus();
     panVelocityRef.current = { x: 0, y: 0 };
     panSampleMsRef.current = 0;
 
     const node = nodeAtPoint(event.clientX, event.clientY);
+    const category = node ? null : categoryAtPoint(event.clientX, event.clientY);
     if (!node && event.button !== 0) return;
     if (node && !isGraphNodePrimaryPointerButton(event.button)) return;
 
@@ -124,8 +160,10 @@ export function useGraphCanvasInteractions({
       node.fy = node.y;
       simulationClientRef.current?.setNodeFixed(node.id, node.x, node.y);
     }
+    if (category) setCategoryNodesFixed(category, true);
 
     pointerRef.current = {
+      dragCategory: category,
       dragNode: node,
       lastX: event.clientX,
       lastY: event.clientY,
@@ -134,9 +172,9 @@ export function useGraphCanvasInteractions({
       startX: event.clientX,
       startY: event.clientY,
       time: performance.now(),
-      type: node ? "node" : "pan"
+      type: node ? "node" : category ? "bubble" : "pan"
     };
-  }, [nodeAtPoint, requestDraw, simulationClientRef]);
+  }, [categoryAtPoint, nodeAtPoint, requestDraw, setCategoryNodesFixed, simulationClientRef]);
 
   const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -167,7 +205,7 @@ export function useGraphCanvasInteractions({
         x: (pointer.dragNode.fx ?? pointer.dragNode.x) + dx / viewRef.current.scale,
         y: (pointer.dragNode.fy ?? pointer.dragNode.y) + dy / viewRef.current.scale
       };
-      const regions = graphCategoryRegions(graphCategoryLayouts(nodesRef.current.values()));
+      const regions = graphCategoryRegions(graphCategoryDynamicLayouts(nodesRef.current.values()));
       const constrainedPoint = constrainGraphCategoryPoint(
         pointer.dragNode,
         regions,
@@ -183,6 +221,26 @@ export function useGraphCanvasInteractions({
       pointer.dragNode.x = pointer.dragNode.fx;
       pointer.dragNode.y = pointer.dragNode.fy;
       simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, pointer.dragNode.x, pointer.dragNode.y);
+      requestDraw();
+      return;
+    }
+
+    if (pointer.dragCategory) {
+      const translation = constrainGraphCategoryTranslation(
+        nodesRef.current.values(),
+        pointer.dragCategory,
+        dx / viewRef.current.scale,
+        dy / viewRef.current.scale
+      );
+      const translated = translateGraphCategoryNodes(
+        nodesRef.current.values(),
+        pointer.dragCategory,
+        translation.x,
+        translation.y
+      );
+      for (const node of translated) {
+        simulationClientRef.current?.setNodeFixed(node.id, node.x, node.y);
+      }
       requestDraw();
       return;
     }
@@ -211,6 +269,7 @@ export function useGraphCanvasInteractions({
         if (action?.type === "tagSearch") openTagSearchRef.current(action.tag);
       }
     }
+    if (pointer.dragCategory) setCategoryNodesFixed(pointer.dragCategory, false);
 
     if (pointer.type === "pan") {
       panVelocityRef.current = finishGraphPanVelocity(
@@ -223,7 +282,7 @@ export function useGraphCanvasInteractions({
     pointerRef.current = null;
     event.currentTarget.style.cursor = "grab";
     requestDraw();
-  }, [openFileRef, openTagSearchRef, requestDraw, simulationClientRef]);
+  }, [openFileRef, openTagSearchRef, requestDraw, setCategoryNodesFixed, simulationClientRef]);
 
   const handlePointerCancel = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     const pointer = pointerRef.current;
@@ -237,13 +296,14 @@ export function useGraphCanvasInteractions({
       pointer.dragNode.fy = null;
       simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, null, null, 0.08);
     }
+    if (pointer.dragCategory) setCategoryNodesFixed(pointer.dragCategory, false);
 
     pointerRef.current = null;
     panVelocityRef.current = { x: 0, y: 0 };
     panSampleMsRef.current = 0;
     event.currentTarget.style.cursor = "grab";
     requestDraw();
-  }, [requestDraw, simulationClientRef]);
+  }, [requestDraw, setCategoryNodesFixed, simulationClientRef]);
 
   const handlePointerLeave = useCallback(() => {
     hoverPointRef.current = null;

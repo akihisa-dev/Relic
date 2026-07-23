@@ -2,13 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyGraphCategoryBoundary,
+  applyGraphCategoryMotion,
+  constrainGraphCategoryTranslation,
   constrainGraphCategoryPoint,
   graphCategoryBoundaryRadius,
   graphCategoryContour,
+  graphCategoryDynamicLayouts,
   graphCategoryLayouts,
   graphCategoryRegions,
   graphCategoryTarget,
-  normalizeGraphCategory
+  normalizeGraphCategory,
+  translateGraphCategoryNodes
 } from "./graphCategoryModel";
 
 describe("graphCategoryModel", () => {
@@ -100,5 +104,49 @@ describe("graphCategoryModel", () => {
     );
     expect(Math.hypot(constrained.x - layout.x, constrained.y - layout.y))
       .toBeLessThanOrEqual(layout.radius - 24);
+  });
+
+  it("所属ノードの重心へバブルを追従させ、まとまりごと移動する", () => {
+    const nodes = [
+      { category: "人物", fx: null, fy: null, vx: 0, vy: 0, x: 10, y: 20 },
+      { category: "人物", fx: null, fy: null, vx: 0, vy: 0, x: 30, y: 40 },
+      { category: null, fx: null, fy: null, vx: 0, vy: 0, x: 100, y: 100 }
+    ];
+
+    expect(graphCategoryDynamicLayouts(nodes)[0]).toMatchObject({ x: 20, y: 30 });
+    const translated = translateGraphCategoryNodes(nodes, "人物", 15, -5);
+
+    expect(translated).toHaveLength(2);
+    expect(graphCategoryDynamicLayouts(nodes)[0]).toMatchObject({ x: 35, y: 25 });
+    expect(nodes[0]).toMatchObject({ fx: 25, fy: 15, x: 25, y: 15 });
+    expect(nodes[2]).toMatchObject({ fx: null, fy: null, x: 100, y: 100 });
+  });
+
+  it("近づきすぎたカテゴリ同士へ逆向きの移動速度を与える", () => {
+    const nodes = [
+      { category: "人物", vx: 0, vy: 0, x: -10, y: 0 },
+      { category: "資料", vx: 0, vy: 0, x: 10, y: 0 }
+    ];
+
+    applyGraphCategoryMotion(nodes, 0.5);
+
+    expect(nodes[0]!.vx).toBeLessThan(0);
+    expect(nodes[1]!.vx).toBeGreaterThan(0);
+  });
+
+  it("バブルの直接移動でも別カテゴリの中心を通り抜けない", () => {
+    const nodes = [
+      { category: "人物", vx: 0, vy: 0, x: -100, y: 0 },
+      { category: "資料", vx: 0, vy: 0, x: 100, y: 0 }
+    ];
+    const translation = constrainGraphCategoryTranslation(nodes, "人物", 200, 0);
+    translateGraphCategoryNodes(nodes, "人物", translation.x, translation.y);
+    const layouts = graphCategoryDynamicLayouts(nodes);
+    const distance = Math.hypot(
+      layouts[0]!.x - layouts[1]!.x,
+      layouts[0]!.y - layouts[1]!.y
+    );
+
+    expect(distance).toBeGreaterThan(150);
   });
 });

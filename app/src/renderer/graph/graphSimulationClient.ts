@@ -15,12 +15,8 @@ import {
   graphNodeWeight
 } from "./graphLayout";
 import {
-  applyGraphCategoryBoundary,
-  constrainGraphCategoryPoint,
-  graphCategoryAttractionStrength,
-  graphCategoryLayouts,
-  graphCategoryRegions,
-  graphCategoryTarget
+  applyGraphCategoryMotion,
+  graphCategoryDriftCenterStrength
 } from "./graphCategoryModel";
 import {
   defaultGraphOptions,
@@ -151,18 +147,16 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
 
   const updateForces = () => {
     if (!simulation) return;
-    const categoryLayouts = graphCategoryRegions(graphCategoryLayouts(fallbackNodes));
-
     simulation
       .force(
         "x",
-        forceX<FallbackNode>((node) => graphCategoryTarget(node, categoryLayouts)?.x ?? 0)
-          .strength((node) => node.category ? graphCategoryAttractionStrength : currentOptions.centerStrength)
+        forceX<FallbackNode>(0)
+          .strength((node) => node.category ? graphCategoryDriftCenterStrength : currentOptions.centerStrength)
       )
       .force(
         "y",
-        forceY<FallbackNode>((node) => graphCategoryTarget(node, categoryLayouts)?.y ?? 0)
-          .strength((node) => node.category ? graphCategoryAttractionStrength : currentOptions.centerStrength)
+        forceY<FallbackNode>(0)
+          .strength((node) => node.category ? graphCategoryDriftCenterStrength : currentOptions.centerStrength)
       )
       .force(
         "charge",
@@ -185,7 +179,9 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
       )
       .force(
         "category-boundary",
-        (alpha) => applyGraphCategoryBoundary(fallbackNodes, categoryLayouts, alpha)
+        (alpha) => {
+          applyGraphCategoryMotion(fallbackNodes, alpha);
+        }
       );
   };
 
@@ -212,12 +208,8 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
       const node = fallbackNodes.find((candidate) => candidate.id === id);
       if (!node || !simulation) return;
 
-      const regions = graphCategoryRegions(graphCategoryLayouts(fallbackNodes));
-      const constrained = x === null || y === null
-        ? null
-        : constrainGraphCategoryPoint(node, regions, { x, y });
-      node.fx = constrained?.x ?? x;
-      node.fy = constrained?.y ?? y;
+      node.fx = x;
+      node.fy = y;
       if (node.fx !== null) node.x = node.fx;
       if (node.fy !== null) node.y = node.fy;
 

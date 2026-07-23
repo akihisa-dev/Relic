@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { WorkspaceGraphNode } from "../../shared/ipc";
 import {
+  graphCategoryAtWorldPoint,
   graphCategoryBubbles,
   graphCategoryColor,
+  graphNodeBubbleHighlight,
   nodeColor
 } from "./graphDrawingModel";
 import { defaultGraphDrawTheme, type GraphSimNode } from "./graphTypes";
@@ -79,5 +81,24 @@ describe("graphDrawingModel", () => {
       .toBe(personColor);
     expect(nodeColor(graphNode("file"), defaultGraphDrawTheme))
       .toBe(defaultGraphDrawTheme.textSecondary);
+    expect(graphNodeBubbleHighlight(defaultGraphDrawTheme))
+      .toBe(defaultGraphDrawTheme.background);
+    expect(graphNodeBubbleHighlight(darkTheme)).toBe(darkTheme.text);
+  });
+
+  it("動いたバブルの輪郭内だけを操作対象として判定する", () => {
+    const node = {
+      ...graphNode("file"),
+      category: "人物",
+      fx: null,
+      fy: null,
+      vx: 0,
+      vy: 0,
+      x: 240,
+      y: -30
+    } satisfies GraphSimNode;
+
+    expect(graphCategoryAtWorldPoint([node], { x: 240, y: -30 })).toBe("人物");
+    expect(graphCategoryAtWorldPoint([node], { x: 500, y: -30 })).toBeNull();
   });
 });

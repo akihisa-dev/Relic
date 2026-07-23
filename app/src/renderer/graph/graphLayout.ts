@@ -1,9 +1,5 @@
 import type { WorkspaceGraph } from "../../shared/ipc";
-import {
-  constrainGraphCategoryPoint,
-  graphCategoryLayouts,
-  graphCategoryRegions
-} from "./graphCategoryModel";
+import { graphCategoryLayouts, graphCategoryTarget } from "./graphCategoryModel";
 import type {
   GraphOptions,
   GraphSimLink,
@@ -12,7 +8,6 @@ import type {
   GraphSimulationNodeSnapshot,
   GraphSimulationPositionsMessage
 } from "./graphTypes";
-import { defaultGraphOptions } from "./graphTypes";
 
 const graphSpiralAngle = 2.399963229728653;
 
@@ -21,6 +16,7 @@ export function syncGraphLayout(
   nodes: Map<string, GraphSimNode>
 ): GraphSimLink[] {
   const nextIds = new Set(graph.nodes.map((node) => node.id));
+  const addedIds = new Set<string>();
 
   for (const id of nodes.keys()) {
     if (!nextIds.has(id)) nodes.delete(id);
@@ -34,6 +30,7 @@ export function syncGraphLayout(
     }
 
     const position = initialGraphNodePosition(index);
+    addedIds.add(node.id);
     nodes.set(node.id, {
       ...node,
       fx: null,
@@ -45,18 +42,20 @@ export function syncGraphLayout(
     });
   });
 
-  const categoryRegions = graphCategoryRegions(graphCategoryLayouts(nodes.values()));
-  for (const node of nodes.values()) {
-    const constrained = constrainGraphCategoryPoint(
-      node,
-      categoryRegions,
-      node,
-      graphNodeBaseRadiusFromWeight(graphNodeWeight(node), defaultGraphOptions) + 6
-    );
-    node.x = constrained.x;
-    node.y = constrained.y;
-    if (node.fx !== null) node.fx = constrained.x;
-    if (node.fy !== null) node.fy = constrained.y;
+  const seedLayouts = new Map(
+    graphCategoryLayouts(nodes.values()).map((layout) => [layout.category, layout])
+  );
+  const categoryIndexes = new Map<string, number>();
+  for (const id of addedIds) {
+    const node = nodes.get(id);
+    const target = node ? graphCategoryTarget(node, seedLayouts) : null;
+    if (!node || !target) continue;
+    const index = categoryIndexes.get(target.category) ?? 0;
+    const angle = index * graphSpiralAngle;
+    const radius = Math.min(target.radius - 42, 14 * Math.sqrt(index));
+    node.x = target.x + Math.cos(angle) * radius;
+    node.y = target.y + Math.sin(angle) * radius;
+    categoryIndexes.set(target.category, index + 1);
   }
 
   return graph.links.flatMap((link) => {

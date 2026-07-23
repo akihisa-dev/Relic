@@ -9,7 +9,7 @@ import {
 } from "./graphInteractionModel";
 import {
   graphCategoryContour,
-  graphCategoryLayouts,
+  graphCategoryDynamicLayouts,
   graphCategoryRegions,
   normalizeGraphCategory
 } from "./graphCategoryModel";
@@ -99,11 +99,8 @@ export function drawGraph(
     const active = !focused || node.id === focused.id || neighbors.has(node.id);
     const radius = graphNodeVisualRadius(node, options, view.scale);
     const color = nodeColor(node, theme);
-    context.globalAlpha = graphHighlightAlpha(active, highlightStrength, 1, graphDimmedNodeAlpha);
-    context.fillStyle = color;
-    context.beginPath();
-    context.arc(node.x, node.y, radius, 0, Math.PI * 2);
-    context.fill();
+    const nodeAlpha = graphHighlightAlpha(active, highlightStrength, 1, graphDimmedNodeAlpha);
+    drawGraphBubbleNode(context, node, radius, color, theme, view.scale, nodeAlpha);
 
     if (node.id === focused?.id && highlightStrength > 0) {
       context.globalAlpha = 0.36 * highlightStrength;
@@ -130,6 +127,71 @@ export function drawGraph(
       context.fillText(node.label, node.x, node.y + radius + 4 / view.scale, 240 / view.scale);
     }
   }
+  context.restore();
+}
+
+export function graphNodeBubbleHighlight(theme: GraphDrawTheme): string {
+  return graphThemeIsDark(theme.background) ? theme.text : theme.background;
+}
+
+function drawGraphBubbleNode(
+  context: CanvasRenderingContext2D,
+  node: GraphSimNode,
+  radius: number,
+  color: string,
+  theme: GraphDrawTheme,
+  scale: number,
+  alpha: number
+): void {
+  const highlight = graphNodeBubbleHighlight(theme);
+  context.save();
+  context.globalAlpha = alpha * 0.8;
+  context.fillStyle = color;
+  context.beginPath();
+  context.arc(node.x, node.y, radius, 0, Math.PI * 2);
+  context.fill();
+
+  context.globalAlpha = alpha * 0.16;
+  context.fillStyle = highlight;
+  context.beginPath();
+  context.arc(
+    node.x - radius * 0.28,
+    node.y - radius * 0.3,
+    radius * 0.48,
+    0,
+    Math.PI * 2
+  );
+  context.fill();
+
+  context.globalAlpha = alpha * 0.12;
+  context.fillStyle = theme.borderStrong;
+  context.beginPath();
+  context.arc(
+    node.x + radius * 0.2,
+    node.y + radius * 0.24,
+    radius * 0.42,
+    0,
+    Math.PI * 2
+  );
+  context.fill();
+
+  context.globalAlpha = alpha * 0.68;
+  context.strokeStyle = color;
+  context.lineWidth = 1.2 / scale;
+  context.stroke();
+
+  context.globalAlpha = alpha * 0.48;
+  context.strokeStyle = highlight;
+  context.lineWidth = 1.1 / scale;
+  context.beginPath();
+  context.arc(
+    node.x,
+    node.y,
+    radius * 0.68,
+    Math.PI * 1.08,
+    Math.PI * 1.47
+  );
+  context.stroke();
   context.restore();
 }
 
@@ -291,7 +353,7 @@ export interface GraphCategoryBubble {
 }
 
 export function graphCategoryBubbles(nodes: GraphSimNode[]): GraphCategoryBubble[] {
-  const regions = graphCategoryRegions(graphCategoryLayouts(nodes));
+  const regions = graphCategoryRegions(graphCategoryDynamicLayouts(nodes));
   return [...regions.values()].map((region) => ({
     category: region.category,
     points: graphCategoryContour(region),
@@ -299,6 +361,18 @@ export function graphCategoryBubbles(nodes: GraphSimNode[]): GraphCategoryBubble
     x: region.x,
     y: region.y
   }));
+}
+
+export function graphCategoryAtWorldPoint(
+  nodes: GraphSimNode[],
+  point: GraphCategoryPoint
+): string | null {
+  const bubbles = graphCategoryBubbles(nodes);
+  for (let index = bubbles.length - 1; index >= 0; index -= 1) {
+    const bubble = bubbles[index]!;
+    if (pointInPolygon(point, bubble.points)) return bubble.category;
+  }
+  return null;
 }
 
 export function graphCategoryColor(category: string, theme: GraphDrawTheme): string {
@@ -367,6 +441,30 @@ function traceSmoothBubble(
     );
   }
   context.closePath();
+}
+
+function pointInPolygon(
+  point: GraphCategoryPoint,
+  polygon: readonly GraphCategoryPoint[]
+): boolean {
+  let inside = false;
+  for (
+    let index = 0, previous = polygon.length - 1;
+    index < polygon.length;
+    previous = index, index += 1
+  ) {
+    const currentPoint = polygon[index]!;
+    const previousPoint = polygon[previous]!;
+    const crosses = (currentPoint.y > point.y) !== (previousPoint.y > point.y) &&
+      point.x < (
+        (previousPoint.x - currentPoint.x) *
+        (point.y - currentPoint.y) /
+        (previousPoint.y - currentPoint.y) +
+        currentPoint.x
+      );
+    if (crosses) inside = !inside;
+  }
+  return inside;
 }
 
 function graphThemeIsDark(background: string): boolean {

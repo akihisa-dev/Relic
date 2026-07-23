@@ -15,12 +15,8 @@ import {
   graphNodeWeight
 } from "./graphLayout";
 import {
-  applyGraphCategoryBoundary,
-  constrainGraphCategoryPoint,
-  graphCategoryAttractionStrength,
-  graphCategoryLayouts,
-  graphCategoryRegions,
-  graphCategoryTarget
+  applyGraphCategoryMotion,
+  graphCategoryDriftCenterStrength
 } from "./graphCategoryModel";
 import {
   defaultGraphOptions,
@@ -125,18 +121,16 @@ function updateSimulationOptions(options: GraphOptions, alpha = 0.18): void {
 
 function updateSimulationForces(): void {
   if (!simulation) return;
-  const categoryLayouts = graphCategoryRegions(graphCategoryLayouts(workerNodes));
-
   simulation
     .force(
       "x",
-      forceX<WorkerNode>((node) => graphCategoryTarget(node, categoryLayouts)?.x ?? 0)
-        .strength((node) => node.category ? graphCategoryAttractionStrength : currentOptions.centerStrength)
+      forceX<WorkerNode>(0)
+        .strength((node) => node.category ? graphCategoryDriftCenterStrength : currentOptions.centerStrength)
     )
     .force(
       "y",
-      forceY<WorkerNode>((node) => graphCategoryTarget(node, categoryLayouts)?.y ?? 0)
-        .strength((node) => node.category ? graphCategoryAttractionStrength : currentOptions.centerStrength)
+      forceY<WorkerNode>(0)
+        .strength((node) => node.category ? graphCategoryDriftCenterStrength : currentOptions.centerStrength)
     )
     .force(
       "charge",
@@ -159,7 +153,9 @@ function updateSimulationForces(): void {
     )
     .force(
       "category-boundary",
-      (alpha) => applyGraphCategoryBoundary(workerNodes, categoryLayouts, alpha)
+      (alpha) => {
+        applyGraphCategoryMotion(workerNodes, alpha);
+      }
     );
 }
 
@@ -167,12 +163,8 @@ function updateFixedNode(id: string, x: number | null, y: number | null, alpha =
   const node = workerNodes.find((candidate) => candidate.id === id);
   if (!node || !simulation) return;
 
-  const regions = graphCategoryRegions(graphCategoryLayouts(workerNodes));
-  const constrained = x === null || y === null
-    ? null
-    : constrainGraphCategoryPoint(node, regions, { x, y });
-  node.fx = constrained?.x ?? x;
-  node.fy = constrained?.y ?? y;
+  node.fx = x;
+  node.fy = y;
   if (node.fx !== null) node.x = node.fx;
   if (node.fy !== null) node.y = node.fy;
 
