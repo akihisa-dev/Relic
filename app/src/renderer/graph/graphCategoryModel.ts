@@ -21,8 +21,15 @@ export interface GraphCategoryPressure {
   radius: number;
 }
 
+export interface GraphCategoryObstacle {
+  angle: number;
+  distance: number;
+  radius: number;
+}
+
 export interface GraphCategoryRegion extends GraphCategoryLayout {
   contacts: GraphCategoryContact[];
+  obstacles: GraphCategoryObstacle[];
   pressures: GraphCategoryPressure[];
 }
 
@@ -49,6 +56,8 @@ const graphCategoryDesiredOverlap = 28;
 const graphCategoryClusterClearance = 120;
 const graphCategoryBoundaryPadding = 36;
 const graphCategoryCollisionStrength = 0.16;
+const graphCategoryExteriorCompression = 16;
+const graphCategoryExteriorReactionStrength = 0.16;
 const graphCategoryMaximumBulge = 52;
 const graphCategoryPressureHalfAngle = Math.PI / 5;
 const graphCategoryTranslationStep = 32;
@@ -161,7 +170,17 @@ export function graphCategoryRegions(
       if (pressureRadius <= layout.radius) return [];
       return [{ angle: Math.atan2(dy, dx), radius: pressureRadius }];
     });
-    return [layout.category, { ...layout, contacts, pressures }];
+    const obstacles = orderedNodes.flatMap((node): GraphCategoryObstacle[] => {
+      if (normalizeGraphCategory(node.category) === layout.category ||
+          node.x === undefined || node.y === undefined) return [];
+      const dx = node.x - layout.x;
+      const dy = node.y - layout.y;
+      const distance = Math.hypot(dx, dy);
+      const radius = graphCategoryNodeClearance(node) + graphCategoryExteriorCompression;
+      if (distance >= layout.radius + radius) return [];
+      return [{ angle: Math.atan2(dy, dx), distance, radius }];
+    });
+    return [layout.category, { ...layout, contacts, obstacles, pressures }];
   }));
 }
 
@@ -203,6 +222,18 @@ export function graphCategoryBoundaryRadius(
     const planeRadius = contactDistance / directionProjection;
     if (planeRadius >= boundaryRadius) continue;
 
+    boundaryRadius = Math.min(boundaryRadius, Math.max(0, planeRadius));
+  }
+  for (const obstacle of region.obstacles) {
+    const directionProjection = Math.cos(normalizeAngle(angle - obstacle.angle));
+    if (directionProjection <= 0) continue;
+    const contactDistance = (
+      obstacle.distance +
+      region.radius -
+      obstacle.radius
+    ) / 2;
+    const planeRadius = contactDistance / directionProjection;
+    if (planeRadius >= boundaryRadius) continue;
     boundaryRadius = Math.min(boundaryRadius, Math.max(0, planeRadius));
   }
   return boundaryRadius;
@@ -333,6 +364,12 @@ export function applyGraphCategoryMotion(
     node.vy = (node.vy ?? 0) +
       (region.y - node.y) * graphCategoryAttractionStrength * Math.max(0, alpha);
   }
+  applyGraphCategoryExteriorReaction(
+    orderedNodes,
+    nodesByCategory,
+    orderedRegions,
+    alpha
+  );
   applyGraphCategoryBoundary(orderedNodes, regions, alpha);
   return regions;
 }
@@ -427,7 +464,55 @@ function graphCategoryDeformableBoundaryRadius(
     ) / 2;
     radius = Math.min(radius, Math.max(0, contactDistance / directionProjection));
   }
+  for (const obstacle of region.obstacles) {
+    const directionProjection = Math.cos(normalizeAngle(angle - obstacle.angle));
+    if (directionProjection <= 0) continue;
+    const contactDistance = (
+      obstacle.distance +
+      region.radius -
+      obstacle.radius
+    ) / 2;
+    radius = Math.min(radius, Math.max(0, contactDistance / directionProjection));
+  }
   return radius;
+}
+
+function applyGraphCategoryExteriorReaction(
+  nodes: GraphCategoryForceNode[],
+  nodesByCategory: ReadonlyMap<string, GraphCategoryForceNode[]>,
+  regions: GraphCategoryRegion[],
+  alpha: number
+): void {
+  for (const region of regions) {
+    for (const node of nodes) {
+      if (normalizeGraphCategory(node.category) === region.category ||
+          node.x === undefined || node.y === undefined) continue;
+      const dx = region.x - node.x;
+      const dy = region.y - node.y;
+      const distance = Math.hypot(dx, dy);
+      const responseDistance = region.radius +
+        graphCategoryNodeClearance(node) +
+        graphCategoryExteriorCompression;
+      if (distance >= responseDistance) continue;
+
+      const fallbackAngle = stableCategoryAngle(
+        region.category,
+        normalizeGraphCategory(node.category) ?? "uncategorized"
+      );
+      const unitX = distance === 0 ? Math.cos(fallbackAngle) : dx / distance;
+      const unitY = distance === 0 ? Math.sin(fallbackAngle) : dy / distance;
+      const correction = (
+        (responseDistance - distance) *
+        graphCategoryExteriorReactionStrength *
+        Math.max(0, alpha)
+      );
+      shiftCategoryVelocity(
+        nodesByCategory.get(region.category),
+        unitX * correction,
+        unitY * correction
+      );
+    }
+  }
 }
 
 function constrainGraphCategoryExteriorPoint(

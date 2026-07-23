@@ -133,6 +133,7 @@ describe("GraphView", () => {
     Object.defineProperty(canvas, "releasePointerCapture", { configurable: true, value: vi.fn() });
     const fileNode = {
       backlinkCount: 0,
+      category: "人物",
       exists: true,
       fx: null,
       fy: null,
@@ -158,7 +159,9 @@ describe("GraphView", () => {
     graphViewModelMocks.graphNodeAtCanvasPoint.mockReturnValue(fileNode);
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
     expect(fileNode).toMatchObject({ fx: 20, fy: 30 });
-    fireEvent(canvas, new MouseEvent("pointercancel", { bubbles: true, clientX: 20, clientY: 30 }));
+    fireEvent(canvas, new MouseEvent("pointermove", { bubbles: true, clientX: 30, clientY: 40 }));
+    expect(fileNode).toMatchObject({ fx: 30, fy: 40, x: 30, y: 40 });
+    fireEvent(canvas, new MouseEvent("pointercancel", { bubbles: true, clientX: 30, clientY: 40 }));
     expect(fileNode).toMatchObject({ fx: null, fy: null });
     expect(onOpenFile).not.toHaveBeenCalled();
 

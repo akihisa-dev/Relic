@@ -128,6 +128,38 @@ describe("graphCategoryModel", () => {
     expect(graphCategoryBoundaryRadius(region, Math.PI)).toBe(region.radius);
   });
 
+  it("所属ノードをつかんだ場合は自分のバブル内を移動できる", () => {
+    const nodes = [
+      { category: "人物", x: -10, y: 0 },
+      { category: "人物", x: 10, y: 0 }
+    ];
+    const regions = graphCategoryRegions(graphCategoryDynamicLayouts(nodes), nodes);
+    const moved = constrainGraphNodeToCategoryRegions(
+      nodes[0]!,
+      regions,
+      { x: 60, y: 20 },
+      18
+    );
+
+    expect(moved).toEqual({ x: 60, y: 20 });
+  });
+
+  it("外部ノードが接触した方向の膜をへこませ、バブルへ反力を与える", () => {
+    const nodes = [
+      { category: "人物", vx: 0, vy: 0, x: -10, y: 0 },
+      { category: "人物", vx: 0, vy: 0, x: 10, y: 0 },
+      { category: null, vx: 0, vy: 0, x: 115, y: 0 }
+    ];
+
+    const regions = applyGraphCategoryMotion(nodes, 0.5);
+    const person = regions.get("人物")!;
+
+    expect(graphCategoryBoundaryRadius(person, 0)).toBeLessThan(person.radius);
+    expect(graphCategoryBoundaryRadius(person, Math.PI)).toBe(person.radius);
+    expect(nodes[0]!.vx).toBeLessThan(0);
+    expect(nodes[1]!.vx).toBeLessThan(0);
+  });
+
   it("未分類と別カテゴリのノードをカテゴリーバブルの外へ押し戻す", () => {
     const regions = graphCategoryRegions([{
       category: "人物",
