@@ -38,7 +38,6 @@ export const graphCategoryDriftCenterStrength = 0.012;
 const graphCategoryMinimumRadius = 96;
 const graphCategoryNodeSpacing = 48;
 const graphCategoryDesiredOverlap = 28;
-const graphCategoryContactGap = 8;
 const graphCategoryClusterClearance = 120;
 const graphCategoryBoundaryPadding = 36;
 const graphCategoryCollisionStrength = 0.16;
@@ -161,22 +160,12 @@ export function graphCategoryBoundaryRadius(
     const contactDistance = (
       contact.distance +
       region.radius -
-      contact.radius -
-      graphCategoryContactGap
+      contact.radius
     ) / 2;
     const planeRadius = contactDistance / directionProjection;
     if (planeRadius >= boundaryRadius) continue;
 
-    const contactHalfAngle = Math.acos(clamp(contactDistance / region.radius, -1, 1));
-    const contactProgress = clamp(
-      1 - Math.abs(delta) / Math.max(0.001, contactHalfAngle),
-      0,
-      1
-    );
-    const smoothContact = contactProgress * contactProgress * (3 - 2 * contactProgress);
-    const overlap = region.radius + contact.radius - contact.distance;
-    const indentation = Math.min(12, overlap * 0.18) * smoothContact;
-    boundaryRadius = Math.min(boundaryRadius, Math.max(0, planeRadius - indentation));
+    boundaryRadius = Math.min(boundaryRadius, Math.max(0, planeRadius));
   }
   return boundaryRadius;
 }
@@ -368,8 +357,4 @@ function stableCategoryAngle(left: string, right: string): number {
 
 function normalizeAngle(angle: number): number {
   return Math.atan2(Math.sin(angle), Math.cos(angle));
-}
-
-function clamp(value: number, minimum: number, maximum: number): number {
-  return Math.min(maximum, Math.max(minimum, value));
 }

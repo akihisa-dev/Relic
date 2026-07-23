@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createGraphSimulationClient } from "./graphSimulationClient";
+import { graphSimulationVelocityDecay } from "./graphTypes";
 
 class MockWorker {
   static instances: MockWorker[] = [];
@@ -19,6 +20,10 @@ describe("createGraphSimulationClient", () => {
   afterEach(() => {
     MockWorker.instances = [];
     vi.unstubAllGlobals();
+  });
+
+  it("移動速度を毎回強く減衰させて長い滑走を防ぐ", () => {
+    expect(graphSimulationVelocityDecay).toBe(0.68);
   });
 
   it("Workerは一度だけ終了し、終了後の通知や要求を無視する", () => {

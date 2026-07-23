@@ -50,7 +50,7 @@ describe("graphCategoryModel", () => {
     expect(byCategory.get("資料")?.contacts).toHaveLength(1);
   });
 
-  it("接触方向だけを滑らかに凹ませ、輪郭同士を重ねない", () => {
+  it("接触方向だけを凹ませ、輪郭同士が隙間なく同じ境界を共有する", () => {
     const regions = graphCategoryRegions(graphCategoryLayouts([
       { category: "資料" },
       { category: "人物" }
@@ -65,7 +65,7 @@ describe("graphCategoryModel", () => {
 
     expect(materialRadius).toBeLessThan(material.radius);
     expect(oppositeRadius).toBe(material.radius);
-    expect(materialRadius + personRadius).toBeLessThan(contact.distance);
+    expect(materialRadius + personRadius).toBeCloseTo(contact.distance, 6);
     expect(contour).toHaveLength(72);
   });
 

@@ -22,6 +22,8 @@ export const defaultGraphOptions: GraphOptions = {
   textFadeMultiplier: 0
 };
 
+export const graphSimulationVelocityDecay = 0.68;
+
 export interface GraphDrawTheme {
   accent: string;
   background: string;

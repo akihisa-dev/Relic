@@ -20,6 +20,7 @@ import {
 } from "./graphCategoryModel";
 import {
   defaultGraphOptions,
+  graphSimulationVelocityDecay,
   type GraphOptions,
   type GraphSimulationRequest,
   type GraphSimulationResponse
@@ -106,7 +107,7 @@ function syncSimulation(message: Extract<GraphSimulationRequest, { type: "sync" 
   simulation?.stop();
   simulation = forceSimulation<WorkerNode, WorkerLink>(workerNodes)
     .alphaDecay(1 - Math.pow(0.001, 1 / 300))
-    .velocityDecay(0.4)
+    .velocityDecay(graphSimulationVelocityDecay)
     .on("tick", postGraphPositions);
 
   updateSimulationForces();

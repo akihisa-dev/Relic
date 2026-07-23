@@ -20,6 +20,7 @@ import {
 } from "./graphCategoryModel";
 import {
   defaultGraphOptions,
+  graphSimulationVelocityDecay,
   type GraphOptions,
   type GraphSimulationLinkSnapshot,
   type GraphSimulationNodeSnapshot,
@@ -245,7 +246,7 @@ function createFallbackGraphSimulationClient(onPositions: GraphSimulationPositio
       simulation?.stop();
       simulation = forceSimulation<FallbackNode, FallbackLink>(fallbackNodes)
         .alphaDecay(1 - Math.pow(0.001, 1 / 300))
-        .velocityDecay(0.4)
+        .velocityDecay(graphSimulationVelocityDecay)
         .on("tick", postPositions);
       updateForces();
       restart(alpha);
