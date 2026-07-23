@@ -173,7 +173,7 @@ describe("GraphView", () => {
     expect(onOpenFile).toHaveBeenCalledWith("note.md");
   });
 
-  it("バブルのドラッグでは所属ノードをまとめて移動し、中断時に全固定を解除する", async () => {
+  it("バブルのドラッグでは接触した別バブルも押し、中断時に全固定を解除する", async () => {
     const graph: WorkspaceGraph = {
       links: [],
       nodes: [
@@ -199,11 +199,21 @@ describe("GraphView", () => {
         },
         {
           backlinkCount: 0,
+          category: "資料",
           exists: true,
           id: "C.md",
           label: "C",
           linkCount: 0,
           path: "C.md",
+          type: "file"
+        },
+        {
+          backlinkCount: 0,
+          exists: true,
+          id: "D.md",
+          label: "D",
+          linkCount: 0,
+          path: "D.md",
           type: "file"
         }
       ]
@@ -214,7 +224,8 @@ describe("GraphView", () => {
       expect.arrayContaining([
         expect.objectContaining({ id: "A.md" }),
         expect.objectContaining({ id: "B.md" }),
-        expect.objectContaining({ id: "C.md" })
+        expect.objectContaining({ id: "C.md" }),
+        expect.objectContaining({ id: "D.md" })
       ]),
       [],
       expect.any(Object)
@@ -235,8 +246,8 @@ describe("GraphView", () => {
     }));
     fireEvent(canvas, new MouseEvent("pointermove", {
       bubbles: true,
-      clientX: 40,
-      clientY: 30
+      clientX: 30,
+      clientY: -980
     }));
     fireEvent.lostPointerCapture(canvas, { pointerId: 1 });
 
@@ -252,7 +263,13 @@ describe("GraphView", () => {
     );
     expect(graphSimulationMocks.setNodeFixed).toHaveBeenCalledWith("A.md", null, null, 0.08);
     expect(graphSimulationMocks.setNodeFixed).toHaveBeenCalledWith("B.md", null, null, 0.08);
-    expect(graphSimulationMocks.setNodeFixed.mock.calls.some(([id]) => id === "C.md")).toBe(false);
+    expect(graphSimulationMocks.setNodeFixed).toHaveBeenCalledWith(
+      "C.md",
+      expect.any(Number),
+      expect.any(Number)
+    );
+    expect(graphSimulationMocks.setNodeFixed).toHaveBeenCalledWith("C.md", null, null, 0.08);
+    expect(graphSimulationMocks.setNodeFixed.mock.calls.some(([id]) => id === "D.md")).toBe(false);
   });
 
   it("テーマ属性とOSの配色変更時だけ描画色を更新する", async () => {

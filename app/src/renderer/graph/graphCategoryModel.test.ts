@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   applyGraphCategoryBoundary,
   applyGraphCategoryMotion,
-  constrainGraphCategoryTranslation,
   constrainGraphCategoryPoint,
+  constrainGraphNodeToCategoryRegions,
   graphCategoryBoundaryRadius,
   graphCategoryContour,
   graphCategoryDynamicLayouts,
@@ -12,7 +12,8 @@ import {
   graphCategoryRegions,
   graphCategoryTarget,
   normalizeGraphCategory,
-  translateGraphCategoryNodes
+  translateGraphCategoryNodes,
+  translateGraphCategoryNodesWithPush
 } from "./graphCategoryModel";
 
 describe("graphCategoryModel", () => {
@@ -103,7 +104,53 @@ describe("graphCategoryModel", () => {
       24
     );
     expect(Math.hypot(constrained.x - layout.x, constrained.y - layout.y))
-      .toBeLessThanOrEqual(layout.radius - 24);
+      .toBeLessThanOrEqual(layout.radius + 52 - 24);
+  });
+
+  it("所属ノードが外側から押す方向だけバブルの輪郭を膨らませる", () => {
+    const layouts = [{
+      category: "人物",
+      count: 1,
+      radius: 96,
+      x: 0,
+      y: 0
+    }];
+    const regions = graphCategoryRegions(layouts, [{
+      backlinkCount: 0,
+      category: "人物",
+      linkCount: 0,
+      x: 120,
+      y: 0
+    }]);
+    const region = regions.get("人物")!;
+
+    expect(graphCategoryBoundaryRadius(region, 0)).toBeGreaterThan(region.radius);
+    expect(graphCategoryBoundaryRadius(region, Math.PI)).toBe(region.radius);
+  });
+
+  it("未分類と別カテゴリのノードをカテゴリーバブルの外へ押し戻す", () => {
+    const regions = graphCategoryRegions([{
+      category: "人物",
+      count: 1,
+      radius: 96,
+      x: 0,
+      y: 0
+    }]);
+    const uncategorized = { category: null, vx: 0, vy: 0, x: 0, y: 0 };
+    const otherCategory = { category: "資料", vx: 0, vy: 0, x: 20, y: 0 };
+
+    applyGraphCategoryBoundary([uncategorized, otherCategory], regions, 0.5);
+
+    expect(Math.hypot(uncategorized.vx, uncategorized.vy)).toBeGreaterThan(96);
+    expect(otherCategory.vx).toBeGreaterThan(76);
+
+    const dragged = constrainGraphNodeToCategoryRegions(
+      { category: null },
+      regions,
+      { x: 0, y: 0 },
+      12
+    );
+    expect(Math.hypot(dragged.x, dragged.y)).toBeGreaterThan(96);
   });
 
   it("所属ノードの重心へバブルを追従させ、まとまりごと移動する", () => {
@@ -134,19 +181,17 @@ describe("graphCategoryModel", () => {
     expect(nodes[1]!.vx).toBeGreaterThan(0);
   });
 
-  it("バブルの直接移動でも別カテゴリの中心を通り抜けない", () => {
+  it("ドラッグしたバブルで接触した別のバブルを押して移動する", () => {
     const nodes = [
       { category: "人物", vx: 0, vy: 0, x: -100, y: 0 },
       { category: "資料", vx: 0, vy: 0, x: 100, y: 0 }
     ];
-    const translation = constrainGraphCategoryTranslation(nodes, "人物", 200, 0);
-    translateGraphCategoryNodes(nodes, "人物", translation.x, translation.y);
+    const translated = translateGraphCategoryNodesWithPush(nodes, "人物", 200, 0);
     const layouts = graphCategoryDynamicLayouts(nodes);
-    const distance = Math.hypot(
-      layouts[0]!.x - layouts[1]!.x,
-      layouts[0]!.y - layouts[1]!.y
-    );
+    const byCategory = new Map(layouts.map((layout) => [layout.category, layout]));
 
-    expect(distance).toBeGreaterThan(150);
+    expect(translated).toHaveLength(2);
+    expect(byCategory.get("人物")?.x).toBeCloseTo(100, 6);
+    expect(byCategory.get("資料")?.x).toBeGreaterThan(250);
   });
 });

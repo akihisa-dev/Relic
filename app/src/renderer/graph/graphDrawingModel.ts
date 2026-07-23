@@ -353,7 +353,7 @@ export interface GraphCategoryBubble {
 }
 
 export function graphCategoryBubbles(nodes: GraphSimNode[]): GraphCategoryBubble[] {
-  const regions = graphCategoryRegions(graphCategoryDynamicLayouts(nodes));
+  const regions = graphCategoryRegions(graphCategoryDynamicLayouts(nodes), nodes);
   return [...regions.values()].map((region) => ({
     category: region.category,
     points: graphCategoryContour(region),

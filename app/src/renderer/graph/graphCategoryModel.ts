@@ -16,8 +16,14 @@ export interface GraphCategoryContact {
   radius: number;
 }
 
+export interface GraphCategoryPressure {
+  angle: number;
+  radius: number;
+}
+
 export interface GraphCategoryRegion extends GraphCategoryLayout {
   contacts: GraphCategoryContact[];
+  pressures: GraphCategoryPressure[];
 }
 
 export interface GraphCategoryPoint {
@@ -26,6 +32,8 @@ export interface GraphCategoryPoint {
 }
 
 export interface GraphCategoryForceNode extends GraphCategoryNode {
+  backlinkCount?: number;
+  linkCount?: number;
   vx?: number;
   vy?: number;
   x?: number;
@@ -41,6 +49,9 @@ const graphCategoryDesiredOverlap = 28;
 const graphCategoryClusterClearance = 120;
 const graphCategoryBoundaryPadding = 36;
 const graphCategoryCollisionStrength = 0.16;
+const graphCategoryMaximumBulge = 52;
+const graphCategoryPressureHalfAngle = Math.PI / 5;
+const graphCategoryTranslationStep = 32;
 
 export function normalizeGraphCategory(category: unknown): string | null {
   if (typeof category !== "string") return null;
@@ -119,9 +130,11 @@ export function graphCategoryDynamicLayouts(
 }
 
 export function graphCategoryRegions(
-  layouts: Iterable<GraphCategoryLayout>
+  layouts: Iterable<GraphCategoryLayout>,
+  nodes: Iterable<GraphCategoryForceNode> = []
 ): Map<string, GraphCategoryRegion> {
   const ordered = [...layouts];
+  const orderedNodes = [...nodes];
   return new Map(ordered.map((layout) => {
     const contacts = ordered.flatMap((other): GraphCategoryContact[] => {
       if (other.category === layout.category) return [];
@@ -135,7 +148,20 @@ export function graphCategoryRegions(
         radius: other.radius
       }];
     });
-    return [layout.category, { ...layout, contacts }];
+    const pressures = orderedNodes.flatMap((node): GraphCategoryPressure[] => {
+      if (normalizeGraphCategory(node.category) !== layout.category ||
+          node.x === undefined || node.y === undefined) return [];
+      const dx = node.x - layout.x;
+      const dy = node.y - layout.y;
+      const distance = Math.hypot(dx, dy);
+      const pressureRadius = Math.min(
+        layout.radius + graphCategoryMaximumBulge,
+        distance + graphCategoryNodeClearance(node)
+      );
+      if (pressureRadius <= layout.radius) return [];
+      return [{ angle: Math.atan2(dy, dx), radius: pressureRadius }];
+    });
+    return [layout.category, { ...layout, contacts, pressures }];
   }));
 }
 
@@ -152,6 +178,18 @@ export function graphCategoryBoundaryRadius(
   angle: number
 ): number {
   let boundaryRadius = region.radius;
+  for (const pressure of region.pressures) {
+    const progress = Math.max(
+      0,
+      1 - Math.abs(normalizeAngle(angle - pressure.angle)) / graphCategoryPressureHalfAngle
+    );
+    const smoothPressure = progress * progress * (3 - 2 * progress);
+    boundaryRadius = Math.max(
+      boundaryRadius,
+      region.radius + (pressure.radius - region.radius) * smoothPressure
+    );
+  }
+
   for (const contact of region.contacts) {
     const delta = normalizeAngle(angle - contact.angle);
     const directionProjection = Math.cos(delta);
@@ -202,7 +240,10 @@ export function constrainGraphCategoryPoint(
   const angle = Math.atan2(dy, dx);
   const maximumDistance = Math.max(
     0,
-    graphCategoryBoundaryRadius(region, angle) - Math.max(0, padding)
+    Math.max(
+      graphCategoryBoundaryRadius(region, angle),
+      graphCategoryDeformableBoundaryRadius(region, angle)
+    ) - Math.max(0, padding)
   );
   if (distance <= maximumDistance) return point;
   return {
@@ -222,10 +263,23 @@ export function applyGraphCategoryBoundary(
       x: node.x + (node.vx ?? 0),
       y: node.y + (node.vy ?? 0)
     };
-    const constrained = constrainGraphCategoryPoint(node, regions, predicted);
+    const constrained = constrainGraphNodeToCategoryRegions(node, regions, predicted);
     node.vx = constrained.x - node.x;
     node.vy = constrained.y - node.y;
   }
+}
+
+export function constrainGraphNodeToCategoryRegions(
+  node: GraphCategoryForceNode,
+  regions: ReadonlyMap<string, GraphCategoryRegion>,
+  point: GraphCategoryPoint,
+  padding = graphCategoryBoundaryPadding
+): GraphCategoryPoint {
+  return constrainGraphCategoryExteriorPoint(
+    node,
+    regions,
+    constrainGraphCategoryPoint(node, regions, point, padding)
+  );
 }
 
 export function applyGraphCategoryMotion(
@@ -233,7 +287,10 @@ export function applyGraphCategoryMotion(
   alpha: number
 ): Map<string, GraphCategoryRegion> {
   const orderedNodes = [...nodes];
-  const regions = graphCategoryRegions(graphCategoryDynamicLayouts(orderedNodes));
+  const regions = graphCategoryRegions(
+    graphCategoryDynamicLayouts(orderedNodes),
+    orderedNodes
+  );
   const nodesByCategory = new Map<string, GraphCategoryForceNode[]>();
   for (const node of orderedNodes) {
     const category = normalizeGraphCategory(node.category);
@@ -305,35 +362,30 @@ export function translateGraphCategoryNodes<T extends GraphCategoryForceNode>(
   return translated;
 }
 
-export function constrainGraphCategoryTranslation(
-  nodes: Iterable<GraphCategoryForceNode>,
+export function translateGraphCategoryNodesWithPush<T extends GraphCategoryForceNode>(
+  nodes: Iterable<T>,
   category: string,
   dx: number,
   dy: number
-): GraphCategoryPoint {
-  const layouts = graphCategoryDynamicLayouts(nodes);
-  const target = layouts.find((layout) => layout.category === normalizeGraphCategory(category));
-  if (!target) return { x: dx, y: dy };
+): T[] {
+  const orderedNodes = [...nodes];
+  const normalizedCategory = normalizeGraphCategory(category);
+  if (!normalizedCategory || (dx === 0 && dy === 0)) return [];
 
-  let nextX = target.x + dx;
-  let nextY = target.y + dy;
-  for (let pass = 0; pass < 2; pass += 1) {
-    for (const other of layouts) {
-      if (other.category === target.category) continue;
-      const offsetX = nextX - other.x;
-      const offsetY = nextY - other.y;
-      const distance = Math.hypot(offsetX, offsetY);
-      const minimumDistance = target.radius + other.radius - graphCategoryDesiredOverlap;
-      if (distance >= minimumDistance) continue;
-
-      const fallbackAngle = stableCategoryAngle(target.category, other.category);
-      const unitX = distance === 0 ? Math.cos(fallbackAngle) : offsetX / distance;
-      const unitY = distance === 0 ? Math.sin(fallbackAngle) : offsetY / distance;
-      nextX = other.x + unitX * minimumDistance;
-      nextY = other.y + unitY * minimumDistance;
+  const distance = Math.hypot(dx, dy);
+  const stepCount = Math.max(1, Math.ceil(distance / graphCategoryTranslationStep));
+  const movedNodes = new Set<T>();
+  for (let step = 0; step < stepCount; step += 1) {
+    for (const node of translateGraphCategoryStep(
+      orderedNodes,
+      normalizedCategory,
+      dx / stepCount,
+      dy / stepCount
+    )) {
+      movedNodes.add(node);
     }
   }
-  return { x: nextX - target.x, y: nextY - target.y };
+  return [...movedNodes];
 }
 
 function shiftCategoryVelocity(
@@ -353,6 +405,122 @@ function stableCategoryAngle(left: string, right: string): number {
     hash = Math.imul(hash ^ character.charCodeAt(0), 1_677_761);
   }
   return (Math.abs(hash) % 360) * Math.PI / 180;
+}
+
+function graphCategoryNodeClearance(node: GraphCategoryForceNode): number {
+  const weight = Math.max(0, (node.backlinkCount ?? 0) + (node.linkCount ?? 0));
+  return Math.max(18, Math.min(36, 3 * Math.sqrt(weight + 1) + 10));
+}
+
+function graphCategoryDeformableBoundaryRadius(
+  region: GraphCategoryRegion,
+  angle: number
+): number {
+  let radius = region.radius + graphCategoryMaximumBulge;
+  for (const contact of region.contacts) {
+    const directionProjection = Math.cos(normalizeAngle(angle - contact.angle));
+    if (directionProjection <= 0) continue;
+    const contactDistance = (
+      contact.distance +
+      region.radius -
+      contact.radius
+    ) / 2;
+    radius = Math.min(radius, Math.max(0, contactDistance / directionProjection));
+  }
+  return radius;
+}
+
+function constrainGraphCategoryExteriorPoint(
+  node: GraphCategoryForceNode,
+  regions: ReadonlyMap<string, GraphCategoryRegion>,
+  point: GraphCategoryPoint
+): GraphCategoryPoint {
+  const ownCategory = normalizeGraphCategory(node.category);
+  let constrained = point;
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (const region of regions.values()) {
+      if (region.category === ownCategory) continue;
+      const dx = constrained.x - region.x;
+      const dy = constrained.y - region.y;
+      const distance = Math.hypot(dx, dy);
+      const fallbackAngle = stableCategoryAngle(ownCategory ?? "uncategorized", region.category);
+      const angle = distance === 0 ? fallbackAngle : Math.atan2(dy, dx);
+      const minimumDistance = graphCategoryBoundaryRadius(region, angle) +
+        graphCategoryNodeClearance(node);
+      if (distance >= minimumDistance) continue;
+      const unitX = distance === 0 ? Math.cos(angle) : dx / distance;
+      const unitY = distance === 0 ? Math.sin(angle) : dy / distance;
+      constrained = {
+        x: region.x + unitX * minimumDistance,
+        y: region.y + unitY * minimumDistance
+      };
+    }
+  }
+  return constrained;
+}
+
+function translateGraphCategoryStep<T extends GraphCategoryForceNode>(
+  nodes: T[],
+  category: string,
+  dx: number,
+  dy: number
+): T[] {
+  const layouts = graphCategoryDynamicLayouts(nodes);
+  const layoutByCategory = new Map(layouts.map((layout) => [layout.category, layout]));
+  if (!layoutByCategory.has(category)) return [];
+
+  const translations = new Map<string, GraphCategoryPoint>([
+    [category, { x: dx, y: dy }]
+  ]);
+  const queue = [category];
+  const maximumUpdates = Math.max(1, layouts.length * layouts.length);
+  let updateCount = 0;
+
+  while (queue.length > 0 && updateCount < maximumUpdates) {
+    const movingCategory = queue.shift()!;
+    const moving = layoutByCategory.get(movingCategory)!;
+    const movingTranslation = translations.get(movingCategory)!;
+    const movingX = moving.x + movingTranslation.x;
+    const movingY = moving.y + movingTranslation.y;
+
+    for (const other of layouts) {
+      if (other.category === movingCategory || other.category === category) continue;
+      const otherTranslation = translations.get(other.category) ?? { x: 0, y: 0 };
+      const otherX = other.x + otherTranslation.x;
+      const otherY = other.y + otherTranslation.y;
+      const offsetX = otherX - movingX;
+      const offsetY = otherY - movingY;
+      const distance = Math.hypot(offsetX, offsetY);
+      const minimumDistance = moving.radius + other.radius - graphCategoryDesiredOverlap;
+      if (distance >= minimumDistance) continue;
+
+      const movementDistance = Math.hypot(movingTranslation.x, movingTranslation.y);
+      const fallbackAngle = movementDistance > 0
+        ? Math.atan2(movingTranslation.y, movingTranslation.x)
+        : stableCategoryAngle(movingCategory, other.category);
+      const unitX = distance === 0 ? Math.cos(fallbackAngle) : offsetX / distance;
+      const unitY = distance === 0 ? Math.sin(fallbackAngle) : offsetY / distance;
+      translations.set(other.category, {
+        x: otherTranslation.x + unitX * (minimumDistance - distance),
+        y: otherTranslation.y + unitY * (minimumDistance - distance)
+      });
+      queue.push(other.category);
+      updateCount += 1;
+    }
+  }
+
+  const moved: T[] = [];
+  for (const [movingCategory, translation] of translations) {
+    for (const node of translateGraphCategoryNodes(
+      nodes,
+      movingCategory,
+      translation.x,
+      translation.y
+    )) {
+      moved.push(node);
+    }
+  }
+  return moved;
 }
 
 function normalizeAngle(angle: number): number {
