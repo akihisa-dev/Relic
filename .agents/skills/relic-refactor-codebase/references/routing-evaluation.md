@@ -38,3 +38,10 @@
 2. 単一bug、新機能、UI、翻訳、test、version、commit、dependency、package障害を横取りしない。
 3. 指定領域でも複数境界を包括的に変える依頼を未発火にしない。
 4. `relic-audit-code-health` と両方が候補になる場合、調査だけか包括実装かで選べる。
+
+## 本Skillを変更したときの検証
+
+1. repository rootと対象Skillを確認し、`app/package.json` と `docs/development.md` にある現行の `pnpm skills:check` を必須検証として実行する。
+2. frontmatter、参照切れ、重複名、`agents/openai.yaml` との意味の一致を確認する。descriptionを変えた場合は上記の発火例と対象外を再評価する。
+3. 利用可能なら公式Skill validatorも実行する。validatorが `PyYAML` を要求し、実行環境にない場合は未実施理由とrepository標準検証の結果を分けて報告する。外部validatorだけのために `PyYAML` をRelicの製品依存へ追加しない。
+4. 手順またはroutingを実質的に変えた場合は、発火対象、単一問題、責務分割だけを求める依頼の代表例でforward-testする。外部変更や長時間作業を伴う場合は実行前に利用者へ確認する。
