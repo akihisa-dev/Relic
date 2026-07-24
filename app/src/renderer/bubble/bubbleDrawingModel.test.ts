@@ -100,13 +100,15 @@ describe("bubbleDrawingModel", () => {
       depth: defaultGraphDrawTheme.borderStrong,
       highlight: defaultGraphDrawTheme.background,
       interiorAlpha: 0.025,
-      rimSecondary: "hsl(86 62% 40%)"
+      rimSecondary: "hsl(86 62% 40%)",
+      rimTertiary: "hsl(162 62% 40%)"
     });
     expect(bubbleMembranePalette(color, darkTheme)).toEqual({
       depth: darkTheme.borderStrong,
       highlight: darkTheme.text,
       interiorAlpha: 0.04,
-      rimSecondary: "hsl(158 62% 40%)"
+      rimSecondary: "hsl(158 62% 40%)",
+      rimTertiary: "hsl(74 62% 40%)"
     });
     expect(bubbleMembranePalette(color, defaultGraphDrawTheme).interiorAlpha)
       .toBeLessThanOrEqual(0.04);
