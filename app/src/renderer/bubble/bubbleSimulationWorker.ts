@@ -86,6 +86,16 @@ function handleBubbleSimulationRequest(message: BubbleSimulationRequest): void {
     return;
   }
 
+  if (message.type === "moveNode") {
+    moveNode(message.id, message.x, message.y, message.alpha);
+    return;
+  }
+
+  if (message.type === "interaction") {
+    setInteractionActive(message.active, message.alpha);
+    return;
+  }
+
   if (message.type === "categoryCenterOffset") {
     updateCategoryCenterOffset(message.id, message.offsetX, message.offsetY);
     return;
@@ -210,6 +220,24 @@ function updateFixedNode(
 
   simulation.alphaTarget(alpha);
   restartSimulation(alpha);
+}
+
+function moveNode(id: string, x: number, y: number, alpha = 0.18): void {
+  const node = workerNodes.find((candidate) => candidate.id === id);
+  if (!node || !simulation) return;
+
+  node.fx = null;
+  node.fy = null;
+  node.x = x;
+  node.y = y;
+  restartSimulation(alpha);
+}
+
+function setInteractionActive(active: boolean, alpha = 0.18): void {
+  if (!simulation) return;
+
+  simulation.alphaTarget(active ? alpha : 0);
+  restartSimulation(active ? alpha : 0.08);
 }
 
 function restartSimulation(alpha = 0.3): void {

@@ -196,7 +196,7 @@ describe("bubbleCategoryModel", () => {
 
     expect(translateBubbleCategoryNodesWithPush(nodes, "人物", 40, 30))
       .toHaveLength(1);
-    expect(nodes[0]).toMatchObject({ fx: 100, fy: 50, x: 100, y: 50 });
+    expect(nodes[0]).toMatchObject({ fx: null, fy: null, x: 100, y: 50 });
     expect(bubbleCategoryDynamicLayouts(nodes)[0]).toMatchObject({ x: 40, y: 30 });
   });
 
@@ -314,7 +314,7 @@ describe("bubbleCategoryModel", () => {
 
     expect(translated).toHaveLength(2);
     expect(bubbleCategoryDynamicLayouts(nodes)[0]).toMatchObject({ x: 35, y: 25 });
-    expect(nodes[0]).toMatchObject({ fx: 25, fy: 15, x: 25, y: 15 });
+    expect(nodes[0]).toMatchObject({ fx: null, fy: null, x: 25, y: 15 });
     expect(nodes[2]).toMatchObject({ fx: null, fy: null, x: 100, y: 100 });
   });
 

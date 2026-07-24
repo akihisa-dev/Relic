@@ -24,11 +24,6 @@ export function translateBubbleCategoryNodes<T extends BubbleCategoryForceNode>(
         node.x === undefined || node.y === undefined) continue;
     node.x += dx;
     node.y += dy;
-    if ("fx" in node) {
-      const fixedNode = node as T & { fx?: number | null; fy?: number | null };
-      fixedNode.fx = node.x;
-      fixedNode.fy = node.y;
-    }
     translated.push(node);
   }
   return translated;

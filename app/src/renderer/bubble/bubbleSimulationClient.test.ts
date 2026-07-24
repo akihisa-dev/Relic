@@ -26,14 +26,28 @@ describe("createBubbleSimulationClient", () => {
     expect(bubbleSimulationVelocityDecay).toBe(0.68);
   });
 
-  it("単一ノードのバブル中心差分をWorkerへ通知する", () => {
+  it("ノード位置とドラッグ中の物理演算状態をWorkerへ通知する", () => {
     vi.stubGlobal("Worker", MockWorker);
     const client = createBubbleSimulationClient(vi.fn());
     const worker = MockWorker.instances[0]!;
 
+    client.setInteractionActive(true);
+    client.moveNode("A.md", 12, 24);
     client.setNodeCategoryCenterOffset("A.md", -24, 8);
     client.setNodeFixed("A.md", null, null, 0.08, 4, -2);
 
+    expect(worker.postMessage).toHaveBeenCalledWith({
+      active: true,
+      alpha: undefined,
+      type: "interaction"
+    });
+    expect(worker.postMessage).toHaveBeenCalledWith({
+      alpha: undefined,
+      id: "A.md",
+      type: "moveNode",
+      x: 12,
+      y: 24
+    });
     expect(worker.postMessage).toHaveBeenCalledWith({
       id: "A.md",
       offsetX: -24,

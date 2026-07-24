@@ -17,7 +17,6 @@ import {
   normalizeBubbleCategory
 } from "../bubble/bubbleCategoryModel";
 import {
-  translateBubbleCategoryNodes,
   translateBubbleCategoryNodesWithPush
 } from "../bubble/bubbleCategoryTranslation";
 import {
@@ -87,7 +86,6 @@ export function useBubbleCanvasInteractions({
   });
   const pointerRef = useRef<{
     dragCategory: string | null;
-    dragFixedNodeIds: Set<string>;
     dragNode: BubbleSimNode | null;
     lastX: number;
     lastY: number;
@@ -133,29 +131,6 @@ export function useBubbleCanvasInteractions({
     return bubbleCategoryAtWorldPoint([...nodesRef.current.values()], point);
   }, [canvasRef, nodesRef, viewRef]);
 
-  const setCategoryNodesFixed = useCallback((category: string) => {
-    const fixedNodeIds = new Set<string>();
-    for (const node of translateBubbleCategoryNodes(nodesRef.current.values(), category, 0, 0)) {
-      fixedNodeIds.add(node.id);
-      simulationClientRef.current?.setNodeFixed(
-        node.id,
-        node.x,
-        node.y
-      );
-    }
-    return fixedNodeIds;
-  }, [nodesRef, simulationClientRef]);
-
-  const releaseBubbleNodes = useCallback((fixedNodeIds: ReadonlySet<string>) => {
-    for (const id of fixedNodeIds) {
-      const node = nodesRef.current.get(id);
-      if (!node) continue;
-      node.fx = null;
-      node.fy = null;
-      simulationClientRef.current?.setNodeFixed(id, null, null, 0.08);
-    }
-  }, [nodesRef, simulationClientRef]);
-
   const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     event.currentTarget.focus();
     panVelocityRef.current = { x: 0, y: 0 };
@@ -175,11 +150,10 @@ export function useBubbleCanvasInteractions({
       node.fy = node.y;
       simulationClientRef.current?.setNodeFixed(node.id, node.x, node.y);
     }
-    const dragFixedNodeIds = category ? setCategoryNodesFixed(category) : new Set<string>();
+    if (category) simulationClientRef.current?.setInteractionActive(true);
 
     pointerRef.current = {
       dragCategory: category,
-      dragFixedNodeIds,
       dragNode: node,
       lastX: event.clientX,
       lastY: event.clientY,
@@ -192,7 +166,7 @@ export function useBubbleCanvasInteractions({
       time: performance.now(),
       type: node ? "node" : category ? "bubble" : "pan"
     };
-  }, [categoryAtPoint, nodeAtPoint, requestDraw, setCategoryNodesFixed, simulationClientRef]);
+  }, [categoryAtPoint, nodeAtPoint, requestDraw, simulationClientRef]);
 
   const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -305,8 +279,7 @@ export function useBubbleCanvasInteractions({
         dy / viewRef.current.scale
       );
       for (const node of translated) {
-        pointer.dragFixedNodeIds.add(node.id);
-        simulationClientRef.current?.setNodeFixed(node.id, node.x, node.y);
+        simulationClientRef.current?.moveNode(node.id, node.x, node.y);
       }
       requestDraw();
       return;
@@ -343,7 +316,7 @@ export function useBubbleCanvasInteractions({
         if (action?.type === "tagSearch") openTagSearchRef.current(action.tag);
       }
     }
-    if (pointer.dragCategory) releaseBubbleNodes(pointer.dragFixedNodeIds);
+    if (pointer.dragCategory) simulationClientRef.current?.setInteractionActive(false);
 
     if (pointer.type === "pan") {
       panVelocityRef.current = finishBubblePanVelocity(
@@ -356,7 +329,7 @@ export function useBubbleCanvasInteractions({
     pointerRef.current = null;
     event.currentTarget.style.cursor = "grab";
     requestDraw();
-  }, [openFileRef, openTagSearchRef, releaseBubbleNodes, requestDraw, simulationClientRef]);
+  }, [openFileRef, openTagSearchRef, requestDraw, simulationClientRef]);
 
   const handlePointerCancel = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     const pointer = pointerRef.current;
@@ -370,14 +343,14 @@ export function useBubbleCanvasInteractions({
       pointer.dragNode.fy = null;
       simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, null, null, 0.08);
     }
-    if (pointer.dragCategory) releaseBubbleNodes(pointer.dragFixedNodeIds);
+    if (pointer.dragCategory) simulationClientRef.current?.setInteractionActive(false);
 
     pointerRef.current = null;
     panVelocityRef.current = { x: 0, y: 0 };
     panSampleMsRef.current = 0;
     event.currentTarget.style.cursor = "grab";
     requestDraw();
-  }, [releaseBubbleNodes, requestDraw, simulationClientRef]);
+  }, [requestDraw, simulationClientRef]);
 
   const handlePointerLeave = useCallback(() => {
     hoverPointRef.current = null;

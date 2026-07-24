@@ -11,6 +11,8 @@ const bubbleViewModelMocks = vi.hoisted(() => ({
   bubbleNodeAtCanvasPoint: vi.fn()
 }));
 const bubbleSimulationMocks = vi.hoisted(() => ({
+  moveNode: vi.fn(),
+  setInteractionActive: vi.fn(),
   setNodeCategoryCenterOffset: vi.fn(),
   setNodeFixed: vi.fn(),
   sync: vi.fn()
@@ -26,7 +28,9 @@ vi.mock("../bubble/bubbleSimulationClient", async (importOriginal) => ({
   ...await importOriginal<typeof import("../bubble/bubbleSimulationClient")>(),
   createBubbleSimulationClient: () => ({
     dispose: vi.fn(),
+    moveNode: bubbleSimulationMocks.moveNode,
     restart: vi.fn(),
+    setInteractionActive: bubbleSimulationMocks.setInteractionActive,
     setNodeCategoryCenterOffset: bubbleSimulationMocks.setNodeCategoryCenterOffset,
     setNodeFixed: bubbleSimulationMocks.setNodeFixed,
     sync: bubbleSimulationMocks.sync,
@@ -62,6 +66,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
   bubbleViewModelMocks.bubbleCategoryAtWorldPoint.mockReset();
   bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReset();
+  bubbleSimulationMocks.moveNode.mockReset();
+  bubbleSimulationMocks.setInteractionActive.mockReset();
   bubbleSimulationMocks.setNodeFixed.mockReset();
   bubbleSimulationMocks.setNodeCategoryCenterOffset.mockReset();
   bubbleSimulationMocks.sync.mockReset();
@@ -179,7 +185,7 @@ describe("BubbleView", () => {
     expect(onOpenFile).toHaveBeenCalledWith("note.md");
   });
 
-  it("バブルのドラッグでは接触した別バブルも押し、中断時に全固定を解除する", async () => {
+  it("バブルのドラッグでは物理演算を続けながら接触した別バブルも押す", async () => {
     const graph: WorkspaceGraph = {
       links: [],
       nodes: [
@@ -257,25 +263,25 @@ describe("BubbleView", () => {
     }));
     fireEvent.lostPointerCapture(canvas, { pointerId: 1 });
 
-    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith(
+    expect(bubbleSimulationMocks.setInteractionActive).toHaveBeenNthCalledWith(1, true);
+    expect(bubbleSimulationMocks.moveNode).toHaveBeenCalledWith(
       "A.md",
       expect.any(Number),
       expect.any(Number)
     );
-    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith(
+    expect(bubbleSimulationMocks.moveNode).toHaveBeenCalledWith(
       "B.md",
       expect.any(Number),
       expect.any(Number)
     );
-    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith("A.md", null, null, 0.08);
-    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith("B.md", null, null, 0.08);
-    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith(
+    expect(bubbleSimulationMocks.moveNode).toHaveBeenCalledWith(
       "C.md",
       expect.any(Number),
       expect.any(Number)
     );
-    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith("C.md", null, null, 0.08);
-    expect(bubbleSimulationMocks.setNodeFixed.mock.calls.some(([id]) => id === "D.md")).toBe(false);
+    expect(bubbleSimulationMocks.moveNode.mock.calls.some(([id]) => id === "D.md")).toBe(false);
+    expect(bubbleSimulationMocks.setNodeFixed).not.toHaveBeenCalled();
+    expect(bubbleSimulationMocks.setInteractionActive).toHaveBeenNthCalledWith(2, false);
   });
 
   it("単一ノードをドラッグしてもバブル中心を同じ位置に保つ", async () => {

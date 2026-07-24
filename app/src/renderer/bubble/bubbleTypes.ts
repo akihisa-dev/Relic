@@ -109,6 +109,20 @@ export interface BubbleSimulationFixedNodeMessage {
   y: number | null;
 }
 
+export interface BubbleSimulationMoveNodeMessage {
+  alpha?: number;
+  id: string;
+  type: "moveNode";
+  x: number;
+  y: number;
+}
+
+export interface BubbleSimulationInteractionMessage {
+  active: boolean;
+  alpha?: number;
+  type: "interaction";
+}
+
 export interface BubbleSimulationCategoryCenterOffsetMessage {
   id: string;
   offsetX: number;
@@ -129,6 +143,8 @@ export type BubbleSimulationRequest =
   | BubbleSimulationCategoryCenterOffsetMessage
   | BubbleSimulationDisposeMessage
   | BubbleSimulationFixedNodeMessage
+  | BubbleSimulationInteractionMessage
+  | BubbleSimulationMoveNodeMessage
   | BubbleSimulationOptionsMessage
   | BubbleSimulationRestartMessage
   | BubbleSimulationSyncMessage;

@@ -32,7 +32,9 @@ import {
 
 export interface BubbleSimulationClient {
   dispose: () => void;
+  moveNode: (id: string, x: number, y: number, alpha?: number) => void;
   restart: (alpha?: number) => void;
+  setInteractionActive: (active: boolean, alpha?: number) => void;
   setNodeCategoryCenterOffset: (id: string, offsetX: number, offsetY: number) => void;
   setNodeFixed: (
     id: string,
@@ -124,7 +126,9 @@ function createWorkerBubbleSimulationClient(
         worker.terminate();
       }
     },
+    moveNode: (id, x, y, alpha) => post({ alpha, id, type: "moveNode", x, y }),
     restart: (alpha) => post({ alpha, type: "restart" }),
+    setInteractionActive: (active, alpha) => post({ active, alpha, type: "interaction" }),
     setNodeCategoryCenterOffset: (id, offsetX, offsetY) => {
       post({ id, offsetX, offsetY, type: "categoryCenterOffset" });
     },
@@ -222,7 +226,21 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
       fallbackLinks = [];
       fallbackNodes = [];
     },
+    moveNode: (id, x, y, alpha = 0.18) => {
+      const node = fallbackNodes.find((candidate) => candidate.id === id);
+      if (!node || !simulation) return;
+      node.fx = null;
+      node.fy = null;
+      node.x = x;
+      node.y = y;
+      restart(alpha);
+    },
     restart,
+    setInteractionActive: (active, alpha = 0.18) => {
+      if (!simulation) return;
+      simulation.alphaTarget(active ? alpha : 0);
+      restart(active ? alpha : 0.08);
+    },
     setNodeCategoryCenterOffset: (id, offsetX, offsetY) => {
       const node = fallbackNodes.find((candidate) => candidate.id === id);
       if (!node) return;
