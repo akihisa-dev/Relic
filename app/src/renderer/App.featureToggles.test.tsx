@@ -111,7 +111,7 @@ describe("App feature toggles", () => {
     const tableButton = await screen.findByRole("button", { name: "テーブル" });
     expect(screen.queryByRole("button", { name: "フロントマター" })).not.toBeInTheDocument();
     fireEvent.click(tableButton);
-    expect(await screen.findByText("1 / 1件")).toBeInTheDocument();
+    expect(await screen.findByText("1件")).toBeInTheDocument();
     expect(getWorkspaceTable).toHaveBeenCalledOnce();
   });
 });

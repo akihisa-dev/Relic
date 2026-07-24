@@ -26,8 +26,9 @@
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-sm);
   color: var(--text);
-  flex: 1 1 260px;
+  flex: 1 1 420px;
   font: inherit;
+  max-width: 560px;
   min-width: 180px;
   padding: 7px 9px;
 }
@@ -36,7 +37,6 @@
   align-items: center;
   display: flex;
   gap: 8px;
-  margin-left: auto;
 }
 
 .table-column-menu,
@@ -73,6 +73,7 @@
 
 .table-result-count {
   color: var(--text-3);
+  margin-left: auto;
   min-width: max-content;
 }
 
@@ -261,12 +262,16 @@
 }
 
 .table-view-header {
-  background: var(--surface-raised);
+  background: color-mix(in srgb, var(--surface) 72%, var(--bg));
   border-bottom: 1px solid var(--border-medium);
   min-height: 38px;
   position: sticky;
   top: 0;
   z-index: 5;
+}
+
+.table-view-scroll--scrolled .table-view-header {
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--text) 9%, transparent);
 }
 
 .table-view-rows {
@@ -301,7 +306,7 @@
 }
 
 .table-view-header .table-view-cell {
-  background: var(--surface-raised);
+  background: color-mix(in srgb, var(--surface) 72%, var(--bg));
   padding-block: 0;
 }
 
@@ -319,7 +324,9 @@
 }
 
 .table-view-cell--sticky {
-  box-shadow: 1px 0 0 var(--border-soft);
+  box-shadow:
+    1px 0 0 var(--border-medium),
+    4px 0 7px color-mix(in srgb, var(--text) 5%, transparent);
   left: 0;
   position: sticky;
   z-index: 3;
@@ -700,12 +707,11 @@
 @media (max-width: 620px) {
   .table-search-input {
     flex-basis: 100%;
+    max-width: none;
   }
 
   .table-toolbar-actions {
     justify-content: space-between;
-    margin-left: 0;
-    width: 100%;
   }
 
   .table-filter-popover {

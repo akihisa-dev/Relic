@@ -61,10 +61,13 @@ describe("TableView", () => {
       </I18nProvider>
     );
 
-    expect(await screen.findByText("2 / 2件")).toBeInTheDocument();
+    expect(await screen.findByText("2件")).toBeInTheDocument();
     expect(screen.getByText("a")).toBeInTheDocument();
     expect(screen.getByText("b")).toBeInTheDocument();
     expect(screen.getByLabelText(/フロントマターを読み取れません/)).toBeInTheDocument();
+    const tableElement = screen.getByRole("table");
+    fireEvent.scroll(tableElement, { target: { scrollTop: 24 } });
+    expect(tableElement).toHaveClass("table-view-scroll--scrolled");
     fireEvent.click(screen.getAllByRole("button", { name: /^note2/ })[0]);
     expect(onOpenFile).toHaveBeenCalledWith("a/note2.md");
   });
@@ -76,9 +79,11 @@ describe("TableView", () => {
       preferences: preferences({ selectedProperties: ["status", "count"] })
     });
 
-    await screen.findByText("2 / 2件");
+    await screen.findByText("2件");
+    fireEvent.change(screen.getByRole("searchbox", { name: "テーブルを検索" }), { target: { value: "note2" } });
+    expect(screen.getByText("2件表示 / 全2件")).toBeInTheDocument();
     fireEvent.change(screen.getByRole("searchbox", { name: "テーブルを検索" }), { target: { value: "draft" } });
-    expect(screen.getByText("1 / 2件")).toBeInTheDocument();
+    expect(screen.getByText("1件表示 / 全2件")).toBeInTheDocument();
     expect(screen.getByText("draft")).toBeInTheDocument();
     expect(screen.queryByText("10")).not.toBeInTheDocument();
 
@@ -90,7 +95,7 @@ describe("TableView", () => {
     fireEvent.click(screen.getByRole("button", { name: "条件を追加" }));
 
     await waitFor(() => expect(save).toHaveBeenCalled());
-    expect(screen.getByText("1 / 2件")).toBeInTheDocument();
+    expect(screen.getByText("1件表示 / 全2件")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "絞り込み 1" })).toBeInTheDocument();
   });
 
@@ -98,7 +103,7 @@ describe("TableView", () => {
     const save = vi.fn(async (input: WorkspaceTablePreferences) => ({ ok: true as const, value: input }));
     renderTable({ saveWorkspaceTablePreferences: save });
 
-    await screen.findByText("2 / 2件");
+    await screen.findByText("2件");
     fireEvent.click(screen.getByRole("button", { name: "列" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "count" }));
     await waitFor(() => expect(screen.getByRole("columnheader", { name: /count/ })).toBeInTheDocument());
@@ -125,7 +130,7 @@ describe("TableView", () => {
       preferences: preferences({ selectedProperties: ["count", "status"] })
     });
 
-    await screen.findByText("2 / 2件");
+    await screen.findByText("2件");
     const countHandle = screen.getByRole("button", { name: "count列を移動" });
     const statusHeader = screen.getByRole("columnheader", { name: /status/ });
     Object.defineProperty(statusHeader, "getBoundingClientRect", {
@@ -159,7 +164,7 @@ describe("TableView", () => {
       preferences: preferences({ selectedProperties: ["count", "status"] })
     });
 
-    await screen.findByText("2 / 2件");
+    await screen.findByText("2件");
     const countHandle = screen.getByRole("button", { name: "count列を移動" });
     const statusHeader = screen.getByRole("columnheader", { name: /status/ });
     Object.defineProperty(statusHeader, "getBoundingClientRect", {
@@ -189,7 +194,7 @@ describe("TableView", () => {
       preferences: preferences({ selectedProperties: ["count"] })
     });
 
-    await screen.findByText("2 / 2件");
+    await screen.findByText("2件");
     const separator = screen.getByRole("separator", { name: "count列の幅を変更" });
     dispatchPointer(separator, "pointerdown", 100, 1);
     dispatchPointer(separator, "pointermove", 160, 1);
@@ -205,7 +210,7 @@ describe("TableView", () => {
 
   it("Escapeでポップオーバーを閉じて開いたボタンへフォーカスを戻す", async () => {
     renderTable();
-    await screen.findByText("2 / 2件");
+    await screen.findByText("2件");
     const trigger = screen.getByRole("button", { name: "絞り込み" });
     fireEvent.click(trigger);
     const target = screen.getByRole("combobox", { name: "対象" });
@@ -221,7 +226,7 @@ describe("TableView", () => {
       .mockImplementation(async (input: WorkspaceTablePreferences) => ({ ok: true as const, value: input }));
     renderTable({ saveWorkspaceTablePreferences: save });
 
-    await screen.findByText("2 / 2件");
+    await screen.findByText("2件");
     fireEvent.click(screen.getByRole("button", { name: "列" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "count" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("保存できません");
@@ -242,7 +247,7 @@ describe("TableView", () => {
     >((resolve) => pending.push({ input, resolve })));
     renderTable({ saveWorkspaceTablePreferences: save });
 
-    await screen.findByText("2 / 2件");
+    await screen.findByText("2件");
     fireEvent.click(screen.getByRole("button", { name: "列" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "count" }));
     await waitFor(() => expect(pending).toHaveLength(1));
@@ -277,7 +282,7 @@ describe("TableView", () => {
     };
     renderTable({}, largeTable);
 
-    await screen.findByText("1000 / 1000件");
+    await screen.findByText("1000件");
     expect(document.querySelectorAll(".table-view-row").length).toBeLessThan(30);
     fireEvent.click(screen.getByRole("button", { name: "categoryの設定" }));
     expect(screen.getByRole("dialog", { name: "categoryの設定" })).toBeInTheDocument();

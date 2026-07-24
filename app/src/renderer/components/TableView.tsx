@@ -322,8 +322,12 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table 
               </div>
             ) : null}
           </div>
-          <span className="table-result-count">{t("table.resultCount", { total: table.rows.length, visible: rows.length })}</span>
         </div>
+        <span className="table-result-count">
+          {search.trim().length > 0 || preferences.filters.length > 0
+            ? t("table.resultCountFiltered", { total: table.rows.length, visible: rows.length })
+            : t("table.resultCountAll", { total: table.rows.length })}
+        </span>
         {saveError ? (
           <span className="table-view-save-error" role="alert">
             {saveError} <button onClick={() => void retry()} type="button">{t("common.retry")}</button>
@@ -333,7 +337,7 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table 
       <div
         aria-colcount={selectedProperties.length + 1}
         aria-rowcount={rows.length + 1}
-        className="table-view-scroll"
+        className={`table-view-scroll${scrollTop > 0 ? " table-view-scroll--scrolled" : ""}`}
         onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
         ref={scrollRef}
         role="table"
