@@ -4,7 +4,9 @@ import type { WorkspaceGraphNode } from "../../shared/ipc";
 import {
   bubbleCategoryAtWorldPoint,
   bubbleCategoryBubbles,
+  bubbleColorWithAlpha,
   bubbleLinkDashPattern,
+  bubbleMembranePalette,
   bubbleNodeBubbleHighlight
 } from "./bubbleDrawingModel";
 import {
@@ -88,6 +90,24 @@ describe("bubbleDrawingModel", () => {
     expect(bubbleNodeBubbleHighlight(defaultGraphDrawTheme))
       .toBe(defaultGraphDrawTheme.background);
     expect(bubbleNodeBubbleHighlight(darkTheme)).toBe(darkTheme.text);
+  });
+
+  it("薄膜の反射色と透明度をテーマに合わせて生成する", () => {
+    const darkTheme = { ...defaultGraphDrawTheme, background: "#11120f" };
+    const color = "hsl(120 62% 40%)";
+
+    expect(bubbleMembranePalette(color, defaultGraphDrawTheme)).toEqual({
+      depth: defaultGraphDrawTheme.borderStrong,
+      highlight: defaultGraphDrawTheme.background,
+      rimSecondary: "hsl(86 62% 40%)"
+    });
+    expect(bubbleMembranePalette(color, darkTheme)).toEqual({
+      depth: darkTheme.borderStrong,
+      highlight: darkTheme.text,
+      rimSecondary: "hsl(158 62% 40%)"
+    });
+    expect(bubbleColorWithAlpha(color, 0.2)).toBe("hsl(120 62% 40% / 0.2)");
+    expect(bubbleColorWithAlpha("#fff", 1.4)).toBe("rgba(255, 255, 255, 1)");
   });
 
   it("リンクの点線をズーム倍率にかかわらず同じ画面間隔に保つ", () => {

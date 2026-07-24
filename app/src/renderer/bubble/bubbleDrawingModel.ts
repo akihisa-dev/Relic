@@ -141,6 +141,23 @@ export function bubbleNodeBubbleHighlight(theme: GraphDrawTheme): string {
   return graphThemeIsDark(theme.background) ? theme.text : theme.background;
 }
 
+export interface BubbleMembranePalette {
+  depth: string;
+  highlight: string;
+  rimSecondary: string;
+}
+
+export function bubbleMembranePalette(
+  color: string,
+  theme: GraphDrawTheme
+): BubbleMembranePalette {
+  return {
+    depth: theme.borderStrong,
+    highlight: bubbleNodeBubbleHighlight(theme),
+    rimSecondary: shiftBubbleHue(color, graphThemeIsDark(theme.background) ? 38 : -34)
+  };
+}
+
 function drawBubbleBubbleNode(
   context: CanvasRenderingContext2D,
   node: BubbleSimNode,
@@ -150,55 +167,67 @@ function drawBubbleBubbleNode(
   scale: number,
   alpha: number
 ): void {
-  const highlight = bubbleNodeBubbleHighlight(theme);
+  const palette = bubbleMembranePalette(color, theme);
+  const fillGradient = context.createRadialGradient(
+    node.x - radius * 0.34,
+    node.y - radius * 0.38,
+    Math.max(0.5 / scale, radius * 0.04),
+    node.x,
+    node.y,
+    radius * 1.08
+  );
+  fillGradient.addColorStop(0, bubbleColorWithAlpha(palette.highlight, 0.78));
+  fillGradient.addColorStop(0.16, bubbleColorWithAlpha(palette.highlight, 0.32));
+  fillGradient.addColorStop(0.42, bubbleColorWithAlpha(color, 0.82));
+  fillGradient.addColorStop(0.82, bubbleColorWithAlpha(color, 0.68));
+  fillGradient.addColorStop(1, bubbleColorWithAlpha(palette.depth, 0.72));
+
   context.save();
-  context.globalAlpha = alpha * 0.8;
-  context.fillStyle = color;
+  context.globalAlpha = alpha;
+  context.fillStyle = fillGradient;
   context.beginPath();
   context.arc(node.x, node.y, radius, 0, Math.PI * 2);
   context.fill();
 
-  context.globalAlpha = alpha * 0.16;
-  context.fillStyle = highlight;
-  context.beginPath();
-  context.arc(
-    node.x - radius * 0.28,
-    node.y - radius * 0.3,
-    radius * 0.48,
-    0,
-    Math.PI * 2
+  const rimGradient = context.createLinearGradient(
+    node.x - radius,
+    node.y - radius,
+    node.x + radius,
+    node.y + radius
   );
-  context.fill();
-
-  context.globalAlpha = alpha * 0.12;
-  context.fillStyle = theme.borderStrong;
+  rimGradient.addColorStop(0, bubbleColorWithAlpha(palette.highlight, 0.9));
+  rimGradient.addColorStop(0.3, bubbleColorWithAlpha(color, 0.78));
+  rimGradient.addColorStop(0.68, bubbleColorWithAlpha(palette.rimSecondary, 0.72));
+  rimGradient.addColorStop(1, bubbleColorWithAlpha(palette.highlight, 0.5));
+  context.strokeStyle = rimGradient;
+  context.lineWidth = 1.45 / scale;
   context.beginPath();
-  context.arc(
-    node.x + radius * 0.2,
-    node.y + radius * 0.24,
-    radius * 0.42,
-    0,
-    Math.PI * 2
-  );
-  context.fill();
-
-  context.globalAlpha = alpha * 0.68;
-  context.strokeStyle = color;
-  context.lineWidth = 1.2 / scale;
+  context.arc(node.x, node.y, radius - 0.7 / scale, 0, Math.PI * 2);
   context.stroke();
 
-  context.globalAlpha = alpha * 0.48;
-  context.strokeStyle = highlight;
-  context.lineWidth = 1.1 / scale;
+  context.strokeStyle = bubbleColorWithAlpha(palette.highlight, 0.72);
+  context.lineCap = "round";
+  context.lineWidth = 1.15 / scale;
   context.beginPath();
   context.arc(
     node.x,
     node.y,
-    radius * 0.68,
-    Math.PI * 1.08,
-    Math.PI * 1.47
+    radius * 0.72,
+    Math.PI * 1.06,
+    Math.PI * 1.48
   );
   context.stroke();
+
+  context.fillStyle = bubbleColorWithAlpha(palette.highlight, 0.62);
+  context.beginPath();
+  context.arc(
+    node.x - radius * 0.38,
+    node.y - radius * 0.4,
+    Math.max(0.8 / scale, radius * 0.07),
+    0,
+    Math.PI * 2
+  );
+  context.fill();
   context.restore();
 }
 
@@ -381,18 +410,84 @@ function drawBubbleCategoryBubbles(
 ): void {
   for (const bubble of bubbleCategoryBubbles(nodes)) {
     const color = graphCategoryColor(bubble.category, theme);
+    const palette = bubbleMembranePalette(color, theme);
+    const fillGradient = context.createRadialGradient(
+      bubble.x - bubble.radius * 0.32,
+      bubble.y - bubble.radius * 0.38,
+      Math.max(1 / scale, bubble.radius * 0.04),
+      bubble.x,
+      bubble.y,
+      bubble.radius * 1.14
+    );
+    fillGradient.addColorStop(0, bubbleColorWithAlpha(palette.highlight, 0.2));
+    fillGradient.addColorStop(0.24, bubbleColorWithAlpha(color, 0.13));
+    fillGradient.addColorStop(0.7, bubbleColorWithAlpha(color, 0.055));
+    fillGradient.addColorStop(1, bubbleColorWithAlpha(palette.rimSecondary, 0.15));
+
     context.save();
-    context.fillStyle = color;
-    context.globalAlpha = 0.075;
+    context.fillStyle = fillGradient;
     traceSmoothBubble(context, bubble.points);
     context.fill();
 
-    context.globalAlpha = 0.46;
-    context.strokeStyle = color;
-    context.lineWidth = 1.4 / scale;
+    context.save();
+    traceSmoothBubble(context, bubble.points);
+    context.clip();
+
+    const depthGradient = context.createRadialGradient(
+      bubble.x + bubble.radius * 0.18,
+      bubble.y + bubble.radius * 0.24,
+      bubble.radius * 0.42,
+      bubble.x,
+      bubble.y,
+      bubble.radius * 1.08
+    );
+    depthGradient.addColorStop(0, bubbleColorWithAlpha(palette.depth, 0));
+    depthGradient.addColorStop(0.72, bubbleColorWithAlpha(palette.depth, 0.025));
+    depthGradient.addColorStop(1, bubbleColorWithAlpha(palette.depth, 0.13));
+    context.fillStyle = depthGradient;
+    context.fillRect(
+      bubble.x - bubble.radius * 1.25,
+      bubble.y - bubble.radius * 1.25,
+      bubble.radius * 2.5,
+      bubble.radius * 2.5
+    );
+
+    context.strokeStyle = bubbleColorWithAlpha(palette.highlight, 0.19);
+    context.lineCap = "round";
+    context.lineWidth = Math.max(1.1 / scale, bubble.radius * 0.018);
+    context.beginPath();
+    context.ellipse(
+      bubble.x - bubble.radius * 0.16,
+      bubble.y - bubble.radius * 0.22,
+      bubble.radius * 0.55,
+      bubble.radius * 0.7,
+      -0.58,
+      Math.PI * 1.08,
+      Math.PI * 1.52
+    );
+    context.stroke();
+    context.restore();
+
+    context.strokeStyle = bubbleColorWithAlpha(palette.depth, 0.18);
+    context.lineWidth = 3.2 / scale;
+    traceSmoothBubble(context, bubble.points);
     context.stroke();
 
-    context.globalAlpha = 0.92;
+    const rimGradient = context.createLinearGradient(
+      bubble.x - bubble.radius,
+      bubble.y - bubble.radius,
+      bubble.x + bubble.radius,
+      bubble.y + bubble.radius
+    );
+    rimGradient.addColorStop(0, bubbleColorWithAlpha(palette.highlight, 0.72));
+    rimGradient.addColorStop(0.28, bubbleColorWithAlpha(color, 0.62));
+    rimGradient.addColorStop(0.66, bubbleColorWithAlpha(palette.rimSecondary, 0.58));
+    rimGradient.addColorStop(1, bubbleColorWithAlpha(palette.highlight, 0.34));
+    context.strokeStyle = rimGradient;
+    context.lineWidth = 1.45 / scale;
+    traceSmoothBubble(context, bubble.points);
+    context.stroke();
+
     context.fillStyle = color;
     context.font = `650 ${13 / scale}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
     context.textAlign = "center";
@@ -405,6 +500,35 @@ function drawBubbleCategoryBubbles(
     );
     context.restore();
   }
+}
+
+export function bubbleColorWithAlpha(color: string, alpha: number): string {
+  const boundedAlpha = clamp(alpha, 0, 1);
+  const hsl = color.trim().match(/^hsl\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*\)$/i);
+  if (hsl) {
+    return `hsl(${hsl[1]} ${hsl[2]}% ${hsl[3]}% / ${boundedAlpha})`;
+  }
+
+  const hexadecimal = color.trim().match(/^#([\da-f]{3}|[\da-f]{6})$/i);
+  if (hexadecimal) {
+    const value = hexadecimal[1]!;
+    const expanded = value.length === 3
+      ? [...value].map((character) => `${character}${character}`).join("")
+      : value;
+    return `rgba(${Number.parseInt(expanded.slice(0, 2), 16)}, ${Number.parseInt(expanded.slice(2, 4), 16)}, ${Number.parseInt(expanded.slice(4, 6), 16)}, ${boundedAlpha})`;
+  }
+
+  const rgb = color.trim().match(/^rgba?\(\s*(\d+)\D+(\d+)\D+(\d+)/i);
+  if (rgb) return `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, ${boundedAlpha})`;
+  return color;
+}
+
+function shiftBubbleHue(color: string, shift: number): string {
+  const hsl = color.trim().match(/^hsl\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*\)$/i);
+  if (!hsl) return color;
+
+  const hue = (Number(hsl[1]) + shift + 360) % 360;
+  return `hsl(${hue} ${hsl[2]}% ${hsl[3]}%)`;
 }
 
 function traceSmoothBubble(
