@@ -6,7 +6,7 @@ const bubbleCategoryMaximumCollisionImpulse = 8;
 const bubbleCategoryMaximumExteriorImpulse = 5;
 const bubbleCategoryCollisionStrength = 0.16;
 const bubbleCategoryExteriorReactionStrength = 0.16;
-const bubbleLinkMaximumStrength = 0.92;
+const bubbleLinkMaximumStrength = 0.86;
 
 export interface BubblePhysicsVector {
   x: number;

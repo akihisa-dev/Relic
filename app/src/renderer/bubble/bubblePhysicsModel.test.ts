@@ -6,11 +6,14 @@ import {
   bubbleCategoryExteriorImpulse,
   bubbleLinkAttractionStrength
 } from "./bubblePhysicsModel";
+import { defaultBubbleOptions } from "./bubbleTypes";
 
 describe("bubblePhysicsModel", () => {
   it("単一リンクを少し弱め、重複リンクも硬くなりすぎないようにする", () => {
-    expect(bubbleLinkAttractionStrength(0.72, 1)).toBeCloseTo(0.72);
-    expect(bubbleLinkAttractionStrength(0.72, 4)).toBeCloseTo(0.92);
+    expect(bubbleLinkAttractionStrength(defaultBubbleOptions.linkStrength, 1))
+      .toBeCloseTo(0.66);
+    expect(bubbleLinkAttractionStrength(defaultBubbleOptions.linkStrength, 4))
+      .toBeCloseTo(0.86);
   });
 
   it("カテゴリ中心の近くでは吸着せず、遠距離でも急加速しない", () => {
