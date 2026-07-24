@@ -6,7 +6,7 @@
     "component": {
       "type": "application",
       "name": "relic",
-      "version": "0.56.14",
+      "version": "0.56.15",
       "licenses": [
         {
           "license": {
