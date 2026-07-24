@@ -139,9 +139,19 @@
 }
 
 .settings-info a {
+  align-items: center;
   color: var(--accent);
+  display: inline-flex;
+  gap: 4px;
   text-decoration: underline;
   text-underline-offset: 3px;
+  width: max-content;
+}
+
+.settings-repository-icon {
+  flex: 0 0 auto;
+  height: 16px;
+  width: 16px;
 }
 
 .setting-row input[type="checkbox"] {

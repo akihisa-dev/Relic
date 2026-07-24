@@ -47,7 +47,9 @@ describe("SettingsPanel", () => {
     expect(screen.getByText("App Info")).toBeInTheDocument();
     expect(screen.getByText("Relic 1.2.3")).toBeInTheDocument();
     expect(screen.getByText("macOS")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "GitHub: https://github.com/akihisa-dev/Relic" })).toHaveAttribute("href", "https://github.com/akihisa-dev/Relic");
+    const repositoryLink = screen.getByRole("link", { name: "GitHub: https://github.com/akihisa-dev/Relic" });
+    expect(repositoryLink).toHaveAttribute("href", "https://github.com/akihisa-dev/Relic");
+    expect(repositoryLink.querySelector("svg.settings-repository-icon[aria-hidden='true']")).not.toBeNull();
     expect(screen.queryByText("darwin")).not.toBeInTheDocument();
   });
 
