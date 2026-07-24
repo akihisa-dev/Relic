@@ -4,6 +4,7 @@ import type { WorkspaceGraphNode } from "../../shared/ipc";
 import {
   bubbleCategoryAtWorldPoint,
   bubbleCategoryBubbles,
+  bubbleLinkDashPattern,
   bubbleNodeBubbleHighlight
 } from "./bubbleDrawingModel";
 import {
@@ -87,6 +88,11 @@ describe("bubbleDrawingModel", () => {
     expect(bubbleNodeBubbleHighlight(defaultGraphDrawTheme))
       .toBe(defaultGraphDrawTheme.background);
     expect(bubbleNodeBubbleHighlight(darkTheme)).toBe(darkTheme.text);
+  });
+
+  it("リンクの点線をズーム倍率にかかわらず同じ画面間隔に保つ", () => {
+    expect(bubbleLinkDashPattern(1)).toEqual([1.5, 5]);
+    expect(bubbleLinkDashPattern(2)).toEqual([0.75, 2.5]);
   });
 
   it("動いたバブルの輪郭内だけを操作対象として判定する", () => {

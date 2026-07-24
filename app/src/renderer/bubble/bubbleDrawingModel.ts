@@ -65,6 +65,9 @@ export function drawBubble(
   }
 
   const linkScaleOpacity = bubbleLinkScaleOpacity(view.scale);
+  context.save();
+  context.setLineDash(bubbleLinkDashPattern(view.scale));
+  context.lineCap = "round";
   for (const [index, link] of links.entries()) {
     const endpoints = bubbleLinkEndpoints(link.sourceNode, link.targetNode, options, view.scale);
     if (!endpoints.visible) continue;
@@ -96,6 +99,7 @@ export function drawBubble(
       drawArrow(context, link.sourceNode, link.targetNode, options, view.scale);
     }
   }
+  context.restore();
 
   context.globalAlpha = 1;
   for (const node of nodes) {
@@ -276,6 +280,10 @@ export function bubbleConnectionPulsePoint(
     x: fromX + (toX - fromX) * linkProgress,
     y: fromY + (toY - fromY) * linkProgress
   };
+}
+
+export function bubbleLinkDashPattern(scale: number): [number, number] {
+  return [1.5 / scale, 5 / scale];
 }
 
 export function bubbleLinkEndpoints(
