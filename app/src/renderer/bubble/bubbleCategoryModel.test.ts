@@ -107,10 +107,10 @@ describe("bubbleCategoryModel", () => {
       24
     );
     expect(Math.hypot(constrained.x - layout.x, constrained.y - layout.y))
-      .toBeLessThanOrEqual(layout.radius + 52 - 24);
+      .toBeLessThanOrEqual(layout.radius - 24);
   });
 
-  it("所属ノードが外側から押す方向だけバブルの輪郭を膨らませる", () => {
+  it("所属ノードが片側へ寄ってもバブルの輪郭を円形に保つ", () => {
     const layouts = [{
       category: "人物",
       count: 1,
@@ -127,7 +127,7 @@ describe("bubbleCategoryModel", () => {
     }]);
     const region = regions.get("人物")!;
 
-    expect(bubbleCategoryBoundaryRadius(region, 0)).toBeGreaterThan(region.radius);
+    expect(bubbleCategoryBoundaryRadius(region, 0)).toBe(region.radius);
     expect(bubbleCategoryBoundaryRadius(region, Math.PI)).toBe(region.radius);
   });
 

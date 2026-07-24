@@ -22,11 +22,6 @@ export interface BubbleCategoryContact {
   radius: number;
 }
 
-export interface BubbleCategoryPressure {
-  angle: number;
-  radius: number;
-}
-
 export interface BubbleCategoryObstacle {
   angle: number;
   distance: number;
@@ -36,7 +31,6 @@ export interface BubbleCategoryObstacle {
 export interface BubbleCategoryRegion extends BubbleCategoryLayout {
   contacts: BubbleCategoryContact[];
   obstacles: BubbleCategoryObstacle[];
-  pressures: BubbleCategoryPressure[];
 }
 
 export interface BubbleCategoryPoint {
@@ -63,7 +57,6 @@ const bubbleCategoryDesiredOverlap = 28;
 const bubbleCategoryClusterClearance = 120;
 const bubbleCategoryBoundaryPadding = 36;
 const bubbleCategoryExteriorMaximumIndentationRatio = 0.75;
-const bubbleCategoryMaximumBulge = 52;
 const bubbleCategoryPressureHalfAngle = Math.PI / 5;
 
 export function normalizeBubbleCategory(category: unknown): string | null {
@@ -199,19 +192,6 @@ export function bubbleCategoryRegions(
         radius: other.radius
       }];
     });
-    const pressures = orderedNodes.flatMap((node): BubbleCategoryPressure[] => {
-      if (normalizeBubbleCategory(node.category) !== layout.category ||
-          node.x === undefined || node.y === undefined) return [];
-      const dx = node.x - layout.x;
-      const dy = node.y - layout.y;
-      const distance = Math.hypot(dx, dy);
-      const pressureRadius = Math.min(
-        layout.radius + bubbleCategoryMaximumBulge,
-        distance + bubbleCategoryNodeClearance(node)
-      );
-      if (pressureRadius <= layout.radius) return [];
-      return [{ angle: Math.atan2(dy, dx), radius: pressureRadius }];
-    });
     const obstacles = orderedNodes.flatMap((node): BubbleCategoryObstacle[] => {
       if (normalizeBubbleCategory(node.category) === layout.category ||
           node.x === undefined || node.y === undefined) return [];
@@ -222,7 +202,7 @@ export function bubbleCategoryRegions(
       if (distance >= layout.radius + radius) return [];
       return [{ angle: Math.atan2(dy, dx), distance, radius }];
     });
-    return [layout.category, { ...layout, contacts, obstacles, pressures }];
+    return [layout.category, { ...layout, contacts, obstacles }];
   }));
 }
 
@@ -239,18 +219,6 @@ export function bubbleCategoryBoundaryRadius(
   angle: number
 ): number {
   let boundaryRadius = region.radius;
-  for (const pressure of region.pressures) {
-    const progress = Math.max(
-      0,
-      1 - Math.abs(normalizeAngle(angle - pressure.angle)) / bubbleCategoryPressureHalfAngle
-    );
-    const smoothPressure = progress * progress * (3 - 2 * progress);
-    boundaryRadius = Math.max(
-      boundaryRadius,
-      region.radius + (pressure.radius - region.radius) * smoothPressure
-    );
-  }
-
   for (const contact of region.contacts) {
     const delta = normalizeAngle(angle - contact.angle);
     const directionProjection = Math.cos(delta);
@@ -307,10 +275,7 @@ export function constrainBubbleCategoryPoint(
   const angle = Math.atan2(dy, dx);
   const maximumDistance = Math.max(
     0,
-    Math.max(
-      bubbleCategoryBoundaryRadius(region, angle),
-      bubbleCategoryDeformableBoundaryRadius(region, angle)
-    ) - Math.max(0, padding)
+    bubbleCategoryBoundaryRadius(region, angle) - Math.max(0, padding)
   );
   if (distance <= maximumDistance) return point;
   return {
@@ -463,30 +428,6 @@ export function stableBubbleCategoryAngle(left: string, right: string): number {
 function bubbleCategoryNodeClearance(node: BubbleCategoryForceNode): number {
   const weight = Math.max(0, (node.backlinkCount ?? 0) + (node.linkCount ?? 0));
   return Math.max(18, Math.min(36, 3 * Math.sqrt(weight + 1) + 10));
-}
-
-function bubbleCategoryDeformableBoundaryRadius(
-  region: BubbleCategoryRegion,
-  angle: number
-): number {
-  let radius = region.radius + bubbleCategoryMaximumBulge;
-  for (const contact of region.contacts) {
-    const directionProjection = Math.cos(normalizeAngle(angle - contact.angle));
-    if (directionProjection <= 0) continue;
-    const contactDistance = (
-      contact.distance +
-      region.radius -
-      contact.radius
-    ) / 2;
-    radius = Math.min(radius, Math.max(0, contactDistance / directionProjection));
-  }
-  for (const obstacle of region.obstacles) {
-    radius = Math.min(
-      radius,
-      bubbleCategoryObstacleBoundaryRadius(region, obstacle, angle)
-    );
-  }
-  return radius;
 }
 
 function bubbleCategoryObstacleBoundaryRadius(
