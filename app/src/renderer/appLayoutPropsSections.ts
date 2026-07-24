@@ -97,7 +97,6 @@ export function createEditorWorkspaceProps(input: AppLayoutEditorWorkspaceInput)
 
 export function createFilesSidebarProps(input: AppLayoutFilesSidebarInput): FilesSidebarProps {
   return {
-    fileSelectionCount: input.fileSelectionCount,
     isCreatingFile: input.isCreatingFile,
     isCreatingFolder: input.isCreatingFolder,
     isCreatingWorkspace: input.isCreatingWorkspace,
@@ -125,7 +124,6 @@ export function createFilesSidebarProps(input: AppLayoutFilesSidebarInput): File
     onRenameItem: input.handleRenameTreeItem,
     onRevealItem: input.handleRevealWorkspaceItem,
     onSelectFolder: input.handleSelectFolder,
-    onSelectedCountChange: input.setFileSelectionCount,
     onTogglePin: input.handleTogglePin,
     openingFilePath: input.openingFilePath,
     openFilePaths: input.openFilePathSet,
@@ -135,7 +133,6 @@ export function createFilesSidebarProps(input: AppLayoutFilesSidebarInput): File
     searchMode: input.searchMode,
     searchQuery: input.searchQuery,
     searchResults: input.searchResults,
-    selectedCountLabel: input.t("files.selectedCount", { count: input.fileSelectionCount }),
     sidebarWidth: input.sidebarWidth,
     startSidebarResize: input.startSidebarResize,
     workspaceState: input.workspaceState

@@ -65,7 +65,6 @@ const bubbleCategoryBoundaryPadding = 36;
 const bubbleCategoryExteriorMaximumIndentationRatio = 0.75;
 const bubbleCategoryMaximumBulge = 52;
 const bubbleCategoryPressureHalfAngle = Math.PI / 5;
-const bubbleCategoryTranslationStep = 32;
 
 export function normalizeBubbleCategory(category: unknown): string | null {
   if (typeof category !== "string") return null;
@@ -442,57 +441,6 @@ export function applyBubbleCategoryMotion(
   return regions;
 }
 
-export function translateBubbleCategoryNodes<T extends BubbleCategoryForceNode>(
-  nodes: Iterable<T>,
-  category: string,
-  dx: number,
-  dy: number
-): T[] {
-  const normalizedCategory = normalizeBubbleCategory(category);
-  if (!normalizedCategory) return [];
-
-  const translated: T[] = [];
-  for (const node of nodes) {
-    if (normalizeBubbleCategory(node.category) !== normalizedCategory ||
-        node.x === undefined || node.y === undefined) continue;
-    node.x += dx;
-    node.y += dy;
-    if ("fx" in node) {
-      const fixedNode = node as T & { fx?: number | null; fy?: number | null };
-      fixedNode.fx = node.x;
-      fixedNode.fy = node.y;
-    }
-    translated.push(node);
-  }
-  return translated;
-}
-
-export function translateBubbleCategoryNodesWithPush<T extends BubbleCategoryForceNode>(
-  nodes: Iterable<T>,
-  category: string,
-  dx: number,
-  dy: number
-): T[] {
-  const orderedNodes = [...nodes];
-  const normalizedCategory = normalizeBubbleCategory(category);
-  if (!normalizedCategory || (dx === 0 && dy === 0)) return [];
-
-  const distance = Math.hypot(dx, dy);
-  const stepCount = Math.max(1, Math.ceil(distance / bubbleCategoryTranslationStep));
-  const movedNodes = new Set<T>();
-  for (let step = 0; step < stepCount; step += 1) {
-    for (const node of translateBubbleCategoryStep(
-      orderedNodes,
-      normalizedCategory,
-      dx / stepCount,
-      dy / stepCount
-    )) {
-      movedNodes.add(node);
-    }
-  }
-  return [...movedNodes];
-}
-
 function shiftCategoryVelocity(
   nodes: BubbleCategoryForceNode[] | undefined,
   dx: number,
@@ -504,7 +452,7 @@ function shiftCategoryVelocity(
   }
 }
 
-function stableCategoryAngle(left: string, right: string): number {
+export function stableBubbleCategoryAngle(left: string, right: string): number {
   let hash = 0;
   for (const character of `${left}\u0000${right}`) {
     hash = Math.imul(hash ^ character.charCodeAt(0), 1_677_761);
@@ -583,7 +531,7 @@ function applyBubbleCategoryExteriorReaction(
         bubbleCategoryNodeClearance(node);
       if (distance >= responseDistance) continue;
 
-      const fallbackAngle = stableCategoryAngle(
+      const fallbackAngle = stableBubbleCategoryAngle(
         region.category,
         normalizeBubbleCategory(node.category) ?? "uncategorized"
       );
@@ -616,7 +564,7 @@ function constrainBubbleCategoryExteriorPoint(
       const dx = constrained.x - region.x;
       const dy = constrained.y - region.y;
       const distance = Math.hypot(dx, dy);
-      const fallbackAngle = stableCategoryAngle(ownCategory ?? "uncategorized", region.category);
+      const fallbackAngle = stableBubbleCategoryAngle(ownCategory ?? "uncategorized", region.category);
       const angle = distance === 0 ? fallbackAngle : Math.atan2(dy, dx);
       const minimumDistance = bubbleCategoryBoundaryRadius(region, angle) +
         bubbleCategoryNodeClearance(node);
@@ -630,70 +578,6 @@ function constrainBubbleCategoryExteriorPoint(
     }
   }
   return constrained;
-}
-
-function translateBubbleCategoryStep<T extends BubbleCategoryForceNode>(
-  nodes: T[],
-  category: string,
-  dx: number,
-  dy: number
-): T[] {
-  const layouts = bubbleCategoryDynamicLayouts(nodes);
-  const layoutByCategory = new Map(layouts.map((layout) => [layout.category, layout]));
-  if (!layoutByCategory.has(category)) return [];
-
-  const translations = new Map<string, BubbleCategoryPoint>([
-    [category, { x: dx, y: dy }]
-  ]);
-  const queue = [category];
-  const maximumUpdates = Math.max(1, layouts.length * layouts.length);
-  let updateCount = 0;
-
-  while (queue.length > 0 && updateCount < maximumUpdates) {
-    const movingCategory = queue.shift()!;
-    const moving = layoutByCategory.get(movingCategory)!;
-    const movingTranslation = translations.get(movingCategory)!;
-    const movingX = moving.x + movingTranslation.x;
-    const movingY = moving.y + movingTranslation.y;
-
-    for (const other of layouts) {
-      if (other.category === movingCategory || other.category === category) continue;
-      const otherTranslation = translations.get(other.category) ?? { x: 0, y: 0 };
-      const otherX = other.x + otherTranslation.x;
-      const otherY = other.y + otherTranslation.y;
-      const offsetX = otherX - movingX;
-      const offsetY = otherY - movingY;
-      const distance = Math.hypot(offsetX, offsetY);
-      const minimumDistance = moving.radius + other.radius - bubbleCategoryDesiredOverlap;
-      if (distance >= minimumDistance) continue;
-
-      const movementDistance = Math.hypot(movingTranslation.x, movingTranslation.y);
-      const fallbackAngle = movementDistance > 0
-        ? Math.atan2(movingTranslation.y, movingTranslation.x)
-        : stableCategoryAngle(movingCategory, other.category);
-      const unitX = distance === 0 ? Math.cos(fallbackAngle) : offsetX / distance;
-      const unitY = distance === 0 ? Math.sin(fallbackAngle) : offsetY / distance;
-      translations.set(other.category, {
-        x: otherTranslation.x + unitX * (minimumDistance - distance),
-        y: otherTranslation.y + unitY * (minimumDistance - distance)
-      });
-      queue.push(other.category);
-      updateCount += 1;
-    }
-  }
-
-  const moved: T[] = [];
-  for (const [movingCategory, translation] of translations) {
-    for (const node of translateBubbleCategoryNodes(
-      nodes,
-      movingCategory,
-      translation.x,
-      translation.y
-    )) {
-      moved.push(node);
-    }
-  }
-  return moved;
 }
 
 function normalizeAngle(angle: number): number {

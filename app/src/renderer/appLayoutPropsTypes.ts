@@ -102,7 +102,6 @@ export interface AppLayoutEditorWorkspaceInput {
 }
 
 export interface AppLayoutFilesSidebarInput {
-  fileSelectionCount: FilesSidebarProps["fileSelectionCount"];
   handleCreateFileFromSidebar: FilesSidebarProps["onCreateFile"];
   handleCreateFileInFolder: FilesSidebarProps["onCreateFileInFolder"];
   handleCreateFolderFromSidebar: FilesSidebarProps["onCreateFolder"];
@@ -140,7 +139,6 @@ export interface AppLayoutFilesSidebarInput {
   searchMode: FilesSidebarProps["searchMode"];
   searchQuery: FilesSidebarProps["searchQuery"];
   searchResults: FilesSidebarProps["searchResults"];
-  setFileSelectionCount: FilesSidebarProps["onSelectedCountChange"];
   sidebarWidth: FilesSidebarProps["sidebarWidth"];
   startSidebarResize: FilesSidebarProps["startSidebarResize"];
   t: Translator;

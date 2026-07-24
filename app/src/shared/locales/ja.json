@@ -212,7 +212,6 @@
   "files.searchModeTag": "タグ",
   "files.searchPlaceholder": "{{mode}}で検索",
   "files.searchResults": "検索結果 {{count}} 件",
-  "files.selectedCount": "{{count}}件選択中",
   "files.unpin": "ピン留めを解除",
   "files.unpinSidebar": "サイドバーのピン留めを解除",
   "files.workspaceEmptyTitle": "書く場所を選ぶ",

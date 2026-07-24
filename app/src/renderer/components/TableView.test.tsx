@@ -229,6 +229,41 @@ describe("TableView", () => {
     await waitFor(() => expect(save).toHaveBeenCalledTimes(2));
   });
 
+  it("連続保存では古い失敗を後の成功へ反映しない", async () => {
+    const pending: Array<{
+      input: WorkspaceTablePreferences;
+      resolve: (result:
+        | { error: { code: string; message: string }; ok: false }
+        | { ok: true; value: WorkspaceTablePreferences }) => void;
+    }> = [];
+    const save = vi.fn((input: WorkspaceTablePreferences) => new Promise<
+      | { error: { code: string; message: string }; ok: false }
+      | { ok: true; value: WorkspaceTablePreferences }
+    >((resolve) => pending.push({ input, resolve })));
+    renderTable({ saveWorkspaceTablePreferences: save });
+
+    await screen.findByText("2 / 2件");
+    fireEvent.click(screen.getByRole("button", { name: "列" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "count" }));
+    await waitFor(() => expect(pending).toHaveLength(1));
+    fireEvent.click(screen.getByRole("checkbox", { name: "status" }));
+    await waitFor(() => expect(pending).toHaveLength(2));
+
+    pending[1]!.resolve({ ok: true, value: pending[1]!.input });
+    await waitFor(() => {
+      expect(screen.getByRole("columnheader", { name: /count/ })).toBeInTheDocument();
+      expect(screen.getByRole("columnheader", { name: /status/ })).toBeInTheDocument();
+    });
+    pending[0]!.resolve({
+      error: { code: "WRITE_FAILED", message: "古い失敗" },
+      ok: false
+    });
+
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+    expect(screen.getByRole("columnheader", { name: /count/ })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /status/ })).toBeInTheDocument();
+  });
+
   it("固定プロパティ設定と大量行の仮想化を維持する", async () => {
     const largeTable: WorkspaceTable = {
       availableProperties: ["category"],

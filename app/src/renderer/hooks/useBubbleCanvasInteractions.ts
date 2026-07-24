@@ -14,10 +14,12 @@ import {
   bubbleCategoryCenterOffsetForNodeDrag,
   bubbleCategoryDynamicLayouts,
   bubbleCategoryRegions,
-  normalizeBubbleCategory,
+  normalizeBubbleCategory
+} from "../bubble/bubbleCategoryModel";
+import {
   translateBubbleCategoryNodes,
   translateBubbleCategoryNodesWithPush
-} from "../bubble/bubbleCategoryModel";
+} from "../bubble/bubbleCategoryTranslation";
 import {
   type BubbleHighlightState,
   type BubbleHoverFocusState,

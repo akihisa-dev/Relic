@@ -12,10 +12,12 @@ import {
   bubbleCategoryLayouts,
   bubbleCategoryRegions,
   bubbleCategoryTarget,
-  normalizeBubbleCategory,
+  normalizeBubbleCategory
+} from "./bubbleCategoryModel";
+import {
   translateBubbleCategoryNodes,
   translateBubbleCategoryNodesWithPush
-} from "./bubbleCategoryModel";
+} from "./bubbleCategoryTranslation";
 
 describe("bubbleCategoryModel", () => {
   it("カテゴリを正規化し、空値と非文字列を未分類として扱う", () => {

@@ -1,16 +1,14 @@
 import { useCallback, useMemo, useState, type ReactElement } from "react";
 import { useShallow } from "zustand/react/shallow";
 
-import { type ApplicationMenuState, type WorkspaceState } from "../shared/ipc";
-import type { AppCommandActions } from "./appCommandActions";
+import { type WorkspaceState } from "../shared/ipc";
 import { createAppLayoutProps } from "./appLayoutProps";
 import { selectAppEditorStoreState, selectAppUiStoreState } from "./appStoreSelectors";
 import { AppLayout } from "./components/AppLayout";
 import { createTranslator } from "./i18nModel";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
 import { useAppCloseGuards } from "./hooks/useAppCloseGuards";
-import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
-import { useApplicationMenu } from "./hooks/useApplicationMenu";
+import { useAppCommandRuntime } from "./hooks/useAppCommandRuntime";
 import { useAppInlineHandlers } from "./hooks/useAppInlineHandlers";
 import { useAppFileSaved } from "./hooks/useAppFileSaved";
 import { useAppLayoutWidths } from "./hooks/useAppLayoutWidths";
@@ -74,7 +72,6 @@ export function App(): ReactElement {
     showSidebarCreateFlight,
     sidebarCreateFlight
   } = useRailFlights();
-  const [fileSelectionCount, setFileSelectionCount] = useState(0);
   const {
     holdWorkspaceRailAfterRename,
     isWorkspaceRenameActive,
@@ -347,68 +344,29 @@ export function App(): ReactElement {
   });
   useWindowCloseRequest(ensureCanCloseAllTabs);
   const isDarkTheme = useAppTheme(editorSettings.theme);
-  const appCommandActions = useMemo<AppCommandActions>(() => ({
-    "close-tab": () => {
-      const paneState = focusedPane === "left" ? leftPane : rightPane;
-      if (paneState.activeTabId) closeTabWithMotion(focusedPane, paneState.activeTabId);
-    },
-    "new-note": () => {
-      setSidebarView("files");
-      setIsCreatingFile(true);
-    },
-    "open-command-palette": () => {
-      setShowQuickSwitcher(false);
-      setShowCommandPalette((current) => !current);
-    },
-    "open-quick-switcher": () => {
-      setShowCommandPalette(false);
-      setShowQuickSwitcher((current) => !current);
-    },
-    "open-search": openQuickSwitcher,
-    "open-settings": () => openPanelInPane(focusedPane, "settings", t("nav.settings")),
-    "reopen-closed-tab": reopenClosedTab,
-    "toggle-right-panel": toggleRightPanelIfAvailable,
-    "toggle-sidebar": toggleSidebar,
-    "toggle-split": toggleSplitWithMotion,
-    "toggle-typewriter": toggleTypewriterMode
-  }), [
+  const appCommandActions = useAppCommandRuntime({
+    canReopenClosedTab,
     closeTabWithMotion,
     focusedPane,
-    leftPane,
+    isRightPanelOpen: isEffectiveRightPanelOpen,
+    isSidebarOpen,
+    isSplit,
+    isTypewriterMode,
+    leftActiveTabId: leftPane.activeTabId,
     openQuickSwitcher,
     openPanelInPane,
     reopenClosedTab,
-    rightPane,
+    rightActiveTabId: rightPane.activeTabId,
     setIsCreatingFile,
     setShowCommandPalette,
     setShowQuickSwitcher,
     setSidebarView,
     t,
-    toggleRightPanelIfAvailable,
+    toggleRightPanel: toggleRightPanelIfAvailable,
     toggleSidebar,
-    toggleSplitWithMotion,
+    toggleSplit: toggleSplitWithMotion,
     toggleTypewriterMode
-  ]);
-  const applicationMenuState = useMemo<ApplicationMenuState>(() => ({
-    canCloseTab: Boolean((focusedPane === "left" ? leftPane : rightPane).activeTabId),
-    canReopenClosedTab,
-    canToggleRightPanel: true,
-    isRightPanelOpen: isEffectiveRightPanelOpen,
-    isSidebarOpen,
-    isSplit,
-    isTypewriterMode
-  }), [
-    canReopenClosedTab,
-    focusedPane,
-    isEffectiveRightPanelOpen,
-    isSidebarOpen,
-    isSplit,
-    isTypewriterMode,
-    leftPane,
-    rightPane
-  ]);
-  useApplicationMenu({ actions: appCommandActions, state: applicationMenuState });
-  useAppKeyboardShortcuts({ actions: appCommandActions });
+  });
 
   const {
     isRightPanelResizing,
@@ -612,7 +570,6 @@ export function App(): ReactElement {
       workspaceState
     },
     filesSidebar: {
-      fileSelectionCount,
       handleCreateFileFromSidebar,
       handleCreateFileInFolder,
       handleCreateFolderFromSidebar,
@@ -650,7 +607,6 @@ export function App(): ReactElement {
       searchMode,
       searchQuery,
       searchResults,
-      setFileSelectionCount,
       sidebarWidth,
       startSidebarResize,
       t,

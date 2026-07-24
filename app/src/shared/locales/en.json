@@ -212,7 +212,6 @@
   "files.searchModeTag": "Tag",
   "files.searchPlaceholder": "Search by {{mode}}",
   "files.searchResults": "{{count}} search results",
-  "files.selectedCount": "{{count}} selected",
   "files.unpin": "Unpin",
   "files.unpinSidebar": "Unpin in sidebar",
   "files.workspaceEmptyTitle": "Choose a place to write",
