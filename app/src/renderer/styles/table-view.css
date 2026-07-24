@@ -59,6 +59,26 @@
   background: var(--hover);
 }
 
+.table-toolbar-button--active {
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface-raised));
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border-medium));
+}
+
+.table-filter-count {
+  align-items: center;
+  background: var(--accent);
+  border-radius: 999px;
+  color: var(--accent-contrast, #fff);
+  display: inline-flex;
+  font-size: 10px;
+  font-weight: 700;
+  height: 17px;
+  justify-content: center;
+  margin-left: 6px;
+  min-width: 17px;
+  padding-inline: 5px;
+}
+
 .table-toolbar-button:focus-visible,
 .table-search-input:focus-visible,
 .table-view-status button:focus-visible,
@@ -292,7 +312,7 @@
 .table-view-cell {
   align-items: center;
   background: var(--surface);
-  border-right: 1px solid var(--border-soft);
+  border-right: 1px solid color-mix(in srgb, var(--border-soft) 58%, transparent);
   display: flex;
   min-width: 0;
   padding: 7px 10px;
@@ -308,6 +328,16 @@
 .table-view-header .table-view-cell {
   background: color-mix(in srgb, var(--surface) 72%, var(--bg));
   padding-block: 0;
+}
+
+.table-view-header .table-view-cell--sorted::after {
+  background: var(--accent);
+  bottom: -1px;
+  content: "";
+  height: 2px;
+  left: 10px;
+  position: absolute;
+  right: 10px;
 }
 
 .table-view-cell--dragging,
@@ -363,14 +393,17 @@
   color: var(--text-3);
   cursor: grab;
   display: inline-flex;
-  flex: 0 0 18px;
+  flex: 0 0 28px;
   font: inherit;
-  height: 26px;
+  height: 28px;
   justify-content: center;
   letter-spacing: -5px;
   overflow: hidden;
-  padding: 0 4px 0 0;
-  width: 18px;
+  opacity: 0;
+  padding: 0 5px 0 0;
+  pointer-events: none;
+  transition: color var(--motion-fast) var(--ease-standard), opacity var(--motion-fast) var(--ease-standard);
+  width: 28px;
 }
 
 .table-column-drag-handle:hover {
@@ -396,6 +429,13 @@
 .table-sort-indicator {
   color: var(--text-3);
   flex: 0 0 auto;
+  opacity: 0;
+  transition: color var(--motion-fast) var(--ease-standard), opacity var(--motion-fast) var(--ease-standard);
+}
+
+.table-sort-indicator--active {
+  color: var(--accent);
+  opacity: 1;
 }
 
 .table-property-settings-trigger {
@@ -405,11 +445,14 @@
   border-radius: var(--radius-sm);
   color: var(--text-3);
   display: inline-flex;
-  flex: 0 0 24px;
+  flex: 0 0 28px;
   font: inherit;
-  height: 26px;
+  height: 28px;
   justify-content: center;
+  opacity: 0;
   padding: 0;
+  pointer-events: none;
+  transition: color var(--motion-fast) var(--ease-standard), opacity var(--motion-fast) var(--ease-standard);
 }
 
 .table-column-actions-trigger {
@@ -419,13 +462,30 @@
   border-radius: var(--radius-sm);
   color: var(--text-3);
   display: inline-flex;
-  flex: 0 0 30px;
+  flex: 0 0 28px;
   font: inherit;
   font-size: 9px;
-  height: 26px;
+  height: 28px;
   justify-content: center;
   letter-spacing: -1px;
+  opacity: 0;
   padding: 0;
+  pointer-events: none;
+  transition: color var(--motion-fast) var(--ease-standard), opacity var(--motion-fast) var(--ease-standard);
+}
+
+.table-view-cell[role="columnheader"]:hover .table-column-drag-handle,
+.table-view-cell[role="columnheader"]:hover .table-column-actions-trigger,
+.table-view-cell[role="columnheader"]:hover .table-property-settings-trigger,
+.table-view-cell[role="columnheader"]:hover .table-sort-indicator,
+.table-view-cell[role="columnheader"]:focus-within .table-column-drag-handle,
+.table-view-cell[role="columnheader"]:focus-within .table-column-actions-trigger,
+.table-view-cell[role="columnheader"]:focus-within .table-property-settings-trigger,
+.table-view-cell[role="columnheader"]:focus-within .table-sort-indicator,
+.table-column-actions-trigger[aria-expanded="true"],
+.table-property-settings-trigger[aria-expanded="true"] {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .table-column-actions-trigger:hover,
@@ -614,6 +674,30 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.table-value--property-category {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border-soft));
+  border-radius: 999px;
+  color: var(--text);
+  padding: 2px 7px;
+}
+
+.table-value--property-aliases,
+.table-value--property-tags {
+  color: var(--text);
+}
+
+.table-value--property-card,
+.table-value--property-chronicle {
+  color: var(--text-2);
+}
+
+.table-missing-value {
+  color: var(--text-3);
+  font-size: 12px;
+  opacity: 0.55;
 }
 
 .table-value--wrapped {

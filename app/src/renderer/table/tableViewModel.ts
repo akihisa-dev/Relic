@@ -160,7 +160,15 @@ function compareValues(left: WorkspaceTableValue, right: WorkspaceTableValue): n
 }
 
 function searchableRowText(row: WorkspaceTableRow, selectedProperties: string[]): string[] {
-  return [row.name, row.path, ...selectedProperties.flatMap((property) => row.properties[property]?.text ?? [])];
+  return [
+    row.name,
+    row.path,
+    ...selectedProperties.flatMap((property) => {
+      const value = row.properties[property];
+      if (!value) return [];
+      return value.displayText ? [value.text, value.displayText] : [value.text];
+    })
+  ];
 }
 
 function matchesFilter(row: WorkspaceTableRow, filter: WorkspaceTableFilter): boolean {

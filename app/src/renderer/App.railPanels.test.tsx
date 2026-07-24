@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import {
   afterEach,
   beforeAll,
@@ -35,7 +35,7 @@ describe("App rail panels", () => {
     resetRendererStores();
   });
 
-  it("右パネルのアウトラインとリンクを常に利用できる", async () => {
+  it("ファイルタブでは右パネルのアウトラインとリンクを利用できる", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
@@ -133,6 +133,14 @@ describe("App rail panels", () => {
     const tableButton = within(rail).getByRole("button", { name: "テーブル" });
     expect(within(rail).queryByRole("button", { name: "フロントマター" })).not.toBeInTheDocument();
 
+    act(() => {
+      useEditorStore.getState().openFileInPane("left", {
+        content: "# Note",
+        name: "Note",
+        path: "Note.md"
+      });
+    });
+    const initialTabId = useEditorStore.getState().leftPane.activeTabId;
     fireEvent.click(tableButton);
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
@@ -144,6 +152,9 @@ describe("App rail panels", () => {
     expect(document.querySelector('.pane-tab[data-tab-id="chart-table"] .pane-tab-icon svg')).toBeInTheDocument();
     expect(tableButton).toHaveClass("active");
     expect(await screen.findByText("1件")).toBeInTheDocument();
+    expect(container.querySelector(".right-panel")).toHaveClass("right-panel--closed");
+    expect(screen.queryByRole("button", { name: "アウトライン" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "リンク" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "categoryの設定" }));
     expect((await screen.findAllByText("draft")).length).toBeGreaterThan(1);
 
@@ -152,6 +163,13 @@ describe("App rail panels", () => {
     expect(document.querySelector(".rail-tab-flight--close")).not.toBeInTheDocument();
     expect(useEditorStore.getState().leftPane.activeTabId).toBe("chart-table");
     expect(useEditorStore.getState().tabs["chart-table"]).toBeDefined();
+
+    const initialTab = document.querySelector(`.pane-tab[data-tab-id="${initialTabId}"]`);
+    if (!(initialTab instanceof HTMLElement)) throw new Error("initial file tab was not rendered");
+    fireEvent.click(initialTab);
+    await waitFor(() => expect(container.querySelector(".right-panel")).not.toHaveClass("right-panel--closed"));
+    expect(screen.getByRole("button", { name: "アウトライン" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "リンク" })).toBeInTheDocument();
   });
 
 });

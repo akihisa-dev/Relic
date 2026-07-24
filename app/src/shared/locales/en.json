@@ -51,6 +51,7 @@
   "table.filters": "Filters",
   "table.filtersAll": "Match all conditions",
   "table.filtersCount": "Filters {{count}}",
+  "table.missingValue": "No value",
   "table.hideColumn": "Hide column",
   "table.invalidFrontmatter": "Frontmatter could not be read. Open the file and check its YAML.",
   "table.loadFailed": "Could not load the table.",

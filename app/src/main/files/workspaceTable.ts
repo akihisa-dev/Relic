@@ -43,7 +43,7 @@ export async function readWorkspaceTable(
       const rowProperties = Object.fromEntries(
         Object.entries(inspected.data).map(([name, value]) => {
           properties.add(name);
-          return [name, tableValueFor(value)];
+          return [name, tableValueFor(value, name)];
         })
       );
 
@@ -89,12 +89,13 @@ function normalizeTablePreferences(
   };
 }
 
-export function tableValueFor(value: unknown): WorkspaceTableValue {
+export function tableValueFor(value: unknown, property?: string): WorkspaceTableValue {
   if (value === null || value === undefined) return { kind: "null", text: "null" };
   if (typeof value === "string") {
+    const displayText = property === "card" ? fileNameForDisplay(value) : undefined;
     return value.length === 0
       ? { kind: "empty-string", text: "\"\"" }
-      : { kind: "string", text: value };
+      : { ...(displayText ? { displayText } : {}), kind: "string", text: value };
   }
   if (typeof value === "number") {
     return { kind: "number", numberValue: value, text: String(value) };
@@ -107,15 +108,46 @@ export function tableValueFor(value: unknown): WorkspaceTableValue {
     return { kind: "date", text: iso.endsWith("T00:00:00.000Z") ? iso.slice(0, 10) : iso };
   }
   if (Array.isArray(value)) {
+    const displayText = property === "aliases" || property === "tags"
+      ? value.map((item) => compactYaml(item)).join(" ・ ")
+      : undefined;
     return value.length === 0
       ? { kind: "empty-array", text: "[]" }
-      : { kind: "array", text: compactYaml(value) };
+      : {
+          ...(displayText ? { displayText } : {}),
+          kind: "array",
+          text: compactYaml(value)
+        };
   }
   if (typeof value === "object") {
-    return { kind: "object", text: compactYaml(value) };
+    const displayText = property === "chronicle" ? chronicleSummary(value) : undefined;
+    return {
+      ...(displayText ? { displayText } : {}),
+      kind: "object",
+      text: compactYaml(value)
+    };
   }
 
   return { kind: "string", text: String(value) };
+}
+
+function fileNameForDisplay(value: string): string | undefined {
+  const name = value.split(/[\\/]/).at(-1)?.trim();
+  return name && name !== value ? name : undefined;
+}
+
+function chronicleSummary(value: object): string | undefined {
+  const record = value as Record<string, unknown>;
+  const calendar = displayScalar(record.calendar);
+  const start = displayScalar(record.start);
+  const end = displayScalar(record.end);
+  const period = start && end ? (start === end ? start : `${start}–${end}`) : start ?? end;
+  if (calendar && period) return `${calendar} · ${period}`;
+  return calendar ?? period;
+}
+
+function displayScalar(value: unknown): string | undefined {
+  return typeof value === "string" || typeof value === "number" ? String(value) : undefined;
 }
 
 function compactYaml(value: unknown): string {

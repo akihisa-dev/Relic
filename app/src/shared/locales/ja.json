@@ -51,6 +51,7 @@
   "table.filters": "絞り込み",
   "table.filtersAll": "すべての条件に一致",
   "table.filtersCount": "絞り込み {{count}}",
+  "table.missingValue": "値なし",
   "table.hideColumn": "列を隠す",
   "table.invalidFrontmatter": "フロントマターを読み取れません。ファイルを開いてYAMLを確認してください。",
   "table.loadFailed": "テーブルを読み込めませんでした。",

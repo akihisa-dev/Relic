@@ -99,6 +99,24 @@ describe("tableViewModel", () => {
     expect(filterTableRows(targetRows, "", [{ operator: "invalid", target: "frontmatter" }], [])).toEqual([targetRows[4]]);
   });
 
+  it("表示用要約と元のYAML表現のどちらでも検索できる", () => {
+    const targetRows: WorkspaceTableRow[] = [{
+      frontmatterStatus: "valid",
+      name: "chronicle",
+      path: "chronicle.md",
+      properties: {
+        chronicle: {
+          displayText: "基準暦 · 338–375",
+          kind: "object",
+          text: "{calendar: 基準暦, start: 338, end: 375}"
+        }
+      }
+    }];
+
+    expect(filterTableRows(targetRows, "338–375", [], ["chronicle"])).toEqual(targetRows);
+    expect(filterTableRows(targetRows, "start: 338", [], ["chronicle"])).toEqual(targetRows);
+  });
+
   it("列幅を範囲内へ制限し、未設定列は既定幅にする", () => {
     const widened = withTableColumnWidth(defaultWorkspaceTablePreferences, "status", 900);
     expect(tableColumnWidth(widened, "status")).toBe(640);

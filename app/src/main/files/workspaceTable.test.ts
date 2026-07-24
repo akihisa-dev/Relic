@@ -85,7 +85,7 @@ describe("workspaceTable", () => {
         items: { kind: "empty-array", text: "[]" },
         meta: { kind: "object", text: "{owner: me}" },
         status: { kind: "string", text: "draft" },
-        tags: { kind: "array", text: "[one, two]" }
+        tags: { displayText: "one ・ two", kind: "array", text: "[one, two]" }
       }
     });
     expect(result.value.rows[1].frontmatterStatus).toBe("invalid");
@@ -96,5 +96,23 @@ describe("workspaceTable", () => {
   it("空文字と日付を未設定とは異なる値として表現する", () => {
     expect(tableValueFor("")).toEqual({ kind: "empty-string", text: "\"\"" });
     expect(tableValueFor(new Date("2026-07-17T00:00:00.000Z"))).toEqual({ kind: "date", text: "2026-07-17" });
+  });
+
+  it("固定プロパティへ元の値を保った表示用要約を付ける", () => {
+    expect(tableValueFor(["灰冠卿", "黒槍のエルド"], "aliases")).toEqual({
+      displayText: "灰冠卿 ・ 黒槍のエルド",
+      kind: "array",
+      text: "[灰冠卿, 黒槍のエルド]"
+    });
+    expect(tableValueFor("../assets/黒鉄の軍旗.png", "card")).toEqual({
+      displayText: "黒鉄の軍旗.png",
+      kind: "string",
+      text: "../assets/黒鉄の軍旗.png"
+    });
+    expect(tableValueFor({ calendar: "基準暦", start: 338, end: 375 }, "chronicle")).toEqual({
+      displayText: "基準暦 · 338–375",
+      kind: "object",
+      text: "{calendar: 基準暦, start: 338, end: 375}"
+    });
   });
 });

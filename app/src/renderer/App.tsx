@@ -152,9 +152,12 @@ export function App(): ReactElement {
     setWorkspaceError,
     setWorkspaceState
   });
-  const isRightPanelOutlineAvailable = true;
-  const isRightPanelLinksAvailable = true;
-  const isRightPanelRecoveryAvailable = true;
+  const focusedPaneState = focusedPane === "left" ? leftPane : rightPane;
+  const focusedTab = focusedPaneState.activeTabId ? tabs[focusedPaneState.activeTabId] : null;
+  const isRightPanelAvailable = !focusedTab || focusedTab.kind === "file";
+  const isRightPanelOutlineAvailable = isRightPanelAvailable;
+  const isRightPanelLinksAvailable = isRightPanelAvailable;
+  const isRightPanelRecoveryAvailable = isRightPanelAvailable;
   const {
     effectiveRightPanelView,
     handleRightPanelViewButton,

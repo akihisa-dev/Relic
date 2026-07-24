@@ -150,6 +150,7 @@ export type WorkspaceTableValueKind =
 
 export interface WorkspaceTableValue {
   booleanValue?: boolean;
+  displayText?: string;
   kind: WorkspaceTableValueKind;
   numberValue?: number;
   text: string;

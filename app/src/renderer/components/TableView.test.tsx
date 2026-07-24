@@ -96,7 +96,54 @@ describe("TableView", () => {
 
     await waitFor(() => expect(save).toHaveBeenCalled());
     expect(screen.getByText("1件表示 / 全2件")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "絞り込み 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "絞り込み 1" })).toHaveClass("table-toolbar-button--active");
+    expect(screen.getByText("1", { selector: ".table-filter-count" })).toBeInTheDocument();
+  });
+
+  it("固定プロパティを要約し、カテゴリと欠損値を区別して表示する", async () => {
+    const semanticTable: WorkspaceTable = {
+      availableProperties: ["aliases", "card", "category", "chronicle", "missing", "tags"],
+      preferences: preferences({
+        selectedProperties: ["aliases", "card", "category", "chronicle", "missing", "tags"]
+      }),
+      rows: [{
+        frontmatterStatus: "valid",
+        name: "灰冠の将",
+        path: "灰冠の将.md",
+        properties: {
+          aliases: { displayText: "灰冠卿 ・ 黒槍のエルド", kind: "array", text: "[灰冠卿, 黒槍のエルド]" },
+          card: { displayText: "黒鉄の軍旗.png", kind: "string", text: "../assets/黒鉄の軍旗.png" },
+          category: { kind: "string", text: "人物" },
+          chronicle: { displayText: "基準暦 · 338–375", kind: "object", text: "{calendar: 基準暦, start: 338, end: 375}" },
+          tags: { displayText: "人物 ・ 将軍", kind: "array", text: "[人物, 将軍]" }
+        }
+      }]
+    };
+    renderTable({}, semanticTable);
+
+    await screen.findByText("1件");
+    expect(screen.getByText("灰冠卿 ・ 黒槍のエルド")).toHaveClass("table-value--property-aliases");
+    expect(screen.getByLabelText("../assets/黒鉄の軍旗.png")).toHaveTextContent("黒鉄の軍旗.png");
+    expect(screen.getByText("人物", { selector: ".table-value--property-category" })).toBeInTheDocument();
+    expect(screen.getByText("基準暦 · 338–375")).toHaveClass("table-value--property-chronicle");
+    expect(screen.getByText("人物 ・ 将軍")).toHaveClass("table-value--property-tags");
+    expect(screen.getByRole("cell", { name: "値なし" })).toHaveTextContent("—");
+  });
+
+  it("並び替え中の列だけを強調する", async () => {
+    renderTable({}, {
+      ...table,
+      preferences: preferences({
+        selectedProperties: ["count"],
+        sort: { direction: "desc", property: "count" }
+      })
+    });
+
+    await screen.findByText("2件");
+    const countHeader = screen.getByRole("columnheader", { name: /count/ });
+    expect(countHeader).toHaveClass("table-view-cell--sorted");
+    expect(countHeader.querySelector(".table-sort-indicator")).toHaveClass("table-sort-indicator--active");
+    expect(screen.getByRole("columnheader", { name: /ファイル名/ })).not.toHaveClass("table-view-cell--sorted");
   });
 
   it("列選択、並び替え、幅、折り返しをキーボード操作で保存する", async () => {

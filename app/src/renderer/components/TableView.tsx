@@ -269,14 +269,18 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table 
         <div className="table-toolbar-actions">
           <div className="table-filter-menu" ref={filterMenuRef}>
             <button
+              aria-label={preferences.filters.length > 0 ? t("table.filtersCount", { count: preferences.filters.length }) : t("table.filters")}
               aria-expanded={filterMenuOpen}
               aria-haspopup="dialog"
-              className="table-toolbar-button"
+              className={`table-toolbar-button${preferences.filters.length > 0 ? " table-toolbar-button--active" : ""}`}
               onClick={() => setFilterMenuOpen((open) => !open)}
               ref={filterMenuTriggerRef}
               type="button"
             >
-              {preferences.filters.length > 0 ? t("table.filtersCount", { count: preferences.filters.length }) : t("table.filters")}
+              <span>{t("table.filters")}</span>
+              {preferences.filters.length > 0
+                ? <span aria-hidden="true" className="table-filter-count">{preferences.filters.length}</span>
+                : null}
             </button>
             {filterMenuOpen ? (
               <div aria-label={t("table.filters")} className="table-filter-popover" role="dialog">
@@ -461,6 +465,7 @@ function TableRow({ columnDragOffsets, draggedProperty, duplicateName, onOpenFil
           dragOffset={columnDragOffsets[property] ?? 0}
           dragging={draggedProperty === property}
           key={property}
+          property={property}
           value={row.properties[property]}
           wrapped={wrappedProperties.includes(property)}
         />
@@ -469,21 +474,44 @@ function TableRow({ columnDragOffsets, draggedProperty, duplicateName, onOpenFil
   );
 }
 
-function ValueCell({ dragOffset, dragging, value, wrapped }: {
+function ValueCell({ dragOffset, dragging, property, value, wrapped }: {
   dragOffset: number;
   dragging: boolean;
+  property: string;
   value?: WorkspaceTableValue;
   wrapped: boolean;
 }): ReactElement {
+  const t = useT();
   const style = { "--table-column-drag-offset": `${dragOffset}px` } as CSSProperties;
   const className = `table-view-cell${dragging ? " table-view-cell--dragging" : ""}`;
-  if (!value) return <div aria-label="" className={`${className} table-view-cell--empty`} role="cell" style={style} />;
+  if (!value) {
+    return (
+      <div aria-label={t("table.missingValue")} className={`${className} table-view-cell--empty`} role="cell" style={style}>
+        <span aria-hidden="true" className="table-missing-value">—</span>
+      </div>
+    );
+  }
   return (
     <div className={className} role="cell" style={style}>
-      <span aria-label={value.text} className={`table-value table-value--${value.kind}${wrapped ? " table-value--wrapped" : ""}`}>
+      <span
+        aria-label={value.text}
+        className={[
+          "table-value",
+          `table-value--${value.kind}`,
+          fixedPropertyClass(property, value.kind),
+          wrapped ? "table-value--wrapped" : ""
+        ].filter(Boolean).join(" ")}
+      >
         {value.kind === "boolean" ? <span aria-hidden="true">{value.booleanValue ? "☑" : "☐"} </span> : null}
-        {value.text}
+        {value.displayText ?? value.text}
       </span>
     </div>
   );
+}
+
+function fixedPropertyClass(property: string, kind: WorkspaceTableValue["kind"]): string {
+  if ((property === "aliases" || property === "tags") && kind === "array") return `table-value--property-${property}`;
+  if ((property === "card" || property === "category") && kind === "string") return `table-value--property-${property}`;
+  if (property === "chronicle" && kind === "object") return "table-value--property-chronicle";
+  return "";
 }

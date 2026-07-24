@@ -86,7 +86,12 @@ export function TableColumnHeader({
   return (
     <div
       aria-sort={active ? (direction === "asc" ? "ascending" : "descending") : "none"}
-      className={["table-view-cell", sticky ? "table-view-cell--sticky" : "", dragState ? `table-view-cell--${dragState}` : ""].filter(Boolean).join(" ")}
+      className={[
+        "table-view-cell",
+        active ? "table-view-cell--sorted" : "",
+        sticky ? "table-view-cell--sticky" : "",
+        dragState ? `table-view-cell--${dragState}` : ""
+      ].filter(Boolean).join(" ")}
       onDragOver={onColumnDragOver}
       onDrop={onColumnDrop}
       ref={rootRef}
@@ -105,7 +110,9 @@ export function TableColumnHeader({
       ) : null}
       <button aria-label={t("table.sortBy", { name: label })} className="table-sort-button" onClick={onSort} type="button">
         <span>{label}</span>
-        <span aria-hidden="true" className="table-sort-indicator">{active ? (direction === "asc" ? "↑" : "↓") : "↕"}</span>
+        <span aria-hidden="true" className={`table-sort-indicator${active ? " table-sort-indicator--active" : ""}`}>
+          {active ? (direction === "asc" ? "↑" : "↓") : "↕"}
+        </span>
       </button>
       {onHide ? (
         <button
