@@ -144,6 +144,7 @@ export function bubbleNodeBubbleHighlight(theme: GraphDrawTheme): string {
 export interface BubbleMembranePalette {
   depth: string;
   highlight: string;
+  interiorAlpha: number;
   rimSecondary: string;
 }
 
@@ -154,6 +155,7 @@ export function bubbleMembranePalette(
   return {
     depth: theme.borderStrong,
     highlight: bubbleNodeBubbleHighlight(theme),
+    interiorAlpha: graphThemeIsDark(theme.background) ? 0.04 : 0.025,
     rimSecondary: shiftBubbleHue(color, graphThemeIsDark(theme.background) ? 38 : -34)
   };
 }
@@ -411,21 +413,9 @@ function drawBubbleCategoryBubbles(
   for (const bubble of bubbleCategoryBubbles(nodes)) {
     const color = graphCategoryColor(bubble.category, theme);
     const palette = bubbleMembranePalette(color, theme);
-    const fillGradient = context.createRadialGradient(
-      bubble.x - bubble.radius * 0.32,
-      bubble.y - bubble.radius * 0.38,
-      Math.max(1 / scale, bubble.radius * 0.04),
-      bubble.x,
-      bubble.y,
-      bubble.radius * 1.14
-    );
-    fillGradient.addColorStop(0, bubbleColorWithAlpha(palette.highlight, 0.2));
-    fillGradient.addColorStop(0.24, bubbleColorWithAlpha(color, 0.13));
-    fillGradient.addColorStop(0.7, bubbleColorWithAlpha(color, 0.055));
-    fillGradient.addColorStop(1, bubbleColorWithAlpha(palette.rimSecondary, 0.15));
 
     context.save();
-    context.fillStyle = fillGradient;
+    context.fillStyle = bubbleColorWithAlpha(color, palette.interiorAlpha);
     traceSmoothBubble(context, bubble.points);
     context.fill();
 
@@ -442,8 +432,8 @@ function drawBubbleCategoryBubbles(
       bubble.radius * 1.08
     );
     depthGradient.addColorStop(0, bubbleColorWithAlpha(palette.depth, 0));
-    depthGradient.addColorStop(0.72, bubbleColorWithAlpha(palette.depth, 0.025));
-    depthGradient.addColorStop(1, bubbleColorWithAlpha(palette.depth, 0.13));
+    depthGradient.addColorStop(0.8, bubbleColorWithAlpha(palette.depth, 0));
+    depthGradient.addColorStop(1, bubbleColorWithAlpha(palette.depth, 0.07));
     context.fillStyle = depthGradient;
     context.fillRect(
       bubble.x - bubble.radius * 1.25,
@@ -452,24 +442,24 @@ function drawBubbleCategoryBubbles(
       bubble.radius * 2.5
     );
 
-    context.strokeStyle = bubbleColorWithAlpha(palette.highlight, 0.19);
+    context.strokeStyle = bubbleColorWithAlpha(palette.highlight, 0.3);
     context.lineCap = "round";
-    context.lineWidth = Math.max(1.1 / scale, bubble.radius * 0.018);
+    context.lineWidth = Math.max(0.8 / scale, bubble.radius * 0.009);
     context.beginPath();
     context.ellipse(
       bubble.x - bubble.radius * 0.16,
       bubble.y - bubble.radius * 0.22,
-      bubble.radius * 0.55,
-      bubble.radius * 0.7,
+      bubble.radius * 0.62,
+      bubble.radius * 0.76,
       -0.58,
-      Math.PI * 1.08,
-      Math.PI * 1.52
+      Math.PI * 1.12,
+      Math.PI * 1.43
     );
     context.stroke();
     context.restore();
 
-    context.strokeStyle = bubbleColorWithAlpha(palette.depth, 0.18);
-    context.lineWidth = 3.2 / scale;
+    context.strokeStyle = bubbleColorWithAlpha(palette.depth, 0.1);
+    context.lineWidth = 2.2 / scale;
     traceSmoothBubble(context, bubble.points);
     context.stroke();
 
@@ -479,12 +469,12 @@ function drawBubbleCategoryBubbles(
       bubble.x + bubble.radius,
       bubble.y + bubble.radius
     );
-    rimGradient.addColorStop(0, bubbleColorWithAlpha(palette.highlight, 0.72));
-    rimGradient.addColorStop(0.28, bubbleColorWithAlpha(color, 0.62));
-    rimGradient.addColorStop(0.66, bubbleColorWithAlpha(palette.rimSecondary, 0.58));
-    rimGradient.addColorStop(1, bubbleColorWithAlpha(palette.highlight, 0.34));
+    rimGradient.addColorStop(0, bubbleColorWithAlpha(palette.highlight, 0.58));
+    rimGradient.addColorStop(0.28, bubbleColorWithAlpha(color, 0.48));
+    rimGradient.addColorStop(0.66, bubbleColorWithAlpha(palette.rimSecondary, 0.46));
+    rimGradient.addColorStop(1, bubbleColorWithAlpha(palette.highlight, 0.3));
     context.strokeStyle = rimGradient;
-    context.lineWidth = 1.45 / scale;
+    context.lineWidth = 1.15 / scale;
     traceSmoothBubble(context, bubble.points);
     context.stroke();
 
