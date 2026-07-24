@@ -31,15 +31,23 @@ describe("createBubbleSimulationClient", () => {
     const client = createBubbleSimulationClient(vi.fn());
     const worker = MockWorker.instances[0]!;
 
-    client.setInteractionActive(true);
+    client.setCategoryDragTarget({
+      centerX: 20,
+      centerY: 30,
+      nodeIds: ["A.md", "B.md"]
+    });
     client.moveNode("A.md", 12, 24);
     client.setNodeCategoryCenterOffset("A.md", -24, 8);
     client.setNodeFixed("A.md", null, null, 0.08, 4, -2);
 
     expect(worker.postMessage).toHaveBeenCalledWith({
-      active: true,
       alpha: undefined,
-      type: "interaction"
+      target: {
+        centerX: 20,
+        centerY: 30,
+        nodeIds: ["A.md", "B.md"]
+      },
+      type: "categoryDrag"
     });
     expect(worker.postMessage).toHaveBeenCalledWith({
       alpha: undefined,

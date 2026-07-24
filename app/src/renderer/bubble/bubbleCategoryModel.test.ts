@@ -15,11 +15,26 @@ import {
   normalizeBubbleCategory
 } from "./bubbleCategoryModel";
 import {
+  alignBubbleNodesToCenter,
   translateBubbleCategoryNodes,
   translateBubbleCategoryNodesWithPush
 } from "./bubbleCategoryTranslation";
 
 describe("bubbleCategoryModel", () => {
+  it("ドラッグ中のバブル中心を掴んだ位置へ合わせ、内部の相対配置を保つ", () => {
+    const nodes = [
+      { id: "A.md", vx: 3, vy: 1, x: 10, y: 20 },
+      { id: "B.md", vx: 1, vy: -1, x: 30, y: 40 },
+      { id: "C.md", x: 100, y: 100 }
+    ];
+
+    expect(alignBubbleNodesToCenter(nodes, new Set(["A.md", "B.md"]), 80, 90))
+      .toHaveLength(2);
+    expect(nodes[0]).toMatchObject({ vx: 1, vy: 1, x: 70, y: 80 });
+    expect(nodes[1]).toMatchObject({ vx: -1, vy: -1, x: 90, y: 100 });
+    expect(nodes[2]).toMatchObject({ x: 100, y: 100 });
+  });
+
   it("カテゴリを正規化し、空値と非文字列を未分類として扱う", () => {
     expect(normalizeBubbleCategory("  人物  ")).toBe("人物");
     expect(normalizeBubbleCategory("   ")).toBeNull();

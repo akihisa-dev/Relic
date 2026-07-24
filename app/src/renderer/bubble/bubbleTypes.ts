@@ -117,10 +117,16 @@ export interface BubbleSimulationMoveNodeMessage {
   y: number;
 }
 
-export interface BubbleSimulationInteractionMessage {
-  active: boolean;
+export interface BubbleCategoryDragTarget {
+  centerX: number;
+  centerY: number;
+  nodeIds: string[];
+}
+
+export interface BubbleSimulationCategoryDragMessage {
   alpha?: number;
-  type: "interaction";
+  target: BubbleCategoryDragTarget | null;
+  type: "categoryDrag";
 }
 
 export interface BubbleSimulationCategoryCenterOffsetMessage {
@@ -141,9 +147,9 @@ export interface BubbleSimulationDisposeMessage {
 
 export type BubbleSimulationRequest =
   | BubbleSimulationCategoryCenterOffsetMessage
+  | BubbleSimulationCategoryDragMessage
   | BubbleSimulationDisposeMessage
   | BubbleSimulationFixedNodeMessage
-  | BubbleSimulationInteractionMessage
   | BubbleSimulationMoveNodeMessage
   | BubbleSimulationOptionsMessage
   | BubbleSimulationRestartMessage

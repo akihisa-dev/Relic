@@ -38,6 +38,7 @@ import {
   screenToWorld
 } from "../bubble/bubbleViewModel";
 import type {
+  BubbleCategoryDragTarget,
   BubbleKeyboardState,
   BubbleOptions,
   BubbleSimNode,
@@ -86,6 +87,7 @@ export function useBubbleCanvasInteractions({
   });
   const pointerRef = useRef<{
     dragCategory: string | null;
+    dragCategoryTarget: BubbleCategoryDragTarget | null;
     dragNode: BubbleSimNode | null;
     lastX: number;
     lastY: number;
@@ -150,10 +152,26 @@ export function useBubbleCanvasInteractions({
       node.fy = node.y;
       simulationClientRef.current?.setNodeFixed(node.id, node.x, node.y);
     }
-    if (category) simulationClientRef.current?.setInteractionActive(true);
+    const categoryNodes = category
+      ? [...nodesRef.current.values()].filter((candidate) =>
+          normalizeBubbleCategory(candidate.category) === category
+        )
+      : [];
+    const dragCategoryTarget = categoryNodes.length > 0 ? {
+      centerX: categoryNodes.reduce((sum, candidate) => sum + candidate.x, 0) / categoryNodes.length,
+      centerY: categoryNodes.reduce((sum, candidate) => sum + candidate.y, 0) / categoryNodes.length,
+      nodeIds: categoryNodes.map((candidate) => candidate.id)
+    } : null;
+    if (dragCategoryTarget) {
+      simulationClientRef.current?.setCategoryDragTarget({
+        ...dragCategoryTarget,
+        nodeIds: [...dragCategoryTarget.nodeIds]
+      });
+    }
 
     pointerRef.current = {
       dragCategory: category,
+      dragCategoryTarget,
       dragNode: node,
       lastX: event.clientX,
       lastY: event.clientY,
@@ -272,14 +290,24 @@ export function useBubbleCanvasInteractions({
     }
 
     if (pointer.dragCategory) {
+      const worldDx = dx / viewRef.current.scale;
+      const worldDy = dy / viewRef.current.scale;
       const translated = translateBubbleCategoryNodesWithPush(
         nodesRef.current.values(),
         pointer.dragCategory,
-        dx / viewRef.current.scale,
-        dy / viewRef.current.scale
+        worldDx,
+        worldDy
       );
       for (const node of translated) {
         simulationClientRef.current?.moveNode(node.id, node.x, node.y);
+      }
+      if (pointer.dragCategoryTarget) {
+        pointer.dragCategoryTarget.centerX += worldDx;
+        pointer.dragCategoryTarget.centerY += worldDy;
+        simulationClientRef.current?.setCategoryDragTarget({
+          ...pointer.dragCategoryTarget,
+          nodeIds: [...pointer.dragCategoryTarget.nodeIds]
+        });
       }
       requestDraw();
       return;
@@ -316,7 +344,7 @@ export function useBubbleCanvasInteractions({
         if (action?.type === "tagSearch") openTagSearchRef.current(action.tag);
       }
     }
-    if (pointer.dragCategory) simulationClientRef.current?.setInteractionActive(false);
+    if (pointer.dragCategory) simulationClientRef.current?.setCategoryDragTarget(null);
 
     if (pointer.type === "pan") {
       panVelocityRef.current = finishBubblePanVelocity(
@@ -343,7 +371,7 @@ export function useBubbleCanvasInteractions({
       pointer.dragNode.fy = null;
       simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, null, null, 0.08);
     }
-    if (pointer.dragCategory) simulationClientRef.current?.setInteractionActive(false);
+    if (pointer.dragCategory) simulationClientRef.current?.setCategoryDragTarget(null);
 
     pointerRef.current = null;
     panVelocityRef.current = { x: 0, y: 0 };

@@ -18,10 +18,12 @@ import {
   applyBubbleCategoryMotion,
   bubbleCategoryDriftCenterStrength
 } from "./bubbleCategoryModel";
+import { alignBubbleNodesToCenter } from "./bubbleCategoryTranslation";
 import { bubbleLinkAttractionStrength } from "./bubblePhysicsModel";
 import {
   defaultBubbleOptions,
   bubbleSimulationVelocityDecay,
+  type BubbleCategoryDragTarget,
   type BubbleOptions,
   type BubbleSimulationRequest,
   type BubbleSimulationResponse
@@ -50,6 +52,8 @@ type BubbleSimulationWorkerScope = {
 const ctx = self as unknown as BubbleSimulationWorkerScope;
 
 let currentOptions: BubbleOptions = defaultBubbleOptions;
+let categoryDragNodeIds = new Set<string>();
+let categoryDragTarget: BubbleCategoryDragTarget | null = null;
 let simulation: Simulation<WorkerNode, WorkerLink> | null = null;
 let workerLinks: WorkerLink[] = [];
 let workerNodes: WorkerNode[] = [];
@@ -91,8 +95,8 @@ function handleBubbleSimulationRequest(message: BubbleSimulationRequest): void {
     return;
   }
 
-  if (message.type === "interaction") {
-    setInteractionActive(message.active, message.alpha);
+  if (message.type === "categoryDrag") {
+    setCategoryDragTarget(message.target, message.alpha);
     return;
   }
 
@@ -230,14 +234,16 @@ function moveNode(id: string, x: number, y: number, alpha = 0.18): void {
   node.fy = null;
   node.x = x;
   node.y = y;
-  restartSimulation(alpha);
+  simulation.alpha(Math.max(simulation.alpha(), alpha)).restart();
 }
 
-function setInteractionActive(active: boolean, alpha = 0.18): void {
+function setCategoryDragTarget(target: BubbleCategoryDragTarget | null, alpha = 0.18): void {
   if (!simulation) return;
 
-  simulation.alphaTarget(active ? alpha : 0);
-  restartSimulation(active ? alpha : 0.08);
+  categoryDragTarget = target;
+  categoryDragNodeIds = new Set(target?.nodeIds ?? []);
+  simulation.alphaTarget(target ? alpha : 0);
+  restartSimulation(target ? alpha : 0.08);
 }
 
 function restartSimulation(alpha = 0.3): void {
@@ -253,11 +259,21 @@ function restartSimulation(alpha = 0.3): void {
 function disposeSimulation(): void {
   simulation?.stop();
   simulation = null;
+  categoryDragNodeIds.clear();
+  categoryDragTarget = null;
   workerLinks = [];
   workerNodes = [];
 }
 
 function postBubblePositions(): void {
+  if (categoryDragTarget) {
+    alignBubbleNodesToCenter(
+      workerNodes,
+      categoryDragNodeIds,
+      categoryDragTarget.centerX,
+      categoryDragTarget.centerY
+    );
+  }
   const buffer = new ArrayBuffer(workerNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
   const values = new Float32Array(buffer);
   const ids: string[] = [];

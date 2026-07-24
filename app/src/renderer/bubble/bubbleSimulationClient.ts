@@ -18,10 +18,12 @@ import {
   applyBubbleCategoryMotion,
   bubbleCategoryDriftCenterStrength
 } from "./bubbleCategoryModel";
+import { alignBubbleNodesToCenter } from "./bubbleCategoryTranslation";
 import { bubbleLinkAttractionStrength } from "./bubblePhysicsModel";
 import {
   defaultBubbleOptions,
   bubbleSimulationVelocityDecay,
+  type BubbleCategoryDragTarget,
   type BubbleOptions,
   type BubbleSimulationLinkSnapshot,
   type BubbleSimulationNodeSnapshot,
@@ -34,7 +36,7 @@ export interface BubbleSimulationClient {
   dispose: () => void;
   moveNode: (id: string, x: number, y: number, alpha?: number) => void;
   restart: (alpha?: number) => void;
-  setInteractionActive: (active: boolean, alpha?: number) => void;
+  setCategoryDragTarget: (target: BubbleCategoryDragTarget | null, alpha?: number) => void;
   setNodeCategoryCenterOffset: (id: string, offsetX: number, offsetY: number) => void;
   setNodeFixed: (
     id: string,
@@ -128,7 +130,7 @@ function createWorkerBubbleSimulationClient(
     },
     moveNode: (id, x, y, alpha) => post({ alpha, id, type: "moveNode", x, y }),
     restart: (alpha) => post({ alpha, type: "restart" }),
-    setInteractionActive: (active, alpha) => post({ active, alpha, type: "interaction" }),
+    setCategoryDragTarget: (target, alpha) => post({ alpha, target, type: "categoryDrag" }),
     setNodeCategoryCenterOffset: (id, offsetX, offsetY) => {
       post({ id, offsetX, offsetY, type: "categoryCenterOffset" });
     },
@@ -142,6 +144,8 @@ function createWorkerBubbleSimulationClient(
 
 function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPositionHandler): BubbleSimulationClient {
   let currentOptions: BubbleOptions = defaultBubbleOptions;
+  let categoryDragNodeIds = new Set<string>();
+  let categoryDragTarget: BubbleCategoryDragTarget | null = null;
   let disposed = false;
   let fallbackLinks: FallbackLink[] = [];
   let fallbackNodes: FallbackNode[] = [];
@@ -150,6 +154,14 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
   const postPositions = () => {
     if (disposed) return;
 
+    if (categoryDragTarget) {
+      alignBubbleNodesToCenter(
+        fallbackNodes,
+        categoryDragNodeIds,
+        categoryDragTarget.centerX,
+        categoryDragTarget.centerY
+      );
+    }
     const buffer = new ArrayBuffer(fallbackNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
     const values = new Float32Array(buffer);
     const ids: string[] = [];
@@ -223,6 +235,8 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
       disposed = true;
       simulation?.stop();
       simulation = null;
+      categoryDragNodeIds.clear();
+      categoryDragTarget = null;
       fallbackLinks = [];
       fallbackNodes = [];
     },
@@ -233,13 +247,15 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
       node.fy = null;
       node.x = x;
       node.y = y;
-      restart(alpha);
+      simulation.alpha(Math.max(simulation.alpha(), alpha)).restart();
     },
     restart,
-    setInteractionActive: (active, alpha = 0.18) => {
+    setCategoryDragTarget: (target, alpha = 0.18) => {
       if (!simulation) return;
-      simulation.alphaTarget(active ? alpha : 0);
-      restart(active ? alpha : 0.08);
+      categoryDragTarget = target;
+      categoryDragNodeIds = new Set(target?.nodeIds ?? []);
+      simulation.alphaTarget(target ? alpha : 0);
+      restart(target ? alpha : 0.08);
     },
     setNodeCategoryCenterOffset: (id, offsetX, offsetY) => {
       const node = fallbackNodes.find((candidate) => candidate.id === id);

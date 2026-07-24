@@ -9,6 +9,46 @@ import {
 const bubbleCategoryDesiredOverlap = 28;
 const bubbleCategoryTranslationStep = 32;
 
+interface BubblePositionNode {
+  id: string;
+  vx?: number;
+  vy?: number;
+  x?: number;
+  y?: number;
+}
+
+export function alignBubbleNodesToCenter<T extends BubblePositionNode>(
+  nodes: Iterable<T>,
+  nodeIds: ReadonlySet<string>,
+  centerX: number,
+  centerY: number
+): T[] {
+  const aligned = [...nodes].filter((node) =>
+    nodeIds.has(node.id) && node.x !== undefined && node.y !== undefined
+  );
+  if (aligned.length === 0) return [];
+
+  const currentCenterX = aligned.reduce((sum, node) => sum + node.x!, 0) / aligned.length;
+  const currentCenterY = aligned.reduce((sum, node) => sum + node.y!, 0) / aligned.length;
+  const dx = centerX - currentCenterX;
+  const dy = centerY - currentCenterY;
+  for (const node of aligned) {
+    node.x! += dx;
+    node.y! += dy;
+  }
+
+  const moving = aligned.filter((node) => node.vx !== undefined && node.vy !== undefined);
+  if (moving.length > 0) {
+    const averageVelocityX = moving.reduce((sum, node) => sum + node.vx!, 0) / moving.length;
+    const averageVelocityY = moving.reduce((sum, node) => sum + node.vy!, 0) / moving.length;
+    for (const node of moving) {
+      node.vx! -= averageVelocityX;
+      node.vy! -= averageVelocityY;
+    }
+  }
+  return aligned;
+}
+
 export function translateBubbleCategoryNodes<T extends BubbleCategoryForceNode>(
   nodes: Iterable<T>,
   category: string,

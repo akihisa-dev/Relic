@@ -12,7 +12,7 @@ const bubbleViewModelMocks = vi.hoisted(() => ({
 }));
 const bubbleSimulationMocks = vi.hoisted(() => ({
   moveNode: vi.fn(),
-  setInteractionActive: vi.fn(),
+  setCategoryDragTarget: vi.fn(),
   setNodeCategoryCenterOffset: vi.fn(),
   setNodeFixed: vi.fn(),
   sync: vi.fn()
@@ -30,7 +30,7 @@ vi.mock("../bubble/bubbleSimulationClient", async (importOriginal) => ({
     dispose: vi.fn(),
     moveNode: bubbleSimulationMocks.moveNode,
     restart: vi.fn(),
-    setInteractionActive: bubbleSimulationMocks.setInteractionActive,
+    setCategoryDragTarget: bubbleSimulationMocks.setCategoryDragTarget,
     setNodeCategoryCenterOffset: bubbleSimulationMocks.setNodeCategoryCenterOffset,
     setNodeFixed: bubbleSimulationMocks.setNodeFixed,
     sync: bubbleSimulationMocks.sync,
@@ -67,7 +67,7 @@ afterEach(() => {
   bubbleViewModelMocks.bubbleCategoryAtWorldPoint.mockReset();
   bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReset();
   bubbleSimulationMocks.moveNode.mockReset();
-  bubbleSimulationMocks.setInteractionActive.mockReset();
+  bubbleSimulationMocks.setCategoryDragTarget.mockReset();
   bubbleSimulationMocks.setNodeFixed.mockReset();
   bubbleSimulationMocks.setNodeCategoryCenterOffset.mockReset();
   bubbleSimulationMocks.sync.mockReset();
@@ -263,7 +263,11 @@ describe("BubbleView", () => {
     }));
     fireEvent.lostPointerCapture(canvas, { pointerId: 1 });
 
-    expect(bubbleSimulationMocks.setInteractionActive).toHaveBeenNthCalledWith(1, true);
+    expect(bubbleSimulationMocks.setCategoryDragTarget).toHaveBeenNthCalledWith(1, {
+      centerX: expect.any(Number),
+      centerY: expect.any(Number),
+      nodeIds: ["A.md", "B.md"]
+    });
     expect(bubbleSimulationMocks.moveNode).toHaveBeenCalledWith(
       "A.md",
       expect.any(Number),
@@ -281,7 +285,16 @@ describe("BubbleView", () => {
     );
     expect(bubbleSimulationMocks.moveNode.mock.calls.some(([id]) => id === "D.md")).toBe(false);
     expect(bubbleSimulationMocks.setNodeFixed).not.toHaveBeenCalled();
-    expect(bubbleSimulationMocks.setInteractionActive).toHaveBeenNthCalledWith(2, false);
+    expect(bubbleSimulationMocks.setCategoryDragTarget).toHaveBeenNthCalledWith(2, {
+      centerX: expect.any(Number),
+      centerY: expect.any(Number),
+      nodeIds: ["A.md", "B.md"]
+    });
+    const initialDragTarget = bubbleSimulationMocks.setCategoryDragTarget.mock.calls[0]![0]!;
+    const movedDragTarget = bubbleSimulationMocks.setCategoryDragTarget.mock.calls[1]![0]!;
+    expect(movedDragTarget.centerX - initialDragTarget.centerX).toBe(10);
+    expect(movedDragTarget.centerY - initialDragTarget.centerY).toBe(-1000);
+    expect(bubbleSimulationMocks.setCategoryDragTarget).toHaveBeenNthCalledWith(3, null);
   });
 
   it("単一ノードをドラッグしてもバブル中心を同じ位置に保つ", async () => {
