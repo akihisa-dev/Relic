@@ -465,26 +465,6 @@ function drawBubbleCategoryBubbles(
     traceSmoothBubble(context, bubble.points);
     context.stroke();
 
-    context.lineCap = "round";
-    context.lineJoin = "round";
-    context.strokeStyle = bubbleColorWithAlpha(palette.rimSecondary, 0.3);
-    context.lineWidth = 6.5 / scale;
-    traceBubbleContourSegment(context, bubble.points, 0.54, 0.76);
-    context.stroke();
-    context.strokeStyle = bubbleColorWithAlpha(palette.highlight, 0.78);
-    context.lineWidth = 1.7 / scale;
-    traceBubbleContourSegment(context, bubble.points, 0.55, 0.75);
-    context.stroke();
-
-    context.strokeStyle = bubbleColorWithAlpha(palette.rimTertiary, 0.34);
-    context.lineWidth = 5 / scale;
-    traceBubbleContourSegment(context, bubble.points, 0.94, 1.14);
-    context.stroke();
-    context.strokeStyle = bubbleColorWithAlpha(color, 0.74);
-    context.lineWidth = 1.35 / scale;
-    traceBubbleContourSegment(context, bubble.points, 0.96, 1.12);
-    context.stroke();
-
     context.fillStyle = color;
     context.font = `650 ${13 / scale}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
     context.textAlign = "center";
@@ -496,26 +476,6 @@ function drawBubbleCategoryBubbles(
       Math.max(80 / scale, bubble.radius * 1.5)
     );
     context.restore();
-  }
-}
-
-function traceBubbleContourSegment(
-  context: CanvasRenderingContext2D,
-  points: readonly BubbleCategoryPoint[],
-  startFraction: number,
-  endFraction: number
-): void {
-  if (points.length === 0 || endFraction <= startFraction) return;
-  const count = points.length;
-  const startIndex = Math.floor(startFraction * count);
-  const endIndex = Math.ceil(endFraction * count);
-  const first = points[((startIndex % count) + count) % count]!;
-
-  context.beginPath();
-  context.moveTo(first.x, first.y);
-  for (let index = startIndex + 1; index <= endIndex; index += 1) {
-    const point = points[((index % count) + count) % count]!;
-    context.lineTo(point.x, point.y);
   }
 }
 
