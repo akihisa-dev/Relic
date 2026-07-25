@@ -34,6 +34,7 @@ const hoveredItemLabelFontSize = 14;
 const hoveredItemGlowBlur = 10;
 const itemLabelGap = 8;
 const itemRangeFont = "650 11px -apple-system, BlinkMacSystemFont, sans-serif";
+const calendarSurfaceRangeCapHeight = 12;
 
 export interface ChronicleCanvasTheme {
   background: string;
@@ -228,17 +229,27 @@ function drawCalendarSurfaces(
       ? theme.mutedText
       : `hsl(${hue} ${theme.categorySaturation}% ${theme.categoryLightness}%)`;
     context.save();
-    context.globalAlpha = 0.1;
+    context.globalAlpha = 0.04;
     context.fillStyle = surfaceColor;
     if (declaredRect) context.fillRect(declaredRect.left, top, declaredRect.width, height);
-    context.globalAlpha = 0.42;
+    context.globalAlpha = 0.72;
     context.strokeStyle = surfaceColor;
-    context.lineWidth = 1.5;
+    context.lineWidth = 2;
+    context.lineCap = "butt";
     if (surface.rangeState === "unset" && "setLineDash" in context) context.setLineDash([8, 6]);
-    if (declaredRect) context.strokeRect(declaredRect.left, top, declaredRect.width, height);
+    if (declaredRect) {
+      drawCalendarSurfaceRange(
+        context,
+        declaredRect.left,
+        declaredRect.left + declaredRect.width,
+        top,
+        surface.rangeState !== "unset" && left >= -2 && left <= viewportWidth + 2,
+        surface.rangeState !== "unset" && right >= -2 && right <= viewportWidth + 2
+      );
+    }
 
     if (surface.rangeState === "overflow") {
-      context.globalAlpha = 0.12;
+      context.globalAlpha = 0.08;
       context.fillStyle = "#d97706";
       const leadingOverflow = contentStart < left ? clippedRect(contentStart, left) : null;
       const trailingOverflow = contentEnd > right ? clippedRect(right, contentEnd) : null;
@@ -246,9 +257,28 @@ function drawCalendarSurfaces(
       if (trailingOverflow) context.fillRect(trailingOverflow.left, top, trailingOverflow.width, height);
       context.globalAlpha = 0.72;
       context.strokeStyle = "#d97706";
+      context.lineWidth = 1.5;
       if ("setLineDash" in context) context.setLineDash([6, 5]);
-      if (leadingOverflow) context.strokeRect(leadingOverflow.left, top, leadingOverflow.width, height);
-      if (trailingOverflow) context.strokeRect(trailingOverflow.left, top, trailingOverflow.width, height);
+      if (leadingOverflow) {
+        drawCalendarSurfaceRange(
+          context,
+          leadingOverflow.left,
+          leadingOverflow.left + leadingOverflow.width,
+          top,
+          contentStart >= -2 && contentStart <= viewportWidth + 2,
+          left >= -2 && left <= viewportWidth + 2
+        );
+      }
+      if (trailingOverflow) {
+        drawCalendarSurfaceRange(
+          context,
+          trailingOverflow.left,
+          trailingOverflow.left + trailingOverflow.width,
+          top,
+          right >= -2 && right <= viewportWidth + 2,
+          contentEnd >= -2 && contentEnd <= viewportWidth + 2
+        );
+      }
       if ("setLineDash" in context) context.setLineDash([]);
     }
 
@@ -258,7 +288,7 @@ function drawCalendarSurfaces(
     context.textAlign = "left";
     context.textBaseline = "middle";
     const labelX = Math.min(Math.max(left + 10, 10), Math.max(10, Math.min(right - 10, viewportWidth - 120)));
-    context.fillText(surface.calendarName, labelX, top + 18);
+    context.fillText(surface.calendarName, labelX, top + 24);
     context.font = "650 10px -apple-system, BlinkMacSystemFont, sans-serif";
     context.textAlign = "center";
     for (const year of years) {
@@ -268,10 +298,37 @@ function drawCalendarSurfaces(
       if (converted === null) continue;
       context.globalAlpha = 0.72;
       context.fillStyle = surfaceColor;
-      context.fillText(formatYear(converted), x, top + 18);
+      context.fillText(formatYear(converted), x, top + 24);
     }
     context.restore();
   }
+}
+
+function drawCalendarSurfaceRange(
+  context: CanvasRenderingContext2D,
+  left: number,
+  right: number,
+  top: number,
+  drawStartCap: boolean,
+  drawEndCap: boolean
+): void {
+  context.beginPath();
+  context.moveTo(left, top);
+  context.lineTo(right, top);
+  context.stroke();
+  if (!drawStartCap && !drawEndCap) return;
+
+  const capOffset = calendarSurfaceRangeCapHeight / 2;
+  context.beginPath();
+  if (drawStartCap) {
+    context.moveTo(left, top - capOffset);
+    context.lineTo(left, top + capOffset);
+  }
+  if (drawEndCap) {
+    context.moveTo(right, top - capOffset);
+    context.lineTo(right, top + capOffset);
+  }
+  context.stroke();
 }
 
 function drawItem(

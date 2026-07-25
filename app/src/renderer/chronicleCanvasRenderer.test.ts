@@ -191,7 +191,7 @@ describe("chronicleCanvasRenderer", () => {
     });
   });
 
-  it("追加暦を半透明の暦面と局所年目盛りとして描画する", () => {
+  it("追加暦を薄い暦面、上辺の期間線、両端キャップ、局所年目盛りとして描画する", () => {
     const settings = {
       baseCalendarName: "基準暦",
       calendars: [{ name: "王国暦", range: { end: 20, start: 1 }, yearOne: 100 }],
@@ -203,7 +203,8 @@ describe("chronicleCanvasRenderer", () => {
     initializeChronicleCanvasCamera(camera, scene, 800, 500);
     const fillTextCalls: FillTextCall[] = [];
     const strokeRectCalls: Array<{ height: number; width: number; x: number; y: number }> = [];
-    const context = createCanvasContext(fillTextCalls, [], strokeRectCalls);
+    const strokeCalls: StrokeCall[] = [];
+    const context = createCanvasContext(fillTextCalls, [], strokeRectCalls, [], strokeCalls);
 
     drawChronicleCanvas(context, scene, camera, null, null, 800, 500, {
       background: "#fff",
@@ -213,11 +214,60 @@ describe("chronicleCanvasRenderer", () => {
       text: "#111"
     }, new Map(), settings, new Map([["王国暦", 210]]));
 
-    expect(strokeRectCalls.length).toBeGreaterThan(0);
+    const surfaceStrokes = strokeCalls.filter((call) => call.strokeStyle === "hsl(210 68% 40%)");
+    const surface = scene.surfaces[0];
+    const top = worldToCanvas({ x: 0, y: surface.y - surface.height / 2 }, camera).y;
+    const left = worldToCanvas({ x: surface.startX!, y: 0 }, camera).x;
+    const right = worldToCanvas({ x: surface.endX!, y: 0 }, camera).x;
+    expect(strokeRectCalls).toHaveLength(0);
+    expect(surfaceStrokes).toHaveLength(2);
+    expect(surfaceStrokes[0]).toMatchObject({
+      lineWidth: 2,
+      points: [{ x: left, y: top }, { x: right, y: top }]
+    });
+    expect(surfaceStrokes[1]).toMatchObject({
+      lineWidth: 2,
+      points: [
+        { x: left, y: top - 6 },
+        { x: left, y: top + 6 },
+        { x: right, y: top - 6 },
+        { x: right, y: top + 6 }
+      ]
+    });
     expect(fillTextCalls.find((call) => call.text === "王国暦")).toMatchObject({
       fillStyle: "hsl(210 68% 40%)"
     });
     expect(fillTextCalls.some((call) => call.text === "Kingdom")).toBe(true);
+  });
+
+  it("範囲未設定の追加暦は破線の上辺だけを描き両端キャップを置かない", () => {
+    const settings = {
+      baseCalendarName: "基準暦",
+      calendars: [{ name: "王国暦", range: null, yearOne: 100 }],
+      visibleCalendarNames: ["基準暦", "王国暦"]
+    };
+    const scene = createChronicleCanvasScene([], () => 0.5, 10, settings);
+    const camera = createChronicleCanvasCamera();
+    initializeChronicleCanvasCamera(camera, scene, 800, 500);
+    const lineDashCalls: number[][] = [];
+    const strokeCalls: StrokeCall[] = [];
+
+    drawChronicleCanvas(
+      createCanvasContext([], [], [], lineDashCalls, strokeCalls),
+      scene,
+      camera,
+      null,
+      null,
+      800,
+      500,
+      { background: "#fff", categoryLightness: 40, categorySaturation: 68, mutedText: "#666", text: "#111" },
+      new Map(),
+      settings,
+      new Map([["王国暦", 210]])
+    );
+
+    expect(lineDashCalls).toContainEqual([8, 6]);
+    expect(strokeCalls.filter((call) => call.strokeStyle === "hsl(210 68% 40%)")).toHaveLength(1);
   });
 
   it("最小倍率でも暦面の高さを安全な縦倍率で描画する", () => {
@@ -231,9 +281,9 @@ describe("chronicleCanvasRenderer", () => {
       { ...entry("Second", "second.md", 120), calendarName: "王国暦" }
     ], () => 0.5, 10, settings);
     const camera = { ...createChronicleCanvasCamera(), panX: 0, panY: 0, scale: 0.08 };
-    const strokeRectCalls: Array<{ height: number; width: number; x: number; y: number }> = [];
+    const fillRectCalls: FillRectCall[] = [];
 
-    drawChronicleCanvas(createCanvasContext([], [], strokeRectCalls), scene, camera, null, null, 800, 500, {
+    drawChronicleCanvas(createCanvasContext([], [], [], [], [], fillRectCalls), scene, camera, null, null, 800, 500, {
       background: "#fff",
       categoryLightness: 40,
       categorySaturation: 68,
@@ -241,7 +291,8 @@ describe("chronicleCanvasRenderer", () => {
       text: "#111"
     }, new Map(), settings);
 
-    expect(strokeRectCalls[0].height).toBeCloseTo(
+    const surfaceFill = fillRectCalls.find((call) => call.globalAlpha === 0.04)!;
+    expect(surfaceFill.height).toBeCloseTo(
       scene.surfaces[0].height * CHRONICLE_CANVAS_MIN_VERTICAL_SCALE
     );
   });
@@ -310,28 +361,63 @@ interface FillTextCall {
   y: number;
 }
 
+interface FillRectCall {
+  fillStyle: string;
+  globalAlpha: number;
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+}
+
+interface StrokeCall {
+  globalAlpha: number;
+  lineWidth: number;
+  points: Array<{ x: number; y: number }>;
+  strokeStyle: string;
+}
+
 function createCanvasContext(
   fillTextCalls: FillTextCall[],
   fillStyleCalls: string[] = [],
   strokeRectCalls: Array<{ height: number; width: number; x: number; y: number }> = [],
-  lineDashCalls: number[][] = []
+  lineDashCalls: number[][] = [],
+  strokeCalls: StrokeCall[] = [],
+  fillRectCalls: FillRectCall[] = []
 ): CanvasRenderingContext2D {
+  let currentStrokePoints: Array<{ x: number; y: number }> = [];
   const context = {
     arc: () => undefined,
-    beginPath: () => undefined,
+    beginPath: () => {
+      currentStrokePoints = [];
+    },
     clearRect: () => undefined,
     fill: () => fillStyleCalls.push(String(context.fillStyle)),
-    fillRect: () => undefined,
+    fillRect: (x: number, y: number, width: number, height: number) => {
+      fillRectCalls.push({
+        fillStyle: String(context.fillStyle),
+        globalAlpha: context.globalAlpha,
+        height,
+        width,
+        x,
+        y
+      });
+    },
     fillText: (text: string, x: number, y: number) => {
       fillTextCalls.push({ fillStyle: String(context.fillStyle), font: context.font, text, x, y });
     },
-    lineTo: () => undefined,
+    lineTo: (x: number, y: number) => currentStrokePoints.push({ x, y }),
     measureText: () => ({ width: 42 }) as TextMetrics,
-    moveTo: () => undefined,
+    moveTo: (x: number, y: number) => currentStrokePoints.push({ x, y }),
     restore: () => undefined,
     save: () => undefined,
     setLineDash: (segments: number[]) => lineDashCalls.push(segments),
-    stroke: () => undefined,
+    stroke: () => strokeCalls.push({
+      globalAlpha: context.globalAlpha,
+      lineWidth: context.lineWidth,
+      points: [...currentStrokePoints],
+      strokeStyle: String(context.strokeStyle)
+    }),
     strokeRect: (x: number, y: number, width: number, height: number) => strokeRectCalls.push({ height, width, x, y }),
     fillStyle: "",
     font: "",
