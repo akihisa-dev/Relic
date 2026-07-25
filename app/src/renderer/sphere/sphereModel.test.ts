@@ -79,7 +79,8 @@ describe("sphereModel", () => {
       opacity: 0.78
     });
     expect(sphereNodeAppearance("#4477aa", node, "focused", defaultGraphDrawTheme)).toMatchObject({
-      color: defaultGraphDrawTheme.accent,
+      color: "#4477aa",
+      emissiveColor: "#4477aa",
       emissiveIntensity: 0.24,
       opacity: 1
     });

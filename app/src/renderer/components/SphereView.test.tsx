@@ -101,12 +101,13 @@ describe("SphereView", () => {
     };
 
     act(() => runtimeMocks.callbacks?.onNodeHover(node));
-    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(screen.getByText("A")).toHaveClass("sphere-view-focus");
     expect(runtimeMocks.setFocus).toHaveBeenLastCalledWith("A.md");
 
     act(() => runtimeMocks.callbacks?.onNodeClick(node));
     act(() => runtimeMocks.callbacks?.onNodeHover(null));
     expect(runtimeMocks.setFocus).toHaveBeenLastCalledWith("A.md");
+    expect(screen.getByText("A")).toHaveClass("sphere-view-focus");
     expect(onOpenFile).not.toHaveBeenCalled();
 
     act(() => runtimeMocks.callbacks?.onNodeClick(node));

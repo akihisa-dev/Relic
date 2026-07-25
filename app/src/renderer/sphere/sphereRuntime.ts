@@ -270,7 +270,7 @@ export function createSphereRuntime(
       return sphereLinkTouchesFocus(link, focusId) ? 2.4 : 0;
     })
     .linkColor((link) => focusId && sphereLinkTouchesFocus(link, focusId)
-      ? theme.accent
+      ? theme.primary
       : focusId
         ? sphereColorWithOpacity(theme.textSecondary, 0.12)
         : theme.textSecondary)

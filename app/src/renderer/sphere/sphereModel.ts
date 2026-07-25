@@ -203,13 +203,13 @@ export function sphereNodeAppearance(
   baseColor: string,
   node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">,
   state: SphereNodeFocusState,
-  theme: Pick<GraphDrawTheme, "accent" | "border" | "borderStrong">
+  theme: Pick<GraphDrawTheme, "border" | "borderStrong">
 ): SphereNodeAppearance {
   const prominence = sphereNodeProminence(node);
   if (state === "focused") {
     return {
-      color: theme.accent,
-      emissiveColor: theme.accent,
+      color: baseColor,
+      emissiveColor: baseColor,
       emissiveIntensity: 0.24,
       opacity: 1
     };

@@ -269,7 +269,7 @@ describe("sphereRuntime", () => {
       opacity: 1,
       roughness: 0.34
     });
-    expect(`#${focusedMaterial.color.getHexString()}`).toBe(defaultGraphDrawTheme.accent);
+    expect(`#${focusedMaterial.color.getHexString()}`).toBe("#111111");
     expect(`#${connectedMaterial.color.getHexString()}`).toBe("#222222");
     expect(dimmedMaterial.opacity).toBe(0.14);
     expect(linkWidthAccessor(sphereData().links[0])).toBe(2.4);
@@ -282,7 +282,7 @@ describe("sphereRuntime", () => {
       type: "link"
     } as const;
     expect(linkWidthAccessor(unfocusedLink)).toBe(0);
-    expect(linkColorAccessor(sphereData().links[0])).toBe(defaultGraphDrawTheme.accent);
+    expect(linkColorAccessor(sphereData().links[0])).toBe(defaultGraphDrawTheme.primary);
     expect(linkColorAccessor(unfocusedLink)).toBe("rgba(98, 98, 91, 0.12)");
     runtime.setFocus(null);
     expect(focusedMaterial.opacity).toBe(0.86);
@@ -301,7 +301,7 @@ describe("sphereRuntime", () => {
     ]));
     expect(`#${focusedMaterial.color.getHexString()}`).toBe("#88aadd");
     runtime.setFocus("A.md");
-    expect(`#${focusedMaterial.color.getHexString()}`).toBe(darkTheme.accent);
+    expect(`#${focusedMaterial.color.getHexString()}`).toBe("#88aadd");
     expect(`#${connectedMaterial.color.getHexString()}`).toBe("#ddaa88");
     expect(dimmedMaterial.opacity).toBe(0.14);
     forceGraphMocks.graph.onNodeClick.mock.calls[0][0](data.nodes[0]);
