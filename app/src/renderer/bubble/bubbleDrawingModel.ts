@@ -38,6 +38,7 @@ export function drawBubble(
   options: BubbleOptions,
   highlight: BubbleHighlightState,
   theme: GraphDrawTheme,
+  categoryColors: ReadonlyMap<string, string>,
   width: number,
   height: number
 ): void {
@@ -59,7 +60,7 @@ export function drawBubble(
   const highlightProgress = bubbleHighlightProgress(animationTimeMs);
   const highlightOpacity = bubbleHighlightOpacity(animationTimeMs);
   const focusedColor = focused ? theme.accent : null;
-  drawBubbleCategoryBubbles(context, nodes, view.scale, theme);
+  drawBubbleCategoryBubbles(context, nodes, view.scale, theme, categoryColors);
   if (focused && focusedColor) {
     drawBubbleNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, highlightOpacity);
   }
@@ -105,7 +106,7 @@ export function drawBubble(
   for (const node of nodes) {
     const active = !focused || node.id === focused.id || neighbors.has(node.id);
     const radius = bubbleNodeVisualRadius(node, options, view.scale);
-    const color = graphNodeColor(node, theme);
+    const color = graphNodeColor(node, theme, categoryColors);
     const nodeAlpha = bubbleHighlightAlpha(active, highlightStrength, 1, bubbleDimmedNodeAlpha);
     drawBubbleBubbleNode(context, node, radius, color, theme, view.scale, nodeAlpha);
 
@@ -410,10 +411,11 @@ function drawBubbleCategoryBubbles(
   context: CanvasRenderingContext2D,
   nodes: BubbleSimNode[],
   scale: number,
-  theme: GraphDrawTheme
+  theme: GraphDrawTheme,
+  categoryColors: ReadonlyMap<string, string>
 ): void {
   for (const bubble of bubbleCategoryBubbles(nodes)) {
-    const color = graphCategoryColor(bubble.category, theme);
+    const color = categoryColors.get(bubble.category) ?? graphCategoryColor(bubble.category, theme);
     const palette = bubbleMembranePalette(color, theme);
 
     context.save();

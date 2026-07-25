@@ -12,6 +12,7 @@ import {
 import {
   defaultGraphDrawTheme,
   graphCategoryColor,
+  graphCategoryColors,
   graphNodeColor
 } from "../graph/graphThemeModel";
 import type { BubbleSimNode } from "./bubbleTypes";
@@ -90,6 +91,34 @@ describe("bubbleDrawingModel", () => {
     expect(bubbleNodeBubbleHighlight(defaultGraphDrawTheme))
       .toBe(defaultGraphDrawTheme.background);
     expect(bubbleNodeBubbleHighlight(darkTheme)).toBe(darkTheme.text);
+  });
+
+  it("表示中のカテゴリ色を入力順に関係なく色相環へ分散する", () => {
+    const categories = ["人物", "勢力", "戦役", "地誌", "資料", "案内"];
+    const forward = graphCategoryColors(categories, defaultGraphDrawTheme);
+    const reversed = graphCategoryColors([...categories].reverse(), defaultGraphDrawTheme);
+    const dark = graphCategoryColors(
+      categories,
+      { ...defaultGraphDrawTheme, background: "#11120f" }
+    );
+    const hues = [...forward.values()].map((color) =>
+      Number(color.match(/^hsl\((\d+)/)?.[1])
+    ).sort((left, right) => left - right);
+    const gaps = hues.map((hue, index) => {
+      const next = hues[(index + 1) % hues.length]!;
+      return (next - hue + 360) % 360;
+    });
+
+    expect([...forward]).toEqual([...reversed]);
+    expect(new Set(forward.values())).toHaveLength(categories.length);
+    expect(Math.min(...gaps)).toBeGreaterThanOrEqual(59);
+    expect([...dark.keys()]).toEqual([...forward.keys()]);
+    expect([...dark.values()].every((color) => color.endsWith("68%)"))).toBe(true);
+    expect(graphNodeColor(
+      { ...graphNode("file"), category: "人物" },
+      defaultGraphDrawTheme,
+      forward
+    )).toBe(forward.get("人物"));
   });
 
   it("薄膜の反射色と透明度をテーマに合わせて生成する", () => {

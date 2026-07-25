@@ -40,26 +40,54 @@ export function readGraphDrawTheme(element: Element = document.documentElement):
 }
 
 export function graphCategoryColor(category: string, theme: GraphDrawTheme): string {
+  const hue = Math.abs(graphCategoryHash(category)) % 360;
+  const lightness = graphThemeIsDark(theme.background) ? 68 : 40;
+  return `hsl(${hue} 62% ${lightness}%)`;
+}
+
+export function graphCategoryColors(
+  categories: Iterable<string>,
+  theme: GraphDrawTheme
+): ReadonlyMap<string, string> {
+  const orderedCategories = [...new Set(
+    [...categories].map((category) => category.trim()).filter(Boolean)
+  )].sort((left, right) => (
+    (graphCategoryHash(left) >>> 0) - (graphCategoryHash(right) >>> 0) ||
+    left.localeCompare(right)
+  ));
+  if (orderedCategories.length === 1) {
+    const category = orderedCategories[0]!;
+    return new Map([[category, graphCategoryColor(category, theme)]]);
+  }
+
+  const lightness = graphThemeIsDark(theme.background) ? 68 : 40;
+  return new Map(orderedCategories.map((category, index) => {
+    const hue = Math.round((15 + index * 360 / orderedCategories.length) % 360);
+    return [category, `hsl(${hue} 62% ${lightness}%)`];
+  }));
+}
+
+export function graphNodeColor(
+  node: WorkspaceGraphNode,
+  theme: GraphDrawTheme,
+  categoryColors?: ReadonlyMap<string, string>
+): string {
+  const category = typeof node.category === "string" ? node.category.trim() : "";
+  if (node.type === "file" && category) {
+    return categoryColors?.get(category) ?? graphCategoryColor(category, theme);
+  }
+  if (node.type === "tag") return theme.accent;
+  if (node.type === "attachment" || node.type === "unresolved") return theme.textMuted;
+  return theme.textSecondary;
+}
+
+function graphCategoryHash(category: string): number {
   let hash = 2_166_136_261;
   for (let index = 0; index < category.length; index += 1) {
     hash ^= category.charCodeAt(index);
     hash = Math.imul(hash, 16_777_619);
   }
-
-  const hue = Math.abs(hash) % 360;
-  const lightness = graphThemeIsDark(theme.background) ? 68 : 40;
-  return `hsl(${hue} 62% ${lightness}%)`;
-}
-
-export function graphNodeColor(
-  node: WorkspaceGraphNode,
-  theme: GraphDrawTheme
-): string {
-  const category = typeof node.category === "string" ? node.category.trim() : "";
-  if (node.type === "file" && category) return graphCategoryColor(category, theme);
-  if (node.type === "tag") return theme.accent;
-  if (node.type === "attachment" || node.type === "unresolved") return theme.textMuted;
-  return theme.textSecondary;
+  return hash;
 }
 
 export function graphThemeIsDark(background: string): boolean {

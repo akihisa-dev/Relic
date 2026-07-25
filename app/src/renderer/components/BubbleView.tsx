@@ -15,7 +15,11 @@ import {
   type BubbleSimNode,
   type BubbleViewTransform
 } from "../bubble/bubbleTypes";
-import { defaultGraphDrawTheme, readGraphDrawTheme } from "../graph/graphThemeModel";
+import {
+  defaultGraphDrawTheme,
+  graphCategoryColors,
+  readGraphDrawTheme
+} from "../graph/graphThemeModel";
 import { useT } from "../i18n";
 import { bubbleCanvasSizeFallback, useBubbleCanvasInteractions } from "../hooks/useBubbleCanvasInteractions";
 import { useLatest } from "../hooks/useLatest";
@@ -55,6 +59,7 @@ export function BubbleView({
   const frameRef = useRef<number | null>(null);
   const drawRef = useRef<() => void>(() => undefined);
   const themeRef = useRef(defaultGraphDrawTheme);
+  const categoryColorsRef = useRef<ReadonlyMap<string, string>>(new Map());
   const initialNodes = useMemo(() => new Map<string, BubbleSimNode>(), []);
   const initialLinks = useMemo<BubbleSimLink[]>(() => [], []);
   const initialView = useMemo(() => initialBubbleViewTransform(), []);
@@ -103,6 +108,12 @@ export function BubbleView({
 
   const updateTheme = useCallback(() => {
     themeRef.current = readGraphDrawTheme(canvasRef.current ?? document.documentElement);
+    categoryColorsRef.current = graphCategoryColors(
+      [...nodesRef.current.values()].flatMap((node) =>
+        typeof node.category === "string" ? [node.category] : []
+      ),
+      themeRef.current
+    );
     requestDraw();
   }, [requestDraw]);
 
@@ -144,6 +155,12 @@ export function BubbleView({
   useEffect(() => {
     const links = syncBubbleLayout(filteredGraph, nodesRef.current);
     linksRef.current = links;
+    categoryColorsRef.current = graphCategoryColors(
+      [...nodesRef.current.values()].flatMap((node) =>
+        typeof node.category === "string" ? [node.category] : []
+      ),
+      themeRef.current
+    );
     simulationClientRef.current?.sync(
       bubbleSimulationNodes(nodesRef.current.values()),
       bubbleSimulationLinks(links),
@@ -197,6 +214,7 @@ export function BubbleView({
       latestOptionsRef.current,
       highlight,
       themeRef.current,
+      categoryColorsRef.current,
       cssWidth,
       cssHeight
     );
