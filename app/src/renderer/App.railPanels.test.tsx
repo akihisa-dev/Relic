@@ -9,7 +9,6 @@ import {
   vi
 } from "vitest";
 import {
-  allRailFeatureToggles,
   renderApp,
   restoreNavigatorPlatform,
   setNavigatorPlatform
@@ -96,7 +95,6 @@ describe("App rail panels", () => {
 
   it("レールのテーブルボタンからフロントマター設定を統合したテーブルを開ける", async () => {
     window.relic = makeRelicApi({
-      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceFrontmatterCategoryChoices: vi.fn().mockResolvedValue({
         ok: true,
         value: ["draft", "done"]

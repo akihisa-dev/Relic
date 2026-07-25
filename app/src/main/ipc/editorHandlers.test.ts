@@ -28,7 +28,6 @@ vi.mock("../applicationMenu", () => ({
 import {
   copyEditorTextToClipboardChannel,
   defaultEditorSettings,
-  defaultFeatureToggles,
   defaultFrontmatterTemplates,
   getEditorSettingsChannel,
   listFileRecoverySnapshotsChannel,
@@ -216,7 +215,6 @@ describe("editor IPC handlers", () => {
     const workspace = createWorkspaceSummary(workspacePath);
     await writeAppSettings(userDataPath, addOrActivateWorkspace({
       editorSettings: defaultEditorSettings,
-      featureToggles: defaultFeatureToggles,
       frontmatterTemplates: defaultFrontmatterTemplates,
       lastWorkspaceId: null,
       userDefinedFields: [],

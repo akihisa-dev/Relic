@@ -18,7 +18,6 @@ import {
   applySearchAndReplaceChannel,
   applyUnlinkedReferenceChannel,
   defaultEditorSettings,
-  defaultFeatureToggles,
   defaultFrontmatterTemplates,
   getBacklinksChannel,
   getUnlinkedReferencesChannel,
@@ -220,7 +219,6 @@ describe("fileSearchHandlers", () => {
     temporaryPaths.push(userDataPath);
     await writeAppSettings(userDataPath, {
       editorSettings: defaultEditorSettings,
-      featureToggles: defaultFeatureToggles,
       frontmatterTemplates: defaultFrontmatterTemplates,
       lastWorkspaceId: null,
       userDefinedFields: [],
@@ -305,7 +303,6 @@ describe("fileSearchHandlers", () => {
     const workspace = createWorkspaceSummary(workspacePath);
     await writeAppSettings(userDataPath, addOrActivateWorkspace({
       editorSettings: defaultEditorSettings,
-      featureToggles: defaultFeatureToggles,
       frontmatterTemplates: defaultFrontmatterTemplates,
       lastWorkspaceId: null,
       userDefinedFields: [],

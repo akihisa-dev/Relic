@@ -1,12 +1,10 @@
 import { useCallback, useMemo, useRef } from "react";
 import type { MouseEvent, ReactElement, ReactNode } from "react";
 
-import type { FeatureToggles } from "../../shared/ipc";
 import {
   activePanelTabIdsForPanes,
   activeChartIdsForPanes,
   chartIdForRailView,
-  enabledRailViewsForFeatures,
   openChartIdsForTabs,
   openPanelTabIdsForTabs,
   panelLabelsForTranslator,
@@ -21,7 +19,6 @@ import { useEditorStore, type PaneId, type PaneState, type PanelTabKind, type Ta
 interface UseAppRailNavigationInput {
   clearRailTabFlight: () => void;
   closeSidebar: () => void;
-  featureToggles: FeatureToggles;
   focusedPane: PaneId;
   leftPane: PaneState;
   openChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
@@ -49,7 +46,6 @@ export interface UseAppRailNavigationResult {
 export function useAppRailNavigation({
   clearRailTabFlight,
   closeSidebar,
-  featureToggles,
   focusedPane,
   leftPane,
   openChartInPane,
@@ -82,13 +78,9 @@ export function useAppRailNavigation({
   const openChartIds = useStableSet(nextOpenChartIds);
   const activePanelTabIds = useStableSet(nextActivePanelTabIds);
   const activeChartIds = useStableSet(nextActiveChartIds);
-  const enabledRailViews = useMemo(
-    () => enabledRailViewsForFeatures(sidebarViews, featureToggles),
-    [featureToggles, sidebarViews]
-  );
   const { chartRailViews, panelRailViews, primaryRailViews } = useMemo(
-    () => splitRailViews(enabledRailViews),
-    [enabledRailViews]
+    () => splitRailViews(sidebarViews),
+    [sidebarViews]
   );
 
   const renderPanelTabIcon = useCallback((panel: PanelTabKind): ReactNode => (

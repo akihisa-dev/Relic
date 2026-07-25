@@ -2,11 +2,9 @@ import path from "node:path";
 
 import {
   defaultEditorSettings,
-  defaultFeatureToggles,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields,
   type EditorSettings,
-  type FeatureToggles,
   type FrontmatterTemplate,
   type UserDefinedField,
   type WorkspaceSummary
@@ -24,7 +22,6 @@ import {
 
 export interface AppSettings {
   editorSettings: EditorSettings;
-  featureToggles: FeatureToggles;
   frontmatterTemplates: FrontmatterTemplate[];
   lastWorkspaceId: string | null;
   userDefinedFields: UserDefinedField[];
@@ -44,7 +41,6 @@ export const currentAppSettingsSchemaVersion = 6;
 function createDefaultAppSettings(): AppSettings {
   return {
     editorSettings: { ...defaultEditorSettings },
-    featureToggles: { ...defaultFeatureToggles },
     frontmatterTemplates: defaultFrontmatterTemplates.map((template) => ({
       ...template,
       fieldNames: [...template.fieldNames]
@@ -85,7 +81,6 @@ function parseAppSettings(raw: Record<string, unknown>): AppSettings {
 
   return {
     editorSettings: parseEditorSettings(raw.editorSettings),
-    featureToggles: parseFeatureToggles(raw.featureToggles),
     frontmatterTemplates: parseFrontmatterTemplates(raw.frontmatterTemplates),
     lastWorkspaceId: parseLastWorkspaceId(raw.lastWorkspaceId, workspaces),
     userDefinedFields: parseUserDefinedFields(raw.userDefinedFields),
@@ -119,24 +114,6 @@ function parseEditorSettings(raw: unknown): EditorSettings {
 
 function isPositiveFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
-}
-
-function parseFeatureToggles(raw: unknown): FeatureToggles {
-  if (typeof raw !== "object" || raw === null) {
-    return { ...defaultFeatureToggles };
-  }
-
-  const s = raw as Record<string, unknown>;
-
-  return {
-    cards: typeof s.cards === "boolean" ? s.cards : false,
-    chronicle: typeof s.chronicle === "boolean" ? s.chronicle : false,
-    graph: typeof s.graph === "boolean" ? s.graph : false,
-    sphere: typeof s.sphere === "boolean" ? s.sphere : false,
-    table: typeof s.table === "boolean" ? s.table : false,
-    tools: typeof s.tools === "boolean" ? s.tools : false,
-    frontmatter: typeof s.frontmatter === "boolean" ? s.frontmatter : false
-  };
 }
 
 const WORKSPACE_ID_PATTERN = /^[A-Za-z0-9_-]+$/;

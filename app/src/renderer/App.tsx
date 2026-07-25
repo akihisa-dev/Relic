@@ -143,8 +143,6 @@ export function App(): ReactElement {
   }, [showToast, t]);
   const {
     appInfo,
-    featureToggles,
-    handleSaveFeatureToggles,
     handleSaveSettings,
     userDefinedFields
   } = useAppSettingsState({
@@ -464,7 +462,6 @@ export function App(): ReactElement {
   } = useAppRailNavigation({
     clearRailTabFlight,
     closeSidebar,
-    featureToggles,
     focusedPane,
     leftPane,
     openChartInPane,
@@ -488,14 +485,12 @@ export function App(): ReactElement {
     categoryChoices,
     calendarSettings,
     editorSettings,
-    featureToggles,
     charts,
     currentFilePath: activeFileTabInFocusedPane?.path ?? null,
     handleOpenFile,
     handleOpenTagSearch: handleOpenGraphTagSearch,
     handleSaveCategoryChoices,
     handleSaveCalendarSettings,
-    handleSaveFeatureToggles,
     handleSaveSettings,
     workspaceDataRevision,
     workspaceState

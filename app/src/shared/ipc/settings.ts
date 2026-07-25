@@ -4,8 +4,6 @@ import type { IpcFeatureContract } from "./contract";
 export const getAppInfoChannel = "app:getInfo";
 export const applicationMenuCommandChannel = "app:menuCommand";
 export const updateApplicationMenuStateChannel = "app:updateMenuState";
-export const getFeatureTogglesChannel = "app:getFeatureToggles";
-export const saveFeatureTogglesChannel = "app:saveFeatureToggles";
 export const getUserDefinedFieldsChannel = "app:getUserDefinedFields";
 export const saveUserDefinedFieldsChannel = "app:saveUserDefinedFields";
 export const getFrontmatterTemplatesChannel = "app:getFrontmatterTemplates";
@@ -39,16 +37,6 @@ export interface ApplicationMenuState {
   isTypewriterMode: boolean;
 }
 
-export interface FeatureToggles {
-  cards: boolean;
-  chronicle: boolean;
-  graph: boolean;
-  sphere: boolean;
-  table: boolean;
-  tools: boolean;
-  frontmatter: boolean;
-}
-
 export type UserDefinedFieldType =
   | "text"
   | "number"
@@ -74,22 +62,10 @@ export interface FrontmatterTemplate {
 export const defaultUserDefinedFields: UserDefinedField[] = [];
 export const defaultFrontmatterTemplates: FrontmatterTemplate[] = [];
 
-export const defaultFeatureToggles: FeatureToggles = {
-  cards: false,
-  chronicle: false,
-  graph: false,
-  sphere: false,
-  table: false,
-  tools: false,
-  frontmatter: false
-};
-
 export interface SettingsApi {
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   onApplicationMenuCommand: (callback: (command: ApplicationMenuCommand) => void) => () => void;
   updateApplicationMenuState: (input: ApplicationMenuState) => void;
-  getFeatureToggles: () => Promise<RelicResult<FeatureToggles>>;
-  saveFeatureToggles: (input: FeatureToggles) => Promise<RelicResult<void>>;
   getUserDefinedFields: () => Promise<RelicResult<UserDefinedField[]>>;
   saveUserDefinedFields: (input: UserDefinedField[]) => Promise<RelicResult<void>>;
   getFrontmatterTemplates: () => Promise<RelicResult<FrontmatterTemplate[]>>;
@@ -100,8 +76,6 @@ export const settingsIpcContract = {
   getAppInfo: { channel: getAppInfoChannel, main: "handle", transport: "invoke", validatesInput: false },
   onApplicationMenuCommand: { channel: applicationMenuCommandChannel, main: "sender", transport: "subscribe", validatesInput: false },
   updateApplicationMenuState: { channel: updateApplicationMenuStateChannel, main: "on", transport: "send", validatesInput: true },
-  getFeatureToggles: { channel: getFeatureTogglesChannel, main: "handle", transport: "invoke", validatesInput: false },
-  saveFeatureToggles: { channel: saveFeatureTogglesChannel, main: "handle", transport: "invoke", validatesInput: true },
   getUserDefinedFields: { channel: getUserDefinedFieldsChannel, main: "handle", transport: "invoke", validatesInput: false },
   saveUserDefinedFields: { channel: saveUserDefinedFieldsChannel, main: "handle", transport: "invoke", validatesInput: true },
   getFrontmatterTemplates: { channel: getFrontmatterTemplatesChannel, main: "handle", transport: "invoke", validatesInput: false },

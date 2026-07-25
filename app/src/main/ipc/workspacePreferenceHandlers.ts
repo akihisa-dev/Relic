@@ -1,14 +1,10 @@
 import { app } from "electron";
 
 import {
-  defaultFeatureToggles,
-  getFeatureTogglesChannel,
   getFrontmatterTemplatesChannel,
   getUserDefinedFieldsChannel,
-  saveFeatureTogglesChannel,
   saveFrontmatterTemplatesChannel,
   saveUserDefinedFieldsChannel,
-  type FeatureToggles,
   type FrontmatterTemplate,
   type UserDefinedField
 } from "../../shared/ipc";
@@ -17,37 +13,11 @@ import { readAppSettings, updateAppSettings } from "../settings/appSettings";
 import { ipcErrorDetails } from "./activeWorkspace";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
-  isFeatureTogglesInput,
   isFrontmatterTemplatesInput,
   isUserDefinedFieldsInput
 } from "./workspaceHandlerValidators";
 
 export function registerWorkspacePreferenceHandlers(): void {
-  handleLocalizedIpc(getFeatureTogglesChannel, async (): Promise<RelicResult<FeatureToggles>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      return ok(settings.featureToggles ?? defaultFeatureToggles);
-    } catch (error) {
-      return fail("FEATURE_TOGGLES_READ_FAILED", "機能トグルを読み込めませんでした。", ipcErrorDetails(error));
-    }
-  });
-
-  handleLocalizedIpc(saveFeatureTogglesChannel, async (_event, input: unknown): Promise<RelicResult<void>> => {
-    try {
-      if (!isFeatureTogglesInput(input)) {
-        return fail("FEATURE_TOGGLES_INVALID_INPUT", "機能トグルの値が正しくありません。");
-      }
-
-      await updateAppSettings(app.getPath("userData"), (settings) => ({
-        ...settings,
-        featureToggles: input
-      }));
-      return ok(undefined);
-    } catch (error) {
-      return fail("FEATURE_TOGGLES_SAVE_FAILED", "機能トグルを保存できませんでした。", ipcErrorDetails(error));
-    }
-  });
-
   handleLocalizedIpc(getUserDefinedFieldsChannel, async (): Promise<RelicResult<UserDefinedField[]>> => {
     try {
       const settings = await readAppSettings(app.getPath("userData"));

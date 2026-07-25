@@ -8,10 +8,8 @@ import type {
   WorkspaceState
 } from "../../shared/ipc";
 import {
-  defaultFeatureToggles,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields,
-  type FeatureToggles,
   type UserDefinedField
 } from "../../shared/ipc";
 
@@ -27,7 +25,6 @@ export function useAppSettingsState({
   setWorkspaceState
 }: UseAppSettingsStateInput) {
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
-  const [featureToggles, setFeatureToggles] = useState<FeatureToggles>(defaultFeatureToggles);
   const [frontmatterTemplates, setFrontmatterTemplates] = useState<FrontmatterTemplate[]>(defaultFrontmatterTemplates);
   const [userDefinedFields, setUserDefinedFields] = useState<UserDefinedField[]>(defaultUserDefinedFields);
 
@@ -53,11 +50,6 @@ export function useAppSettingsState({
       if (result.ok) setEditorSettings(result.value);
     });
 
-    void relicClient.current?.getFeatureToggles().then((result) => {
-      if (canceled) return;
-      if (result.ok) setFeatureToggles(result.value);
-    });
-
     void relicClient.current?.getUserDefinedFields().then((result) => {
       if (canceled) return;
       if (result.ok) setUserDefinedFields(result.value);
@@ -81,13 +73,6 @@ export function useAppSettingsState({
     [setEditorSettings, setWorkspaceError]
   );
 
-  const handleSaveFeatureToggles = useCallback((toggles: FeatureToggles): void => {
-    setFeatureToggles(toggles);
-    void relicClient.current?.saveFeatureToggles(toggles).then((result) => {
-      if (!result.ok) setWorkspaceError(result.error.message);
-    });
-  }, [setWorkspaceError]);
-
   const handleSaveUserDefinedFields = useCallback((fields: UserDefinedField[]): void => {
     setUserDefinedFields(fields);
     void relicClient.current?.saveUserDefinedFields(fields).then((result) => {
@@ -104,9 +89,7 @@ export function useAppSettingsState({
 
   return {
     appInfo,
-    featureToggles,
     frontmatterTemplates,
-    handleSaveFeatureToggles,
     handleSaveFrontmatterTemplates,
     handleSaveSettings,
     handleSaveUserDefinedFields,

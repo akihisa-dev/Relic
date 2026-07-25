@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   isChronicleCalendarSettingsInput,
-  isFeatureTogglesInput,
   isFrontmatterCategoryChoicesInput,
   isFrontmatterTemplatesInput,
   isChartsInput,
@@ -139,35 +138,6 @@ describe("workspaceHandlerValidators", () => {
     })).toBe(false);
     expect(isFrontmatterTemplatesInput([{ fieldNames: ["status"], name: "Basic" }])).toBe(true);
     expect(isFrontmatterTemplatesInput([{ fieldNames: [], name: "Basic" }])).toBe(false);
-  });
-
-  it("validates feature toggles before saving", () => {
-    expect(isFeatureTogglesInput({
-      cards: true,
-      chronicle: false,
-      frontmatter: true,
-      graph: true,
-      sphere: false,
-      table: false,
-      tools: false
-    })).toBe(true);
-    expect(isFeatureTogglesInput({
-      cards: true,
-      chronicle: false,
-      frontmatter: true,
-      graph: true,
-      sphere: false,
-      table: false,
-      tools: "false"
-    })).toBe(false);
-    expect(isFeatureTogglesInput({
-      cards: true,
-      chronicle: false,
-      frontmatter: true,
-      sphere: false,
-      table: false,
-      tools: false
-    })).toBe(false);
   });
 
   it("validates workspace rename input", () => {

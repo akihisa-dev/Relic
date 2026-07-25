@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import type {
   AppInfo,
   EditorSettings,
-  FeatureToggles,
   FrontmatterCategoryChoice,
   WorkspaceChart,
   WorkspaceState
@@ -18,12 +17,10 @@ interface UseAppTabRenderersInput {
   categoryChoices: FrontmatterCategoryChoice[];
   calendarSettings: ChronicleCalendarSettings;
   editorSettings: EditorSettings;
-  featureToggles: FeatureToggles;
   charts: WorkspaceChart[];
   currentFilePath: string | null;
   handleOpenFile: (path: string) => void;
   handleOpenTagSearch: (tag: string) => void;
-  handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
   handleSaveCategoryChoices: (choices: FrontmatterCategoryChoice[]) => void;
   handleSaveCalendarSettings: (settings: ChronicleCalendarSettings) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
@@ -41,7 +38,6 @@ export function useAppTabRenderers(input: UseAppTabRenderersInput): {
     categoryChoices: input.categoryChoices,
     charts: input.charts,
     currentFilePath: input.currentFilePath,
-    featureToggles: input.featureToggles,
     onCalendarSettingsSave: input.handleSaveCalendarSettings,
     onCategoryChoicesSave: input.handleSaveCategoryChoices,
     onOpenFile: input.handleOpenFile,
@@ -53,9 +49,7 @@ export function useAppTabRenderers(input: UseAppTabRenderersInput): {
     appInfo: input.appInfo,
     categoryChoices: input.categoryChoices,
     editorSettings: input.editorSettings,
-    featureToggles: input.featureToggles,
     onCategoryChoicesSave: input.handleSaveCategoryChoices,
-    onFeatureTogglesSave: input.handleSaveFeatureToggles,
     onOpenFile: input.handleOpenFile,
     onSettingsSave: input.handleSaveSettings,
     workspaceDataRevision: input.workspaceDataRevision,

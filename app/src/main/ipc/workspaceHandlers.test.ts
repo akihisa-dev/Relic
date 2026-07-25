@@ -24,7 +24,6 @@ vi.mock("electron", () => ({
 
 import {
   defaultEditorSettings,
-  defaultFeatureToggles,
   defaultFrontmatterTemplates,
   defaultWorkspaceTablePreferences,
   defaultUserDefinedFields,
@@ -74,7 +73,6 @@ describe("workspaceHandlers", () => {
     const settings = addOrActivateWorkspace(
       {
         editorSettings: defaultEditorSettings,
-        featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
         lastWorkspaceId: null,
         userDefinedFields: defaultUserDefinedFields,
@@ -140,7 +138,6 @@ describe("workspaceHandlers", () => {
     const workspace = createWorkspaceSummary(workspacePath);
     const settings = addOrActivateWorkspace({
       editorSettings: defaultEditorSettings,
-      featureToggles: defaultFeatureToggles,
       frontmatterTemplates: defaultFrontmatterTemplates,
       lastWorkspaceId: null,
       userDefinedFields: defaultUserDefinedFields,
@@ -232,7 +229,6 @@ describe("workspaceHandlers", () => {
     const settings = addOrActivateWorkspace(
       {
         editorSettings: defaultEditorSettings,
-        featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
         lastWorkspaceId: null,
         userDefinedFields: defaultUserDefinedFields,
@@ -273,7 +269,6 @@ describe("workspaceHandlers", () => {
     const settings = addOrActivateWorkspace(
       {
         editorSettings: defaultEditorSettings,
-        featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
         lastWorkspaceId: null,
         userDefinedFields: defaultUserDefinedFields,
@@ -314,7 +309,6 @@ describe("workspaceHandlers", () => {
     const settings = addOrActivateWorkspace(
       {
         editorSettings: defaultEditorSettings,
-        featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
         lastWorkspaceId: null,
         userDefinedFields: defaultUserDefinedFields,
@@ -350,7 +344,6 @@ describe("workspaceHandlers", () => {
     const settings = addOrActivateWorkspace(
       {
         editorSettings: defaultEditorSettings,
-        featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
         lastWorkspaceId: null,
         userDefinedFields: defaultUserDefinedFields,
@@ -402,7 +395,6 @@ describe("workspaceHandlers", () => {
     const settings = addOrActivateWorkspace(
       {
         editorSettings: defaultEditorSettings,
-        featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
         lastWorkspaceId: null,
         userDefinedFields: defaultUserDefinedFields,
@@ -467,7 +459,6 @@ describe("workspaceHandlers", () => {
     const settings = addOrActivateWorkspace(
       {
         editorSettings: defaultEditorSettings,
-        featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
         lastWorkspaceId: null,
         userDefinedFields: defaultUserDefinedFields,

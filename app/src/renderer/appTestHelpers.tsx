@@ -1,6 +1,5 @@
 import { render } from "@testing-library/react";
 
-import { defaultFeatureToggles } from "../shared/ipc";
 import { App } from "./App";
 
 export function renderApp() {
@@ -28,14 +27,3 @@ export function restoreNavigatorPlatform(): void {
 
   Reflect.deleteProperty(navigator, "platform");
 }
-
-export const allRailFeatureToggles = {
-  ...defaultFeatureToggles,
-  cards: true,
-  chronicle: true,
-  frontmatter: true,
-  graph: true,
-  sphere: true,
-  table: true,
-  tools: true
-};

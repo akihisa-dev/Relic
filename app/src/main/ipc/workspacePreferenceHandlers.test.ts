@@ -26,11 +26,8 @@ vi.mock("./activeWorkspace", () => ({
 }));
 
 import {
-  defaultFeatureToggles,
-  getFeatureTogglesChannel,
   getFrontmatterTemplatesChannel,
   getUserDefinedFieldsChannel,
-  saveFeatureTogglesChannel,
   saveFrontmatterTemplatesChannel,
   saveUserDefinedFieldsChannel,
 } from "../../shared/ipc";
@@ -38,15 +35,6 @@ import { registerWorkspacePreferenceHandlers } from "./workspacePreferenceHandle
 
 type RegisteredHandler = (...args: unknown[]) => Promise<unknown>;
 
-const featureToggles = {
-  cards: true,
-  chronicle: true,
-  frontmatter: true,
-  graph: true,
-  sphere: true,
-  table: true,
-  tools: true,
-};
 const userDefinedFields = [
   { choices: ["high", "low"], name: "priority", type: "select" as const },
 ];
@@ -55,7 +43,6 @@ const frontmatterTemplates = [
 ];
 const baseSettings = {
   editorSettings: {},
-  featureToggles,
   frontmatterTemplates,
   lastWorkspaceId: null,
   userDefinedFields,
@@ -84,11 +71,6 @@ describe("registerWorkspacePreferenceHandlers", () => {
 
   it.each([
     {
-      channel: getFeatureTogglesChannel,
-      label: "機能トグル",
-      value: featureToggles,
-    },
-    {
       channel: getUserDefinedFieldsChannel,
       label: "カスタムフィールド",
       value: userDefinedFields,
@@ -105,23 +87,7 @@ describe("registerWorkspacePreferenceHandlers", () => {
     expect(settingsMock.readAppSettings).toHaveBeenCalledWith("/user-data");
   });
 
-  it("古い設定に機能トグルがない場合は安全な既定値を返す", async () => {
-    settingsMock.readAppSettings.mockResolvedValueOnce({
-      ...baseSettings,
-      featureToggles: undefined,
-    });
-
-    const result = await handlerFor(getFeatureTogglesChannel)();
-
-    expect(result).toEqual({ ok: true, value: defaultFeatureToggles });
-  });
-
   it.each([
-    {
-      channel: saveFeatureTogglesChannel,
-      input: { chronicle: true },
-      label: "項目を欠いた機能トグル",
-    },
     {
       channel: saveUserDefinedFieldsChannel,
       input: [{ name: "priority", type: "unknown" }],
@@ -140,12 +106,6 @@ describe("registerWorkspacePreferenceHandlers", () => {
   });
 
   it.each([
-    {
-      channel: saveFeatureTogglesChannel,
-      input: featureToggles,
-      key: "featureToggles",
-      label: "機能トグル",
-    },
     {
       channel: saveUserDefinedFieldsChannel,
       input: userDefinedFields,
@@ -173,10 +133,6 @@ describe("registerWorkspacePreferenceHandlers", () => {
 
   it.each([
     {
-      channel: getFeatureTogglesChannel,
-      code: "FEATURE_TOGGLES_READ_FAILED",
-    },
-    {
       channel: getUserDefinedFieldsChannel,
       code: "USER_DEFINED_FIELDS_READ_FAILED",
     },
@@ -198,11 +154,6 @@ describe("registerWorkspacePreferenceHandlers", () => {
   });
 
   it.each([
-    {
-      channel: saveFeatureTogglesChannel,
-      code: "FEATURE_TOGGLES_SAVE_FAILED",
-      input: featureToggles,
-    },
     {
       channel: saveUserDefinedFieldsChannel,
       code: "USER_DEFINED_FIELDS_SAVE_FAILED",

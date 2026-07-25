@@ -14,7 +14,6 @@ vi.mock("electron", () => ({
 
 import {
   defaultEditorSettings,
-  defaultFeatureToggles,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields
 } from "../../shared/ipc";
@@ -776,7 +775,6 @@ describe("toolActions", () => {
     const settings = addOrActivateWorkspace(
       {
         editorSettings: defaultEditorSettings,
-        featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
         lastWorkspaceId: null,
         userDefinedFields: defaultUserDefinedFields,

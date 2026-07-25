@@ -1,31 +1,22 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  defaultEditorSettings,
-  defaultFeatureToggles
-} from "../../shared/ipc";
+import { defaultEditorSettings } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
 import { SettingsPanel } from "./SettingsPanel";
 
 describe("SettingsPanel", () => {
   function renderSettingsPanel({
-    featureToggles = defaultFeatureToggles,
     language = "en",
-    onFeatureTogglesSave = vi.fn(),
     onSave = vi.fn()
   }: {
-    featureToggles?: typeof defaultFeatureToggles;
     language?: "en" | "ja";
-    onFeatureTogglesSave?: (toggles: typeof defaultFeatureToggles) => void;
     onSave?: (settings: typeof defaultEditorSettings) => void;
   } = {}) {
     render(
       <I18nProvider language={language}>
         <SettingsPanel
           appInfo={{ name: "Relic", version: "1.2.3" }}
-          featureToggles={featureToggles}
-          onFeatureTogglesSave={onFeatureTogglesSave}
           onSave={onSave}
           settings={defaultEditorSettings}
         />
@@ -42,8 +33,8 @@ describe("SettingsPanel", () => {
     expect(screen.queryByText("Theme")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Dark" })).not.toBeInTheDocument();
     expect(screen.getByText("Editor")).toBeInTheDocument();
-    expect(screen.getByText("Features")).toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: "Bubble" })).toBeInTheDocument();
+    expect(screen.queryByText("Features")).not.toBeInTheDocument();
+    expect(screen.queryByRole("switch", { name: "Bubble" })).not.toBeInTheDocument();
     expect(screen.getByText("App Info")).toBeInTheDocument();
     expect(screen.getByText("Relic 1.2.3")).toBeInTheDocument();
     expect(screen.getByText("macOS")).toBeInTheDocument();
@@ -91,37 +82,4 @@ describe("SettingsPanel", () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ frontmatterDateFormat: "dmy" }));
   });
 
-  it("機能トグルを既存のFeatureToggles形式で保存する", () => {
-    const onFeatureTogglesSave = vi.fn();
-    renderSettingsPanel({
-      featureToggles: { ...defaultFeatureToggles, chronicle: true, tools: true },
-      onFeatureTogglesSave
-    });
-
-    expect(screen.queryByRole("switch", { name: "File tools" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("switch", { name: "Right panel: Links" })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByLabelText("Bubble"));
-    expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ graph: true, tools: true }));
-
-    fireEvent.click(screen.getByLabelText("Cards"));
-    expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ cards: true }));
-  });
-
-  it("役割のないフロントマタートグルを表示せずテーブルを切り替える", () => {
-    const onFeatureTogglesSave = vi.fn();
-    renderSettingsPanel({
-      featureToggles: { ...defaultFeatureToggles, table: true },
-      onFeatureTogglesSave
-    });
-
-    expect(screen.queryByRole("switch", { name: "Frontmatter" })).not.toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: "Table" })).toHaveAttribute("aria-checked", "true");
-
-    fireEvent.click(screen.getByRole("switch", { name: "Table" }));
-    expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({
-      frontmatter: false,
-      table: false
-    }));
-  });
 });

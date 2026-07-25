@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import type {
   AppInfo,
   EditorSettings,
-  FeatureToggles,
   FrontmatterCategoryChoice
 } from "../../shared/ipc";
 import type { PanelTabKind } from "../store/editorStore";
@@ -14,9 +13,7 @@ interface UseAppPanelTabRendererInput {
   appInfo: AppInfo | null;
   categoryChoices: FrontmatterCategoryChoice[];
   editorSettings: EditorSettings;
-  featureToggles: FeatureToggles;
   onCategoryChoicesSave: (choices: FrontmatterCategoryChoice[]) => void;
-  onFeatureTogglesSave: (toggles: FeatureToggles) => void;
   onOpenFile: (path: string) => void;
   onSettingsSave: (settings: EditorSettings) => void;
   workspaceDataRevision: number;
@@ -27,9 +24,7 @@ export function useAppPanelTabRenderer({
   appInfo,
   categoryChoices,
   editorSettings,
-  featureToggles,
   onCategoryChoicesSave,
-  onFeatureTogglesSave,
   onOpenFile,
   onSettingsSave,
   workspaceDataRevision,
@@ -53,12 +48,10 @@ export function useAppPanelTabRenderer({
       <Suspense fallback={<LazyTabFallback />}>
         <LazySettingsPanel
           appInfo={appInfo}
-          featureToggles={featureToggles}
-          onFeatureTogglesSave={onFeatureTogglesSave}
           onSave={onSettingsSave}
           settings={editorSettings}
         />
       </Suspense>
     );
-  }, [appInfo, categoryChoices, editorSettings, featureToggles, onCategoryChoicesSave, onFeatureTogglesSave, onOpenFile, onSettingsSave, workspaceDataRevision, workspaceId]);
+  }, [appInfo, categoryChoices, editorSettings, onCategoryChoicesSave, onOpenFile, onSettingsSave, workspaceDataRevision, workspaceId]);
 }

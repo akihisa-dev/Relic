@@ -1,5 +1,4 @@
 import type {
-  FeatureToggles,
   ChronicleCalendarSettings,
   FrontmatterCategoryChoice,
   FrontmatterTemplate,
@@ -215,21 +214,6 @@ export function isFrontmatterTemplatesInput(input: unknown): input is Frontmatte
       ))
     );
   });
-}
-
-export function isFeatureTogglesInput(input: unknown): input is FeatureToggles {
-  if (typeof input !== "object" || input === null || Array.isArray(input)) return false;
-
-  const candidate = input as Record<string, unknown>;
-  return (
-    typeof candidate.cards === "boolean" &&
-    typeof candidate.chronicle === "boolean" &&
-    typeof candidate.graph === "boolean" &&
-    typeof candidate.sphere === "boolean" &&
-    typeof candidate.table === "boolean" &&
-    typeof candidate.tools === "boolean" &&
-    typeof candidate.frontmatter === "boolean"
-  );
 }
 
 export function isWorkspaceIdInput(input: unknown): input is { workspaceId: string } {

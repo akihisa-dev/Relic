@@ -67,13 +67,10 @@ import {
   type GenerateTableOfContentsInput,
   generateTagIndexChannel,
   type GenerateTagIndexInput,
-  getFeatureTogglesChannel,
-  saveFeatureTogglesChannel,
   getFrontmatterTemplatesChannel,
   saveFrontmatterTemplatesChannel,
   getUserDefinedFieldsChannel,
   saveUserDefinedFieldsChannel,
-  type FeatureToggles,
   type FrontmatterTemplate,
   type UserDefinedField,
   mergeFilesChannel,
@@ -308,10 +305,6 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(generateTableOfContentsChannel, input) as Promise<RelicResult<string>>,
   generateTagIndex: (input: GenerateTagIndexInput) =>
     ipcRenderer.invoke(generateTagIndexChannel, input) as Promise<RelicResult<string>>,
-  getFeatureToggles: () =>
-    ipcRenderer.invoke(getFeatureTogglesChannel) as Promise<RelicResult<FeatureToggles>>,
-  saveFeatureToggles: (input: FeatureToggles) =>
-    ipcRenderer.invoke(saveFeatureTogglesChannel, input) as Promise<RelicResult<void>>,
   getUserDefinedFields: () =>
     ipcRenderer.invoke(getUserDefinedFieldsChannel) as Promise<RelicResult<UserDefinedField[]>>,
   saveUserDefinedFields: (input: UserDefinedField[]) =>

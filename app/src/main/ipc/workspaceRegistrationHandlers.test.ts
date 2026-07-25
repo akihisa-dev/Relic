@@ -116,7 +116,6 @@ const workspaceTwo = {
 };
 const baseSettings = {
   editorSettings: {},
-  featureToggles: {},
   frontmatterTemplates: [],
   lastWorkspaceId: workspaceOne.id,
   userDefinedFields: [],

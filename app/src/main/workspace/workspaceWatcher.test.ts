@@ -18,7 +18,6 @@ vi.mock("node:fs", () => ({
 
 import {
   defaultEditorSettings,
-  defaultFeatureToggles,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields
 } from "../../shared/ipc";
@@ -56,7 +55,6 @@ class FakeWatcher {
 function appSettings(overrides: Partial<AppSettings> = {}): AppSettings {
   return {
     editorSettings: defaultEditorSettings,
-    featureToggles: defaultFeatureToggles,
     frontmatterTemplates: defaultFrontmatterTemplates,
     lastWorkspaceId: "ws-1",
     userDefinedFields: defaultUserDefinedFields,

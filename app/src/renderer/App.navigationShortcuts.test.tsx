@@ -18,7 +18,6 @@ import {
 
 import { defaultEditorSettings } from "../shared/ipc";
 import {
-  allRailFeatureToggles,
   renderApp,
   restoreNavigatorPlatform,
   setNavigatorPlatform
@@ -47,7 +46,6 @@ describe("App navigation and shortcuts", () => {
 
   it("画面タブ名は言語変更に追従する", async () => {
     window.relic = makeRelicApi({
-      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
@@ -91,7 +89,6 @@ describe("App navigation and shortcuts", () => {
 
   it("別の画面タブを開いた後でも開いているレールボタンを押すと対象タブをアクティブにする", async () => {
     window.relic = makeRelicApi({
-      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 

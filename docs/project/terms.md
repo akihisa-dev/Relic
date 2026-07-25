@@ -69,7 +69,6 @@ Relic英語名は、文書・会話・将来の英語UIで使う概念名を指�
 | ファイル加工ツール | File tools | `tools`, `ToolTarget`, `tools:*`, `generateTitleList`, `generateToc`, `generateTagIndex`, `mergeFiles` | `app/src/shared/ipc/tools.ts`, `app/src/main/ipc/toolActions.ts`, `app/src/renderer/components/FileToolsSubmenu.tsx` | [tools](../features/tools.md), [design](../design/DESIGN.md) |
 | フロントマター設定 | Frontmatter settings | `frontmatter`, `FrontmatterPanel`, `UserDefinedField`, `STANDARD_FIXED_FIELDS`, `CHRONICLE_FIXED_FIELDS` | `app/src/renderer/components/FrontmatterPanel.tsx`, `app/src/renderer/frontmatterSettingsModel.ts`, `app/src/shared/ipc.ts` | [frontmatter](../features/frontmatter.md), [design](../design/DESIGN.md) |
 | 設定 | Settings | `settings`, `SettingsPanel`, `EditorSettings`, `app-settings.json` | `app/src/renderer/components/SettingsPanel.tsx`, `app/src/main/settings/appSettings.ts`, `app/src/shared/ipc.ts` | [design](../design/DESIGN.md), [stack](../engineering/stack.md) |
-| 機能トグル | Feature toggles | `FeatureToggles`, `featureToggles`, `tools`, `frontmatter`, `cards`, `table`, `graph`, `sphere`, `chronicle` | `app/src/shared/ipc.ts`, `app/src/main/settings/appSettings.ts`, `app/src/renderer/components/SettingsPanel.tsx` | [design](../design/DESIGN.md), [development](../development.md) |
 | コマンドパレット | Command palette | `CommandPalette`, `showCommandPalette`, `useCommandPaletteCommands`, `commandPalette.*` | `app/src/renderer/components/CommandPalette.tsx`, `app/src/renderer/hooks/useCommandPaletteCommands.ts`, `app/src/renderer/App.tsx` | [commands](../features/commands.md), [navigation](../features/navigation.md) |
 | クイックスイッチャー | Quick switcher | `QuickSwitcher`, `showQuickSwitcher`, `command.quickSwitcher`, `quickSwitcher.*` | `app/src/renderer/components/QuickSwitcher.tsx`, `app/src/renderer/hooks/useCommandPaletteCommands.ts`, `app/src/renderer/App.tsx` | [commands](../features/commands.md), [navigation](../features/navigation.md) |
 | ピン留め | Pinning | `pinnedPaths`, `togglePinChannel`, `togglePin`, `files.pinned` | `app/src/shared/ipc.ts`, `app/src/main/settings/workspaceSettings.ts`, `app/src/renderer/components/FileTree.tsx` | [files](../features/files.md), [design](../design/DESIGN.md) |
@@ -490,20 +489,11 @@ Markdownファイル以外の補助画面をメインエリア内に開くタブ
 ---
 
 ### 設定
-テーマ、言語、エディタ表示、表示言語に応じたフォントプリセット、行番号、スペルチェック、機能トグル、アプリ情報を扱うパネルタブ。Markdown本文やワークスペース内ファイルには保存しない。
+テーマ、言語、エディタ表示、表示言語に応じたフォントプリセット、行番号、スペルチェック、アプリ情報を扱うパネルタブ。Markdown本文やワークスペース内ファイルには保存しない。
 
 | Obsidian | VS Code |
 |---|---|
 | Settings | Settings |
-
----
-
-### 機能トグル
-設定パネルタブで切り替える機能のオン / オフ。現行実装では、カード、テーブル、バブル、スフィア、クロニクルの表示・操作入口を制御する。バブルの内部設定キーは読込互換のため `graph` を維持する。旧 `frontmatter` と `tools` 値は読込互換のため保持するが表示制御には使わない。フロントマター設定はテーブルビューへ統合し、独立した機能トグルを設けない。ファイル加工、右パネルのアウトラインとリンクは常に利用可能であり、機能トグルの対象にしない。
-
-| Obsidian | VS Code |
-|---|---|
-| Core plugin toggle（類似） | Setting toggle |
 
 ---
 

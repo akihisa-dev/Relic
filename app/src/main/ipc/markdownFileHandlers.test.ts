@@ -45,7 +45,6 @@ import {
   createFolderChannel,
   createMarkdownFileChannel,
   defaultEditorSettings,
-  defaultFeatureToggles,
   defaultFrontmatterTemplates,
   duplicateMarkdownFileChannel,
   getLinkUpdateImpactChannel,
@@ -130,7 +129,6 @@ describe("markdownFileHandlers", () => {
     const settings = addOrActivateWorkspace(
       {
         editorSettings: defaultEditorSettings,
-        featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
         lastWorkspaceId: null,
         userDefinedFields: [],
@@ -169,7 +167,6 @@ describe("markdownFileHandlers", () => {
     const settings = addOrActivateWorkspace(
       {
         editorSettings: defaultEditorSettings,
-        featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
         lastWorkspaceId: null,
         userDefinedFields: [],
@@ -207,7 +204,6 @@ describe("markdownFileHandlers", () => {
     const settings = addOrActivateWorkspace(
       {
         editorSettings: defaultEditorSettings,
-        featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
         lastWorkspaceId: null,
         userDefinedFields: [],
@@ -512,7 +508,6 @@ describe("markdownFileHandlers", () => {
     temporaryPaths.push(userDataPath);
     await writeAppSettings(userDataPath, {
       editorSettings: defaultEditorSettings,
-      featureToggles: defaultFeatureToggles,
       frontmatterTemplates: defaultFrontmatterTemplates,
       lastWorkspaceId: null,
       userDefinedFields: [],
@@ -686,7 +681,6 @@ describe("markdownFileHandlers", () => {
     const workspace = createWorkspaceSummary(workspacePath);
     await writeAppSettings(userDataPath, addOrActivateWorkspace({
       editorSettings: defaultEditorSettings,
-      featureToggles: defaultFeatureToggles,
       frontmatterTemplates: defaultFrontmatterTemplates,
       lastWorkspaceId: null,
       userDefinedFields: [],

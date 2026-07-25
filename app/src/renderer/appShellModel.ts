@@ -1,4 +1,4 @@
-import type { FeatureToggles, WorkspaceState } from "../shared/ipc";
+import type { WorkspaceState } from "../shared/ipc";
 import type { Translator } from "./i18nModel";
 import type { PaneState, PanelTabKind, Tab } from "./store/editorStore";
 import type { SidebarView } from "./store/uiStore";
@@ -100,21 +100,6 @@ export function activeChartIdsForPanes(
       .filter((tab): tab is Extract<Tab, { kind: "chart" }> => tab?.kind === "chart")
       .map((tab) => tab.chartId)
   );
-}
-
-export function enabledRailViewsForFeatures<TView extends Pick<AppRailView, "id">>(
-  views: TView[],
-  featureToggles: Pick<FeatureToggles, "cards" | "chronicle" | "graph" | "sphere" | "table">
-): TView[] {
-  return views.filter((view) => {
-    if (view.id === "cards" && !featureToggles.cards) return false;
-    if (view.id === "graph" && !featureToggles.graph) return false;
-    if (view.id === "sphere" && !featureToggles.sphere) return false;
-    if (view.id === "table" && !featureToggles.table) return false;
-    if (view.id === "chronicle" && !featureToggles.chronicle) return false;
-
-    return true;
-  });
 }
 
 export function splitRailViews<TView extends Pick<AppRailView, "id">>(

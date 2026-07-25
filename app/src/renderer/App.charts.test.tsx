@@ -13,7 +13,6 @@ import {
   vi
 } from "vitest";
 import {
-  allRailFeatureToggles,
   renderApp,
   restoreNavigatorPlatform,
   setNavigatorPlatform
@@ -114,10 +113,6 @@ describe("App charts", () => {
     });
 
     window.relic = makeRelicApi({
-      getFeatureToggles: vi.fn().mockResolvedValue({
-        ok: true,
-        value: { ...allRailFeatureToggles, sphere: false }
-      }),
       getWorkspaceGraph,
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
@@ -125,7 +120,6 @@ describe("App charts", () => {
     const { container } = await renderApp();
 
     await screen.findByText("Notes");
-    expect(getWorkspaceGraph).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "バブル" }));
 
     await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledTimes(1));
@@ -136,8 +130,11 @@ describe("App charts", () => {
       kind: "chart"
     });
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
-    const bubbleCanvas = container.querySelector(".bubble-view-canvas") as HTMLCanvasElement;
-    expect(bubbleCanvas).toBeInTheDocument();
+    const bubbleCanvas = await waitFor(() => {
+      const canvas = container.querySelector(".bubble-view-canvas") as HTMLCanvasElement | null;
+      expect(canvas).toBeInTheDocument();
+      return canvas!;
+    });
     expect(bubbleCanvas).toHaveAttribute("tabindex", "0");
     expect(fireEvent.keyDown(bubbleCanvas, { key: "ArrowRight" })).toBe(false);
     expect(fireEvent.keyDown(bubbleCanvas, { key: "=", shiftKey: true })).toBe(false);
@@ -151,7 +148,6 @@ describe("App charts", () => {
       value: { links: [], nodes: [] }
     });
     window.relic = makeRelicApi({
-      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceGraph,
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
@@ -515,7 +511,6 @@ describe("App charts", () => {
     });
 
     window.relic = makeRelicApi({
-      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceCharts,
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
       readMarkdownFile: vi.fn().mockResolvedValue({
@@ -572,7 +567,6 @@ describe("App charts", () => {
 
   it("カードを開いて戻ったときに一覧の選択状態を維持する", async () => {
     window.relic = makeRelicApi({
-      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceCards: vi.fn().mockResolvedValue({
         ok: true,
         value: [{ flavorText: null, imagePath: "images/moon.webp", name: "Moon", path: "notes/moon.md" }]
@@ -609,7 +603,6 @@ describe("App charts", () => {
     const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({
-      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
@@ -650,7 +643,6 @@ describe("App charts", () => {
       path: "history/person.md"
     };
     window.relic = makeRelicApi({
-      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{

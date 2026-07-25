@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   defaultEditorSettings,
-  defaultFeatureToggles,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields
 } from "../../shared/ipc";
@@ -33,7 +32,6 @@ describe("appSettings", () => {
 
     await writeAppSettings(userDataPath, {
       editorSettings: { ...defaultEditorSettings, language: "ja" },
-      featureToggles: { ...defaultFeatureToggles, tools: true },
       frontmatterTemplates: defaultFrontmatterTemplates,
       lastWorkspaceId: "ws-1",
       userDefinedFields: defaultUserDefinedFields,
@@ -42,7 +40,6 @@ describe("appSettings", () => {
 
     await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
       editorSettings: expect.objectContaining({ language: "ja" }),
-      featureToggles: expect.objectContaining({ tools: true }),
       lastWorkspaceId: "ws-1",
       workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
     });
@@ -87,7 +84,6 @@ describe("appSettings", () => {
     temporaryPaths.push(userDataPath);
     await writeAppSettings(userDataPath, {
       editorSettings: defaultEditorSettings,
-      featureToggles: defaultFeatureToggles,
       frontmatterTemplates: defaultFrontmatterTemplates,
       lastWorkspaceId: null,
       userDefinedFields: defaultUserDefinedFields,
@@ -104,10 +100,7 @@ describe("appSettings", () => {
     });
     const secondUpdate = updateAppSettings(userDataPath, (settings) => ({
       ...settings,
-      featureToggles: {
-        ...settings.featureToggles,
-        tools: true
-      }
+      editorSettings: { ...settings.editorSettings, theme: "dark" }
     }));
 
     await Promise.all([firstUpdate, secondUpdate]);
@@ -115,7 +108,7 @@ describe("appSettings", () => {
 
     expect(loaded.lastWorkspaceId).toBe("ws-1");
     expect(loaded.workspaces).toEqual([{ id: "ws-1", name: "Notes", path: "/tmp/notes" }]);
-    expect(loaded.featureToggles.tools).toBe(true);
+    expect(loaded.editorSettings.theme).toBe("dark");
   });
 
   it("別の設定ファイルの更新は完了待ちに巻き込まれない", async () => {
@@ -285,7 +278,7 @@ describe("appSettings", () => {
     });
   });
 
-  it("型が壊れた表示設定と機能設定は項目ごとの安全な既定値へ戻す", async () => {
+  it("型が壊れた表示設定は既定値へ戻し、旧機能設定は無視する", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
@@ -310,10 +303,9 @@ describe("appSettings", () => {
       workspaces: []
     }), "utf8");
 
-    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      editorSettings: defaultEditorSettings,
-      featureToggles: defaultFeatureToggles
-    });
+    const loaded = await readAppSettings(userDataPath);
+    expect(loaded).toMatchObject({ editorSettings: defaultEditorSettings });
+    expect(loaded).not.toHaveProperty("featureToggles");
   });
 
   it("壊れたテンプレートを除外し、有効なフィールド名だけを復元する", async () => {

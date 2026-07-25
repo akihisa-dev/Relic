@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { defaultFeatureToggles, type WorkspaceState } from "../shared/ipc";
+import type { WorkspaceState } from "../shared/ipc";
 import {
   activeChartIdsForPanes,
   activePanelTabIdsForPanes,
   chartIdForRailView,
-  enabledRailViewsForFeatures,
   isChartTabActiveInPanes,
   isChartTabOpenInTabs,
   openChartIdsForTabs,
@@ -88,7 +87,7 @@ describe("appShellModel", () => {
     });
   });
 
-  it("filters and splits rail views without changing order", () => {
+  it("splits all rail views without changing order", () => {
     const railViews: AppRailView[] = [
       { icon: null, id: "files", label: "Files" },
       { icon: null, id: "cards", label: "Cards" },
@@ -99,33 +98,15 @@ describe("appShellModel", () => {
       { icon: null, id: "settings", label: "Settings" }
     ];
 
-    const defaultEnabled = enabledRailViewsForFeatures(railViews, defaultFeatureToggles);
-    expect(defaultEnabled.map((view) => view.id)).toEqual(["files", "settings"]);
+    const split = splitRailViews(railViews);
 
-    const enabled = enabledRailViewsForFeatures(railViews, {
-      ...defaultFeatureToggles,
-      cards: true,
-      chronicle: false,
-      graph: true,
-      sphere: true,
-      table: true
-    });
-    const split = splitRailViews(enabled);
-
-    expect(enabled.map((view) => view.id)).toEqual(["files", "cards", "table", "graph", "sphere", "settings"]);
     expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files"]);
-    expect(split.chartRailViews.map((view) => view.id)).toEqual(["cards", "table", "graph", "sphere"]);
+    expect(split.chartRailViews.map((view) => view.id)).toEqual(["cards", "table", "graph", "sphere", "chronicle"]);
     expect(split.panelRailViews.map((view) => view.id)).toEqual(["settings"]);
     expect(chartIdForRailView("graph")).toBe("graph");
     expect(chartIdForRailView("cards")).toBe("cards");
     expect(chartIdForRailView("sphere")).toBe("sphere");
     expect(chartIdForRailView("chronicle")).toBe("chronicle");
     expect(chartIdForRailView("table")).toBe("table");
-
-    expect(enabledRailViewsForFeatures(railViews, {
-      ...defaultFeatureToggles,
-      cards: true,
-      graph: false
-    }).map((view) => view.id)).toEqual(["files", "cards", "settings"]);
   });
 });

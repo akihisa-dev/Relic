@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { defaultEditorSettings, type FrontmatterTemplate, defaultFeatureToggles, type UserDefinedField } from "../../shared/ipc";
+import { defaultEditorSettings, type FrontmatterTemplate, type UserDefinedField } from "../../shared/ipc";
 import { makeRelicApi } from "../../test/rendererTestUtils";
 import { useAppSettingsState } from "./useAppSettingsState";
 
@@ -10,10 +10,6 @@ describe("useAppSettingsState", () => {
     ...defaultEditorSettings,
     language: "ja" as const,
     fontSize: 18
-  };
-  const featureToggles = {
-    ...defaultFeatureToggles,
-    tools: true
   };
   const userDefinedFields: UserDefinedField[] = [{ name: "category", type: "text" }];
   const frontmatterTemplates: FrontmatterTemplate[] = [{
@@ -51,34 +47,6 @@ describe("useAppSettingsState", () => {
     expect(setEditorSettings).toHaveBeenCalledWith(editorSettings);
     await waitFor(() => {
       expect(setWorkspaceError).toHaveBeenCalledWith("エディタ設定の保存に失敗しました");
-    });
-  });
-
-  it("機能トグル保存失敗時に setWorkspaceError を呼ぶ", async () => {
-    window.relic = makeRelicApi({
-      saveFeatureToggles: vi.fn().mockResolvedValue({
-        ok: false,
-        error: { code: "FEATURE_TOGGLES_SAVE_FAILED", message: "機能トグルの保存に失敗しました" }
-      })
-    });
-
-    const setWorkspaceError = vi.fn();
-    const setWorkspaceState = vi.fn();
-
-    const { result } = renderHook(() => useAppSettingsState({
-      setEditorSettings: vi.fn(),
-      setWorkspaceError,
-      setWorkspaceState
-    }));
-
-    act(() => {
-      result.current.handleSaveFeatureToggles(featureToggles);
-    });
-
-    expect(result.current.featureToggles).toEqual(featureToggles);
-
-    await waitFor(() => {
-      expect(setWorkspaceError).toHaveBeenCalledWith("機能トグルの保存に失敗しました");
     });
   });
 

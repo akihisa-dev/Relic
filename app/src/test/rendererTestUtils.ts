@@ -2,7 +2,6 @@ import { vi } from "vitest";
 
 import {
   defaultEditorSettings,
-  defaultFeatureToggles,
   relicApiContractVersion,
   type WorkspaceState
 } from "../shared/ipc";
@@ -70,7 +69,6 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getUnlinkedReferences: vi.fn().mockResolvedValue({ ok: true, value: { references: [], skippedUnreadableFileCount: 0, truncated: false } }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultEditorSettings, language: "ja" } }),
-    getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
     getFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getFrontmatterValueCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
     getLinkUpdateImpact: vi.fn().mockResolvedValue({ ok: true, value: { fileCount: 0, linkCount: 0, unreadableFileCount: 0 } }),
@@ -114,7 +112,6 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     revealWorkspaceItem: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "saved" } }),
-    saveFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     savePreviewAsPdf: vi.fn().mockResolvedValue({ ok: true, value: { status: "saved" } }),
     saveUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: undefined }),

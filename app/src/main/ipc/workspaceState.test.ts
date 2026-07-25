@@ -39,7 +39,6 @@ vi.mock("../workspace/workspaceService", () => ({
 
 import {
   defaultEditorSettings,
-  defaultFeatureToggles,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields,
 } from "../../shared/ipc";
@@ -52,7 +51,6 @@ const workspace = {
 };
 const settings = {
   editorSettings: defaultEditorSettings,
-  featureToggles: defaultFeatureToggles,
   frontmatterTemplates: defaultFrontmatterTemplates,
   lastWorkspaceId: workspace.id,
   userDefinedFields: defaultUserDefinedFields,

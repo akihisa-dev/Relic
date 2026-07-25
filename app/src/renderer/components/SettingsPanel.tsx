@@ -2,8 +2,7 @@ import type { ReactElement } from "react";
 
 import {
   type AppInfo,
-  type EditorSettings,
-  type FeatureToggles
+  type EditorSettings
 } from "../../shared/ipc";
 import { useT } from "../i18n";
 import { SettingsSegmentedControl } from "./SettingsSegmentedControl";
@@ -27,15 +26,11 @@ function RepositoryIcon(): ReactElement {
 export function SettingsPanel({
   appInfo,
   settings,
-  featureToggles,
-  onSave,
-  onFeatureTogglesSave
+  onSave
 }: {
   appInfo: AppInfo | null;
   settings: EditorSettings;
-  featureToggles: FeatureToggles;
   onSave: (s: EditorSettings) => void;
-  onFeatureTogglesSave: (t: FeatureToggles) => void;
 }): ReactElement {
   const t = useT();
   const update = <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]): void => {
@@ -133,33 +128,6 @@ export function SettingsPanel({
               value={settings.frontmatterDateFormat}
             />
           </div>
-        </div>
-      </section>
-
-      <section className="settings-group">
-        <div className="links-panel-subheading">{t("settings.sectionFeatures")}</div>
-        <div className="settings-stack">
-          {(
-            [
-              { key: "cards", label: t("settings.featureCards") },
-              { key: "table", label: t("settings.featureTable") },
-              { key: "graph", label: t("settings.featureBubble") },
-              { key: "sphere", label: t("settings.featureSphere") },
-              { key: "chronicle", label: t("settings.featureChronicle") }
-            ] as { key: keyof FeatureToggles; label: string }[]
-          ).map(({ key, label }) => (
-            <div className="setting-row" key={key}>
-              <span>{label}</span>
-              <SettingsToggleSwitch
-                label={label}
-                on={featureToggles[key]}
-                onChange={(on) => {
-                  const next = { ...featureToggles, [key]: on };
-                  onFeatureTogglesSave(next);
-                }}
-              />
-            </div>
-          ))}
         </div>
       </section>
 

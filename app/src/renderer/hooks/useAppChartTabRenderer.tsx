@@ -2,7 +2,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import type { ChronicleCalendarSettings } from "../../shared/chronicleCalendar";
-import type { FeatureToggles, FrontmatterCategoryChoice, WorkspaceChart } from "../../shared/ipc";
+import type { FrontmatterCategoryChoice, WorkspaceChart } from "../../shared/ipc";
 import { preloadWorkspaceGraph } from "../graph/workspaceGraphLoader";
 import { useEditorStore, type PaneId } from "../store/editorStore";
 import {
@@ -25,7 +25,6 @@ interface UseAppChartTabRendererInput {
   categoryChoices: FrontmatterCategoryChoice[];
   charts: WorkspaceChart[];
   currentFilePath: string | null;
-  featureToggles: FeatureToggles;
   onCalendarSettingsSave: (settings: ChronicleCalendarSettings) => void;
   onCategoryChoicesSave: (choices: FrontmatterCategoryChoice[]) => void;
   onOpenFile: (path: string) => void;
@@ -45,7 +44,6 @@ export function useAppChartTabRenderer({
   categoryChoices,
   charts,
   currentFilePath,
-  featureToggles,
   onCalendarSettingsSave,
   onCategoryChoicesSave,
   onOpenFile,
@@ -76,13 +74,13 @@ export function useAppChartTabRenderer({
   }, [onOpenFile, workspaceId]);
 
   useEffect(() => {
-    if (!featureToggles.sphere || workspaceId === "none") return;
+    if (workspaceId === "none") return;
     const timer = window.setTimeout(() => {
       void import("../components/SphereView");
       preloadWorkspaceGraph({ revision: workspaceDataRevision, workspaceId });
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [featureToggles.sphere, workspaceDataRevision, workspaceId]);
+  }, [workspaceDataRevision, workspaceId]);
 
   useEffect(() => {
     setChroniclePaneViewStates((current) => resetClosedChroniclePaneStates(
