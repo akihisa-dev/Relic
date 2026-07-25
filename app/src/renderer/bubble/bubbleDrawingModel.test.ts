@@ -7,7 +7,8 @@ import {
   bubbleColorWithAlpha,
   bubbleLinkDashPattern,
   bubbleMembranePalette,
-  bubbleNodeBubbleHighlight
+  bubbleNodeBubbleHighlight,
+  bubbleNodeHighlightColor
 } from "./bubbleDrawingModel";
 import {
   defaultGraphDrawTheme,
@@ -119,6 +120,27 @@ describe("bubbleDrawingModel", () => {
       defaultGraphDrawTheme,
       forward
     )).toBe(forward.get("人物"));
+  });
+
+  it("ホバー時の強調色に固定のアクセント色を使わない", () => {
+    const categoryColors = new Map([["人物", "hsl(195 62% 40%)"]]);
+    const categorizedNode = { ...graphNode("file"), category: "人物" };
+
+    expect(bubbleNodeHighlightColor(
+      categorizedNode,
+      defaultGraphDrawTheme,
+      categoryColors
+    )).toBe("hsl(195 62% 40%)");
+    expect(bubbleNodeHighlightColor(
+      graphNode("file"),
+      defaultGraphDrawTheme,
+      categoryColors
+    )).toBe(defaultGraphDrawTheme.textSecondary);
+    expect(bubbleNodeHighlightColor(
+      categorizedNode,
+      defaultGraphDrawTheme,
+      categoryColors
+    )).not.toBe(defaultGraphDrawTheme.accent);
   });
 
   it("薄膜の反射色と透明度をテーマに合わせて生成する", () => {

@@ -1,3 +1,4 @@
+import type { WorkspaceGraphNode } from "../../shared/ipc";
 import {
   graphCategoryColor,
   graphNodeColor,
@@ -59,7 +60,9 @@ export function drawBubble(
   const animationTimeMs = typeof performance === "undefined" ? 0 : performance.now();
   const highlightProgress = bubbleHighlightProgress(animationTimeMs);
   const highlightOpacity = bubbleHighlightOpacity(animationTimeMs);
-  const focusedColor = focused ? theme.accent : null;
+  const focusedColor = focused
+    ? bubbleNodeHighlightColor(focused, theme, categoryColors)
+    : null;
   drawBubbleCategoryBubbles(context, nodes, view.scale, theme, categoryColors);
   if (focused && focusedColor) {
     drawBubbleNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, highlightOpacity);
@@ -140,6 +143,14 @@ export function drawBubble(
 
 export function bubbleNodeBubbleHighlight(theme: GraphDrawTheme): string {
   return graphThemeIsDark(theme.background) ? theme.text : theme.background;
+}
+
+export function bubbleNodeHighlightColor(
+  node: WorkspaceGraphNode,
+  theme: GraphDrawTheme,
+  categoryColors: ReadonlyMap<string, string>
+): string {
+  return graphNodeColor(node, theme, categoryColors);
 }
 
 export interface BubbleMembranePalette {
