@@ -35,7 +35,7 @@ description: RelicのGitHub Actions workflow、trigger、permissions、concurren
 ## Actionと検査scriptを変更する
 
 1. Action変更では公式の `action.yml`、release notes、対応runner、必須input、権限を一次情報で確認する。major tagだけから互換性を推測しない。
-2. workflowから呼ぶpackage scriptと実在パスを現行HEADへ照合し、ローカルで再現できるCode CI検査は `pnpm verify:ci` へ集約する。Pull Requestのbase/headなどイベント固有入力を使う検査は別stepとして差分を明示する。
+2. workflowから呼ぶpackage scriptと実在パスを現行HEADへ照合する。GitHubへの公開前検証は `pnpm verify:local:push`、タグ公開前は `pnpm verify:local:release` へ集約し、GitHub Actionsの結果を代替証拠にしない。Pull Requestのbase/headなどイベント固有入力を使う検査は別stepとして差分を明示する。
 3. Secret Guardはstaged内容、送信commit range、CIのPR rangeで同じ検知規則を使い、hook設定がなくてもSkillから明示実行できる状態を保つ。
 4. guard自身のfixtureに実在credentialを入れず、分割した架空値で正常系と拒否系を検証する。
 5. workflow、hook、権限判断、外部操作Skillを変更した場合は `.github/CODEOWNERS` の保護対象を同期する。

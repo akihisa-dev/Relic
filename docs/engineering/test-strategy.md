@@ -17,9 +17,9 @@ Relicの自動テスト、実アプリ確認、macOS配布物確認が、それ�
 | Electron実行スモーク | Vitest外の専用コマンドで実際のElectronプロセス接続とウインドウ動作を確認 |
 | macOS package | Vitest外のmacOS workflowで成果物の構造と起動を確認 |
 
-末尾2役はVitestではなく、別プロセスで実行する確認責務を表す。Electron実行スモークは隔離した開発版を通常CIで起動し、macOS packageはPre-release VerificationとRelease workflowで実際の成果物を起動する。
+末尾2役はVitestではなく、別プロセスで実行する確認責務を表す。Electron実行スモークは隔離した開発版を起動し、macOS packageはタグpush前の `pnpm verify:local:release` で実際のローカル成果物を起動する。
 
-ローカル作業では、実アプリの起動、GUI操作、スクリーンショット、E2E、`smoke:electron`、`smoke:package` を、ユーザーがその作業で明示的に指示した場合だけ実行する。UI変更や自動テストで判断できない状態があることだけでは起動せず、未実施を通常変更の完了阻害条件にしない。この制限は、GitHub Actions上で定義済みの起動スモークとリリース検証には適用しない。
+ローカル作業では、実アプリの起動、GUI操作、スクリーンショット、E2E、`smoke:electron`、`smoke:package` を、ユーザーがその作業で明示的に指示した場合だけ実行する。UI変更や自動テストで判断できない状態があることだけでは起動せず、未実施を通常変更の完了阻害条件にしない。タグpushまたはリリースが明示された場合だけは、公開前検証 `pnpm verify:local:release` に含まれる、その作業で生成した配布版の自動起動スモークまで許可されたものとして扱う。
 
 ## Electron起動スモーク
 
@@ -28,7 +28,7 @@ Relicの自動テスト、実アプリ確認、macOS配布物確認が、それ�
 | 種別 | 確認すること | 実行場所 |
 |------|--------------|----------|
 | 開発版 | Electronプロセス、メインウインドウ、Renderer初期画面、`window.relic`、ワークスペース状態取得IPC、未登録の初期空状態 | ローカルの `pnpm smoke:electron`、Pull Request・`main`・手動のCode CI |
-| 配布版 | 上記の接続に加え、package後の実行ファイル、ASAR、asset、production用HTMLから起動できること | macOSのPre-release VerificationとDraft Release workflowで `pnpm smoke:package` |
+| 配布版 | 上記の接続に加え、package後の実行ファイル、ASAR、asset、production用HTMLから起動できること | タグpush前のローカル `pnpm verify:local:release` で `pnpm smoke:package` |
 
 両者は異なる失敗を検出するため、一方の成功を他方の成功として扱わない。起動スモークは一時ユーザーデータだけを使い、成功・失敗にかかわらず削除する。Mainは確認結果をJSONへ記録し、起動側はMain・Preload・Rendererの標準出力、標準エラー、JSON reportを証拠として保存する。CIでは失敗時に証拠をartifactとして取得できる。
 

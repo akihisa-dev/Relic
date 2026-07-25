@@ -4,6 +4,15 @@ set -eu
 hook_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 repository_root=$(git rev-parse --show-toplevel)
 zero=0000000000000000000000000000000000000000
+updates_file=$(mktemp "${TMPDIR:-/tmp}/relic-pre-push.XXXXXX")
+trap 'rm -f "$updates_file"' EXIT HUP INT TERM
+
+cat > "$updates_file"
+
+publication_check=$(
+  cd "$repository_root"
+  node app/scripts/check-local-publication.mjs < "$updates_file"
+)
 
 while read local_ref local_sha remote_ref remote_sha; do
   printf '%s %s %s %s\n' "$local_ref" "$local_sha" "$remote_ref" "$remote_sha" \
@@ -15,7 +24,19 @@ while read local_ref local_sha remote_ref remote_sha; do
 
   if [ "$remote_sha" = "$zero" ]; then
     node "$repository_root/app/scripts/version-policy.mjs" check-ref "$local_sha"
+    for commit in $(git rev-list "$local_sha" --not --remotes); do
+      git diff-tree --check --root --no-commit-id -r "$commit" --
+    done
   else
     node "$repository_root/app/scripts/version-policy.mjs" check-range "$remote_sha" "$local_sha"
+    git diff --check "$remote_sha" "$local_sha" --
   fi
-done
+done < "$updates_file"
+
+if [ -n "$publication_check" ]; then
+  echo "Running Relic local publication gate: $publication_check"
+  (
+    cd "$repository_root/app"
+    pnpm "$publication_check"
+  )
+fi

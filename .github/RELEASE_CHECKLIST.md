@@ -8,8 +8,8 @@ RelicのローカルGitタグ作成、タグのGitHubへのpush、Draft Release�
 - [ ] 必要なバージョン更新がコミット済みである
 - [ ] 作業中の差分が残っていない
 - [ ] リリース対象コミットがローカル `main` とGitHubの `main` の両方から到達できる
-- [ ] `app/` で `pnpm outdated` と `pnpm audit --prod` を実行し、依存状態を確認した
-- [ ] `app/` で `pnpm verify:ci` が成功した
+- [ ] `app/` で `pnpm outdated` を実行し、依存状態を確認した
+- [ ] `app/` で `pnpm verify:local:release` が成功し、既知のproduction脆弱性がなく、macOS安全ビルドと配布版起動スモークが完了した
 - [ ] リポジトリルートで `git diff --check` が成功した
 - [ ] 作成するGitタグが `app/package.json` の `version` と一致している
 - [ ] 同名タグがローカルにもGitHubにも存在しない
@@ -19,6 +19,7 @@ RelicのローカルGitタグ作成、タグのGitHubへのpush、Draft Release�
 - [ ] タグpushが明示的に依頼されている
 - [ ] push対象タグが、確認済みのリリース対象コミットを指している
 - [ ] push前に `.githooks/secret-guard.sh --range <outgoing-range>` が成功している
+- [ ] `.githooks/pre-push` または同等の明示手順で `pnpm verify:local:release` を再実行し、失敗または未実施の検証がない
 - [ ] GitHubの `main` がリリース対象コミットへ到達できることを再確認した
 - [ ] 同名のremote tagが存在しない
 
@@ -42,11 +43,11 @@ GitタグをGitHubへpushすると、`.github/workflows/draft-release.yml` がma
 - [ ] 未署名・未公証ビルドであることが分かる
 - [ ] checksumで配布ZIPの整合を確認できることが分かる
 
-## ローカルで事前確認する場合
+## ローカル公開前検証
 
-タグを作成する前にGitHub Actionsの `Pre-release Verification` を手動実行すると、macOS runnerでRelease workflowと同じ安全ビルドと配布版起動スモークを確認できる。このworkflowはタグ、Release、push、リポジトリ内容を変更せず、成果物も公開しない。失敗した場合はタグを作成せず、安全ビルドまたは `pnpm smoke:package` の最初の失敗を修正して再実行する。
+タグを作成またはGitHubへpushする前に、Apple Silicon搭載Macの `app/` で `pnpm verify:local:release` を実行する。このコマンドは固定lockfile、全テスト、型、構造、文書、ライセンス、SBOM、Renderer production build、重要度を問わないproduction依存監査、差分形式、macOS安全ビルド、配布版起動スモークを確認する。
 
-ローカルでmacOS向け成果物まで確認する場合は、Apple Silicon搭載Macの`app/`で`pnpm verify:ci`、`pnpm build:mac:safe`、`pnpm smoke:package`を実行する。`build:mac:safe`はApple Silicon以外の実行環境をビルド開始前に拒否する。
+GitHub Actionsの結果は公開後の別環境確認と成果物生成として扱い、ローカル公開前検証の代わりにしない。ローカル検証が失敗または未実施ならタグをpushしない。
 
 ## 未署名・未公証の注意
 

@@ -21,13 +21,20 @@ RelicはGitHub Public Repositoryとして公開する前提で管理する。脆
 ## 秘密情報検知
 
 - `.githooks/pre-commit` は `.githooks/secret-guard.sh --staged` を呼び出し、ステージ済みの差分から禁止ファイル名と秘密情報らしい文字列を検知する。
-- `.githooks/pre-push` は `.githooks/secret-guard.sh --pre-push` を呼び出し、push対象コミットを検査する。
+- `.githooks/pre-push` は、送信refがcleanな現在のHEADを指すことを確認し、push対象コミットの秘密情報、version、SBOM、空白を検査する。通常pushでは `pnpm verify:local:push`、タグpushでは `pnpm verify:local:release` を実行し、失敗または未実施の変更を送信しない。
 - 検知対象は、環境変数ファイル、認証情報を示すファイル名、HTTP Authorization header、provider token、秘密鍵、認証情報を含むDB接続文字列など、漏えいリスクが高い形に限定する。
 - 新しいbranchやtagのpushでは、どのremoteにも未到達のcommitだけを新しい公開範囲として検査する。既に公開済みのcommitを指すtag作成で全履歴を再検査せず、未公開commitを含むrefでは従来どおり検査する。
 - 画像、ZIP、実行ファイルなど、テキストとして検査する必要がないファイルは内容検査の対象外とする。
 - 検知ルールの確認には `.githooks/secret-guard.sh --self-test` を使い、本物のtoken、秘密鍵、実在credentialをテストやログへ含めない。
 - AIエージェントのコミット・公開手順は `core.hooksPath` の設定だけに依存せず、staged差分または送信commit rangeのguardを明示実行する。
 - 誤検知した場合は、まず検知対象文字列を含まない安全な表現へ変更する。検知ルールを緩める場合は、対象パターンと安全性を確認する。
+
+## ローカル公開前検証
+
+- GitHubへのpushを外部公開境界とし、GitHub Actionsの結果を公開前の安全証拠として扱わない。
+- `pnpm verify:local:push` は固定lockfile、全テスト、型、構造、文書、ライセンス、SBOM、Renderer production build、重要度を問わないproduction依存監査、差分形式を確認する。
+- `pnpm verify:local:release` は通常pushの検証に加え、Apple Silicon向けmacOS安全ビルドと、その作業で生成した配布版の自動起動スモークを実行する。
+- production依存に既知の脆弱性が1件でもある場合や、監査先へ接続できず結果を確定できない場合はpushしない。
 
 ## GitHub Actions
 

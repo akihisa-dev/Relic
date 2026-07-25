@@ -20,16 +20,17 @@ description: Relicの検証・コミット済み変更を、明示された範�
 3. non-fast-forward、remote側の新しいcommit、branch保護、通信可能な経路で確認した認証・権限の拒否がある場合は、rebase、merge、force pushを自動選択せず停止する。
 4. 接続失敗だけを認証失敗と表現せず、通信問題または判定不能として分ける。制限環境内の `gh` 失敗だけを理由に再認証を案内しない。
 5. 新規remote branchでは、意図した基準branchとの共通祖先からHEADまでを公開対象として確認する。
-6. `.githooks/secret-guard.sh --range <outgoing-range>` と `app/` の `pnpm version:check -- <base> <head>` を明示実行する。`core.hooksPath` の設定有無に依存せず、送信対象の秘密情報、コミットversion、SBOM同期を確認し、いずれかが失敗した場合はpushしない。
+6. `.githooks/secret-guard.sh --range <outgoing-range>`、`app/` の `pnpm version:check -- <base> <head>`、送信commitの `git diff --check`、`pnpm verify:local:push` を明示実行する。`core.hooksPath` の設定やGitHub Actionsに依存せず、送信対象の秘密情報、コミットversion、SBOM、空白、全テスト、production build、既知のproduction脆弱性をローカルで確認し、いずれかが失敗または未実施ならpushしない。
 
 ## pushとPull Requestを実行する
 
 1. remote名、local branch、remote branchを明示した通常のpushを使う。upstream設定も依頼された公開に必要な場合だけ行う。
-2. push後はGitHub側のbranch SHAがlocal HEADと一致することを一次情報で確認する。
-3. Pull Request作成が明示されている場合は、同じhead・baseの既存Open PRを先に確認し、重複作成しない。
-4. ready状態が明示されていなければDraft PRとし、目的、変更内容、確認結果、影響、未確認事項を本文へ記載する。
-5. PR本文、ラベル、reviewer、担当者、milestone、merge、ready化は、依頼された項目だけ変更する。
-6. GitHub上のcheck失敗を調査する場合は `$relic-change-ci` の読取手順に従い、利用可能なGitHub連携から実行・job・logを取得する。連携で不足する場合だけ、同Skillが定める権限付きの `gh` 補助経路を使う。
+2. push対象refがcleanな現在のHEADを指すことを確認する。`.githooks/pre-push` が有効ならローカル公開前検証を再実行させ、無効でも前節の明示実行を省略しない。
+3. push後はGitHub側のbranch SHAがlocal HEADと一致することを一次情報で確認する。
+4. Pull Request作成が明示されている場合は、同じhead・baseの既存Open PRを先に確認し、重複作成しない。
+5. ready状態が明示されていなければDraft PRとし、目的、変更内容、確認結果、影響、未確認事項を本文へ記載する。
+6. PR本文、ラベル、reviewer、担当者、milestone、merge、ready化は、依頼された項目だけ変更する。
+7. GitHub上のcheck失敗を調査する場合は `$relic-change-ci` の読取手順に従い、利用可能なGitHub連携から実行・job・logを取得する。連携で不足する場合だけ、同Skillが定める権限付きの `gh` 補助経路を使う。
 
 ## 完了状態を確認する
 

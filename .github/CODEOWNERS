@@ -12,3 +12,5 @@
 /.githooks/ @akihisa-dev
 /app/scripts/version-policy.mjs @akihisa-dev
 /app/scripts/version-policy.test.mjs @akihisa-dev
+/app/scripts/check-local-publication.mjs @akihisa-dev
+/app/scripts/check-local-publication.test.mjs @akihisa-dev

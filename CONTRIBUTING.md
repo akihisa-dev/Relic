@@ -22,13 +22,13 @@ Pull Requestを送ることで、提出内容をAGPL-3.0-or-laterで配布・改
 
 AIの権限判断、外部操作、コミット、リリース、GitHub Actions、秘密情報検査に関わるファイルは、通常のコードレビューに加えてオーナー確認の対象です。対象パスは [`.github/CODEOWNERS`](.github/CODEOWNERS) を正本とします。機能別Skillの通常の改善まで一律にオーナー確認へ広げません。
 
-Pull RequestではGitHub Actionsが変更コミットの秘密情報パターン、version規則、SBOM同期を検査します。ローカルでも次の設定で `.githooks/pre-commit` と `.githooks/pre-push` を有効にし、公開前に同じ検査を行ってください。AIエージェントのコミット・公開手順は、設定の有無にかかわらずhookまたはguardを明示実行します。
+GitHubへのpushは外部公開として扱います。GitHub上のcheckを公開前検証の代わりにせず、ローカルで全検証に成功した変更だけを送信してください。次の設定で `.githooks/pre-commit` と `.githooks/pre-push` を有効にすると、通常pushでは `pnpm verify:local:push`、タグpushでは配布ビルドと起動スモークを含む `pnpm verify:local:release` が自動実行されます。
 
 ```sh
 git config core.hooksPath .githooks
 ```
 
-設定を変更せずに確認する場合は、ステージ済み差分へ `.githooks/pre-commit`、送信予定commitへ `.githooks/secret-guard.sh --range <range>` と `app/` の `pnpm version:check -- <base> <head>` を実行します。
+設定を変更せずに確認する場合も、ステージ済み差分へ `.githooks/pre-commit` を実行し、送信予定commitへ秘密情報・version・SBOM・空白の検査を行ったうえで、`app/` の `pnpm verify:local:push` を実行します。タグ送信では代わりに `pnpm verify:local:release` を実行します。
 
 ## 開発ルール
 

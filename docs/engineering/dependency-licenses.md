@@ -53,6 +53,7 @@ git -C .. diff --check
 Relic本体のversionはSBOMのapplication componentにも記録するため、依存関係を変更しないコミットでもversion更新後に `pnpm sbom:generate` を実行する。`pnpm version:check-staged`、Gitのpre-commit、pre-push、Pull Requestのversion検査は、`app/package.json` とSBOMのversionが一致しない状態を拒否する。
 
 更新候補とproduction dependenciesの既知リスクを確認する場合は、`app/` で `pnpm outdated` と `pnpm audit --prod` を実行する。
+GitHubへpushする前は `pnpm security:audit:strict` を含む `pnpm verify:local:push` を必須とし、重要度を問わず既知のproduction脆弱性が1件でもあれば送信しない。監査先へ接続できず結果を確定できない場合も成功扱いにしない。
 
 ---
 
@@ -64,7 +65,7 @@ Draft Release workflowでは、配布ZIPとchecksumに加えて、`THIRD_PARTY_N
 ## 依存関係更新の継続確認
 
 依存関係は、リリース前、依存更新作業、大きな実装後など、必要な区切りでローカルから確認する。
-Gitタグを作成するリリース作業では、タグ作成前に `pnpm outdated` と `pnpm audit --prod` を実行する。
+Gitタグを作成するリリース作業では、タグ作成前に `pnpm outdated` と `pnpm verify:local:release` を実行し、既知のproduction脆弱性がないことをローカルで確認する。
 
 ---
 
