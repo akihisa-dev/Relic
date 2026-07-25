@@ -10,6 +10,8 @@ allowBuilds:
   macos-alias: true
 
 minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - js-yaml@5.2.2
 trustPolicy: no-downgrade
 trustPolicyExclude:
   - semver@5.7.2
