@@ -1,5 +1,11 @@
 import ForceGraph3D, { type ForceGraph3DInstance } from "3d-force-graph";
-import { Quaternion, Vector3 } from "three";
+import {
+  Mesh,
+  MeshPhysicalMaterial,
+  Quaternion,
+  SphereGeometry,
+  Vector3
+} from "three";
 
 import { defaultGraphDrawTheme, type GraphDrawTheme } from "../graph/graphThemeModel";
 import {
@@ -15,12 +21,14 @@ import {
   sphereLayoutSettings,
   sphereLinkDistance,
   sphereLinkTouchesFocus,
+  sphereNodeAppearance,
   sphereNodeChargeStrength,
+  sphereRenderableColor,
   sphereQuarterCameraPosition,
-  sphereStarColor,
   type SphereData,
   type SphereLink,
-  type SphereNode
+  type SphereNode,
+  type SphereNodeFocusState
 } from "./sphereModel";
 
 interface SphereRuntimeCallbacks {
@@ -119,6 +127,10 @@ export function createSphereRuntime(
   let nodeDataFrame: number | null = null;
   let resizeFrame: number | null = null;
   let animationPaused = false;
+  let nodeRelSize = 4.2;
+  let nodeResolution = 16;
+  const nodeGeometries = new Map<string, SphereGeometry>();
+  const nodeMaterials = new Map<string, MeshPhysicalMaterial>();
 
   const graph = new ForceGraph3D(host, {
     controlType: "orbit",
@@ -155,6 +167,54 @@ export function createSphereRuntime(
     guideRadius = SPHERE_MIN_GUIDE_RADIUS;
     guides = createSphereGuides(guideRadius, theme.accent);
     scene.add(guides.group);
+  };
+  const clearNodeObjects = () => {
+    for (const material of nodeMaterials.values()) material.dispose();
+    for (const geometry of nodeGeometries.values()) geometry.dispose();
+    nodeMaterials.clear();
+    nodeGeometries.clear();
+  };
+  const nodeFocusState = (node: SphereNode): SphereNodeFocusState => {
+    if (!focusId) return "default";
+    if (node.id === focusId) return "focused";
+    return focusIds.has(node.id) ? "connected" : "dimmed";
+  };
+  const applyNodeAppearance = (node: SphereNode, material: MeshPhysicalMaterial) => {
+    const baseColor = nodeColors.get(node.id) ?? theme.textSecondary;
+    const appearance = sphereNodeAppearance(baseColor, node, nodeFocusState(node), theme);
+    material.color.setStyle(sphereRenderableColor(appearance.color));
+    material.emissive.setStyle(sphereRenderableColor(appearance.emissiveColor));
+    material.emissiveIntensity = appearance.emissiveIntensity;
+    material.opacity = appearance.opacity;
+    material.transparent = appearance.opacity < 1;
+    material.depthWrite = appearance.opacity >= 0.5;
+    material.needsUpdate = true;
+  };
+  const updateNodeAppearances = () => {
+    for (const node of data.nodes) {
+      const material = nodeMaterials.get(node.id);
+      if (material) applyNodeAppearance(node, material);
+    }
+  };
+  const createNodeObject = (node: SphereNode): Mesh => {
+    const radius = Math.cbrt(Math.max(0, node.val || 1)) * nodeRelSize;
+    const geometryKey = `${radius}:${nodeResolution}`;
+    let geometry = nodeGeometries.get(geometryKey);
+    if (!geometry) {
+      geometry = new SphereGeometry(radius, nodeResolution, nodeResolution);
+      nodeGeometries.set(geometryKey, geometry);
+    }
+    const material = new MeshPhysicalMaterial({
+      clearcoat: 0.82,
+      clearcoatRoughness: 0.2,
+      metalness: 0.04,
+      roughness: 0.34
+    });
+    applyNodeAppearance(node, material);
+    nodeMaterials.set(node.id, material);
+    const mesh = new Mesh(geometry, material);
+    mesh.name = `sphere-node-${node.id}`;
+    return mesh;
   };
   const followLayoutRadius = () => {
     if (!guides) return;
@@ -203,17 +263,11 @@ export function createSphereRuntime(
     .nodeId("id")
     .nodeLabel((node) => node.label)
     .nodeVal((node) => node.val)
-    .nodeOpacity(0.9)
+    .nodeThreeObject((node) => createNodeObject(node))
     .linkVisibility(true)
     .linkOpacity(0.42)
     .linkWidth((link) => {
       return sphereLinkTouchesFocus(link, focusId) ? 2.4 : 0;
-    })
-    .nodeColor((node) => {
-      const baseColor = nodeColors.get(node.id) ?? theme.textSecondary;
-      if (!focusId) return sphereStarColor(baseColor, node);
-      if (node.id === focusId) return theme.accent;
-      return focusIds.has(node.id) ? baseColor : sphereColorWithOpacity(theme.border, 0.16);
     })
     .linkColor((link) => focusId && sphereLinkTouchesFocus(link, focusId)
       ? theme.accent
@@ -400,7 +454,6 @@ export function createSphereRuntime(
       graph
         .nodeLabel("")
         .nodeVal(1)
-        .nodeColor(theme.textSecondary)
         .linkColor(theme.border)
         .linkWidth(0)
         .onNodeHover(() => undefined)
@@ -413,6 +466,7 @@ export function createSphereRuntime(
       graph.d3Force("charge", null);
       renderer.forceContextLoss();
       graph._destructor();
+      clearNodeObjects();
       currentHost.replaceChildren();
     },
     resetView: () => {
@@ -429,6 +483,7 @@ export function createSphereRuntime(
       cancelNodeDataFrame();
       if (shouldClearRenderedData) {
         graph.graphData({ links: [], nodes: [] });
+        clearNodeObjects();
         hasRenderedData = false;
       }
       const hasCompleteCoordinates = data.nodes.length > 0 && data.nodes.every((node) => (
@@ -441,6 +496,8 @@ export function createSphereRuntime(
       focusIds = sphereFocusIds(data, focusId);
       const isLarge = data.nodes.length >= 1_500 || data.links.length >= 3_000;
       const layoutSettings = sphereLayoutSettings(data.nodes.length, data.links.length);
+      nodeRelSize = layoutSettings.nodeRelSize;
+      nodeResolution = isLarge ? 8 : 16;
       const nodesById = new Map(data.nodes.map((node) => [node.id, node]));
       const chargeForce = graph.d3Force("charge") as ConfigurableChargeForce | undefined;
       const linkForce = graph.d3Force("link") as ConfigurableLinkForce | undefined;
@@ -454,7 +511,7 @@ export function createSphereRuntime(
       graph
         .linkOpacity(layoutSettings.linkOpacity)
         .nodeRelSize(layoutSettings.nodeRelSize)
-        .nodeResolution(isLarge ? 4 : 8)
+        .nodeResolution(nodeResolution)
         .cooldownTicks(isLarge ? 90 : 180)
         .cooldownTime(isLarge ? 4_000 : 8_000);
       renderer.setPixelRatio(isLarge ? 1 : Math.min(window.devicePixelRatio || 1, 2));
@@ -464,6 +521,7 @@ export function createSphereRuntime(
       if (nextFocusId === focusId) return;
       focusId = nextFocusId;
       focusIds = sphereFocusIds(data, focusId);
+      updateNodeAppearances();
       graph.refresh();
       if (animationPaused) renderStaticFrame();
     },
@@ -477,6 +535,7 @@ export function createSphereRuntime(
       nodeColors = nextNodeColors;
       graph.backgroundColor(theme.background);
       guides?.setColor(theme.accent);
+      updateNodeAppearances();
       graph.refresh();
       if (animationPaused) renderStaticFrame();
     },

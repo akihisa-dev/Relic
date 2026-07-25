@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Vector3 } from "three";
+import { Mesh, MeshPhysicalMaterial, Vector3 } from "three";
 
 import { defaultGraphDrawTheme } from "../graph/graphThemeModel";
 import { SPHERE_MIN_GUIDE_RADIUS, type SphereData } from "./sphereModel";
@@ -117,8 +117,8 @@ describe("sphereRuntime", () => {
       }))
     };
     for (const method of [
-      "showNavInfo", "enableNodeDrag", "nodeId", "nodeLabel", "nodeVal", "nodeOpacity", "linkOpacity",
-      "linkVisibility", "linkWidth", "nodeColor", "linkColor", "onNodeHover", "onNodeClick", "onBackgroundClick",
+      "showNavInfo", "enableNodeDrag", "nodeId", "nodeLabel", "nodeVal", "nodeThreeObject", "linkOpacity",
+      "linkVisibility", "linkWidth", "linkColor", "onNodeHover", "onNodeClick", "onBackgroundClick",
       "onEngineTick", "onEngineStop", "width", "height", "backgroundColor", "nodeResolution",
       "nodeRelSize", "cooldownTicks", "cooldownTime", "graphData", "refresh", "zoomToFit", "pauseAnimation",
       "resumeAnimation", "_destructor"
@@ -252,12 +252,26 @@ describe("sphereRuntime", () => {
     forceGraphMocks.graph.onEngineStop.mock.calls[0][0]();
     expect(forceGraphMocks.graph.cameraPosition).toHaveBeenCalledTimes(2);
     expect(scene.add).toHaveBeenCalledTimes(2);
-    const colorAccessor = forceGraphMocks.graph.nodeColor.mock.calls[0][0];
+    const nodeObjectAccessor = forceGraphMocks.graph.nodeThreeObject.mock.calls[0][0];
+    const focusedNodeObject = nodeObjectAccessor(data.nodes[0]) as Mesh;
+    const connectedNodeObject = nodeObjectAccessor(data.nodes[1]) as Mesh;
+    const dimmedNodeObject = nodeObjectAccessor(data.nodes[2]) as Mesh;
+    const focusedMaterial = focusedNodeObject.material as MeshPhysicalMaterial;
+    const connectedMaterial = connectedNodeObject.material as MeshPhysicalMaterial;
+    const dimmedMaterial = dimmedNodeObject.material as MeshPhysicalMaterial;
     const linkColorAccessor = forceGraphMocks.graph.linkColor.mock.calls[0][0];
     const linkWidthAccessor = forceGraphMocks.graph.linkWidth.mock.calls[0][0];
-    expect(colorAccessor(sphereData().nodes[0])).toBe(defaultGraphDrawTheme.accent);
-    expect(colorAccessor(sphereData().nodes[1])).toBe("#222222");
-    expect(colorAccessor(sphereData().nodes[2])).toBe("rgba(59, 60, 51, 0.16)");
+    expect(focusedMaterial).toMatchObject({
+      clearcoat: 0.82,
+      clearcoatRoughness: 0.2,
+      emissiveIntensity: 0.24,
+      metalness: 0.04,
+      opacity: 1,
+      roughness: 0.34
+    });
+    expect(`#${focusedMaterial.color.getHexString()}`).toBe(defaultGraphDrawTheme.accent);
+    expect(`#${connectedMaterial.color.getHexString()}`).toBe("#222222");
+    expect(dimmedMaterial.opacity).toBe(0.14);
     expect(linkWidthAccessor(sphereData().links[0])).toBe(2.4);
     const unfocusedLink = {
       count: 1,
@@ -271,9 +285,25 @@ describe("sphereRuntime", () => {
     expect(linkColorAccessor(sphereData().links[0])).toBe(defaultGraphDrawTheme.accent);
     expect(linkColorAccessor(unfocusedLink)).toBe("rgba(98, 98, 91, 0.12)");
     runtime.setFocus(null);
-    expect(colorAccessor(sphereData().nodes[0])).toBe("rgba(17, 17, 17, 0.58)");
-    expect(colorAccessor(sphereData().nodes[2])).toBe("rgba(51, 51, 51, 0.4)");
+    expect(focusedMaterial.opacity).toBe(0.86);
+    expect(connectedMaterial.opacity).toBe(0.86);
+    expect(dimmedMaterial.opacity).toBe(0.78);
     expect(linkColorAccessor(unfocusedLink)).toBe(defaultGraphDrawTheme.textSecondary);
+    const darkTheme = {
+      ...defaultGraphDrawTheme,
+      accent: "#ff8a3d",
+      background: "#141510",
+      border: "#4a4c42",
+      borderStrong: "#70736a"
+    };
+    runtime.setTheme(darkTheme, new Map([
+      ["A.md", "#88aadd"], ["B.md", "#ddaa88"], ["C.md", "#99bb88"]
+    ]));
+    expect(`#${focusedMaterial.color.getHexString()}`).toBe("#88aadd");
+    runtime.setFocus("A.md");
+    expect(`#${focusedMaterial.color.getHexString()}`).toBe(darkTheme.accent);
+    expect(`#${connectedMaterial.color.getHexString()}`).toBe("#ddaa88");
+    expect(dimmedMaterial.opacity).toBe(0.14);
     forceGraphMocks.graph.onNodeClick.mock.calls[0][0](data.nodes[0]);
     forceGraphMocks.graph.onBackgroundClick.mock.calls[0][0]();
     expect(callbacks.onNodeClick).toHaveBeenCalledWith(data.nodes[0]);
@@ -333,6 +363,39 @@ describe("sphereRuntime", () => {
     runAnimationFrame();
 
     expect(forceGraphMocks.graph.graphData).toHaveBeenLastCalledWith(data);
+    runtime.dispose();
+  });
+
+  it("通常表示と大規模表示のどちらも滑らかな球面分割数を保つ", () => {
+    const host = document.createElement("div");
+    const runtime = createSphereRuntime(host, {
+      canvasLabel: "スフィア",
+      onBackgroundClick: vi.fn(),
+      onContextLost: vi.fn(),
+      onNodeClick: vi.fn(),
+      onNodeHover: vi.fn()
+    });
+
+    runtime.setData(sphereData());
+    expect(forceGraphMocks.graph.nodeResolution).toHaveBeenLastCalledWith(16);
+
+    const largeData: SphereData = {
+      focusIdsByNode: new Map(),
+      links: [],
+      nodes: Array.from({ length: 1_500 }, (_, index) => ({
+        backlinkCount: 0,
+        exists: true,
+        id: `${index}.md`,
+        label: String(index),
+        linkCount: 0,
+        path: `${index}.md`,
+        type: "file",
+        val: 3
+      }))
+    };
+    runtime.setData(largeData);
+    expect(forceGraphMocks.graph.nodeResolution).toHaveBeenLastCalledWith(8);
+
     runtime.dispose();
   });
 

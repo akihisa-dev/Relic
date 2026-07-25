@@ -44,7 +44,7 @@ describe("sphereGuides", () => {
     expect((ringGlow.material as LineMaterial).linewidth).toBeGreaterThan((ring.material as LineMaterial).linewidth);
   });
 
-  it("赤道と中心軸より控えめな天球グリッドを生成する", () => {
+  it("赤道と中心軸より控えめな球状空間グリッドを生成する", () => {
     const guides = createSphereGuides(100, "#8899aa");
     const latitudeLines = guides.group.children.filter(({ name }) => name.startsWith("sphere-grid-latitude-")) as Line2[];
     const meridianLines = guides.group.children.filter(({ name }) => name.startsWith("sphere-grid-meridian-")) as Line2[];

@@ -44,22 +44,30 @@ export interface SphereLayoutSettings {
   nodeRelSize: number;
 }
 
-export type SphereStarMagnitude = 1 | 2 | 3 | 4 | 5;
+export type SphereNodeProminence = 1 | 2 | 3 | 4 | 5;
+export type SphereNodeFocusState = "connected" | "default" | "dimmed" | "focused";
+
+export interface SphereNodeAppearance {
+  color: string;
+  emissiveColor: string;
+  emissiveIntensity: number;
+  opacity: number;
+}
 
 export const SPHERE_MIN_GUIDE_RADIUS = 80;
-const SPHERE_STAR_OPACITY: Record<SphereStarMagnitude, number> = {
-  1: 1,
-  2: 0.9,
-  3: 0.76,
-  4: 0.58,
-  5: 0.4
+const SPHERE_NODE_OPACITY: Record<SphereNodeProminence, number> = {
+  1: 0.78,
+  2: 0.86,
+  3: 0.92,
+  4: 0.96,
+  5: 1
 };
-const SPHERE_STAR_VALUE: Record<SphereStarMagnitude, number> = {
-  1: 30,
-  2: 18,
+const SPHERE_NODE_VALUE: Record<SphereNodeProminence, number> = {
+  1: 3,
+  2: 5.5,
   3: 10,
-  4: 5.5,
-  5: 3
+  4: 18,
+  5: 30
 };
 
 export function sphereQuarterCameraPosition(distance: number): SphereCoordinates {
@@ -177,25 +185,63 @@ export function sphereNodeColors(
 }
 
 export function sphereNodeValue(node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">): number {
-  return SPHERE_STAR_VALUE[sphereStarMagnitude(node)];
+  return SPHERE_NODE_VALUE[sphereNodeProminence(node)];
 }
 
-export function sphereStarMagnitude(
+export function sphereNodeProminence(
   node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">
-): SphereStarMagnitude {
+): SphereNodeProminence {
   const connections = Math.max(0, node.backlinkCount + node.linkCount);
-  if (connections >= 5) return 1;
-  if (connections >= 3) return 2;
+  if (connections >= 5) return 5;
+  if (connections >= 3) return 4;
   if (connections >= 2) return 3;
-  if (connections >= 1) return 4;
-  return 5;
+  if (connections >= 1) return 2;
+  return 1;
 }
 
-export function sphereStarColor(
-  color: string,
-  node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">
-): string {
-  return sphereColorWithOpacity(color, SPHERE_STAR_OPACITY[sphereStarMagnitude(node)]);
+export function sphereNodeAppearance(
+  baseColor: string,
+  node: Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount">,
+  state: SphereNodeFocusState,
+  theme: Pick<GraphDrawTheme, "accent" | "border" | "borderStrong">
+): SphereNodeAppearance {
+  const prominence = sphereNodeProminence(node);
+  if (state === "focused") {
+    return {
+      color: theme.accent,
+      emissiveColor: theme.accent,
+      emissiveIntensity: 0.24,
+      opacity: 1
+    };
+  }
+  if (state === "connected") {
+    return {
+      color: baseColor,
+      emissiveColor: baseColor,
+      emissiveIntensity: 0.14,
+      opacity: Math.max(0.94, SPHERE_NODE_OPACITY[prominence])
+    };
+  }
+  if (state === "dimmed") {
+    return {
+      color: theme.borderStrong,
+      emissiveColor: theme.border,
+      emissiveIntensity: 0.015,
+      opacity: 0.14
+    };
+  }
+  return {
+    color: baseColor,
+    emissiveColor: baseColor,
+    emissiveIntensity: 0.06 + (prominence - 1) * 0.018,
+    opacity: SPHERE_NODE_OPACITY[prominence]
+  };
+}
+
+export function sphereRenderableColor(color: string): string {
+  const modernHsl = /^hsl\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*\)$/iu.exec(color);
+  if (!modernHsl) return color;
+  return `hsl(${modernHsl[1]}, ${modernHsl[2]}%, ${modernHsl[3]}%)`;
 }
 
 export function sphereColorWithOpacity(color: string, opacity: number): string {

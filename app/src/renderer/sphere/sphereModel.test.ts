@@ -11,12 +11,13 @@ import {
   sphereLayoutSettings,
   sphereLinkDistance,
   sphereLinkTouchesFocus,
+  sphereNodeAppearance,
   sphereNodeChargeStrength,
   sphereNodeColors,
+  sphereNodeProminence,
   sphereNodeValue,
   sphereQuarterCameraPosition,
-  sphereStarColor,
-  sphereStarMagnitude
+  sphereRenderableColor
 } from "./sphereModel";
 
 describe("sphereModel", () => {
@@ -56,20 +57,40 @@ describe("sphereModel", () => {
     expect(data.nodes[0]).not.toHaveProperty("baseColor");
   });
 
-  it("関連数を5段階の星の等級へ変換し、明るい星ほど体積を増やす", () => {
-    expect(sphereStarMagnitude({ backlinkCount: 0, linkCount: 0 })).toBe(5);
-    expect(sphereStarMagnitude({ backlinkCount: 0, linkCount: 1 })).toBe(4);
-    expect(sphereStarMagnitude({ backlinkCount: 1, linkCount: 1 })).toBe(3);
-    expect(sphereStarMagnitude({ backlinkCount: 1, linkCount: 2 })).toBe(2);
-    expect(sphereStarMagnitude({ backlinkCount: 2, linkCount: 3 })).toBe(1);
+  it("関連数を5段階の強調レベルへ変換し、関連の多いノードほど体積を増やす", () => {
+    expect(sphereNodeProminence({ backlinkCount: 0, linkCount: 0 })).toBe(1);
+    expect(sphereNodeProminence({ backlinkCount: 0, linkCount: 1 })).toBe(2);
+    expect(sphereNodeProminence({ backlinkCount: 1, linkCount: 1 })).toBe(3);
+    expect(sphereNodeProminence({ backlinkCount: 1, linkCount: 2 })).toBe(4);
+    expect(sphereNodeProminence({ backlinkCount: 2, linkCount: 3 })).toBe(5);
     expect(sphereNodeValue({ backlinkCount: 0, linkCount: 0 })).toBe(3);
     expect(sphereNodeValue({ backlinkCount: 10_000, linkCount: 10_000 })).toBe(30);
-    expect(sphereStarColor("#f2691b", { backlinkCount: 0, linkCount: 0 }))
-      .toBe("rgba(242, 105, 27, 0.4)");
-    expect(sphereStarColor("#f2691b", { backlinkCount: 2, linkCount: 3 }))
-      .toBe("rgba(242, 105, 27, 1)");
     expect(sphereColorWithOpacity("#62625b", 0.12)).toBe("rgba(98, 98, 91, 0.12)");
     expect(sphereColorWithOpacity("currentColor", 0.12)).toBe("currentColor");
+  });
+
+  it("カテゴリ色を保った表面とフォーカス状態の見分けを生成する", () => {
+    const node = { backlinkCount: 0, linkCount: 0 };
+
+    expect(sphereNodeAppearance("#4477aa", node, "default", defaultGraphDrawTheme)).toEqual({
+      color: "#4477aa",
+      emissiveColor: "#4477aa",
+      emissiveIntensity: 0.06,
+      opacity: 0.78
+    });
+    expect(sphereNodeAppearance("#4477aa", node, "focused", defaultGraphDrawTheme)).toMatchObject({
+      color: defaultGraphDrawTheme.accent,
+      emissiveIntensity: 0.24,
+      opacity: 1
+    });
+    expect(sphereNodeAppearance("#4477aa", node, "connected", defaultGraphDrawTheme))
+      .toMatchObject({ color: "#4477aa", opacity: 0.94 });
+    expect(sphereNodeAppearance("#4477aa", node, "dimmed", defaultGraphDrawTheme)).toMatchObject({
+      color: defaultGraphDrawTheme.borderStrong,
+      opacity: 0.14
+    });
+    expect(sphereRenderableColor("hsl(15 62% 40%)")).toBe("hsl(15, 62%, 40%)");
+    expect(sphereRenderableColor("#4477aa")).toBe("#4477aa");
   });
 
   it("リンク密度が高いほど反発力とリンク距離を増やす", () => {
