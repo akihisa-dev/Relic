@@ -174,18 +174,17 @@ function drawBubbleBubbleNode(
 ): void {
   const palette = bubbleMembranePalette(color, theme);
   const fillGradient = context.createRadialGradient(
-    node.x - radius * 0.34,
-    node.y - radius * 0.38,
-    Math.max(0.5 / scale, radius * 0.04),
-    node.x,
-    node.y,
-    radius * 1.08
+    node.x - radius * 0.14,
+    node.y - radius * 0.16,
+    Math.max(0.5 / scale, radius * 0.06),
+    node.x + radius * 0.08,
+    node.y + radius * 0.1,
+    radius * 1.12
   );
-  fillGradient.addColorStop(0, bubbleColorWithAlpha(palette.highlight, 0.78));
-  fillGradient.addColorStop(0.16, bubbleColorWithAlpha(palette.highlight, 0.32));
-  fillGradient.addColorStop(0.42, bubbleColorWithAlpha(color, 0.82));
-  fillGradient.addColorStop(0.82, bubbleColorWithAlpha(color, 0.68));
-  fillGradient.addColorStop(1, bubbleColorWithAlpha(palette.depth, 0.72));
+  fillGradient.addColorStop(0, bubbleColorWithAlpha(color, 0.88));
+  fillGradient.addColorStop(0.58, bubbleColorWithAlpha(color, 0.8));
+  fillGradient.addColorStop(0.88, bubbleColorWithAlpha(palette.rimSecondary, 0.7));
+  fillGradient.addColorStop(1, bubbleColorWithAlpha(palette.depth, 0.76));
 
   context.save();
   context.globalAlpha = alpha;
@@ -210,25 +209,25 @@ function drawBubbleBubbleNode(
   context.arc(node.x, node.y, radius - 0.7 / scale, 0, Math.PI * 2);
   context.stroke();
 
-  context.strokeStyle = bubbleColorWithAlpha(palette.highlight, 0.72);
+  context.strokeStyle = bubbleColorWithAlpha(palette.highlight, 0.46);
   context.lineCap = "round";
-  context.lineWidth = 1.15 / scale;
+  context.lineWidth = 0.85 / scale;
   context.beginPath();
   context.arc(
     node.x,
     node.y,
-    radius * 0.72,
-    Math.PI * 1.06,
-    Math.PI * 1.48
+    radius * 0.84,
+    Math.PI * 1.1,
+    Math.PI * 1.4
   );
   context.stroke();
 
-  context.fillStyle = bubbleColorWithAlpha(palette.highlight, 0.62);
+  context.fillStyle = bubbleColorWithAlpha(palette.highlight, 0.42);
   context.beginPath();
   context.arc(
-    node.x - radius * 0.38,
-    node.y - radius * 0.4,
-    Math.max(0.8 / scale, radius * 0.07),
+    node.x - radius * 0.42,
+    node.y - radius * 0.43,
+    Math.max(0.55 / scale, radius * 0.04),
     0,
     Math.PI * 2
   );
