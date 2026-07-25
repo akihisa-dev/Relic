@@ -6,7 +6,7 @@
     "component": {
       "type": "application",
       "name": "relic",
-      "version": "0.58.11",
+      "version": "0.58.12",
       "licenses": [
         {
           "license": {
@@ -210,8 +210,8 @@
     {
       "type": "library",
       "name": "dompurify",
-      "version": "3.4.11",
-      "purl": "pkg:npm/dompurify@3.4.11",
+      "version": "3.4.12",
+      "purl": "pkg:npm/dompurify@3.4.12",
       "licenses": [
         {
           "license": {

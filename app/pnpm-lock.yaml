@@ -6,6 +6,7 @@ settings:
 
 overrides:
   '@electron/node-gyp': 10.2.0-electron.1
+  dompurify: 3.4.12
   esbuild: ^0.28.1
   tar: ^7.5.11
   tmp: ^0.2.6
@@ -46,8 +47,8 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
       dompurify:
-        specifier: ^3.4.11
-        version: 3.4.11
+        specifier: 3.4.12
+        version: 3.4.12
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
@@ -1673,8 +1674,8 @@ packages:
   dom-accessibility-api@0.6.3:
     resolution: {integrity: sha512-7ZgogeTnjuHbo+ct10G9Ffp0mif17idi0IyWNVA/wcwcm7NPOD/WEHVP3n7n3MhXqxoIYm8d6MuZohYWIZ4T3w==}
 
-  dompurify@3.4.11:
-    resolution: {integrity: sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==}
+  dompurify@3.4.12:
+    resolution: {integrity: sha512-zQvGet8Z2sWbQhCmfFz/T5QWH2oBmjnqK3qvOjaqaNLrLEF912WamU+ohnTp0TCep/MFVHpdJuCZEdFOdTnEFg==}
 
   ds-store@0.1.6:
     resolution: {integrity: sha512-kY21M6Lz+76OS3bnCzjdsJSF7LBpLYGCVfavW8TgQD2XkcqIZ86W0y9qUDZu6fp7SIZzqosMDW2zi7zVFfv4hw==}
@@ -5392,7 +5393,7 @@ snapshots:
 
   dom-accessibility-api@0.6.3: {}
 
-  dompurify@3.4.11:
+  dompurify@3.4.12:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -6205,7 +6206,7 @@ snapshots:
       d3-sankey: 0.12.3
       dagre-d3-es: 7.0.14
       dayjs: 1.11.21
-      dompurify: 3.4.11
+      dompurify: 3.4.12
       es-toolkit: 1.47.0
       katex: 0.16.47
       khroma: 2.1.0
