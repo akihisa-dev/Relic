@@ -1,16 +1,14 @@
 # Relic 用語集
 
-このドキュメントはRelicの設計・開発・会話において使用する用語を定義する。
-ここに定義された用語は、仕様書・作業記録・会話すべてで一貫して使用すること。
+この文書はRelicの仕様、設計、実装、会話で使用する用語を定義する。
+ここに定義された用語は、正本文書と実装で一貫して使用する。
 
 この文書は常時読む前提ではなく、用語の意味や実装上の呼び名を確認するときだけ該当箇所を参照する。
 仕様上の振る舞いは `docs/features/`、画面構成は `docs/design/`、データ構造は `docs/engineering/data-model.md` を正とする。
 
-対照表の参照アプリ：**Obsidian / VS Code**
-
 ## 英名・実装識別子の扱い
 
-Relic英語名は、文書・会話・将来の英語UIで使う概念名を指す。
+Relic英語名は、文書、会話、英語UIで使う概念名を指す。
 実装識別子は、TypeScript型、union値、設定キー、IPC名、component / store / hook名など、コード上で対象機能を追うための名前を指す。
 
 コード上の名称がRelic英語名を兼ねる場合もあるが、常に同一とは扱わない。
@@ -30,7 +28,7 @@ Relic英語名は、文書・会話・将来の英語UIで使う概念名を指�
 | タグ | Tag | `WorkspaceTagSummary`, `getWorkspaceTagsChannel`, `tags`, `frontmatterTags` | `app/src/shared/ipc.ts`, `app/src/main/files/tags.ts`, `app/src/shared/tags.ts` | [links](../features/links.md), [frontmatter](../features/frontmatter.md) |
 | フロントマター | Frontmatter | `frontmatter`, `parseFrontmatter`, `writeFrontmatter`, `getFrontmatterValueCandidatesChannel` | `app/src/main/files/frontmatter.ts`, `app/src/renderer/editorFrontmatter.ts`, `app/src/renderer/editorFrontmatterModel.ts` | [frontmatter](../features/frontmatter.md), [data-model](../engineering/data-model.md) |
 | 図表コードブロック | Diagram code block | `DiagramLanguage`, `diagramLanguageFor`, `renderDiagramElement`, `DiagramBlockWidget`, `data-diagram-source` | `app/src/renderer/diagramLanguage.ts`, `app/src/renderer/diagramPreview.ts`, `app/src/renderer/editorDiagramLivePreview.ts` | [markdown](../features/markdown.md), [editor-engine](../engineering/editor-engine.md) |
-| フロントマターテンプレート | Frontmatter template | `FrontmatterTemplate`, `frontmatterTemplates`, `getFrontmatterTemplatesChannel` | `app/src/shared/ipc.ts`, `app/src/main/settings/appSettings.ts`, `app/src/main/ipc/workspacePreferenceHandlers.ts` | [frontmatter](../features/frontmatter.md) |
+| フロントマターテンプレート | Frontmatter template | `FrontmatterTemplate`, `frontmatterTemplates`, `getFrontmatterTemplatesChannel` | `app/src/shared/ipc.ts`, `app/src/main/settings/appSettings.ts`, `app/src/main/ipc/workspacePreferenceHandlers.ts` | [data-model](../engineering/data-model.md) |
 | 固定プロパティ | Fixed property | `FixedFrontmatterFieldName`, `reservedFrontmatterFieldNames`, `aliases`, `card`, `category`, `tags`, `chronicle` | `app/src/shared/frontmatterFields.ts`, `app/src/renderer/frontmatterSettingsModel.ts` | [frontmatter](../features/frontmatter.md), [data-model](../engineering/data-model.md) |
 | 旧カスタムプロパティ定義 | Legacy custom property definition | `UserDefinedField`, `UserDefinedFieldType`, `userDefinedFields`, `getUserDefinedFieldsChannel` | `app/src/shared/ipc.ts`, `app/src/main/settings/appSettings.ts` | [frontmatter](../features/frontmatter.md) |
 | アプリウィンドウ | App window | `BrowserWindow`, `App`, `createWindow` | `app/src/main/main.ts`, `app/src/renderer/App.tsx` | [design](../design/DESIGN.md), [architecture](../engineering/architecture.md) |
@@ -45,7 +43,7 @@ Relic英語名は、文書・会話・将来の英語UIで使う概念名を指�
 | ファイルビュー | File view | `FileTab`, `kind: "file"`, `SidebarView: "files"` | `app/src/renderer/components/PaneView.tsx`, `app/src/renderer/components/FilesSidebar.tsx`, `app/src/renderer/store/editorStore.ts` | [editor](../features/editor.md), [files](../features/files.md), [navigation](../features/navigation.md) |
 | カードビュー | Card view | `CardView`, `WorkspaceCard`, `getWorkspaceCardsChannel`, `chartId: "cards"` | `app/src/renderer/components/CardView.tsx`, `app/src/main/files/cards.ts`, `app/src/shared/ipc/workspace.ts` | [frontmatter](../features/frontmatter.md), [navigation](../features/navigation.md), [data-model](../engineering/data-model.md) |
 | テーブルビュー | Table view | `TableView`, `WorkspaceTable`, `getWorkspaceTableChannel`, `chartId: "table"` | `app/src/renderer/components/TableView.tsx`, `app/src/main/files/workspaceTable.ts`, `app/src/shared/ipc/workspace.ts` | [frontmatter](../features/frontmatter.md), [navigation](../features/navigation.md), [data-model](../engineering/data-model.md) |
-| 左レール | Left rail | `AppRail`, `RailNavigation`, `AppRailView`, `AppRailViewId` | `app/src/renderer/components/AppRail.tsx`, `app/src/renderer/components/RailNavigation.tsx`, `app/src/renderer/appShellModel.ts` | [design](../design/DESIGN.md) |
+| 左レール | Left rail | `AppRail`, `RailNavigation`, `AppRailView`, `AppRailViewId` | `app/src/renderer/components/AppRail.tsx`, `app/src/renderer/components/railNavigationViews.tsx`, `app/src/renderer/appShellModel.ts` | [design](../design/DESIGN.md) |
 | ファイルサイドバー | Files sidebar | `FilesSidebar`, `AppFilesSidebar`, `SidebarView: "files"` | `app/src/renderer/components/FilesSidebar.tsx`, `app/src/renderer/components/AppFilesSidebar.tsx`, `app/src/renderer/store/uiStore.ts` | [files](../features/files.md), [search](../features/search.md), [design](../design/DESIGN.md) |
 | サイドバー | Sidebar | `SidebarView`, `isSidebarOpen`, `activeSidebarView` | `app/src/renderer/store/uiStore.ts`, `app/src/renderer/components/AppFilesSidebar.tsx`, `app/src/renderer/hooks/useSidebarResize.ts` | [design](../design/DESIGN.md) |
 | ワークスペース切替 | Workspace switcher | `RailWorkspaceSwitcher`, `switchWorkspaceChannel`, `SwitchWorkspaceInput`, `renameWorkspaceChannel` | `app/src/renderer/components/RailWorkspaceSwitcher.tsx`, `app/src/shared/ipc.ts`, `app/src/main/ipc/workspaceRegistrationHandlers.ts` | [files](../features/files.md), [design](../design/DESIGN.md) |
@@ -67,14 +65,12 @@ Relic英語名は、文書・会話・将来の英語UIで使う概念名を指�
 | アウトラインパネル | Outline panel | `RightPanelView: "outline"`, `outlineHeadings`, `OutlineHeading` | `app/src/renderer/store/uiStore.ts`, `app/src/renderer/components/AppRightPanel.tsx`, `app/src/renderer/editorDerivedState.ts` | [editor](../features/editor.md), [design](../design/DESIGN.md) |
 | リンクパネル | Links panel | `RightPanelView: "links"`, `backlinks`, `outgoingLinks`, `links.*` | `app/src/renderer/store/uiStore.ts`, `app/src/renderer/components/AppRightPanel.tsx`, `app/src/renderer/appLinks.ts` | [links](../features/links.md), [design](../design/DESIGN.md) |
 | ファイル加工ツール | File tools | `tools`, `ToolTarget`, `tools:*`, `generateTitleList`, `generateToc`, `generateTagIndex`, `mergeFiles` | `app/src/shared/ipc/tools.ts`, `app/src/main/ipc/toolActions.ts`, `app/src/renderer/components/FileToolsSubmenu.tsx` | [tools](../features/tools.md), [design](../design/DESIGN.md) |
-| フロントマター設定 | Frontmatter settings | `frontmatter`, `FrontmatterPanel`, `UserDefinedField`, `STANDARD_FIXED_FIELDS`, `CHRONICLE_FIXED_FIELDS` | `app/src/renderer/components/FrontmatterPanel.tsx`, `app/src/renderer/frontmatterSettingsModel.ts`, `app/src/shared/ipc.ts` | [frontmatter](../features/frontmatter.md), [design](../design/DESIGN.md) |
+| フロントマター設定 | Frontmatter settings | `TableView`, `WorkspaceTable`, `FIXED_FIELDS`, `uniqueChoices` | `app/src/renderer/components/TableView.tsx`, `app/src/renderer/frontmatterSettingsModel.ts`, `app/src/main/files/workspaceTable.ts` | [frontmatter](../features/frontmatter.md), [design](../design/DESIGN.md) |
 | 設定 | Settings | `settings`, `SettingsPanel`, `EditorSettings`, `app-settings.json` | `app/src/renderer/components/SettingsPanel.tsx`, `app/src/main/settings/appSettings.ts`, `app/src/shared/ipc.ts` | [design](../design/DESIGN.md), [stack](../engineering/stack.md) |
 | コマンドパレット | Command palette | `CommandPalette`, `showCommandPalette`, `useCommandPaletteCommands`, `commandPalette.*` | `app/src/renderer/components/CommandPalette.tsx`, `app/src/renderer/hooks/useCommandPaletteCommands.ts`, `app/src/renderer/App.tsx` | [commands](../features/commands.md), [navigation](../features/navigation.md) |
 | クイックスイッチャー | Quick switcher | `QuickSwitcher`, `showQuickSwitcher`, `command.quickSwitcher`, `quickSwitcher.*` | `app/src/renderer/components/QuickSwitcher.tsx`, `app/src/renderer/hooks/useCommandPaletteCommands.ts`, `app/src/renderer/App.tsx` | [commands](../features/commands.md), [navigation](../features/navigation.md) |
 | ピン留め | Pinning | `pinnedPaths`, `togglePinChannel`, `togglePin`, `files.pinned` | `app/src/shared/ipc.ts`, `app/src/main/settings/workspaceSettings.ts`, `app/src/renderer/components/FileTree.tsx` | [files](../features/files.md), [design](../design/DESIGN.md) |
 | 分割表示 | Split view | `isSplit`, `toggleSplit`, `PaneId`, `leftPane`, `rightPane` | `app/src/renderer/store/editorStore.ts`, `app/src/renderer/store/editorStoreModel.ts`, `app/src/renderer/components/AppEditorWorkspace.tsx` | [navigation](../features/navigation.md), [design](../design/DESIGN.md) |
-
----
 
 ## 基本構造
 
@@ -105,430 +101,146 @@ Markdownファイルの内容を表示・編集する主要ビュー。UI名は�
 ### ワークスペース
 ユーザーがRelicに登録したローカルフォルダ1つ。その中の `.md` ファイルがアプリで管理される。検索・内部リンク・タグはこの単位で完結する。同期や履歴管理が必要な場合は、OS・クラウド同期フォルダ・Relic外部のツールで扱う。
 
-| Obsidian | VS Code |
-|---|---|
-| Vault | Workspace |
-
----
-
 ### ファイル
 ワークスペース内に存在するMarkdownファイル（`.md`）1つ。Relicにおける情報の最小単位。フロントマターとテキストコンテンツで構成される。
 
-| Obsidian | VS Code |
-|---|---|
-| Note | File |
-
----
-
 ### フォルダ
 ワークスペース内でファイルをグループ化する入れ物。OSのディレクトリと1対1で対応する。フォルダの中にさらにフォルダを作ることができる（ネスト）。
-
-| Obsidian | VS Code |
-|---|---|
-| Folder | Folder |
-
----
 
 ## エディタモード
 
 ### ライブプレビュー
 エディタのデフォルトモード。Markdown記法をリアルタイムにレンダリングして表示する。カーソルまたは選択範囲が装飾された文字に触れているときは、その装飾に使われている記法だけを表示し、レンダリング自体は維持する。
 
-| Obsidian | VS Code |
-|---|---|
-| Live Preview | Preview（別ペイン） |
-
----
-
 ### ソースモード
 Markdown記法をそのままテキストとして表示するモード。レンダリングを行わない。`**太字**` はそのまま `**太字**` と表示される。
 
-| Obsidian | VS Code |
-|---|---|
-| Source mode | 通常の編集画面 |
-
----
-
 ### タイプライターモード
 カーソル行が常に画面中央付近に来るようにスクロールする表示補助。書いている行を見失いにくくするためのモード。
-
-| Obsidian | VS Code |
-|---|---|
-| Typewriter mode | — |
-
----
 
 ## リンク・タグ
 
 ### 内部リンク
 `[[ファイル名]]` 記法でワークスペース内の別のファイルへリンクを張る機能。リンク先が存在しない場合は未作成であることを示すスタイルで表示し、クリックで新規ファイルを作成できる。
 
-| Obsidian | VS Code |
-|---|---|
-| Internal link / Wiki link | — |
-
----
-
 ### バックリンク
 あるファイルを内部リンクで参照している他のファイルの一覧。「このファイルはどこから参照されているか」を示す。右パネルに表示され、エクスポートの対象には含まれない。
-
-| Obsidian | VS Code |
-|---|---|
-| Backlinks | — |
-
----
 
 ### アウトゴーイングリンク
 あるファイルが内部リンクで参照している他のファイルの一覧。「このファイルはどこへリンクしているか」を示す。右パネルに表示され、エクスポートの対象には含まれない。
 
-| Obsidian | VS Code |
-|---|---|
-| Outgoing links | — |
-
----
-
 ### タグ
 ファイルをカテゴリ分けするためのラベル。フロントマターの固定プロパティ `tags:` で付与できる。複数のファイルを横断して検索・絞り込みができる。本文中の関連づけにはインラインリンク `[[...]]` を使う。
-
-| Obsidian | VS Code |
-|---|---|
-| Tag | — |
-
----
 
 ### フロントマター
 ファイル先頭の `---` で囲まれたYAMLブロック。ファイルのメタデータ（タイトル・タグ・日付など）を記述する場所。エディタ上では生のYAMLではなくフォーム形式で表示・編集できる。
 
-| Obsidian | VS Code |
-|---|---|
-| Frontmatter / Properties | — |
-
----
-
 ### 図表コードブロック
 Markdown本文中の `mermaid` または `d2` コードブロック。保存される正本はコードブロック内のソース文字列で、Relicは表示時だけSVGへ変換する。生成SVGとpan / zoom状態はMarkdownファイルへ保存しない。
-
-| Obsidian | VS Code |
-|---|---|
-| Mermaid block（類似） | Markdown code block |
-
----
 
 ### フロントマターテンプレート
 複数のフィールド名をまとめるアプリ設定上の保存済みセット。ワークスペース内の専用テンプレートフォルダや本文テンプレートファイルには依存しない。現行UIではテンプレート管理画面やテンプレート適用操作は表示しない。
 
-| Obsidian | VS Code |
-|---|---|
-| Template（類似） | Snippet（類似） |
-
----
-
 ### 固定プロパティ
-Relicが最初から特別扱いするフロントマターキー。`aliases`、`category`、`tags`、`chronicle` を指す。
-
-| Obsidian | VS Code |
-|---|---|
-| Core properties（類似） | — |
-
----
+Relicが最初から特別扱いするフロントマターキー。`aliases`、`card`、`category`、`tags`、`chronicle` を指す。
 
 ### 旧カスタムプロパティ定義
 旧設定ファイルに保存済みの場合だけ互換的に読み込む、任意名フロントマターキーの入力能力定義。現行UIでは追加・編集・削除の管理画面を持たない。
-
-| Obsidian | VS Code |
-|---|---|
-| User properties（類似） | — |
-
----
 
 ## UI要素
 
 ### アプリウィンドウ
 アプリ全体が表示される1つのウィンドウ。タイトルバー・左レール・ファイルサイドバー・メインエリア・右パネル・ステータスバーなど、画面上のすべてのUI要素を含む外枠。
 
-| Obsidian | VS Code |
-|---|---|
-| App window | Window |
-
----
-
 ### アプリケーションメニュー
 macOSの画面上部に表示するアプリ全体のメニュー。OS標準操作とRelic固有操作をまとめ、表示言語、ショートカット、利用可否、チェック状態を現在のアプリ状態へ同期する。画面内で開く右クリックメニューやMarkdown操作メニューとは区別する。
-
----
 
 ### タイトルバー
 ウィンドウ最上部のバー。macOSのウィンドウ操作ボタン、アプリ名、タブバーなどのグローバルな情報を表示する領域。
 
-| Obsidian | VS Code |
-|---|---|
-| Title bar | Title bar |
-
----
-
 ### タブバー
 開いているタブを横並びで表示する領域。メインエリアの各ペイン上部に配置される。個々のファイルやビューを示す部品は「タブ」と呼ぶ。
-
-| Obsidian | VS Code |
-|---|---|
-| Tab bar | Tab bar |
-
----
 
 ### カラム
 画面全体を構成する大きな縦方向の区画。レイアウトの骨格を表す言葉で、左レール、ファイルサイドバー、メインエリア、右パネルのような主要領域を指す。Relicの基本構造は「左レール + ファイルサイドバー + メインエリア」を中心にし、必要に応じて右パネルを開く。
 
-| Obsidian | VS Code |
-|---|---|
-| Sidebar / Main area | Side bar / Editor area |
-
----
-
 ### ペイン
 メインエリアの中を左右に分割した表示枠。分割表示中は左ペインと右ペインがそれぞれ独立したタブ列を持ち、ファイルタブ、パネルタブ、チャートタブを開ける。右パネルはペインではない。
-
-| Obsidian | VS Code |
-|---|---|
-| Pane | Editor group |
-
----
 
 ### パネル
 補助情報や操作を表示するための領域。Relicでは、メインエリアのタブとして開く「パネルタブ」と、ファイルタブの右側に開く「右パネル」を区別する。
 
-| Obsidian | VS Code |
-|---|---|
-| Panel / Sidebar view | View / Panel |
-
----
-
 ### メインエリア
 画面右側の主要な作業領域。ファイルタブ、パネルタブ、チャートタブを表示する。左右2ペイン分割に対応し、ペインごとに独立したタブ列を持つ。右パネルはメインエリアの右側に開く補助領域として扱う。
 
-| Obsidian | VS Code |
-|---|---|
-| Editor area | Editor area |
-
----
-
 ### 左レール
-アプリ左端の縦アイコン領域。ファイルサイドバーの開閉、チャート、フロントマター設定、設定などの入口を持つ。登録済みワークスペースがある場合は、レール下部にワークスペース切替も表示する。
-
-| Obsidian | VS Code |
-|---|---|
-| Ribbon（類似） | Activity bar |
-
----
+アプリ左端の縦アイコン領域。ファイルサイドバーの開閉、主要ビュー、設定などの入口を持つ。フロントマター設定はテーブルビューへ統合する。登録済みワークスペースがある場合は、レール下部にワークスペース切替も表示する。
 
 ### ファイルサイドバー
 左レールのファイル入口で開閉する可変幅のパネル。ワークスペース作成・登録、ファイルツリー、ピン留め、クイックスイッチャー起動、ファイル / フォルダ操作を扱う。設定などの補助機能は、ファイルサイドバー内ではなくメインエリアのパネルタブとして開く。
 
-| Obsidian | VS Code |
-|---|---|
-| File explorer | Explorer |
-
----
-
 ### サイドバー
-単に「サイドバー」と書く場合は、原則としてファイルサイドバーを指す。ファイル加工はファイルツリーの右クリックメニュー、設定とフロントマター設定はメインエリアのパネルタブとして扱う。
-
-| Obsidian | VS Code |
-|---|---|
-| File explorer | Explorer |
-
----
+単に「サイドバー」と書く場合は、原則としてファイルサイドバーを指す。ファイル加工はファイルツリーの右クリックメニュー、設定はメインエリアのパネルタブ、フロントマター設定はテーブルビューで扱う。
 
 ### ワークスペース切替
 登録済みワークスペースを選んで切り替える領域。左レール下部に表示する。ワークスペース項目は右クリックメニューから名前変更または登録一覧からの削除ができる。登録一覧から削除しても、OS上のフォルダ自体は削除しない。
 
-| Obsidian | VS Code |
-|---|---|
-| Vault switcher | Workspace switcher |
-
----
-
 ### ファイルツリー
 ファイルサイドバー内で、ワークスペース内のフォルダとMarkdownファイルを階層表示する領域。フォルダの開閉、ファイルの選択、右クリックメニュー、複数選択、ピン留め項目の表示などを行う。
-
-| Obsidian | VS Code |
-|---|---|
-| File explorer | Explorer tree |
-
----
 
 ### Markdown操作メニュー
 エディタの右クリックメニューから開くMarkdown本文の操作群。太字、見出し、リスト、リンク、表など、Markdown本文へ記法を挿入・適用する操作を配置する。現行UIには、エディタ上部に常時表示されるMarkdown書式ツールバーはない。
 
-| Obsidian | VS Code |
-|---|---|
-| — | Toolbar |
-
----
-
 ### タブ行アクション
 各ペインのタブ列右側に表示される操作群。ソースモード切り替え、分割表示、右パネルのアウトライン / リンク切り替えを扱う。開いているファイルの名前変更はファイルタブ本文上部の編集可能なファイルタイトル、ファイル移動はファイルツリーの操作で扱う。
-
-| Obsidian | VS Code |
-|---|---|
-| Toolbar（類似） | Editor title actions（類似） |
-
----
 
 ### エディタ本体
 Markdownファイルの本文を表示・編集する領域。ライブプレビュー・ソースモード・タイプライターモードなどの表示モードは、この領域に適用される。
 
-| Obsidian | VS Code |
-|---|---|
-| Editor | Text editor |
-
----
-
 ### 右パネル
 メインエリアの右側に開閉表示される補助パネル。アウトラインパネルやリンクパネルを表示する。分割表示の「右ペイン」とは別物。
-
-| Obsidian | VS Code |
-|---|---|
-| Right sidebar / Right panel | Secondary side bar / Panel |
-
----
 
 ### ステータスバー
 エディタ下部に常時表示されるバー。現在開いているファイルの文字数・単語数などの情報を表示する。
 
-| Obsidian | VS Code |
-|---|---|
-| Status bar | Status bar |
-
----
-
 ### タブ
 複数のファイルや作業画面を同時に開くためのUI。ブラウザのタブと同じ概念。メインエリアのペイン上部に横並びで表示され、タブが多い場合は横スクロールで切り替える。
-
-| Obsidian | VS Code |
-|---|---|
-| Tab | Tab |
-
----
 
 ### ファイルタブ
 Markdownファイルを表示・編集するタブ。編集可能なファイルタイトル、エディタ本体、Markdown操作メニュー、ファイル固有の右パネル操作と結びつく。
 
-| Obsidian | VS Code |
-|---|---|
-| Note tab | Editor tab |
-
----
-
 ### パネルタブ
-Markdownファイル以外の補助画面をメインエリア内に開くタブ。フロントマター設定と設定を表示する。
-
-| Obsidian | VS Code |
-|---|---|
-| View tab（類似） | Editor tab / View（類似） |
-
----
+Markdownファイル以外の補助画面をメインエリア内に開くタブ。現行UIでは設定を表示する。互換性のために保持する内部識別子は、現在の画面入口を意味しない。
 
 ### チャートタブ
 カードビュー、テーブルビュー、バブルビュー、スフィアビュー、またはクロニクルビューをメインエリア内に開くタブ。
 
-| Obsidian | VS Code |
-|---|---|
-| — | Editor tab（類似） |
-
----
-
 ### 年表
 クロニクルビュー内で、`chronicle` 固定プロパティから生成した単年または期間を時間軸上に配置する可視化表現。
-
-| Obsidian | VS Code |
-|---|---|
-| — | — |
-
----
 
 ### アウトラインパネル
 エディタ右側に表示されるパネル。現在開いているファイルの見出し（H1〜H6）一覧を表示し、クリックで該当箇所にジャンプできる。ボタンで開閉できる。
 
-| Obsidian | VS Code |
-|---|---|
-| Outline | Outline |
-
----
-
 ### リンクパネル
 右パネル内に表示されるリンク一覧。バックリンクとアウトゴーイングリンクを確認し、対象ファイルを開く、別ペインで開く、Markdownリンクやパスをコピーする、OS上の場所を表示する操作を扱う。
-
-| Obsidian | VS Code |
-|---|---|
-| Backlinks / Outgoing links | — |
-
----
 
 ### ファイル加工ツール
 既存Markdownファイルを読み取り専用で扱い、タイトル一覧、目次、タグ別索引、ファイルのマージ結果を新規ファイルとして出力する操作群。ファイルツリーの右クリックメニューから、ワークスペース全体、フォルダ配下、または複数選択したMarkdownを対象に実行する。
 
-| Obsidian | VS Code |
-|---|---|
-| — | — |
-
----
-
 ### フロントマター設定
-ワークスペースで使うフロントマターの固定プロパティ確認と、`category` 候補を管理するパネルタブ。個別ファイル内のフロントマター編集フォームとは別物。
-
-| Obsidian | VS Code |
-|---|---|
-| Properties settings（類似） | — |
-
----
-
-| Obsidian | VS Code |
-|---|---|
-| — | — |
-
----
+ワークスペースで使うフロントマターの固定プロパティ確認と、`category` 候補を管理する機能。テーブルビューのプロパティ列見出しから開く設定ポップオーバーで扱い、独立した画面やパネルタブは持たない。個別ファイル内のフロントマター編集フォームとは別物。
 
 ### 設定
 テーマ、言語、エディタ表示、表示言語に応じたフォントプリセット、行番号、スペルチェック、アプリ情報を扱うパネルタブ。Markdown本文やワークスペース内ファイルには保存しない。
 
-| Obsidian | VS Code |
-|---|---|
-| Settings | Settings |
-
----
-
 ### コマンドパレット
 `⌘⇧P` で開く操作検索モーダル。新規ファイル作成、検索、クイックスイッチャー、サイドバー開閉、分割表示、右パネル、タイプライターモード、設定などの操作をキーボードから実行する。
-
-| Obsidian | VS Code |
-|---|---|
-| Command palette | Command Palette |
-
----
 
 ### クイックスイッチャー
 `⌘P` で開くファイル検索モーダル。現在のワークスペース内のMarkdownファイルをファイル名やエイリアスで絞り込み、アクティブなペインで開く。
 
-| Obsidian | VS Code |
-|---|---|
-| Quick switcher | Quick Open |
-
----
-
 ### ピン留め
 よく使うファイルやフォルダをファイルサイドバー上部に固定表示する機能。ピン留めしたアイテムは常にすぐアクセスできる位置に表示される。
 
-| Obsidian | VS Code |
-|---|---|
-| Bookmark（類似） | Pinned（類似） |
-
----
-
 ### 分割表示
 エディタエリアを左右2つのペインに分けて、異なるファイルを同時に表示・編集できる機能。ショートカットまたはボタンで分割・解除できる。
-
-| Obsidian | VS Code |
-|---|---|
-| Split pane | Split editor |
-
----

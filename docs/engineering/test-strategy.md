@@ -54,19 +54,9 @@ Relicの自動テスト、実アプリ確認、macOS配布物確認が、それ�
 | Main / Preload / Renderer契約 | 共有IPC台帳を基準にPreload公開とMain登録を全件照合 | `preload/ipcContract.test.ts`、`main/ipc/ipcContract.test.ts`、`shared/ipcContract.test.ts`、`renderer/relicClient.test.ts` |
 | Markdown共有走査 | コード範囲、パスのデコードと正規化をリンクとグラフの共通入力で確認 | `shared/markdownScan.test.ts`、`shared/links.test.ts`、`main/files/workspaceGraph.test.ts` |
 | 設定の初期状態 | 欠損設定の読み込みごとに独立した値を生成し、同じpathの更新queueとは別の契約として確認 | `main/settings/secureVersionedJsonStore.test.ts`、`main/settings/appSettings.test.ts`、`main/settings/workspaceSettings.test.ts` |
-
-## 0.6.4〜0.6.11の回帰対応
-
-| 版 | 不具合または性能回帰 | 回帰条件を固定するテスト | 判定 |
-|----|----------------------|--------------------------|------|
-| 0.6.4 | 設定保存の並行更新で変更が消える | `secureVersionedJsonStore.test.ts` | 同じ保存ファイルの更新queueを一時領域で再現しており十分 |
-| 0.6.5 | バブル描画中のテーマ参照が反復する | `BubbleView.test.tsx`、`bubbleDrawingModel.test.ts`、`bubbleViewRuntime.test.ts` | 表示接続と純粋描画責務を分けて維持 |
-| 0.6.6 | 年表の中断操作が確定扱いになる | `ChronicleCanvas.cursor.test.tsx` | `pointercancel`時の利用者操作をコンポーネント層で再現 |
-| 0.6.7 | 年表項目の一部からしか開けない | `chronicleCanvasModel.test.ts` | hit判定モデルを固定し、表示文言へ依存しない |
-| 0.6.8 | 年表drag中断後に一時配置が残る | `chronicleCanvasModel.test.ts` | cancel時の一時状態破棄をモデル層で再現 |
-| 0.6.9 | バブルの中断操作が確定扱いになる | `BubbleView.test.tsx` | `pointercancel`と確定処理を表示接続で区別 |
-| 0.6.10 | 静止中もバブルを再描画する | `BubbleView.test.tsx`、`bubbleViewRuntime.test.ts`、`App.charts.test.tsx` | runtime停止と画面接続の両方を確認 |
-| 0.6.11 | watcher開始・実行中の失敗から復旧しない | `workspaceWatcher.test.ts`、`preload.test.ts`、`App.externalChanges.test.tsx`、`shared/ipcContract.test.ts` | Main→Preload→Rendererの各契約と復旧状態を確認 |
+| 設定の並行保存 | 同じ設定ファイルの更新queue、安全書き込み、保存値の保持 | `secureVersionedJsonStore.test.ts` |
+| バブルの操作と描画停止 | 中断操作と確定処理の分離、テーマ参照、停止中の再描画抑制 | `BubbleView.test.tsx`、`bubbleDrawingModel.test.ts`、`bubbleViewRuntime.test.ts`、`App.charts.test.tsx` |
+| クロニクルの操作 | 中断時の一時状態破棄、項目全体のhit判定、対象ファイルを開く接続 | `ChronicleCanvas.cursor.test.tsx`、`chronicleCanvasModel.test.ts` |
 
 ## 重複と不足の判断
 
