@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "baselineHead": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
+  "measurement": {
+    "unit": "unicode-code-points",
+    "included": [
+      "AGENTS.md",
+      "repository-owned Skill descriptions",
+      "repository-owned Skill source selected by each routing case"
+    ],
+    "excluded": [
+      "system and developer instructions outside the repository",
+      "external Skill catalogs",
+      "agents/openai.yaml UI metadata",
+      "model-specific tokenization"
+    ],
+    "note": "文字数はリポジトリ内で決定的に再計測できる代理指標であり、モデル固有の実トークン数ではない。"
+  },
+  "baseline": {
+    "alwaysOnChars": 17454,
+    "selectedSkillCountMean": 4.724137931034483,
+    "selectedSkillCharsMedian": 12510,
+    "selectedSkillCharsMean": 12828.551724137931
+  },
+  "limits": {
+    "alwaysOnCharsMax": 14836,
+    "orientationSkillCountMeanMax": 2.3,
+    "preWriteSkillCountMeanMax": 3.2,
+    "preWriteSkillCharsMedianMax": 9000,
+    "allSkillCharsMeanMax": 12828.551724137931
+  }
+}

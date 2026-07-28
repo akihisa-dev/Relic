@@ -85,40 +85,12 @@
 
 ## オンデマンド手順
 
-- Relicを起点とするローカル変更、コミット、外部書き込みでは `.agents/skills/relic-guard-task/SKILL.md` を各専門Skillと併用し、作業対象、根拠、提示見本の意図、許可範囲、完了証拠を変更前後に照合する
-- UI、デザイン、画面構成、操作感、表示状態の変更では `.agents/skills/relic-change-ui/SKILL.md` に従う
-- 実アプリの起動、GUI操作、実画面確認、スクリーンショットでは `.agents/skills/relic-test-development-app/SKILL.md` に従う
-- 自動テストの追加・修正、ローカルのテスト失敗、flaky test、coverage不足の切り分けでは `.agents/skills/relic-test-code/SKILL.md` に従う
-- UI用語、日本語・英語の翻訳、翻訳キー、未翻訳、言語別の見切れでは `.agents/skills/relic-change-localization/SKILL.md` に従う
-- Markdownエディタ、ライブプレビュー、選択範囲、編集履歴、自動保存接続の変更では `.agents/skills/relic-change-markdown-editor/SKILL.md` に従う
-- フロントマターYAML、固定プロパティ、フォーム、往復保持の変更では `.agents/skills/relic-change-frontmatter/SKILL.md` に従う
-- カードビューの対象抽出、選択、画像読込、レスポンシブ表示の変更では `.agents/skills/relic-change-card-view/SKILL.md` に従う
-- テーブルビューの派生値、列操作、検索、仮想表示、設定保存の変更では `.agents/skills/relic-change-table-view/SKILL.md` に従う
-- Markdown描画、HTML・PDF・SVG出力、安全化の変更では `.agents/skills/relic-change-markdown-output/SKILL.md` に従う
-- ワークスペース、ファイル、フォルダ、保存、移動、削除、外部変更の変更では `.agents/skills/relic-change-workspace-files/SKILL.md` に従う
-- 添付画像・PDFの対応形式、取込、安全な読込、Markdownへの画像追加、画像・PDF表示では `.agents/skills/relic-change-attachments/SKILL.md` に従う
-- ファイル加工、フォルダ内マージ、タイトル一覧、目次、タグ別索引の変更では `.agents/skills/relic-change-tools/SKILL.md` に従う
-- 全文・ファイル名・タグ・フロントマター検索と置換では `.agents/skills/relic-change-search-replace/SKILL.md` に従う
-- 内部リンク、Markdown相対リンク、埋め込み、バックリンク、未リンク参照、aliases、共有派生索引では `.agents/skills/relic-change-links-index/SKILL.md` に従う
-- コマンド、クイックスイッチャー、ショートカット、タブ、ペイン、画面移動の変更では `.agents/skills/relic-change-navigation/SKILL.md` に従う
-- グラフの派生データ、Canvas描画、検索、強調、物理演算では `.agents/skills/relic-change-bubble/SKILL.md` に従う
-- スフィアの3次元派生、WebGL描画、視点操作、星表現、性能では `.agents/skills/relic-change-sphere/SKILL.md` に従う
-- クロニクルのfrontmatter解析、暦換算、配置、Canvas描画、操作では `.agents/skills/relic-change-chronicle/SKILL.md` に従う
-- アプリ設定、ワークスペース設定、schema、互換移行、設定保存の変更では `.agents/skills/relic-change-settings/SKILL.md` に従う
-- IPC、preload、main handler、BrowserWindow、CSPの変更では `.agents/skills/relic-change-electron-boundaries/SKILL.md` に従う
-- package、make、ASAR、resources、アイコン、OS別成果物の構成変更、障害診断、修正では `.agents/skills/relic-debug-packaging/SKILL.md` に従う
-- 正本文書、README、索引の作成、整理、同期では `.agents/skills/relic-maintain-docs/SKILL.md` に従う
-- Skill集合全体の棚卸し、責務・発火・重複・履歴・ルーティングの監査と承認後の整理では `.agents/skills/relic-audit-skills/SKILL.md` に従う
-- React診断、責務分離、ソース肥大化、アーキテクチャ、bundle、性能の監査や改善では `.agents/skills/relic-audit-code-health/SKILL.md` に従う
-- コードベース全体または指定領域を、複数の責務、状態所有、実行境界、性能、配布、文書まで含めて包括的にリファクタリングする場合は `.agents/skills/relic-refactor-codebase/SKILL.md` に従う
-- 明示された機能廃止を、入口、保存データ、UI、IPC、設定、依存、文書まで横断して完了する場合は `.agents/skills/relic-retire-feature/SKILL.md` に従う
-- npm・pnpm依存関係、Electron、ビルド基盤、GitHub Action参照version、依存関係監査対応の更新では `.agents/skills/relic-update-dependencies/SKILL.md` に従う
-- GitHub Actionsのtrigger、permissions、concurrency、実行内容、秘密情報検査、Git hook、CODEOWNERSの変更では `.agents/skills/relic-change-ci/SKILL.md` に従う
-- バージョンの決定、更新、コミット件名との整合確認では `.agents/skills/relic-manage-version/SKILL.md` に従う
-- 差分をステージまたはコミットする場合は `.agents/skills/relic-commit/SKILL.md` に従う
-- 通常ブランチのpush、Draft Pull Request作成・更新では `.agents/skills/relic-publish-github/SKILL.md` に従う
-- Issue番号、Issue URL、Issue対応依頼では `.agents/skills/relic-issue/SKILL.md` に従う。調査・相談だけではコメントやcloseを行わない
-- タグ、配布、Release作業では `.agents/skills/relic-release/SKILL.md` に従う
+- Skillカタログのdescriptionを正本とし、入口・専門はorientation、guardはpreWrite、テストはverification、version・commitはcommit、公開はpublicationで読む。Skillは1段階だけに置き、コミット・公開依頼では対応Skillを入口にする
+- ローカル変更は書き込み前に `relic-guard-task`、自動テストの追加・修正・失敗・flaky・coverage時だけ `relic-test-code`、コミット時に `relic-manage-version` と `relic-commit` を使う。調査だけ、変更不要と確定した作業、途中で安全に停止した作業へ出口Skillを追加しない
+- 実アプリの起動、GUI操作、実画面確認、スクリーンショットは明示依頼時だけ `relic-test-development-app` を使い、既存ウインドウや配布版を対象にしない
+- Issue番号、Issue URL、Issue対応依頼では `relic-issue` を入口にし、調査・相談だけではコメントやcloseを行わない
+- 通常ブランチのpushとDraft Pull Requestは `relic-publish-github`、タグと配布とReleaseは `relic-release` を明示された公開段階でだけ使う
+- 専門Skillの安全条件と検証は、共通手順を減らす目的で省略しない。複数領域を横断する依頼では、各領域へ到達した時点で対応する専門Skillを併用する
 - 外部への書き込みは明示指示の範囲だけ行う。「Issueを対応して」は、完了コミット後の完了コメントとcloseを含むが、push許可は含まない。「Issueを調査して」は外部書き込みを含まない
 - コードや文書の変更を伴うIssueは、検証済みの完了コミットを確認してからcloseする。対象remoteへの到達やpushはcloseの要件にせず、未pushであることを完了報告へ明示する
 - Issueの完了条件を満たしたらcloseし、Closed Issueへ新しい課題を継ぎ足したり自動で再openしたりしない。追加課題は別Issue候補として分離し、新規Issueは明示指示時だけ作成する

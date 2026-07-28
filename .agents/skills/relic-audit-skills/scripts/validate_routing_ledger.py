@@ -12,10 +12,11 @@ import tempfile
 from pathlib import Path
 
 REQUIRED_CASE_FIELDS = {
-    "id", "request", "expectedEntrySkill", "expectedSpecialistSkills",
+    "id", "request", "expectedSkillsByPhase",
     "forbiddenSkills", "requiredDocs", "permissionMode", "expectedEndState",
     "misrouteImpact",
 }
+ROUTING_PHASES = ("orientation", "preWrite", "verification", "commit", "publication")
 EXECUTION_STATUSES = {
     "execution-pass", "execution-fail", "not-executed", "environment-mismatch"
 }
@@ -79,6 +80,22 @@ def current_execution_cases(results: dict, current_digest: str) -> set[str]:
     }
 
 
+def phase_skills(case: dict) -> dict[str, list[str]]:
+    phases = case.get("expectedSkillsByPhase", {})
+    return {
+        phase: phases.get(phase, []) if isinstance(phases, dict) else []
+        for phase in ROUTING_PHASES
+    }
+
+
+def flattened_phase_skills(phases: dict[str, list[str]]) -> list[str]:
+    return [
+        skill
+        for phase in ROUTING_PHASES
+        for skill in phases.get(phase, [])
+    ]
+
+
 def validate(
     workspace: Path,
     ledger_path: Path,
@@ -89,9 +106,9 @@ def validate(
     errors: list[str] = []
     ledger = load_json(ledger_path)
     results = load_json(results_path)
-    if ledger.get("version") != 1:
+    if ledger.get("version") != 2:
         errors.append(f"unsupported routing case schema version: {ledger.get('version')}")
-    if results.get("version") != 2:
+    if results.get("version") != 3:
         errors.append(f"unsupported routing result schema version: {results.get('version')}")
     skills = repository_skill_names(workspace / ".agents/skills")
     cases = ledger.get("cases", [])
@@ -105,25 +122,65 @@ def validate(
         if not case_id or case_id in case_ids:
             errors.append(f"duplicate or missing case id: {case_id}")
         case_ids.add(case_id)
-        expected = {case.get("expectedEntrySkill")}
-        expected.update(case.get("expectedSpecialistSkills", []))
+        raw_phases = case.get("expectedSkillsByPhase")
+        if not isinstance(raw_phases, dict):
+            errors.append(f"{case_id}: expectedSkillsByPhase must be an object")
+            raw_phases = {}
+        unknown_phases = sorted(set(raw_phases) - set(ROUTING_PHASES))
+        missing_phases = sorted(set(ROUTING_PHASES) - set(raw_phases))
+        if unknown_phases:
+            errors.append(f"{case_id}: unknown routing phases: {', '.join(unknown_phases)}")
+        if missing_phases:
+            errors.append(f"{case_id}: missing routing phases: {', '.join(missing_phases)}")
+        phases = phase_skills(case)
+        for phase, phase_entries in phases.items():
+            if not isinstance(phase_entries, list) or not all(
+                isinstance(skill, str) and skill for skill in phase_entries
+            ):
+                errors.append(f"{case_id}: {phase} skills must be non-empty strings")
+            if len(phase_entries) != len(set(phase_entries)):
+                errors.append(f"{case_id}: duplicate skills in {phase} phase")
+        expected_list = flattened_phase_skills(phases)
+        duplicate_expected = sorted({
+            skill for skill in expected_list if expected_list.count(skill) > 1
+        })
+        if duplicate_expected:
+            errors.append(
+                f"{case_id}: skills must have one owning phase: {', '.join(duplicate_expected)}"
+            )
+        permission_mode = case.get("permissionMode", "")
+        if (
+            not phases["orientation"]
+            and not permission_mode.startswith("read-only-stop")
+        ):
+            errors.append(f"{case_id}: orientation phase must contain the entry skill")
+        expected = set(expected_list)
         named = set(expected)
         named.update(case.get("forbiddenSkills", []))
         unknown = {name for name in named if name and name not in skills}
         if unknown:
             errors.append(f"{case_id}: unknown skills: {', '.join(sorted(unknown))}")
         covered_skills.update(name for name in expected if name in skills)
-        permission_mode = case.get("permissionMode", "")
         expected_skills = {name for name in expected if name}
         forbidden_skills = set(case.get("forbiddenSkills", []))
         if any(marker in permission_mode for marker in LOCAL_MUTATION_MARKERS):
-            missing_exit_skills = {
-                "relic-guard-task", "relic-manage-version", "relic-commit"
-            } - expected_skills
-            if missing_exit_skills:
+            if "relic-guard-task" not in set(phases["preWrite"]):
                 errors.append(
-                    f"{case_id}: local mutation case is missing required workflow skills: "
-                    f"{', '.join(sorted(missing_exit_skills))}"
+                    f"{case_id}: local mutation case must use relic-guard-task in preWrite"
+                )
+            commit_phase_skills = set(phases["commit"])
+            if permission_mode.startswith("local-commit"):
+                commit_phase_skills.update(
+                    set(phases["orientation"])
+                    & {"relic-manage-version", "relic-commit"}
+                )
+            missing_commit_skills = {
+                "relic-manage-version", "relic-commit"
+            } - commit_phase_skills
+            if missing_commit_skills:
+                errors.append(
+                    f"{case_id}: local mutation case is missing commit phase skills: "
+                    f"{', '.join(sorted(missing_commit_skills))}"
                 )
         if permission_mode.startswith("read-only"):
             missing_forbidden = {
@@ -174,8 +231,9 @@ def validate(
             errors.append(f"{case_id}: invalid execution status: {status}")
         if status in {"not-executed", "environment-mismatch", "execution-fail"} and not execution.get("reason"):
             errors.append(f"{case_id}: {status} requires a reason")
-        if status in {"execution-pass", "execution-fail"} and not execution.get("actualSkills"):
-            errors.append(f"{case_id}: {status} requires actualSkills")
+        actual_phases = execution.get("actualSkillsByPhase")
+        if status in {"execution-pass", "execution-fail"} and not isinstance(actual_phases, dict):
+            errors.append(f"{case_id}: {status} requires actualSkillsByPhase")
         if status in {"execution-pass", "execution-fail"}:
             execution_head = execution.get("head")
             if not isinstance(execution_head, str) or not COMMIT_HASH_PATTERN.fullmatch(execution_head):
@@ -191,23 +249,42 @@ def validate(
             surface_digest = execution.get("routingSurfaceDigest")
             if not isinstance(surface_digest, str) or not SHA256_PATTERN.fullmatch(surface_digest):
                 errors.append(f"{case_id}: {status} requires routingSurfaceDigest")
-        actual_unknown = sorted(set(execution.get("actualSkills", [])) - skills)
+        normalized_actual_phases = {
+            phase: actual_phases.get(phase, []) if isinstance(actual_phases, dict) else []
+            for phase in ROUTING_PHASES
+        }
+        if isinstance(actual_phases, dict):
+            unknown_actual_phases = sorted(set(actual_phases) - set(ROUTING_PHASES))
+            if unknown_actual_phases:
+                errors.append(
+                    f"{case_id}: execution has unknown phases: "
+                    f"{', '.join(unknown_actual_phases)}"
+                )
+        actual_list = flattened_phase_skills(normalized_actual_phases)
+        actual_unknown = sorted(set(actual_list) - skills)
         if actual_unknown:
             errors.append(f"{case_id}: execution contains unknown skills: {', '.join(actual_unknown)}")
         if status == "execution-pass" and case_id in case_by_id:
             case = case_by_id[case_id]
-            actual_skills = set(execution.get("actualSkills", []))
-            expected_skills = {
-                case.get("expectedEntrySkill"),
-                *case.get("expectedSpecialistSkills", []),
-            }
-            missing_expected = sorted(skill for skill in expected_skills if skill and skill not in actual_skills)
-            selected_forbidden = sorted(set(case.get("forbiddenSkills", [])) & actual_skills)
-            if missing_expected:
-                errors.append(
-                    f"{case_id}: execution-pass is missing expected skills: "
-                    f"{', '.join(missing_expected)}"
+            expected_phases = phase_skills(case)
+            expected_skills = set(flattened_phase_skills(expected_phases))
+            actual_skills = set(actual_list)
+            for phase in ROUTING_PHASES:
+                missing_expected = sorted(
+                    set(expected_phases[phase]) - set(normalized_actual_phases[phase])
                 )
+                if missing_expected:
+                    errors.append(
+                        f"{case_id}: execution-pass is missing {phase} skills: "
+                        f"{', '.join(missing_expected)}"
+                    )
+            unexpected_skills = sorted(actual_skills - expected_skills)
+            if unexpected_skills:
+                errors.append(
+                    f"{case_id}: execution-pass selected unexpected skills: "
+                    f"{', '.join(unexpected_skills)}"
+                )
+            selected_forbidden = sorted(set(case.get("forbiddenSkills", [])) & actual_skills)
             if selected_forbidden:
                 errors.append(
                     f"{case_id}: execution-pass selected forbidden skills: "
@@ -242,27 +319,56 @@ def self_test() -> None:
     with tempfile.TemporaryDirectory(prefix="relic-routing-ledger-") as directory:
         workspace = Path(directory)
         (workspace / "AGENTS.md").write_text("# Test rules\n", encoding="utf-8")
-        for name in ("example", "specialist", "forbidden", "relic-test-development-app"):
+        for name in (
+            "example", "specialist", "forbidden", "relic-test-development-app",
+            "relic-guard-task", "relic-manage-version", "relic-commit",
+        ):
             skill_dir = workspace / f".agents/skills/{name}"
             skill_dir.mkdir(parents=True)
             (skill_dir / "SKILL.md").write_text(
                 f"---\nname: {name}\ndescription: {name}\n---\n",
                 encoding="utf-8",
             )
-        ledger = {"version": 1, "cases": [
+        empty_phases = {
+            "orientation": [],
+            "preWrite": [],
+            "verification": [],
+            "commit": [],
+            "publication": [],
+        }
+        ledger = {"version": 2, "cases": [
             {
-                "id": "case", "request": "request", "expectedEntrySkill": "example",
-                "expectedSpecialistSkills": ["specialist"], "forbiddenSkills": ["forbidden"],
+                "id": "case", "request": "request",
+                "expectedSkillsByPhase": {
+                    **empty_phases,
+                    "orientation": ["example", "specialist"],
+                },
+                "forbiddenSkills": ["forbidden"],
                 "requiredDocs": [], "permissionMode": "analysis-only",
                 "expectedEndState": "reported", "misrouteImpact": "none",
             },
             {
                 "id": "forbidden-positive", "request": "実画面を操作確認する",
-                "expectedEntrySkill": "forbidden",
-                "expectedSpecialistSkills": ["relic-test-development-app"],
+                "expectedSkillsByPhase": {
+                    **empty_phases,
+                    "orientation": ["forbidden"],
+                    "verification": ["relic-test-development-app"],
+                },
                 "forbiddenSkills": [], "requiredDocs": [],
                 "permissionMode": "explicit-gui-check",
                 "expectedEndState": "reported", "misrouteImpact": "none",
+            },
+            {
+                "id": "local-change", "request": "change",
+                "expectedSkillsByPhase": {
+                    **empty_phases,
+                    "orientation": ["example"],
+                    "preWrite": ["relic-guard-task"],
+                    "commit": ["relic-manage-version", "relic-commit"],
+                },
+                "forbiddenSkills": [], "requiredDocs": [],
+                "permissionMode": "local-change",
+                "expectedEndState": "committed", "misrouteImpact": "none",
             },
         ]}
         ledger_path = workspace / "ledger.json"
@@ -270,7 +376,7 @@ def self_test() -> None:
         ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
         surface_digest = routing_surface_digest(workspace, ledger_path)
         valid_head = "1" * 40
-        results = {"version": 2, "environment": {
+        results = {"version": 3, "environment": {
             "repository": "example/repo", "head": valid_head, "skillRoot": ".agents/skills",
             "externalCatalogs": [], "historyScope": "full", "executionAvailable": False,
             "routingSurfaceDigest": surface_digest,
@@ -280,6 +386,9 @@ def self_test() -> None:
             }},
             {"caseId": "forbidden-positive", "staticStatus": "not-reviewed",
              "staticReason": "fixture", "execution": {
+                "status": "not-executed", "reason": "test environment"
+            }},
+            {"caseId": "local-change", "staticStatus": "static-pass", "execution": {
                 "status": "not-executed", "reason": "test environment"
             }},
         ]}
@@ -322,19 +431,22 @@ def self_test() -> None:
             "unsupported routing result schema version" in error
             for error in validate(workspace, ledger_path, results_path, known_commits={valid_head})
         )
-        results["version"] = 2
+        results["version"] = 3
         results_path.write_text(json.dumps(results), encoding="utf-8")
-        ledger["cases"][0]["expectedEntrySkill"] = "missing"
+        ledger["cases"][0]["expectedSkillsByPhase"]["orientation"][0] = "missing"
         ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
         assert any(
             "unknown skills" in error
             for error in validate(workspace, ledger_path, results_path, known_commits={valid_head})
         )
-        ledger["cases"][0]["expectedEntrySkill"] = "example"
+        ledger["cases"][0]["expectedSkillsByPhase"]["orientation"][0] = "example"
         ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
         results["cases"][0]["execution"] = {
             "status": "execution-pass",
-            "actualSkills": ["example", "specialist"],
+            "actualSkillsByPhase": {
+                **empty_phases,
+                "orientation": ["example", "specialist"],
+            },
             "head": valid_head,
             "routingSurfaceDigest": surface_digest,
         }
@@ -342,25 +454,31 @@ def self_test() -> None:
         assert validate(workspace, ledger_path, results_path, known_commits={valid_head}) == []
         assert current_execution_cases(results, surface_digest) == {"case"}
         assert current_execution_cases(results, "0" * 64) == set()
-        results["cases"][0]["execution"]["actualSkills"] = ["example"]
+        results["cases"][0]["execution"]["actualSkillsByPhase"]["orientation"] = ["example"]
         results_path.write_text(json.dumps(results), encoding="utf-8")
         assert any(
-            "missing expected skills" in error
+            "missing orientation skills" in error
             for error in validate(workspace, ledger_path, results_path, known_commits={valid_head})
         )
-        results["cases"][0]["execution"]["actualSkills"] = ["example", "specialist", "forbidden"]
+        results["cases"][0]["execution"]["actualSkillsByPhase"]["orientation"] = [
+            "example", "specialist", "forbidden",
+        ]
         results_path.write_text(json.dumps(results), encoding="utf-8")
         assert any(
             "selected forbidden skills" in error
             for error in validate(workspace, ledger_path, results_path, known_commits={valid_head})
         )
-        results["cases"][0]["execution"]["actualSkills"] = ["example", "specialist", "missing"]
+        results["cases"][0]["execution"]["actualSkillsByPhase"]["orientation"] = [
+            "example", "specialist", "missing",
+        ]
         results_path.write_text(json.dumps(results), encoding="utf-8")
         assert any(
             "execution contains unknown skills" in error
             for error in validate(workspace, ledger_path, results_path, known_commits={valid_head})
         )
-        results["cases"][0]["execution"]["actualSkills"] = ["example", "specialist"]
+        results["cases"][0]["execution"]["actualSkillsByPhase"]["orientation"] = [
+            "example", "specialist",
+        ]
         results["cases"][0]["execution"]["head"] = "2" * 40
         results_path.write_text(json.dumps(results), encoding="utf-8")
         assert any(
@@ -373,23 +491,28 @@ def self_test() -> None:
             "requires a full execution head" in error
             for error in validate(workspace, ledger_path, results_path, known_commits={valid_head})
         )
-        ledger["cases"] = [ledger["cases"][0]]
-        results["cases"] = [results["cases"][0]]
+        ledger["cases"] = [ledger["cases"][0], ledger["cases"][2]]
+        results["cases"] = [results["cases"][0], results["cases"][2]]
         ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
         results_path.write_text(json.dumps(results), encoding="utf-8")
-        assert any(
-            "repository-owned skills missing from routing cases: forbidden" in error
-            for error in validate(workspace, ledger_path, results_path, known_commits={valid_head})
-        )
-        ledger["cases"][0]["permissionMode"] = "local-change"
+        ledger["cases"][1]["expectedSkillsByPhase"]["preWrite"] = []
         ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
         assert any(
-            "local mutation case is missing required workflow skills" in error
+            "local mutation case must use relic-guard-task in preWrite" in error
             for error in validate(workspace, ledger_path, results_path, known_commits={valid_head})
         )
-        ledger["cases"][0]["permissionMode"] = "analysis-only"
+        ledger["cases"][1]["expectedSkillsByPhase"]["preWrite"] = ["relic-guard-task"]
+        ledger["cases"][1]["expectedSkillsByPhase"]["commit"] = []
         ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
-        results["cases"] = [results["cases"][0], results["cases"][0]]
+        assert any(
+            "local mutation case is missing commit phase skills" in error
+            for error in validate(workspace, ledger_path, results_path, known_commits={valid_head})
+        )
+        ledger["cases"][1]["expectedSkillsByPhase"]["commit"] = [
+            "relic-manage-version", "relic-commit",
+        ]
+        ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
+        results["cases"] = [results["cases"][0], results["cases"][0], results["cases"][1]]
         results_path.write_text(json.dumps(results), encoding="utf-8")
         assert any(
             "duplicate routing result case IDs" in error

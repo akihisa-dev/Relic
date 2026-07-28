@@ -86,6 +86,10 @@ class SkillEvidence:
     scope: str
     frontmatter_name: str
     description: str
+    source_chars: int
+    source_bytes: int
+    description_chars: int
+    description_bytes: int
     folder_name: str
     skill_file: str
     skill_directory: str
@@ -434,6 +438,10 @@ def collect_skill(target: SkillTarget, workspace: Path) -> SkillEvidence:
         scope=REPOSITORY_SCOPE if repository_owned else EXTERNAL_SCOPE,
         frontmatter_name=frontmatter_name,
         description=description,
+        source_chars=len(text),
+        source_bytes=len(text.encode("utf-8")),
+        description_chars=len(description),
+        description_bytes=len(description.encode("utf-8")),
         folder_name=folder_name,
         skill_file=display_path(skill_file, workspace),
         skill_directory=display_path(skill_directory, workspace),
@@ -747,6 +755,12 @@ def run_self_test() -> None:
         assert evidence["summary"]["missing_reference_candidate_count"] == 1
         assert len(evidence["similarity_candidates"]) == 1
         assert evidence["missing_reference_candidates"][0]["target"] == "references/schema.md"
+        assert all(skill["source_chars"] > 0 for skill in evidence["skills"])
+        assert all(skill["source_bytes"] >= skill["source_chars"] for skill in evidence["skills"])
+        assert all(
+            skill["description_chars"] == len(skill["description"])
+            for skill in evidence["skills"]
+        )
         assert not any(
             issue.startswith("missing-inline-path-candidate:")
             for skill in evidence["skills"]

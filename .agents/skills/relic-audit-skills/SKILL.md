@@ -28,7 +28,7 @@ description: Relicリポジトリで利用可能なSkill集合と本監査Skill�
 
 1. `AGENTS.md`、`README.md`、`CONTRIBUTING.md`、`docs/INDEX.md` と、Skillに関係する現行文書だけを確認する。上位文書から未読の詳細を推測しない。
 2. 利用可能なSkillカタログに示された全Skillの名前と場所を機械的に記録する。repository-ownedは全件を確認する。externalは名前、場所、descriptionを収集し、深い読解は責務競合候補、実際に選択されたSkill、高影響候補へ絞る。読めない・深掘りしていない対象は未確認として明示する。
-3. 次のコマンドを基本形として、決定的な台帳、frontmatter、補助資源、参照切れ、参照切れ候補、重複名、description類似候補を収集する。コードフェンス外のローカルMarkdownリンクは確定参照として検査し、HTTP URLとサイト内routeはローカルファイル参照にしない。インラインコードのパスは説明例を含み得る候補として分離する。追加rootは `--root`、個別の `SKILL.md` は `--skill` を繰り返して渡す。カタログ名がfolder内のnameと異なるSkillは `--catalog-entry 'catalog-name=/path/to/SKILL.md'` で渡し、名前空間を失わない。同名entryを複数回渡してよく、同一Skillパッケージは全所在地を保持して統合し、異なる内容はvariantとして分ける。結果は候補抽出であり、問題の確定判定にしない。
+3. 次のコマンドを基本形として、決定的な台帳、frontmatter、補助資源、参照切れ、参照切れ候補、重複名、description類似候補、Skill sourceとdescriptionの文字数・byte数を収集する。文字数はモデル固有の実トークン数ではなく、同じHEADで再現できる指示量の代理指標として扱う。コードフェンス外のローカルMarkdownリンクは確定参照として検査し、HTTP URLとサイト内routeはローカルファイル参照にしない。インラインコードのパスは説明例を含み得る候補として分離する。追加rootは `--root`、個別の `SKILL.md` は `--skill` を繰り返して渡す。カタログ名がfolder内のnameと異なるSkillは `--catalog-entry 'catalog-name=/path/to/SKILL.md'` で渡し、名前空間を失わない。同名entryを複数回渡してよく、同一Skillパッケージは全所在地を保持して統合し、異なる内容はvariantとして分ける。結果は候補抽出であり、問題の確定判定にしない。
 
    ```sh
    python3 .agents/skills/relic-audit-skills/scripts/collect_skill_evidence.py \
@@ -57,10 +57,11 @@ description: Relicリポジトリで利用可能なSkill集合と本監査Skill�
 2. 行数、類似度、参照数だけで問題を確定しない。具体的な依頼で誤選択、手順停止、安全条件の衝突、保守時の二重更新が起きる証拠を示す。
 3. 現行の機能領域、Git履歴、繰り返し手作業から不足領域を探す。想像上の将来作業だけを新規Skillの根拠にしない。
 4. 代表依頼には、正例、対象外、監査と変更、隣接Skillの境界、入口Skill、出口Skillを含める。期待Skill、実際に選ばれそうなSkill、誤発火、未発火、description改善案を評価する。
-5. repository-owned Skill全体の代表依頼は `references/routing-cases.json` を正本とし、`references/routing-results.json` で静的判定と実行判定を分ける。実行判定には実在する観測commitとrouting surface digestを記録し、`execution-pass` は期待する入口・専門Skillをすべて含み、禁止Skillを含まない場合だけ使う。実行できないcaseは `not-executed` と理由を記録し、成功扱いしない。`scripts/validate_routing_ledger.py` で台帳の形式、正例としての網羅、commit実在、証拠鮮度を確認する。現在の品質を主張する場合は `--require-current-execution <case-id>` を使い、対象caseの現行surfaceに対する実行証拠を終了条件にする。
-6. `critical`、`high`、`medium`、`low` の重要度と、`keep`、`revise`、`rename`、`merge`、`split`、`deprecate`、`delete`、`create`、`hold` の変更種別を [監査基準](references/audit-criteria.md) に従って使う。不確かな推論は断定しない。
-7. 各変更候補について、残す根拠、反対証拠、何もしない案、より小さい修正案、失われ得る固有知識を先に埋める。変更件数を作ることを目的にしない。
-8. 最後に本Skill自身を一度だけ同じ基準で評価し、独立役の所見を統合して、責務、description、重複、手順量、現行構成への適合を確認する。
+5. repository-owned Skill全体の代表依頼は `references/routing-cases.json` を正本とし、期待Skillを `orientation`、`preWrite`、`verification`、`commit`、`publication` の所有段階へ一度だけ置く。`references/routing-results.json` では静的判定と段階別の実行判定を分ける。実行判定には実在する観測commitとrouting surface digestを記録し、`execution-pass` は各段階の期待Skillを含み、未期待・禁止Skillを含まない場合だけ使う。実行できないcaseは `not-executed` と理由を記録し、成功扱いしない。`scripts/validate_routing_ledger.py` で台帳の形式、正例としての網羅、段階所有、commit実在、証拠鮮度を確認する。現在の品質を主張する場合は `--require-current-execution <case-id>` を使い、対象caseの現行surfaceに対する実行証拠を終了条件にする。
+6. 指示量の効果は `references/instruction-budget-baseline.json` と `scripts/check_instruction_budget.py` で比較する。常時読む `AGENTS.md` とrepository-owned description、各段階までに選ぶSkill sourceをUnicode文字数で計測し、改善前HEADからの削減と全段階合計の非増加を同時に確認する。ホストが返す実トークン数は補助証拠として分離し、モデル情報なしに基準値へ混ぜない。
+7. `critical`、`high`、`medium`、`low` の重要度と、`keep`、`revise`、`rename`、`merge`、`split`、`deprecate`、`delete`、`create`、`hold` の変更種別を [監査基準](references/audit-criteria.md) に従って使う。不確かな推論は断定しない。
+8. 各変更候補について、残す根拠、反対証拠、何もしない案、より小さい修正案、失われ得る固有知識を先に埋める。変更件数を作ることを目的にしない。
+9. 最後に本Skill自身を一度だけ同じ基準で評価し、独立役の所見を統合して、責務、description、重複、手順量、現行構成への適合を確認する。
 
 ## 監査結果を変更より先に示す
 
@@ -74,5 +75,5 @@ description: Relicリポジトリで利用可能なSkill集合と本監査Skill�
 1. 監査と適用モードでは中間レポート後、候補指定の適用モードではターン冒頭に対象ファイルを再読し、現行HEADに対する対象候補、理由、影響範囲を短く再監査してから編集する。
 2. 固有知識を失わない。削除前に現行利用なし、後継、知識移行、参照移行、独立役の一致を確認する。統合では同じ結果とrouting、双方の知識移行表、統合後の正例と境界例を確認する。分割・廃止・新設も [監査基準](references/audit-criteria.md) の高影響ゲートを満たさなければ `hold` にする。
 3. 現行の命名、frontmatter、`agents/openai.yaml`、補助ディレクトリ、ルーティング文書へ合わせる。単一Skillの新規作成手順そのものは `$skill-creator`、文書更新とコミットはリポジトリの対応Skill・規則も使う。
-4. 対象Skillごとの構文、参照、script、代表routing caseを再検証し、監査Skill変更時はcollectorとrouting validatorのself-testおよび [評価ケース](references/evaluation-cases.md) の該当caseを必須にする。`pnpm skills:check` でrepository-ownedの確定参照、構文、重複名を終了条件として確認し、`pnpm skills:routing:audit` で台帳の網羅、証拠鮮度、未実行理由を確認する。通常成功を現在のrouting品質の証明にはしない。外部informational findingと参照切れ候補は目視で分類する。利用可能なら公式Skill validatorも実行し、未実行なら理由と代替確認を示す。
+4. 対象Skillごとの構文、参照、script、代表routing caseを再検証し、監査Skill変更時はcollector、routing validator、instruction budget checkerのself-testおよび [評価ケース](references/evaluation-cases.md) の該当caseを必須にする。`pnpm skills:check` でrepository-ownedの確定参照、構文、重複名を、`pnpm skills:instruction:check` で常時指示量と段階別読込予算を終了条件として確認し、`pnpm skills:routing:audit` で台帳の網羅、段階所有、証拠鮮度、未実行理由を確認する。通常成功を現在のrouting品質の証明にはしない。外部informational findingと参照切れ候補は目視で分類する。利用可能なら公式Skill validatorも実行し、未実行なら理由と代替確認を示す。
 5. `git diff --check` と全差分を確認し、最終差分、検証結果、残る不確実性、他Skillへの影響を報告する。承認されていない追加変更、削除、外部書き込み、pushを行わない。

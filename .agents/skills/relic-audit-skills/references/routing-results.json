@@ -1,45 +1,492 @@
 {
-  "version": 2,
+  "version": 3,
   "environment": {
     "repository": "akihisa-dev/Relic",
-    "head": "026d4fd2871c9788f31f5cc06dc6b03ac0109db0",
+    "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
     "skillRoot": ".agents/skills",
-    "externalCatalogs": ["openai-system", "openai-bundled", "openai-curated-remote", "workspace-local"],
+    "externalCatalogs": [
+      "openai-system",
+      "openai-bundled",
+      "openai-curated-remote",
+      "workspace-local"
+    ],
     "sameNameVariants": false,
     "historyScope": "full",
     "executionAvailable": true,
-    "routingSurfaceDigest": "fc5efbdf2fda0525e5d42404644e664288d5a9c2cc5c6190285ddf8534a6a997",
-    "notes": "headは全Skill監査を開始した変更前HEAD。routingSurfaceDigestはAGENTS.md、全repository-owned SKILL.md、routing-cases.jsonの修正後内容を表す。6 caseを期待結果を伏せた独立agentで再実行し、無条件選択と条件付き選択を分離して全6件の現行成功を記録した。過去観測は現在成功へ数えず、外部Skillはdigest対象外のため現在性を主張しない。"
+    "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5",
+    "notes": "段階別routing schemaへ移行した。期待結果を渡さない独立評価で現行成功を確認し、過去の段階情報がない観測はlegacyObservationへ保持する。routingSurfaceDigestは現行のAGENTS.md、全repository-owned SKILL.md、routing-cases.jsonへ同期する。"
   },
   "cases": [
-    {"caseId":"issue-all-open","staticStatus":"static-pass","execution":{"status":"execution-pass","actualSkills":["relic-issue","relic-guard-task","relic-commit","relic-manage-version"],"head":"026d4fd2871c9788f31f5cc06dc6b03ac0109db0","routingSurfaceDigest":"fc5efbdf2fda0525e5d42404644e664288d5a9c2cc5c6190285ddf8534a6a997"},"legacyObservation":{"status":"execution-fail","actualSkills":["relic-issue","relic-change-ci","relic-test-code","relic-debug-packaging","relic-audit-code-health","relic-audit-skills","relic-maintain-docs"],"head":"17bdf3ffb08a8eb1bb4e8a696f1ca7b7d2035b96"}},
-    {"caseId":"code-health-vs-refactor","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"task-target-mismatch","staticStatus":"static-pass","execution":{"status":"environment-mismatch","reason":"過去の成功観測にはrouting surface digestがなく、現行caseの成功証拠として再利用できない"},"legacyObservation":{"status":"execution-pass","actualSkills":["relic-guard-task"],"head":"f59b197d1a710cf2584ee42bba9cfe47cd022cb5"}},
-    {"caseId":"reference-first-ui","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"guardの見本限定判断はforward-test済み。entry Skillの独立routing実行は未実施"}},
-    {"caseId":"full-refactor","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"ui-localization-navigation","staticStatus":"static-pass","execution":{"status":"execution-pass","actualSkills":["relic-change-navigation","relic-guard-task","relic-change-ui","relic-change-localization","relic-manage-version","relic-commit"],"head":"026d4fd2871c9788f31f5cc06dc6b03ac0109db0","routingSurfaceDigest":"fc5efbdf2fda0525e5d42404644e664288d5a9c2cc5c6190285ddf8534a6a997"}},
-    {"caseId":"ui-localization-navigation-explicit-gui","staticStatus":"static-pass","execution":{"status":"execution-pass","actualSkills":["relic-change-navigation","relic-guard-task","relic-change-ui","relic-change-localization","relic-test-development-app","relic-manage-version","relic-commit"],"head":"026d4fd2871c9788f31f5cc06dc6b03ac0109db0","routingSurfaceDigest":"fc5efbdf2fda0525e5d42404644e664288d5a9c2cc5c6190285ddf8534a6a997"}},
-    {"caseId":"workspace-file-settings","staticStatus":"static-pass","execution":{"status":"execution-pass","actualSkills":["relic-change-workspace-files","relic-guard-task","relic-change-settings","relic-manage-version","relic-commit"],"head":"026d4fd2871c9788f31f5cc06dc6b03ac0109db0","routingSurfaceDigest":"fc5efbdf2fda0525e5d42404644e664288d5a9c2cc5c6190285ddf8534a6a997"}},
-    {"caseId":"markdown-stack","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"derived-views","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"chronicle-current-calendars","staticStatus":"static-pass","execution":{"status":"execution-pass","actualSkills":["relic-change-chronicle","relic-guard-task","relic-manage-version","relic-commit"],"head":"026d4fd2871c9788f31f5cc06dc6b03ac0109db0","routingSurfaceDigest":"fc5efbdf2fda0525e5d42404644e664288d5a9c2cc5c6190285ddf8534a6a997"}},
-    {"caseId":"sphere-view","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設Skillのdescriptionと台帳の静的整合だけを確認し、独立したモデルrouting実行は未実施"}},
-    {"caseId":"table-view","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設Skillのdescriptionと台帳の静的整合だけを確認し、独立したモデルrouting実行は未実施"}},
-    {"caseId":"card-view","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設Skillのdescriptionと台帳の静的整合だけを確認し、独立したモデルrouting実行は未実施"}},
-    {"caseId":"search-and-tools","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"ci-vs-publish","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"ci-remote-log-diagnosis","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境は使用していない。GitHub連携によるrun・job・log取得は実接続で確認済み"}},
-    {"caseId":"packaging-vs-release","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"dependency-update","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"retire-feature","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"skill-audit-read-only","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設した監査のみcaseの独立routing実行は未実施"}},
-    {"caseId":"skill-audit-unused","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設した不要Skill確認caseの独立routing実行は未実施"}},
-    {"caseId":"skill-audit","staticStatus":"static-pass","execution":{"status":"execution-pass","actualSkills":["relic-audit-skills","relic-guard-task","relic-manage-version","relic-commit"],"head":"026d4fd2871c9788f31f5cc06dc6b03ac0109db0","routingSurfaceDigest":"fc5efbdf2fda0525e5d42404644e664288d5a9c2cc5c6190285ddf8534a6a997"}},
-    {"caseId":"skill-audit-meta","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設したメタ監査caseの独立routing実行は未実施"}},
-    {"caseId":"skill-audit-candidate-apply","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設した候補指定適用caseの独立routing実行は未実施"}},
-    {"caseId":"skill-audit-explicit-delete","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"新設した削除許可境界caseの独立routing実行は未実施"}},
-    {"caseId":"commit-and-version","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"publish-vs-release","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}},
-    {"caseId":"release-explicit","staticStatus":"static-pass","execution":{"status":"not-executed","reason":"独立したモデルrouting実行環境を使用していない"}}
+    {
+      "caseId": "issue-all-open",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "execution-pass",
+        "actualSkillsByPhase": {
+          "orientation": [
+            "relic-issue"
+          ],
+          "preWrite": [
+            "relic-guard-task"
+          ],
+          "verification": [],
+          "commit": [
+            "relic-manage-version",
+            "relic-commit"
+          ],
+          "publication": []
+        },
+        "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
+        "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5"
+      },
+      "legacyObservation": {
+        "status": "execution-fail",
+        "actualSkills": [
+          "relic-issue",
+          "relic-change-ci",
+          "relic-test-code",
+          "relic-debug-packaging",
+          "relic-audit-code-health",
+          "relic-audit-skills",
+          "relic-maintain-docs"
+        ],
+        "head": "17bdf3ffb08a8eb1bb4e8a696f1ca7b7d2035b96"
+      }
+    },
+    {
+      "caseId": "code-health-vs-refactor",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "execution-pass",
+        "actualSkillsByPhase": {
+          "orientation": [
+            "relic-audit-code-health"
+          ],
+          "preWrite": [
+            "relic-guard-task"
+          ],
+          "verification": [],
+          "commit": [
+            "relic-manage-version",
+            "relic-commit"
+          ],
+          "publication": []
+        },
+        "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
+        "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5"
+      }
+    },
+    {
+      "caseId": "task-target-mismatch",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "execution-pass",
+        "actualSkillsByPhase": {
+          "orientation": [],
+          "preWrite": [
+            "relic-guard-task"
+          ],
+          "verification": [],
+          "commit": [],
+          "publication": []
+        },
+        "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
+        "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5"
+      },
+      "legacyObservation": {
+        "status": "execution-pass",
+        "actualSkills": [
+          "relic-guard-task"
+        ],
+        "head": "f59b197d1a710cf2584ee42bba9cfe47cd022cb5"
+      }
+    },
+    {
+      "caseId": "reference-first-ui",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "execution-pass",
+        "actualSkillsByPhase": {
+          "orientation": [
+            "relic-change-ui"
+          ],
+          "preWrite": [
+            "relic-guard-task"
+          ],
+          "verification": [],
+          "commit": [],
+          "publication": []
+        },
+        "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
+        "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5"
+      }
+    },
+    {
+      "caseId": "full-refactor",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "独立したモデルrouting実行環境を使用していない"
+      }
+    },
+    {
+      "caseId": "ui-localization-navigation",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "execution-pass",
+        "actualSkillsByPhase": {
+          "orientation": [
+            "relic-change-navigation",
+            "relic-change-ui",
+            "relic-change-localization"
+          ],
+          "preWrite": [
+            "relic-guard-task"
+          ],
+          "verification": [
+            "relic-test-code"
+          ],
+          "commit": [
+            "relic-manage-version",
+            "relic-commit"
+          ],
+          "publication": []
+        },
+        "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
+        "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5"
+      },
+      "legacyObservation": {
+        "status": "execution-pass",
+        "actualSkills": [
+          "relic-change-navigation",
+          "relic-guard-task",
+          "relic-change-ui",
+          "relic-change-localization",
+          "relic-manage-version",
+          "relic-commit"
+        ],
+        "head": "026d4fd2871c9788f31f5cc06dc6b03ac0109db0",
+        "routingSurfaceDigest": "fc5efbdf2fda0525e5d42404644e664288d5a9c2cc5c6190285ddf8534a6a997"
+      }
+    },
+    {
+      "caseId": "ui-localization-navigation-explicit-gui",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "execution-pass",
+        "actualSkillsByPhase": {
+          "orientation": [
+            "relic-change-navigation",
+            "relic-change-ui",
+            "relic-change-localization"
+          ],
+          "preWrite": [
+            "relic-guard-task"
+          ],
+          "verification": [
+            "relic-test-development-app"
+          ],
+          "commit": [
+            "relic-manage-version",
+            "relic-commit"
+          ],
+          "publication": []
+        },
+        "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
+        "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5"
+      },
+      "legacyObservation": {
+        "status": "execution-pass",
+        "actualSkills": [
+          "relic-change-navigation",
+          "relic-guard-task",
+          "relic-change-ui",
+          "relic-change-localization",
+          "relic-test-development-app",
+          "relic-manage-version",
+          "relic-commit"
+        ],
+        "head": "026d4fd2871c9788f31f5cc06dc6b03ac0109db0",
+        "routingSurfaceDigest": "fc5efbdf2fda0525e5d42404644e664288d5a9c2cc5c6190285ddf8534a6a997"
+      }
+    },
+    {
+      "caseId": "workspace-file-settings",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "environment-mismatch",
+        "reason": "過去観測は段階別のactualSkillsByPhaseを記録していない"
+      },
+      "legacyObservation": {
+        "status": "execution-pass",
+        "actualSkills": [
+          "relic-change-workspace-files",
+          "relic-guard-task",
+          "relic-change-settings",
+          "relic-manage-version",
+          "relic-commit"
+        ],
+        "head": "026d4fd2871c9788f31f5cc06dc6b03ac0109db0",
+        "routingSurfaceDigest": "fc5efbdf2fda0525e5d42404644e664288d5a9c2cc5c6190285ddf8534a6a997"
+      }
+    },
+    {
+      "caseId": "markdown-stack",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "execution-pass",
+        "actualSkillsByPhase": {
+          "orientation": [
+            "relic-change-markdown-editor",
+            "relic-change-frontmatter",
+            "relic-change-attachments",
+            "relic-change-markdown-output",
+            "relic-change-electron-boundaries"
+          ],
+          "preWrite": [
+            "relic-guard-task"
+          ],
+          "verification": [
+            "relic-test-code"
+          ],
+          "commit": [
+            "relic-manage-version",
+            "relic-commit"
+          ],
+          "publication": []
+        },
+        "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
+        "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5"
+      }
+    },
+    {
+      "caseId": "derived-views",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "独立したモデルrouting実行環境を使用していない"
+      }
+    },
+    {
+      "caseId": "chronicle-current-calendars",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "environment-mismatch",
+        "reason": "過去観測は段階別のactualSkillsByPhaseを記録していない"
+      },
+      "legacyObservation": {
+        "status": "execution-pass",
+        "actualSkills": [
+          "relic-change-chronicle",
+          "relic-guard-task",
+          "relic-manage-version",
+          "relic-commit"
+        ],
+        "head": "026d4fd2871c9788f31f5cc06dc6b03ac0109db0",
+        "routingSurfaceDigest": "fc5efbdf2fda0525e5d42404644e664288d5a9c2cc5c6190285ddf8534a6a997"
+      }
+    },
+    {
+      "caseId": "sphere-view",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "新設Skillのdescriptionと台帳の静的整合だけを確認し、独立したモデルrouting実行は未実施"
+      }
+    },
+    {
+      "caseId": "table-view",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "新設Skillのdescriptionと台帳の静的整合だけを確認し、独立したモデルrouting実行は未実施"
+      }
+    },
+    {
+      "caseId": "card-view",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "新設Skillのdescriptionと台帳の静的整合だけを確認し、独立したモデルrouting実行は未実施"
+      }
+    },
+    {
+      "caseId": "search-and-tools",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "独立したモデルrouting実行環境を使用していない"
+      }
+    },
+    {
+      "caseId": "ci-vs-publish",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "独立したモデルrouting実行環境を使用していない"
+      }
+    },
+    {
+      "caseId": "ci-remote-log-diagnosis",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "独立したモデルrouting実行環境は使用していない。GitHub連携によるrun・job・log取得は実接続で確認済み"
+      }
+    },
+    {
+      "caseId": "packaging-vs-release",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "独立したモデルrouting実行環境を使用していない"
+      }
+    },
+    {
+      "caseId": "dependency-update",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "独立したモデルrouting実行環境を使用していない"
+      }
+    },
+    {
+      "caseId": "retire-feature",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "独立したモデルrouting実行環境を使用していない"
+      }
+    },
+    {
+      "caseId": "skill-audit-read-only",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "execution-pass",
+        "actualSkillsByPhase": {
+          "orientation": [
+            "relic-audit-skills"
+          ],
+          "preWrite": [],
+          "verification": [],
+          "commit": [],
+          "publication": []
+        },
+        "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
+        "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5"
+      }
+    },
+    {
+      "caseId": "skill-audit-unused",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "新設した不要Skill確認caseの独立routing実行は未実施"
+      }
+    },
+    {
+      "caseId": "skill-audit",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "environment-mismatch",
+        "reason": "過去観測は段階別のactualSkillsByPhaseを記録していない"
+      },
+      "legacyObservation": {
+        "status": "execution-pass",
+        "actualSkills": [
+          "relic-audit-skills",
+          "relic-guard-task",
+          "relic-manage-version",
+          "relic-commit"
+        ],
+        "head": "026d4fd2871c9788f31f5cc06dc6b03ac0109db0",
+        "routingSurfaceDigest": "fc5efbdf2fda0525e5d42404644e664288d5a9c2cc5c6190285ddf8534a6a997"
+      }
+    },
+    {
+      "caseId": "skill-audit-meta",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "新設したメタ監査caseの独立routing実行は未実施"
+      }
+    },
+    {
+      "caseId": "skill-audit-candidate-apply",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "新設した候補指定適用caseの独立routing実行は未実施"
+      }
+    },
+    {
+      "caseId": "skill-audit-explicit-delete",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "not-executed",
+        "reason": "新設した削除許可境界caseの独立routing実行は未実施"
+      }
+    },
+    {
+      "caseId": "commit-and-version",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "execution-pass",
+        "actualSkillsByPhase": {
+          "orientation": [
+            "relic-manage-version",
+            "relic-commit"
+          ],
+          "preWrite": [
+            "relic-guard-task"
+          ],
+          "verification": [],
+          "commit": [],
+          "publication": []
+        },
+        "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
+        "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5"
+      }
+    },
+    {
+      "caseId": "publish-vs-release",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "execution-pass",
+        "actualSkillsByPhase": {
+          "orientation": [
+            "relic-publish-github"
+          ],
+          "preWrite": [
+            "relic-guard-task"
+          ],
+          "verification": [],
+          "commit": [],
+          "publication": []
+        },
+        "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
+        "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5"
+      }
+    },
+    {
+      "caseId": "release-explicit",
+      "staticStatus": "static-pass",
+      "execution": {
+        "status": "execution-pass",
+        "actualSkillsByPhase": {
+          "orientation": [
+            "relic-release"
+          ],
+          "preWrite": [
+            "relic-guard-task"
+          ],
+          "verification": [],
+          "commit": [],
+          "publication": []
+        },
+        "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
+        "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5"
+      }
+    }
   ]
 }

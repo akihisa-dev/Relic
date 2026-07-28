@@ -16,6 +16,8 @@
 - 保証水準: 独立二役 / 独立passによる代替 / 単独監査
 - routing証拠: `current` / `equivalent` / `stale` / `unverified` の件数
 - 静的レビュー、形式検査、実行観測を分けた件数
+- 指示量の計測単位、基準HEAD、常時文字数、段階別の選択Skill数・source文字数
+- モデル固有の実トークン数を取得したか。取得していない場合は文字数と混同しない
 
 ## 1. 現在のSkill一覧
 
@@ -85,11 +87,21 @@
 
 ## 5. ルーティング評価
 
-冒頭に形式検査、静的レビュー、実行成功、実行失敗、未実行を示し、実行証拠は `current` / `equivalent` / `stale` / `unverified` に分ける。
+冒頭に形式検査、静的レビュー、実行成功、実行失敗、未実行を示し、実行証拠は `current` / `equivalent` / `stale` / `unverified` に分ける。期待・実行Skillは `orientation`、`preWrite`、`verification`、`commit`、`publication` の段階別に示す。
 
 | 依頼文 | 期待されるSkill | 実際に選ばれそうなSkill | 誤発火候補 | 未発火の可能性 | description改善案 | 判定根拠 |
 |---|---|---|---|---|---|---|
 | 「...」 | ... | ... | ... | 高 / 中 / 低 | ... | ... |
+
+### 指示量
+
+| 指標 | 基準値 | 現行値 | 上限 | 判定 |
+|---|---:|---:|---:|---|
+| 常時指示文字数 | ... | ... | ... | pass / fail |
+| orientation平均Skill数 | ... | ... | ... | pass / fail |
+| preWrite平均Skill数 | ... | ... | ... | pass / fail |
+| preWrite Skill source中央値 | ... | ... | ... | pass / fail |
+| 全段階Skill source平均 | ... | ... | ... | pass / fail |
 
 ## 6. 最終提案
 
