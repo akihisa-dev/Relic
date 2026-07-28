@@ -29,6 +29,8 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 
 - File view for reading and editing Markdown.
 - Markdown editor with live preview, source mode, and optional typewriter mode.
+- Live editing for Markdown tables and task checkboxes.
+- Footnotes, syntax-highlighted code blocks, and inline or block math.
 - Page previews for internal links and collapsible Markdown headings.
 - Automatic saving with recovery versions for restoring earlier content.
 - Local workspace management.
@@ -46,17 +48,23 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 
 ### Card View
 
-- Optional Card view presents Markdown files with a `card` front matter image as visual cards.
-- Selecting an item in the list previews its card; selecting the large card opens the source Markdown file.
+- Card view presents Markdown files with a `card` front matter property as visual cards.
+- Selecting an item in the list previews its card. Selecting the same list item again opens the source Markdown file; the large card itself remains read-only.
 
 ![Relic Card view screenshot](assets/relic-card-view-screenshot.png)
+
+### Table View
+
+- Table view lists every Markdown file and selected top-level front matter properties.
+- Search, filter, sort, reorder, resize, and wrap columns without changing the Markdown source.
+- Open a source file from its row, and manage fixed-property guidance and `category` choices from property columns.
 
 ### Linking, Search, and Structure
 
 - Internal links using `[[...]]` and relative Markdown links.
 - Backlinks, outgoing links, and unlinked references.
-- Optional Bubble view for Markdown, tags, attachments, and unresolved links.
-- Optional experimental Sphere view for exploring the workspace graph in 3D.
+- Bubble view for Markdown, tags, attachments, and unresolved links.
+- Sphere view for exploring the same workspace graph in 3D.
 - Outline view.
 - Quick switcher.
 - Command palette.
@@ -66,8 +74,9 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 
 ### Front Matter and Tags
 
-- YAML front matter editing support.
-- Optional front matter settings for fixed properties (`aliases`, `card`, `category`, `tags`, `chronicle`) and custom property input.
+- Collapsible form editing for existing YAML front matter values, with source-mode access to the original YAML.
+- Guided addition and editing for fixed properties (`aliases`, `card`, `category`, `tags`, `chronicle`).
+- Read-only overview of any top-level property in Table view.
 - Tags from front matter `tags:`.
 
 ### Diagrams and Export
@@ -78,19 +87,14 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 
 ### Chronicle View
 
-- Optional Chronicle view that places Markdown files on a timeline from `chronicle` front matter values.
+- Chronicle view that places Markdown files on a timeline from `chronicle` front matter values.
 
 ![Relic Chronicle view screenshot](assets/relic-timeline-screenshot.png)
 
 ### File Processing Tools
 
-- Optional file processing tools are available from feature toggles.
-- Merge files.
-- Generate title lists.
-- Generate tables of contents.
-- Generate tag indexes.
-
-Front matter settings, Card view, Bubble view, Sphere view, Chronicle view, and file processing tools are implemented but hidden by default. They can be enabled from Settings feature toggles.
+- Create new Markdown files by merging files or generating title lists, tables of contents, and tag indexes.
+- Run file processing from the context menu for a workspace, folder, or multi-file selection; existing source files are not changed.
 
 ---
 
@@ -163,21 +167,21 @@ If you prefer not to use terminal commands directly, helper scripts are availabl
 
 ## Verification
 
-Run type checking and tests together:
+Run the runtime check, type checking, tests, and dependency-license file checks together:
 
 ```sh
 cd app
 pnpm verify
 ```
 
-Run the full set of locally reproducible checks, including coverage reporting, architecture, documentation, workflow, and Skill structure checks:
+Run the full set of locally reproducible checks, including coverage reporting, architecture, documentation, workflow, Skill structure, and dependency-license file checks:
 
 ```sh
 cd app
 pnpm verify:full
 ```
 
-Run the reproducible part of Code CI, adding dependency notices, SBOM, and the Renderer production boundary check:
+Run the reproducible part of Code CI, adding the Renderer production build and import-boundary checks plus a production dependency audit:
 
 ```sh
 pnpm verify:ci
@@ -204,7 +208,7 @@ macOS test alias:
 pnpm test:mac
 ```
 
-Pull Requests, pushes to `main`, and manual Code CI runs execute `verify:ci` on macOS. Pull Requests additionally validate version policy against their base and head commits. The packaged app under `app/out/` is checked only when distribution build verification is explicitly requested. Before creating a release tag, the manual Pre-release Verification workflow can run the macOS safe build without creating a tag, Release, push, or repository change.
+Pull Requests, pushes to `main`, and manual Code CI runs execute `verify:ci` and an isolated development-app startup smoke check on macOS. Pull Requests additionally validate version policy against their base and head commits. The packaged app under `app/out/` is checked only when distribution build verification is explicitly requested. Before creating a release tag, the manual Pre-release Verification workflow can run the macOS safe build and a packaged-app startup smoke check without creating a tag, Release, push, or repository change.
 
 ---
 
@@ -304,6 +308,8 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 
 - Markdownを表示・編集するファイルビュー
 - ライブプレビュー、ソースモード、任意のタイプライターモードを備えたMarkdownエディタ
+- Markdownテーブルとタスクチェックボックスのライブ編集
+- 脚注、シンタックスハイライト付きコードブロック、インライン数式・ブロック数式
 - 内部リンクのページプレビューとMarkdown見出しの折りたたみ
 - 以前の本文を読み戻せる復元版を伴う自動保存
 - ローカルワークスペース管理
@@ -321,17 +327,23 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 
 ### カードビュー
 
-- フロントマターの `card` で画像を指定したMarkdownファイルを、任意で有効化できるカードビューに表示します
-- 一覧ではカードを切り替えて確認でき、大きなカードを選択すると元のMarkdownファイルを開きます
+- フロントマターに `card` プロパティを持つMarkdownファイルを、カードビューに表示します
+- 一覧項目を選ぶとカードを切り替え、選択中の同じ項目をもう一度選ぶと元のMarkdownファイルを開きます。大きなカード自体は表示専用です
 
 ![Relicカードビューのスクリーンショット](assets/relic-card-view-screenshot.png)
+
+### テーブルビュー
+
+- すべてのMarkdownファイルと、選択したトップレベルのフロントマタープロパティを表で確認できます
+- Markdown本文を変更せず、検索、絞り込み、並び替え、列の移動・幅変更・折り返しができます
+- 行から元ファイルを開き、プロパティ列から固定プロパティの説明や `category` 候補を管理できます
 
 ### リンク・検索・構造表示
 
 - 内部リンク `[[...]]` とMarkdown相対リンク
 - バックリンク、アウトゴーイングリンク、未リンク参照
-- Markdown、タグ、添付画像、未解決リンクの関係を表示する、任意で有効化できるバブルビュー
-- ワークスペースグラフを3次元で見渡す、任意で有効化できる試験的なスフィアビュー
+- Markdown、タグ、添付画像、未解決リンクの関係を表示するバブルビュー
+- 同じワークスペースグラフを3次元で見渡すスフィアビュー
 - アウトライン表示
 - クイックスイッチャー
 - コマンドパレット
@@ -341,8 +353,9 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 
 ### フロントマターとタグ
 
-- フロントマター（YAML）編集補助
-- 任意で有効化できるフロントマター設定（`aliases`、`card`、`category`、`tags`、`chronicle` の固定プロパティ確認・カスタムプロパティ入力能力）
+- 既存のフロントマター値を折りたたみ式フォームで編集でき、ソースモードでは元のYAMLを直接確認・編集できます
+- 固定プロパティ（`aliases`、`card`、`category`、`tags`、`chronicle`）の追加・編集をフォームで補助します
+- テーブルビューでは、任意のトップレベルプロパティを読み取り専用の一覧として確認できます
 - フロントマター `tags:` によるタグ扱い
 
 ### 図表と出力
@@ -353,19 +366,14 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 
 ### クロニクルビュー
 
-- `chronicle` フロントマター値からMarkdownファイルを時間軸上の年表へ配置する、任意で有効化できるクロニクルビュー
+- `chronicle` フロントマター値からMarkdownファイルを時間軸上の年表へ配置するクロニクルビュー
 
 ![Relicクロニクルビューのスクリーンショット](assets/relic-timeline-screenshot.png)
 
 ### ファイル加工ツール
 
-- ファイル加工ツールは機能トグルで任意に有効化できます
-- ファイルのマージ
-- タイトル一覧の生成
-- 目次生成
-- タグ別索引生成
-
-フロントマター設定、カードビュー、バブルビュー、スフィアビュー、クロニクルビュー、ファイル加工ツールは実装済みですが、初期状態では非表示です。設定の機能トグルから有効化できます。
+- ファイルのマージ、タイトル一覧、目次、タグ別索引を、新しいMarkdownファイルとして生成します
+- ワークスペース、フォルダ、複数ファイル選択の右クリックメニューから実行し、既存の元ファイルは変更しません
 
 ---
 
@@ -438,21 +446,21 @@ pnpm start:mac
 
 ## 検証
 
-型チェックとテストをまとめて実行します。
+Node.js環境、型、テスト、依存ライセンス文書の整合をまとめて確認します。
 
 ```sh
 cd app
 pnpm verify
 ```
 
-カバレッジ測定、アーキテクチャ、文書、workflow、Skill構造まで、ローカルで再現可能な包括確認を行う場合:
+カバレッジ測定、アーキテクチャ、文書、workflow、Skill構造、依存ライセンス文書まで、ローカルで再現可能な包括確認を行う場合:
 
 ```sh
 cd app
 pnpm verify:full
 ```
 
-依存通知、SBOM、Rendererのproduction buildと初期読込境界の確認も加え、Code CIの再現可能部分を実行する場合:
+Rendererのproduction buildと初期読込境界、production依存関係の脆弱性監査も加え、Code CIの再現可能部分を実行する場合:
 
 ```sh
 pnpm verify:ci
@@ -479,7 +487,7 @@ macOS向けのテストエイリアス:
 pnpm test:mac
 ```
 
-Pull Request、`main`へのpush、手動のCode CIはmacOSで `verify:ci` を実行します。Pull Requestではbase/head間のバージョン規則も追加確認します。`app/out/` 配下のパッケージ版アプリは、配布ビルド確認を明示した場合だけ確認対象にします。Releaseタグ作成前は手動のPre-release Verification workflowで、タグ、Release、push、リポジトリ変更を行わずにmacOSのsafe buildを実行できます。
+Pull Request、`main`へのpush、手動のCode CIは、macOSで `verify:ci` と隔離した開発版の自動起動スモークを実行します。Pull Requestではbase/head間のバージョン規則も追加確認します。`app/out/` 配下のパッケージ版アプリは、配布ビルド確認を明示した場合だけ確認対象にします。Releaseタグ作成前は手動のPre-release Verification workflowで、タグ、Release、push、リポジトリ変更を行わずにmacOSのsafe buildと配布版の自動起動スモークを実行できます。
 
 ---
 
