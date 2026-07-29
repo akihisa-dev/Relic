@@ -28,8 +28,8 @@ GitタグをGitHubへpushすると、`.github/workflows/draft-release.yml` がma
 ## 成果物
 
 - [ ] Release tagが `app/package.json` の `version` と一致している
-- [ ] `Relic-macOS-arm64.zip` が添付されている
-- [ ] `Relic-macOS-arm64.zip.sha256` が添付されている
+- [ ] `Relic-macOS-arm64.dmg` が添付され、Applicationsフォルダへコピーして導入できる
+- [ ] `Relic-macOS-arm64.dmg.sha256` が添付されている
 - [ ] packageディレクトリが`Relic-darwin-arm64`で、Universal Binaryまたはx64成果物が混在していない
 - [ ] `THIRD_PARTY_NOTICES.md` が添付されている
 - [ ] `relic-dependencies.cdx.json` が添付されている
@@ -41,11 +41,11 @@ GitタグをGitHubへpushすると、`.github/workflows/draft-release.yml` がma
 - [ ] Release本文に主要変更と既知の注意点が書かれている
 - [ ] macOS配布物がApple Silicon向けであることが分かる
 - [ ] 未署名・未公証ビルドであることが分かる
-- [ ] checksumで配布ZIPの整合を確認できることが分かる
+- [ ] checksumで配布DMGの整合を確認できることが分かる
 
 ## ローカル公開前検証
 
-タグを作成またはGitHubへpushする前に、Apple Silicon搭載Macの `app/` で `pnpm verify:local:release` を実行する。このコマンドは固定lockfile、全テスト、型、構造、文書、ライセンス、SBOM、Renderer production build、重要度を問わないproduction依存監査、差分形式、macOS安全ビルド、配布版起動スモークを確認する。
+タグを作成またはGitHubへpushする前に、Apple Silicon搭載Macの `app/` で `pnpm verify:local:release` を実行する。このコマンドは固定lockfile、全テスト、型、構造、文書、ライセンス、SBOM、Renderer production build、重要度を問わないproduction依存監査、差分形式、macOS安全ビルド、配布DMGの生成、配布版起動スモークを確認する。
 
 GitHub Actionsの結果は公開後の別環境確認と成果物生成として扱い、ローカル公開前検証の代わりにしない。ローカル検証が失敗または未実施ならタグをpushしない。
 

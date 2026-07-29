@@ -1,13 +1,14 @@
-import { access, readdir } from 'node:fs/promises';
+import { access, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { inspectPackagedResources, renderPackageContentReport } from './package-content-report.mjs';
-import { macBuildTarget } from './mac-build-target.mjs';
+import { forgeDmgFileName, macBuildTarget } from './mac-build-target.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const outDir = path.resolve(__dirname, '..', macBuildTarget.outputDirectory);
+const appDir = path.resolve(__dirname, '..');
+const outDir = path.join(appDir, macBuildTarget.outputDirectory);
 
 if (process.argv.length !== 2) {
   console.error('[check:package:safe] usage: node scripts/check-package-artifacts.mjs');
@@ -37,5 +38,17 @@ async function checkMacApp(appDir) {
   console.log('[check:mac:safe] OK: Relic.app exists');
 }
 
+async function checkMacDmg() {
+  const packageJson = JSON.parse(await readFile(path.join(appDir, 'package.json'), 'utf8'));
+  const dmgPath = path.join(
+    outDir,
+    macBuildTarget.dmgDirectory,
+    forgeDmgFileName(packageJson.version)
+  );
+  await access(dmgPath);
+  console.log(`[check:mac:safe] OK: installable DMG exists at ${dmgPath}`);
+}
+
 const packagedAppDir = await findPackagedAppDir();
 await checkMacApp(packagedAppDir);
+await checkMacDmg();

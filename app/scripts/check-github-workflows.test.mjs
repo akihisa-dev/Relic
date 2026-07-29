@@ -96,7 +96,7 @@ jobs:
     const workflows = new Map([
       [".github/workflows/ci.yml", codeCi],
       [".github/workflows/pre-release-verification.yml", workflow("Pre-release", "workflow_dispatch", "test \"$(uname -m)\" = arm64 && pnpm build:mac:safe && pnpm smoke:package")],
-      [".github/workflows/draft-release.yml", workflow("Draft", "push", "test \"$(uname -m)\" = arm64 && pnpm build:mac:safe && pnpm smoke:package")]
+      [".github/workflows/draft-release.yml", workflow("Draft", "push", "test \"$(uname -m)\" = arm64 && pnpm build:mac:safe && pnpm smoke:package && test -f Relic-macOS-arm64.dmg && test -f Relic-macOS-arm64.dmg.sha256")]
     ]);
 
     expect(validateRepositoryWorkflowPolicy(workflows, {
@@ -167,6 +167,38 @@ jobs:
     expect(errors).toContain(
       ".github/workflows/draft-release.yml: package build job build must run the package Electron smoke."
     );
+  });
+
+  it("Draft ReleaseにDMGとchecksumがない場合は報告する", () => {
+    const packageWorkflow = parseWorkflow(`
+name: Package
+on: workflow_dispatch
+permissions:
+  contents: read
+concurrency:
+  group: package
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - run: test "$(uname -m)" = arm64
+      - run: pnpm build:mac:safe
+      - run: pnpm smoke:package
+`);
+    const workflows = new Map([
+      [".github/workflows/ci.yml", packageWorkflow],
+      [".github/workflows/pre-release-verification.yml", packageWorkflow],
+      [".github/workflows/draft-release.yml", packageWorkflow]
+    ]);
+
+    expect(validateRepositoryWorkflowPolicy(workflows, {
+      engines: { node: ">=22 <27" },
+      packageManager: "pnpm@10.10.0"
+    })).toEqual(expect.arrayContaining([
+      ".github/workflows/draft-release.yml: missing macOS release asset Relic-macOS-arm64.dmg.",
+      ".github/workflows/draft-release.yml: missing macOS release asset Relic-macOS-arm64.dmg.sha256."
+    ]));
   });
 
   it("arm64確認より先にmacOS buildを実行するjobを報告する", () => {

@@ -101,31 +101,29 @@ jobs:
           path: app/artifacts/electron-smoke
           if-no-files-found: ignore
 
-      - name: Create macOS release ZIP
+      - name: Prepare macOS release DMG
         working-directory: app
         shell: bash
         run: |
           mkdir -p release-assets
-          app_bundle="$(find out/darwin -name 'Relic.app' -type d -print -quit)"
-          if [ -z "$app_bundle" ]; then
-            echo "Relic.app was not found under app/out/darwin." >&2
-            exit 1
-          fi
-          ditto -c -k --sequesterRsrc --keepParent "$app_bundle" release-assets/Relic-macOS-arm64.zip
-          test -f release-assets/Relic-macOS-arm64.zip
+          app_version="$(node -p "require('./package.json').version")"
+          dmg_path="out/darwin/make/Relic-${app_version}-arm64.dmg"
+          test -f "$dmg_path"
+          cp "$dmg_path" release-assets/Relic-macOS-arm64.dmg
+          test -f release-assets/Relic-macOS-arm64.dmg
           (
             cd release-assets
-            shasum -a 256 Relic-macOS-arm64.zip > Relic-macOS-arm64.zip.sha256
+            shasum -a 256 Relic-macOS-arm64.dmg > Relic-macOS-arm64.dmg.sha256
           )
-          test -f release-assets/Relic-macOS-arm64.zip.sha256
+          test -f release-assets/Relic-macOS-arm64.dmg.sha256
 
-      - name: Upload macOS release ZIP
+      - name: Upload macOS release DMG
         uses: actions/upload-artifact@v7
         with:
           name: Relic-macOS-arm64
           path: |
-            app/release-assets/Relic-macOS-arm64.zip
-            app/release-assets/Relic-macOS-arm64.zip.sha256
+            app/release-assets/Relic-macOS-arm64.dmg
+            app/release-assets/Relic-macOS-arm64.dmg.sha256
           if-no-files-found: error
 
   verify-release-dependencies:
@@ -228,8 +226,8 @@ jobs:
           fi
 
           required_assets=(
-            "release-assets/Relic-macOS-arm64.zip"
-            "release-assets/Relic-macOS-arm64.zip.sha256"
+            "release-assets/Relic-macOS-arm64.dmg"
+            "release-assets/Relic-macOS-arm64.dmg.sha256"
             "THIRD_PARTY_NOTICES.md"
             "sbom/relic-dependencies.cdx.json"
           )
@@ -245,7 +243,7 @@ jobs:
 
           (
             cd release-assets
-            sha256sum -c Relic-macOS-arm64.zip.sha256
+            sha256sum -c Relic-macOS-arm64.dmg.sha256
           )
 
       - name: Check release assets do not already exist
@@ -255,8 +253,8 @@ jobs:
 
           existing_assets="$(gh release view "$TAG_NAME" --json assets --jq '.assets[].name')"
           required_asset_names=(
-            "Relic-macOS-arm64.zip"
-            "Relic-macOS-arm64.zip.sha256"
+            "Relic-macOS-arm64.dmg"
+            "Relic-macOS-arm64.dmg.sha256"
             "THIRD_PARTY_NOTICES.md"
             "relic-dependencies.cdx.json"
           )
@@ -275,7 +273,7 @@ jobs:
           set -euo pipefail
 
           gh release upload "$TAG_NAME" \
-            release-assets/Relic-macOS-arm64.zip \
-            release-assets/Relic-macOS-arm64.zip.sha256 \
+            release-assets/Relic-macOS-arm64.dmg \
+            release-assets/Relic-macOS-arm64.dmg.sha256 \
             THIRD_PARTY_NOTICES.md \
             sbom/relic-dependencies.cdx.json

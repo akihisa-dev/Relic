@@ -199,6 +199,12 @@ export function validateRepositoryWorkflowPolicy(workflows, packageJson) {
     errors.push(".github/workflows/pre-release-verification.yml: pre-release verification must be manual-only.");
   }
   const draftRelease = workflows.get(".github/workflows/draft-release.yml");
+  const draftReleaseCommands = draftRelease ? workflowCommands(draftRelease) : [];
+  for (const assetName of ["Relic-macOS-arm64.dmg", "Relic-macOS-arm64.dmg.sha256"]) {
+    if (!draftReleaseCommands.some((command) => command.includes(assetName))) {
+      errors.push(`.github/workflows/draft-release.yml: missing macOS release asset ${assetName}.`);
+    }
+  }
   for (const command of ["pnpm build:mac:safe"]) {
     if (!preRelease || !workflowCommands(preRelease).some((entry) => entry.includes(command))) {
       errors.push(`.github/workflows/pre-release-verification.yml: missing shared safe build command ${command}.`);

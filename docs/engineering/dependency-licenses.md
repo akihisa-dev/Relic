@@ -59,7 +59,7 @@ GitHubへpushする前は `pnpm security:audit:strict` を含む `pnpm verify:lo
 
 ## リリースでの扱い
 
-Draft Release workflowでは、配布ZIPとchecksumに加えて、`THIRD_PARTY_NOTICES.md` と `sbom/relic-dependencies.cdx.json` をRelease Assetsへ添付する。
+Draft Release workflowでは、配布DMGとchecksumに加えて、`THIRD_PARTY_NOTICES.md` と `sbom/relic-dependencies.cdx.json` をRelease Assetsへ添付する。
 リリース前には、Relic本体のライセンスが `LICENSE`、外部依存関係の一覧が `THIRD_PARTY_NOTICES.md`、機械可読の依存一覧がSBOMで確認できることを確認する。
 
 ## 依存関係更新の継続確認
