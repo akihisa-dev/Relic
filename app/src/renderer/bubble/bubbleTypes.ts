@@ -15,9 +15,9 @@ export const defaultBubbleOptions: BubbleOptions = {
   centerStrength: 0.1,
   lineSizeMultiplier: 1,
   linkDistance: 250,
-  linkStrength: 0.48,
+  linkStrength: 0.32,
   nodeSizeMultiplier: 1,
-  repelStrength: 10,
+  repelStrength: 12,
   showArrows: false,
   textFadeMultiplier: 0
 };
