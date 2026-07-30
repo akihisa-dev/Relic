@@ -9,11 +9,11 @@ import {
 import { defaultBubbleOptions } from "./bubbleTypes";
 
 describe("bubblePhysicsModel", () => {
-  it("単一リンクを少し弱め、重複リンクも硬くなりすぎないようにする", () => {
+  it("単一リンクを弱め、重複リンクも硬くなりすぎないようにする", () => {
     expect(bubbleLinkAttractionStrength(defaultBubbleOptions.linkStrength, 1))
-      .toBeCloseTo(0.66);
+      .toBeCloseTo(0.48);
     expect(bubbleLinkAttractionStrength(defaultBubbleOptions.linkStrength, 4))
-      .toBeCloseTo(0.86);
+      .toBeCloseTo(0.68);
   });
 
   it("カテゴリ中心の近くでは吸着せず、遠距離でも急加速しない", () => {
