@@ -1,7 +1,8 @@
 import {
   bubbleCategoryAttractionImpulse,
   bubbleCategoryCollisionImpulses,
-  bubbleCategoryExteriorImpulse
+  bubbleCategoryExteriorImpulse,
+  bubbleCategorySeparationOffsets
 } from "./bubblePhysicsModel";
 
 export interface BubbleCategoryNode {
@@ -42,6 +43,9 @@ export interface BubbleCategoryForceNode extends BubbleCategoryNode {
   backlinkCount?: number;
   categoryCenterOffsetX?: number;
   categoryCenterOffsetY?: number;
+  fx?: number | null;
+  fy?: number | null;
+  id?: string;
   linkCount?: number;
   vx?: number;
   vy?: number;
@@ -58,6 +62,8 @@ const bubbleCategoryClusterClearance = 120;
 const bubbleCategoryBoundaryPadding = 36;
 const bubbleCategoryExteriorMaximumIndentationRatio = 0.75;
 const bubbleCategoryPressureHalfAngle = Math.PI / 5;
+const bubbleCategorySpacingProjectionMaximumPasses = 32;
+const bubbleCategorySpacingProjectionTolerance = 0.001;
 
 export function normalizeBubbleCategory(category: unknown): string | null {
   if (typeof category !== "string") return null;
@@ -406,6 +412,95 @@ export function applyBubbleCategoryMotion(
   return regions;
 }
 
+export function constrainBubbleCategorySpacing(
+  nodes: Iterable<BubbleCategoryForceNode>,
+  anchoredNodeIds: ReadonlySet<string> = new Set()
+): void {
+  const orderedNodes = [...nodes];
+  const orderedLayouts = bubbleCategoryDynamicLayouts(orderedNodes);
+  if (orderedLayouts.length < 2) return;
+
+  const nodesByCategory = new Map<string, BubbleCategoryForceNode[]>();
+  const anchoredCategories = new Set<string>();
+  for (const node of orderedNodes) {
+    const category = normalizeBubbleCategory(node.category);
+    if (!category || node.x === undefined || node.y === undefined) continue;
+    const categoryNodes = nodesByCategory.get(category) ?? [];
+    categoryNodes.push(node);
+    nodesByCategory.set(category, categoryNodes);
+    if (
+      (node.id !== undefined && anchoredNodeIds.has(node.id)) ||
+      (node.fx !== undefined && node.fx !== null) ||
+      (node.fy !== undefined && node.fy !== null)
+    ) {
+      anchoredCategories.add(category);
+    }
+  }
+
+  for (
+    let pass = 0;
+    pass < bubbleCategorySpacingProjectionMaximumPasses;
+    pass += 1
+  ) {
+    let corrected = false;
+    for (let leftIndex = 0; leftIndex < orderedLayouts.length; leftIndex += 1) {
+      const left = orderedLayouts[leftIndex]!;
+      for (
+        let rightIndex = leftIndex + 1;
+        rightIndex < orderedLayouts.length;
+        rightIndex += 1
+      ) {
+        const right = orderedLayouts[rightIndex]!;
+        const dx = right.x - left.x;
+        const dy = right.y - left.y;
+        const distance = Math.hypot(dx, dy);
+        const minimumDistance = left.radius + right.radius + bubbleCategorySpacing;
+        const penetration = minimumDistance - distance;
+        if (penetration <= bubbleCategorySpacingProjectionTolerance) continue;
+
+        const leftAnchored = anchoredCategories.has(left.category);
+        const rightAnchored = anchoredCategories.has(right.category);
+        if (leftAnchored && rightAnchored) continue;
+
+        const fallbackAngle = stableBubbleCategoryAngle(left.category, right.category);
+        const unitX = distance === 0 ? Math.cos(fallbackAngle) : dx / distance;
+        const unitY = distance === 0 ? Math.sin(fallbackAngle) : dy / distance;
+        const offsets = bubbleCategorySeparationOffsets(
+          penetration,
+          left.count,
+          right.count
+        );
+        const leftOffset = leftAnchored
+          ? 0
+          : rightAnchored
+            ? penetration
+            : offsets.left;
+        const rightOffset = rightAnchored
+          ? 0
+          : leftAnchored
+            ? penetration
+            : offsets.right;
+        shiftCategoryPosition(
+          nodesByCategory.get(left.category),
+          -unitX * leftOffset,
+          -unitY * leftOffset
+        );
+        shiftCategoryPosition(
+          nodesByCategory.get(right.category),
+          unitX * rightOffset,
+          unitY * rightOffset
+        );
+        left.x -= unitX * leftOffset;
+        left.y -= unitY * leftOffset;
+        right.x += unitX * rightOffset;
+        right.y += unitY * rightOffset;
+        corrected = true;
+      }
+    }
+    if (!corrected) return;
+  }
+}
+
 function shiftCategoryVelocity(
   nodes: BubbleCategoryForceNode[] | undefined,
   dx: number,
@@ -414,6 +509,17 @@ function shiftCategoryVelocity(
   for (const node of nodes ?? []) {
     node.vx = (node.vx ?? 0) + dx;
     node.vy = (node.vy ?? 0) + dy;
+  }
+}
+
+function shiftCategoryPosition(
+  nodes: BubbleCategoryForceNode[] | undefined,
+  dx: number,
+  dy: number
+): void {
+  for (const node of nodes ?? []) {
+    if (node.x !== undefined) node.x += dx;
+    if (node.y !== undefined) node.y += dy;
   }
 }
 

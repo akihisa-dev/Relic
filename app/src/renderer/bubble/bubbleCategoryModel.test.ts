@@ -13,6 +13,7 @@ import {
   bubbleCategoryRegions,
   bubbleCategorySpacing,
   bubbleCategoryTarget,
+  constrainBubbleCategorySpacing,
   normalizeBubbleCategory
 } from "./bubbleCategoryModel";
 import {
@@ -347,6 +348,79 @@ describe("bubbleCategoryModel", () => {
 
     expect(nodes[0]!.vx).toBeLessThan(0);
     expect(nodes[1]!.vx).toBeGreaterThan(0);
+  });
+
+  it("物理演算が収束した後もカテゴリーバブル間の余白を維持する", () => {
+    const nodes = [
+      { category: "人物", vx: 0, vy: 0, x: -20, y: -5 },
+      { category: "人物", vx: 0, vy: 0, x: -20, y: 5 },
+      { category: "資料", vx: 0, vy: 0, x: 20, y: -5 },
+      { category: "資料", vx: 0, vy: 0, x: 20, y: 5 }
+    ];
+
+    applyBubbleCategoryMotion(nodes, 0);
+    constrainBubbleCategorySpacing(nodes);
+    const projectedLayouts = bubbleCategoryDynamicLayouts(nodes);
+    const distance = Math.hypot(
+      projectedLayouts[0]!.x - projectedLayouts[1]!.x,
+      projectedLayouts[0]!.y - projectedLayouts[1]!.y
+    );
+
+    expect(distance).toBeGreaterThanOrEqual(
+      projectedLayouts[0]!.radius +
+      projectedLayouts[1]!.radius +
+      bubbleCategorySpacing -
+      0.001
+    );
+  });
+
+  it("中央に密集した複数カテゴリをすべて余白のある位置へ分離する", () => {
+    const nodes = ["人物", "資料", "場所", "出来事", "組織", "概念"]
+      .flatMap((category, index) => [
+        { category, x: index % 3 * 4, y: Math.floor(index / 3) * 4 - 3 },
+        { category, x: index % 3 * 4, y: Math.floor(index / 3) * 4 + 3 }
+      ]);
+
+    constrainBubbleCategorySpacing(nodes);
+    const layouts = bubbleCategoryDynamicLayouts(nodes);
+
+    for (let leftIndex = 0; leftIndex < layouts.length; leftIndex += 1) {
+      for (let rightIndex = leftIndex + 1; rightIndex < layouts.length; rightIndex += 1) {
+        const left = layouts[leftIndex]!;
+        const right = layouts[rightIndex]!;
+        expect(Math.hypot(left.x - right.x, left.y - right.y))
+          .toBeGreaterThanOrEqual(
+            left.radius + right.radius + bubbleCategorySpacing - 0.001
+          );
+      }
+    }
+  });
+
+  it("ドラッグ中のカテゴリを動かさずに周囲のバブルへ余白を作る", () => {
+    const nodes = [
+      { category: "人物", id: "person-a", x: -20, y: -5 },
+      { category: "人物", id: "person-b", x: -20, y: 5 },
+      { category: "資料", id: "material-a", x: 20, y: -5 },
+      { category: "資料", id: "material-b", x: 20, y: 5 }
+    ];
+    const personBefore = nodes
+      .filter((node) => node.category === "人物")
+      .map((node) => ({ x: node.x, y: node.y }));
+
+    constrainBubbleCategorySpacing(nodes, new Set(["person-a", "person-b"]));
+    const layouts = bubbleCategoryDynamicLayouts(nodes);
+
+    expect(
+      nodes
+        .filter((node) => node.category === "人物")
+        .map((node) => ({ x: node.x, y: node.y }))
+    ).toEqual(personBefore);
+    expect(Math.hypot(
+      layouts[0]!.x - layouts[1]!.x,
+      layouts[0]!.y - layouts[1]!.y
+    )).toBeGreaterThanOrEqual(
+      layouts[0]!.radius + layouts[1]!.radius + bubbleCategorySpacing - 0.001
+    );
   });
 
   it("ドラッグしたバブルで接触した別のバブルを押して移動する", () => {

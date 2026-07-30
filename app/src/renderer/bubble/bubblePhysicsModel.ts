@@ -18,6 +18,11 @@ export interface BubbleCategoryCollisionImpulses {
   right: number;
 }
 
+export interface BubbleCategorySeparationOffsets {
+  left: number;
+  right: number;
+}
+
 export function bubbleLinkAttractionStrength(baseStrength: number, count: number): number {
   return Math.min(
     bubbleLinkMaximumStrength,
@@ -60,6 +65,21 @@ export function bubbleCategoryCollisionImpulses(
   return {
     left: impulse * 2 * rightMass / totalMass,
     right: impulse * 2 * leftMass / totalMass
+  };
+}
+
+export function bubbleCategorySeparationOffsets(
+  penetration: number,
+  leftNodeCount: number,
+  rightNodeCount: number
+): BubbleCategorySeparationOffsets {
+  const leftMass = Math.max(1, leftNodeCount);
+  const rightMass = Math.max(1, rightNodeCount);
+  const totalMass = leftMass + rightMass;
+  const distance = Math.max(0, penetration);
+  return {
+    left: distance * rightMass / totalMass,
+    right: distance * leftMass / totalMass
   };
 }
 

@@ -4,6 +4,7 @@ import {
   bubbleCategoryAttractionImpulse,
   bubbleCategoryCollisionImpulses,
   bubbleCategoryExteriorImpulse,
+  bubbleCategorySeparationOffsets,
   bubbleLinkAttractionStrength
 } from "./bubblePhysicsModel";
 import { bubbleCategoryDriftCenterStrength } from "./bubbleCategoryModel";
@@ -31,10 +32,13 @@ describe("bubblePhysicsModel", () => {
   it("大きいバブルほど衝突で動きにくくする", () => {
     const equal = bubbleCategoryCollisionImpulses(40, 1, 2, 2);
     const weighted = bubbleCategoryCollisionImpulses(40, 1, 8, 2);
+    const separated = bubbleCategorySeparationOffsets(40, 8, 2);
 
     expect(equal.left).toBeCloseTo(equal.right);
     expect(weighted.left).toBeLessThan(weighted.right);
     expect(weighted.left + weighted.right).toBeCloseTo(equal.left + equal.right);
+    expect(separated.left).toBeLessThan(separated.right);
+    expect(separated.left + separated.right).toBeCloseTo(40);
   });
 
   it("外部ノードの反力を所属ノード数に応じて分散する", () => {

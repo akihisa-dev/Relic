@@ -16,7 +16,8 @@ import {
 } from "./bubbleLayout";
 import {
   applyBubbleCategoryMotion,
-  bubbleCategoryDriftCenterStrength
+  bubbleCategoryDriftCenterStrength,
+  constrainBubbleCategorySpacing
 } from "./bubbleCategoryModel";
 import { alignBubbleNodesToCenter } from "./bubbleCategoryTranslation";
 import { bubbleLinkAttractionStrength } from "./bubblePhysicsModel";
@@ -162,6 +163,7 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
         categoryDragTarget.centerY
       );
     }
+    constrainBubbleCategorySpacing(fallbackNodes, categoryDragNodeIds);
     const buffer = new ArrayBuffer(fallbackNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
     const values = new Float32Array(buffer);
     const ids: string[] = [];
