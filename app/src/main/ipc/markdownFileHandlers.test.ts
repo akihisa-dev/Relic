@@ -401,6 +401,14 @@ describe("markdownFileHandlers", () => {
     });
     expect(registeredWorkspaceResult).toEqual({ ok: true, value: undefined });
 
+    await rm(workspacePath, { recursive: true });
+    const missingFolderResult = await handlerFor(revealWorkspaceItemChannel)(undefined, {
+      path: "",
+      workspaceId: workspace.id
+    });
+    expect(missingFolderResult).toEqual({ ok: true, value: undefined });
+    expect(electronMock.showItemInFolder).toHaveBeenLastCalledWith(workspacePath);
+
     const missingWorkspaceResult = await handlerFor(revealWorkspaceItemChannel)(undefined, {
       path: "",
       workspaceId: "missing"

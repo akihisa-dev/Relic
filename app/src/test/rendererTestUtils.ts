@@ -95,6 +95,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     openWorkspace: vi.fn(),
     readMarkdownFile: vi.fn(),
     refreshWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
+    relinkWorkspace: vi.fn(),
     removeWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     renameFolder: vi.fn(),
     renameMarkdownFile: vi.fn(),

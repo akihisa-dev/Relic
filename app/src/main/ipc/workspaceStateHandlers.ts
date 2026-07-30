@@ -73,7 +73,7 @@ function refreshWorkspaceState(
 
       invalidateWorkspaceData(workspaceId);
       await rm(getWorkspaceFileIndexCachePath(userDataPath, workspaceId), { force: true });
-      const state = await buildWorkspaceState(settings, { strict: true });
+      const state = await buildWorkspaceState(settings);
       const latestSettings = await readAppSettings(userDataPath);
       if (latestSettings.lastWorkspaceId !== workspaceId) {
         return fail("WORKSPACE_REFRESH_STALE", t("refresh.workspaceChanged"));

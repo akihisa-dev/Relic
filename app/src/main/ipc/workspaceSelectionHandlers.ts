@@ -5,20 +5,24 @@ import { app, dialog } from "electron";
 import {
   createNewWorkspaceChannel,
   openWorkspaceChannel,
+  relinkWorkspaceChannel,
   type WorkspaceState
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { getMainTranslator } from "../i18n";
 import { readAppSettings, updateAppSettings } from "../settings/appSettings";
+import * as workspaceSettings from "../settings/workspaceSettings";
 import {
   addOrActivateWorkspace,
   createWorkspaceSummary,
+  normalizeWorkspacePathForId,
   prepareWorkspace
 } from "../workspace/workspaceService";
 import { syncWorkspaceWatcher } from "../workspace/workspaceWatcher";
 import { ipcErrorDetails } from "./activeWorkspace";
 import { buildWorkspaceState } from "./workspaceState";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
+import { isWorkspaceIdInput } from "./workspaceHandlerValidators";
 
 export function registerWorkspaceSelectionHandlers(): void {
   handleLocalizedIpc(openWorkspaceChannel, async (): Promise<RelicResult<WorkspaceState>> => {
@@ -86,6 +90,71 @@ export function registerWorkspaceSelectionHandlers(): void {
       );
     }
   });
+
+  handleLocalizedIpc(
+    relinkWorkspaceChannel,
+    async (_event, input: unknown): Promise<RelicResult<WorkspaceState>> => {
+      const t = await getMainTranslator();
+      try {
+        if (!isWorkspaceIdInput(input)) {
+          return fail("WORKSPACE_RELINK_INVALID_INPUT", t("refresh.invalidWorkspace"));
+        }
+
+        const userDataPath = app.getPath("userData");
+        const settings = await readAppSettings(userDataPath);
+        const workspace = settings.workspaces.find((item) => item.id === input.workspaceId);
+        if (!workspace) {
+          return fail("WORKSPACE_NOT_FOUND", t("errors.notFound"));
+        }
+
+        const selection = await dialog.showOpenDialog({
+          buttonLabel: t("dialogs.relinkWorkspaceButton"),
+          message: t("dialogs.relinkWorkspaceMessage"),
+          properties: ["openDirectory"]
+        });
+        if (selection.canceled || selection.filePaths.length === 0) {
+          return ok(await buildWorkspaceState(settings));
+        }
+
+        const selectedWorkspace = createWorkspaceSummary(selection.filePaths[0]);
+        await prepareWorkspace(selectedWorkspace.path);
+        const duplicate = settings.workspaces.some((item) => (
+          item.id !== workspace.id &&
+          normalizeWorkspacePathForId(item.path) === normalizeWorkspacePathForId(selectedWorkspace.path)
+        ));
+        if (duplicate) {
+          return fail("WORKSPACE_RELINK_ALREADY_REGISTERED", t("files.workspaceRelinkAlreadyRegistered"));
+        }
+
+        const nextSettings = {
+          ...settings,
+          lastWorkspaceId: workspace.id,
+          workspaces: settings.workspaces.map((item) => (
+            item.id === workspace.id
+              ? { ...item, path: selectedWorkspace.path }
+              : item
+          ))
+        };
+        const savedSettings = await updateAppSettings(userDataPath, () => nextSettings);
+        await workspaceSettings.updateWorkspaceSettings(
+          userDataPath,
+          workspace.id,
+          (current) => ({
+            ...current,
+            workspacePath: selectedWorkspace.path
+          })
+        ).catch(() => undefined);
+        syncWorkspaceWatcher(savedSettings);
+        return ok(await buildWorkspaceState(savedSettings));
+      } catch (error) {
+        return fail(
+          "WORKSPACE_RELINK_FAILED",
+          t("files.workspaceRelinkFailed"),
+          ipcErrorDetails(error)
+        );
+      }
+    }
+  );
 }
 
 async function currentWorkspaceState(): Promise<RelicResult<WorkspaceState>> {

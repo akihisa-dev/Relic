@@ -8,7 +8,12 @@ import { useFileTreeSelection } from "../hooks/useFileTreeSelection";
 import type { FileToolActionId } from "../fileTreeTypes";
 import { FilesSearchResults } from "./FilesSearchResults";
 import { FilesSidebarTreeSection } from "./FilesSidebarTreeSection";
-import { FilesCreateActions, FilesWorkspaceActions, FilesWorkspaceEmpty } from "./FilesWorkspaceActions";
+import {
+  FilesCreateActions,
+  FilesWorkspaceActions,
+  FilesWorkspaceEmpty,
+  FilesWorkspaceRecovery
+} from "./FilesWorkspaceActions";
 
 export interface FilesSidebarProps {
   isCreatingFile: boolean;
@@ -16,6 +21,8 @@ export interface FilesSidebarProps {
   isCreatingWorkspace: boolean;
   isSearching: boolean;
   isOpeningWorkspace: boolean;
+  isRefreshingWorkspace: boolean;
+  isRelinkingWorkspace: boolean;
   onCreateFile: (event?: React.MouseEvent<HTMLButtonElement>) => void;
   onCreateFileInFolder?: (folderPath: string, name: string) => void;
   onCreateFolder: (event?: React.MouseEvent<HTMLButtonElement>) => void;
@@ -32,6 +39,10 @@ export interface FilesSidebarProps {
   onOpenInOtherPane?: (path: string) => void;
   onOpenQuickSwitcher: () => void;
   onOpenWorkspace: () => void;
+  onRelinkWorkspace: (workspaceId: string) => void;
+  onRemoveWorkspace: (workspaceId: string) => void;
+  onRetryWorkspace: () => void;
+  onRevealWorkspace: (workspaceId: string) => void;
   onRunFileTool: (toolId: FileToolActionId, target: ToolTarget) => void;
   onRevealItem?: (path: string) => void;
   onRenameItem: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
@@ -56,6 +67,8 @@ export function FilesSidebar({
   isCreatingWorkspace,
   isSearching,
   isOpeningWorkspace,
+  isRefreshingWorkspace,
+  isRelinkingWorkspace,
   onCreateFile,
   onCreateFileInFolder,
   onCreateFolder,
@@ -72,6 +85,10 @@ export function FilesSidebar({
   onOpenInOtherPane,
   onOpenQuickSwitcher,
   onOpenWorkspace,
+  onRelinkWorkspace,
+  onRemoveWorkspace,
+  onRetryWorkspace,
+  onRevealWorkspace,
   onRunFileTool,
   onRevealItem,
   onRenameItem,
@@ -91,6 +108,8 @@ export function FilesSidebar({
 }: FilesSidebarProps): ReactElement {
   const [expansionRequest, setExpansionRequest] = useState<FileTreeExpansionRequest | undefined>(undefined);
   const activeWorkspace = workspaceState?.activeWorkspace ?? null;
+  const availability = workspaceState?.availability;
+  const workspaceUnavailable = availability?.status === "unavailable";
   const pinnedPaths = useMemo(
     () => new Set(workspaceState?.pinnedPaths ?? []),
     [workspaceState?.pinnedPaths]
@@ -110,19 +129,33 @@ export function FilesSidebar({
     <div className={`sidebar-section${activeWorkspace ? " files-sidebar-section" : ""}`}>
       {activeWorkspace ? (
         <>
-          <div className="files-sidebar-fixed-controls">
-            <FilesCreateActions
-              isCreatingFile={isCreatingFile}
-              isCreatingFolder={isCreatingFolder}
-              onCollapseAllFolders={() => requestExpansion("collapse")}
-              onCreateFile={onCreateFile}
-              onCreateFolder={onCreateFolder}
-              onExpandAllFolders={() => requestExpansion("expand")}
-              onOpenQuickSwitcher={onOpenQuickSwitcher}
-            />
-          </div>
+          {!workspaceUnavailable ? (
+            <div className="files-sidebar-fixed-controls">
+              <FilesCreateActions
+                isCreatingFile={isCreatingFile}
+                isCreatingFolder={isCreatingFolder}
+                onCollapseAllFolders={() => requestExpansion("collapse")}
+                onCreateFile={onCreateFile}
+                onCreateFolder={onCreateFolder}
+                onExpandAllFolders={() => requestExpansion("expand")}
+                onOpenQuickSwitcher={onOpenQuickSwitcher}
+              />
+            </div>
+          ) : null}
           <div className="files-sidebar-scroll-area">
-            {isFilteringFiles ? (
+            {availability && availability.status !== "available" ? (
+              <FilesWorkspaceRecovery
+                availability={availability}
+                isRefreshingWorkspace={isRefreshingWorkspace}
+                isRelinkingWorkspace={isRelinkingWorkspace}
+                onRelinkWorkspace={() => onRelinkWorkspace(activeWorkspace.id)}
+                onRemoveWorkspace={() => onRemoveWorkspace(activeWorkspace.id)}
+                onRetryWorkspace={onRetryWorkspace}
+                onRevealWorkspace={() => onRevealWorkspace(activeWorkspace.id)}
+                workspace={activeWorkspace}
+              />
+            ) : null}
+            {!workspaceUnavailable && isFilteringFiles ? (
               <FilesSearchResults
                 error={searchError}
                 frontmatterField={searchFrontmatterField}
@@ -135,7 +168,7 @@ export function FilesSidebar({
                 results={searchResults}
               />
             ) : null}
-            {!isFilteringFiles && workspaceState ? (
+            {!workspaceUnavailable && !isFilteringFiles && workspaceState ? (
               <FilesSidebarTreeSection
                 expansionRequest={expansionRequest}
                 onDeleteItem={onDeleteItem}

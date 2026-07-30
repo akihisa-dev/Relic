@@ -115,6 +115,9 @@ export interface AppLayoutFilesSidebarInput {
   handleMoveFolder: FilesSidebarProps["onMoveFolder"];
   handleMoveTreeItems: FilesSidebarProps["onMoveItems"];
   handleOpenWorkspace: FilesSidebarProps["onOpenWorkspace"];
+  handleRelinkWorkspace: FilesSidebarProps["onRelinkWorkspace"];
+  handleRemoveWorkspace: FilesSidebarProps["onRemoveWorkspace"];
+  handleRevealWorkspace: FilesSidebarProps["onRevealWorkspace"];
   handleOpenQuickSwitcher: FilesSidebarProps["onOpenQuickSwitcher"];
   handleRenameTreeItem: FilesSidebarProps["onRenameItem"];
   handleRevealWorkspaceItem: FilesSidebarProps["onRevealItem"];
@@ -126,6 +129,8 @@ export interface AppLayoutFilesSidebarInput {
   isCreatingFolder: FilesSidebarProps["isCreatingFolder"];
   isCreatingWorkspace: FilesSidebarProps["isCreatingWorkspace"];
   isOpeningWorkspace: FilesSidebarProps["isOpeningWorkspace"];
+  isRefreshingWorkspace: FilesSidebarProps["isRefreshingWorkspace"];
+  isRelinkingWorkspace: FilesSidebarProps["isRelinkingWorkspace"];
   isSearching: FilesSidebarProps["isSearching"];
   isSidebarOpen: FilesSidebarProps["isSidebarOpen"];
   isSidebarResizing: FilesSidebarProps["isSidebarResizing"];
@@ -141,6 +146,7 @@ export interface AppLayoutFilesSidebarInput {
   searchResults: FilesSidebarProps["searchResults"];
   sidebarWidth: FilesSidebarProps["sidebarWidth"];
   startSidebarResize: FilesSidebarProps["startSidebarResize"];
+  refreshWorkspace: FilesSidebarProps["onRetryWorkspace"];
   t: Translator;
   workspaceState: FilesSidebarProps["workspaceState"];
 }

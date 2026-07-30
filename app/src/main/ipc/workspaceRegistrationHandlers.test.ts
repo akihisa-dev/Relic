@@ -15,6 +15,7 @@ const dependencies = vi.hoisted(() => ({
   getMainTranslator: vi.fn(),
   invalidateWorkspaceData: vi.fn(),
   mkdir: vi.fn(),
+  normalizeWorkspacePathForId: vi.fn((value: string) => value.toLowerCase()),
   parsePinnedPaths: vi.fn(),
   prepareWorkspace: vi.fn(),
   readAppSettings: vi.fn(),
@@ -72,6 +73,7 @@ vi.mock("../workspace/workspaceService", () => ({
   activateWorkspace: dependencies.activateWorkspace,
   addOrActivateWorkspace: dependencies.addOrActivateWorkspace,
   createWorkspaceSummary: dependencies.createWorkspaceSummary,
+  normalizeWorkspacePathForId: dependencies.normalizeWorkspacePathForId,
   prepareWorkspace: dependencies.prepareWorkspace,
   removeWorkspaceRegistration: dependencies.removeWorkspaceRegistration,
   renameWorkspaceRegistration: dependencies.renameWorkspaceRegistration,
@@ -95,6 +97,7 @@ import {
   getWorkspaceStateChannel,
   openWorkspaceChannel,
   refreshWorkspaceChannel,
+  relinkWorkspaceChannel,
   removeWorkspaceChannel,
   renameWorkspaceChannel,
   switchWorkspaceChannel,
@@ -226,7 +229,7 @@ describe("registerWorkspaceRegistrationHandlers", () => {
     const result = await handlerFor(refreshWorkspaceChannel)({}, { workspaceId: workspaceOne.id });
 
     expect(dependencies.invalidateWorkspaceData).toHaveBeenCalledWith(workspaceOne.id);
-    expect(dependencies.buildWorkspaceState).toHaveBeenCalledWith(baseSettings, { strict: true });
+    expect(dependencies.buildWorkspaceState).toHaveBeenCalledWith(baseSettings);
     expect(result).toMatchObject({
       error: { code: "WORKSPACE_REFRESH_STALE" },
       ok: false
@@ -300,6 +303,44 @@ describe("registerWorkspaceRegistrationHandlers", () => {
     expect(dependencies.syncWorkspaceWatcher).toHaveBeenCalledWith(
       expect.objectContaining({ lastWorkspaceId: workspaceTwo.id }),
     );
+  });
+
+  it("登録IDを保ったままワークスペースフォルダを再指定する", async () => {
+    const relinkedPath = "/workspaces/relinked";
+    electronMock.showOpenDialog.mockResolvedValueOnce({
+      canceled: false,
+      filePaths: [relinkedPath]
+    });
+    dependencies.createWorkspaceSummary.mockReturnValueOnce({
+      id: "path-derived-id",
+      name: "relinked",
+      path: relinkedPath
+    });
+
+    const result = await handlerFor(relinkWorkspaceChannel)(
+      {},
+      { workspaceId: workspaceOne.id }
+    );
+
+    expect(dependencies.prepareWorkspace).toHaveBeenCalledWith(relinkedPath);
+    expect(dependencies.updateAppSettings).toHaveBeenCalledOnce();
+    expect(dependencies.updateWorkspaceSettings).toHaveBeenCalledWith(
+      "/user-data",
+      workspaceOne.id,
+      expect.any(Function)
+    );
+    const updateWorkspacePath = dependencies.updateWorkspaceSettings.mock.calls.at(-1)?.[2];
+    expect(updateWorkspacePath?.({ pinnedPaths: [], workspacePath: workspaceOne.path }))
+      .toMatchObject({ workspacePath: relinkedPath });
+    const savedSettings = dependencies.buildWorkspaceState.mock.calls.at(-1)?.[0];
+    expect(savedSettings).toMatchObject({
+      lastWorkspaceId: workspaceOne.id,
+      workspaces: [
+        { id: workspaceOne.id, name: workspaceOne.name, path: relinkedPath },
+        workspaceTwo
+      ]
+    });
+    expect(result).toMatchObject({ ok: true });
   });
 
   it("新規フォルダを作成してから登録・有効化する", async () => {

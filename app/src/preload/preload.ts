@@ -48,6 +48,7 @@ import {
   openWorkspaceChannel,
   readMarkdownFileChannel,
   readFileRecoverySnapshotChannel,
+  relinkWorkspaceChannel,
   removeWorkspaceChannel,
   renameWorkspaceChannel,
   renameFolderChannel,
@@ -125,6 +126,7 @@ import {
   type ReadMarkdownFileInput,
   type ReadFileRecoverySnapshotInput,
   type RemoveWorkspaceInput,
+  type RelinkWorkspaceInput,
   type RenameWorkspaceInput,
   type RenameFolderInput,
   type RenameMarkdownFileInput,
@@ -251,6 +253,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(listFileRecoverySnapshotsChannel, input) as Promise<RelicResult<FileRecoveryList>>,
   readFileRecoverySnapshot: (input: ReadFileRecoverySnapshotInput) =>
     ipcRenderer.invoke(readFileRecoverySnapshotChannel, input) as Promise<RelicResult<FileRecoverySnapshot>>,
+  relinkWorkspace: (input: RelinkWorkspaceInput) =>
+    ipcRenderer.invoke(relinkWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   removeWorkspace: (input: RemoveWorkspaceInput) =>
     ipcRenderer.invoke(removeWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   renameWorkspace: (input: RenameWorkspaceInput) =>

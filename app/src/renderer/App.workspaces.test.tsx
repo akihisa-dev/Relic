@@ -77,6 +77,94 @@ describe("App workspaces", () => {
     expect(css).toMatch(/\.file-tree-row\.dragging\s*\{[^}]*cursor:\s*grabbing;/s);
   });
 
+  it("読込不能ワークスペースを空表示と区別し、ファイル操作を隠して復旧操作を示す", async () => {
+    const unavailableState = {
+      ...withWorkspace,
+      availability: {
+        fileOperationsAvailable: false,
+        issues: [{
+          area: "file-tree" as const,
+          details: "ENOENT: workspace read failed",
+          kind: "missing" as const
+        }],
+        status: "unavailable" as const
+      },
+      fileTree: []
+    };
+    const refreshWorkspace = vi.fn().mockResolvedValue({ ok: true, value: unavailableState });
+    const relinkWorkspace = vi.fn().mockResolvedValue({ ok: true, value: unavailableState });
+    const revealWorkspaceItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    const createMarkdownFile = vi.fn();
+    const removeWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] }
+    });
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: unavailableState }),
+      createMarkdownFile,
+      refreshWorkspace,
+      relinkWorkspace,
+      removeWorkspace,
+      revealWorkspaceItem
+    });
+
+    await renderApp();
+
+    expect(await screen.findByRole("heading", { name: "現在このフォルダを読み込めません" }))
+      .toBeInTheDocument();
+    expect(screen.getByText(withWorkspace.activeWorkspace!.path)).toBeInTheDocument();
+    expect(screen.getByText("登録したパスが存在しません。")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "新規ファイル" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "フォルダ作成" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "新規ファイルを作成" }));
+    expect(createMarkdownFile).not.toHaveBeenCalled();
+    expect(await screen.findByText("ワークスペースフォルダを再び読み込めるまで、ファイル操作は利用できません。"))
+      .toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "再試行" }));
+    await waitFor(() => expect(refreshWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-1" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "フォルダを再指定" }));
+    await waitFor(() => expect(relinkWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-1" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "ファイルの場所を表示" }));
+    await waitFor(() => expect(revealWorkspaceItem).toHaveBeenCalledWith({
+      path: "",
+      workspaceId: "ws-1"
+    }));
+
+    fireEvent.click(screen.getByRole("button", { name: "登録だけ解除" }));
+    await waitFor(() => expect(removeWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-1" }));
+  });
+
+  it("索引だけ失敗した場合は警告と読めたファイル一覧を同時に表示する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          availability: {
+            fileOperationsAvailable: true,
+            issues: [{
+              area: "file-index",
+              details: "EIO: index read failed",
+              kind: "temporary"
+            }],
+            status: "degraded"
+          },
+          fileTree: [{ name: "Note", path: "Note.md", type: "file" }]
+        }
+      })
+    });
+
+    await renderApp();
+
+    expect(await screen.findByRole("heading", { name: "一部の情報を読み込めませんでした" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "· Note" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "新規ファイル" })).toBeEnabled();
+  });
+
   it("左レールの選択中ワークスペースの右クリックからワークスペース全体のファイル加工を実行する", async () => {
     vi.stubGlobal("innerWidth", 800);
     vi.stubGlobal("innerHeight", 600);

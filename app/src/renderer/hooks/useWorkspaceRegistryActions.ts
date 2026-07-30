@@ -20,6 +20,7 @@ export function useWorkspaceRegistryActions({
 }: WorkspaceRegistryInput) {
   const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
+  const [isRelinkingWorkspace, setIsRelinkingWorkspace] = useState(false);
 
   const handleOpenWorkspace = useCallback((): void => {
     const relic = relicClient.current;
@@ -100,6 +101,24 @@ export function useWorkspaceRegistryActions({
     else removeWorkspace();
   }, [activeWorkspaceId, beforeCloseAllTabs, closeAllTabs, setWorkspaceError, setWorkspaceState]);
 
+  const handleRelinkWorkspace = useCallback((workspaceId: string): void => {
+    const relic = relicClient.current;
+    if (!relic) return;
+
+    runAfterCloseCheck(beforeCloseAllTabs, () => {
+      setIsRelinkingWorkspace(true);
+      setWorkspaceError(null);
+      void relic.relinkWorkspace({ workspaceId }).then((result) => {
+        if (result.ok) {
+          setWorkspaceState(result.value);
+          closeAllTabs();
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      }).finally(() => setIsRelinkingWorkspace(false));
+    });
+  }, [beforeCloseAllTabs, closeAllTabs, setWorkspaceError, setWorkspaceState]);
+
   const handleRenameWorkspace = useCallback(async (workspaceId: string, name: string): Promise<boolean> => {
     if (!relicClient.current) return false;
 
@@ -140,13 +159,15 @@ export function useWorkspaceRegistryActions({
     handleCreateNewWorkspace,
     handleOpenWorkspace,
     handleRefreshWorkspaceState,
+    handleRelinkWorkspace,
     handleRevealWorkspace,
     handleRemoveWorkspace,
     handleRenameWorkspace,
     handleSwitchWorkspace,
     handleTogglePin,
     isCreatingWorkspace,
-    isOpeningWorkspace
+    isOpeningWorkspace,
+    isRelinkingWorkspace
   };
 }
 

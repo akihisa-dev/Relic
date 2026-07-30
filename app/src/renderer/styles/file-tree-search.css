@@ -950,6 +950,114 @@
   margin: 0;
 }
 
+.workspace-recovery {
+  background: color-mix(in srgb, var(--error-bg) 54%, var(--surface) 46%);
+  border: 1px solid color-mix(in srgb, var(--error) 28%, var(--border) 72%);
+  border-radius: 10px;
+  display: grid;
+  gap: 14px;
+  margin: 2px 0 12px;
+  padding: 16px;
+}
+
+.workspace-recovery--degraded {
+  background: color-mix(in srgb, var(--accent-soft) 30%, var(--surface) 70%);
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border) 76%);
+}
+
+.workspace-recovery-kicker {
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  margin: 0 0 5px;
+  text-transform: uppercase;
+}
+
+.workspace-recovery h2 {
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.workspace-recovery-copy,
+.workspace-recovery-note {
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 7px 0 0;
+}
+
+.workspace-recovery-path {
+  margin: 0;
+}
+
+.workspace-recovery-path dt {
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.workspace-recovery-path dd {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.workspace-recovery-issues {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.workspace-recovery-issues li {
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  border-radius: 7px;
+  display: grid;
+  font-size: 12px;
+  gap: 3px;
+  padding: 9px 10px;
+}
+
+.workspace-recovery-issues span,
+.workspace-recovery-issues summary {
+  color: var(--text-2);
+}
+
+.workspace-recovery-issues details {
+  margin-top: 3px;
+}
+
+.workspace-recovery-issues summary {
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.workspace-recovery-issues code {
+  display: block;
+  font-size: 10px;
+  line-height: 1.5;
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.workspace-recovery-actions {
+  display: grid;
+  gap: 7px;
+}
+
+.workspace-recovery-actions button {
+  min-height: 32px;
+  text-align: left;
+}
+
 .setting-row {
   align-items: center;
   display: flex;

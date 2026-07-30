@@ -50,6 +50,7 @@ Relicの自動テスト、実アプリ確認、macOS配布物確認が、それ�
 | 外部変更と再読込 | watcher、Preload通知、Renderer状態遷移 | `workspaceWatcher.test.ts`、`preload.test.ts`、`App.externalChanges.test.tsx` |
 | 検索と置換 | Main handler、検索・置換統合、Renderer操作 | `fileSearchHandlers.test.ts`、`search.test.ts`、`replace.test.ts`、`App.searchLinks.test.tsx` |
 | ワークスペース切替中の派生データ | 要求キー付きhook、旧要求の完了破棄、表示側の読込状態 | `useWorkspaceGraphState.test.ts`、`useWorkspaceCardsState.test.ts`、`useWorkspaceCharts.test.tsx`、`useWorkspaceAliases.test.ts`、`useWorkspaceSearchState.test.ts`、`useWorkspaceFrontmatterCategoryChoices.test.ts` |
+| ワークスペース読込復旧 | 空フォルダとパス消失・権限不足・一時障害の分類、索引・設定の部分失敗、再試行、フォルダ再指定、登録解除、利用不能時の操作停止 | `main/ipc/workspaceState.test.ts`、`main/ipc/workspaceHandlers.test.ts`、`main/ipc/workspaceRegistrationHandlers.test.ts`、`renderer/App.workspaces.test.tsx` |
 | HTML・SVG・PDF出力 | Renderer生成・安全化、Main出力handler | `outputHtml.test.ts`、`previewMarkdown.test.ts`、`sanitizeOutputSvg.test.ts`、`outputHandlers.test.ts` |
 | Main / Preload / Renderer契約 | 共有IPC台帳を基準にPreload公開とMain登録を全件照合 | `preload/ipcContract.test.ts`、`main/ipc/ipcContract.test.ts`、`shared/ipcContract.test.ts`、`renderer/relicClient.test.ts` |
 | Markdown共有走査 | コード範囲、パスのデコードと正規化をリンクとグラフの共通入力で確認 | `shared/markdownScan.test.ts`、`shared/links.test.ts`、`main/files/workspaceGraph.test.ts` |

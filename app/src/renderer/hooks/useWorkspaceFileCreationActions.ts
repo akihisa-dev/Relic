@@ -33,6 +33,10 @@ export function useWorkspaceFileCreationActions({
 
   const handleCreateFile = useCallback((): void => {
     if (!relicClient.current) return;
+    if (workspaceState?.availability?.fileOperationsAvailable === false) {
+      setWorkspaceError(t("files.workspaceUnavailableOperations"));
+      return;
+    }
 
     const fileName = fileNameDraft.trim() || nextUniqueFileName(workspaceState, t);
 
@@ -68,6 +72,10 @@ export function useWorkspaceFileCreationActions({
 
   const handleCreateNoteFromPane = useCallback((name: string): void => {
     if (!relicClient.current) return;
+    if (workspaceState?.availability?.fileOperationsAvailable === false) {
+      setWorkspaceError(t("files.workspaceUnavailableOperations"));
+      return;
+    }
 
     const fileName = name.trim() || nextUniqueFileName(workspaceState, t);
 
@@ -99,6 +107,10 @@ export function useWorkspaceFileCreationActions({
 
   const handleCreateFolder = useCallback((): void => {
     if (!relicClient.current) return;
+    if (workspaceState?.availability?.fileOperationsAvailable === false) {
+      setWorkspaceError(t("files.workspaceUnavailableOperations"));
+      return;
+    }
 
     setIsCreatingFolder(true);
     setWorkspaceError(null);

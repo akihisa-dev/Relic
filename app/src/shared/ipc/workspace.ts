@@ -11,6 +11,7 @@ export const workspaceChangedChannel = "workspace:changed";
 export const workspaceWatcherStatusChannel = "workspace:watcherStatus";
 export const openWorkspaceChannel = "workspace:open";
 export const removeWorkspaceChannel = "workspace:remove";
+export const relinkWorkspaceChannel = "workspace:relink";
 export const renameWorkspaceChannel = "workspace:rename";
 export const switchWorkspaceChannel = "workspace:switch";
 export const getWorkspaceChartsChannel = "workspace:getCharts";
@@ -59,8 +60,30 @@ export interface WorkspaceFileNode {
   type: "file";
 }
 
+export type WorkspaceReadArea = "file-index" | "file-tree" | "settings";
+export type WorkspaceReadFailureKind =
+  | "corrupt"
+  | "missing"
+  | "permission"
+  | "temporary"
+  | "unknown"
+  | "unsupported";
+
+export interface WorkspaceReadIssue {
+  area: WorkspaceReadArea;
+  details: string;
+  kind: WorkspaceReadFailureKind;
+}
+
+export interface WorkspaceAvailability {
+  fileOperationsAvailable: boolean;
+  issues: WorkspaceReadIssue[];
+  status: "available" | "degraded" | "unavailable";
+}
+
 export interface WorkspaceState {
   activeWorkspace: WorkspaceSummary | null;
+  availability?: WorkspaceAvailability;
   fileTree: WorkspaceTreeNode[];
   fileIndex?: WorkspaceFileIndexEntry[];
   pinnedPaths: string[];
@@ -87,6 +110,10 @@ export interface RefreshWorkspaceInput {
 }
 
 export interface RemoveWorkspaceInput {
+  workspaceId: string;
+}
+
+export interface RelinkWorkspaceInput {
   workspaceId: string;
 }
 
@@ -240,6 +267,7 @@ export interface WorkspaceApi {
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;
   refreshWorkspace: (input: RefreshWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   openWorkspace: () => Promise<RelicResult<WorkspaceState>>;
+  relinkWorkspace: (input: RelinkWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   removeWorkspace: (input: RemoveWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   renameWorkspace: (input: RenameWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
@@ -263,6 +291,7 @@ export const workspaceIpcContract = {
   getWorkspaceState: { channel: getWorkspaceStateChannel, main: "handle", transport: "invoke", validatesInput: false },
   refreshWorkspace: { channel: refreshWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: true },
   openWorkspace: { channel: openWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: false },
+  relinkWorkspace: { channel: relinkWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: true },
   removeWorkspace: { channel: removeWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: true },
   renameWorkspace: { channel: renameWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: true },
   switchWorkspace: { channel: switchWorkspaceChannel, main: "handle", transport: "invoke", validatesInput: true },

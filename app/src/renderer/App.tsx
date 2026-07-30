@@ -248,6 +248,7 @@ export function App(): ReactElement {
     handleOpenWikiLink,
     handleOpenWorkspace,
     handleRemoveWorkspace,
+    handleRelinkWorkspace,
     handleRevealWorkspace,
     handleRenameWorkspace,
     handleSwitchWorkspace,
@@ -261,6 +262,7 @@ export function App(): ReactElement {
     isCreatingFolder,
     isCreatingWorkspace,
     isOpeningWorkspace,
+    isRelinkingWorkspace,
     setIsCreatingFile
   } = useWorkspaceFileActions({
     aliasesByPath,
@@ -582,6 +584,9 @@ export function App(): ReactElement {
       handleMoveTreeItems,
       handleOpenQuickSwitcher: openQuickSwitcher,
       handleOpenWorkspace,
+      handleRelinkWorkspace,
+      handleRemoveWorkspace,
+      handleRevealWorkspace,
       handleRenameTreeItem,
       handleRevealWorkspaceItem,
       handleSelectFolder,
@@ -592,6 +597,8 @@ export function App(): ReactElement {
       isCreatingFolder,
       isCreatingWorkspace,
       isOpeningWorkspace,
+      isRefreshingWorkspace,
+      isRelinkingWorkspace,
       isSearching,
       isSidebarOpen,
       isSidebarResizing,
@@ -608,6 +615,7 @@ export function App(): ReactElement {
       sidebarWidth,
       startSidebarResize,
       t,
+      refreshWorkspace,
       workspaceState
     },
     overlays: {

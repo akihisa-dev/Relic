@@ -1,5 +1,6 @@
 import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 
+import type { WorkspaceAvailability, WorkspaceSummary } from "../../shared/ipc";
 import { useT } from "../i18n";
 
 interface FilesWorkspaceActionProps {
@@ -17,6 +18,17 @@ interface FilesCreateActionsProps {
   onCollapseAllFolders: () => void;
   onExpandAllFolders: () => void;
   onOpenQuickSwitcher: () => void;
+}
+
+interface FilesWorkspaceRecoveryProps {
+  availability: WorkspaceAvailability;
+  isRefreshingWorkspace: boolean;
+  isRelinkingWorkspace: boolean;
+  onRelinkWorkspace: () => void;
+  onRemoveWorkspace: () => void;
+  onRetryWorkspace: () => void;
+  onRevealWorkspace: () => void;
+  workspace: WorkspaceSummary;
 }
 
 export function FilesCreateActions({
@@ -173,6 +185,102 @@ export function FilesWorkspaceEmpty({
       </div>
     </div>
   );
+}
+
+export function FilesWorkspaceRecovery({
+  availability,
+  isRefreshingWorkspace,
+  isRelinkingWorkspace,
+  onRelinkWorkspace,
+  onRemoveWorkspace,
+  onRetryWorkspace,
+  onRevealWorkspace,
+  workspace
+}: FilesWorkspaceRecoveryProps): ReactElement {
+  const t = useT();
+  const unavailable = availability.status === "unavailable";
+
+  return (
+    <section className={`workspace-recovery workspace-recovery--${availability.status}`}>
+      <div>
+        <p className="workspace-recovery-kicker">
+          {unavailable ? t("files.workspaceUnavailableKicker") : t("files.workspaceDegradedKicker")}
+        </p>
+        <h2>{unavailable ? t("files.workspaceUnavailableTitle") : t("files.workspaceDegradedTitle")}</h2>
+        <p className="workspace-recovery-copy">
+          {unavailable ? t("files.workspaceUnavailableCopy") : t("files.workspaceDegradedCopy")}
+        </p>
+      </div>
+      <dl className="workspace-recovery-path">
+        <dt>{t("files.workspaceRegisteredPath")}</dt>
+        <dd>{workspace.path}</dd>
+      </dl>
+      <ul className="workspace-recovery-issues">
+        {availability.issues.map((issue, index) => (
+          <li key={`${issue.area}:${issue.kind}:${index}`}>
+            <strong>{t(workspaceIssueAreaKey(issue.area))}</strong>
+            <span>{t(workspaceIssueKindKey(issue.kind))}</span>
+            {issue.details ? (
+              <details>
+                <summary>{t("files.workspaceErrorDetails")}</summary>
+                <code>{issue.details}</code>
+              </details>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      <div className="workspace-recovery-actions">
+        <button
+          className="primary-button"
+          disabled={isRefreshingWorkspace}
+          onClick={onRetryWorkspace}
+          type="button"
+        >
+          {isRefreshingWorkspace ? t("common.running") : t("files.workspaceRetry")}
+        </button>
+        <button
+          className="secondary-button"
+          disabled={isRelinkingWorkspace}
+          onClick={onRelinkWorkspace}
+          type="button"
+        >
+          {isRelinkingWorkspace ? t("common.running") : t("files.workspaceRelink")}
+        </button>
+        <button className="secondary-button" onClick={onRevealWorkspace} type="button">
+          {t("files.revealInFinder")}
+        </button>
+        <button className="secondary-button" onClick={onRemoveWorkspace} type="button">
+          {t("files.workspaceRemoveRegistration")}
+        </button>
+      </div>
+      <p className="workspace-recovery-note">{t("files.workspaceRecoveryDoesNotChangeMarkdown")}</p>
+    </section>
+  );
+}
+
+function workspaceIssueAreaKey(
+  area: WorkspaceAvailability["issues"][number]["area"]
+): "files.workspaceIssueFileIndex" | "files.workspaceIssueFileTree" | "files.workspaceIssueSettings" {
+  if (area === "file-tree") return "files.workspaceIssueFileTree";
+  if (area === "file-index") return "files.workspaceIssueFileIndex";
+  return "files.workspaceIssueSettings";
+}
+
+function workspaceIssueKindKey(
+  kind: WorkspaceAvailability["issues"][number]["kind"]
+):
+  | "files.workspaceIssueCorrupt"
+  | "files.workspaceIssueMissing"
+  | "files.workspaceIssuePermission"
+  | "files.workspaceIssueTemporary"
+  | "files.workspaceIssueUnknown"
+  | "files.workspaceIssueUnsupported" {
+  if (kind === "missing") return "files.workspaceIssueMissing";
+  if (kind === "permission") return "files.workspaceIssuePermission";
+  if (kind === "temporary") return "files.workspaceIssueTemporary";
+  if (kind === "corrupt") return "files.workspaceIssueCorrupt";
+  if (kind === "unsupported") return "files.workspaceIssueUnsupported";
+  return "files.workspaceIssueUnknown";
 }
 
 function OpenWorkspaceIcon(): ReactElement {

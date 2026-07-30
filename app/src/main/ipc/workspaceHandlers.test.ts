@@ -103,6 +103,11 @@ describe("workspaceHandlers", () => {
       ok: true,
       value: expect.objectContaining({
         activeWorkspace: workspace,
+        availability: {
+          fileOperationsAvailable: true,
+          issues: [],
+          status: "available"
+        },
         pinnedPaths: ["読書メモ.md"],
         workspaces: [workspace]
       })
@@ -252,6 +257,13 @@ describe("workspaceHandlers", () => {
       ok: true,
       value: expect.objectContaining({
         activeWorkspace: workspace,
+        availability: {
+          fileOperationsAvailable: false,
+          issues: [
+            expect.objectContaining({ area: "file-tree", kind: "missing" })
+          ],
+          status: "unavailable"
+        },
         fileTree: [],
         pinnedPaths: [],
         workspaces: [workspace]
@@ -293,6 +305,13 @@ describe("workspaceHandlers", () => {
       ok: true,
       value: expect.objectContaining({
         activeWorkspace: workspace,
+        availability: {
+          fileOperationsAvailable: true,
+          issues: [
+            expect.objectContaining({ area: "settings" })
+          ],
+          status: "degraded"
+        },
         fileTree: [{ name: "note", path: "note.md", type: "file" }],
         pinnedPaths: [],
         workspaces: [workspace]

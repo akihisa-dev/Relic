@@ -96,6 +96,10 @@ export function registerWorkspaceItemHandlers(): void {
         if (!workspaceSummary) {
           return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
         }
+        if (input.workspaceId !== undefined && input.path === "") {
+          shell.showItemInFolder(workspaceSummary.path);
+          return ok(undefined);
+        }
         const absolutePath = await resolveExistingWorkspacePathOrRoot(workspaceSummary.path, input.path);
         if (!absolutePath.ok) return absolutePath;
         const safePath = await verifyExistingWorkspacePath(workspaceSummary.path, absolutePath.value);

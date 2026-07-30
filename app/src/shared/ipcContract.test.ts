@@ -4,7 +4,7 @@ import { relicApiContractVersion, relicIpcContract } from "./ipc";
 
 describe("IPC public contract", () => {
   it("契約バージョンと既存チャンネル文字列を維持する", () => {
-    expect(relicApiContractVersion).toBe(6);
+    expect(relicApiContractVersion).toBe(7);
     expect(contractChannels()).toEqual({
       applySearchAndReplace: "workspace:applySearchAndReplace",
       applyUnlinkedReference: "workspace:applyUnlinkedReference",
@@ -55,6 +55,7 @@ describe("IPC public contract", () => {
       readMarkdownFile: "workspace:readMarkdownFile",
       readPdfFile: "workspace:readPdfFile",
       refreshWorkspace: "workspace:refresh",
+      relinkWorkspace: "workspace:relink",
       removeWorkspace: "workspace:remove",
       renameFolder: "workspace:renameFolder",
       renameMarkdownFile: "workspace:renameMarkdownFile",

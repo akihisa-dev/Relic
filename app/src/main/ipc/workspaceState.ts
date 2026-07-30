@@ -1,6 +1,14 @@
 import { app } from "electron";
 
-import type { WorkspaceState } from "../../shared/ipc";
+import type {
+  WorkspaceAvailability,
+  WorkspaceFileIndexEntry,
+  WorkspaceReadArea,
+  WorkspaceReadFailureKind,
+  WorkspaceReadIssue,
+  WorkspaceState
+} from "../../shared/ipc";
+import { redactSensitiveText } from "../../shared/securityRedaction";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { getWorkspaceFileIndexCachePath, readWorkspaceFileIndex } from "../files/workspaceFileIndex";
 import { finishPerformanceMeasure, startPerformanceMeasure } from "../files/performanceLog";
@@ -8,13 +16,8 @@ import { type AppSettings } from "../settings/appSettings";
 import { readWorkspaceSettings } from "../settings/workspaceSettings";
 import { toWorkspaceState } from "../workspace/workspaceService";
 
-interface BuildWorkspaceStateOptions {
-  strict?: boolean;
-}
-
 export async function buildWorkspaceState(
-  settings: AppSettings,
-  options: BuildWorkspaceStateOptions = {}
+  settings: AppSettings
 ): Promise<WorkspaceState> {
   const startedAt = startPerformanceMeasure();
   const activeWorkspace =
@@ -26,46 +29,97 @@ export async function buildWorkspaceState(
   }
 
   const userDataPath = app.getPath("userData");
-  const fileTreePromise = options.strict
-    ? readWorkspaceFileTree(activeWorkspace.path)
-    : readWorkspaceFileTree(activeWorkspace.path).catch(() => []);
-  const fileIndexPromise = fileTreePromise
-    .then(async (fileTree) => {
-      const readIndex = readWorkspaceFileIndex(activeWorkspace.path, {
+  const issues: WorkspaceReadIssue[] = [];
+  const [fileTreeResult, workspaceSettingsResult] = await Promise.allSettled([
+    readWorkspaceFileTree(activeWorkspace.path),
+    readWorkspaceSettings(userDataPath, activeWorkspace.id)
+  ]);
+  const fileTree = fileTreeResult.status === "fulfilled" ? fileTreeResult.value : [];
+  if (fileTreeResult.status === "rejected") {
+    issues.push(workspaceReadIssue("file-tree", fileTreeResult.reason));
+  }
+  const pinnedPaths = workspaceSettingsResult.status === "fulfilled"
+    ? workspaceSettingsResult.value.pinnedPaths
+    : [];
+  if (workspaceSettingsResult.status === "rejected") {
+    issues.push(workspaceReadIssue("settings", workspaceSettingsResult.reason));
+  }
+  let fileIndexEntries: WorkspaceFileIndexEntry[] = [];
+
+  if (fileTreeResult.status === "fulfilled") {
+    try {
+      const fileIndex = await readWorkspaceFileIndex(activeWorkspace.path, {
         cachePath: getWorkspaceFileIndexCachePath(userDataPath, activeWorkspace.id),
         fileTree,
         includeSearchContent: false
       });
-      if (options.strict) return readIndex;
-      return readIndex.catch(() => ({
-        entries: [],
-        records: [],
-        stats: {
-          cachedContentHitCount: 0,
-          cacheHitCount: 0,
-          cacheMissCount: 0,
-          readFileCount: 0,
-          readHeadCount: 0,
-          statCount: 0,
-          targetPathCount: 0,
-          unreadableCount: 0
-        }
-      }));
-    });
+      fileIndexEntries = fileIndex.entries;
+    } catch (error) {
+      issues.push(workspaceReadIssue("file-index", error));
+    }
+  }
 
-  const workspaceSettingsPromise = readWorkspaceSettings(userDataPath, activeWorkspace.id);
-
-  const [fileTree, fileIndex, wsSettings] = await Promise.all([
-    fileTreePromise,
-    fileIndexPromise,
-    options.strict ? workspaceSettingsPromise : workspaceSettingsPromise.catch(() => null)
-  ]);
-
-  const workspaceState = toWorkspaceState(settings, fileTree, wsSettings?.pinnedPaths ?? [], fileIndex.entries);
+  const availability = workspaceAvailability(issues);
+  const workspaceState = {
+    ...toWorkspaceState(settings, fileTree, pinnedPaths, fileIndexEntries),
+    availability
+  };
   finishPerformanceMeasure("buildWorkspaceState", startedAt, {
     activeWorkspace: true,
-    fileIndexEntries: fileIndex.entries.length,
+    fileIndexEntries: fileIndexEntries.length,
+    readIssues: issues.length,
     fileTreeNodes: fileTree.length
   });
   return workspaceState;
+}
+
+export function workspaceReadIssue(
+  area: WorkspaceReadArea,
+  error: unknown
+): WorkspaceReadIssue {
+  return {
+    area,
+    details: redactSensitiveText(error instanceof Error ? error.message : String(error)),
+    kind: workspaceReadFailureKind(error)
+  };
+}
+
+function workspaceAvailability(issues: WorkspaceReadIssue[]): WorkspaceAvailability {
+  const fileTreeUnavailable = issues.some((issue) => issue.area === "file-tree");
+  return {
+    fileOperationsAvailable: !fileTreeUnavailable,
+    issues,
+    status: fileTreeUnavailable
+      ? "unavailable"
+      : issues.length > 0
+        ? "degraded"
+        : "available"
+  };
+}
+
+function workspaceReadFailureKind(error: unknown): WorkspaceReadFailureKind {
+  if (error instanceof Error) {
+    if (error.name === "CorruptWorkspaceSettingsError") return "corrupt";
+    if (error.name === "UnsupportedWorkspaceSettingsVersionError") return "unsupported";
+  }
+
+  const code = errorCode(error);
+  if (code === "ENOENT" || code === "ENOTDIR") return "missing";
+  if (code === "EACCES" || code === "EPERM") return "permission";
+  if (
+    code === "EAGAIN" ||
+    code === "EBUSY" ||
+    code === "EIO" ||
+    code === "ENXIO" ||
+    code === "ETIMEDOUT"
+  ) {
+    return "temporary";
+  }
+  return "unknown";
+}
+
+function errorCode(error: unknown): string | undefined {
+  return typeof error === "object" && error !== null && "code" in error
+    ? String((error as { code?: unknown }).code)
+    : undefined;
 }

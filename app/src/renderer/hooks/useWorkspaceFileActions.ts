@@ -64,7 +64,12 @@ export function useWorkspaceFileActions({
     setWorkspaceState
   });
   const mutationActions = useWorkspaceFileMutationActions({
-    beforeMutateWorkspaceItems,
+    beforeMutateWorkspaceItems: workspaceState?.availability?.fileOperationsAvailable === false
+      ? () => {
+        setWorkspaceError(t("files.workspaceUnavailableOperations"));
+        return false;
+      }
+      : beforeMutateWorkspaceItems,
     closeTab,
     focusedPane,
     leftPane,
