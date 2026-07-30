@@ -239,6 +239,70 @@ describe("App file actions", () => {
     });
   });
 
+  it("移動を完全に戻せない場合は現在位置・確認対象・復旧方法を通知する", async () => {
+    const recoveryWorkspaceState = {
+      ...withWorkspace,
+      fileTree: [{
+        children: [{ name: "note", path: "archive/note.md", type: "file" as const }],
+        name: "archive",
+        path: "archive",
+        type: "folder" as const
+      }]
+    };
+    const moveMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        recovery: {
+          currentPath: "archive/note.md",
+          fileRollback: "failed",
+          linkUpdates: {
+            appliedPaths: ["source.md"],
+            conflictedPaths: [],
+            rolledBackPaths: [],
+            rollbackFailedPaths: ["source.md"]
+          },
+          newPath: "archive/note.md",
+          oldPath: "note.md",
+          reasonCode: "LINK_UPDATE_WRITE_FAILED"
+        },
+        status: "recovery-required",
+        workspaceState: recoveryWorkspaceState
+      }
+    });
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "note", path: "note.md", type: "file" },
+            { children: [], name: "archive", path: "archive", type: "folder" }
+          ]
+        }
+      }),
+      moveMarkdownFile
+    });
+
+    await renderApp();
+    const fileRow = await screen.findByRole("button", { name: /note/ });
+    const archiveRow = await screen.findByRole("button", { name: /archive/ });
+    fireEvent.dragStart(fileRow, {
+      dataTransfer: { effectAllowed: "move", setData: vi.fn() }
+    });
+    fireEvent.drop(archiveRow, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+    });
+
+    const toast = await screen.findByText(/現在のファイル位置: archive\/note\.md/);
+    expect(toast).toHaveClass("toast--error");
+    expect(toast).toHaveTextContent("確認が必要なリンクファイル: source.md");
+    expect(toast).toHaveTextContent("ワークスペースを再読み込み");
+    expect(moveMarkdownFile).toHaveBeenCalledWith({
+      destinationFolder: "archive",
+      path: "note.md"
+    });
+  });
+
   it("PNGをフォルダ行へドロップしたらMarkdown追加ではなく画像として取り込む", async () => {
     const importImageFile = vi.fn().mockResolvedValue({
       ok: true,

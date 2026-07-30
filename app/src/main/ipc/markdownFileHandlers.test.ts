@@ -262,13 +262,19 @@ describe("markdownFileHandlers", () => {
       newName: "Renamed",
       path: duplicatedPath
     });
-    expect(renameResult).toMatchObject({ ok: true, value: { file: { path: "Renamed.md" } } });
+    expect(renameResult).toMatchObject({
+      ok: true,
+      value: { file: { path: "Renamed.md" }, status: "completed" }
+    });
 
     const moveResult = await handlerFor(moveMarkdownFileChannel)(undefined, {
       destinationFolder: "archive",
       path: "Renamed.md"
     });
-    expect(moveResult).toMatchObject({ ok: true, value: { file: { path: "archive/Renamed.md" } } });
+    expect(moveResult).toMatchObject({
+      ok: true,
+      value: { file: { path: "archive/Renamed.md" }, status: "completed" }
+    });
     await expect(readFile(path.join(workspacePath, "archive", "Renamed.md"), "utf8")).resolves.toBe("");
     expect(invalidateSpy).toHaveBeenCalledTimes(5);
     expect(invalidateSpy).toHaveBeenCalledWith(workspace.id, undefined);

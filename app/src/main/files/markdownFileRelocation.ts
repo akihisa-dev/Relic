@@ -1,12 +1,15 @@
-import { readFile, rename } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { MarkdownFileContent } from "../../shared/ipc";
-import { hasMarkdownExtension } from "../../shared/markdownExtension";
-import { fail, type RelicResult } from "../../shared/result";
+import type { MarkdownFileContent, MarkdownFileRelocationRecovery } from "../../shared/ipc";
+import { hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
+import { fail, ok, type RelicResult } from "../../shared/result";
 import { atomicWriteNewTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
-import { updateLinksForFileRename } from "./linkUpdater";
+import {
+  prepareLinksForFileRename,
+  type PreparedLinkUpdate
+} from "./linkUpdater";
 import {
   createCopyRelativePath,
   markdownPathInFolder,
@@ -20,15 +23,55 @@ import {
   verifyExistingWorkspacePath,
   verifyNewWorkspacePath
 } from "./paths";
-import { getRenameDestinationCollision, renameFileSystemEntry } from "./renameOperations";
+import {
+  getRenameDestinationCollision,
+  renameFileSystemEntry,
+  rollbackRenamedFileWithoutOverwrite
+} from "./renameOperations";
 import { readMarkdownFile } from "./markdownFileContent";
+
+export type MarkdownFileRelocationOutcome =
+  | {
+      file: MarkdownFileContent;
+      status: "completed";
+    }
+  | {
+      recovery: MarkdownFileRelocationRecovery;
+      status: "recovery-required" | "rolled-back";
+    };
+
+interface MarkdownFileRelocationOperations {
+  pathExists(filePath: string): Promise<boolean>;
+  prepareLinks(
+    workspacePath: string,
+    oldRelativePath: string,
+    newRelativePath: string
+  ): Promise<RelicResult<PreparedLinkUpdate>>;
+  readFinalFile(workspacePath: string, relativePath: string): Promise<RelicResult<MarkdownFileContent>>;
+  rollbackFile(currentPath: string, originalPath: string): Promise<void>;
+}
+
+const defaultMarkdownFileRelocationOperations: MarkdownFileRelocationOperations = {
+  pathExists: async (filePath) => {
+    try {
+      await access(filePath);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  prepareLinks: prepareLinksForFileRename,
+  readFinalFile: readMarkdownFile,
+  rollbackFile: rollbackRenamedFileWithoutOverwrite
+};
 
 export async function renameMarkdownFile(
   workspacePath: string,
   relativePath: string,
   newName: string,
-  operations: Partial<RealpathOperations> = {}
-): Promise<RelicResult<MarkdownFileContent>> {
+  operations: Partial<RealpathOperations> = {},
+  relocationOperations: Partial<MarkdownFileRelocationOperations> = {}
+): Promise<RelicResult<MarkdownFileRelocationOutcome>> {
   if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけをリネームできます。");
   }
@@ -51,6 +94,7 @@ export async function renameMarkdownFile(
     failureMessage: "ファイル名を変更できませんでした。",
     nextRelativePath: nextRelativePath.value,
     operations,
+    relocationOperations,
     relativePath,
     sourcePath: absoluteSourcePath.value
   });
@@ -60,8 +104,9 @@ export async function moveMarkdownFile(
   workspacePath: string,
   relativePath: string,
   destinationFolder: string,
-  operations: Partial<RealpathOperations> = {}
-): Promise<RelicResult<MarkdownFileContent>> {
+  operations: Partial<RealpathOperations> = {},
+  relocationOperations: Partial<MarkdownFileRelocationOperations> = {}
+): Promise<RelicResult<MarkdownFileRelocationOutcome>> {
   if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを移動できます。");
   }
@@ -80,6 +125,7 @@ export async function moveMarkdownFile(
     failureMessage: "ファイルを移動できませんでした。",
     nextRelativePath,
     operations,
+    relocationOperations,
     relativePath,
     sourcePath: absoluteSourcePath.value
   });
@@ -93,10 +139,15 @@ async function moveMarkdownFileToPath(
     failureMessage: string;
     nextRelativePath: string;
     operations: Partial<RealpathOperations>;
+    relocationOperations: Partial<MarkdownFileRelocationOperations>;
     relativePath: string;
     sourcePath: string;
   }
-): Promise<RelicResult<MarkdownFileContent>> {
+): Promise<RelicResult<MarkdownFileRelocationOutcome>> {
+  const relocationOperations = {
+    ...defaultMarkdownFileRelocationOperations,
+    ...options.relocationOperations
+  };
   const absoluteDestinationPath = await resolveNewWorkspacePath(
     workspacePath,
     options.nextRelativePath,
@@ -108,7 +159,8 @@ async function moveMarkdownFileToPath(
   }
 
   if (options.sourcePath === absoluteDestinationPath.value) {
-    return readMarkdownFile(workspacePath, options.relativePath);
+    const file = await readMarkdownFile(workspacePath, options.relativePath);
+    return file.ok ? ok({ file: file.value, status: "completed" }) : file;
   }
 
   const safeSourcePath = await verifyExistingWorkspacePath(workspacePath, options.sourcePath, options.operations);
@@ -138,19 +190,110 @@ async function moveMarkdownFileToPath(
     );
     if (!safeDestinationBeforeRename.ok) return safeDestinationBeforeRename;
 
+    const sourceFile = await readMarkdownFile(workspacePath, options.relativePath);
+    if (!sourceFile.ok) return sourceFile;
+    const preparedLinks = await relocationOperations.prepareLinks(
+      workspacePath,
+      options.relativePath,
+      options.nextRelativePath
+    );
+    if (!preparedLinks.ok) return preparedLinks;
+    const sourceBeforeRename = await readMarkdownFile(workspacePath, options.relativePath);
+    if (!sourceBeforeRename.ok) return sourceBeforeRename;
+    if (sourceBeforeRename.value.content !== sourceFile.value.content) {
+      return fail(
+        "FILE_RELOCATION_CONFLICT",
+        "移動または名前変更の対象ファイルが外部で変更されています。再読み込みしてから実行してください。"
+      );
+    }
+    const collisionBeforeRename = await getRenameDestinationCollision(
+      options.sourcePath,
+      absoluteDestinationPath.value
+    );
+    if (collisionBeforeRename === "different-entry") {
+      return fail("FILE_ALREADY_EXISTS", options.alreadyExistsMessage);
+    }
+
     await renameFileSystemEntry(
       options.sourcePath,
       absoluteDestinationPath.value,
-      collision,
+      collisionBeforeRename,
       path.basename(options.sourcePath)
     );
-    const links = await updateLinksForFileRename(workspacePath, options.relativePath, options.nextRelativePath);
+    let links;
+    try {
+      links = await preparedLinks.value.apply();
+    } catch (error) {
+      links = {
+        error: {
+          code: "LINK_UPDATE_WRITE_FAILED",
+          details: errorDetails(error),
+          message: "内部リンクを更新できませんでした。"
+        },
+        ok: false as const,
+        recovery: {
+          appliedPaths: [],
+          conflictedPaths: [],
+          rolledBackPaths: [],
+          rollbackFailedPaths: []
+        }
+      };
+    }
     if (!links.ok) {
-      await rename(absoluteDestinationPath.value, options.sourcePath).catch(() => undefined);
-      return links;
+      let fileRollback: MarkdownFileRelocationRecovery["fileRollback"] = "succeeded";
+      const oldPathOccupied = await relocationOperations.pathExists(options.sourcePath);
+      try {
+        if (oldPathOccupied) throw new Error("Original path is occupied.");
+        await relocationOperations.rollbackFile(absoluteDestinationPath.value, options.sourcePath);
+      } catch {
+        fileRollback = "failed";
+      }
+
+      const oldPathExists = await relocationOperations.pathExists(options.sourcePath);
+      const newPathExists = await relocationOperations.pathExists(absoluteDestinationPath.value);
+      const currentPath = oldPathExists === newPathExists
+        ? null
+        : oldPathExists
+          ? options.relativePath
+          : options.nextRelativePath;
+      const hasUnrecoveredLinks =
+        links.recovery.conflictedPaths.length > 0 ||
+        links.recovery.rollbackFailedPaths.length > 0;
+      const status = fileRollback === "succeeded" && !hasUnrecoveredLinks
+        ? "rolled-back"
+        : "recovery-required";
+
+      return ok({
+        recovery: {
+          currentPath,
+          fileRollback,
+          linkUpdates: links.recovery,
+          newPath: options.nextRelativePath,
+          oldPath: options.relativePath,
+          reasonCode: links.error.code
+        },
+        status
+      });
     }
 
-    return readMarkdownFile(workspacePath, options.nextRelativePath);
+    let finalFile: RelicResult<MarkdownFileContent>;
+    try {
+      finalFile = await relocationOperations.readFinalFile(workspacePath, options.nextRelativePath);
+    } catch (error) {
+      finalFile = fail("FILE_READ_FAILED", "ファイルを読み込めませんでした。", errorDetails(error));
+    }
+    if (finalFile.ok) {
+      return ok({ file: finalFile.value, status: "completed" });
+    }
+
+    return ok({
+      file: {
+        ...sourceFile.value,
+        name: stripMarkdownExtension(path.posix.basename(options.nextRelativePath)),
+        path: options.nextRelativePath
+      },
+      status: "completed"
+    });
   } catch (error) {
     return fail(
       options.failureCode,

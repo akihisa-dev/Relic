@@ -3,7 +3,7 @@ import path from "node:path";
 
 import type { LinkUpdateImpact, LinkUpdateImpactKind } from "../../shared/ipc";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
-import { fail, ok, type RelicResult } from "../../shared/result";
+import { fail, ok, type RelicError, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
@@ -13,13 +13,18 @@ import {
   replaceMovedSourceBasenameLinksWithCount,
   replaceFolderLinksWithCount
 } from "./linkUpdaterModel";
-import { resolveExistingWorkspacePath, toWorkspaceRelativePath } from "./paths";
+import {
+  resolveExistingWorkspacePath,
+  resolveWorkspaceRelativePath,
+  toWorkspaceRelativePath
+} from "./paths";
 
 interface LinkUpdatePatch {
   absolutePath: string;
   linkCount: number;
   nextContent: string;
   previousContent: string;
+  relativePath: string;
 }
 
 interface LinkUpdatePatchResult {
@@ -31,8 +36,30 @@ interface LinkUpdateReadOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
 }
 
-interface LinkUpdateWriteOperations extends LinkUpdateReadOperations {
+export interface LinkUpdateWriteOperations extends LinkUpdateReadOperations {
   writeTextFile(filePath: string, content: string): Promise<void>;
+}
+
+export interface LinkUpdateRecovery {
+  appliedPaths: string[];
+  conflictedPaths: string[];
+  rolledBackPaths: string[];
+  rollbackFailedPaths: string[];
+}
+
+export type LinkUpdateTransactionResult =
+  | {
+      ok: true;
+      value: void;
+    }
+  | {
+      error: RelicError;
+      ok: false;
+      recovery: LinkUpdateRecovery;
+    };
+
+export interface PreparedLinkUpdate {
+  apply(operations?: LinkUpdateWriteOperations): Promise<LinkUpdateTransactionResult>;
 }
 
 const defaultLinkUpdateReadOperations: LinkUpdateReadOperations = {
@@ -70,16 +97,44 @@ export async function updateLinksForFileRename(
   oldRelativePath: string,
   newRelativePath: string,
   operations: LinkUpdateWriteOperations = defaultLinkUpdateWriteOperations
-): Promise<RelicResult<void>> {
-  if (oldRelativePath === newRelativePath) return ok(undefined);
+): Promise<LinkUpdateTransactionResult> {
+  if (oldRelativePath === newRelativePath) return { ok: true, value: undefined };
 
   const patches = await buildLinkUpdatePatches(workspacePath, "file", oldRelativePath, newRelativePath, {
     operations,
     skipUnreadableFiles: false
   });
-  if (!patches.ok) return patches;
+  if (!patches.ok) return withEmptyRecovery(patches.error);
 
   return applyLinkUpdatePatches(patches.value.patches, operations);
+}
+
+export async function prepareLinksForFileRename(
+  workspacePath: string,
+  oldRelativePath: string,
+  newRelativePath: string,
+  operations: LinkUpdateReadOperations = defaultLinkUpdateReadOperations
+): Promise<RelicResult<PreparedLinkUpdate>> {
+  if (oldRelativePath === newRelativePath) {
+    return ok({
+      apply: async () => ({ ok: true, value: undefined })
+    });
+  }
+
+  const patches = await buildLinkUpdatePatches(workspacePath, "file", oldRelativePath, newRelativePath, {
+    movedFile: {
+      newRelativePath: toWorkspaceRelativePath(newRelativePath),
+      oldRelativePath: toWorkspaceRelativePath(oldRelativePath)
+    },
+    operations,
+    skipUnreadableFiles: false
+  });
+  if (!patches.ok) return patches;
+
+  return ok({
+    apply: async (writeOperations = defaultLinkUpdateWriteOperations) =>
+      applyLinkUpdatePatches(patches.value.patches, writeOperations)
+  });
 }
 
 /**
@@ -91,14 +146,14 @@ export async function updateLinksForFolderRename(
   oldFolderRelativePath: string,
   newFolderRelativePath: string,
   operations: LinkUpdateWriteOperations = defaultLinkUpdateWriteOperations
-): Promise<RelicResult<void>> {
-  if (oldFolderRelativePath === newFolderRelativePath) return ok(undefined);
+): Promise<LinkUpdateTransactionResult> {
+  if (oldFolderRelativePath === newFolderRelativePath) return { ok: true, value: undefined };
 
   const patches = await buildLinkUpdatePatches(workspacePath, "folder", oldFolderRelativePath, newFolderRelativePath, {
     operations,
     skipUnreadableFiles: false
   });
-  if (!patches.ok) return patches;
+  if (!patches.ok) return withEmptyRecovery(patches.error);
 
   return applyLinkUpdatePatches(patches.value.patches, operations);
 }
@@ -109,6 +164,10 @@ async function buildLinkUpdatePatches(
   oldPath: string,
   newPath: string,
   options: {
+    movedFile?: {
+      newRelativePath: string;
+      oldRelativePath: string;
+    };
     operations: LinkUpdateReadOperations;
     skipUnreadableFiles: boolean;
   }
@@ -145,8 +204,11 @@ async function buildLinkUpdatePatches(
       return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新のためにファイルを読み込めませんでした。", errorDetails(err));
     }
 
+    const effectiveSourcePath = options.movedFile?.oldRelativePath === sourcePath
+      ? options.movedFile.newRelativePath
+      : sourcePath;
     if (!shouldProcessMarkdownFile(
-      sourcePath,
+      effectiveSourcePath,
       normalizedNewPath,
       kind,
       content,
@@ -160,17 +222,17 @@ async function buildLinkUpdatePatches(
     const replacement = kind === "file"
       ? replaceFileLinksWithCount(
         content,
-        sourcePath,
+        effectiveSourcePath,
         normalizedOldPath,
         newBaseName,
         newPathWithoutExt
       )
       : replaceFolderLinksWithCount(content, normalizedOldPath, normalizedNewPath);
 
-    const movedSourceReplacement = kind === "file" && sourcePath === normalizedNewPath
+    const movedSourceReplacement = kind === "file" && effectiveSourcePath === normalizedNewPath
       ? replaceMovedSourceBasenameLinksWithCount(
         replacement.content,
-        sourcePath,
+        effectiveSourcePath,
         normalizedOldPath
       )
       : { content: replacement.content, count: 0 };
@@ -178,11 +240,18 @@ async function buildLinkUpdatePatches(
     replacement.count += movedSourceReplacement.count;
 
     if (replacement.content !== content) {
+      let patchAbsolutePath = absoluteSourcePath.value;
+      if (effectiveSourcePath !== sourcePath) {
+        const movedAbsolutePath = resolveWorkspaceRelativePath(workspacePath, effectiveSourcePath);
+        if (!movedAbsolutePath.ok) return movedAbsolutePath;
+        patchAbsolutePath = movedAbsolutePath.value;
+      }
       patches.push({
-        absolutePath: absoluteSourcePath.value,
+        absolutePath: patchAbsolutePath,
         linkCount: replacement.count,
         nextContent: replacement.content,
-        previousContent: content
+        previousContent: content,
+        relativePath: effectiveSourcePath
       });
     }
   }
@@ -256,41 +325,108 @@ function summarizeLinkUpdatePatches(result: LinkUpdatePatchResult): LinkUpdateIm
 async function applyLinkUpdatePatches(
   patches: LinkUpdatePatch[],
   operations: LinkUpdateWriteOperations
-): Promise<RelicResult<void>> {
+): Promise<LinkUpdateTransactionResult> {
   const applied: LinkUpdatePatch[] = [];
+  let activePatch: LinkUpdatePatch | null = null;
 
   try {
     for (const patch of patches) {
+      activePatch = patch;
       const currentContent = await operations.readFile(patch.absolutePath, "utf8");
       if (currentContent !== patch.previousContent) {
-        await rollbackAppliedPatches(applied, operations);
-        return fail("LINK_UPDATE_CONFLICT", "内部リンク更新対象のファイルが外部で変更されています。再読み込みしてから実行してください。");
+        const recovery = await rollbackAppliedPatches(applied, operations);
+        recovery.conflictedPaths.push(patch.relativePath);
+        return failureWithRecovery(
+          "LINK_UPDATE_CONFLICT",
+          "内部リンク更新対象のファイルが外部で変更されています。再読み込みしてから実行してください。",
+          undefined,
+          recovery
+        );
       }
 
       await operations.writeTextFile(patch.absolutePath, patch.nextContent);
       applied.push(patch);
+      activePatch = null;
     }
 
-    return ok(undefined);
+    return { ok: true, value: undefined };
   } catch (error) {
-    await rollbackAppliedPatches(applied, operations);
+    const rollbackCandidates = [...applied];
+    const conflictedPaths: string[] = [];
+    if (activePatch && !rollbackCandidates.includes(activePatch)) {
+      try {
+        const currentContent = await operations.readFile(activePatch.absolutePath, "utf8");
+        if (currentContent === activePatch.nextContent) {
+          rollbackCandidates.push(activePatch);
+        } else if (currentContent !== activePatch.previousContent) {
+          conflictedPaths.push(activePatch.relativePath);
+        }
+      } catch {
+        conflictedPaths.push(activePatch.relativePath);
+      }
+    }
+    const recovery = await rollbackAppliedPatches(rollbackCandidates, operations);
+    recovery.conflictedPaths.push(...conflictedPaths);
 
-    return fail("LINK_UPDATE_WRITE_FAILED", "内部リンクを更新できませんでした。", errorDetails(error));
+    return failureWithRecovery(
+      "LINK_UPDATE_WRITE_FAILED",
+      "内部リンクを更新できませんでした。",
+      errorDetails(error),
+      recovery
+    );
   }
 }
 
 async function rollbackAppliedPatches(
   applied: LinkUpdatePatch[],
   operations: LinkUpdateWriteOperations
-): Promise<void> {
+): Promise<LinkUpdateRecovery> {
+  const recovery: LinkUpdateRecovery = {
+    appliedPaths: applied.map((patch) => patch.relativePath),
+    conflictedPaths: [],
+    rolledBackPaths: [],
+    rollbackFailedPaths: []
+  };
+
   for (const patch of applied.toReversed()) {
     try {
       const currentContent = await operations.readFile(patch.absolutePath, "utf8");
       if (currentContent === patch.nextContent) {
         await operations.writeTextFile(patch.absolutePath, patch.previousContent);
+        recovery.rolledBackPaths.push(patch.relativePath);
+      } else if (currentContent !== patch.previousContent) {
+        recovery.conflictedPaths.push(patch.relativePath);
       }
     } catch {
-      // ロールバックはベストエフォート。外部変更の上書きだけは避ける。
+      recovery.rollbackFailedPaths.push(patch.relativePath);
     }
   }
+
+  return recovery;
+}
+
+function withEmptyRecovery(error: RelicError): LinkUpdateTransactionResult {
+  return {
+    error,
+    ok: false,
+    recovery: {
+      appliedPaths: [],
+      conflictedPaths: [],
+      rolledBackPaths: [],
+      rollbackFailedPaths: []
+    }
+  };
+}
+
+function failureWithRecovery(
+  code: string,
+  message: string,
+  details: string | undefined,
+  recovery: LinkUpdateRecovery
+): LinkUpdateTransactionResult {
+  return {
+    error: { code, details, message },
+    ok: false,
+    recovery
+  };
 }

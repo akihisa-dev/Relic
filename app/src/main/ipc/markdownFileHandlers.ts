@@ -219,10 +219,18 @@ export function registerMarkdownFileHandlers(): void {
       }
 
       invalidateWorkspaceData(context.value.activeWorkspace.id);
-      return ok({
-        file: renamedFile.value,
-        workspaceState: await buildWorkspaceState(context.value.settings)
-      });
+      const workspaceState = await buildWorkspaceState(context.value.settings);
+      return renamedFile.value.status === "completed"
+        ? ok({
+          file: renamedFile.value.file,
+          status: "completed" as const,
+          workspaceState
+        })
+        : ok({
+          recovery: renamedFile.value.recovery,
+          status: renamedFile.value.status,
+          workspaceState
+        });
     } catch (error) {
       return fail(
         "FILE_RENAME_FAILED",
@@ -252,10 +260,18 @@ export function registerMarkdownFileHandlers(): void {
       }
 
       invalidateWorkspaceData(context.value.activeWorkspace.id);
-      return ok({
-        file: movedFile.value,
-        workspaceState: await buildWorkspaceState(context.value.settings)
-      });
+      const workspaceState = await buildWorkspaceState(context.value.settings);
+      return movedFile.value.status === "completed"
+        ? ok({
+          file: movedFile.value.file,
+          status: "completed" as const,
+          workspaceState
+        })
+        : ok({
+          recovery: movedFile.value.recovery,
+          status: movedFile.value.status,
+          workspaceState
+        });
     } catch (error) {
       return fail(
         "FILE_MOVE_FAILED",

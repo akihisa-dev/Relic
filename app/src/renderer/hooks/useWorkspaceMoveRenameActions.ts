@@ -1,6 +1,11 @@
 import { useCallback } from "react";
 
-import type { WorkspaceTreeNode } from "../../shared/ipc";
+import type {
+  MarkdownFileRelocationRecovery,
+  RelocateMarkdownFileResult,
+  WorkspaceTreeNode
+} from "../../shared/ipc";
+import type { Translator } from "../i18nModel";
 import { relicClient } from "../relicClient";
 import { getMovableTreeItems, removeCoveredItems } from "./workspaceFileActionHelpers";
 import type {
@@ -19,6 +24,7 @@ import {
 
 interface UseWorkspaceMoveRenameActionsInput extends WorkspaceFileMutationInput {
   runner: WorkspaceMutationRunner;
+  t: Translator;
   updateMovedFileTab: UpdateMovedFileTab;
   updateMovedFolderTabs: UpdateMovedFolderTabs;
 }
@@ -28,23 +34,48 @@ export function useWorkspaceMoveRenameActions({
   leftPane,
   rightPane,
   runner,
+  setWorkspaceError,
   setWorkspaceState,
   tabs,
+  t,
   updateMovedFileTab,
   updateMovedFolderTabs
 }: UseWorkspaceMoveRenameActionsInput) {
+  const relocationOptions = (
+    oldPath: string,
+    preferredTabId?: string
+  ): {
+    isComplete: (value: RelocateMarkdownFileResult) => boolean;
+    onIncomplete: (value: RelocateMarkdownFileResult) => void;
+  } => ({
+    isComplete: isCompletedRelocation,
+    onIncomplete: (value) => {
+      if (!("recovery" in value)) return;
+      setWorkspaceState(value.workspaceState);
+      if (value.recovery.currentPath && value.recovery.currentPath !== oldPath) {
+        updateMovedFileTab(oldPath, {
+          name: pathName(value.recovery.currentPath),
+          path: value.recovery.currentPath
+        }, preferredTabId);
+      }
+      setWorkspaceError(fileRelocationRecoveryMessage(value.status, value.recovery, t));
+    }
+  });
+
   const handleMoveFile = useCallback((path: string, destFolder: string): void => {
     if (!relicClient.current) return;
     void runner.runWorkspaceMutation(
       [{ path, type: "file" }],
       () => relicClient.current!.moveMarkdownFile({ destinationFolder: destFolder, path }),
       (value) => {
+        if (!isCompletedRelocation(value)) return;
         updateMovedFileTab(path, value.file);
         setWorkspaceState(value.workspaceState);
       },
-      { kind: "file", oldPath: path, newPath: movedFilePath(path, destFolder) }
+      { kind: "file", oldPath: path, newPath: movedFilePath(path, destFolder) },
+      relocationOptions(path)
     );
-  }, [runner, setWorkspaceState, updateMovedFileTab]);
+  }, [runner, setWorkspaceError, setWorkspaceState, t, updateMovedFileTab]);
 
   const handleMoveFolder = useCallback((path: string, destFolder: string): void => {
     if (!relicClient.current) return;
@@ -78,11 +109,12 @@ export function useWorkspaceMoveRenameActions({
             [item],
             () => relicClient.current!.moveMarkdownFile({ destinationFolder: destFolder, path: item.path }),
             (value) => {
+              if (!isCompletedRelocation(value)) return;
               updateMovedFileTab(item.path, value.file, fileTabIdByPath.get(item.path));
               setWorkspaceState(value.workspaceState);
             },
             { kind: "file", oldPath: item.path, newPath: movedFilePath(item.path, destFolder) },
-            { skipItemGuard: true }
+            { ...relocationOptions(item.path, fileTabIdByPath.get(item.path)), skipItemGuard: true }
           );
           if (!moved) return;
         } else {
@@ -101,7 +133,15 @@ export function useWorkspaceMoveRenameActions({
         }
       }
     })();
-  }, [runner, setWorkspaceState, tabs, updateMovedFileTab, updateMovedFolderTabs]);
+  }, [
+    runner,
+    setWorkspaceError,
+    setWorkspaceState,
+    t,
+    tabs,
+    updateMovedFileTab,
+    updateMovedFolderTabs
+  ]);
 
   const activeFile = () => getActiveFileTab({ focusedPane, leftPane, rightPane, tabs });
   const handleMoveActiveFile = useCallback((destinationFolder: string): void => {
@@ -111,12 +151,24 @@ export function useWorkspaceMoveRenameActions({
       [{ path: active.tab.path, type: "file" }],
       () => relicClient.current!.moveMarkdownFile({ destinationFolder, path: active.tab.path }),
       (value) => {
+        if (!isCompletedRelocation(value)) return;
         updateMovedFileTab(active.tab.path, value.file, active.tabId);
         setWorkspaceState(value.workspaceState);
       },
-      { kind: "file", oldPath: active.tab.path, newPath: movedFilePath(active.tab.path, destinationFolder) }
+      { kind: "file", oldPath: active.tab.path, newPath: movedFilePath(active.tab.path, destinationFolder) },
+      relocationOptions(active.tab.path, active.tabId)
     );
-  }, [focusedPane, leftPane, rightPane, runner, setWorkspaceState, tabs, updateMovedFileTab]);
+  }, [
+    focusedPane,
+    leftPane,
+    rightPane,
+    runner,
+    setWorkspaceError,
+    setWorkspaceState,
+    t,
+    tabs,
+    updateMovedFileTab
+  ]);
 
   const handleRenameActiveFile = useCallback((newName: string): void => {
     const active = activeFile();
@@ -125,12 +177,24 @@ export function useWorkspaceMoveRenameActions({
       [{ path: active.tab.path, type: "file" }],
       () => relicClient.current!.renameMarkdownFile({ newName, path: active.tab.path }),
       (value) => {
+        if (!isCompletedRelocation(value)) return;
         updateMovedFileTab(active.tab.path, value.file, active.tabId);
         setWorkspaceState(value.workspaceState);
       },
-      { kind: "file", oldPath: active.tab.path, newPath: renamedFilePath(active.tab.path, newName) }
+      { kind: "file", oldPath: active.tab.path, newPath: renamedFilePath(active.tab.path, newName) },
+      relocationOptions(active.tab.path, active.tabId)
     );
-  }, [focusedPane, leftPane, rightPane, runner, setWorkspaceState, tabs, updateMovedFileTab]);
+  }, [
+    focusedPane,
+    leftPane,
+    rightPane,
+    runner,
+    setWorkspaceError,
+    setWorkspaceState,
+    t,
+    tabs,
+    updateMovedFileTab
+  ]);
 
   const handleRenameTreeItem = useCallback((path: string, type: WorkspaceTreeNode["type"], newName: string): void => {
     if (!relicClient.current) return;
@@ -139,10 +203,12 @@ export function useWorkspaceMoveRenameActions({
         [{ path, type: "file" }],
         () => relicClient.current!.renameMarkdownFile({ newName, path }),
         (value) => {
+          if (!isCompletedRelocation(value)) return;
           updateMovedFileTab(path, value.file);
           setWorkspaceState(value.workspaceState);
         },
-        { kind: "file", oldPath: path, newPath: renamedFilePath(path, newName) }
+        { kind: "file", oldPath: path, newPath: renamedFilePath(path, newName) },
+        relocationOptions(path)
       );
       return;
     }
@@ -156,7 +222,52 @@ export function useWorkspaceMoveRenameActions({
       },
       { kind: "folder", oldPath: path, newPath: nextFolderPath }
     );
-  }, [runner, setWorkspaceState, updateMovedFileTab, updateMovedFolderTabs]);
+  }, [
+    runner,
+    setWorkspaceError,
+    setWorkspaceState,
+    t,
+    updateMovedFileTab,
+    updateMovedFolderTabs
+  ]);
 
   return { handleMoveActiveFile, handleMoveFile, handleMoveFolder, handleMoveTreeItems, handleRenameActiveFile, handleRenameTreeItem };
+}
+
+export function fileRelocationRecoveryMessage(
+  status: "recovery-required" | "rolled-back",
+  recovery: MarkdownFileRelocationRecovery,
+  t: Translator
+): string {
+  if (status === "rolled-back") {
+    return t("files.relocationRolledBack", {
+      newPath: recovery.newPath,
+      oldPath: recovery.oldPath
+    });
+  }
+
+  const unresolvedPaths = [
+    ...recovery.linkUpdates.conflictedPaths,
+    ...recovery.linkUpdates.rollbackFailedPaths
+  ].filter((value, index, values) => values.indexOf(value) === index);
+  const visiblePaths = unresolvedPaths.slice(0, 5);
+  const remainingCount = Math.max(0, unresolvedPaths.length - visiblePaths.length);
+  return t("files.relocationRecoveryRequired", {
+    currentPath: recovery.currentPath ?? t("files.relocationCurrentPathUnknown"),
+    newPath: recovery.newPath,
+    oldPath: recovery.oldPath,
+    paths: visiblePaths.length > 0 ? visiblePaths.join(", ") : t("files.relocationNoLinkPaths"),
+    remaining: remainingCount
+  });
+}
+
+function pathName(filePath: string): string {
+  const baseName = filePath.split("/").at(-1) ?? filePath;
+  return baseName.replace(/\.md$/i, "");
+}
+
+function isCompletedRelocation(
+  value: RelocateMarkdownFileResult
+): value is Extract<RelocateMarkdownFileResult, { status: "completed" }> {
+  return "file" in value && (!("status" in value) || value.status === "completed");
 }

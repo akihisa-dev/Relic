@@ -402,9 +402,48 @@ describe("updateLinksForFileRename", () => {
 
     expect(result).toMatchObject({
       error: expect.objectContaining({ code: "LINK_UPDATE_WRITE_FAILED" }),
-      ok: false
+      ok: false,
+      recovery: {
+        appliedPaths: ["first.md"],
+        conflictedPaths: ["first.md"],
+        rolledBackPaths: [],
+        rollbackFailedPaths: []
+      }
     });
     await expect(readFile(firstPath, "utf8")).resolves.toBe("外部変更 [[new]]");
+    await expect(readFile(secondPath, "utf8")).resolves.toBe("[[old]]");
+  });
+
+  it("内部リンクのロールバック失敗対象を結果として返す", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-rollback-failed-"));
+    temporaryPaths.push(ws);
+    const firstPath = path.join(ws, "first.md");
+    const secondPath = path.join(ws, "second.md");
+    await writeFile(firstPath, "[[old]]", "utf8");
+    await writeFile(secondPath, "[[old]]", "utf8");
+    await writeFile(path.join(ws, "new.md"), "", "utf8");
+
+    let writeCount = 0;
+    const result = await updateLinksForFileRename(ws, "old.md", "new.md", {
+      readFile,
+      async writeTextFile(filePath, content) {
+        writeCount += 1;
+        if (writeCount >= 2) throw new Error("write failed");
+        await writeFile(filePath, content, "utf8");
+      }
+    });
+
+    expect(result).toMatchObject({
+      error: { code: "LINK_UPDATE_WRITE_FAILED" },
+      ok: false,
+      recovery: {
+        appliedPaths: ["first.md"],
+        conflictedPaths: [],
+        rolledBackPaths: [],
+        rollbackFailedPaths: ["first.md"]
+      }
+    });
+    await expect(readFile(firstPath, "utf8")).resolves.toBe("[[new]]");
     await expect(readFile(secondPath, "utf8")).resolves.toBe("[[old]]");
   });
 });

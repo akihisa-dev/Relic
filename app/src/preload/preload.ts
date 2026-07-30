@@ -128,6 +128,7 @@ import {
   type RenameWorkspaceInput,
   type RenameFolderInput,
   type RenameMarkdownFileInput,
+  type RelocateMarkdownFileResult,
   type RenameMarkdownFileResult,
   type ApplySearchAndReplaceResult,
   type ReplaceInFileInput,
@@ -240,7 +241,7 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(moveItemToTrashChannel, input) as Promise<RelicResult<WorkspaceState>>,
   moveMarkdownFile: (input: MoveMarkdownFileInput) =>
     ipcRenderer.invoke(moveMarkdownFileChannel, input) as Promise<
-      RelicResult<RenameMarkdownFileResult>
+      RelicResult<RelocateMarkdownFileResult>
     >,
   openWorkspace: () =>
     ipcRenderer.invoke(openWorkspaceChannel) as Promise<RelicResult<WorkspaceState>>,
@@ -256,7 +257,7 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(renameWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   renameMarkdownFile: (input: RenameMarkdownFileInput) =>
     ipcRenderer.invoke(renameMarkdownFileChannel, input) as Promise<
-      RelicResult<RenameMarkdownFileResult>
+      RelicResult<RelocateMarkdownFileResult>
     >,
   renameFolder: (input: RenameFolderInput) =>
     ipcRenderer.invoke(renameFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,

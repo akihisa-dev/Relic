@@ -69,7 +69,11 @@ export function useWorkspaceMutationRunner({
       action: () => Promise<RelicResult<T>>,
       onSuccess: (value: T) => void,
       linkImpact?: LinkImpactRequest,
-      options?: { skipItemGuard?: boolean }
+      options?: {
+        isComplete?: (value: T) => boolean;
+        onIncomplete?: (value: T) => void;
+        skipItemGuard?: boolean;
+      }
     ): Promise<boolean> => {
       if (!options?.skipItemGuard && !await ensureCanMutateItems(items)) return false;
       if (linkImpact && !await confirmLinkUpdateImpact(linkImpact.kind, linkImpact.oldPath, linkImpact.newPath)) {
@@ -78,6 +82,10 @@ export function useWorkspaceMutationRunner({
 
       const result = await action();
       if (result.ok) {
+        if (options?.isComplete && !options.isComplete(result.value)) {
+          options.onIncomplete?.(result.value);
+          return false;
+        }
         onSuccess(result.value);
         return true;
       }

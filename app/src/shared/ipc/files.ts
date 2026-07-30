@@ -138,6 +138,32 @@ export interface RenameMarkdownFileResult {
   workspaceState: WorkspaceState;
 }
 
+export interface MarkdownFileRelocationRecovery {
+  currentPath: string | null;
+  fileRollback: "failed" | "succeeded";
+  linkUpdates: {
+    appliedPaths: string[];
+    conflictedPaths: string[];
+    rolledBackPaths: string[];
+    rollbackFailedPaths: string[];
+  };
+  newPath: string;
+  oldPath: string;
+  reasonCode: string;
+}
+
+export type RelocateMarkdownFileResult =
+  | {
+      file: MarkdownFileContent;
+      status: "completed";
+      workspaceState: WorkspaceState;
+    }
+  | {
+      recovery: MarkdownFileRelocationRecovery;
+      status: "recovery-required" | "rolled-back";
+      workspaceState: WorkspaceState;
+    };
+
 export type CreateLinkedMarkdownFileResult = RenameMarkdownFileResult;
 
 export interface FilesApi {
@@ -154,9 +180,9 @@ export interface FilesApi {
   getLinkUpdateImpact: (input: LinkUpdateImpactInput) => Promise<RelicResult<LinkUpdateImpact>>;
   moveFolder: (input: MoveFolderInput) => Promise<RelicResult<WorkspaceState>>;
   moveItemToTrash: (input: MoveItemToTrashInput) => Promise<RelicResult<WorkspaceState>>;
-  moveMarkdownFile: (input: MoveMarkdownFileInput) => Promise<RelicResult<RenameMarkdownFileResult>>;
+  moveMarkdownFile: (input: MoveMarkdownFileInput) => Promise<RelicResult<RelocateMarkdownFileResult>>;
   readMarkdownFile: (input: ReadMarkdownFileInput) => Promise<RelicResult<MarkdownFileContent>>;
-  renameMarkdownFile: (input: RenameMarkdownFileInput) => Promise<RelicResult<RenameMarkdownFileResult>>;
+  renameMarkdownFile: (input: RenameMarkdownFileInput) => Promise<RelicResult<RelocateMarkdownFileResult>>;
   renameFolder: (input: RenameFolderInput) => Promise<RelicResult<WorkspaceState>>;
   revealWorkspaceItem: (input: RevealWorkspaceItemInput) => Promise<RelicResult<void>>;
   startWorkspaceFileDrag: (input: StartWorkspaceFileDragInput) => void;

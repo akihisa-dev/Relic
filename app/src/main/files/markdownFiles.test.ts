@@ -521,9 +521,12 @@ describe("renameMarkdownFile", () => {
     await expect(renameMarkdownFile(workspacePath, "before.md", "after")).resolves.toEqual({
       ok: true,
       value: {
-        content: "# Before",
-        name: "after",
-        path: "after.md"
+        file: {
+          content: "# Before",
+          name: "after",
+          path: "after.md"
+        },
+        status: "completed"
       }
     });
     await expect(readFile(path.join(workspacePath, "after.md"), "utf8")).resolves.toBe("# Before");
@@ -552,9 +555,12 @@ describe("renameMarkdownFile", () => {
     await expect(renameMarkdownFile(workspacePath, "before.md", "after")).resolves.toEqual({
       ok: true,
       value: {
-        content: "# Before",
-        name: "after",
-        path: "after.md"
+        file: {
+          content: "# Before",
+          name: "after",
+          path: "after.md"
+        },
+        status: "completed"
       }
     });
     await expect(readFile(path.join(workspacePath, "after.md"), "utf8")).resolves.toBe("# Before");
@@ -746,9 +752,12 @@ describe("moveMarkdownFile", () => {
     await expect(moveMarkdownFile(workspacePath, "note.md", "archive")).resolves.toEqual({
       ok: true,
       value: {
-        content: "# Note",
-        name: "note",
-        path: "archive/note.md"
+        file: {
+          content: "# Note",
+          name: "note",
+          path: "archive/note.md"
+        },
+        status: "completed"
       }
     });
     await expect(readFile(path.join(workspacePath, "archive/note.md"), "utf8")).resolves.toBe("# Note");
@@ -782,6 +791,221 @@ describe("moveMarkdownFile", () => {
       ok: true
     });
     await expect(readFile(path.join(workspacePath, "archive", "note.md"), "utf8")).resolves.toBe("[[../target]]");
+  });
+
+  it("リンク更新失敗時にファイルと適用済みリンクを戻し、安全に再試行できる", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-rollback-"));
+    temporaryPaths.push(workspacePath);
+    await mkdir(path.join(workspacePath, "archive"));
+    await writeFile(path.join(workspacePath, "note.md"), "# Note", "utf8");
+
+    const failed = await moveMarkdownFile(workspacePath, "note.md", "archive", {}, {
+      prepareLinks: async () => ({
+        ok: true,
+        value: {
+          apply: async () => ({
+            error: { code: "LINK_UPDATE_WRITE_FAILED", message: "failed" },
+            ok: false,
+            recovery: {
+              appliedPaths: ["source.md"],
+              conflictedPaths: [],
+              rolledBackPaths: ["source.md"],
+              rollbackFailedPaths: []
+            }
+          })
+        }
+      })
+    });
+
+    expect(failed).toEqual({
+      ok: true,
+      value: {
+        recovery: {
+          currentPath: "note.md",
+          fileRollback: "succeeded",
+          linkUpdates: {
+            appliedPaths: ["source.md"],
+            conflictedPaths: [],
+            rolledBackPaths: ["source.md"],
+            rollbackFailedPaths: []
+          },
+          newPath: "archive/note.md",
+          oldPath: "note.md",
+          reasonCode: "LINK_UPDATE_WRITE_FAILED"
+        },
+        status: "rolled-back"
+      }
+    });
+    await expect(readFile(path.join(workspacePath, "note.md"), "utf8")).resolves.toBe("# Note");
+    await expect(readFile(path.join(workspacePath, "archive", "note.md"), "utf8"))
+      .rejects.toMatchObject({ code: "ENOENT" });
+
+    await expect(moveMarkdownFile(workspacePath, "note.md", "archive")).resolves.toMatchObject({
+      ok: true,
+      value: { status: "completed" }
+    });
+  });
+
+  it("リンク更新計画を確定できない場合はファイル本体を移動しない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-plan-failed-"));
+    temporaryPaths.push(workspacePath);
+    await mkdir(path.join(workspacePath, "archive"));
+    await writeFile(path.join(workspacePath, "note.md"), "# Note", "utf8");
+
+    const result = await moveMarkdownFile(workspacePath, "note.md", "archive", {}, {
+      prepareLinks: async () => ({
+        error: { code: "LINK_UPDATE_READ_FAILED", message: "failed" },
+        ok: false
+      })
+    });
+
+    expect(result).toMatchObject({
+      error: { code: "LINK_UPDATE_READ_FAILED" },
+      ok: false
+    });
+    await expect(readFile(path.join(workspacePath, "note.md"), "utf8")).resolves.toBe("# Note");
+    await expect(readFile(path.join(workspacePath, "archive", "note.md"), "utf8"))
+      .rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("リンク更新計画の確定中に対象ファイルが外部変更された場合は移動しない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-plan-conflict-"));
+    temporaryPaths.push(workspacePath);
+    await mkdir(path.join(workspacePath, "archive"));
+    const notePath = path.join(workspacePath, "note.md");
+    await writeFile(notePath, "# Before", "utf8");
+
+    const result = await moveMarkdownFile(workspacePath, "note.md", "archive", {}, {
+      prepareLinks: async () => {
+        await writeFile(notePath, "# External", "utf8");
+        return {
+          ok: true,
+          value: { apply: async () => ({ ok: true, value: undefined }) }
+        };
+      }
+    });
+
+    expect(result).toMatchObject({
+      error: { code: "FILE_RELOCATION_CONFLICT" },
+      ok: false
+    });
+    await expect(readFile(notePath, "utf8")).resolves.toBe("# External");
+    await expect(readFile(path.join(workspacePath, "archive", "note.md"), "utf8"))
+      .rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("ファイル本体を元へ戻せない場合は現在位置と未復旧リンクを返す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-recovery-"));
+    temporaryPaths.push(workspacePath);
+    await mkdir(path.join(workspacePath, "archive"));
+    await writeFile(path.join(workspacePath, "note.md"), "# Note", "utf8");
+
+    const result = await moveMarkdownFile(workspacePath, "note.md", "archive", {}, {
+      rollbackFile: async () => {
+        throw new Error("rollback failed");
+      },
+      prepareLinks: async () => ({
+        ok: true,
+        value: {
+          apply: async () => ({
+            error: { code: "LINK_UPDATE_WRITE_FAILED", message: "failed" },
+            ok: false,
+            recovery: {
+              appliedPaths: ["source.md"],
+              conflictedPaths: [],
+              rolledBackPaths: [],
+              rollbackFailedPaths: ["source.md"]
+            }
+          })
+        }
+      })
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        recovery: {
+          currentPath: "archive/note.md",
+          fileRollback: "failed",
+          linkUpdates: {
+            appliedPaths: ["source.md"],
+            rollbackFailedPaths: ["source.md"]
+          },
+          newPath: "archive/note.md",
+          oldPath: "note.md"
+        },
+        status: "recovery-required"
+      }
+    });
+    await expect(readFile(path.join(workspacePath, "archive", "note.md"), "utf8")).resolves.toBe("# Note");
+  });
+
+  it("ロールバック前に元パスが外部作成された場合は上書きしない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-rollback-conflict-"));
+    temporaryPaths.push(workspacePath);
+    await mkdir(path.join(workspacePath, "archive"));
+    const oldPath = path.join(workspacePath, "note.md");
+    const newPath = path.join(workspacePath, "archive", "note.md");
+    await writeFile(oldPath, "# Original", "utf8");
+
+    const result = await moveMarkdownFile(workspacePath, "note.md", "archive", {}, {
+      prepareLinks: async () => ({
+        ok: true,
+        value: {
+          apply: async () => {
+            await writeFile(oldPath, "# External", "utf8");
+            return {
+              error: { code: "LINK_UPDATE_WRITE_FAILED", message: "failed" },
+              ok: false,
+              recovery: {
+                appliedPaths: [],
+                conflictedPaths: [],
+                rolledBackPaths: [],
+                rollbackFailedPaths: []
+              }
+            };
+          }
+        }
+      })
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        recovery: {
+          currentPath: null,
+          fileRollback: "failed"
+        },
+        status: "recovery-required"
+      }
+    });
+    await expect(readFile(oldPath, "utf8")).resolves.toBe("# External");
+    await expect(readFile(newPath, "utf8")).resolves.toBe("# Original");
+  });
+
+  it("移動とリンク更新後の最終読み込み失敗を実際の変更失敗として扱わない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-final-read-"));
+    temporaryPaths.push(workspacePath);
+    await mkdir(path.join(workspacePath, "archive"));
+    await writeFile(path.join(workspacePath, "note.md"), "# Note", "utf8");
+    await writeFile(path.join(workspacePath, "source.md"), "[[note]]", "utf8");
+
+    const result = await moveMarkdownFile(workspacePath, "note.md", "archive", {}, {
+      readFinalFile: async () => ({
+        error: { code: "FILE_READ_FAILED", message: "failed" },
+        ok: false
+      })
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        file: { path: "archive/note.md" },
+        status: "completed"
+      }
+    });
+    await expect(readFile(path.join(workspacePath, "source.md"), "utf8"))
+      .resolves.toBe("[[archive/note]]");
   });
 
   it("移動先に同名ファイルがある場合は上書きしない", async () => {

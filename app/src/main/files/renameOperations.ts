@@ -1,4 +1,4 @@
-import { rename, stat } from "node:fs/promises";
+import { link, rename, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 
 const DEFAULT_MAX_RENAME_TEMPORARY_PATH_CANDIDATES = 1000;
@@ -43,6 +43,24 @@ export async function renameFileSystemEntry(
     await rename(temporaryPath, destinationPath);
   } catch (error) {
     await rename(temporaryPath, sourcePath).catch(() => undefined);
+    throw error;
+  }
+}
+
+export async function rollbackRenamedFileWithoutOverwrite(
+  currentPath: string,
+  originalPath: string,
+  operations: {
+    link(sourcePath: string, destinationPath: string): Promise<void>;
+    unlink(filePath: string): Promise<void>;
+  } = { link, unlink }
+): Promise<void> {
+  await operations.link(currentPath, originalPath);
+
+  try {
+    await operations.unlink(currentPath);
+  } catch (error) {
+    await operations.unlink(originalPath).catch(() => undefined);
     throw error;
   }
 }
