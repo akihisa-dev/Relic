@@ -12,7 +12,7 @@ export interface BubbleOptions {
 }
 
 export const defaultBubbleOptions: BubbleOptions = {
-  centerStrength: 0.1,
+  centerStrength: 0.04,
   lineSizeMultiplier: 1,
   linkDistance: 250,
   linkStrength: 0.32,

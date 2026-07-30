@@ -6,6 +6,7 @@ import {
   bubbleCategoryExteriorImpulse,
   bubbleLinkAttractionStrength
 } from "./bubblePhysicsModel";
+import { bubbleCategoryDriftCenterStrength } from "./bubbleCategoryModel";
 import { defaultBubbleOptions } from "./bubbleTypes";
 
 describe("bubblePhysicsModel", () => {
@@ -15,6 +16,11 @@ describe("bubblePhysicsModel", () => {
     expect(bubbleLinkAttractionStrength(defaultBubbleOptions.linkStrength, 4))
       .toBeCloseTo(0.52);
     expect(defaultBubbleOptions.repelStrength).toBe(12);
+  });
+
+  it("全体を中央へ押し込みすぎない弱い復帰力を使う", () => {
+    expect(defaultBubbleOptions.centerStrength).toBe(0.04);
+    expect(bubbleCategoryDriftCenterStrength).toBe(0.003);
   });
 
   it("カテゴリ中心の近くでは吸着せず、遠距離でも急加速しない", () => {

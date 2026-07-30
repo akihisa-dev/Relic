@@ -49,7 +49,7 @@ export interface BubbleCategoryForceNode extends BubbleCategoryNode {
   y?: number;
 }
 
-export const bubbleCategoryDriftCenterStrength = 0.012;
+export const bubbleCategoryDriftCenterStrength = 0.003;
 
 const bubbleCategoryMinimumRadius = 96;
 const bubbleCategoryNodeSpacing = 48;
