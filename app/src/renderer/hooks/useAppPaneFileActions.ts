@@ -8,8 +8,9 @@ import { ensureMarkdownExtension } from "../../shared/markdownExtension";
 import type { HeadingScrollTarget } from "../editorDerivedState";
 import type { PaneId, PanelTabKind, Tab } from "../store/editorStore";
 import { joinWorkspacePath } from "../workspacePaths";
+import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
 
-interface UseAppPaneFileActionsInput {
+interface UseAppPaneFileActionsInput extends Pick<WorkspaceRequestGuard, "beginWorkspaceRequest"> {
   focusedPane: PaneId;
   handleDuplicateTreeFile: (path: string) => void;
   isSplit: boolean;
@@ -26,6 +27,7 @@ interface UseAppPaneFileActionsInput {
 }
 
 export function useAppPaneFileActions({
+  beginWorkspaceRequest,
   focusedPane,
   handleDuplicateTreeFile,
   isSplit,
@@ -68,7 +70,8 @@ export function useAppPaneFileActions({
   }, [tabs, isSplit, openFileInPane, openImageInPane, openPdfInPane, openChartInPane, openPanelInPane]);
 
   const openTreeFileInOtherPane = useCallback((path: string): void => {
-    if (!relicClient.current || !isSplit) return;
+    const relic = relicClient.current;
+    if (!relic || !isSplit) return;
     const otherPane = focusedPane === "left" ? "right" : "left";
     if (isSupportedMarkdownImagePath(path)) {
       openImageInPane(otherPane, { name: path.split("/").at(-1) ?? path, path });
@@ -80,22 +83,28 @@ export function useAppPaneFileActions({
       return;
     }
 
-    void relicClient.current.readMarkdownFile({ path }).then((result) => {
+    const isCurrentWorkspace = beginWorkspaceRequest();
+    if (!isCurrentWorkspace()) return;
+    void relic.readMarkdownFile({ path }).then((result) => {
+      if (!isCurrentWorkspace()) return;
       if (result.ok) {
         openFileInPane(otherPane, result.value);
       } else {
         setWorkspaceError(result.error.message);
       }
     });
-  }, [focusedPane, isSplit, openFileInPane, openImageInPane, openPdfInPane, setWorkspaceError]);
+  }, [beginWorkspaceRequest, focusedPane, isSplit, openFileInPane, openImageInPane, openPdfInPane, setWorkspaceError]);
 
   const openWorkspacePathInOtherPane = useCallback((path: string, heading?: string): void => {
     if (!relicClient.current || !isSplit) return;
     const relic = relicClient.current;
+    const isCurrentWorkspace = beginWorkspaceRequest();
+    if (!isCurrentWorkspace()) return;
     const otherPane = focusedPane === "left" ? "right" : "left";
     const setScrollHeading = otherPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
 
     void relic.readMarkdownFile({ path }).then((readResult) => {
+      if (!isCurrentWorkspace()) return;
       if (readResult.ok) {
         openFileInPane(otherPane, readResult.value);
         if (heading) setScrollHeading(heading);
@@ -103,6 +112,7 @@ export function useAppPaneFileActions({
       }
 
       void relic.createLinkedMarkdownFile({ path }).then((createResult) => {
+        if (!isCurrentWorkspace()) return;
         if (createResult.ok) {
           setWorkspaceState(createResult.value.workspaceState);
           openFileInPane(otherPane, createResult.value.file);
@@ -114,6 +124,7 @@ export function useAppPaneFileActions({
     });
   }, [
     focusedPane,
+    beginWorkspaceRequest,
     isSplit,
     openFileInPane,
     setLeftPaneScrollHeading,
@@ -123,14 +134,18 @@ export function useAppPaneFileActions({
   ]);
 
   const handleCreateFileInFolder = useCallback((folderPath: string, name: string): void => {
-    if (!relicClient.current) return;
+    const relic = relicClient.current;
+    if (!relic) return;
     const trimmedFileName = name.trim();
     if (!trimmedFileName) return;
 
     const nextPath = joinWorkspacePath(folderPath, ensureMarkdownExtension(trimmedFileName));
 
+    const isCurrentWorkspace = beginWorkspaceRequest();
+    if (!isCurrentWorkspace()) return;
     setWorkspaceError(null);
-    void relicClient.current.createLinkedMarkdownFile({ path: nextPath }).then((result) => {
+    void relic.createLinkedMarkdownFile({ path: nextPath }).then((result) => {
+      if (!isCurrentWorkspace()) return;
       if (result.ok) {
         setWorkspaceState(result.value.workspaceState);
         openFileInPane(focusedPane, result.value.file);
@@ -138,31 +153,39 @@ export function useAppPaneFileActions({
         setWorkspaceError(result.error.message);
       }
     });
-  }, [focusedPane, openFileInPane, setWorkspaceError, setWorkspaceState]);
+  }, [beginWorkspaceRequest, focusedPane, openFileInPane, setWorkspaceError, setWorkspaceState]);
 
   const handleCreateFolderInFolder = useCallback((folderPath: string, name: string): void => {
-    if (!relicClient.current) return;
+    const relic = relicClient.current;
+    if (!relic) return;
     const trimmedFolderName = name.trim();
     if (!trimmedFolderName) return;
 
+    const isCurrentWorkspace = beginWorkspaceRequest();
+    if (!isCurrentWorkspace()) return;
     setWorkspaceError(null);
-    void relicClient.current.createFolder({ name: trimmedFolderName, parentFolder: folderPath }).then((result) => {
+    void relic.createFolder({ name: trimmedFolderName, parentFolder: folderPath }).then((result) => {
+      if (!isCurrentWorkspace()) return;
       if (result.ok) {
         setWorkspaceState(result.value);
       } else {
         setWorkspaceError(result.error.message);
       }
     });
-  }, [setWorkspaceError, setWorkspaceState]);
+  }, [beginWorkspaceRequest, setWorkspaceError, setWorkspaceState]);
 
   const handleRevealWorkspaceItem = useCallback((path: string): void => {
-    if (!relicClient.current) return;
+    const relic = relicClient.current;
+    if (!relic) return;
+    const isCurrentWorkspace = beginWorkspaceRequest();
+    if (!isCurrentWorkspace()) return;
 
     setWorkspaceError(null);
-    void relicClient.current.revealWorkspaceItem({ path }).then((result) => {
+    void relic.revealWorkspaceItem({ path }).then((result) => {
+      if (!isCurrentWorkspace()) return;
       if (!result.ok) setWorkspaceError(result.error.message);
     });
-  }, [setWorkspaceError]);
+  }, [beginWorkspaceRequest, setWorkspaceError]);
 
   const handleDuplicateTabFile = useCallback((tabId: string): void => {
     const tab = tabs[tabId];

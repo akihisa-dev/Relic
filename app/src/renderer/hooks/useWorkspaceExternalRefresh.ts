@@ -5,14 +5,16 @@ import type { Translator } from "../i18nModel";
 import { relicClient } from "../relicClient";
 import { useEditorStore } from "../store/editorStore";
 import { applyWorkspaceSnapshot } from "../workspaceSnapshotSync";
+import type { IsCurrentRequest } from "./useAsyncRequestGuard";
 import { useLatest } from "./useLatest";
+import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
 
 interface SaveBeforeRefreshResult {
   message?: string;
   ok: boolean;
 }
 
-interface UseWorkspaceExternalRefreshInput {
+interface UseWorkspaceExternalRefreshInput extends Pick<WorkspaceRequestGuard, "beginWorkspaceRequestFor"> {
   flushTabsBeforeClose: (tabIds: string[]) => Promise<SaveBeforeRefreshResult>;
   onWorkspaceDataChanged: () => Promise<boolean>;
   setWorkspaceError: (message: string | null) => void;
@@ -23,6 +25,7 @@ interface UseWorkspaceExternalRefreshInput {
 }
 
 export function useWorkspaceExternalRefresh({
+  beginWorkspaceRequestFor,
   flushTabsBeforeClose,
   onWorkspaceDataChanged,
   setWorkspaceError,
@@ -44,10 +47,12 @@ export function useWorkspaceExternalRefresh({
   const applyCurrentWorkspaceSnapshot = useCallback(async (
     nextState: WorkspaceState,
     workspaceId: string,
-    notifyFileFailures: boolean
+    notifyFileFailures: boolean,
+    isCurrentWorkspace: IsCurrentRequest
   ) => {
     return applyWorkspaceSnapshot({
       getActiveWorkspaceId: () => activeWorkspaceIdRef.current,
+      isCurrentWorkspace,
       nextState,
       notifyFileFailures,
       onWorkspaceDataChanged: () => onWorkspaceDataChangedRef.current(),
@@ -69,14 +74,17 @@ export function useWorkspaceExternalRefresh({
     }
 
     const promise = (async () => {
+      const isCurrentWorkspace = beginWorkspaceRequestFor(workspaceId);
+      if (!isCurrentWorkspace()) return;
       const relic = relicClient.current;
       if (!relic || activeWorkspaceIdRef.current !== workspaceId) return;
       const result = await relic.getWorkspaceState();
+      if (!isCurrentWorkspace()) return;
       if (!result.ok) {
         setWorkspaceError(result.error.message);
         return;
       }
-      await applyCurrentWorkspaceSnapshot(result.value, workspaceId, true);
+      await applyCurrentWorkspaceSnapshot(result.value, workspaceId, true, isCurrentWorkspace);
     })().finally(() => {
       externalRefreshPromiseRef.current = null;
       const queuedWorkspaceId = queuedExternalWorkspaceIdRef.current;
@@ -84,19 +92,22 @@ export function useWorkspaceExternalRefresh({
       if (queuedWorkspaceId) runExternalRefresh(queuedWorkspaceId);
     });
     externalRefreshPromiseRef.current = promise;
-  }, [activeWorkspaceIdRef, applyCurrentWorkspaceSnapshot, setWorkspaceError]);
+  }, [activeWorkspaceIdRef, applyCurrentWorkspaceSnapshot, beginWorkspaceRequestFor, setWorkspaceError]);
 
   const refreshWorkspace = useCallback((): void => {
     const workspaceId = activeWorkspaceIdRef.current;
     if (!workspaceId || manualRefreshPromiseRef.current) return;
+    const isCurrentWorkspace = beginWorkspaceRequestFor(workspaceId);
+    if (!isCurrentWorkspace()) return;
 
     setIsRefreshingWorkspace(true);
     const promise = (async () => {
       if (externalRefreshPromiseRef.current) await externalRefreshPromiseRef.current;
-      if (activeWorkspaceIdRef.current !== workspaceId) return;
+      if (!isCurrentWorkspace() || activeWorkspaceIdRef.current !== workspaceId) return;
 
       const tabIds = Object.keys(useEditorStore.getState().tabs);
       const saveResult = await flushTabsBeforeClose(tabIds);
+      if (!isCurrentWorkspace()) return;
       if (!saveResult.ok) {
         showToast(saveResult.message ?? t("refresh.saveFailed"), "error");
         return;
@@ -105,6 +116,7 @@ export function useWorkspaceExternalRefresh({
       const relic = relicClient.current;
       if (!relic || activeWorkspaceIdRef.current !== workspaceId) return;
       const result = await relic.refreshWorkspace({ workspaceId });
+      if (!isCurrentWorkspace()) return;
       if (!result.ok) {
         if (result.error.code !== "WORKSPACE_REFRESH_STALE") {
           showToast(result.error.message, "error");
@@ -112,7 +124,12 @@ export function useWorkspaceExternalRefresh({
         return;
       }
 
-      const applied = await applyCurrentWorkspaceSnapshot(result.value, workspaceId, false);
+      const applied = await applyCurrentWorkspaceSnapshot(
+        result.value,
+        workspaceId,
+        false,
+        isCurrentWorkspace
+      );
       if (!applied.applied) return;
       if (applied.failedFileCount > 0 || !applied.derivedDataUpdated) {
         const message = applied.failedFileCount > 0 && !applied.derivedDataUpdated
@@ -124,8 +141,8 @@ export function useWorkspaceExternalRefresh({
         return;
       }
       showToast(t("refresh.completed"), "info");
-    })().catch((error) => {
-      void error;
+    })().catch(() => {
+      if (!isCurrentWorkspace()) return;
       showToast(t("refresh.failed"), "error");
     }).finally(() => {
       manualRefreshPromiseRef.current = null;
@@ -138,6 +155,7 @@ export function useWorkspaceExternalRefresh({
   }, [
     activeWorkspaceIdRef,
     applyCurrentWorkspaceSnapshot,
+    beginWorkspaceRequestFor,
     flushTabsBeforeClose,
     runExternalRefresh,
     showToast,
@@ -152,10 +170,12 @@ export function useWorkspaceExternalRefresh({
   useEffect(() => {
     if (!relicClient.current?.onWorkspaceWatcherStatus) return undefined;
     return relicClient.current.onWorkspaceWatcherStatus((event) => {
+      const isCurrentWorkspace = beginWorkspaceRequestFor(event.workspaceId);
+      if (!isCurrentWorkspace()) return;
       if (event.workspaceId !== activeWorkspaceIdRef.current) return;
       setWorkspaceError(t("files.workspaceWatcherUnavailable"));
     });
-  }, [activeWorkspaceIdRef, setWorkspaceError, t]);
+  }, [activeWorkspaceIdRef, beginWorkspaceRequestFor, setWorkspaceError, t]);
 
   return { isRefreshingWorkspace, refreshWorkspace };
 }

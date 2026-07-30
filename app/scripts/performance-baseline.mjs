@@ -25,14 +25,25 @@ export function compareLowerIsBetterMetrics(current, baseline, maxRegressionPerc
     const baselineValue = baseline[metric];
     const currentValue = current[metric];
 
-    if (currentValue === undefined) continue;
+    if (currentValue === undefined) {
+      entries.push({
+        baseline: baselineValue,
+        current: null,
+        metric,
+        regressionPercent: Number.POSITIVE_INFINITY,
+        regressed: true,
+        status: "missing"
+      });
+      continue;
+    }
     if (baselineValue === undefined) {
       entries.push({
         baseline: 0,
         current: currentValue,
         metric,
         regressionPercent: currentValue > 0 ? Number.POSITIVE_INFINITY : 0,
-        regressed: currentValue > 0
+        regressed: currentValue > 0,
+        status: "new"
       });
       continue;
     }
@@ -45,13 +56,15 @@ export function compareLowerIsBetterMetrics(current, baseline, maxRegressionPerc
       current: currentValue,
       metric,
       regressionPercent,
-      regressed: regressionPercent > maxRegressionPercent
+      regressed: regressionPercent > maxRegressionPercent,
+      status: "measured"
     });
   }
 
   return {
     entries,
     maxRegressionPercent,
+    missingMetrics: entries.filter((entry) => entry.status === "missing"),
     regressions: entries.filter((entry) => entry.regressed)
   };
 }
@@ -66,13 +79,15 @@ export function renderComparison(comparison) {
   ];
 
   for (const entry of visibleEntries) {
-    const change = Number.isFinite(entry.regressionPercent)
+    const change = entry.status === "missing"
+      ? "missing"
+      : Number.isFinite(entry.regressionPercent)
       ? `${entry.regressionPercent >= 0 ? "+" : ""}${entry.regressionPercent.toFixed(1)}%`
       : "+infinity";
     lines.push([
-      entry.regressed ? "FAIL" : "PASS",
+      entry.status === "missing" ? "MISSING" : entry.regressed ? "FAIL" : "PASS",
       entry.baseline,
-      entry.current,
+      entry.current ?? "-",
       change,
       entry.metric
     ].join("\t"));

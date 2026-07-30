@@ -27,4 +27,16 @@ describe("performance-baseline", () => {
     const comparison = compareLowerIsBetterMetrics({ duration: 115 }, { duration: 100 }, 15);
     expect(comparison.regressions).toEqual([]);
   });
+
+  it("基準に存在する計測項目の欠落を失敗として表示する", () => {
+    const comparison = compareLowerIsBetterMetrics(
+      { collected: 80 },
+      { collected: 100, silentlyMissing: 50 },
+      15
+    );
+
+    expect(comparison.missingMetrics.map((entry) => entry.metric)).toEqual(["silentlyMissing"]);
+    expect(comparison.regressions.map((entry) => entry.metric)).toEqual(["silentlyMissing"]);
+    expect(renderComparison(comparison)).toContain("MISSING\t50\t-\tmissing\tsilentlyMissing");
+  });
 });

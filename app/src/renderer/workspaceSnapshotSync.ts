@@ -4,6 +4,7 @@ import { relicClient } from "./relicClient";
 import { useEditorStore } from "./store/editorStore";
 import { collectMarkdownPaths } from "./workspacePaths";
 import { flushPendingEditorChanges } from "./editorInputBuffer";
+import type { IsCurrentRequest } from "./hooks/useAsyncRequestGuard";
 
 export interface ApplyWorkspaceSnapshotResult {
   applied: boolean;
@@ -13,6 +14,7 @@ export interface ApplyWorkspaceSnapshotResult {
 
 interface ApplyWorkspaceSnapshotInput {
   getActiveWorkspaceId: () => string | null;
+  isCurrentWorkspace: IsCurrentRequest;
   nextState: WorkspaceState;
   notifyFileFailures: boolean;
   onWorkspaceDataChanged: () => Promise<boolean>;
@@ -24,6 +26,7 @@ interface ApplyWorkspaceSnapshotInput {
 
 export async function applyWorkspaceSnapshot({
   getActiveWorkspaceId,
+  isCurrentWorkspace,
   nextState,
   notifyFileFailures,
   onWorkspaceDataChanged,
@@ -33,7 +36,7 @@ export async function applyWorkspaceSnapshot({
   workspaceId
 }: ApplyWorkspaceSnapshotInput): Promise<ApplyWorkspaceSnapshotResult> {
   const relic = relicClient.current;
-  if (!relic || nextState.activeWorkspace?.id !== workspaceId) {
+  if (!isCurrentWorkspace() || !relic || nextState.activeWorkspace?.id !== workspaceId) {
     return { applied: false, derivedDataUpdated: true, failedFileCount: 0 };
   }
 
@@ -70,7 +73,7 @@ export async function applyWorkspaceSnapshot({
     tabId
   })));
 
-  if (getActiveWorkspaceId() !== workspaceId) {
+  if (!isCurrentWorkspace() || getActiveWorkspaceId() !== workspaceId) {
     return { applied: false, derivedDataUpdated: true, failedFileCount: 0 };
   }
 
@@ -101,12 +104,18 @@ export async function applyWorkspaceSnapshot({
     if (shouldNotify) setWorkspaceError(t("pane.externalConflictToast", { name: currentTab.name }));
   }
 
-  if (getActiveWorkspaceId() !== workspaceId) {
+  if (!isCurrentWorkspace() || getActiveWorkspaceId() !== workspaceId) {
     return { applied: false, derivedDataUpdated: true, failedFileCount };
   }
 
   setWorkspaceState(nextState);
+  if (!isCurrentWorkspace()) {
+    return { applied: false, derivedDataUpdated: true, failedFileCount };
+  }
   const derivedDataUpdated = await onWorkspaceDataChanged();
+  if (!isCurrentWorkspace()) {
+    return { applied: false, derivedDataUpdated, failedFileCount };
+  }
   return {
     applied: true,
     derivedDataUpdated,

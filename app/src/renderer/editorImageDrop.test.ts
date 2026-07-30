@@ -71,4 +71,44 @@ describe("editorImageDrop", () => {
     expect(view.state.doc.toString()).toBe("![diagram](notes/diagram.png)");
     view.destroy();
   });
+
+  it("workspace切替後は残りの画像取込とMarkdown挿入を中止する", async () => {
+    let resolveFirstImport!: (result: {
+      ok: true;
+      value: { path: string };
+    }) => void;
+    const firstImport = new Promise<{
+      ok: true;
+      value: { path: string };
+    }>((resolve) => {
+      resolveFirstImport = resolve;
+    });
+    const importImageFile = vi.fn()
+      .mockReturnValueOnce(firstImport)
+      .mockResolvedValue({ ok: true, value: { path: "notes/second.png" } });
+    window.relic = makeRelicApi({ importImageFile });
+    const parent = document.body.appendChild(document.createElement("div"));
+    const view = new EditorView({
+      state: EditorState.create({ doc: "" }),
+      parent
+    });
+    let isCurrentWorkspace = true;
+
+    const importing = importDroppedImagesAsMarkdown(
+      view,
+      { clientX: 0, clientY: 0 } as DragEvent,
+      "notes/entry.md",
+      ["/tmp/first.png", "/tmp/second.png"],
+      () => isCurrentWorkspace
+    );
+    expect(importImageFile).toHaveBeenCalledTimes(1);
+
+    isCurrentWorkspace = false;
+    resolveFirstImport({ ok: true, value: { path: "notes/first.png" } });
+    await importing;
+
+    expect(importImageFile).toHaveBeenCalledTimes(1);
+    expect(view.state.doc.toString()).toBe("");
+    view.destroy();
+  });
 });

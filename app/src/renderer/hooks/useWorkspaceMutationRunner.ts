@@ -4,7 +4,9 @@ import type { LinkUpdateImpactKind } from "../../shared/ipc/files";
 import type { RelicResult } from "../../shared/result";
 import type { Translator } from "../i18nModel";
 import { relicClient } from "../relicClient";
+import type { IsCurrentRequest } from "./useAsyncRequestGuard";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
+import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
 import { workspaceFileErrorMessage } from "./workspaceFileError";
 
 export type WorkspaceMutationItem = { path: string; type: "file" | "folder" };
@@ -19,25 +21,40 @@ const linkUpdateImpactFileThreshold = 30;
 const linkUpdateImpactLinkThreshold = 100;
 
 export function useWorkspaceMutationRunner({
+  beginWorkspaceRequest,
   beforeMutateWorkspaceItems,
   setWorkspaceError,
   t
-}: Pick<WorkspaceFileActionsContext, "beforeMutateWorkspaceItems" | "setWorkspaceError"> & {
+}: Pick<WorkspaceFileActionsContext, "beforeMutateWorkspaceItems" | "setWorkspaceError"> & Pick<
+  WorkspaceRequestGuard,
+  "beginWorkspaceRequest"
+> & {
   t: Translator;
 }) {
   const ensureCanMutateItems = useCallback(
-    async (items: WorkspaceMutationItem[]): Promise<boolean> => {
+    async (
+      items: WorkspaceMutationItem[],
+      isCurrentWorkspace: IsCurrentRequest = beginWorkspaceRequest()
+    ): Promise<boolean> => {
+      if (!isCurrentWorkspace()) return false;
       if (!beforeMutateWorkspaceItems) return true;
-      return Promise.resolve(beforeMutateWorkspaceItems(items));
+      const allowed = await Promise.resolve(beforeMutateWorkspaceItems(items));
+      return isCurrentWorkspace() && allowed;
     },
-    [beforeMutateWorkspaceItems]
+    [beforeMutateWorkspaceItems, beginWorkspaceRequest]
   );
 
   const confirmLinkUpdateImpact = useCallback(
-    async (kind: LinkUpdateImpactKind, oldPath: string, newPath: string): Promise<boolean> => {
+    async (
+      kind: LinkUpdateImpactKind,
+      oldPath: string,
+      newPath: string,
+      isCurrentWorkspace: IsCurrentRequest
+    ): Promise<boolean> => {
       if (!relicClient.current || oldPath === newPath) return true;
 
       const result = await relicClient.current.getLinkUpdateImpact({ kind, newPath, oldPath });
+      if (!isCurrentWorkspace()) return false;
       if (!result.ok) {
         setWorkspaceError(result.error.message);
         return false;
@@ -70,17 +87,27 @@ export function useWorkspaceMutationRunner({
       onSuccess: (value: T) => void,
       linkImpact?: LinkImpactRequest,
       options?: {
+        isCurrentWorkspace?: IsCurrentRequest;
         isComplete?: (value: T) => boolean;
         onIncomplete?: (value: T) => void;
         skipItemGuard?: boolean;
       }
     ): Promise<boolean> => {
-      if (!options?.skipItemGuard && !await ensureCanMutateItems(items)) return false;
-      if (linkImpact && !await confirmLinkUpdateImpact(linkImpact.kind, linkImpact.oldPath, linkImpact.newPath)) {
+      const isCurrentWorkspace = options?.isCurrentWorkspace ?? beginWorkspaceRequest();
+      if (!isCurrentWorkspace()) return false;
+      if (!options?.skipItemGuard && !await ensureCanMutateItems(items, isCurrentWorkspace)) return false;
+      if (linkImpact && !await confirmLinkUpdateImpact(
+        linkImpact.kind,
+        linkImpact.oldPath,
+        linkImpact.newPath,
+        isCurrentWorkspace
+      )) {
         return false;
       }
+      if (!isCurrentWorkspace()) return false;
 
       const result = await action();
+      if (!isCurrentWorkspace()) return false;
       if (result.ok) {
         if (options?.isComplete && !options.isComplete(result.value)) {
           options.onIncomplete?.(result.value);
@@ -93,8 +120,8 @@ export function useWorkspaceMutationRunner({
       setWorkspaceError(workspaceFileErrorMessage(result.error, t));
       return false;
     },
-    [confirmLinkUpdateImpact, ensureCanMutateItems, setWorkspaceError, t]
+    [beginWorkspaceRequest, confirmLinkUpdateImpact, ensureCanMutateItems, setWorkspaceError, t]
   );
 
-  return { ensureCanMutateItems, runWorkspaceMutation };
+  return { beginWorkspaceRequest, ensureCanMutateItems, runWorkspaceMutation };
 }

@@ -7,9 +7,10 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const defaultOutputDirectory = path.join(process.cwd(), ".vite", `renderer-production-${process.pid}`);
 const manifestFileName = "renderer-production-manifest.json";
-const requiredDeferredRendererSources = [
+export const requiredDeferredRendererSources = [
   "node_modules/@terrastruct/d2/dist/browser/index.js",
-  "node_modules/mermaid/dist/mermaid.core.mjs"
+  "node_modules/mermaid/dist/mermaid.core.mjs",
+  "src/renderer/previewMarkdown.ts"
 ];
 
 export async function buildRendererProduction(outputDirectory = defaultOutputDirectory) {
@@ -90,7 +91,7 @@ async function main() {
   try {
     await buildRendererProduction();
     await checkRendererProductionManifest(defaultOutputDirectory);
-    console.log("Renderer production check passed: Mermaid and D2 remain outside the initial static import graph.");
+    console.log("Renderer production check passed: Markdown preview, Mermaid, and D2 remain outside the initial static import graph.");
   } finally {
     await rm(defaultOutputDirectory, { force: true, recursive: true });
   }

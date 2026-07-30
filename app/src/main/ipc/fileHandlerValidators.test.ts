@@ -12,24 +12,30 @@ import {
 import {
   isCreateFolderInput,
   isCreateMarkdownFileInput,
+  isImportImageFileInput,
   isImportMarkdownFilesInput,
   isLinkUpdateImpactInput,
   isMoveFolderInput,
   isMoveItemToTrashInput,
   isMoveMarkdownFileInput,
-  isPathInput,
-  isReadFileRecoverySnapshotInput,
   isReadImageFileInput,
   isReadPdfFileInput,
   isRevealWorkspaceItemInput,
   isRenameFolderInput,
   isRenameMarkdownFileInput,
+  isStartWorkspaceFileDragInput
+} from "./fileHandlerValidators";
+import {
+  isReadFileRecoverySnapshotInput,
+  isWriteMarkdownFileInput
+} from "./editorFileHandlerValidators";
+import { isPathInput } from "./inputValidation";
+import {
+  isApplyUnlinkedReferenceInput,
   isReplaceInFileInput,
   isSearchAndReplaceInput,
-  isSearchWorkspaceInput,
-  isStartWorkspaceFileDragInput,
-  isWriteMarkdownFileInput
-} from "./fileHandlerValidators";
+  isSearchWorkspaceInput
+} from "./searchHandlerValidators";
 
 describe("fileHandlerValidators", () => {
   it("preload公開ファイル操作APIの入力をメイン側で検証できる", () => {
@@ -108,6 +114,25 @@ describe("fileHandlerValidators", () => {
     expect(isImportMarkdownFilesInput({ destinationFolder: "", sourcePaths: ["/tmp/Note.md\0"] })).toBe(false);
   });
 
+  it("validates image import source and destination without normalizing input", () => {
+    expect(isImportImageFileInput({
+      destinationFolder: "",
+      sourcePath: "/tmp/image.png"
+    })).toBe(true);
+    expect(isImportImageFileInput({
+      destinationFolder: "../outside",
+      sourcePath: "/tmp/image.png"
+    })).toBe(false);
+    expect(isImportImageFileInput({
+      destinationFolder: "",
+      sourcePath: " /tmp/image.png "
+    })).toBe(false);
+    expect(isImportImageFileInput({
+      destinationFolder: "",
+      sourcePath: "/tmp/image.png\0"
+    })).toBe(false);
+  });
+
   it("validates link update impact input paths", () => {
     expect(isLinkUpdateImpactInput({ kind: "file", newPath: "Archive/Note.md", oldPath: "Note.md" })).toBe(true);
     expect(isLinkUpdateImpactInput({ kind: "folder", newPath: "Archive/Notes", oldPath: "Notes" })).toBe(true);
@@ -161,6 +186,25 @@ describe("fileHandlerValidators", () => {
     expect(isSearchWorkspaceInput({ mode: "regex", query: "relic" })).toBe(false);
     expect(isSearchWorkspaceInput({ mode: "fullText", query: 1 })).toBe(false);
     expect(isSearchWorkspaceInput({ frontmatterField: 1, mode: "frontmatter", query: "draft" })).toBe(false);
+  });
+
+  it("validates unlinked reference ranges before applying a file mutation", () => {
+    const valid = {
+      from: 4,
+      matchText: "Note",
+      sourcePath: "Source.md",
+      targetPath: "Note.md",
+      to: 8
+    };
+
+    expect(isApplyUnlinkedReferenceInput(valid)).toBe(true);
+    expect(isApplyUnlinkedReferenceInput({ ...valid, from: -1 })).toBe(false);
+    expect(isApplyUnlinkedReferenceInput({ ...valid, to: 3 })).toBe(false);
+    expect(isApplyUnlinkedReferenceInput({
+      ...valid,
+      sourcePath: "../outside.md"
+    })).toBe(false);
+    expect(isApplyUnlinkedReferenceInput({ ...valid, matchText: "" })).toBe(false);
   });
 
   it("validates move and trash inputs without accepting partial objects", () => {

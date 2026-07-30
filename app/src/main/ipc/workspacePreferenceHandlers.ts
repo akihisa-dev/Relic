@@ -15,7 +15,7 @@ import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
   isFrontmatterTemplatesInput,
   isUserDefinedFieldsInput
-} from "./workspaceHandlerValidators";
+} from "./workspacePreferenceHandlerValidators";
 
 export function registerWorkspacePreferenceHandlers(): void {
   handleLocalizedIpc(getUserDefinedFieldsChannel, async (): Promise<RelicResult<UserDefinedField[]>> => {

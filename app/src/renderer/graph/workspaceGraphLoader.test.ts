@@ -83,4 +83,18 @@ describe("workspaceGraphLoader", () => {
     expect(loadWorkspaceGraph(oldestRequest)).toBe(oldestPromise);
     expect(getWorkspaceGraph).toHaveBeenCalledTimes(3);
   });
+
+  it("Preload API instanceが変わった場合は同じkeyでも旧cacheを使わない", async () => {
+    const firstClientRequest = vi.fn().mockResolvedValue({ ok: true, value: { links: [], nodes: [] } });
+    const secondClientRequest = vi.fn().mockResolvedValue({ ok: true, value: { links: [], nodes: [] } });
+    const request = { revision: 0, workspaceId: "workspace-1" };
+
+    window.relic = makeRelicApi({ getWorkspaceGraph: firstClientRequest });
+    await loadWorkspaceGraph(request);
+    window.relic = makeRelicApi({ getWorkspaceGraph: secondClientRequest });
+    await loadWorkspaceGraph(request);
+
+    expect(firstClientRequest).toHaveBeenCalledOnce();
+    expect(secondClientRequest).toHaveBeenCalledOnce();
+  });
 });

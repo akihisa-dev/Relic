@@ -32,6 +32,8 @@ import { useSplitCloseMotion } from "./hooks/useSplitCloseMotion";
 import { useWindowCloseRequest } from "./hooks/useWindowCloseRequest";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
 import { useWorkspaceExternalRefresh } from "./hooks/useWorkspaceExternalRefresh";
+import { useWorkspaceDataRevision } from "./hooks/useWorkspaceDataRevision";
+import { useWorkspaceRequestGuard } from "./hooks/useWorkspaceRequestGuard";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { useEditorStore } from "./store/editorStore";
@@ -41,6 +43,8 @@ import "./styles.css";
 
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
+  const workspaceRequestGuard = useWorkspaceRequestGuard(workspaceState?.activeWorkspace?.id ?? null);
+  const { beginWorkspaceRequest, beginWorkspaceRequestFor } = workspaceRequestGuard;
   const { closeToast, isToastClosing, setWorkspaceError, showToast, toastMessage } = useAppToast();
   const {
     linkContextMenu,
@@ -65,7 +69,10 @@ export function App(): ReactElement {
     setLeftPaneScrollHeading,
     setRightPaneScrollHeading
   } = useAppPanePresentationState();
-  const [workspaceDataRevision, setWorkspaceDataRevision] = useState(0);
+  const {
+    markWorkspaceDataChanged,
+    workspaceDataRevision
+  } = useWorkspaceDataRevision(workspaceState?.activeWorkspace?.id ?? null);
   const {
     clearRailTabFlight,
     railTabFlight,
@@ -78,7 +85,6 @@ export function App(): ReactElement {
     isWorkspaceRenameHoldingRail,
     setIsWorkspaceRenameActive
   } = useWorkspaceRenameRailHold();
-
   const {
     canNavigateBack,
     canNavigateForward,
@@ -127,12 +133,10 @@ export function App(): ReactElement {
   } = useUiStore(useShallow(selectAppUiStoreState));
   const hasOpenChart = editorTabIndex(tabs).hasOpenChart;
   const { isSplitClosing, toggleSplitWithMotion } = useSplitCloseMotion(isSplit, toggleSplit);
-
   const toggleSidebar = useCallback((): void => {
     if (isWorkspaceRenameActive) return;
     toggleSidebarState();
   }, [isWorkspaceRenameActive, toggleSidebarState]);
-
   const t = useMemo(() => createTranslator(editorSettings.language), [editorSettings.language]);
   const removeWorkspaceLabel = useCallback(
     (name: string) => t("files.removeWorkspace", { name }),
@@ -146,6 +150,7 @@ export function App(): ReactElement {
     handleSaveSettings,
     userDefinedFields
   } = useAppSettingsState({
+    beginWorkspaceRequest,
     setEditorSettings,
     setWorkspaceError,
     setWorkspaceState
@@ -171,7 +176,6 @@ export function App(): ReactElement {
     setRightPanelView,
     toggleRightPanel
   });
-
   const {
     frontmatterCandidates,
     isSearching,
@@ -210,6 +214,7 @@ export function App(): ReactElement {
   });
 
   const handleFileSaved = useAppFileSaved({
+    beginWorkspaceRequest,
     hasOpenChart,
     reloadCharts,
     setWorkspaceError,
@@ -284,6 +289,7 @@ export function App(): ReactElement {
     tabs,
     t,
     updateTabMeta,
+    workspaceRequestGuard,
     workspaceState
   });
   const appInlineHandlers = useAppInlineHandlers({
@@ -299,6 +305,7 @@ export function App(): ReactElement {
     handleSidebarOpenFile,
     openingFilePath
   } = useSidebarFileInteractions({
+    beginWorkspaceRequest,
     handleCreateFile,
     handleCreateFolder,
     handleOpenFile,
@@ -333,10 +340,11 @@ export function App(): ReactElement {
   });
 
   const handleWorkspaceDataChanged = useCallback(async (): Promise<boolean> => {
-    setWorkspaceDataRevision((revision) => revision + 1);
+    markWorkspaceDataChanged();
     return hasOpenChart ? reloadCharts() : true;
-  }, [hasOpenChart, reloadCharts]);
+  }, [hasOpenChart, markWorkspaceDataChanged, reloadCharts]);
   const { isRefreshingWorkspace, refreshWorkspace } = useWorkspaceExternalRefresh({
+    beginWorkspaceRequestFor,
     flushTabsBeforeClose,
     onWorkspaceDataChanged: handleWorkspaceDataChanged,
     setWorkspaceError,
@@ -391,6 +399,7 @@ export function App(): ReactElement {
     openTreeFileInOtherPane,
     openWorkspacePathInOtherPane
   } = useAppPaneFileActions({
+    beginWorkspaceRequest,
     focusedPane,
     handleDuplicateTreeFile,
     isSplit,
@@ -504,6 +513,7 @@ export function App(): ReactElement {
       appInlineHandlers,
       applyingReferenceKey,
       backlinks,
+      beginWorkspaceRequest,
       canReopenClosedTab,
       closeAllTabsInPaneWithMotion,
       closeOtherTabsWithMotion,

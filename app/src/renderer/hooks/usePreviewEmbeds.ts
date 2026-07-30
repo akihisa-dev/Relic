@@ -1,7 +1,7 @@
 import { relicClient } from "../relicClient";
 import { useEffect, useMemo, useState } from "react";
 
-import { extractEmbedTargets, maxEmbeddedFileLength, type EmbedState } from "../previewMarkdown";
+import { extractEmbedTargets, maxEmbeddedFileLength, type EmbedState } from "../previewMarkdownModel";
 import { runWithConcurrency } from "../concurrency";
 import { useT } from "../i18n";
 

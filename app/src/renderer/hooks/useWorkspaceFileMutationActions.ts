@@ -11,6 +11,7 @@ import { useWorkspaceMutationRunner } from "./useWorkspaceMutationRunner";
 
 export function useWorkspaceFileMutationActions(input: WorkspaceFileMutationInput & { t: Translator }) {
   const runner = useWorkspaceMutationRunner({
+    beginWorkspaceRequest: input.beginWorkspaceRequest,
     beforeMutateWorkspaceItems: input.beforeMutateWorkspaceItems,
     setWorkspaceError: input.setWorkspaceError,
     t: input.t

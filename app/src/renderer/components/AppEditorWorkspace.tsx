@@ -7,6 +7,7 @@ import type { AppLinkContextMenu } from "../appLinks";
 import type { HeadingScrollTarget, OutlineHeading } from "../editorDerivedState";
 import type { FileTab, PaneId, PanelTabKind } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
+import type { WorkspaceRequestGuard } from "../hooks/useWorkspaceRequestGuard";
 import { useT } from "../i18n";
 import { AppRightPanel } from "./AppRightPanel";
 import { LayoutResizeBoundary } from "./LayoutResizeBoundary";
@@ -18,6 +19,7 @@ interface AppEditorWorkspaceProps {
   canReopenClosedTab: boolean;
   applyingReferenceKey: string | null;
   backlinks: Backlink[];
+  beginWorkspaceRequest: WorkspaceRequestGuard["beginWorkspaceRequest"];
   editorActionPulse: number;
   editorSettings: EditorSettings;
   focusedPane: PaneId;
@@ -133,6 +135,7 @@ export function AppEditorWorkspace({
   canReopenClosedTab,
   applyingReferenceKey,
   backlinks,
+  beginWorkspaceRequest,
   editorActionPulse,
   editorSettings,
   focusedPane,
@@ -206,6 +209,7 @@ export function AppEditorWorkspace({
 
   const commonPaneViewProps: CommonPaneViewProps = {
     allFilePaths,
+    beginWorkspaceRequest,
     canReopenClosedTab,
     editorSettings,
     focusedPane,

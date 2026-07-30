@@ -31,6 +31,8 @@ describe("test-inventory", () => {
     expect(classifyTestProject("src/renderer/model.test.ts")).toBe("renderer");
     expect(classifyTestProject("src/main/files/search.test.ts")).toBe("node");
     expect(classifyTestProject("scripts/check.test.mjs")).toBe("node");
+    expect(classifyTestProject("src/unknown/orphan.test.ts")).toBe("uncollected");
+    expect(classifyTestProject("scripts/wrong-extension.test.ts")).toBe("uncollected");
   });
 
   it("テスト宣言、行数、無効化と単独実行指定を数える", () => {
@@ -56,6 +58,7 @@ describe("test-inventory", () => {
     const sources = new Map([
       ["src/shared/model.test.ts", "it('works', () => {});\n"],
       ["src/renderer/View.test.tsx", `${"// setup\n".repeat(700)}it.skip('later', () => {});\n`],
+      ["src/renderer/out/collected.test.ts", "it('remains collected', () => {});\n"],
       ["out/ignored.test.ts", "it.only('ignored', () => {});\n"]
     ]);
     for (const [relativePath, source] of sources) {
@@ -66,15 +69,16 @@ describe("test-inventory", () => {
 
     const inventory = await collectTestInventory(root);
 
-    expect(inventory.total).toBe(2);
-    expect(inventory.counts["unit-model"]).toBe(1);
+    expect(inventory.total).toBe(3);
+    expect(inventory.counts["unit-model"]).toBe(2);
     expect(inventory.counts["react-component"]).toBe(1);
-    expect(inventory.projects).toEqual({ node: 1, renderer: 1 });
+    expect(inventory.projects).toEqual({ node: 1, renderer: 2, uncollected: 0 });
+    expect(inventory.uncollected).toEqual([]);
     expect(inventory.totals).toEqual({
       disabledDeclarations: 1,
       focusedDeclarations: 0,
-      lines: 702,
-      testDeclarations: 2
+      lines: 703,
+      testDeclarations: 3
     });
     expect(inventory.attention.map((entry) => entry.path)).toEqual(["src/renderer/View.test.tsx"]);
   });
@@ -89,17 +93,33 @@ describe("test-inventory", () => {
         testDeclarations: 3
       }],
       counts: { "unit-model": 1 },
-      projects: { node: 1, renderer: 0 },
+      projects: { node: 1, renderer: 0, uncollected: 0 },
       total: 1,
       totals: {
         disabledDeclarations: 1,
         focusedDeclarations: 0,
         lines: 720,
         testDeclarations: 3
-      }
+      },
+      uncollected: []
     });
 
     expect(output).toContain("test-declarations: 3");
     expect(output).toContain("720 lines | 3 declarations | 1 disabled | src/renderer/View.test.tsx");
+    expect(output).toContain("Collection gaps\nnone");
+  });
+
+  it("Vitestが収集しないテストファイルを棚卸しに残す", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "relic-test-inventory-"));
+    temporaryDirectories.push(root);
+    const filePath = path.join(root, "src/unknown/orphan.test.ts");
+    await mkdir(path.dirname(filePath), { recursive: true });
+    await writeFile(filePath, "it('would be skipped', () => {});\n");
+
+    const inventory = await collectTestInventory(root);
+
+    expect(inventory.projects).toEqual({ node: 0, renderer: 0, uncollected: 1 });
+    expect(inventory.uncollected.map((entry) => entry.path)).toEqual(["src/unknown/orphan.test.ts"]);
+    expect(renderTestInventory(inventory)).toContain("Collection gaps\nsrc/unknown/orphan.test.ts");
   });
 });

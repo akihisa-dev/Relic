@@ -1,6 +1,7 @@
 import { BrowserWindow } from "electron";
 
 import type { Translator } from "../../shared/i18n";
+import { installWindowSecurityPolicy } from "../windowSecurity";
 import type { AppSettingsRecoveryState } from "./appSettingsRecovery";
 
 const recoveryActionOrigin = "relic-settings-recovery:";
@@ -43,44 +44,37 @@ export function createAppSettingsRecoveryWindow({
   });
   let startInProgress = false;
 
-  window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-  window.webContents.on("will-navigate", (event, url) => {
-    if (url.startsWith("data:text/html")) return;
-    event.preventDefault();
+  installWindowSecurityPolicy(window, {
+    isNavigationAllowed: (url) => url.startsWith("data:text/html"),
+    onNavigationDenied: (url) => {
+      let action: string;
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== recoveryActionOrigin) return;
+        action = parsed.hostname;
+      } catch {
+        return;
+      }
 
-    let action: string;
-    try {
-      const parsed = new URL(url);
-      if (parsed.protocol !== recoveryActionOrigin) return;
-      action = parsed.hostname;
-    } catch {
-      return;
-    }
+      if (action === "show-location") {
+        onShowLocation(recovery.backupPath ?? recovery.settingsPath);
+        return;
+      }
 
-    if (action === "show-location") {
-      onShowLocation(recovery.backupPath ?? recovery.settingsPath);
-      return;
-    }
+      if (action === "exit") {
+        onExit();
+        return;
+      }
 
-    if (action === "exit") {
-      onExit();
-      return;
+      if (action === "start-defaults" && !startInProgress) {
+        startInProgress = true;
+        void onStartDefaults()
+          .catch(() => {
+            startInProgress = false;
+            onStartDefaultsFailed();
+          });
+      }
     }
-
-    if (action === "start-defaults" && !startInProgress) {
-      startInProgress = true;
-      void onStartDefaults()
-        .catch(() => {
-          startInProgress = false;
-          onStartDefaultsFailed();
-        });
-    }
-  });
-  window.webContents.on("will-attach-webview", (event) => {
-    event.preventDefault();
-  });
-  window.webContents.session.setPermissionRequestHandler((_webContents, _permission, callback) => {
-    callback(false);
   });
   window.once("ready-to-show", () => {
     if (!window.isDestroyed()) window.show();

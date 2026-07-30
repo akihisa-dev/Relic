@@ -2,6 +2,7 @@ import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 import type { useWorkspaceMutationRunner } from "./useWorkspaceMutationRunner";
+import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
 
 export type WorkspaceFileMutationInput = Pick<
   WorkspaceFileActionsContext,
@@ -16,7 +17,7 @@ export type WorkspaceFileMutationInput = Pick<
   | "setWorkspaceState"
   | "tabs"
   | "updateTabMeta"
->;
+> & Pick<WorkspaceRequestGuard, "beginWorkspaceRequest">;
 
 export type WorkspaceMutationRunner = ReturnType<typeof useWorkspaceMutationRunner>;
 export type UpdateMovedFileTab = (

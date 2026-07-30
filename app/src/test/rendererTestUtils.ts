@@ -45,8 +45,7 @@ export function resetRendererStores(): void {
     isRightPanelOpen: true,
     isSidebarOpen: true,
     isTypewriterMode: false,
-    rightPanelView: "outline",
-    selectedChartId: null
+    rightPanelView: "outline"
   });
 }
 

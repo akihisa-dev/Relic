@@ -20,6 +20,7 @@ import { isLargeMarkdownContent } from "../largeMarkdown";
 import { updateTextCount, type TextCountSnapshot } from "../paneViewModel";
 import { useEditorStore, type PaneId, type PanelTabKind, type Tab } from "../store/editorStore";
 import { useT } from "../i18n";
+import type { WorkspaceRequestGuard } from "../hooks/useWorkspaceRequestGuard";
 import { SourceModeButton } from "./AppMainActions";
 import { EditableFileTitle } from "./EditableFileTitle";
 import { Editor } from "./Editor";
@@ -28,6 +29,7 @@ import { ImageTabSurface, PdfTabSurface } from "./PaneAttachmentSurfaces";
 interface PaneContentSurfaceProps {
   activeTab: Tab | null | undefined;
   allFilePaths: string[];
+  beginWorkspaceRequest?: WorkspaceRequestGuard["beginWorkspaceRequest"];
   editorActionPulse: number;
   editorSettings: EditorSettings;
   frontmatterCandidates: Record<string, string[]>;
@@ -55,6 +57,7 @@ interface PaneContentSurfaceProps {
 export function PaneContentSurface({
   activeTab,
   allFilePaths,
+  beginWorkspaceRequest,
   editorActionPulse,
   editorSettings,
   frontmatterCandidates,
@@ -190,6 +193,7 @@ export function PaneContentSurface({
           ) : null}
           <Editor
             allFilePaths={allFilePaths}
+            beginWorkspaceRequest={beginWorkspaceRequest}
             content={activeFileTab.content}
             contentSourceKey={activeContentEchoKey ?? undefined}
             contentUpdate={activeFileTab.contentUpdate}

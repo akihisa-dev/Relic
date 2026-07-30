@@ -18,7 +18,7 @@ import {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { refreshApplicationMenu } from "../applicationMenu";
-import { writeMarkdownFileContent } from "../files/markdownFiles";
+import { writeMarkdownFileContent } from "../files/markdownFileContent";
 import {
   createFileRecoverySnapshot,
   listFileRecoverySnapshots,
@@ -35,10 +35,10 @@ import {
   isEditorSettingsInput
 } from "./editorHandlerValidators";
 import {
-  isPathInput,
   isReadFileRecoverySnapshotInput,
   isWriteMarkdownFileInput
-} from "./fileHandlerValidators";
+} from "./editorFileHandlerValidators";
+import { isPathInput } from "./inputValidation";
 
 export function registerEditorHandlers(): void {
   handleLocalizedIpc(

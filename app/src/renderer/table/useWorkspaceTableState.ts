@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
-
 import type { WorkspaceTable } from "../../shared/ipc";
+import { useWorkspaceResourceState } from "../hooks/useWorkspaceResourceState";
 import { loadWorkspaceTable } from "./workspaceTableLoader";
 
 export type WorkspaceTableState =
@@ -13,27 +12,14 @@ export function useWorkspaceTableState(input: {
   refreshRevision: number;
   workspaceId: string;
 }): WorkspaceTableState {
-  const requestKey = JSON.stringify([input.workspaceId, input.refreshRevision]);
-  const [snapshot, setSnapshot] = useState<WorkspaceTableState & { requestKey: string }>({
-    requestKey,
-    status: "loading"
+  const state = useWorkspaceResourceState({
+    loadFailedMessage: input.loadFailedMessage,
+    loadResource: loadWorkspaceTable,
+    revision: input.refreshRevision,
+    workspaceId: input.workspaceId
   });
 
-  useEffect(() => {
-    let active = true;
-    void loadWorkspaceTable({ revision: input.refreshRevision, workspaceId: input.workspaceId }).then((result) => {
-      if (!active) return;
-      setSnapshot(result.ok
-        ? { requestKey, status: "ready", table: result.value }
-        : { requestKey, status: "error", message: result.error.message });
-    }).catch(() => {
-      if (active) setSnapshot({ requestKey, status: "error", message: input.loadFailedMessage });
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [input.loadFailedMessage, input.refreshRevision, input.workspaceId, requestKey]);
-
-  return snapshot.requestKey === requestKey ? snapshot : { status: "loading" };
+  return state.status === "ready"
+    ? { status: "ready", table: state.value }
+    : state;
 }

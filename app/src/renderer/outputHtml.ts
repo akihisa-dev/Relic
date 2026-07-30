@@ -4,7 +4,7 @@ import { decodeDiagramSourceAttribute } from "./diagramSourceAttribute";
 import { getRenderedDiagramSvgText } from "./diagramSvg";
 import { sanitizePreviewHtml, sanitizeSvgHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
-import { escapeHtml, renderMarkdown } from "./previewMarkdown";
+import { escapeHtml } from "./previewMarkdownModel";
 import { previewImageContextKey, resolvePreviewImages } from "./previewImageLoader";
 import type { OutputPdfOptions } from "../shared/ipc/output";
 import { runWithConcurrency } from "./concurrency";
@@ -35,6 +35,7 @@ export async function buildPreviewOutputHtml({
     fileName ||
     "Relic";
   const defaultFileName = safeOutputFileName(outputFileNameFromPath(path) || fileName || firstH1(content) || "relic-preview");
+  const { renderMarkdown } = await import("./previewMarkdown");
 
   const root = document.createElement("div");
   root.className = "relic-output-body";

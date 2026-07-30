@@ -10,7 +10,7 @@
 
 ライブプレビューはCodeMirror 6を中心に実装する。ただし、Markdown解析・HTML安全化・KaTeX連携・図表レンダリングなどは専用ライブラリを組み合わせ、CodeMirrorだけで無理に完結させない。
 
-Markdownプレビューでは `marked` でHTMLを生成し、`marked-footnote` で脚注を追加し、`DOMPurify` で安全化する。コードブロックのハイライトには `highlight.js`、数式表示には `KaTeX` を使う。`mermaid` / `d2` コードブロックの図表示には `Mermaid` と `@terrastruct/d2` を遅延読み込みで使い、生成SVGは表示前に再度 `DOMPurify` で安全化する。フロントマターのYAML読み書きには `js-yaml` を使う。
+Markdownプレビューでは `marked` でHTMLを生成し、`marked-footnote` で脚注を追加し、`DOMPurify` で安全化する。コードブロックのハイライトには `highlight.js`、数式表示には `KaTeX` を使う。この変換処理はページプレビューまたは出力の要求時に遅延読み込みし、埋め込みパスや見出しIDなどの純粋処理だけを通常のエディタ経路から使う。`mermaid` / `d2` コードブロックの図表示には `Mermaid` と `@terrastruct/d2` を遅延読み込みで使い、生成SVGは表示前に再度 `DOMPurify` で安全化する。フロントマターのYAML読み書きには `js-yaml` を使う。
 
 エディタ設定や表示モードの切り替えには CodeMirror 6 の `Compartment` を使う。フォント、行番号、スペルチェック、ソース/ライブプレビュー、タイプライターモード、補完候補、イベントハンドラは `reconfigure` で差し替え、`EditorView` は破棄しない。これにより本文、選択範囲、Undo/Redo履歴、フォーカス、スクロール位置を維持する。
 
@@ -34,7 +34,7 @@ Markdownプレビューでは `marked` でHTMLを生成し、`marked-footnote` �
 
 タイプライターモードの位置計算は `EditorView.requestMeasure` へ集約し、同じ測定キーの予約では最新のカーソル位置だけを処理する。read段階で座標とスクロール位置を取得し、write段階では目標が現在位置と異なる場合だけスクロールを書き換える。
 
-見出し折りたたみと入力補助のコードフェンス判定はMarkdown構文木のnodeと祖先を使い、通常経路では文書先頭からコードフェンス状態を再走査しない。構文木が対象位置まで未構築の場合だけ正しさを守る走査へ戻す。見出しの探索範囲は対象見出しから最大2000行とし、構文木がコードフェンス内として扱う見出し記法を除外する。
+見出し折りたたみと入力補助のコードフェンス判定はMarkdown構文木のnodeと祖先を使い、通常経路では文書先頭からコードフェンス状態を再走査しない。見出し折りたたみで構文木が対象位置まで未構築の場合は、短い時間上限で対象位置までの構築を試み、構築できなければ不完全な木から候補を返さない。見出しの探索範囲は対象見出しから最大2000行とし、構文木がコードフェンス内として扱う見出し記法を除外する。
 
 右パネルの発リンクは、前回の解決結果とWikiリンク位置をsnapshotとして保持する。通知された変更が既存リンク、角括弧、コード記法、改行へ触れない場合は解決結果を再利用し、後続リンク位置だけを変更量で移動する。ファイルパス・alias索引が変わった場合、またはリンク構文へ触れた場合は全文を再解析する。
 
@@ -101,7 +101,7 @@ js-yaml                   # フロントマターYAML処理
 - `app/src/renderer/editorOutgoingLinks.ts`: 発リンク解析結果とリンク位置の差分更新
 - `app/src/renderer/editorAutoSaveStatus.ts`: 変更タブだけを対象にした保存状態の差分計算
 - `app/src/renderer/store/editorTabChangeEvents.ts`: 変更タブだけを自動保存へ渡す内部通知
-- `app/src/renderer/previewMarkdown.ts`: 埋め込みを含むプレビューHTML生成とDOMPurifyによる安全化
+- `app/src/renderer/previewMarkdown.ts`: 要求時に遅延読み込みする、埋め込みを含むプレビューHTML生成とDOMPurifyによる安全化
 - `app/src/renderer/previewMarkdownModel.ts`: 埋め込み・画像パス、見出しID、HTML文字列の純粋な正規化
 - `app/src/renderer/previewMarkdownRenderer.ts`: marked / marked-footnoteの拡張、highlight.js、KaTeX、画像・リンクrenderer
 - `app/src/main/files/frontmatter.ts`、`app/src/renderer/editorFrontmatterModel.ts`: `js-yaml` によるフロントマター解析・書き戻し

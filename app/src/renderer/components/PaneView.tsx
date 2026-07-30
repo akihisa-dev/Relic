@@ -9,12 +9,14 @@ import type { HeadingScrollTarget } from "../editorDerivedState";
 import { flushPendingEditorChanges } from "../editorInputBuffer";
 import { paneTabsPresentationKey } from "../paneViewModel";
 import { usePaneHeadingScroll } from "../hooks/usePaneHeadingScroll";
+import type { WorkspaceRequestGuard } from "../hooks/useWorkspaceRequestGuard";
 import { useEditorStore, type PaneId, type PanelTabKind } from "../store/editorStore";
 import { PaneContentSurface } from "./PaneContentSurface";
 import { PaneTabs } from "./PaneTabs";
 
 export interface PaneViewProps {
   allFilePaths: string[];
+  beginWorkspaceRequest?: WorkspaceRequestGuard["beginWorkspaceRequest"];
   canReopenClosedTab: boolean;
   editorActionPulse: number;
   editorSettings: EditorSettings;
@@ -73,6 +75,7 @@ export function __resetPaneViewRenderCountsForTests(): void {
 
 function PaneViewComponent({
   allFilePaths,
+  beginWorkspaceRequest,
   canReopenClosedTab,
   editorActionPulse,
   editorSettings,
@@ -205,6 +208,7 @@ function PaneViewComponent({
       <PaneContentSurface
         activeTab={activeTab}
         allFilePaths={allFilePaths}
+        beginWorkspaceRequest={beginWorkspaceRequest}
         editorActionPulse={editorActionPulse}
         editorSettings={editorSettings}
         frontmatterCandidates={frontmatterCandidates}

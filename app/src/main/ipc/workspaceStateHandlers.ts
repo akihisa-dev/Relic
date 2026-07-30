@@ -14,7 +14,7 @@ import { getMainTranslator } from "../i18n";
 import { readAppSettings } from "../settings/appSettings";
 import { syncWorkspaceWatcher } from "../workspace/workspaceWatcher";
 import { ipcErrorDetails } from "./activeWorkspace";
-import { isRefreshWorkspaceInput } from "./workspaceHandlerValidators";
+import { isRefreshWorkspaceInput } from "./workspaceRegistrationHandlerValidators";
 import { buildWorkspaceState } from "./workspaceState";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
 

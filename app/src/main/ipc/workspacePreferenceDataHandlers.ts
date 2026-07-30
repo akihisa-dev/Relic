@@ -12,7 +12,7 @@ import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
   isChronicleCalendarSettingsInput,
   isFrontmatterCategoryChoicesInput
-} from "./workspaceHandlerValidators";
+} from "./workspacePreferenceHandlerValidators";
 
 export function registerWorkspacePreferenceDataHandlers(): void {
   handleLocalizedIpc(getWorkspaceFrontmatterCategoryChoicesChannel, async () => {

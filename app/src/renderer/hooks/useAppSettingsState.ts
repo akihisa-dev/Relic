@@ -4,32 +4,34 @@ import { useCallback, useEffect, useState } from "react";
 import type {
   AppInfo,
   EditorSettings,
-  FrontmatterTemplate,
   WorkspaceState
 } from "../../shared/ipc";
 import {
-  defaultFrontmatterTemplates,
   defaultUserDefinedFields,
   type UserDefinedField
 } from "../../shared/ipc";
+import { useLatest } from "./useLatest";
+import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
 
-interface UseAppSettingsStateInput {
+interface UseAppSettingsStateInput extends Pick<WorkspaceRequestGuard, "beginWorkspaceRequest"> {
   setEditorSettings: (settings: EditorSettings) => void;
   setWorkspaceError: (message: string | null) => void;
   setWorkspaceState: (state: WorkspaceState) => void;
 }
 
 export function useAppSettingsState({
+  beginWorkspaceRequest,
   setEditorSettings,
   setWorkspaceError,
   setWorkspaceState
 }: UseAppSettingsStateInput) {
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
-  const [frontmatterTemplates, setFrontmatterTemplates] = useState<FrontmatterTemplate[]>(defaultFrontmatterTemplates);
   const [userDefinedFields, setUserDefinedFields] = useState<UserDefinedField[]>(defaultUserDefinedFields);
+  const beginWorkspaceRequestRef = useLatest(beginWorkspaceRequest);
 
   useEffect(() => {
     let canceled = false;
+    const isCurrentWorkspace = beginWorkspaceRequestRef.current();
 
     void relicClient.current?.getAppInfo().then((result) => {
       if (canceled) return;
@@ -37,7 +39,7 @@ export function useAppSettingsState({
     });
 
     void relicClient.current?.getWorkspaceState().then((result) => {
-      if (canceled) return;
+      if (canceled || !isCurrentWorkspace()) return;
       if (result.ok) {
         setWorkspaceState(result.value);
       } else {
@@ -55,13 +57,8 @@ export function useAppSettingsState({
       if (result.ok) setUserDefinedFields(result.value);
     });
 
-    void relicClient.current?.getFrontmatterTemplates().then((result) => {
-      if (canceled) return;
-      if (result.ok) setFrontmatterTemplates(result.value);
-    });
-
     return () => { canceled = true; };
-  }, [setEditorSettings, setWorkspaceError, setWorkspaceState]);
+  }, [beginWorkspaceRequestRef, setEditorSettings, setWorkspaceError, setWorkspaceState]);
 
   const handleSaveSettings = useCallback(
     (settings: EditorSettings): void => {
@@ -80,17 +77,8 @@ export function useAppSettingsState({
     });
   }, [setWorkspaceError]);
 
-  const handleSaveFrontmatterTemplates = useCallback((templates: FrontmatterTemplate[]): void => {
-    setFrontmatterTemplates(templates);
-    void relicClient.current?.saveFrontmatterTemplates(templates).then((result) => {
-      if (!result.ok) setWorkspaceError(result.error.message);
-    });
-  }, [setWorkspaceError]);
-
   return {
     appInfo,
-    frontmatterTemplates,
-    handleSaveFrontmatterTemplates,
     handleSaveSettings,
     handleSaveUserDefinedFields,
     userDefinedFields

@@ -9,6 +9,7 @@ import {
 } from "./workspaceFileActionHelpers";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 import type { Translator } from "../i18nModel";
+import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
 import { workspaceFileErrorMessage } from "./workspaceFileError";
 
 type WorkspaceFileCreationInput = Pick<
@@ -16,9 +17,10 @@ type WorkspaceFileCreationInput = Pick<
   "focusedPane" | "openFileInPane" | "setWorkspaceError" | "setWorkspaceState" | "workspaceState"
 > & {
   t: Translator;
-};
+} & Pick<WorkspaceRequestGuard, "beginWorkspaceRequest">;
 
 export function useWorkspaceFileCreationActions({
+  beginWorkspaceRequest,
   focusedPane,
   openFileInPane,
   setWorkspaceError,
@@ -32,26 +34,30 @@ export function useWorkspaceFileCreationActions({
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
   const handleCreateFile = useCallback((): void => {
-    if (!relicClient.current) return;
+    const relic = relicClient.current;
+    if (!relic) return;
     if (workspaceState?.availability?.fileOperationsAvailable === false) {
       setWorkspaceError(t("files.workspaceUnavailableOperations"));
       return;
     }
 
     const fileName = fileNameDraft.trim() || nextUniqueFileName(workspaceState, t);
+    const isCurrentWorkspace = beginWorkspaceRequest();
+    if (!isCurrentWorkspace()) return;
 
     setIsCreatingFile(true);
     setWorkspaceError(null);
 
-    void relicClient.current
+    void relic
       .createMarkdownFile({ name: fileName })
       .then((result) => {
+        if (!isCurrentWorkspace()) return;
         if (result.ok) {
           setWorkspaceState(result.value);
           setFileNameDraft("");
           const expectedPath = ensureMarkdownExtension(fileName);
-          void relicClient.current!.readMarkdownFile({ path: expectedPath }).then((readResult) => {
-            if (readResult.ok) {
+          void relic.readMarkdownFile({ path: expectedPath }).then((readResult) => {
+            if (isCurrentWorkspace() && readResult.ok) {
               openFileInPane(focusedPane, readResult.value);
             }
           });
@@ -61,6 +67,7 @@ export function useWorkspaceFileCreationActions({
       })
       .finally(() => setIsCreatingFile(false));
   }, [
+    beginWorkspaceRequest,
     fileNameDraft,
     focusedPane,
     openFileInPane,
@@ -71,25 +78,31 @@ export function useWorkspaceFileCreationActions({
   ]);
 
   const handleCreateNoteFromPane = useCallback((name: string): void => {
-    if (!relicClient.current) return;
+    const relic = relicClient.current;
+    if (!relic) return;
     if (workspaceState?.availability?.fileOperationsAvailable === false) {
       setWorkspaceError(t("files.workspaceUnavailableOperations"));
       return;
     }
 
     const fileName = name.trim() || nextUniqueFileName(workspaceState, t);
+    const isCurrentWorkspace = beginWorkspaceRequest();
+    if (!isCurrentWorkspace()) return;
 
-    void relicClient.current
+    void relic
       .createMarkdownFile({ name: fileName })
       .then((result) => {
+        if (!isCurrentWorkspace()) return;
         if (result.ok) {
           setWorkspaceState(result.value);
           const expectedPath = ensureMarkdownExtension(fileName);
           const newFile = findCreatedMarkdownPath(result.value.fileTree, expectedPath);
 
           if (newFile) {
-            void relicClient.current!.readMarkdownFile({ path: newFile }).then((readResult) => {
-              if (readResult.ok) openFileInPane(focusedPane, readResult.value);
+            void relic.readMarkdownFile({ path: newFile }).then((readResult) => {
+              if (isCurrentWorkspace() && readResult.ok) {
+                openFileInPane(focusedPane, readResult.value);
+              }
             });
           }
         } else {
@@ -97,6 +110,7 @@ export function useWorkspaceFileCreationActions({
         }
       });
   }, [
+    beginWorkspaceRequest,
     focusedPane,
     openFileInPane,
     setWorkspaceError,
@@ -106,18 +120,22 @@ export function useWorkspaceFileCreationActions({
   ]);
 
   const handleCreateFolder = useCallback((): void => {
-    if (!relicClient.current) return;
+    const relic = relicClient.current;
+    if (!relic) return;
     if (workspaceState?.availability?.fileOperationsAvailable === false) {
       setWorkspaceError(t("files.workspaceUnavailableOperations"));
       return;
     }
 
+    const isCurrentWorkspace = beginWorkspaceRequest();
+    if (!isCurrentWorkspace()) return;
     setIsCreatingFolder(true);
     setWorkspaceError(null);
 
-    void relicClient.current
+    void relic
       .createFolder({ name: folderNameDraft.trim() || nextUniqueFolderName(workspaceState, t) })
       .then((result) => {
+        if (!isCurrentWorkspace()) return;
         if (result.ok) {
           setWorkspaceState(result.value);
           setFolderNameDraft("");
@@ -126,7 +144,7 @@ export function useWorkspaceFileCreationActions({
         }
       })
       .finally(() => setIsCreatingFolder(false));
-  }, [folderNameDraft, setWorkspaceError, setWorkspaceState, t, workspaceState]);
+  }, [beginWorkspaceRequest, folderNameDraft, setWorkspaceError, setWorkspaceState, t, workspaceState]);
 
   return {
     fileNameDraft,

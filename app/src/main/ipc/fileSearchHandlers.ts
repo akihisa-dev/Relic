@@ -17,7 +17,7 @@ import {
 import { isReservedFrontmatterFieldName } from "../../shared/frontmatterFields";
 import { fail, ok } from "../../shared/result";
 import { readBacklinks } from "../files/backlinks";
-import { readMarkdownFile } from "../files/markdownFiles";
+import { readMarkdownFile } from "../files/markdownFileContent";
 import { applySearchAndReplace, replaceInFile, searchAndReplace } from "../files/replace";
 import { searchWorkspace, workspaceSearchMaxFileBytes } from "../files/search";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
@@ -26,13 +26,13 @@ import { applyUnlinkedReference, readUnlinkedReferences } from "../files/unlinke
 import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
 import { workspaceDataProvider } from "../files/workspaceDataProvider";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
+import { isPathInput } from "./inputValidation";
 import {
-  isPathInput,
   isApplyUnlinkedReferenceInput,
   isReplaceInFileInput,
   isSearchAndReplaceInput,
   isSearchWorkspaceInput
-} from "./fileHandlerValidators";
+} from "./searchHandlerValidators";
 
 export function registerFileSearchHandlers(): void {
   handleLocalizedIpc(searchWorkspaceChannel, async (_event, input: unknown) => {

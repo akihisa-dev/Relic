@@ -22,7 +22,7 @@ import { syncWorkspaceWatcher } from "../workspace/workspaceWatcher";
 import { ipcErrorDetails } from "./activeWorkspace";
 import { buildWorkspaceState } from "./workspaceState";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
-import { isWorkspaceIdInput } from "./workspaceHandlerValidators";
+import { isWorkspaceIdInput } from "./inputValidation";
 
 export function registerWorkspaceSelectionHandlers(): void {
   handleLocalizedIpc(openWorkspaceChannel, async (): Promise<RelicResult<WorkspaceState>> => {

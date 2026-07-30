@@ -7,6 +7,7 @@ import {
   analyzeArchitecture,
   collectModuleSpecifiers,
   formatArchitectureReport,
+  hasWindowRelicAccess,
   validateModuleResolutionPolicy
 } from "./architecture-check.mjs";
 
@@ -45,6 +46,52 @@ describe("architecture-check", () => {
     });
 
     await expect(analyzeArchitecture(root)).resolves.toEqual({ cycles: [], violations: [] });
+  });
+
+  it("未知のproduction層を黙って検査対象外にしない", async () => {
+    const root = await createFixture({
+      "src/feature/orphan.ts": "export const value = 1;"
+    });
+
+    await expect(analyzeArchitecture(root)).resolves.toMatchObject({
+      violations: ["feature/orphan.ts: 未知のsource layerにproduction実装があります"]
+    });
+  });
+
+  it("RendererのIPC境界をrelicClientだけに限定する", async () => {
+    expect(hasWindowRelicAccess("export const api = window.relic;")).toBe(true);
+    expect(hasWindowRelicAccess(`export const api = window["relic"];`)).toBe(true);
+    expect(hasWindowRelicAccess("export const api = (window as Window).relic;")).toBe(true);
+    expect(hasWindowRelicAccess("export const api = window!.relic;")).toBe(true);
+    expect(hasWindowRelicAccess("export const api = globalThis.window.relic;")).toBe(true);
+    expect(hasWindowRelicAccess(`export const api = globalThis["window"]["relic"];`)).toBe(true);
+    expect(hasWindowRelicAccess("const { relic: api } = window; export { api };")).toBe(true);
+    expect(hasWindowRelicAccess("export const api = otherWindow.relic;")).toBe(false);
+    expect(hasWindowRelicAccess(`
+      export function read(window: { relic: unknown }) {
+        return window.relic;
+      }
+    `)).toBe(false);
+    expect(hasWindowRelicAccess(`
+      const window = otherWindow;
+      export const api = window.relic;
+    `)).toBe(false);
+    expect(hasWindowRelicAccess(`
+      export function read(globalThis: { window: { relic: unknown } }) {
+        return globalThis.window.relic;
+      }
+    `)).toBe(false);
+
+    const root = await createFixture({
+      "src/renderer/direct.ts": "export const api = window.relic;",
+      "src/renderer/relicClient.ts": "export const api = window.relic;"
+    });
+
+    await expect(analyzeArchitecture(root)).resolves.toMatchObject({
+      violations: [
+        "renderer/direct.ts: window.relicへの直接アクセスはrenderer/relicClient.tsだけに限定されています"
+      ]
+    });
   });
 
   it("rendererとsharedからOS境界への依存を報告する", async () => {
@@ -90,8 +137,10 @@ describe("architecture-check", () => {
 
   it("production実装から除外対象のテストへ依存できない", async () => {
     const root = await createFixture({
+      "src/types/global.d.mts": "export interface GlobalContract { value: string }",
       "src/shared/value.test.ts": "export const fixture = 1;",
-      "src/shared/value.ts": `export { fixture } from "./value.test";`
+      "src/shared/value.ts": `export { fixture } from "./value.test";`,
+      "src/renderer/viewTestHelpers.ts": "export const direct = window.relic;"
     });
 
     await expect(analyzeArchitecture(root)).resolves.toMatchObject({

@@ -32,7 +32,7 @@ import {
   MathWidget
 } from "./editorLivePreviewWidgets";
 import { createTranslator, type Translator } from "./i18nModel";
-import { resolveWorkspaceImagePath } from "./previewMarkdown";
+import { resolveWorkspaceImagePath } from "./previewMarkdownModel";
 import { previewImageContextKey } from "./previewImageLoader";
 import { editorHeavyUpdateDelay } from "./editorComplexity";
 import { editorFrameUpdateEffect, scheduleEditorFrameEffect } from "./editorFrameUpdates";

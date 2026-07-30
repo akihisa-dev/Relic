@@ -21,6 +21,7 @@ export function createEditorWorkspaceProps(input: AppLayoutEditorWorkspaceInput)
     allFilePaths: input.allFilePaths,
     applyingReferenceKey: input.applyingReferenceKey,
     backlinks: input.backlinks,
+    beginWorkspaceRequest: input.beginWorkspaceRequest,
     canReopenClosedTab: input.canReopenClosedTab,
     editorActionPulse: input.editorActionPulse,
     editorSettings: input.editorSettings,

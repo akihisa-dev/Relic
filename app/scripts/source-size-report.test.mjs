@@ -36,9 +36,12 @@ describe("source-size-report", () => {
     expect(countSourceLines("a\nb")).toBe(2);
   });
 
-  it("実装、テスト、CSSを分類して個別の警告基準を返す", () => {
-    expect(classifySourceFile("src/model.ts")).toEqual({ category: "implementation", warningLines: 700 });
+  it("production、test support、tooling、テスト、CSSを分類して個別の警告基準を返す", () => {
+    expect(classifySourceFile("src/model.ts")).toEqual({ category: "production", warningLines: 700 });
     expect(classifySourceFile("src/model.test.ts")).toEqual({ category: "test", warningLines: 1200 });
+    expect(classifySourceFile("src/test/setup.ts")).toEqual({ category: "test-support", warningLines: 700 });
+    expect(classifySourceFile("src/renderer/editorTestHelpers.ts")).toEqual({ category: "test-support", warningLines: 700 });
+    expect(classifySourceFile("scripts/check.mjs")).toEqual({ category: "tooling", warningLines: 700 });
     expect(classifySourceFile("src/styles.css")).toEqual({ category: "css", warningLines: 1000 });
   });
 
@@ -47,16 +50,21 @@ describe("source-size-report", () => {
       "src/same-b.ts": "1\n2\n",
       "src/same-a.tsx": "1\n2\n",
       "src/short.css": "1\n",
-      "src/ignored.js": "1\n2\n3\n",
+      "src/included.js": "1\n2\n3\n",
       "src/out/generated.ts": "1\n2\n3\n4\n",
       "node_modules/package/index.ts": "1\n2\n3\n4\n5\n",
       "scripts/check.mjs": "1\n2\n3\n",
+      "scripts/legacy.cjs": "1\n2\n3\n4\n5\n",
+      "build-tools/plugin.ts": "1\n2\n3\n4\n",
     });
 
     const entries = await collectSourceSizeEntries(root);
 
     expect(entries.map((entry) => entry.path)).toEqual([
+      "scripts/legacy.cjs",
+      "build-tools/plugin.ts",
       "scripts/check.mjs",
+      "src/included.js",
       "src/same-a.tsx",
       "src/same-b.ts",
       "src/short.css",
@@ -65,7 +73,7 @@ describe("source-size-report", () => {
 
   it("基準超過を警告するがレポート自体は生成する", () => {
     const report = renderSourceSizeReport([
-      { category: "implementation", lines: 701, path: "src/large.ts", warning: true, warningLines: 700 },
+      { category: "production", lines: 701, path: "src/large.ts", warning: true, warningLines: 700 },
       { category: "test", lines: 2, path: "src/small.test.ts", warning: false, warningLines: 1200 },
     ]);
 
@@ -75,7 +83,7 @@ describe("source-size-report", () => {
 
   it("ベースラインからの急増を分類別の増加量と増加率で警告する", () => {
     const current = [
-      { category: "implementation", lines: 160, path: "src/model.ts", warning: false, warningLines: 700 },
+      { category: "production", lines: 160, path: "src/model.ts", warning: false, warningLines: 700 },
       { category: "test", lines: 160, path: "src/model.test.ts", warning: false, warningLines: 1200 }
     ];
     const baseline = createSourceSizeBaseline(current.map((entry) => ({ ...entry, lines: 100 })));

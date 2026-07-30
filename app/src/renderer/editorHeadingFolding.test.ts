@@ -23,7 +23,7 @@ describe("editorHeadingFolding", () => {
       doc: content,
       extensions: markdown({ extensions: GFM })
     });
-    await ensureSyntaxTree(state, state.doc.length, 1000);
+    expect(await ensureSyntaxTree(state, state.doc.length, 5000)).not.toBeNull();
 
     const range = headingFoldRange(state, targetFrom);
     expect(range).toEqual({
@@ -36,7 +36,7 @@ describe("editorHeadingFolding", () => {
   it("コードフェンス内の見出しを折りたたみ対象にしない", async () => {
     const content = "```md\n# code heading\n```\n# Real\nbody";
     const state = EditorState.create({ doc: content, extensions: markdown({ extensions: GFM }) });
-    await ensureSyntaxTree(state, state.doc.length, 100);
+    expect(await ensureSyntaxTree(state, state.doc.length, 5000)).not.toBeNull();
 
     expect(headingFoldRange(state, content.indexOf("# code"))).toBeNull();
     expect(headingFoldRange(state, content.indexOf("# Real"))).not.toBeNull();

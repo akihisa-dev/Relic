@@ -1,16 +1,22 @@
 import { describe, expect, it } from "vitest";
 
+import { isWorkspaceIdInput } from "./inputValidation";
 import {
   isChronicleCalendarSettingsInput,
   isFrontmatterCategoryChoicesInput,
   isFrontmatterTemplatesInput,
-  isChartsInput,
-  isRenameWorkspaceInput,
-  isSwitchWorkspaceInput,
-  isWorkspaceTablePreferencesInput,
-  isUpdateChartEntryInput,
   isUserDefinedFieldsInput
-} from "./workspaceHandlerValidators";
+} from "./workspacePreferenceHandlerValidators";
+import {
+  isRefreshWorkspaceInput,
+  isRenameWorkspaceInput,
+  isSwitchWorkspaceInput
+} from "./workspaceRegistrationHandlerValidators";
+import {
+  isChartsInput,
+  isWorkspaceTablePreferencesInput,
+  isUpdateChartEntryInput
+} from "./workspaceVisualizationHandlerValidators";
 
 describe("workspaceHandlerValidators", () => {
   it("暦名の重複、0年、表示対象なしを拒否する", () => {
@@ -151,8 +157,11 @@ describe("workspaceHandlerValidators", () => {
   });
 
   it("validates workspace switch input with a safe workspace id", () => {
+    expect(isWorkspaceIdInput({ workspaceId: "workspace-1" })).toBe(true);
     expect(isSwitchWorkspaceInput({ workspaceId: "workspace-1" })).toBe(true);
+    expect(isRefreshWorkspaceInput({ workspaceId: "workspace-1" })).toBe(true);
     expect(isSwitchWorkspaceInput({ workspaceId: "workspace_1" })).toBe(true);
+    expect(isRefreshWorkspaceInput({ workspaceId: "../outside" })).toBe(false);
     expect(isSwitchWorkspaceInput({ workspaceId: "" })).toBe(false);
     expect(isSwitchWorkspaceInput({ workspaceId: "  " })).toBe(false);
     expect(isSwitchWorkspaceInput({ workspaceId: "../outside" })).toBe(false);

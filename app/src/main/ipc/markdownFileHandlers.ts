@@ -19,11 +19,13 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import {
   createMarkdownFileAtPath,
   createMarkdownFile,
+  importMarkdownFiles
+} from "../files/markdownFileCreation";
+import {
   duplicateMarkdownFile,
-  importMarkdownFiles,
   moveMarkdownFile,
   renameMarkdownFile
-} from "../files/markdownFiles";
+} from "../files/markdownFileRelocation";
 import { readLinkUpdateImpact } from "../files/linkUpdater";
 import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
 import { getCachedMainTranslator } from "../i18n";
@@ -35,9 +37,9 @@ import {
   isImportMarkdownFilesInput,
   isLinkUpdateImpactInput,
   isMoveMarkdownFileInput,
-  isPathInput,
   isRenameMarkdownFileInput
 } from "./fileHandlerValidators";
+import { isPathInput } from "./inputValidation";
 import { buildWorkspaceState } from "./workspaceState";
 import { registerAttachmentFileHandlers } from "./attachmentFileHandlers";
 import { registerWorkspaceItemHandlers } from "./workspaceItemHandlers";

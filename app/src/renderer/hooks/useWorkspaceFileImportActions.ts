@@ -7,21 +7,26 @@ import { splitDroppedWorkspaceFiles } from "./workspaceFileMutationShared";
 import { workspaceFileErrorMessage } from "./workspaceFileError";
 
 export function useWorkspaceFileImportActions({
+  beginWorkspaceRequest,
   focusedPane,
   openImageInPane,
   setWorkspaceError,
   setWorkspaceState,
   t
 }: Pick<WorkspaceFileMutationInput,
-  "focusedPane" | "openImageInPane" | "setWorkspaceError" | "setWorkspaceState"
+  "beginWorkspaceRequest" | "focusedPane" | "openImageInPane" | "setWorkspaceError" | "setWorkspaceState"
 > & { t: Translator }) {
   const handleImportMarkdownFiles = useCallback((sourcePaths: string[], destinationFolder: string): void => {
-    if (!relicClient.current || sourcePaths.length === 0) return;
+    const relic = relicClient.current;
+    if (!relic || sourcePaths.length === 0) return;
+    const isCurrentWorkspace = beginWorkspaceRequest();
+    if (!isCurrentWorkspace()) return;
     const { imageSourcePaths, markdownSourcePaths } = splitDroppedWorkspaceFiles(sourcePaths);
 
     void (async () => {
       if (markdownSourcePaths.length > 0) {
-        const result = await relicClient.current!.importMarkdownFiles({ destinationFolder, sourcePaths: markdownSourcePaths });
+        const result = await relic.importMarkdownFiles({ destinationFolder, sourcePaths: markdownSourcePaths });
+        if (!isCurrentWorkspace()) return;
         if (!result.ok) {
           setWorkspaceError(workspaceFileErrorMessage(result.error, t));
           return;
@@ -31,7 +36,9 @@ export function useWorkspaceFileImportActions({
 
       const importedImagePaths: string[] = [];
       for (const sourcePath of imageSourcePaths) {
-        const result = await relicClient.current!.importImageFile({ destinationFolder, sourcePath });
+        if (!isCurrentWorkspace()) return;
+        const result = await relic.importImageFile({ destinationFolder, sourcePath });
+        if (!isCurrentWorkspace()) return;
         if (!result.ok) {
           setWorkspaceError(workspaceFileErrorMessage(result.error, t));
           return;
@@ -39,14 +46,15 @@ export function useWorkspaceFileImportActions({
         importedImagePaths.push(result.value.path);
       }
       if (importedImagePaths.length > 0) {
-        const stateResult = await relicClient.current!.getWorkspaceState();
+        const stateResult = await relic.getWorkspaceState();
+        if (!isCurrentWorkspace()) return;
         if (stateResult.ok) setWorkspaceState(stateResult.value);
       }
       for (const imagePath of importedImagePaths) {
         openImageInPane(focusedPane, { name: imagePath.split("/").at(-1) ?? imagePath, path: imagePath });
       }
     })();
-  }, [focusedPane, openImageInPane, setWorkspaceError, setWorkspaceState, t]);
+  }, [beginWorkspaceRequest, focusedPane, openImageInPane, setWorkspaceError, setWorkspaceState, t]);
 
   return { handleImportMarkdownFiles };
 }

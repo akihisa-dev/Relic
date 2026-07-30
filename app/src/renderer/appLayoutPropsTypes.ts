@@ -29,6 +29,7 @@ export interface AppLayoutShellInput {
 export interface AppLayoutEditorWorkspaceInput {
   activeFileTab: EditorWorkspaceProps["activeFileTab"];
   allFilePaths: EditorWorkspaceProps["allFilePaths"];
+  beginWorkspaceRequest: EditorWorkspaceProps["beginWorkspaceRequest"];
   canReopenClosedTab: EditorWorkspaceProps["canReopenClosedTab"];
   appInlineHandlers: Pick<
     EditorWorkspaceProps,

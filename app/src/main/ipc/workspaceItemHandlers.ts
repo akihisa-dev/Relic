@@ -19,10 +19,10 @@ import {
 } from "../files/paths";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
-  isPathInput,
   isRevealWorkspaceItemInput,
   isStartWorkspaceFileDragInput
 } from "./fileHandlerValidators";
+import { isPathInput } from "./inputValidation";
 import { isAuthorizedIpcSender } from "./ipcSenderAuthorization";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
 

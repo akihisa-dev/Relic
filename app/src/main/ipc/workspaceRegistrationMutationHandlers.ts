@@ -19,11 +19,11 @@ import {
 import { syncWorkspaceWatcher } from "../workspace/workspaceWatcher";
 import { ipcErrorDetails } from "./activeWorkspace";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
+import { isWorkspaceIdInput } from "./inputValidation";
 import {
   isRenameWorkspaceInput,
-  isSwitchWorkspaceInput,
-  isWorkspaceIdInput
-} from "./workspaceHandlerValidators";
+  isSwitchWorkspaceInput
+} from "./workspaceRegistrationHandlerValidators";
 import { buildWorkspaceState } from "./workspaceState";
 
 export function registerWorkspaceRegistrationMutationHandlers(): void {

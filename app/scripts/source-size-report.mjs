@@ -2,7 +2,17 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const includedExtensions = new Set([".css", ".mjs", ".ts", ".tsx"]);
+const includedExtensions = new Set([
+  ".cjs",
+  ".css",
+  ".cts",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".mts",
+  ".ts",
+  ".tsx"
+]);
 const excludedDirectories = new Set([".vite", "coverage", "dist", "node_modules", "out"]);
 const retainedLargeSourceReasons = new Map([
   ["src/renderer/styles/chronicle.css", "年表画面の構成要素とレスポンシブ上書きを一続きで管理する単一機能CSS"],
@@ -12,7 +22,12 @@ const retainedLargeSourceReasons = new Map([
 export function classifySourceFile(filePath) {
   if (filePath.endsWith(".css")) return { category: "css", warningLines: 1000 };
   if (/\.(?:test|spec)\.[^.]+$/.test(filePath)) return { category: "test", warningLines: 1200 };
-  return { category: "implementation", warningLines: 700 };
+  if (/(?:^|\/)(?:test|test-support)\//u.test(filePath)
+    || /(?:TestHelpers|testHelpers)\.[^.]+$/u.test(filePath)) {
+    return { category: "test-support", warningLines: 700 };
+  }
+  if (/^(?:build-tools|scripts)\//u.test(filePath)) return { category: "tooling", warningLines: 700 };
+  return { category: "production", warningLines: 700 };
 }
 
 export function countSourceLines(content) {
@@ -53,7 +68,7 @@ async function walkSourceFiles(directory, rootDirectory) {
 
 export async function collectSourceSizeEntries(rootDirectory) {
   const entries = [];
-  for (const sourceDirectory of ["src", "scripts"]) {
+  for (const sourceDirectory of ["src", "scripts", "build-tools"]) {
     const directory = path.join(rootDirectory, sourceDirectory);
     try {
       entries.push(...await walkSourceFiles(directory, rootDirectory));
@@ -66,20 +81,24 @@ export async function collectSourceSizeEntries(rootDirectory) {
 
 export function createSourceSizeBaseline(entries) {
   return {
-    entries: Object.fromEntries(entries.map((entry) => [entry.path, entry.lines])),
-    version: 1
+    entries: Object.fromEntries(entries.map((entry) => [
+      entry.path,
+      { category: entry.category, lines: entry.lines }
+    ])),
+    version: 2
   };
 }
 
 export function compareSourceSizeEntries(entries, baseline) {
-  const baselineEntries = baseline?.version === 1 && baseline.entries ? baseline.entries : {};
+  const baselineEntries = baseline?.version === 2 && baseline.entries ? baseline.entries : {};
   return entries.map((entry) => {
-    const baselineLines = baselineEntries[entry.path];
+    const baselineEntry = baselineEntries[entry.path];
+    const baselineLines = baselineEntry?.category === entry.category ? baselineEntry.lines : undefined;
     const delta = typeof baselineLines === "number" ? entry.lines - baselineLines : null;
     const growthPercent = typeof baselineLines === "number" && baselineLines > 0
       ? (delta / baselineLines) * 100
       : null;
-    const minimumGrowth = entry.category === "implementation" ? 50 : 100;
+    const minimumGrowth = entry.category === "production" ? 50 : 100;
     return {
       ...entry,
       baselineLines: typeof baselineLines === "number" ? baselineLines : null,

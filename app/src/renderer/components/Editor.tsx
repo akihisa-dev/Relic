@@ -18,6 +18,7 @@ import {
 import { useEditorContextMenu } from "../hooks/useEditorContextMenu";
 import { useEditorFrontmatterDialog } from "../hooks/useEditorFrontmatterDialog";
 import { useLatest } from "../hooks/useLatest";
+import type { WorkspaceRequestGuard } from "../hooks/useWorkspaceRequestGuard";
 import { useToolbarActions } from "../hooks/useToolbarActions";
 import { useT } from "../i18n";
 import { outputFileNameFromPath } from "../outputHtml";
@@ -27,6 +28,7 @@ import { EditorFrontmatterPropertyMenu } from "./EditorFrontmatterPropertyMenu";
 
 interface EditorProps {
   allFilePaths?: string[];
+  beginWorkspaceRequest?: WorkspaceRequestGuard["beginWorkspaceRequest"];
   content: string;
   contentSourceKey?: string;
   contentUpdate?: EditorContentUpdate;
@@ -52,9 +54,11 @@ interface EditorProps {
 const defaultAllFilePaths: string[] = [];
 const defaultFrontmatterCandidates: Record<string, string[]> = {};
 const defaultUserDefinedFields: UserDefinedField[] = [];
+const beginAlwaysCurrentWorkspaceRequest: WorkspaceRequestGuard["beginWorkspaceRequest"] = () => () => true;
 
 export function Editor({
   allFilePaths = defaultAllFilePaths,
+  beginWorkspaceRequest = beginAlwaysCurrentWorkspaceRequest,
   content,
   contentSourceKey,
   contentUpdate,
@@ -188,7 +192,9 @@ export function Editor({
 
       event.preventDefault();
       event.stopPropagation();
-      void importDroppedImagesAsMarkdown(view, event, filePath, sourcePaths);
+      const isCurrentWorkspace = beginWorkspaceRequest();
+      if (!isCurrentWorkspace()) return;
+      void importDroppedImagesAsMarkdown(view, event, filePath, sourcePaths, isCurrentWorkspace);
     };
     let compositionFlushTimer: ReturnType<typeof setTimeout> | null = null;
     const handleCompositionEnd = (): void => {
@@ -229,7 +235,7 @@ export function Editor({
       container.removeEventListener("compositionend", handleCompositionEnd, true);
       if (compositionFlushTimer) clearTimeout(compositionFlushTimer);
     };
-  }, [filePath, openContextMenu, openFrontmatterDialog]);
+  }, [beginWorkspaceRequest, filePath, openContextMenu, openFrontmatterDialog]);
 
   useEffect(() => {
     const container = containerRef.current;

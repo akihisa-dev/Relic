@@ -1,6 +1,8 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
+import { nodeTestIncludes, rendererTestIncludes } from "./scripts/test-collection-policy.mjs";
+
 const rendererExecArgv = process.allowedNodeEnvironmentFlags.has("--no-experimental-webstorage")
   ? ["--no-experimental-webstorage"]
   : [];
@@ -20,13 +22,7 @@ export default defineConfig({
         extends: true,
         test: {
           environment: "node",
-          include: [
-            "build-tools/**/*.{test,spec}.ts",
-            "scripts/**/*.{test,spec}.mjs",
-            "src/main/**/*.{test,spec}.{ts,tsx}",
-            "src/preload/**/*.{test,spec}.{ts,tsx}",
-            "src/shared/**/*.{test,spec}.{ts,tsx}"
-          ],
+          include: nodeTestIncludes,
           name: "node",
           setupFiles: ["src/test/nodeSetup.ts"]
         }
@@ -36,7 +32,7 @@ export default defineConfig({
         test: {
           environment: "jsdom",
           execArgv: rendererExecArgv,
-          include: ["src/renderer/**/*.{test,spec}.{ts,tsx}"],
+          include: rendererTestIncludes,
           name: "renderer",
           setupFiles: ["src/test/setup.ts"]
         }

@@ -2,13 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   collectInitialManifestKeys,
+  requiredDeferredRendererSources,
   rendererInitialLoadViolations
 } from "./renderer-production-check.mjs";
 
-const requiredSources = [
-  "node_modules/@terrastruct/d2/dist/browser/index.js",
-  "node_modules/mermaid/dist/mermaid.core.mjs"
-];
+const requiredSources = requiredDeferredRendererSources;
 
 describe("renderer-production-check", () => {
   it("entryから静的importだけを初期読込としてたどる", () => {
@@ -22,27 +20,32 @@ describe("renderer-production-check", () => {
     expect([...initial]).toEqual(["entry", "shared", "transitive"]);
   });
 
-  it("MermaidとD2が初期静的importへ入る回帰を検出する", () => {
+  it("Markdown preview、Mermaid、D2が初期静的importへ入る回帰を検出する", () => {
     const manifest = {
       d2: {
         src: "node_modules/@terrastruct/d2/dist/browser/index.js"
       },
-      entry: { imports: ["d2", "mermaid"], isEntry: true },
+      entry: { imports: ["d2", "mermaid", "preview"], isEntry: true },
       mermaid: {
         src: "node_modules/mermaid/dist/mermaid.core.mjs"
+      },
+      preview: {
+        src: "src/renderer/previewMarkdown.ts"
       }
     };
 
     expect(rendererInitialLoadViolations(manifest, requiredSources)).toEqual([
       "Renderer dependency is loaded initially: node_modules/@terrastruct/d2/dist/browser/index.js",
-      "Renderer dependency is loaded initially: node_modules/mermaid/dist/mermaid.core.mjs"
+      "Renderer dependency is loaded initially: node_modules/mermaid/dist/mermaid.core.mjs",
+      "Renderer dependency is loaded initially: src/renderer/previewMarkdown.ts"
     ]);
   });
 
   it("必要な依存entryが出力されない回帰を検出する", () => {
     expect(rendererInitialLoadViolations({ entry: { isEntry: true } }, requiredSources)).toEqual([
       "Required renderer dependency was not emitted: node_modules/@terrastruct/d2/dist/browser/index.js",
-      "Required renderer dependency was not emitted: node_modules/mermaid/dist/mermaid.core.mjs"
+      "Required renderer dependency was not emitted: node_modules/mermaid/dist/mermaid.core.mjs",
+      "Required renderer dependency was not emitted: src/renderer/previewMarkdown.ts"
     ]);
   });
 
@@ -50,8 +53,9 @@ describe("renderer-production-check", () => {
     const manifest = {
       d2: { src: "node_modules/@terrastruct/d2/dist/browser/index.js" },
       entry: { dynamicImports: ["feature"], isEntry: true },
-      feature: { dynamicImports: ["d2", "mermaid"] },
-      mermaid: { src: "node_modules/mermaid/dist/mermaid.core.mjs" }
+      feature: { dynamicImports: ["d2", "mermaid", "preview"] },
+      mermaid: { src: "node_modules/mermaid/dist/mermaid.core.mjs" },
+      preview: { src: "src/renderer/previewMarkdown.ts" }
     };
 
     expect(rendererInitialLoadViolations(manifest, requiredSources)).toEqual([]);
@@ -62,8 +66,9 @@ describe("renderer-production-check", () => {
     const mermaid = "node_modules/.pnpm/mermaid@11.16.0/node_modules/mermaid/dist/mermaid.core.mjs";
     const manifest = {
       [d2]: { src: d2 },
-      entry: { dynamicImports: [d2, mermaid], isEntry: true },
-      [mermaid]: { src: mermaid }
+      entry: { dynamicImports: [d2, mermaid, "preview"], isEntry: true },
+      [mermaid]: { src: mermaid },
+      preview: { src: "src/renderer/previewMarkdown.ts" }
     };
 
     expect(rendererInitialLoadViolations(manifest, requiredSources)).toEqual([]);

@@ -39,7 +39,7 @@ Relicは、ユーザーが選んだローカルフォルダだけをワークス
 | 一括置換 | `app/src/main/files/replace.ts` | 対象収集時の `resolveExistingWorkspacePath(...)` と各書き込み直前の `verifyExistingWorkspacePath(...)` |
 | タイトル一覧・目次・タグ索引・マージ | `app/src/main/ipc/toolTitleListAction.ts`、`toolTableOfContentsAction.ts`、`toolTagIndexAction.ts`、`toolMergeAction.ts` | 対象は `resolveToolTargetPaths(...)`、出力は `writeToolMarkdownOutput(...)` |
 | ツール出力 | `app/src/main/ipc/toolOutputFiles.ts` | `safeOutputName(...)` と `resolveNewWorkspacePath(...)` |
-| PDF/SVG保存 | `app/src/main/ipc/outputHandlers.ts` | OSの保存ダイアログで選ばれたユーザー指定先へ保存する。ワークスペース内限定のファイル操作とは別境界として扱う |
+| PDF/SVG保存 | `app/src/main/ipc/outputHandlers.ts`、`diagramOutputHandlers.ts`、`previewPdfHandler.ts` | OSの保存ダイアログで選ばれたユーザー指定先へ保存する。ワークスペース内限定のファイル操作とは別境界として扱う |
 
 ## テスト方針
 

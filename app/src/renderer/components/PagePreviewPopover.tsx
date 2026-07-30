@@ -5,7 +5,6 @@ import type { AliasIndex } from "../../shared/links";
 import { resolveWikiLinkPathWithAliases } from "../../shared/links";
 import { sanitizePreviewHtml } from "../htmlSanitizer";
 import { useT } from "../i18n";
-import { renderMarkdown } from "../previewMarkdown";
 
 interface PagePreviewPopoverProps {
   aliasesByPath: AliasIndex;
@@ -13,8 +12,8 @@ interface PagePreviewPopoverProps {
 }
 
 interface PreviewState {
-  content: string | null;
   error: string | null;
+  html: string | null;
   isLoading: boolean;
   path: string;
   x: number;
@@ -37,6 +36,10 @@ export function PagePreviewPopover({
   const existingPathSet = useMemo(() => new Set(existingMarkdownPaths), [existingMarkdownPaths]);
 
   useEffect(() => {
+    requestIdRef.current += 1;
+    hoveredLinkRef.current = null;
+    setPreview(null);
+
     const clearTimer = (): void => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
@@ -74,23 +77,26 @@ export function PagePreviewPopover({
 
       timerRef.current = setTimeout(() => {
         if (!existingPathSet.has(path) || !relicClient.current) {
-          setPreview({ content: null, error: t("preview.pageMissing"), isLoading: false, path, x, y });
+          setPreview({ error: t("preview.pageMissing"), html: null, isLoading: false, path, x, y });
           return;
         }
 
-        setPreview({ content: null, error: null, isLoading: true, path, x, y });
-        void relicClient.current.readMarkdownFile({ path }).then((result) => {
+        setPreview({ error: null, html: null, isLoading: true, path, x, y });
+        void relicClient.current.readMarkdownFile({ path }).then(async (result) => {
           if (requestIdRef.current !== requestId) return;
           if (result.ok) {
-            setPreview({ content: result.value.content, error: null, isLoading: false, path, x, y });
+            const { renderMarkdown } = await import("../previewMarkdown");
+            if (requestIdRef.current !== requestId) return;
+            const html = sanitizePreviewHtml(renderMarkdown(result.value.content, null, new Map(), false, t));
+            setPreview({ error: null, html, isLoading: false, path, x, y });
           } else {
-            setPreview({ content: null, error: result.error.message, isLoading: false, path, x, y });
+            setPreview({ error: result.error.message, html: null, isLoading: false, path, x, y });
           }
         }).catch((reason) => {
           if (requestIdRef.current !== requestId) return;
           setPreview({
-            content: null,
             error: reason instanceof Error ? reason.message : String(reason),
+            html: null,
             isLoading: false,
             path,
             x,
@@ -132,6 +138,8 @@ export function PagePreviewPopover({
 
     return () => {
       clearTimer();
+      hoveredLinkRef.current = null;
+      requestIdRef.current += 1;
       window.removeEventListener("pointerover", handlePointerOver, true);
       window.removeEventListener("focusin", handleFocusIn, true);
       window.removeEventListener("pointerout", handlePointerOut, true);
@@ -142,10 +150,6 @@ export function PagePreviewPopover({
   }, [aliasesByPath, existingMarkdownPaths, existingPathSet, t]);
 
   if (!preview) return null;
-
-  const html = preview.content
-    ? sanitizePreviewHtml(renderMarkdown(preview.content, null, new Map(), false, t))
-    : "";
 
   return (
     <aside
@@ -159,7 +163,7 @@ export function PagePreviewPopover({
       ) : preview.error ? (
         <div className="page-preview-note">{preview.error}</div>
       ) : (
-        <div className="page-preview-body" dangerouslySetInnerHTML={{ __html: html }} />
+        <div className="page-preview-body" dangerouslySetInnerHTML={{ __html: preview.html ?? "" }} />
       )}
     </aside>
   );

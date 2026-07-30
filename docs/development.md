@@ -111,13 +111,13 @@ UI文言は辞書へ集約し、コンポーネント内へ散在させない。
 - 共通型、定数、IPC境界定義は既存の責務別共有モジュールへ置く
 - 新機能を肥大したファイルへ足す前に、hook、component、lib、serviceへ切り出せる責務を確認する
 
-`app/` で `pnpm source:size` を実行すると、実装、テスト、CSSの行数を多い順に確認できる。
-保存済みの `scripts/baselines/source-lines.json` との差分も表示し、実装は50行以上かつ20%以上、テストとCSSは100行以上かつ20%以上の増加を急増警告にする。
+`app/` で `pnpm source:size` を実行すると、production、test、test-support、tooling、CSSの行数を責務別に多い順で確認できる。
+保存済みの `scripts/baselines/source-lines.json` には分類と行数を記録し、productionは50行以上かつ20%以上、それ以外は100行以上かつ20%以上の増加を急増警告にする。
 絶対行数と急増はいずれも責務を確認するための警告であり、行数だけを理由にCIを失敗させたり、機械的に分割したりしない。意図した構造変更を確認した場合だけ `pnpm source:size:baseline` で基準を更新する。
-`pnpm renderer:production:check` はrendererのproduction buildを実行し、MermaidとD2のentryが出力され、初期entryから続く静的import経路へ含まれないことを確認する。
+`pnpm renderer:production:check` はrendererのproduction buildを実行し、Markdownプレビュー、Mermaid、D2のentryが出力され、初期entryから続く静的import経路へ含まれないことを確認する。
 個別chunk、JavaScript、CSS、assetの容量と増加率はCIの合否条件にしない。
 `pnpm performance:workspace` は再現可能な1,000ファイルfixture、`pnpm performance:workspace:large` は10,000ファイルfixtureで、ファイルツリー、索引、変更ファイルだけの再読込、検索、タグ、バックリンク、グラフ、年表を複数回測定して中央値とI/O回数を表示する。
-性能を比較するときは、同じfixture fingerprint、実行回数、warmup回数を使い、単発値ではなく中央値と読み取り・stat回数を確認する。
+性能を比較するときは、同じfixture fingerprint、実行回数、warmup回数を使い、単発値ではなく中央値と読み取り・stat回数を確認する。保存済み基準にある指標が現在の測定結果にない場合は比較不能として検証を失敗させる。
 
 ---
 
@@ -181,11 +181,11 @@ pnpm verify:local:release
 
 Node APIを使うmain・preload・shared・scriptsのテストはNode環境、rendererのテストはjsdom環境で分離して実行する。
 `test:coverage` は全テストを実行して製品コードの未実行箇所を測定する。割合そのものはCIの合否条件にせず、測定用・診断用の `scripts/` はテスト対象に含めるが製品コードの集計からは除外する。未実行箇所は数値を埋めるためではなく、保存、拒否、状態遷移など重要な失敗経路の不足を判断する材料にする。
-`architecture:check` はプロセス境界、循環依存、未解決相対import、module alias禁止方針を確認する。保証範囲は [engineering/architecture.md](engineering/architecture.md) を正とする。
-`test:inventory` は全テストファイルを失敗責務の層へ分類し、Electron実行とmacOS packageがVitest外の責務であることも表示する。
+`architecture:check` はプロセス境界、未知のproduction層、RendererのPreload API直接参照、循環依存、未解決相対import、module alias禁止方針を確認する。保証範囲は [engineering/architecture.md](engineering/architecture.md) を正とする。
+`test:inventory` はVitestと共有する収集方針で全テストファイルを照合して失敗責務の層へ分類し、Electron実行とmacOS packageがVitest外の責務であることも表示する。
 `smoke:electron` は一時ユーザーデータを使ってmacOSの開発版Electronを起動し、メインウインドウ、Renderer、Preload API、初期IPC接続を確認して自動終了する。安全ビルド済みのmacOS配布版を確認する場合は `pnpm smoke:package` を使う。ローカルではユーザーが実行を明示した場合だけ使い、どちらも必要に応じて `-- --artifacts-dir <path>` でJSON reportとプロセスログの保存先を指定できる。
 `verify` は日常変更向けにNode.js環境、型、全テスト、依存通知・SBOM整合を確認する。
-`verify:full` はローカルで再現可能な包括確認として、Node.js環境、型、全テストとカバレッジ測定、アーキテクチャ境界、文書索引、workflow安全条件、Skill構造、監査器の自己テスト、指示量予算、依存通知・SBOM整合を確認する。
+`verify:full` はローカルで再現可能な包括確認として、Node.js環境、型、全テストとカバレッジ測定、Vitest収集台帳、アーキテクチャ境界、文書索引、workflow安全条件、Skill構造、監査器の自己テスト、指示量予算、依存通知・SBOM整合を確認する。
 `verify:ci` は `verify:full` にrendererのproduction build、初期静的import境界の検査、production依存関係の脆弱性監査を追加し、Code CIの再現可能部分をまとめる。依存関係監査はhigh以上の検出で失敗し、低・中リスクも監査出力で確認できる。Pull Requestのbase/headを使うバージョン検査はGitHubイベント固有のため別stepで実行する。
 `verify:local:push` はGitHubへ送信する前の必須検証で、固定lockfileからの依存配置、`verify:full`、Renderer production build、重要度を問わないproduction依存監査、差分形式を確認する。既知の脆弱性、監査通信の失敗、またはいずれかの検査失敗があればpushしない。
 `verify:local:release` はタグpush前の必須検証で、`verify:local:push` にmacOS安全ビルド、配布DMGの生成確認、その作業で生成した配布版の自動起動スモークを追加する。タグpushまたはリリースの明示指示はこの自動起動スモークの実施許可を含むが、既存アプリやGUI操作の許可は含まない。

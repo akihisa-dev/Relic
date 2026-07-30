@@ -1,4 +1,13 @@
-import { codeFolding, foldEffect, foldedRanges, foldService, syntaxTree, unfoldEffect } from "@codemirror/language";
+import {
+  codeFolding,
+  ensureSyntaxTree,
+  foldEffect,
+  foldedRanges,
+  foldService,
+  syntaxTree,
+  syntaxTreeAvailable,
+  unfoldEffect
+} from "@codemirror/language";
 import type { Extension, EditorState } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
@@ -26,9 +35,13 @@ export function headingFoldRange(state: EditorState, lineStart: number): { from:
 
   const maxLineNumber = Math.min(doc.lines, headingLine.number + maxHeadingFoldScanLines);
   const scanTo = doc.line(maxLineNumber).to;
+  const tree = syntaxTreeAvailable(state, scanTo)
+    ? syntaxTree(state)
+    : ensureSyntaxTree(state, scanTo, 25);
+  if (!tree) return null;
   let currentHeadingFound = false;
   let boundaryFrom: number | null = null;
-  syntaxTree(state).iterate({
+  tree.iterate({
     enter: (node) => {
       if (node.to < headingLine.from || node.from > scanTo || boundaryFrom !== null) return false;
       headingFoldVisitedNodes += 1;

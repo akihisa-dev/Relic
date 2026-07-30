@@ -2,6 +2,7 @@ import { useWorkspaceFileCreationActions } from "./useWorkspaceFileCreationActio
 import { useWorkspaceFileMutationActions } from "./useWorkspaceFileMutationActions";
 import { useWorkspaceFileOpenActions } from "./useWorkspaceFileOpenActions";
 import { useWorkspaceRegistryActions } from "./useWorkspaceRegistryActions";
+import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 import type { Translator } from "../i18nModel";
 
@@ -9,6 +10,7 @@ type UseWorkspaceFileActionsInput = WorkspaceFileActionsContext & {
   beforeCloseAllTabs?: () => Promise<boolean> | boolean;
   beforeMutateWorkspaceItems?: WorkspaceFileActionsContext["beforeMutateWorkspaceItems"];
   t: Translator;
+  workspaceRequestGuard: WorkspaceRequestGuard;
 };
 
 export function useWorkspaceFileActions({
@@ -31,9 +33,13 @@ export function useWorkspaceFileActions({
   tabs,
   t,
   updateTabMeta,
+  workspaceRequestGuard,
   workspaceState
 }: UseWorkspaceFileActionsInput) {
+  const activeWorkspaceId = workspaceState?.activeWorkspace?.id ?? null;
+  const activeWorkspacePath = workspaceState?.activeWorkspace?.path ?? null;
   const creationActions = useWorkspaceFileCreationActions({
+    ...workspaceRequestGuard,
     focusedPane,
     openFileInPane,
     setWorkspaceError,
@@ -42,6 +48,8 @@ export function useWorkspaceFileActions({
     workspaceState
   });
   const openActions = useWorkspaceFileOpenActions({
+    ...workspaceRequestGuard,
+    activeWorkspaceId,
     aliasesByPath,
     existingMarkdownPaths,
     focusedPane,
@@ -57,13 +65,16 @@ export function useWorkspaceFileActions({
     tabs
   });
   const registryActions = useWorkspaceRegistryActions({
-    activeWorkspaceId: workspaceState?.activeWorkspace?.id,
+    ...workspaceRequestGuard,
+    activeWorkspaceId,
+    activeWorkspacePath,
     beforeCloseAllTabs,
     closeAllTabs,
     setWorkspaceError,
     setWorkspaceState
   });
   const mutationActions = useWorkspaceFileMutationActions({
+    ...workspaceRequestGuard,
     beforeMutateWorkspaceItems: workspaceState?.availability?.fileOperationsAvailable === false
       ? () => {
         setWorkspaceError(t("files.workspaceUnavailableOperations"));

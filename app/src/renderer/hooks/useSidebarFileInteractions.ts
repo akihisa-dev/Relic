@@ -9,8 +9,9 @@ import type { HeadingScrollTarget } from "../editorDerivedState";
 import type { Translator } from "../i18nModel";
 import { useEditorStore, type ImageTab, type PaneId, type PdfTab } from "../store/editorStore";
 import type { SidebarCreateFlight } from "./useRailFlights";
+import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
 
-interface UseSidebarFileInteractionsInput {
+interface UseSidebarFileInteractionsInput extends Pick<WorkspaceRequestGuard, "beginWorkspaceRequest"> {
   handleCreateFile: () => void;
   handleCreateFolder: () => void;
   handleOpenFile: (path: string) => void;
@@ -31,6 +32,7 @@ interface OpenFileOptions {
 }
 
 export function useSidebarFileInteractions({
+  beginWorkspaceRequest,
   handleCreateFile,
   handleCreateFolder,
   handleOpenFile,
@@ -167,15 +169,19 @@ export function useSidebarFileInteractions({
       return;
     }
 
-    if (!relicClient.current) return;
+    const relic = relicClient.current;
+    if (!relic) return;
+    const isCurrentWorkspace = beginWorkspaceRequest();
+    if (!isCurrentWorkspace()) return;
 
     setWorkspaceError(null);
     const token = sidebarFileOpenTokenRef.current + 1;
     sidebarFileOpenTokenRef.current = token;
     pendingSidebarFileOpenTokensRef.current[path] = token;
-    void relicClient.current.readMarkdownFile({ path }).then((result) => {
+    void relic.readMarkdownFile({ path }).then((result) => {
       if (pendingSidebarFileOpenTokensRef.current[path] !== token) return;
       delete pendingSidebarFileOpenTokensRef.current[path];
+      if (!isCurrentWorkspace()) return;
       if (result.ok) {
         openFileInPane(targetPane, result.value);
         scrollToLine(targetPane, options?.lineNumber);
@@ -184,7 +190,7 @@ export function useSidebarFileInteractions({
         setWorkspaceError(result.error.message);
       }
     });
-  }, [handleOpenFile, markOpeningFile, onFileOpenMotion, openFileInPane, openImagePath, openPdfPath, scrollToLine, setTabActive, setWorkspaceError]);
+  }, [beginWorkspaceRequest, handleOpenFile, markOpeningFile, onFileOpenMotion, openFileInPane, openImagePath, openPdfPath, scrollToLine, setTabActive, setWorkspaceError]);
 
   const handleCreateFileFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
     void event;

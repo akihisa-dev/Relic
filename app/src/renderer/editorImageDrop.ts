@@ -2,6 +2,9 @@ import { relicClient } from "./relicClient";
 import type { EditorView } from "@codemirror/view";
 
 import { isSupportedMarkdownImagePath, markdownImageAltFromPath } from "../shared/imageFiles";
+import type { IsCurrentRequest } from "./hooks/useAsyncRequestGuard";
+
+const alwaysCurrentRequest: IsCurrentRequest = () => true;
 
 export function droppedImageSourcePaths(event: DragEvent, getDroppedFilePath: (file: File) => string): string[] {
   const paths: string[] = [];
@@ -20,21 +23,25 @@ export async function importDroppedImagesAsMarkdown(
   view: EditorView,
   event: DragEvent,
   filePath: string,
-  sourcePaths: string[]
+  sourcePaths: string[],
+  isCurrentWorkspace: IsCurrentRequest = alwaysCurrentRequest
 ): Promise<void> {
-  if (!relicClient.current || sourcePaths.length === 0) return;
+  const relic = relicClient.current;
+  if (!isCurrentWorkspace() || !relic || sourcePaths.length === 0) return;
 
   const destinationFolder = workspaceFolderForMarkdownFile(filePath);
   const snippets: string[] = [];
 
   for (const sourcePath of sourcePaths) {
-    const importedImage = await relicClient.current.importImageFile({ destinationFolder, sourcePath });
+    if (!isCurrentWorkspace()) return;
+    const importedImage = await relic.importImageFile({ destinationFolder, sourcePath });
+    if (!isCurrentWorkspace()) return;
     if (!importedImage.ok) continue;
 
     snippets.push(`![${markdownImageAltFromPath(importedImage.value.path)}](${importedImage.value.path})`);
   }
 
-  if (snippets.length === 0) return;
+  if (!isCurrentWorkspace() || snippets.length === 0) return;
 
   insertMarkdownImageBlock(view, dropPosition(view, event), snippets.join("\n"));
 }

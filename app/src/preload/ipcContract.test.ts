@@ -49,6 +49,8 @@ describe("preload IPC contract", () => {
   it("flatなwindow.relicへ契約バージョンと全メソッドだけを公開する", () => {
     const api = exposedApi();
 
+    expect(electronMock.exposeInMainWorld).toHaveBeenCalledTimes(1);
+    expect(electronMock.exposeInMainWorld).toHaveBeenCalledWith("relic", api);
     expect(api.apiContractVersion).toBe(relicApiContractVersion);
     expect(relicApiContractVersion).toBe(7);
     expect(Object.keys(api).sort()).toEqual([
@@ -94,10 +96,12 @@ async function invokeContractMethod(
 
   if (entry.transport === "subscribe") {
     const unsubscribe = operation(vi.fn());
-    expect(electronMock.on).toHaveBeenCalledWith(entry.channel, expect.any(Function));
+    const listener = electronMock.on.mock.calls.find(([channel]) => channel === entry.channel)?.[1];
+    expect(listener).toBeTypeOf("function");
+    expect(electronMock.on).toHaveBeenCalledWith(entry.channel, listener);
     expect(unsubscribe).toBeTypeOf("function");
     (unsubscribe as () => void)();
-    expect(electronMock.removeListener).toHaveBeenCalledWith(entry.channel, expect.any(Function));
+    expect(electronMock.removeListener).toHaveBeenCalledWith(entry.channel, listener);
     return;
   }
 

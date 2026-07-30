@@ -4,7 +4,7 @@ Relicの自動テスト、実アプリ確認、macOS配布物確認が、それ�
 
 ## 役割別の構成
 
-`app/` で `pnpm test:inventory` を実行すると、すべてのVitestファイルを次の主責務へ一度だけ分類する。あわせてNode・Renderer project別のファイル数、テスト宣言数、総行数、無効化・単独実行指定、700行以上の要整理候補を表示する。`it.each` は入力ごとの実行件数ではなく、1つのテスト宣言として数える。テスト追加のたびに変化する件数は文書へ固定せず、このコマンドの出力を現在値の正本とする。
+`app/` で `pnpm test:inventory` を実行すると、Vitest設定と共有する収集方針を使い、すべてのテストファイルを次の主責務へ一度だけ分類する。あわせてNode・Renderer project別のファイル数、テスト宣言数、総行数、無効化・単独実行指定、700行以上の要整理候補を表示する。収集対象なのにどのprojectにも属さないファイル、またはVitestが収集するのに棚卸し対象外となるファイルがあれば失敗する。`it.each` は入力ごとの実行件数ではなく、1つのテスト宣言として数える。テスト追加のたびに変化する件数は文書へ固定せず、このコマンドの出力を現在値の正本とする。
 
 | 役割 | 主に検出する失敗 |
 |------|------------------|
@@ -46,12 +46,12 @@ Relicの自動テスト、実アプリ確認、macOS配布物確認が、それ�
 
 | 利用経路 | 主な保護層 | 代表テスト |
 |----------|------------|------------|
-| 保存と保存競合 | hook・Main handler・安全書込の接続、ファイル統合 | `useEditorAutoSave.test.ts`、`editorHandlers.test.ts`、`markdownFiles.test.ts`、`atomicWrite.test.ts`、`secureVersionedJsonStore.test.ts` |
+| 保存と保存競合 | hook・Main handler・安全書込の接続、ファイル統合 | `useEditorAutoSave.test.ts`、`editorHandlers.test.ts`、`markdownFileContent.test.ts`、`markdownFileCreation.test.ts`、`markdownFileRelocation.test.ts`、`atomicWrite.test.ts`、`secureVersionedJsonStore.test.ts` |
 | 外部変更と再読込 | watcher、Preload通知、Renderer状態遷移 | `workspaceWatcher.test.ts`、`preload.test.ts`、`App.externalChanges.test.tsx` |
 | 検索と置換 | Main handler、検索・置換統合、Renderer操作 | `fileSearchHandlers.test.ts`、`search.test.ts`、`replace.test.ts`、`App.searchLinks.test.tsx` |
-| ワークスペース切替中の派生データ | 要求キー付きhook、旧要求の完了破棄、表示側の読込状態 | `useWorkspaceGraphState.test.ts`、`useWorkspaceCardsState.test.ts`、`useWorkspaceCharts.test.tsx`、`useWorkspaceAliases.test.ts`、`useWorkspaceSearchState.test.ts`、`useWorkspaceFrontmatterCategoryChoices.test.ts` |
+| ワークスペース切替中の非同期処理 | 共有要求世代と要求キー付きhook、切替成功から再描画までを含む旧要求の完了破棄、監視通知queue、初期・保存後の状態再取得、画像取込、Preload API差し替え時のcache破棄 | `useWorkspaceRequestGuard.test.ts`、`useWorkspaceDataRevision.test.ts`、`workspaceGraphLoader.test.ts`、`useWorkspaceGraphState.test.ts`、`useWorkspaceCardsState.test.ts`、`useWorkspaceCharts.test.tsx`、`useWorkspaceFileOpenActions.test.ts`、`useWorkspaceRegistryActions.test.ts`、`useAppSettingsState.test.ts`、`useAppFileSaved.test.ts`、`App.refresh.test.tsx`、`App.workspaceRace.test.tsx`、`editorImageDrop.test.ts` |
 | ワークスペース読込復旧 | 空フォルダとパス消失・権限不足・一時障害の分類、索引・設定の部分失敗、再試行、フォルダ再指定、登録解除、利用不能時の操作停止 | `main/ipc/workspaceState.test.ts`、`main/ipc/workspaceHandlers.test.ts`、`main/ipc/workspaceRegistrationHandlers.test.ts`、`renderer/App.workspaces.test.tsx` |
-| HTML・SVG・PDF出力 | Renderer生成・安全化、Main出力handler | `outputHtml.test.ts`、`previewMarkdown.test.ts`、`sanitizeOutputSvg.test.ts`、`outputHandlers.test.ts` |
+| HTML・SVG・PDF出力 | Renderer生成・安全化、Main登録、入力検証、一時ウィンドウの実行と後始末 | `outputHtml.test.ts`、`previewMarkdown.test.ts`、`sanitizeOutputSvg.test.ts`、`outputHandlers.test.ts`、`diagramOutputHandlers.test.ts`、`previewPdfHandler.test.ts`、`previewPdfRuntime.test.ts`、`previewPdfValidator.test.ts` |
 | Main / Preload / Renderer契約 | 共有IPC台帳を基準にPreload公開とMain登録を全件照合 | `preload/ipcContract.test.ts`、`main/ipc/ipcContract.test.ts`、`shared/ipcContract.test.ts`、`renderer/relicClient.test.ts` |
 | Markdown共有走査 | コード範囲、パスのデコードと正規化をリンクとグラフの共通入力で確認 | `shared/markdownScan.test.ts`、`shared/links.test.ts`、`main/files/workspaceGraph.test.ts` |
 | 設定の初期状態 | 欠損設定の読み込みごとに独立した値を生成し、同じpathの更新queueとは別の契約として確認 | `main/settings/secureVersionedJsonStore.test.ts`、`main/settings/appSettings.test.ts`、`main/settings/workspaceSettings.test.ts` |
@@ -66,7 +66,7 @@ Relicの自動テスト、実アプリ確認、macOS配布物確認が、それ�
 - 純粋モデルとReactコンポーネントで同じ操作を扱う場合も、モデルの状態遷移と実イベント接続を分けている限り維持する。
 - 大量の内部スナップショットは採用せず、保存結果、拒否、状態遷移、副作用の有無を確認する。
 - ワークスペース由来の非同期データは、切替直後に前の内容を返さないことと、前の要求が後から完了しても現在の内容を上書きしないことをhook単位で確認する。
-- `pnpm test:inventory` の分類漏れは低リスクで機械検知できるため、検証scriptの回帰テストで保護する。
+- `pnpm test:inventory` とVitestは同じ収集方針を参照し、分類漏れだけでなくprojectへの収集漏れも検証scriptの回帰テストで保護する。
 - 700行以上という表示は、失敗責務の分割を検討するための保守上の注意であり、機械的な分割や合否判定には使わない。共有setupの重複が増える場合や、一続きの統合シナリオとして読む方が明確な場合は、責務を確認したうえで維持する。
 - 無効化または単独実行指定は、意図せず検証対象が欠ける可能性があるため、棚卸し結果に常に表示する。
 

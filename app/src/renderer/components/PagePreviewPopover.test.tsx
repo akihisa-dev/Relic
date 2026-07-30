@@ -1,10 +1,11 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { makeRelicApi } from "../../test/rendererTestUtils";
 import { I18nProvider } from "../i18n";
 import { PagePreviewPopover } from "./PagePreviewPopover";
 
-function renderPopover(): HTMLSpanElement {
+function renderPopover(existingMarkdownPaths: string[] = []): HTMLSpanElement {
   const link = document.createElement("span");
   link.dataset.previewSourcePath = "Source.md";
   link.dataset.previewTarget = "Target";
@@ -13,7 +14,7 @@ function renderPopover(): HTMLSpanElement {
 
   render(
     <I18nProvider language="ja">
-      <PagePreviewPopover aliasesByPath={{}} existingMarkdownPaths={[]} />
+      <PagePreviewPopover aliasesByPath={{}} existingMarkdownPaths={existingMarkdownPaths} />
     </I18nProvider>
   );
 
@@ -23,6 +24,7 @@ function renderPopover(): HTMLSpanElement {
 afterEach(() => {
   cleanup();
   document.body.replaceChildren();
+  window.relic = undefined;
   vi.useRealTimers();
 });
 
@@ -55,6 +57,62 @@ describe("PagePreviewPopover", () => {
 
     fireEvent.pointerOver(secondLink, { clientX: 80, clientY: 90 });
 
+    expect(screen.queryByRole("complementary", { name: "ページプレビュー" })).toBeNull();
+  });
+
+  it("hoverが確定してからMarkdown変換を読み込み、安全化した本文を表示する", async () => {
+    vi.useFakeTimers();
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { content: "# Target\n\n本文", encoding: "utf8", path: "Target.md" }
+    });
+    window.relic = makeRelicApi({ readMarkdownFile });
+    const link = renderPopover(["Target.md"]);
+
+    fireEvent.pointerOver(link, { clientX: 40, clientY: 50 });
+    act(() => vi.advanceTimersByTime(240));
+    vi.useRealTimers();
+
+    expect(await screen.findByText("本文")).toBeInTheDocument();
+    expect(readMarkdownFile).toHaveBeenCalledWith({ path: "Target.md" });
+    expect(screen.getByRole("heading", { name: "Target" })).toBeInTheDocument();
+  });
+
+  it("ワークスペース由来のpath集合が変わった後は旧要求の完了を表示しない", async () => {
+    vi.useFakeTimers();
+    let resolveRead!: (value: {
+      ok: true;
+      value: { content: string; encoding: "utf8"; path: string };
+    }) => void;
+    const readMarkdownFile = vi.fn().mockReturnValue(new Promise((resolve) => {
+      resolveRead = resolve;
+    }));
+    window.relic = makeRelicApi({ readMarkdownFile });
+    const link = document.createElement("span");
+    link.dataset.previewSourcePath = "Source.md";
+    link.dataset.previewTarget = "Target";
+    document.body.append(link);
+    const view = render(
+      <I18nProvider language="ja">
+        <PagePreviewPopover aliasesByPath={{}} existingMarkdownPaths={["Target.md"]} />
+      </I18nProvider>
+    );
+
+    fireEvent.pointerOver(link, { clientX: 40, clientY: 50 });
+    act(() => vi.advanceTimersByTime(240));
+    expect(readMarkdownFile).toHaveBeenCalledWith({ path: "Target.md" });
+
+    view.rerender(
+      <I18nProvider language="ja">
+        <PagePreviewPopover aliasesByPath={{}} existingMarkdownPaths={["Other.md"]} />
+      </I18nProvider>
+    );
+    expect(screen.queryByRole("complementary", { name: "ページプレビュー" })).toBeNull();
+
+    await act(async () => resolveRead({
+      ok: true,
+      value: { content: "# Old workspace", encoding: "utf8", path: "Target.md" }
+    }));
     expect(screen.queryByRole("complementary", { name: "ページプレビュー" })).toBeNull();
   });
 });

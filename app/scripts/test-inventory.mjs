@@ -3,6 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
+import { vitestProjectForTestPath } from "./test-collection-policy.mjs";
+
 const testPattern = /\.(?:test|spec)\.(?:mjs|ts|tsx)$/u;
 const oversizedTestLines = 700;
 const roles = [
@@ -24,7 +26,7 @@ export function classifyTestFile(relativePath) {
 }
 
 export function classifyTestProject(relativePath) {
-  return relativePath.startsWith("src/renderer/") ? "renderer" : "node";
+  return vitestProjectForTestPath(relativePath) ?? "uncollected";
 }
 
 export function inspectTestSource(content) {
@@ -75,9 +77,16 @@ async function walk(directory, rootDirectory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
   for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name, "en"))) {
-    if (["coverage", "node_modules", "out", ".vite"].includes(entry.name)) continue;
     const absolutePath = path.join(directory, entry.name);
-    if (entry.isDirectory()) files.push(...await walk(absolutePath, rootDirectory));
+    if (entry.isDirectory()) {
+      const relativePath = path.relative(rootDirectory, absolutePath).split(path.sep).join("/");
+      const isRootGeneratedDirectory = !relativePath.includes("/")
+        && ["coverage", "out", ".vite"].includes(relativePath);
+      if (entry.name === "node_modules" || entry.name === ".git" || isRootGeneratedDirectory) {
+        continue;
+      }
+      files.push(...await walk(absolutePath, rootDirectory));
+    }
     if (entry.isFile() && testPattern.test(entry.name)) {
       files.push(path.relative(rootDirectory, absolutePath).split(path.sep).join("/"));
     }
@@ -97,7 +106,7 @@ export async function collectTestInventory(rootDirectory) {
     };
   }));
   const counts = Object.fromEntries(roles.map((role) => [role, 0]));
-  const projects = { node: 0, renderer: 0 };
+  const projects = { node: 0, renderer: 0, uncollected: 0 };
   for (const entry of entries) {
     counts[entry.role] += 1;
     projects[entry.project] += 1;
@@ -113,7 +122,8 @@ export async function collectTestInventory(rootDirectory) {
       || entry.disabledDeclarations > 0
       || entry.focusedDeclarations > 0)
     .sort((left, right) => right.lines - left.lines || left.path.localeCompare(right.path, "en"));
-  return { attention, counts, entries, files, projects, total: files.length, totals };
+  const uncollected = entries.filter((entry) => entry.project === "uncollected");
+  return { attention, counts, entries, files, projects, total: files.length, totals, uncollected };
 }
 
 export function renderTestInventory(inventory) {
@@ -142,12 +152,21 @@ export function renderTestInventory(inventory) {
         entry.path
       ].filter(Boolean).join(" | "))),
     "",
+    "Collection gaps",
+    ...(inventory.uncollected?.length > 0
+      ? inventory.uncollected.map((entry) => entry.path)
+      : ["none"]),
+    "",
     "Electron smoke and macOS package checks are dedicated process/workflow roles, not Vitest files."
   ].join("\n");
 }
 
 async function main() {
-  console.log(renderTestInventory(await collectTestInventory(process.cwd())));
+  const inventory = await collectTestInventory(process.cwd());
+  console.log(renderTestInventory(inventory));
+  if (inventory.uncollected.length > 0) {
+    throw new Error(`${inventory.uncollected.length} test file(s) are outside the Vitest collection policy.`);
+  }
 }
 
 const isDirectExecution = process.argv[1]

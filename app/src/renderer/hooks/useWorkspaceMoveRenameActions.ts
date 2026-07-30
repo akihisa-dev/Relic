@@ -100,7 +100,8 @@ export function useWorkspaceMoveRenameActions({
     if (movableItems.length === 0 || movableItems.length !== removeCoveredItems(items).length) return;
 
     void (async () => {
-      if (!await runner.ensureCanMutateItems(movableItems)) return;
+      const isCurrentWorkspace = runner.beginWorkspaceRequest();
+      if (!await runner.ensureCanMutateItems(movableItems, isCurrentWorkspace)) return;
       const fileTabIdByPath = new Map<string, string>();
       for (const [tabId, tab] of Object.entries(tabs)) if (tab.kind === "file") fileTabIdByPath.set(tab.path, tabId);
       for (const item of movableItems) {
@@ -114,7 +115,11 @@ export function useWorkspaceMoveRenameActions({
               setWorkspaceState(value.workspaceState);
             },
             { kind: "file", oldPath: item.path, newPath: movedFilePath(item.path, destFolder) },
-            { ...relocationOptions(item.path, fileTabIdByPath.get(item.path)), skipItemGuard: true }
+            {
+              ...relocationOptions(item.path, fileTabIdByPath.get(item.path)),
+              isCurrentWorkspace,
+              skipItemGuard: true
+            }
           );
           if (!moved) return;
         } else {
@@ -127,7 +132,7 @@ export function useWorkspaceMoveRenameActions({
               setWorkspaceState(value);
             },
             { kind: "folder", oldPath: item.path, newPath: nextFolderPath },
-            { skipItemGuard: true }
+            { isCurrentWorkspace, skipItemGuard: true }
           );
           if (!moved) return;
         }

@@ -185,6 +185,55 @@ describe("App workspace refresh", () => {
     await waitFor(() => expect(getWorkspaceState).toHaveBeenCalledTimes(2));
   });
 
+  it("旧workspaceの監視更新中に切り替えても新workspaceの保留通知を処理する", async () => {
+    let workspaceChanged: Parameters<NonNullable<typeof window.relic>["onWorkspaceChanged"]>[0] =
+      () => undefined;
+    const workspaceA: WorkspaceState = {
+      activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+      fileTree: [],
+      pinnedPaths: [],
+      workspaces: [
+        { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+        { id: "ws-2", name: "Archive", path: "/tmp/Archive" }
+      ]
+    };
+    const workspaceB: WorkspaceState = {
+      activeWorkspace: { id: "ws-2", name: "Archive", path: "/tmp/Archive" },
+      fileTree: [{ name: "Archive note", path: "Archive note.md", type: "file" }],
+      pinnedPaths: [],
+      workspaces: workspaceA.workspaces
+    };
+    const staleRefresh = createDeferred<RelicResult<WorkspaceState>>();
+    const getWorkspaceState = vi.fn()
+      .mockResolvedValueOnce({ ok: true, value: workspaceA })
+      .mockReturnValueOnce(staleRefresh.promise)
+      .mockResolvedValueOnce({ ok: true, value: workspaceB });
+    const switchWorkspace = vi.fn().mockResolvedValue({ ok: true, value: workspaceB });
+    window.relic = makeRelicApi({
+      getWorkspaceState,
+      onWorkspaceChanged: vi.fn((callback) => {
+        workspaceChanged = callback;
+        return vi.fn();
+      }),
+      switchWorkspace
+    });
+
+    await renderApp();
+    await screen.findByRole("button", { name: "Notes" });
+    act(() => workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" }));
+    await waitFor(() => expect(getWorkspaceState).toHaveBeenCalledTimes(2));
+
+    fireEvent.click(await screen.findByRole("button", { name: "Notes" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Archive" }));
+    await screen.findByRole("button", { name: /Archive note/ });
+    act(() => workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-2" }));
+
+    await act(async () => staleRefresh.resolve({ ok: true, value: workspaceA }));
+
+    await waitFor(() => expect(getWorkspaceState).toHaveBeenCalledTimes(3));
+    expect(screen.getByRole("button", { name: /Archive note/ })).toBeInTheDocument();
+  });
+
   it("バブルを開いたまま再同期すると派生データを再取得する", async () => {
     const getWorkspaceGraph = vi.fn().mockResolvedValue({
       ok: true,

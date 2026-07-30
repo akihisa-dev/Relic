@@ -8,7 +8,9 @@ const electronMock = vi.hoisted(() => ({
   loadURL: vi.fn().mockResolvedValue(undefined),
   permissionHandler: vi.fn(),
   setWindowOpenHandler: vi.fn(),
-  show: vi.fn()
+  show: vi.fn(),
+  webContentsRemoveListener: vi.fn(),
+  windowRemoveListener: vi.fn()
 }));
 
 vi.mock("electron", () => ({
@@ -17,6 +19,7 @@ vi.mock("electron", () => ({
       on: vi.fn((event: string, listener: (...args: unknown[]) => void) => {
         electronMock.listeners.set(event, listener);
       }),
+      removeListener: electronMock.webContentsRemoveListener,
       session: {
         setPermissionRequestHandler: electronMock.permissionHandler
       },
@@ -32,6 +35,7 @@ vi.mock("electron", () => ({
     once = vi.fn((event: string, listener: (...args: unknown[]) => void) => {
       electronMock.listeners.set(event, listener);
     });
+    removeListener = electronMock.windowRemoveListener;
     show = electronMock.show;
   }
 }));
@@ -51,6 +55,8 @@ describe("appSettingsRecoveryWindow", () => {
     electronMock.permissionHandler.mockClear();
     electronMock.setWindowOpenHandler.mockClear();
     electronMock.show.mockClear();
+    electronMock.webContentsRemoveListener.mockClear();
+    electronMock.windowRemoveListener.mockClear();
   });
 
   it("スクリプトと権限を無効にした専用ウィンドウへ復旧画面を読み込む", () => {
@@ -124,13 +130,16 @@ describe("appSettingsRecoveryWindow", () => {
     });
     const navigate = electronMock.listeners.get("will-navigate");
     const event = { preventDefault: vi.fn() };
+    const dataNavigation = { preventDefault: vi.fn() };
 
+    navigate?.(dataNavigation, "data:text/html;base64,PGh0bWw+PC9odG1sPg==");
     navigate?.(event, "https://invalid.example/");
     navigate?.(event, "relic-settings-recovery://show-location");
     navigate?.(event, "relic-settings-recovery://exit");
     navigate?.(event, "relic-settings-recovery://start-defaults");
     await Promise.resolve();
 
+    expect(dataNavigation.preventDefault).not.toHaveBeenCalled();
     expect(event.preventDefault).toHaveBeenCalledTimes(4);
     expect(onShowLocation).toHaveBeenCalledWith("/user-data/app-settings.corrupt-1.json");
     expect(onExit).toHaveBeenCalledOnce();

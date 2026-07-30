@@ -1,9 +1,15 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { defaultEditorSettings, type FrontmatterTemplate, type UserDefinedField } from "../../shared/ipc";
+import {
+  defaultEditorSettings,
+  type UserDefinedField,
+  type WorkspaceState
+} from "../../shared/ipc";
 import { makeRelicApi } from "../../test/rendererTestUtils";
 import { useAppSettingsState } from "./useAppSettingsState";
+
+const beginCurrentWorkspaceRequest = () => () => true;
 
 describe("useAppSettingsState", () => {
   const editorSettings = {
@@ -12,14 +18,92 @@ describe("useAppSettingsState", () => {
     fontSize: 18
   };
   const userDefinedFields: UserDefinedField[] = [{ name: "category", type: "text" }];
-  const frontmatterTemplates: FrontmatterTemplate[] = [{
-    fieldNames: ["status", "tags"],
-    name: "記事"
-  }];
-
   afterEach(() => {
     window.relic = undefined;
     vi.clearAllMocks();
+  });
+
+  it("起動時に画面から利用されないフロントマター雛形を読み込まない", async () => {
+    const api = makeRelicApi()!;
+    window.relic = api;
+
+    renderHook(() => useAppSettingsState({
+      beginWorkspaceRequest: beginCurrentWorkspaceRequest,
+      setEditorSettings: vi.fn(),
+      setWorkspaceError: vi.fn(),
+      setWorkspaceState: vi.fn()
+    }));
+
+    await waitFor(() => {
+      expect(api.getAppInfo).toHaveBeenCalledOnce();
+      expect(api.getWorkspaceState).toHaveBeenCalledOnce();
+      expect(api.getEditorSettings).toHaveBeenCalledOnce();
+      expect(api.getUserDefinedFields).toHaveBeenCalledOnce();
+    });
+    expect(api.getFrontmatterTemplates).not.toHaveBeenCalled();
+  });
+
+  it("初期workspace取得後に切替済みなら古い状態を反映しない", async () => {
+    const workspaceState = deferred<{
+      ok: true;
+      value: WorkspaceState;
+    }>();
+    let currentWorkspace = true;
+    const beginWorkspaceRequest = () => () => currentWorkspace;
+    const setEditorSettings = vi.fn();
+    const setWorkspaceError = vi.fn();
+    const setWorkspaceState = vi.fn();
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockReturnValue(workspaceState.promise)
+    });
+
+    renderHook(() => useAppSettingsState({
+      beginWorkspaceRequest,
+      setEditorSettings,
+      setWorkspaceError,
+      setWorkspaceState
+    }));
+
+    currentWorkspace = false;
+    await act(async () => {
+      workspaceState.resolve({
+        ok: true,
+        value: {
+          activeWorkspace: { id: "workspace-a", name: "A", path: "/tmp/A" },
+          fileTree: [],
+          pinnedPaths: [],
+          workspaces: []
+        }
+      });
+      await workspaceState.promise;
+    });
+
+    expect(setWorkspaceState).not.toHaveBeenCalled();
+  });
+
+  it("workspace切替でguard関数が変わっても初期化IPCを再実行しない", async () => {
+    const api = makeRelicApi()!;
+    const setEditorSettings = vi.fn();
+    const setWorkspaceError = vi.fn();
+    const setWorkspaceState = vi.fn();
+    window.relic = api;
+    const { rerender } = renderHook(
+      ({ beginWorkspaceRequest }) => useAppSettingsState({
+        beginWorkspaceRequest,
+        setEditorSettings,
+        setWorkspaceError,
+        setWorkspaceState
+      }),
+      { initialProps: { beginWorkspaceRequest: beginCurrentWorkspaceRequest } }
+    );
+
+    await waitFor(() => expect(api.getWorkspaceState).toHaveBeenCalledOnce());
+    rerender({ beginWorkspaceRequest: () => () => true });
+
+    expect(api.getAppInfo).toHaveBeenCalledOnce();
+    expect(api.getWorkspaceState).toHaveBeenCalledOnce();
+    expect(api.getEditorSettings).toHaveBeenCalledOnce();
+    expect(api.getUserDefinedFields).toHaveBeenCalledOnce();
   });
 
   it("設定保存失敗時に setWorkspaceError を呼ぶ", async () => {
@@ -35,6 +119,7 @@ describe("useAppSettingsState", () => {
     const setWorkspaceState = vi.fn();
 
     const { result } = renderHook(() => useAppSettingsState({
+      beginWorkspaceRequest: beginCurrentWorkspaceRequest,
       setEditorSettings,
       setWorkspaceError,
       setWorkspaceState
@@ -50,34 +135,6 @@ describe("useAppSettingsState", () => {
     });
   });
 
-  it("フロントマター定義保存失敗時に setWorkspaceError を呼ぶ", async () => {
-    window.relic = makeRelicApi({
-      saveFrontmatterTemplates: vi.fn().mockResolvedValue({
-        ok: false,
-        error: { code: "FRONTMATTER_TEMPLATES_SAVE_FAILED", message: "フロントマター雛形の保存に失敗しました" }
-      })
-    });
-
-    const setWorkspaceError = vi.fn();
-    const setWorkspaceState = vi.fn();
-
-    const { result } = renderHook(() => useAppSettingsState({
-      setEditorSettings: vi.fn(),
-      setWorkspaceError,
-      setWorkspaceState
-    }));
-
-    act(() => {
-      result.current.handleSaveFrontmatterTemplates(frontmatterTemplates);
-    });
-
-    expect(result.current.frontmatterTemplates).toEqual(frontmatterTemplates);
-
-    await waitFor(() => {
-      expect(setWorkspaceError).toHaveBeenCalledWith("フロントマター雛形の保存に失敗しました");
-    });
-  });
-
   it("ユーザー定義フィールド保存失敗時に setWorkspaceError を呼ぶ", async () => {
     window.relic = makeRelicApi({
       saveUserDefinedFields: vi.fn().mockResolvedValue({
@@ -90,6 +147,7 @@ describe("useAppSettingsState", () => {
     const setWorkspaceState = vi.fn();
 
     const { result } = renderHook(() => useAppSettingsState({
+      beginWorkspaceRequest: beginCurrentWorkspaceRequest,
       setEditorSettings: vi.fn(),
       setWorkspaceError,
       setWorkspaceState
@@ -106,3 +164,14 @@ describe("useAppSettingsState", () => {
     });
   });
 });
+
+function deferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+} {
+  let resolvePromise!: (value: T) => void;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+  return { promise, resolve: resolvePromise };
+}

@@ -83,11 +83,14 @@ export function useWorkspaceDuplicateDeleteActions({
     if (!window.confirm(deleteTreeItemsMessage(deletableItems.length, t))) return;
 
     void (async () => {
-      if (!await runner.ensureCanMutateItems(deletableItems)) return;
+      const isCurrentWorkspace = runner.beginWorkspaceRequest();
+      if (!await runner.ensureCanMutateItems(deletableItems, isCurrentWorkspace)) return;
       let nextWorkspaceState: WorkspaceState | null = null;
       const deletedItems: typeof deletableItems = [];
       for (const item of deletableItems) {
+        if (!isCurrentWorkspace()) return;
         const result = await relicClient.current!.moveItemToTrash({ path: item.path, type: item.type });
+        if (!isCurrentWorkspace()) return;
         if (!result.ok) {
           if (nextWorkspaceState) {
             closeDeletedTabs(deletedItems);

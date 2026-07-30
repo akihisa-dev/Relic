@@ -23,7 +23,7 @@ import {
   isChartsInput,
   isWorkspaceTablePreferencesInput,
   isUpdateChartEntryInput
-} from "./workspaceHandlerValidators";
+} from "./workspaceVisualizationHandlerValidators";
 
 export function registerWorkspaceVisualizationDataHandlers(): void {
   handleLocalizedIpc(getWorkspaceChartsChannel, async () => {

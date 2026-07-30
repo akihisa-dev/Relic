@@ -1,6 +1,6 @@
 {
   "name": "relic",
-  "version": "0.59.9",
+  "version": "0.59.10",
   "description": "Relic is a local app that extends Markdown files with editing, search, browsing, visualization, and export while keeping the information as Markdown.",
   "license": "AGPL-3.0-or-later",
   "main": ".vite/build/main.js",
@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit",
     "runtime:check": "node scripts/runtime-policy.mjs",
     "verify": "pnpm runtime:check && pnpm typecheck && pnpm test && pnpm licenses:check",
-    "verify:full": "pnpm runtime:check && pnpm typecheck && pnpm test:coverage && pnpm architecture:check && pnpm docs:index:check && pnpm ci:workflows:check && pnpm skills:check && pnpm skills:audit:self-test && pnpm skills:instruction:check && pnpm licenses:check",
+    "verify:full": "pnpm runtime:check && pnpm typecheck && pnpm test:coverage && pnpm test:inventory && pnpm architecture:check && pnpm docs:index:check && pnpm ci:workflows:check && pnpm skills:check && pnpm skills:audit:self-test && pnpm skills:instruction:check && pnpm licenses:check",
     "verify:ci": "pnpm verify:full && pnpm renderer:production:check && pnpm security:audit",
     "verify:local:push": "pnpm install --frozen-lockfile && pnpm verify:full && pnpm renderer:production:check && pnpm security:audit:strict && git -C .. diff --check",
     "verify:local:release": "pnpm verify:local:push && pnpm build:mac:safe && pnpm smoke:package",

@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
-
 import type { WorkspaceCard } from "../../shared/ipc";
+import { useWorkspaceResourceState } from "../hooks/useWorkspaceResourceState";
 import { loadWorkspaceCards } from "./workspaceCardsLoader";
 
 export type WorkspaceCardsState =
@@ -14,37 +13,19 @@ interface UseWorkspaceCardsStateInput {
   workspaceId: string;
 }
 
-type WorkspaceCardsSnapshot = WorkspaceCardsState & { requestKey: string };
-
 export function useWorkspaceCardsState({
   loadFailedMessage,
   refreshRevision,
   workspaceId
 }: UseWorkspaceCardsStateInput): WorkspaceCardsState {
-  const requestKey = JSON.stringify([workspaceId, refreshRevision]);
-  const [snapshot, setSnapshot] = useState<WorkspaceCardsSnapshot>({
-    requestKey,
-    status: "loading"
+  const state = useWorkspaceResourceState({
+    loadFailedMessage,
+    loadResource: loadWorkspaceCards,
+    revision: refreshRevision,
+    workspaceId
   });
 
-  useEffect(() => {
-    let active = true;
-
-    void loadWorkspaceCards({ revision: refreshRevision, workspaceId }).then((result) => {
-      if (!active) return;
-      setSnapshot(result.ok
-        ? { requestKey, status: "ready", cards: result.value }
-        : { requestKey, status: "error", message: result.error.message });
-    }).catch(() => {
-      if (active) {
-        setSnapshot({ requestKey, status: "error", message: loadFailedMessage });
-      }
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [loadFailedMessage, refreshRevision, requestKey, workspaceId]);
-
-  return snapshot.requestKey === requestKey ? snapshot : { status: "loading" };
+  return state.status === "ready"
+    ? { status: "ready", cards: state.value }
+    : state;
 }
