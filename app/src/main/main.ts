@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, shell } from "electron";
+import { app, BrowserWindow, dialog, Menu, shell } from "electron";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -17,7 +17,13 @@ import {
   configureElectronSmokeUserDataPath,
   resolveElectronSmokeConfig
 } from "./electronSmoke";
-import { getMainTranslator } from "./i18n";
+import { getCachedMainTranslator, getMainTranslator, setMainTranslator } from "./i18n";
+import {
+  readAppSettingsForStartup,
+  replaceAppSettingsWithDefaults,
+  type AppSettingsRecoveryState
+} from "./settings/appSettingsRecovery";
+import { createAppSettingsRecoveryWindow } from "./settings/appSettingsRecoveryWindow";
 import { configureWindowCloseProtection } from "./windowCloseProtection";
 import { stopWorkspaceWatcher } from "./workspace/workspaceWatcher";
 import { createMainWindowOptions } from "./windowOptions";
@@ -37,6 +43,8 @@ if (process.platform !== "darwin") {
 const APP_NAME = "Relic";
 let isDevelopmentQuitInProgress = false;
 let mainWindow: BrowserWindow | null = null;
+let settingsRecovery: AppSettingsRecoveryState | null = null;
+let normalApplicationInitialized = false;
 const electronSmokeConfig = resolveElectronSmokeConfig();
 
 app.setName(APP_NAME);
@@ -44,6 +52,15 @@ configureDevelopmentUserDataPath(app, MAIN_WINDOW_VITE_DEV_SERVER_URL, process.e
 configureElectronSmokeUserDataPath(app, electronSmokeConfig);
 
 function createWindow(): void {
+  if (settingsRecovery) {
+    createSettingsRecoveryWindow(settingsRecovery);
+    return;
+  }
+
+  createNormalWindow();
+}
+
+function createNormalWindow(): void {
   const windowOptions = createMainWindowOptions({
     preloadPath: path.join(__dirname, "preload.js")
   });
@@ -68,6 +85,39 @@ function createWindow(): void {
   } else {
     void window.loadFile(rendererIndexPath);
   }
+}
+
+function createSettingsRecoveryWindow(recovery: AppSettingsRecoveryState): void {
+  let recoveryWindow: BrowserWindow;
+  recoveryWindow = createAppSettingsRecoveryWindow({
+    onExit: () => app.quit(),
+    onShowLocation: (targetPath) => shell.showItemInFolder(targetPath),
+    onStartDefaults: async () => {
+      const settings = await replaceAppSettingsWithDefaults(app.getPath("userData"), recovery);
+      setMainTranslator(settings.editorSettings.language);
+      settingsRecovery = null;
+      initializeNormalApplication();
+
+      if (!recoveryWindow.isDestroyed()) recoveryWindow.destroy();
+      createNormalWindow();
+    },
+    onStartDefaultsFailed: () => {
+      const t = getCachedMainTranslator();
+      dialog.showErrorBox(
+        t("settingsRecovery.startFailedTitle"),
+        t("settingsRecovery.startFailedMessage")
+      );
+    },
+    recovery,
+    t: getCachedMainTranslator()
+  });
+  mainWindow = recoveryWindow;
+
+  recoveryWindow.on("closed", () => {
+    if (mainWindow === recoveryWindow) {
+      mainWindow = null;
+    }
+  });
 }
 
 function configureEditorContextMenu(window: BrowserWindow): void {
@@ -123,7 +173,28 @@ function isAllowedAppNavigation(url: string, rendererIndexUrl: string): boolean 
 }
 
 app.whenReady().then(async () => {
-  await getMainTranslator();
+  const startup = await readAppSettingsForStartup(app.getPath("userData"));
+
+  if (startup.status === "ready") {
+    setMainTranslator(startup.settings.editorSettings.language);
+    initializeNormalApplication();
+  } else {
+    settingsRecovery = startup.recovery;
+    setMainTranslator("system");
+  }
+
+  createWindow();
+
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
+
+function initializeNormalApplication(): void {
+  if (normalApplicationInitialized) return;
+
   configureIpcSenderAuthorization((sender) => Boolean(
     mainWindow
     && !mainWindow.isDestroyed()
@@ -137,15 +208,8 @@ app.whenReady().then(async () => {
   registerToolHandlers();
   registerWorkspaceHandlers();
   configureApplicationMenu(() => mainWindow);
-  createWindow();
-
-
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-});
+  normalApplicationInitialized = true;
+}
 
 app.on("before-quit", () => {
   isDevelopmentQuitInProgress = Boolean(MAIN_WINDOW_VITE_DEV_SERVER_URL || electronSmokeConfig);

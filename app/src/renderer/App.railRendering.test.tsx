@@ -10,6 +10,10 @@ vi.mock("./components/RailWorkspaceSwitcher", () => ({
   }
 }));
 
+vi.mock("./components/SphereView", () => ({
+  SphereView: () => null
+}));
+
 import { renderApp } from "./appTestHelpers";
 import { useEditorStore } from "./store/editorStore";
 import {

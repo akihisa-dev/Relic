@@ -38,7 +38,7 @@ const appSettingsStore = new SecureVersionedJsonStore<Record<string, unknown>, A
 
 export const currentAppSettingsSchemaVersion = 6;
 
-function createDefaultAppSettings(): AppSettings {
+export function createDefaultAppSettings(): AppSettings {
   return {
     editorSettings: { ...defaultEditorSettings },
     frontmatterTemplates: defaultFrontmatterTemplates.map((template) => ({
@@ -267,8 +267,13 @@ function serializeAppSettings(settings: AppSettings): Record<string, unknown> {
   };
 }
 
-function createCorruptSettingsError(settingsPath: string): Error {
-  const error = new Error(`設定JSONが壊れています: ${settingsPath}`) as Error;
+function createCorruptSettingsError(settingsPath: string, backupPath: string): Error {
+  const error = new Error(`設定JSONが壊れています: ${settingsPath}`) as Error & {
+    backupPath: string;
+    settingsPath: string;
+  };
   error.name = "CorruptAppSettingsError";
+  error.backupPath = backupPath;
+  error.settingsPath = settingsPath;
   return error;
 }

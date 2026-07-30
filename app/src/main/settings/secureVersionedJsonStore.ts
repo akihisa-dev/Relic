@@ -1,10 +1,10 @@
-import { readFile, rename } from "node:fs/promises";
+import { link, readFile, unlink } from "node:fs/promises";
 import path from "node:path";
 
 import { writePrivateSettingsTextFile } from "./secureSettingsFile";
 
 export interface SecureVersionedJsonCodec<TRaw extends object, TValue> {
-  createCorruptError: (settingsPath: string) => Error;
+  createCorruptError: (settingsPath: string, backupPath: string) => Error;
   createDefaultValue: () => TValue;
   parse: (raw: TRaw) => TValue;
   parseObject: (raw: unknown, settingsPath: string) => TRaw | null;
@@ -48,8 +48,8 @@ export class SecureVersionedJsonStore<TRaw extends object, TValue> {
       const parsedJson = parseSettingsJson(rawSettings);
 
       if (!parsedJson.ok) {
-        await backupCorruptedSettingsFile(settingsPath);
-        throw this.codec.createCorruptError(settingsPath);
+        const backupPath = await backupCorruptedSettingsFile(settingsPath);
+        throw this.codec.createCorruptError(settingsPath, backupPath);
       }
 
       const parsedObject = this.codec.parseObject(parsedJson.value, settingsPath);
@@ -110,10 +110,25 @@ function parseSettingsJson(raw: string): { ok: true; value: unknown } | { ok: fa
   }
 }
 
-async function backupCorruptedSettingsFile(settingsPath: string): Promise<void> {
+async function backupCorruptedSettingsFile(settingsPath: string): Promise<string> {
   const parsedPath = path.parse(settingsPath);
-  const backupPath = path.join(parsedPath.dir, `${parsedPath.name}.corrupt-${Date.now()}.json`);
-  await rename(settingsPath, backupPath);
+
+  for (let suffix = 0; ; suffix += 1) {
+    const suffixText = suffix === 0 ? "" : `-${suffix}`;
+    const backupPath = path.join(
+      parsedPath.dir,
+      `${parsedPath.name}.corrupt-${Date.now()}${suffixText}.json`
+    );
+
+    try {
+      await link(settingsPath, backupPath);
+      await unlink(settingsPath);
+      return backupPath;
+    } catch (error) {
+      if (isAlreadyExistsError(error)) continue;
+      throw error;
+    }
+  }
 }
 
 function isMissingFileError(error: unknown): boolean {
@@ -122,5 +137,14 @@ function isMissingFileError(error: unknown): boolean {
     error !== null &&
     "code" in error &&
     (error as { code?: string }).code === "ENOENT"
+  );
+}
+
+function isAlreadyExistsError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "EEXIST"
   );
 }

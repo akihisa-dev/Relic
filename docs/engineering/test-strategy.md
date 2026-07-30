@@ -55,6 +55,7 @@ Relicの自動テスト、実アプリ確認、macOS配布物確認が、それ�
 | Markdown共有走査 | コード範囲、パスのデコードと正規化をリンクとグラフの共通入力で確認 | `shared/markdownScan.test.ts`、`shared/links.test.ts`、`main/files/workspaceGraph.test.ts` |
 | 設定の初期状態 | 欠損設定の読み込みごとに独立した値を生成し、同じpathの更新queueとは別の契約として確認 | `main/settings/secureVersionedJsonStore.test.ts`、`main/settings/appSettings.test.ts`、`main/settings/workspaceSettings.test.ts` |
 | 設定の並行保存 | 同じ設定ファイルの更新queue、安全書き込み、保存値の保持 | `secureVersionedJsonStore.test.ts` |
+| アプリ設定の起動復旧 | 壊れたJSONの内容保持退避、非対応schemaの無変更表示と明示操作後の退避、初期設定作成、専用ウインドウの権限制限と許可操作 | `main/settings/appSettingsRecovery.test.ts`、`main/settings/appSettingsRecoveryWindow.test.ts` |
 | バブルの操作と描画停止 | 中断操作と確定処理の分離、テーマ参照、停止中の再描画抑制 | `BubbleView.test.tsx`、`bubbleDrawingModel.test.ts`、`bubbleViewRuntime.test.ts`、`App.charts.test.tsx` |
 | クロニクルの操作 | 中断時の一時状態破棄、項目全体のhit判定、対象ファイルを開く接続 | `ChronicleCanvas.cursor.test.tsx`、`chronicleCanvasModel.test.ts` |
 
