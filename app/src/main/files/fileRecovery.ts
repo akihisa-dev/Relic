@@ -1,14 +1,15 @@
-import { readdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
+import { readdir, readFile, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
 
-import type { FileRecoveryEntry, FileRecoverySnapshot } from "../../shared/ipc";
+import type { FileRecoveryEntry, FileRecoveryList, FileRecoverySnapshot } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import {
   ensurePrivateSettingsDirectory,
   privateSettingsFileMode
 } from "../settings/secureSettingsFile";
 import { errorDetails } from "./fileSystem";
+import { atomicWriteTextFile, type AtomicWriteOperations } from "./atomicWrite";
 
 const maxRecoverySnapshotsPerFile = 30;
 const recoveryFileExtension = ".json";
@@ -17,7 +18,8 @@ export async function createFileRecoverySnapshot(
   userDataPath: string,
   workspaceId: string,
   relativePath: string,
-  content: string
+  content: string,
+  writeOperations?: AtomicWriteOperations
 ): Promise<RelicResult<void>> {
   try {
     const createdAt = new Date().toISOString();
@@ -32,10 +34,12 @@ export async function createFileRecoverySnapshot(
       workspaceId
     };
     const fileName = `${createdAt.replace(/[:.]/g, "-")}-${hashText(content).slice(0, 12)}${recoveryFileExtension}`;
-    await writeFile(path.join(snapshotDir, fileName), JSON.stringify(snapshot), {
-      encoding: "utf8",
-      mode: privateSettingsFileMode
-    });
+    await atomicWriteTextFile(
+      path.join(snapshotDir, fileName),
+      JSON.stringify(snapshot),
+      writeOperations,
+      { mode: privateSettingsFileMode }
+    );
     await pruneRecoverySnapshots(snapshotDir, maxRecoverySnapshotsPerFile);
 
     return ok(undefined);
@@ -48,15 +52,25 @@ export async function listFileRecoverySnapshots(
   userDataPath: string,
   workspaceId: string,
   relativePath: string
-): Promise<RelicResult<FileRecoveryEntry[]>> {
+): Promise<RelicResult<FileRecoveryList>> {
   try {
     const snapshotDir = recoverySnapshotDir(userDataPath, workspaceId, relativePath);
     const files = await readRecoverySnapshotFileNames(snapshotDir);
     const entries: FileRecoveryEntry[] = [];
+    let unreadableCount = 0;
 
     for (const fileName of files) {
-      const snapshot = await readSnapshotFile(path.join(snapshotDir, fileName));
-      if (!snapshot || snapshot.workspaceId !== workspaceId || snapshot.path !== relativePath) continue;
+      let snapshot: FileRecoverySnapshot | null;
+      try {
+        snapshot = await readSnapshotFile(path.join(snapshotDir, fileName));
+      } catch {
+        unreadableCount += 1;
+        continue;
+      }
+      if (!snapshot || snapshot.workspaceId !== workspaceId || snapshot.path !== relativePath) {
+        unreadableCount += 1;
+        continue;
+      }
       entries.push({
         createdAt: snapshot.createdAt,
         id: fileName,
@@ -65,7 +79,10 @@ export async function listFileRecoverySnapshots(
       });
     }
 
-    return ok(entries.sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+    return ok({
+      entries: entries.sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+      unreadableCount
+    });
   } catch (error) {
     return fail("FILE_RECOVERY_LIST_FAILED", "復元版を読み込めませんでした。", errorDetails(error));
   }

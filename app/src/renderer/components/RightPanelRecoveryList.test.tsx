@@ -70,7 +70,10 @@ describe("RightPanelRecoveryList", () => {
     const tab = fileTab("tab-a", "A.md");
     const entry = recoveryEntry("snapshot-a", tab.path);
     const onRecoverContent = vi.fn();
-    const listFileRecoverySnapshots = vi.fn().mockResolvedValue({ ok: true, value: [entry] });
+    const listFileRecoverySnapshots = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { entries: [entry], unreadableCount: 0 }
+    });
     const readFileRecoverySnapshot = vi.fn().mockResolvedValue(successfulSnapshot("recovered", tab.path));
     window.relic = makeRelicApi({ listFileRecoverySnapshots, readFileRecoverySnapshot });
 
@@ -88,7 +91,10 @@ describe("RightPanelRecoveryList", () => {
     const onRecoverContent = vi.fn();
     const listFileRecoverySnapshots = vi.fn()
       .mockResolvedValueOnce({ ok: false, error: { code: "list_failed", message: "List failed" } })
-      .mockResolvedValueOnce({ ok: true, value: [recoveryEntry("snapshot-a", tab.path)] });
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { entries: [recoveryEntry("snapshot-a", tab.path)], unreadableCount: 0 }
+      });
     const readFileRecoverySnapshot = vi.fn().mockResolvedValue({
       ok: false,
       error: { code: "read_failed", message: "Restore failed" }
@@ -119,13 +125,19 @@ describe("RightPanelRecoveryList", () => {
     rerender(recoveryView(tabB, vi.fn()));
 
     await act(async () => {
-      pendingB.resolve({ ok: true, value: [recoveryEntry("snapshot-b", tabB.path, 2048)] });
+      pendingB.resolve({
+        ok: true,
+        value: { entries: [recoveryEntry("snapshot-b", tabB.path, 2048)], unreadableCount: 0 }
+      });
       await pendingB.promise;
     });
     expect(await screen.findByText("2 KB")).toBeInTheDocument();
 
     await act(async () => {
-      pendingA.resolve({ ok: true, value: [recoveryEntry("snapshot-a", tabA.path, 1024)] });
+      pendingA.resolve({
+        ok: true,
+        value: { entries: [recoveryEntry("snapshot-a", tabA.path, 1024)], unreadableCount: 0 }
+      });
       await pendingA.promise;
     });
 
@@ -140,7 +152,10 @@ describe("RightPanelRecoveryList", () => {
     const onRecoverContent = vi.fn();
     const listFileRecoverySnapshots = vi.fn(({ path }: { path: string }) => Promise.resolve({
       ok: true as const,
-      value: path === tabA.path ? [recoveryEntry("snapshot-a", tabA.path)] : []
+      value: {
+        entries: path === tabA.path ? [recoveryEntry("snapshot-a", tabA.path)] : [],
+        unreadableCount: 0
+      }
     }));
     const readFileRecoverySnapshot = vi.fn(() => pendingRead.promise);
     window.relic = makeRelicApi({ listFileRecoverySnapshots, readFileRecoverySnapshot });
@@ -171,7 +186,10 @@ describe("RightPanelRecoveryList", () => {
       snapshotId === entries[0]?.id ? firstRead.promise : secondRead.promise
     ));
     window.relic = makeRelicApi({
-      listFileRecoverySnapshots: vi.fn().mockResolvedValue({ ok: true, value: entries }),
+      listFileRecoverySnapshots: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { entries, unreadableCount: 0 }
+      }),
       readFileRecoverySnapshot
     });
 
@@ -192,5 +210,26 @@ describe("RightPanelRecoveryList", () => {
     });
     expect(onRecoverContent).toHaveBeenCalledTimes(1);
     expect(onRecoverContent).toHaveBeenCalledWith(tab.id, "new");
+  });
+
+  it("warns about unreadable snapshots while keeping available snapshots usable", async () => {
+    const tab = fileTab("tab-a", "A.md");
+    const entry = recoveryEntry("snapshot-a", tab.path);
+    const onRecoverContent = vi.fn();
+    window.relic = makeRelicApi({
+      listFileRecoverySnapshots: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { entries: [entry], unreadableCount: 2 }
+      }),
+      readFileRecoverySnapshot: vi.fn().mockResolvedValue(successfulSnapshot("recovered", tab.path))
+    });
+
+    render(recoveryView(tab, onRecoverContent));
+
+    expect(await screen.findByText(
+      "2 recovery version(s) could not be read. The available versions are shown below."
+    )).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Load into editor" }));
+    await waitFor(() => expect(onRecoverContent).toHaveBeenCalledWith(tab.id, "recovered"));
   });
 });

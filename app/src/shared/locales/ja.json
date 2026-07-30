@@ -634,6 +634,7 @@
   "recovery.empty": "このファイルの復元版はまだありません。",
   "recovery.load": "本文へ読み込む",
   "recovery.noFile": "復元版を確認するファイルが開かれていません。",
+  "recovery.unreadable": "{{count}}件の復元版を読み込めませんでした。利用できる復元版だけを表示しています。",
   "diagram.showSource": "元ソースを表示",
   "diagram.syntaxHint": "構文を確認してください。",
   "files.deleteFileConfirm": "「{{name}}」をゴミ箱に移動しますか？",

@@ -63,6 +63,11 @@ export interface FileRecoveryEntry {
   size: number;
 }
 
+export interface FileRecoveryList {
+  entries: FileRecoveryEntry[];
+  unreadableCount: number;
+}
+
 export interface FileRecoverySnapshot {
   content: string;
   createdAt: string;
@@ -90,7 +95,7 @@ export interface EditorApi {
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   saveEditorSettings: (input: EditorSettings) => Promise<RelicResult<void>>;
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
-  listFileRecoverySnapshots: (input: FileRecoveryInput) => Promise<RelicResult<FileRecoveryEntry[]>>;
+  listFileRecoverySnapshots: (input: FileRecoveryInput) => Promise<RelicResult<FileRecoveryList>>;
   readFileRecoverySnapshot: (input: ReadFileRecoverySnapshotInput) => Promise<RelicResult<FileRecoverySnapshot>>;
   copyEditorTextToClipboard: (input: CopyEditorTextToClipboardInput) => Promise<RelicResult<void>>;
   readEditorTextFromClipboard: () => Promise<RelicResult<string>>;

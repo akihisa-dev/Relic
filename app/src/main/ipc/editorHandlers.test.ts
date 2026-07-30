@@ -125,12 +125,15 @@ describe("editor IPC handlers", () => {
     const listResult = await handlerFor(listFileRecoverySnapshotsChannel)(undefined, {
       path: "Note.md"
     });
-    const entries = successfulValue<Array<{ id: string }>>(listResult);
-    expect(entries).toHaveLength(1);
+    const recoveryList = successfulValue<{ entries: Array<{ id: string }>; unreadableCount: number }>(
+      listResult
+    );
+    expect(recoveryList.entries).toHaveLength(1);
+    expect(recoveryList.unreadableCount).toBe(0);
 
     const readResult = await handlerFor(readFileRecoverySnapshotChannel)(undefined, {
       path: "Note.md",
-      snapshotId: entries[0]!.id
+      snapshotId: recoveryList.entries[0]!.id
     });
     expect(readResult).toMatchObject({
       ok: true,

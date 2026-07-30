@@ -9,8 +9,8 @@ import {
   saveEditorSettingsChannel,
   type CopyEditorTextToClipboardInput,
   type EditorSettings,
-  type FileRecoveryEntry,
   type FileRecoveryInput,
+  type FileRecoveryList,
   type FileRecoverySnapshot,
   type ReadFileRecoverySnapshotInput,
   writeMarkdownFileChannel,
@@ -83,7 +83,7 @@ export function registerEditorHandlers(): void {
 
   handleLocalizedIpc(
     listFileRecoverySnapshotsChannel,
-    async (_event, input: FileRecoveryInput): Promise<RelicResult<FileRecoveryEntry[]>> => {
+    async (_event, input: FileRecoveryInput): Promise<RelicResult<FileRecoveryList>> => {
       try {
         if (!isPathInput(input)) {
           return fail("FILE_RECOVERY_INVALID_INPUT", "復元版を確認するファイルを指定してください。");

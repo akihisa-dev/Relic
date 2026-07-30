@@ -17,6 +17,7 @@ export function RightPanelRecoveryList({
 }: RightPanelRecoveryListProps): ReactElement {
   const t = useT();
   const [entries, setEntries] = useState<FileRecoveryEntry[]>([]);
+  const [unreadableCount, setUnreadableCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [recoveringId, setRecoveringId] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export function RightPanelRecoveryList({
     const client = relicClient.current;
     if (!path || !client) {
       setEntries([]);
+      setUnreadableCount(0);
       setError(null);
       setIsLoading(false);
       return;
@@ -46,15 +48,18 @@ export function RightPanelRecoveryList({
     void client.listFileRecoverySnapshots({ path }).then((result) => {
       if (!isCurrentRequest()) return;
       if (result.ok) {
-        setEntries(result.value);
+        setEntries(result.value.entries);
+        setUnreadableCount(result.value.unreadableCount);
       } else {
         setError(result.error.message);
         setEntries([]);
+        setUnreadableCount(0);
       }
     }).catch((reason) => {
       if (!isCurrentRequest()) return;
       setError(reason instanceof Error ? reason.message : String(reason));
       setEntries([]);
+      setUnreadableCount(0);
     }).finally(() => {
       if (isCurrentRequest()) setIsLoading(false);
     });
@@ -100,6 +105,11 @@ export function RightPanelRecoveryList({
       ) : null}
       {error ? (
         <div className="empty-note">{error}</div>
+      ) : null}
+      {!error && unreadableCount > 0 ? (
+        <div className="error-note">
+          {t("recovery.unreadable", { count: unreadableCount })}
+        </div>
       ) : null}
       {!isLoading && !error && entries.length === 0 ? (
         <div className="empty-note">{t("recovery.empty")}</div>

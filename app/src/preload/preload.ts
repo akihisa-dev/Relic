@@ -112,7 +112,7 @@ import {
   type ChartSettings,
   type LinkUpdateImpact,
   type LinkUpdateImpactInput,
-  type FileRecoveryEntry,
+  type FileRecoveryList,
   type FileRecoveryInput,
   type FileRecoverySnapshot,
   type UpdateChartEntryInput,
@@ -247,7 +247,7 @@ const relicApi: RelicApi = {
   readMarkdownFile: (input: ReadMarkdownFileInput) =>
     ipcRenderer.invoke(readMarkdownFileChannel, input) as Promise<RelicResult<MarkdownFileContent>>,
   listFileRecoverySnapshots: (input: FileRecoveryInput) =>
-    ipcRenderer.invoke(listFileRecoverySnapshotsChannel, input) as Promise<RelicResult<FileRecoveryEntry[]>>,
+    ipcRenderer.invoke(listFileRecoverySnapshotsChannel, input) as Promise<RelicResult<FileRecoveryList>>,
   readFileRecoverySnapshot: (input: ReadFileRecoverySnapshotInput) =>
     ipcRenderer.invoke(readFileRecoverySnapshotChannel, input) as Promise<RelicResult<FileRecoverySnapshot>>,
   removeWorkspace: (input: RemoveWorkspaceInput) =>

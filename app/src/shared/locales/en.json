@@ -634,6 +634,7 @@
   "recovery.empty": "There are no recovery versions for this file yet.",
   "recovery.load": "Load into editor",
   "recovery.noFile": "Open a file to inspect recovery versions.",
+  "recovery.unreadable": "{{count}} recovery version(s) could not be read. The available versions are shown below.",
   "diagram.showSource": "Show source",
   "diagram.syntaxHint": "Check the syntax.",
   "files.deleteFileConfirm": "Move “{{name}}” to Trash?",

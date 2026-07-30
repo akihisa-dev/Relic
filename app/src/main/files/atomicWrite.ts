@@ -1,7 +1,7 @@
 import { open, rename, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-interface AtomicWriteOperations {
+export interface AtomicWriteOperations {
   rename: (oldPath: string, newPath: string) => Promise<void>;
   stat?: (filePath: string) => Promise<{ mode: number }>;
   unlink: (filePath: string) => Promise<void>;
