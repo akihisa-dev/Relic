@@ -11,6 +11,7 @@ import {
   bubbleCategoryDynamicLayouts,
   bubbleCategoryLayouts,
   bubbleCategoryRegions,
+  bubbleCategorySpacing,
   bubbleCategoryTarget,
   normalizeBubbleCategory
 } from "./bubbleCategoryModel";
@@ -41,7 +42,7 @@ describe("bubbleCategoryModel", () => {
     expect(normalizeBubbleCategory(["人物"])).toBeNull();
   });
 
-  it("カテゴリだけへ接触する決定的な配置先を割り当てる", () => {
+  it("カテゴリ間に一定の余白を持つ決定的な配置先を割り当てる", () => {
     const nodes = [
       { category: "資料" },
       { category: "人物" },
@@ -65,15 +66,18 @@ describe("bubbleCategoryModel", () => {
       layouts[0]!.x - layouts[1]!.x,
       layouts[0]!.y - layouts[1]!.y
     );
-    expect(distance).toBeLessThan(layouts[0]!.radius + layouts[1]!.radius);
-    expect(byCategory.get("資料")?.contacts).toHaveLength(1);
+    expect(distance).toBeCloseTo(
+      layouts[0]!.radius + layouts[1]!.radius + bubbleCategorySpacing,
+      6
+    );
+    expect(byCategory.get("資料")?.contacts).toHaveLength(0);
   });
 
-  it("接触方向だけを凹ませ、輪郭同士が隙間なく同じ境界を共有する", () => {
-    const regions = bubbleCategoryRegions(bubbleCategoryLayouts([
-      { category: "資料" },
-      { category: "人物" }
-    ]));
+  it("一時的に接触した場合は接触方向だけを凹ませる", () => {
+    const regions = bubbleCategoryRegions([
+      { category: "資料", count: 1, radius: 96, x: 0, y: 0 },
+      { category: "人物", count: 1, radius: 96, x: 180, y: 0 }
+    ]);
     const material = regions.get("資料")!;
     const person = regions.get("人物")!;
     const contact = material.contacts[0]!;

@@ -50,10 +50,10 @@ export interface BubbleCategoryForceNode extends BubbleCategoryNode {
 }
 
 export const bubbleCategoryDriftCenterStrength = 0.003;
+export const bubbleCategorySpacing = 24;
 
 const bubbleCategoryMinimumRadius = 96;
 const bubbleCategoryNodeSpacing = 48;
-const bubbleCategoryDesiredOverlap = 28;
 const bubbleCategoryClusterClearance = 120;
 const bubbleCategoryBoundaryPadding = 36;
 const bubbleCategoryExteriorMaximumIndentationRatio = 0.75;
@@ -86,7 +86,7 @@ export function bubbleCategoryLayouts(nodes: Iterable<BubbleCategoryNode>): Bubb
   const maximumRadius = Math.max(...radii);
   const ringRadius = categories.length === 1
     ? maximumRadius + 180
-    : (maximumRadius - bubbleCategoryDesiredOverlap / 2) /
+    : (maximumRadius + bubbleCategorySpacing / 2) /
       Math.sin(Math.PI / categories.length);
   const clusterX = categories.length === 1
     ? 0
@@ -358,7 +358,7 @@ export function applyBubbleCategoryMotion(
       const dx = right.x - left.x;
       const dy = right.y - left.y;
       const distance = Math.hypot(dx, dy);
-      const minimumDistance = left.radius + right.radius - bubbleCategoryDesiredOverlap;
+      const minimumDistance = left.radius + right.radius + bubbleCategorySpacing;
       if (distance >= minimumDistance) continue;
 
       const fallbackAngle = (leftIndex + rightIndex * 0.5) * Math.PI * 2 /

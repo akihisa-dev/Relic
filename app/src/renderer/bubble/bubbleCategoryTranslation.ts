@@ -1,12 +1,12 @@
 import {
   bubbleCategoryDynamicLayouts,
+  bubbleCategorySpacing,
   normalizeBubbleCategory,
   stableBubbleCategoryAngle,
   type BubbleCategoryForceNode,
   type BubbleCategoryPoint
 } from "./bubbleCategoryModel";
 
-const bubbleCategoryDesiredOverlap = 28;
 const bubbleCategoryTranslationStep = 32;
 
 interface BubblePositionNode {
@@ -127,7 +127,7 @@ function translateBubbleCategoryStep<T extends BubbleCategoryForceNode>(
       const offsetX = otherX - movingX;
       const offsetY = otherY - movingY;
       const distance = Math.hypot(offsetX, offsetY);
-      const minimumDistance = moving.radius + other.radius - bubbleCategoryDesiredOverlap;
+      const minimumDistance = moving.radius + other.radius + bubbleCategorySpacing;
       if (distance >= minimumDistance) continue;
 
       const movementDistance = Math.hypot(movingTranslation.x, movingTranslation.y);
