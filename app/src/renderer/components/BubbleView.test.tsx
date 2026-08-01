@@ -132,7 +132,7 @@ describe("BubbleView", () => {
     expect(canvas).toHaveStyle("cursor: grabbing");
   });
 
-  it("ノードのpointercancelでは固定だけを解除し、通常のpointerup動作を維持する", () => {
+  it("ノードのpointercancelでは固定だけを解除し、選択と再クリックによる起動を維持する", () => {
     const onOpenFile = vi.fn();
     const onOpenTagSearch = vi.fn();
     renderBubbleView("ja", onOpenFile, onOpenTagSearch);
@@ -182,6 +182,52 @@ describe("BubbleView", () => {
     bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReturnValue(fileNode);
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
     fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 20, clientY: 30 }));
+    expect(onOpenFile).not.toHaveBeenCalled();
+
+    fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
+    fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 20, clientY: 30 }));
+    expect(onOpenFile).toHaveBeenCalledWith("note.md");
+
+    bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReturnValue(tagNode);
+    fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
+    fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 20, clientY: 30 }));
+    fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
+    fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 20, clientY: 30 }));
+    expect(onOpenTagSearch).toHaveBeenCalledWith("project");
+  });
+
+  it("ノードをドラッグしても選択を残し、再クリックでファイルを開ける", () => {
+    const onOpenFile = vi.fn();
+    renderBubbleView("ja", onOpenFile);
+    const canvas = screen.getByLabelText("バブル");
+    Object.defineProperty(canvas, "setPointerCapture", { configurable: true, value: vi.fn() });
+    Object.defineProperty(canvas, "hasPointerCapture", { configurable: true, value: vi.fn(() => true) });
+    Object.defineProperty(canvas, "releasePointerCapture", { configurable: true, value: vi.fn() });
+    const fileNode = {
+      backlinkCount: 0,
+      category: "人物",
+      exists: true,
+      fx: null,
+      fy: null,
+      id: "note.md",
+      label: "note",
+      linkCount: 0,
+      path: "note.md",
+      type: "file" as const,
+      vx: 0,
+      vy: 0,
+      x: 20,
+      y: 30
+    };
+    bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReturnValue(fileNode);
+
+    fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
+    fireEvent(canvas, new MouseEvent("pointermove", { bubbles: true, clientX: 32, clientY: 30 }));
+    fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 32, clientY: 30 }));
+    expect(onOpenFile).not.toHaveBeenCalled();
+
+    fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 32, clientY: 30 }));
+    fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 32, clientY: 30 }));
     expect(onOpenFile).toHaveBeenCalledWith("note.md");
   });
 

@@ -73,7 +73,14 @@ export function BubbleView({
     workspaceCacheKey
   });
   const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeIdState] = useState<string | null>(null);
+  const selectedNodeIdRef = useRef<string | null>(null);
   const latestOptionsRef = useLatest(defaultBubbleOptions);
+
+  const setSelectedNodeId = useCallback((nodeId: string | null) => {
+    selectedNodeIdRef.current = nodeId;
+    setSelectedNodeIdState(nodeId);
+  }, []);
 
   const requestDraw = useCallback(() => {
     requestBubbleFrameOnce(frameRef, () => drawRef.current());
@@ -101,6 +108,8 @@ export function BubbleView({
     onOpenFile,
     onOpenTagSearch,
     requestDraw,
+    selectedNodeIdRef,
+    setSelectedNodeId,
     setPinnedNodeId,
     simulationClientRef,
     viewRef
@@ -169,6 +178,12 @@ export function BubbleView({
     requestDraw();
   }, [filteredGraph, requestDraw]);
 
+  useEffect(() => {
+    const currentSelectedNodeId = selectedNodeIdRef.current;
+    if (!currentSelectedNodeId || nodesRef.current.has(currentSelectedNodeId)) return;
+    setSelectedNodeId(null);
+  }, [filteredGraph, setSelectedNodeId]);
+
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -204,7 +219,11 @@ export function BubbleView({
       hoverFocusRef.current,
       performance.now()
     );
-    const targetHighlightId = pinnedNodeId && nodesRef.current.has(pinnedNodeId) ? pinnedNodeId : hoverFocusId;
+    const targetHighlightId = pinnedNodeId && nodesRef.current.has(pinnedNodeId)
+      ? pinnedNodeId
+      : selectedNodeId && nodesRef.current.has(selectedNodeId)
+        ? selectedNodeId
+        : hoverFocusId;
     const highlight = stepBubbleHighlightState(highlightRef.current, targetHighlightId);
     drawBubble(
       context,
@@ -229,7 +248,7 @@ export function BubbleView({
     })) {
       requestDraw();
     }
-  }, [pinnedNodeId, requestDraw]);
+  }, [pinnedNodeId, requestDraw, selectedNodeId]);
 
   drawRef.current = draw;
 

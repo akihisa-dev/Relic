@@ -55,6 +55,8 @@ interface UseBubbleCanvasInteractionsOptions {
   onOpenFile: (path: string) => void;
   onOpenTagSearch: (tag: string) => void;
   requestDraw: () => void;
+  selectedNodeIdRef: RefObject<string | null>;
+  setSelectedNodeId: (nodeId: string | null) => void;
   setPinnedNodeId: (nodeId: string | null) => void;
   simulationClientRef: RefObject<BubbleSimulationClient | null>;
   viewRef: RefObject<BubbleViewTransform>;
@@ -67,6 +69,8 @@ export function useBubbleCanvasInteractions({
   onOpenFile,
   onOpenTagSearch,
   requestDraw,
+  selectedNodeIdRef,
+  setSelectedNodeId,
   setPinnedNodeId,
   simulationClientRef,
   viewRef
@@ -328,6 +332,7 @@ export function useBubbleCanvasInteractions({
       event.currentTarget.releasePointerCapture(pointer.pointerId);
     }
     if (pointer.dragNode) {
+      const wasSelected = selectedNodeIdRef.current === pointer.dragNode.id;
       pointer.dragNode.fx = null;
       pointer.dragNode.fy = null;
       simulationClientRef.current?.setNodeFixed(
@@ -338,11 +343,15 @@ export function useBubbleCanvasInteractions({
         pointer.nodeVelocityX,
         pointer.nodeVelocityY
       );
-      if (!pointer.moved) {
+      if (!pointer.moved && wasSelected) {
         const action = graphNodePrimaryAction(pointer.dragNode);
         if (action?.type === "file") openFileRef.current(action.path);
         if (action?.type === "tagSearch") openTagSearchRef.current(action.tag);
+      } else {
+        setSelectedNodeId(pointer.dragNode.id);
       }
+    } else if (!pointer.moved) {
+      setSelectedNodeId(null);
     }
     if (pointer.dragCategory) simulationClientRef.current?.setCategoryDragTarget(null);
 
@@ -357,7 +366,7 @@ export function useBubbleCanvasInteractions({
     pointerRef.current = null;
     event.currentTarget.style.cursor = "grab";
     requestDraw();
-  }, [openFileRef, openTagSearchRef, requestDraw, simulationClientRef]);
+  }, [openFileRef, openTagSearchRef, requestDraw, selectedNodeIdRef, setSelectedNodeId, simulationClientRef]);
 
   const handlePointerCancel = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     const pointer = pointerRef.current;
@@ -469,9 +478,11 @@ export function useBubbleCanvasInteractions({
       zoomIn: false,
       zoomOut: false
     };
+    selectedNodeIdRef.current = null;
+    setSelectedNodeId(null);
     setPinnedNodeId(null);
     requestDraw();
-  }, [requestDraw, setPinnedNodeId, viewRef]);
+  }, [requestDraw, selectedNodeIdRef, setPinnedNodeId, setSelectedNodeId, viewRef]);
 
   return {
     handleContextMenu,
