@@ -100,6 +100,58 @@ describe("bubbleLayout", () => {
     expect(nodes.get("B.md")).toMatchObject({ vx: 0, vy: 2, x: -20, y: 8 });
   });
 
+  it("固定中のノードの位置をWorkerの古い座標で上書きしない", () => {
+    const nodes = new Map<string, BubbleSimNode>([
+      ["A.md", {
+        ...graphNode({ id: "A.md" }),
+        fx: 10,
+        fy: 20,
+        vx: 0,
+        vy: 0,
+        x: 10,
+        y: 20
+      }],
+      ["B.md", {
+        ...graphNode({ id: "B.md" }),
+        fx: null,
+        fy: null,
+        vx: 0,
+        vy: 0,
+        x: 30,
+        y: 40
+      }]
+    ]);
+    const buffer = new ArrayBuffer(2 * 6 * Float32Array.BYTES_PER_ELEMENT);
+    const values = new Float32Array(buffer);
+    values.set([
+      100, 200, 1, 2, 3, 4,
+      300, 400, 5, 6, 7, 8
+    ]);
+
+    applyBubbleSimulationPositions(nodes, {
+      buffer,
+      ids: ["A.md", "B.md"],
+      type: "positions"
+    });
+
+    expect(nodes.get("A.md")).toMatchObject({
+      categoryCenterOffsetX: 3,
+      categoryCenterOffsetY: 4,
+      vx: 1,
+      vy: 2,
+      x: 10,
+      y: 20
+    });
+    expect(nodes.get("B.md")).toMatchObject({
+      categoryCenterOffsetX: 7,
+      categoryCenterOffsetY: 8,
+      vx: 5,
+      vy: 6,
+      x: 300,
+      y: 400
+    });
+  });
+
   it("単一ノードのバブル中心差分を維持し、同カテゴリが増えた場合は解除する", () => {
     const nodes = new Map<string, BubbleSimNode>();
     const firstGraph: WorkspaceGraph = {

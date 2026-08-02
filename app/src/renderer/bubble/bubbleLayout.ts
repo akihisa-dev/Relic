@@ -135,8 +135,8 @@ export function applyBubbleSimulationPositions(
     if (!node) return;
 
     const offset = index * 6;
-    node.x = values[offset] ?? node.x;
-    node.y = values[offset + 1] ?? node.y;
+    if (node.fx === null) node.x = values[offset] ?? node.x;
+    if (node.fy === null) node.y = values[offset + 1] ?? node.y;
     node.vx = values[offset + 2] ?? node.vx;
     node.vy = values[offset + 3] ?? node.vy;
     node.categoryCenterOffsetX = values[offset + 4] ?? node.categoryCenterOffsetX;
