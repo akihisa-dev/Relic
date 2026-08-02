@@ -7,9 +7,7 @@ export interface VisibleGraph {
 
 export function deriveVisibleGraph(graph: WorkspaceGraph | null): VisibleGraph {
   const source = graph ?? { links: [], nodes: [] };
-  const nodes = source.nodes.filter((node) =>
-    node.type === "file" || node.type === "unresolved"
-  );
+  const nodes = source.nodes.filter((node) => node.type === "file");
   const nodeIds = new Set(nodes.map((node) => node.id));
 
   const links = source.links.filter((link) =>

@@ -172,7 +172,7 @@ describe("App charts", () => {
     expect(getWorkspaceGraph).toHaveBeenCalledOnce();
   });
 
-  it("バブルビューのタグノードクリックはタグ検索アクションになる", () => {
+  it("グラフのタグノードクリックはタグ検索アクションになる", () => {
     expect(graphNodePrimaryAction({
       backlinkCount: 0,
       exists: true,

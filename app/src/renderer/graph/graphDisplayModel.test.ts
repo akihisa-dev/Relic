@@ -25,9 +25,13 @@ describe("deriveVisibleGraph", () => {
     ]);
   });
 
-  it("固定表示条件ではタグと添付を除き、未解決と孤立ファイルを残す", () => {
+  it("固定表示条件では実在ファイルだけを残し、未解決リンクを除く", () => {
     const visible = deriveVisibleGraph({
-      links: [],
+      links: [
+        { count: 1, source: "A.md", target: "B.md", type: "link" },
+        { count: 1, source: "A.md", target: "Missing.md", type: "link" },
+        { count: 1, source: "A.md", target: "#project", type: "tag" }
+      ],
       nodes: [
         ...graph.nodes,
         { backlinkCount: 0, exists: false, id: "Missing.md", label: "Missing", linkCount: 0, path: null, type: "unresolved" },
@@ -35,7 +39,9 @@ describe("deriveVisibleGraph", () => {
       ]
     });
 
-    expect(visible.nodes.map((node) => node.id)).toEqual(["A.md", "B.md", "Missing.md"]);
-    expect(visible.links).toEqual([]);
+    expect(visible.nodes.map((node) => node.id)).toEqual(["A.md", "B.md"]);
+    expect(visible.links).toEqual([
+      { count: 1, source: "A.md", target: "B.md", type: "link" }
+    ]);
   });
 });
