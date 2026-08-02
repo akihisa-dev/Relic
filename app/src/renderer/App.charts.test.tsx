@@ -29,17 +29,12 @@ import {
   applyBubblePanInertia,
   applyBubbleZoomTransition,
   bubbleHoveredNodeContainsPoint,
-  bubbleConnectionPulsePoint,
   bubbleLabelOpacity,
-  bubbleLinkEndpoints,
-  bubbleLinkScaleOpacity,
   bubbleNodeAtCanvasPoint,
   bubbleNodeBaseRadius,
   bubbleNodeScale,
   bubblePointerMovedBeyondClickThreshold,
   bubbleWheelZoomPoint,
-  bubbleHighlightOpacity,
-  bubbleHighlightProgress,
   graphNodePrimaryAction,
   isBubbleNodePrimaryPointerButton,
   finishBubblePanVelocity,
@@ -74,12 +69,10 @@ function kamakuraEntry() {
 
 const bubbleTestOptions = {
   centerStrength: 0.1,
-  lineSizeMultiplier: 1,
   linkDistance: 250,
   linkStrength: 0.72,
   nodeSizeMultiplier: 1,
   repelStrength: 10,
-  showArrows: false,
   textFadeMultiplier: 0
 };
 
@@ -414,36 +407,6 @@ describe("App charts", () => {
     })).toBe(true);
   });
 
-  it("バブルビューの接続線発光は周期内を一方向に進む", () => {
-    expect(bubbleHighlightProgress(0)).toBe(0);
-    expect(bubbleHighlightProgress(425)).toBeCloseTo(0.25);
-    expect(bubbleHighlightProgress(850)).toBeCloseTo(0.5);
-    expect(bubbleHighlightProgress(1_275)).toBeCloseTo(0.75);
-    expect(bubbleHighlightProgress(1_700)).toBe(0);
-  });
-
-  it("バブルビューのハローは周期的に穏やかに明滅する", () => {
-    expect(bubbleHighlightOpacity(0)).toBeCloseTo(0.5);
-    expect(bubbleHighlightOpacity(425)).toBeCloseTo(1);
-    expect(bubbleHighlightOpacity(850)).toBeCloseTo(0.5);
-    expect(bubbleHighlightOpacity(1_275)).toBeCloseTo(0);
-    expect(bubbleHighlightOpacity(1_700)).toBeCloseTo(0.5);
-  });
-
-  it("バブルビューの接続線発光は注目ノードから進み、リンクごとに位置をずらす", () => {
-    const endpoints = {
-      sourceX: 10,
-      sourceY: 20,
-      targetX: 110,
-      targetY: 220,
-      visible: true
-    };
-
-    expect(bubbleConnectionPulsePoint(endpoints, true, 0.25, 0)).toStrictEqual({ x: 35, y: 70 });
-    expect(bubbleConnectionPulsePoint(endpoints, false, 0.25, 0)).toStrictEqual({ x: 85, y: 170 });
-    expect(bubbleConnectionPulsePoint(endpoints, true, 0.25, 1)).toStrictEqual({ x: 54, y: 108 });
-  });
-
   it("バブルビューのノードと文字はズーム係数で描画する", () => {
     const node = {
       backlinkCount: 8,
@@ -463,38 +426,6 @@ describe("App charts", () => {
     expect(bubbleLabelOpacity(1, 0)).toBe(1);
     expect(bubbleLabelOpacity(2, 1)).toBe(1);
 
-    expect(bubbleLinkScaleOpacity(0.04)).toBe(0);
-    expect(bubbleLinkScaleOpacity(0.12)).toBeCloseTo(0.2222);
-    expect(bubbleLinkScaleOpacity(0.3)).toBeCloseTo(0.7222);
-    expect(bubbleLinkScaleOpacity(0.4)).toBe(1);
-  });
-
-  it("バブルビューのリンク線はノード外周で止める", () => {
-    expect(bubbleLinkEndpoints(
-      { backlinkCount: 0, linkCount: 0, x: 0, y: 0 },
-      { backlinkCount: 0, linkCount: 0, x: 100, y: 0 },
-      bubbleTestOptions,
-      1
-    )).toStrictEqual({
-      sourceX: 8,
-      sourceY: 0,
-      targetX: 92,
-      targetY: 0,
-      visible: true
-    });
-
-    expect(bubbleLinkEndpoints(
-      { backlinkCount: 0, linkCount: 0, x: 0, y: 0 },
-      { backlinkCount: 0, linkCount: 0, x: 10, y: 0 },
-      bubbleTestOptions,
-      1
-    )).toStrictEqual({
-      sourceX: 0,
-      sourceY: 0,
-      targetX: 10,
-      targetY: 0,
-      visible: false
-    });
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {

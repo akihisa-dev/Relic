@@ -55,6 +55,7 @@ const ctx = self as unknown as BubbleSimulationWorkerScope;
 let currentOptions: BubbleOptions = defaultBubbleOptions;
 let categoryDragNodeIds = new Set<string>();
 let categoryDragTarget: BubbleCategoryDragTarget | null = null;
+let simulationPaused = false;
 let simulation: Simulation<WorkerNode, WorkerLink> | null = null;
 let workerLinks: WorkerLink[] = [];
 let workerNodes: WorkerNode[] = [];
@@ -96,6 +97,11 @@ function handleBubbleSimulationRequest(message: BubbleSimulationRequest): void {
     return;
   }
 
+  if (message.type === "pause") {
+    pauseSimulation();
+    return;
+  }
+
   if (message.type === "categoryDrag") {
     setCategoryDragTarget(message.target, message.alpha);
     return;
@@ -111,11 +117,17 @@ function handleBubbleSimulationRequest(message: BubbleSimulationRequest): void {
     return;
   }
 
+  if (message.type === "resume") {
+    resumeSimulation(message.alpha);
+    return;
+  }
+
   disposeSimulation();
 }
 
 function syncSimulation(message: Extract<BubbleSimulationRequest, { type: "sync" }>): void {
   currentOptions = message.options;
+  simulationPaused = false;
   workerNodes = message.nodes.map((node) => ({
     backlinkCount: node.backlinkCount,
     category: node.category,
@@ -156,6 +168,10 @@ function updateCategoryCenterOffset(id: string, offsetX: number, offsetY: number
 function updateSimulationOptions(options: BubbleOptions, alpha = 0.18): void {
   currentOptions = options;
   updateSimulationForces();
+  if (simulationPaused) {
+    postBubblePositions();
+    return;
+  }
   restartSimulation(alpha);
 }
 
@@ -218,11 +234,19 @@ function updateFixedNode(
   if (x === null && y === null) {
     node.vx = velocityX ?? node.vx;
     node.vy = velocityY ?? node.vy;
+    if (simulationPaused) {
+      postBubblePositions();
+      return;
+    }
     simulation.alphaTarget(0);
     restartSimulation(0.08);
     return;
   }
 
+  if (simulationPaused) {
+    postBubblePositions();
+    return;
+  }
   simulation.alphaTarget(alpha);
   restartSimulation(alpha);
 }
@@ -235,7 +259,22 @@ function moveNode(id: string, x: number, y: number, alpha = 0.18): void {
   node.fy = null;
   node.x = x;
   node.y = y;
+  if (simulationPaused) {
+    postBubblePositions();
+    return;
+  }
   simulation.alpha(Math.max(simulation.alpha(), alpha)).restart();
+}
+
+function pauseSimulation(): void {
+  if (!simulation) return;
+  simulationPaused = true;
+  simulation.stop();
+  for (const node of workerNodes) {
+    node.vx = 0;
+    node.vy = 0;
+  }
+  postBubblePositions();
 }
 
 function setCategoryDragTarget(target: BubbleCategoryDragTarget | null, alpha = 0.18): void {
@@ -253,12 +292,25 @@ function restartSimulation(alpha = 0.3): void {
     return;
   }
 
+  if (simulationPaused) {
+    postBubblePositions();
+    return;
+  }
+
+  simulation.alpha(Math.max(simulation.alpha(), alpha)).restart();
+  postBubblePositions();
+}
+
+function resumeSimulation(alpha = 0): void {
+  if (!simulation) return;
+  simulationPaused = false;
   simulation.alpha(Math.max(simulation.alpha(), alpha)).restart();
   postBubblePositions();
 }
 
 function disposeSimulation(): void {
   simulation?.stop();
+  simulationPaused = false;
   simulation = null;
   categoryDragNodeIds.clear();
   categoryDragTarget = null;
@@ -275,7 +327,7 @@ function postBubblePositions(): void {
       categoryDragTarget.centerY
     );
   }
-  constrainBubbleCategorySpacing(workerNodes, categoryDragNodeIds);
+  if (!simulationPaused) constrainBubbleCategorySpacing(workerNodes, categoryDragNodeIds);
   const buffer = new ArrayBuffer(workerNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
   const values = new Float32Array(buffer);
   const ids: string[] = [];

@@ -5,7 +5,6 @@ import {
   bubbleCategoryAtWorldPoint,
   bubbleCategoryBubbles,
   bubbleColorWithAlpha,
-  bubbleLinkDashPattern,
   bubbleMembranePalette,
   bubbleNodeBubbleHighlight,
   bubbleNodeHighlightColor
@@ -165,11 +164,6 @@ describe("bubbleDrawingModel", () => {
       .toBeLessThanOrEqual(0.04);
     expect(bubbleColorWithAlpha(color, 0.2)).toBe("hsl(120 62% 40% / 0.2)");
     expect(bubbleColorWithAlpha("#fff", 1.4)).toBe("rgba(255, 255, 255, 1)");
-  });
-
-  it("リンクの点線をズーム倍率にかかわらず同じ画面間隔に保つ", () => {
-    expect(bubbleLinkDashPattern(1)).toEqual([1.5, 5]);
-    expect(bubbleLinkDashPattern(2)).toEqual([0.75, 2.5]);
   });
 
   it("動いたバブルの輪郭内だけを操作対象として判定する", () => {

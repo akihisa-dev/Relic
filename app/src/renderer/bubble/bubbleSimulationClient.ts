@@ -36,7 +36,9 @@ import {
 export interface BubbleSimulationClient {
   dispose: () => void;
   moveNode: (id: string, x: number, y: number, alpha?: number) => void;
+  pause: () => void;
   restart: (alpha?: number) => void;
+  resume: (alpha?: number) => void;
   setCategoryDragTarget: (target: BubbleCategoryDragTarget | null, alpha?: number) => void;
   setNodeCategoryCenterOffset: (id: string, offsetX: number, offsetY: number) => void;
   setNodeFixed: (
@@ -130,7 +132,9 @@ function createWorkerBubbleSimulationClient(
       }
     },
     moveNode: (id, x, y, alpha) => post({ alpha, id, type: "moveNode", x, y }),
+    pause: () => post({ type: "pause" }),
     restart: (alpha) => post({ alpha, type: "restart" }),
+    resume: (alpha) => post({ alpha, type: "resume" }),
     setCategoryDragTarget: (target, alpha) => post({ alpha, target, type: "categoryDrag" }),
     setNodeCategoryCenterOffset: (id, offsetX, offsetY) => {
       post({ id, offsetX, offsetY, type: "categoryCenterOffset" });
@@ -150,6 +154,7 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
   let disposed = false;
   let fallbackLinks: FallbackLink[] = [];
   let fallbackNodes: FallbackNode[] = [];
+  let paused = false;
   let simulation: Simulation<FallbackNode, FallbackLink> | null = null;
 
   const postPositions = () => {
@@ -163,7 +168,7 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
         categoryDragTarget.centerY
       );
     }
-    constrainBubbleCategorySpacing(fallbackNodes, categoryDragNodeIds);
+    if (!paused) constrainBubbleCategorySpacing(fallbackNodes, categoryDragNodeIds);
     const buffer = new ArrayBuffer(fallbackNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
     const values = new Float32Array(buffer);
     const ids: string[] = [];
@@ -228,6 +233,10 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
       return;
     }
 
+    if (paused) {
+      postPositions();
+      return;
+    }
     simulation.alpha(Math.max(simulation.alpha(), alpha)).restart();
     postPositions();
   };
@@ -235,6 +244,7 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
   return {
     dispose: () => {
       disposed = true;
+      paused = false;
       simulation?.stop();
       simulation = null;
       categoryDragNodeIds.clear();
@@ -249,9 +259,29 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
       node.fy = null;
       node.x = x;
       node.y = y;
+      if (paused) {
+        postPositions();
+        return;
+      }
       simulation.alpha(Math.max(simulation.alpha(), alpha)).restart();
     },
+    pause: () => {
+      if (!simulation) return;
+      paused = true;
+      simulation.stop();
+      for (const node of fallbackNodes) {
+        node.vx = 0;
+        node.vy = 0;
+      }
+      postPositions();
+    },
     restart,
+    resume: (alpha = 0) => {
+      if (!simulation) return;
+      paused = false;
+      simulation.alpha(Math.max(simulation.alpha(), alpha)).restart();
+      postPositions();
+    },
     setCategoryDragTarget: (target, alpha = 0.18) => {
       if (!simulation) return;
       categoryDragTarget = target;
@@ -277,11 +307,19 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
       if (x === null && y === null) {
         node.vx = velocityX ?? node.vx;
         node.vy = velocityY ?? node.vy;
+        if (paused) {
+          postPositions();
+          return;
+        }
         simulation.alphaTarget(0);
         restart(0.08);
         return;
       }
 
+      if (paused) {
+        postPositions();
+        return;
+      }
       simulation.alphaTarget(alpha);
       restart(alpha);
     },
@@ -307,6 +345,7 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
         target: link.target
       }));
 
+      paused = false;
       simulation?.stop();
       simulation = forceSimulation<FallbackNode, FallbackLink>(fallbackNodes)
         .alphaDecay(1 - Math.pow(0.001, 1 / 300))

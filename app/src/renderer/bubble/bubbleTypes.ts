@@ -2,23 +2,19 @@ import type { WorkspaceGraphLink, WorkspaceGraphNode } from "../../shared/ipc";
 
 export interface BubbleOptions {
   centerStrength: number;
-  lineSizeMultiplier: number;
   linkDistance: number;
   linkStrength: number;
   nodeSizeMultiplier: number;
   repelStrength: number;
-  showArrows: boolean;
   textFadeMultiplier: number;
 }
 
 export const defaultBubbleOptions: BubbleOptions = {
   centerStrength: 0.04,
-  lineSizeMultiplier: 1,
   linkDistance: 250,
   linkStrength: 0.32,
   nodeSizeMultiplier: 1,
   repelStrength: 12,
-  showArrows: false,
   textFadeMultiplier: 0
 };
 
@@ -58,11 +54,6 @@ export interface BubbleViewTransform {
   zoomCenterX: number;
   zoomCenterY: number;
 }
-
-export type BubbleLinkEndpointNode = Pick<WorkspaceGraphNode, "backlinkCount" | "linkCount"> & {
-  x: number;
-  y: number;
-};
 
 export interface BubbleSimulationNodeSnapshot {
   backlinkCount: number;
@@ -141,6 +132,15 @@ export interface BubbleSimulationRestartMessage {
   type: "restart";
 }
 
+export interface BubbleSimulationPauseMessage {
+  type: "pause";
+}
+
+export interface BubbleSimulationResumeMessage {
+  alpha?: number;
+  type: "resume";
+}
+
 export interface BubbleSimulationDisposeMessage {
   type: "dispose";
 }
@@ -152,7 +152,9 @@ export type BubbleSimulationRequest =
   | BubbleSimulationFixedNodeMessage
   | BubbleSimulationMoveNodeMessage
   | BubbleSimulationOptionsMessage
+  | BubbleSimulationPauseMessage
   | BubbleSimulationRestartMessage
+  | BubbleSimulationResumeMessage
   | BubbleSimulationSyncMessage;
 
 export interface BubbleSimulationPositionsMessage {

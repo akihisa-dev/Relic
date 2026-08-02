@@ -36,9 +36,11 @@ describe("createBubbleSimulationClient", () => {
       centerY: 30,
       nodeIds: ["A.md", "B.md"]
     });
+    client.pause();
     client.moveNode("A.md", 12, 24);
     client.setNodeCategoryCenterOffset("A.md", -24, 8);
     client.setNodeFixed("A.md", null, null, 0.08, 4, -2);
+    client.resume(0.04);
 
     expect(worker.postMessage).toHaveBeenCalledWith({
       alpha: undefined,
@@ -56,6 +58,7 @@ describe("createBubbleSimulationClient", () => {
       x: 12,
       y: 24
     });
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: "pause" });
     expect(worker.postMessage).toHaveBeenCalledWith({
       id: "A.md",
       offsetX: -24,
@@ -71,6 +74,7 @@ describe("createBubbleSimulationClient", () => {
       x: null,
       y: null
     });
+    expect(worker.postMessage).toHaveBeenCalledWith({ alpha: 0.04, type: "resume" });
   });
 
   it("Workerは一度だけ終了し、終了後の通知や要求を無視する", () => {

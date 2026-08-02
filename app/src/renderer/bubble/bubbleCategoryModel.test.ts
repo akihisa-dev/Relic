@@ -167,6 +167,19 @@ describe("bubbleCategoryModel", () => {
     expect(moved).toEqual({ x: 60, y: 20 });
   });
 
+  it("固定したバブルの内壁を越えるドラッグ先を内側へ戻す", () => {
+    const nodes = [{ category: "人物", x: 0, y: 0 }];
+    const regions = bubbleCategoryRegions(bubbleCategoryDynamicLayouts(nodes), nodes);
+    const moved = constrainBubbleNodeToCategoryRegions(
+      nodes[0]!,
+      regions,
+      { x: 240, y: 0 },
+      18
+    );
+
+    expect(moved).toEqual({ x: 78, y: 0 });
+  });
+
   it("所属ノードが1件だけでも移動先を先読みしてバブルごと動かせる", () => {
     const nodes = [{
       category: "人物",

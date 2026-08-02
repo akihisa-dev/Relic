@@ -11,10 +11,10 @@ import {
 import type { BubbleSimulationClient } from "../bubble/bubbleSimulationClient";
 import {
   constrainBubbleNodeToCategoryRegions,
-  bubbleCategoryCenterOffsetForNodeDrag,
   bubbleCategoryDynamicLayouts,
   bubbleCategoryRegions,
-  normalizeBubbleCategory
+  normalizeBubbleCategory,
+  type BubbleCategoryRegion
 } from "../bubble/bubbleCategoryModel";
 import {
   translateBubbleCategoryNodesWithPush
@@ -93,6 +93,7 @@ export function useBubbleCanvasInteractions({
     dragCategory: string | null;
     dragCategoryTarget: BubbleCategoryDragTarget | null;
     dragNode: BubbleSimNode | null;
+    dragNodeRegions: ReadonlyMap<string, BubbleCategoryRegion> | null;
     lastX: number;
     lastY: number;
     moved: boolean;
@@ -152,10 +153,17 @@ export function useBubbleCanvasInteractions({
     requestDraw();
 
     if (node) {
+      simulationClientRef.current?.pause();
       node.fx = node.x;
       node.fy = node.y;
       simulationClientRef.current?.setNodeFixed(node.id, node.x, node.y);
     }
+    const dragNodeRegions = node
+      ? bubbleCategoryRegions(
+          bubbleCategoryDynamicLayouts(nodesRef.current.values()),
+          nodesRef.current.values()
+        )
+      : null;
     const categoryNodes = category
       ? [...nodesRef.current.values()].filter((candidate) =>
           normalizeBubbleCategory(candidate.category) === category
@@ -177,6 +185,7 @@ export function useBubbleCanvasInteractions({
       dragCategory: category,
       dragCategoryTarget,
       dragNode: node,
+      dragNodeRegions,
       lastX: event.clientX,
       lastY: event.clientY,
       moved: false,
@@ -226,51 +235,18 @@ export function useBubbleCanvasInteractions({
       ) + 6 / viewRef.current.scale;
       const graphNodes = [...nodesRef.current.values()];
       const layouts = bubbleCategoryDynamicLayouts(graphNodes);
-      const categoryCenterOffset = bubbleCategoryCenterOffsetForNodeDrag(
-        pointer.dragNode,
-        layouts,
-        desiredPoint,
-        dragPadding
-      );
-      const singletonLayout = categoryCenterOffset
-        ? layouts.find((layout) =>
-            layout.category === normalizeBubbleCategory(pointer.dragNode?.category)
-          )
-        : null;
-      const projectedNodes = graphNodes.map((node) => (
-        node.id === pointer.dragNode?.id
-          ? {
-              ...node,
-              categoryCenterOffsetX: categoryCenterOffset?.x ??
-                node.categoryCenterOffsetX,
-              categoryCenterOffsetY: categoryCenterOffset?.y ??
-                node.categoryCenterOffsetY,
-              x: desiredPoint.x,
-              y: desiredPoint.y
-            }
-          : node
-      ));
-      const regions = bubbleCategoryRegions(
-        categoryCenterOffset
-          ? bubbleCategoryDynamicLayouts(projectedNodes)
-          : layouts,
-        projectedNodes
-      );
+      const regions = pointer.dragNodeRegions ?? bubbleCategoryRegions(layouts, graphNodes);
       const constrainedPoint = constrainBubbleNodeToCategoryRegions(
         pointer.dragNode,
         regions,
         desiredPoint,
         dragPadding
       );
-      if (categoryCenterOffset && singletonLayout) {
-        const finalCenterOffset = bubbleCategoryCenterOffsetForNodeDrag(
-          pointer.dragNode,
-          layouts,
-          constrainedPoint,
-          dragPadding
-        )!;
-        pointer.dragNode.categoryCenterOffsetX = finalCenterOffset.x;
-        pointer.dragNode.categoryCenterOffsetY = finalCenterOffset.y;
+      const category = normalizeBubbleCategory(pointer.dragNode.category);
+      const categoryRegion = category ? regions.get(category) : null;
+      if (categoryRegion?.count === 1) {
+        pointer.dragNode.categoryCenterOffsetX = categoryRegion.x - constrainedPoint.x;
+        pointer.dragNode.categoryCenterOffsetY = categoryRegion.y - constrainedPoint.y;
         simulationClientRef.current?.setNodeCategoryCenterOffset(
           pointer.dragNode.id,
           pointer.dragNode.categoryCenterOffsetX,
@@ -281,13 +257,8 @@ export function useBubbleCanvasInteractions({
       pointer.dragNode.fy = constrainedPoint.y;
       pointer.dragNode.x = pointer.dragNode.fx;
       pointer.dragNode.y = pointer.dragNode.fy;
-      const releaseVelocity = bubbleNodeReleaseVelocity(
-        dx / viewRef.current.scale,
-        dy / viewRef.current.scale,
-        elapsed
-      );
-      pointer.nodeVelocityX = releaseVelocity.x;
-      pointer.nodeVelocityY = releaseVelocity.y;
+      pointer.nodeVelocityX = 0;
+      pointer.nodeVelocityY = 0;
       simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, pointer.dragNode.x, pointer.dragNode.y);
       requestDraw();
       return;
@@ -343,6 +314,7 @@ export function useBubbleCanvasInteractions({
         pointer.nodeVelocityX,
         pointer.nodeVelocityY
       );
+      simulationClientRef.current?.resume(pointer.moved ? 0.08 : 0);
       if (!pointer.moved && wasSelected) {
         const action = graphNodePrimaryAction(pointer.dragNode);
         if (action?.type === "file") openFileRef.current(action.path);
@@ -379,6 +351,7 @@ export function useBubbleCanvasInteractions({
       pointer.dragNode.fx = null;
       pointer.dragNode.fy = null;
       simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, null, null, 0.08);
+      simulationClientRef.current?.resume();
     }
     if (pointer.dragCategory) simulationClientRef.current?.setCategoryDragTarget(null);
 
@@ -502,17 +475,4 @@ export function useBubbleCanvasInteractions({
     pointerRef,
     resetInteractionState
   };
-}
-
-function bubbleNodeReleaseVelocity(
-  dx: number,
-  dy: number,
-  elapsedMs: number
-): { x: number; y: number } {
-  const timeScale = Math.min(1, 16 / Math.max(1, elapsedMs));
-  const x = dx * timeScale * 0.28;
-  const y = dy * timeScale * 0.28;
-  const speed = Math.hypot(x, y);
-  if (speed <= 8 || speed === 0) return { x, y };
-  return { x: x / speed * 8, y: y / speed * 8 };
 }

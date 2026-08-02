@@ -8,7 +8,6 @@ import {
 import {
   clamp,
   bubbleLabelOpacity,
-  bubbleLinkScaleOpacity,
   bubbleNodeScale,
   bubbleNodeVisualRadius,
   type BubbleHighlightState
@@ -20,16 +19,13 @@ import {
 } from "./bubbleCategoryModel";
 import type { BubbleCategoryPoint } from "./bubbleCategoryModel";
 import type {
-  BubbleLinkEndpointNode,
   BubbleOptions,
   BubbleSimLink,
   BubbleSimNode
 } from "./bubbleTypes";
 
-const bubbleDimmedLinkAlpha = 0.18;
 const bubbleDimmedNodeAlpha = 0.34;
 const bubbleDimmedLabelAlpha = 0.32;
-const bubbleHighlightPulsePeriodMs = 1_700;
 
 export function drawBubble(
   context: CanvasRenderingContext2D,
@@ -52,58 +48,35 @@ export function drawBubble(
   const neighbors = new Set<string>();
   if (focused) {
     for (const link of links) {
-      if (link.source === focused.id) neighbors.add(link.target);
-      if (link.target === focused.id) neighbors.add(link.source);
+      const neighborId = link.source === focused.id
+        ? link.target
+        : link.target === focused.id
+          ? link.source
+          : null;
+      if (neighborId !== null) neighbors.add(neighborId);
     }
   }
 
-  const animationTimeMs = typeof performance === "undefined" ? 0 : performance.now();
-  const highlightProgress = bubbleHighlightProgress(animationTimeMs);
-  const highlightOpacity = bubbleHighlightOpacity(animationTimeMs);
   const focusedColor = focused
     ? bubbleNodeHighlightColor(focused, theme, categoryColors)
     : null;
   drawBubbleCategoryBubbles(context, nodes, view.scale, theme, categoryColors);
   if (focused && focusedColor) {
-    drawBubbleNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, highlightOpacity);
-  }
-
-  const linkScaleOpacity = bubbleLinkScaleOpacity(view.scale);
-  context.save();
-  context.setLineDash(bubbleLinkDashPattern(view.scale));
-  context.lineCap = "round";
-  for (const [index, link] of links.entries()) {
-    const endpoints = bubbleLinkEndpoints(link.sourceNode, link.targetNode, options, view.scale);
-    if (!endpoints.visible) continue;
-
-    const active = !focused || link.source === focused.id || link.target === focused.id;
-    context.globalAlpha = bubbleHighlightAlpha(active, highlightStrength, 0.65, bubbleDimmedLinkAlpha) * linkScaleOpacity;
-    context.strokeStyle = active ? theme.borderStrong : theme.border;
-    context.lineWidth = Math.max(0.4 / view.scale, options.lineSizeMultiplier * Math.sqrt(link.count) / view.scale);
-    context.beginPath();
-    context.moveTo(endpoints.sourceX, endpoints.sourceY);
-    context.lineTo(endpoints.targetX, endpoints.targetY);
-    context.stroke();
-
-    if (focused && focusedColor && active && highlightStrength > 0.05) {
-      drawBubbleConnectionPulse(
+    drawBubbleNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, 0.7);
+    for (const neighborId of neighbors) {
+      const neighbor = nodes.find((node) => node.id === neighborId);
+      if (!neighbor) continue;
+      drawBubbleNodeHalo(
         context,
-        endpoints,
-        link.source === focused.id,
-        focusedColor,
+        neighbor,
+        bubbleNodeHighlightColor(neighbor, theme, categoryColors),
+        options,
         view.scale,
-        highlightStrength,
-        highlightProgress,
-        index,
-        linkScaleOpacity
+        highlightStrength * 0.72,
+        0.45
       );
     }
-
-    if (options.showArrows && linkScaleOpacity > 0.001) {
-      drawArrow(context, link.sourceNode, link.targetNode, options, view.scale);
-    }
   }
-  context.restore();
 
   context.globalAlpha = 1;
   for (const node of nodes) {
@@ -112,6 +85,10 @@ export function drawBubble(
     const color = graphNodeColor(node, theme, categoryColors);
     const nodeAlpha = bubbleHighlightAlpha(active, highlightStrength, 1, bubbleDimmedNodeAlpha);
     drawBubbleBubbleNode(context, node, radius, color, theme, view.scale, nodeAlpha);
+
+    if (focused && neighbors.has(node.id) && highlightStrength > 0) {
+      drawBubbleNodeConnectionRing(context, node, color, options, view.scale, highlightStrength);
+    }
 
     if (node.id === focused?.id && highlightStrength > 0) {
       context.globalAlpha = 0.36 * highlightStrength;
@@ -246,14 +223,6 @@ function drawBubbleBubbleNode(
   context.restore();
 }
 
-export function bubbleHighlightProgress(timeMs: number): number {
-  return (timeMs % bubbleHighlightPulsePeriodMs) / bubbleHighlightPulsePeriodMs;
-}
-
-export function bubbleHighlightOpacity(timeMs: number): number {
-  return 0.5 + Math.sin(bubbleHighlightProgress(timeMs) * Math.PI * 2) * 0.5;
-}
-
 function drawBubbleNodeHalo(
   context: CanvasRenderingContext2D,
   node: BubbleSimNode,
@@ -286,104 +255,24 @@ function drawBubbleNodeHalo(
   context.restore();
 }
 
-function drawBubbleConnectionPulse(
+function drawBubbleNodeConnectionRing(
   context: CanvasRenderingContext2D,
-  endpoints: ReturnType<typeof bubbleLinkEndpoints>,
-  sourceIsFocused: boolean,
+  node: BubbleSimNode,
   color: string,
+  options: BubbleOptions,
   scale: number,
-  strength: number,
-  progress: number,
-  linkIndex: number,
-  linkOpacity: number
+  strength: number
 ): void {
-  const point = bubbleConnectionPulsePoint(endpoints, sourceIsFocused, progress, linkIndex);
-  const radius = Math.max(1.4 / scale, 2.4 / scale);
+  const radius = bubbleNodeVisualRadius(node, options, scale);
 
   context.save();
-  context.globalAlpha = 0.62 * strength * linkOpacity;
-  context.fillStyle = color;
+  context.globalAlpha = 0.62 * strength;
+  context.strokeStyle = color;
+  context.lineWidth = 1.3 / scale;
   context.beginPath();
-  context.arc(point.x, point.y, radius, 0, Math.PI * 2);
-  context.fill();
+  context.arc(node.x, node.y, radius + 3 / scale, 0, Math.PI * 2);
+  context.stroke();
   context.restore();
-}
-
-export function bubbleConnectionPulsePoint(
-  endpoints: ReturnType<typeof bubbleLinkEndpoints>,
-  sourceIsFocused: boolean,
-  progress: number,
-  linkIndex: number
-): { x: number; y: number } {
-  const linkProgress = (progress + linkIndex * 0.19) % 1;
-  const fromX = sourceIsFocused ? endpoints.sourceX : endpoints.targetX;
-  const fromY = sourceIsFocused ? endpoints.sourceY : endpoints.targetY;
-  const toX = sourceIsFocused ? endpoints.targetX : endpoints.sourceX;
-  const toY = sourceIsFocused ? endpoints.targetY : endpoints.sourceY;
-  return {
-    x: fromX + (toX - fromX) * linkProgress,
-    y: fromY + (toY - fromY) * linkProgress
-  };
-}
-
-export function bubbleLinkDashPattern(scale: number): [number, number] {
-  return [1.5 / scale, 5 / scale];
-}
-
-export function bubbleLinkEndpoints(
-  source: BubbleLinkEndpointNode,
-  target: BubbleLinkEndpointNode,
-  options: BubbleOptions,
-  scale: number
-): {
-  sourceX: number;
-  sourceY: number;
-  targetX: number;
-  targetY: number;
-  visible: boolean;
-} {
-  const dx = target.x - source.x;
-  const dy = target.y - source.y;
-  const length = Math.hypot(dx, dy);
-  const sourceRadius = bubbleNodeVisualRadius(source, options, scale);
-  const targetRadius = bubbleNodeVisualRadius(target, options, scale);
-
-  if (length <= sourceRadius + targetRadius) {
-    return {
-      sourceX: source.x,
-      sourceY: source.y,
-      targetX: target.x,
-      targetY: target.y,
-      visible: false
-    };
-  }
-
-  const unitX = dx / length;
-  const unitY = dy / length;
-
-  return {
-    sourceX: source.x + unitX * sourceRadius,
-    sourceY: source.y + unitY * sourceRadius,
-    targetX: target.x - unitX * targetRadius,
-    targetY: target.y - unitY * targetRadius,
-    visible: true
-  };
-}
-
-export function drawArrow(context: CanvasRenderingContext2D, source: BubbleSimNode, target: BubbleSimNode, options: BubbleOptions, scale = 1): void {
-  const angle = Math.atan2(target.y - source.y, target.x - source.x);
-  const radius = bubbleNodeVisualRadius(target, options, scale) + 3 / scale;
-  const x = target.x - Math.cos(angle) * radius;
-  const y = target.y - Math.sin(angle) * radius;
-  const size = 6 / scale;
-
-  context.beginPath();
-  context.moveTo(x, y);
-  context.lineTo(x - Math.cos(angle - 0.45) * size, y - Math.sin(angle - 0.45) * size);
-  context.lineTo(x - Math.cos(angle + 0.45) * size, y - Math.sin(angle + 0.45) * size);
-  context.closePath();
-  context.fillStyle = context.strokeStyle;
-  context.fill();
 }
 
 export interface BubbleCategoryBubble {

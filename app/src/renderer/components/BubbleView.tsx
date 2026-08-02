@@ -146,6 +146,7 @@ export function BubbleView({
 
   useEffect(() => {
     const client = createBubbleSimulationClient((message) => {
+      if (pointerRef.current?.type === "node") return;
       applyBubbleSimulationPositions(nodesRef.current, message);
       requestDraw();
     });

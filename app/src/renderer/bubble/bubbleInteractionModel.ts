@@ -57,7 +57,8 @@ export function shouldContinueBubbleFrame(activity: BubbleFrameActivity): boolea
     ? activity.view.scale / activity.view.targetScale
     : activity.view.targetScale / activity.view.scale;
   const zoomActive = zoomRatio - 1 >= 0.01;
-  const highlightActive = activity.targetHighlightId !== null || activity.highlight.strength > 0;
+  const targetStrength = activity.targetHighlightId === null ? 0 : 1;
+  const highlightActive = Math.abs(targetStrength - activity.highlight.strength) >= 0.01;
 
   return activity.pointerActive || keyboardActive || panActive || zoomActive || highlightActive;
 }
@@ -68,10 +69,6 @@ export function bubbleNodeBaseRadius(node: Pick<WorkspaceGraphNode, "backlinkCou
 
 export function bubbleNodeScale(scale: number): number {
   return Math.sqrt(1 / Math.max(bubbleMinScale, scale));
-}
-
-export function bubbleLinkScaleOpacity(scale: number): number {
-  return clamp((scale - 0.04) / 0.36, 0, 1);
 }
 
 export function bubbleNodeVisualRadius(

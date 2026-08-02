@@ -12,6 +12,8 @@ const bubbleViewModelMocks = vi.hoisted(() => ({
 }));
 const bubbleSimulationMocks = vi.hoisted(() => ({
   moveNode: vi.fn(),
+  pause: vi.fn(),
+  resume: vi.fn(),
   setCategoryDragTarget: vi.fn(),
   setNodeCategoryCenterOffset: vi.fn(),
   setNodeFixed: vi.fn(),
@@ -29,7 +31,9 @@ vi.mock("../bubble/bubbleSimulationClient", async (importOriginal) => ({
   createBubbleSimulationClient: () => ({
     dispose: vi.fn(),
     moveNode: bubbleSimulationMocks.moveNode,
+    pause: bubbleSimulationMocks.pause,
     restart: vi.fn(),
+    resume: bubbleSimulationMocks.resume,
     setCategoryDragTarget: bubbleSimulationMocks.setCategoryDragTarget,
     setNodeCategoryCenterOffset: bubbleSimulationMocks.setNodeCategoryCenterOffset,
     setNodeFixed: bubbleSimulationMocks.setNodeFixed,
@@ -67,6 +71,8 @@ afterEach(() => {
   bubbleViewModelMocks.bubbleCategoryAtWorldPoint.mockReset();
   bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReset();
   bubbleSimulationMocks.moveNode.mockReset();
+  bubbleSimulationMocks.pause.mockReset();
+  bubbleSimulationMocks.resume.mockReset();
   bubbleSimulationMocks.setCategoryDragTarget.mockReset();
   bubbleSimulationMocks.setNodeFixed.mockReset();
   bubbleSimulationMocks.setNodeCategoryCenterOffset.mockReset();
@@ -222,8 +228,11 @@ describe("BubbleView", () => {
     bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReturnValue(fileNode);
 
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
+    expect(bubbleSimulationMocks.pause).toHaveBeenCalledOnce();
+    expect(bubbleSimulationMocks.resume).not.toHaveBeenCalled();
     fireEvent(canvas, new MouseEvent("pointermove", { bubbles: true, clientX: 32, clientY: 30 }));
     fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 32, clientY: 30 }));
+    expect(bubbleSimulationMocks.resume).toHaveBeenCalledWith(0.08);
     expect(onOpenFile).not.toHaveBeenCalled();
 
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 32, clientY: 30 }));
