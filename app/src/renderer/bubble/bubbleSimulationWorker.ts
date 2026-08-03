@@ -16,6 +16,7 @@ import {
 } from "./bubbleNodeCollisionModel";
 import {
   applyBubbleCategoryMotion,
+  bubbleCategorySpacing,
   bubbleCategoryDriftCenterStrength,
   constrainBubbleCategorySpacing
 } from "./bubbleCategoryModel";
@@ -211,7 +212,11 @@ function updateSimulationForces(): void {
     .force(
       "category-boundary",
       (alpha) => {
-        applyBubbleCategoryMotion(workerNodes, alpha);
+        applyBubbleCategoryMotion(
+          workerNodes,
+          alpha,
+          hasActiveCategoryContact() ? 0 : bubbleCategorySpacing
+        );
       }
     );
 }
@@ -330,7 +335,11 @@ function postBubblePositions(): void {
   }
   if (!simulationPaused) {
     constrainBubbleNodeSpacing(workerNodes, currentOptions, categoryDragNodeIds);
-    constrainBubbleCategorySpacing(workerNodes, categoryDragNodeIds);
+    constrainBubbleCategorySpacing(
+      workerNodes,
+      categoryDragNodeIds,
+      hasActiveCategoryContact()
+    );
   }
   const buffer = new ArrayBuffer(workerNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
   const values = new Float32Array(buffer);
@@ -348,6 +357,13 @@ function postBubblePositions(): void {
   });
 
   postBubbleSimulationMessage({ buffer, ids, type: "positions" }, [buffer]);
+}
+
+function hasActiveCategoryContact(): boolean {
+  return categoryDragNodeIds.size > 0 || workerNodes.some((node) =>
+    (node.fx !== undefined && node.fx !== null) ||
+    (node.fy !== undefined && node.fy !== null)
+  );
 }
 
 function postBubbleSimulationMessage(message: BubbleSimulationResponse, transfer: Transferable[] = []): void {

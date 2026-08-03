@@ -73,7 +73,8 @@ export function translateBubbleCategoryNodesWithPush<T extends BubbleCategoryFor
   nodes: Iterable<T>,
   category: string,
   dx: number,
-  dy: number
+  dy: number,
+  categorySpacing = bubbleCategorySpacing
 ): T[] {
   const orderedNodes = [...nodes];
   const normalizedCategory = normalizeBubbleCategory(category);
@@ -87,7 +88,8 @@ export function translateBubbleCategoryNodesWithPush<T extends BubbleCategoryFor
       orderedNodes,
       normalizedCategory,
       dx / stepCount,
-      dy / stepCount
+      dy / stepCount,
+      categorySpacing
     )) {
       movedNodes.add(node);
     }
@@ -99,7 +101,8 @@ function translateBubbleCategoryStep<T extends BubbleCategoryForceNode>(
   nodes: T[],
   category: string,
   dx: number,
-  dy: number
+  dy: number,
+  categorySpacing: number
 ): T[] {
   const layouts = bubbleCategoryDynamicLayouts(nodes);
   const layoutByCategory = new Map(layouts.map((layout) => [layout.category, layout]));
@@ -127,7 +130,7 @@ function translateBubbleCategoryStep<T extends BubbleCategoryForceNode>(
       const offsetX = otherX - movingX;
       const offsetY = otherY - movingY;
       const distance = Math.hypot(offsetX, offsetY);
-      const minimumDistance = moving.radius + other.radius + bubbleCategorySpacing;
+      const minimumDistance = moving.radius + other.radius + categorySpacing;
       if (distance >= minimumDistance) continue;
 
       const movementDistance = Math.hypot(movingTranslation.x, movingTranslation.y);

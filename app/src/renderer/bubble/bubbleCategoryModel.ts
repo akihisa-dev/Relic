@@ -55,6 +55,7 @@ export interface BubbleCategoryForceNode extends BubbleCategoryNode {
 
 export const bubbleCategoryDriftCenterStrength = 0.003;
 export const bubbleCategorySpacing = 24;
+export const bubbleCategoryContactOverlap = 28;
 
 const bubbleCategoryMinimumRadius = 96;
 const bubbleCategoryNodeSpacing = 48;
@@ -191,7 +192,7 @@ export function bubbleCategoryRegions(
       const dx = other.x - layout.x;
       const dy = other.y - layout.y;
       const distance = Math.hypot(dx, dy);
-      if (distance >= layout.radius + other.radius) return [];
+      if (distance > layout.radius + other.radius) return [];
       return [{
         angle: Math.atan2(dy, dx),
         distance,
@@ -340,7 +341,8 @@ export function constrainBubbleNodeToCategoryRegions(
 
 export function applyBubbleCategoryMotion(
   nodes: Iterable<BubbleCategoryForceNode>,
-  alpha: number
+  alpha: number,
+  categorySpacing = bubbleCategorySpacing
 ): Map<string, BubbleCategoryRegion> {
   const orderedNodes = [...nodes];
   const regions = bubbleCategoryRegions(
@@ -364,7 +366,7 @@ export function applyBubbleCategoryMotion(
       const dx = right.x - left.x;
       const dy = right.y - left.y;
       const distance = Math.hypot(dx, dy);
-      const minimumDistance = left.radius + right.radius + bubbleCategorySpacing;
+      const minimumDistance = left.radius + right.radius + categorySpacing;
       if (distance >= minimumDistance) continue;
 
       const fallbackAngle = (leftIndex + rightIndex * 0.5) * Math.PI * 2 /
@@ -414,11 +416,15 @@ export function applyBubbleCategoryMotion(
 
 export function constrainBubbleCategorySpacing(
   nodes: Iterable<BubbleCategoryForceNode>,
-  anchoredNodeIds: ReadonlySet<string> = new Set()
+  anchoredNodeIds: ReadonlySet<string> = new Set(),
+  allowContact = false
 ): void {
   const orderedNodes = [...nodes];
   const orderedLayouts = bubbleCategoryDynamicLayouts(orderedNodes);
   if (orderedLayouts.length < 2) return;
+  const minimumCategorySpacing = allowContact
+    ? -bubbleCategoryContactOverlap
+    : bubbleCategorySpacing;
 
   const nodesByCategory = new Map<string, BubbleCategoryForceNode[]>();
   const anchoredCategories = new Set<string>();
@@ -454,7 +460,7 @@ export function constrainBubbleCategorySpacing(
         const dx = right.x - left.x;
         const dy = right.y - left.y;
         const distance = Math.hypot(dx, dy);
-        const minimumDistance = left.radius + right.radius + bubbleCategorySpacing;
+        const minimumDistance = left.radius + right.radius + minimumCategorySpacing;
         const penetration = minimumDistance - distance;
         if (penetration <= bubbleCategorySpacingProjectionTolerance) continue;
 

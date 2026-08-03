@@ -14,6 +14,7 @@ import {
   constrainBubbleNodeSpacing
 } from "../bubble/bubbleNodeCollisionModel";
 import {
+  bubbleCategoryContactOverlap,
   constrainBubbleCategorySpacing,
   constrainBubbleNodeToCategoryRegions,
   bubbleCategoryDynamicLayouts,
@@ -270,7 +271,7 @@ export function useBubbleCanvasInteractions({
         pointer.dragNode.x = constrainedPoint.x;
         pointer.dragNode.y = constrainedPoint.y;
         constrainBubbleNodeSpacing(graphNodes, latestOptionsRef.current, anchoredNodeIds);
-        constrainBubbleCategorySpacing(graphNodes, anchoredNodeIds);
+        constrainBubbleCategorySpacing(graphNodes, anchoredNodeIds, true);
       }
       pointer.nodeVelocityX = 0;
       pointer.nodeVelocityY = 0;
@@ -292,7 +293,8 @@ export function useBubbleCanvasInteractions({
         nodesRef.current.values(),
         pointer.dragCategory,
         worldDx,
-        worldDy
+        worldDy,
+        -bubbleCategoryContactOverlap
       );
       for (const node of translated) {
         simulationClientRef.current?.moveNode(node.id, node.x, node.y);

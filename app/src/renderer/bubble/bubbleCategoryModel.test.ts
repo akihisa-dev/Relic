@@ -7,6 +7,7 @@ import {
   constrainBubbleNodeToCategoryRegions,
   bubbleCategoryBoundaryRadius,
   bubbleCategoryCenterOffsetForNodeDrag,
+  bubbleCategoryContactOverlap,
   bubbleCategoryContour,
   bubbleCategoryDynamicLayouts,
   bubbleCategoryLayouts,
@@ -453,6 +454,29 @@ describe("bubbleCategoryModel", () => {
     expect(material.x).toBeGreaterThan(20);
   });
 
+  it("ドラッグ中はバブル同士の接触と膜の凹みを許す", () => {
+    const nodes = [
+      { category: "人物", fx: -90, fy: 0, id: "person", x: -90, y: 0 },
+      { category: "資料", id: "material", x: 90, y: 0 }
+    ];
+
+    constrainBubbleCategorySpacing(nodes, new Set(["person"]), true);
+    const layouts = bubbleCategoryDynamicLayouts(nodes);
+    const distance = Math.hypot(
+      layouts[0]!.x - layouts[1]!.x,
+      layouts[0]!.y - layouts[1]!.y
+    );
+    const regions = bubbleCategoryRegions(layouts, nodes);
+    const person = regions.get("人物")!;
+
+    expect(distance).toBeGreaterThanOrEqual(
+      layouts[0]!.radius + layouts[1]!.radius - bubbleCategoryContactOverlap - 0.001
+    );
+    expect(distance).toBeLessThan(layouts[0]!.radius + layouts[1]!.radius);
+    expect(person.contacts).toHaveLength(1);
+    expect(bubbleCategoryBoundaryRadius(person, 0)).toBeLessThan(person.radius);
+  });
+
   it("ドラッグしたバブルで接触した別のバブルを押して移動する", () => {
     const nodes = [
       { category: "人物", vx: 0, vy: 0, x: -100, y: 0 },
@@ -465,5 +489,29 @@ describe("bubbleCategoryModel", () => {
     expect(translated).toHaveLength(2);
     expect(byCategory.get("人物")?.x).toBeCloseTo(100, 6);
     expect(byCategory.get("資料")?.x).toBeGreaterThan(250);
+  });
+
+  it("ドラッグ中のバブルは接触後に膜の凹みを残す", () => {
+    const nodes = [
+      { category: "人物", x: -100, y: 0 },
+      { category: "資料", x: 100, y: 0 }
+    ];
+    translateBubbleCategoryNodesWithPush(
+      nodes,
+      "人物",
+      200,
+      0,
+      -bubbleCategoryContactOverlap
+    );
+    const layouts = bubbleCategoryDynamicLayouts(nodes);
+    const distance = Math.hypot(
+      layouts[0]!.x - layouts[1]!.x,
+      layouts[0]!.y - layouts[1]!.y
+    );
+
+    expect(distance).toBeLessThan(layouts[0]!.radius + layouts[1]!.radius);
+    expect(distance).toBeGreaterThanOrEqual(
+      layouts[0]!.radius + layouts[1]!.radius - bubbleCategoryContactOverlap - 0.001
+    );
   });
 });

@@ -16,6 +16,7 @@ import {
 } from "./bubbleNodeCollisionModel";
 import {
   applyBubbleCategoryMotion,
+  bubbleCategorySpacing,
   bubbleCategoryDriftCenterStrength,
   constrainBubbleCategorySpacing
 } from "./bubbleCategoryModel";
@@ -170,7 +171,11 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
     }
     if (!paused) {
       constrainBubbleNodeSpacing(fallbackNodes, currentOptions, categoryDragNodeIds);
-      constrainBubbleCategorySpacing(fallbackNodes, categoryDragNodeIds);
+      constrainBubbleCategorySpacing(
+        fallbackNodes,
+        categoryDragNodeIds,
+        hasActiveCategoryContact()
+      );
     }
     const buffer = new ArrayBuffer(fallbackNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
     const values = new Float32Array(buffer);
@@ -226,7 +231,11 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
       .force(
         "category-boundary",
         (alpha) => {
-          applyBubbleCategoryMotion(fallbackNodes, alpha);
+          applyBubbleCategoryMotion(
+            fallbackNodes,
+            alpha,
+            hasActiveCategoryContact() ? 0 : bubbleCategorySpacing
+          );
         }
       );
   };
@@ -364,4 +373,11 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
       restart(alpha);
     }
   };
+
+  function hasActiveCategoryContact(): boolean {
+    return categoryDragNodeIds.size > 0 || fallbackNodes.some((node) =>
+      (node.fx !== undefined && node.fx !== null) ||
+      (node.fy !== undefined && node.fy !== null)
+    );
+  }
 }

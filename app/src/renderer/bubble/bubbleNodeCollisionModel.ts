@@ -13,7 +13,6 @@ export interface BubbleCollisionNode {
   y?: number;
 }
 
-const bubbleNodeCollisionPadding = 6;
 const bubbleNodeSpacingProjectionMaximumPasses = 32;
 const bubbleNodeSpacingProjectionTolerance = 0.001;
 const bubbleNodeSpatialHashNeighborRange = 1;
@@ -26,7 +25,7 @@ export function bubbleNodeCollisionRadius(
   return bubbleNodeBaseRadiusFromWeight(
     node.backlinkCount + node.linkCount,
     options
-  ) + bubbleNodeCollisionPadding;
+  );
 }
 
 export function constrainBubbleNodeSpacing<T extends BubbleCollisionNode>(

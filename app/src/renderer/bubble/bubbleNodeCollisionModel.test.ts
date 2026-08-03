@@ -66,6 +66,18 @@ describe("bubbleNodeCollisionModel", () => {
         0.001
       );
 
+    const touching = [
+      { backlinkCount: 0, id: "left.md", linkCount: 0, x: 0, y: 0 },
+      { backlinkCount: 0, id: "right.md", linkCount: 0, x: 10, y: 0 }
+    ];
+    constrainBubbleNodeSpacing(touching, options);
+    expect(Math.hypot(touching[0]!.x - touching[1]!.x, touching[0]!.y - touching[1]!.y))
+      .toBeCloseTo(
+        bubbleNodeCollisionRadius(touching[0]!, options) +
+        bubbleNodeCollisionRadius(touching[1]!, options),
+        6
+      );
+
     const dragged = { ...nodes[0]!, x: 0, y: 0 };
     const constrained = constrainBubbleNodePosition(
       dragged,
