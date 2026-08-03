@@ -11,9 +11,10 @@ import {
 import type { BubbleSimulationClient } from "../bubble/bubbleSimulationClient";
 import {
   bubbleNodeCollisionRadius,
-  constrainBubbleNodePosition
+  constrainBubbleNodeSpacing
 } from "../bubble/bubbleNodeCollisionModel";
 import {
+  constrainBubbleCategorySpacing,
   constrainBubbleNodeToCategoryRegions,
   bubbleCategoryDynamicLayouts,
   bubbleCategoryRegions,
@@ -226,40 +227,59 @@ export function useBubbleCanvasInteractions({
         latestOptionsRef.current
       );
       const graphNodes = [...nodesRef.current.values()];
-      const layouts = bubbleCategoryDynamicLayouts(graphNodes);
-      const regions = bubbleCategoryRegions(layouts, graphNodes);
+      const anchoredNodeIds = new Set([pointer.dragNode.id]);
+      const initialPositions = new Map(
+        graphNodes.map((node) => [node.id, { x: node.x, y: node.y }])
+      );
+      let regions = bubbleCategoryRegions(
+        bubbleCategoryDynamicLayouts(graphNodes),
+        graphNodes
+      );
+      const category = normalizeBubbleCategory(pointer.dragNode.category);
       let constrainedPoint = desiredPoint;
       for (let pass = 0; pass < 3; pass += 1) {
+        regions = bubbleCategoryRegions(
+          bubbleCategoryDynamicLayouts(graphNodes),
+          graphNodes
+        );
         constrainedPoint = constrainBubbleNodeToCategoryRegions(
           pointer.dragNode,
           regions,
           constrainedPoint,
           dragPadding
         );
-        constrainedPoint = constrainBubbleNodePosition(
-          pointer.dragNode,
-          graphNodes,
-          constrainedPoint,
-          latestOptionsRef.current
-        );
+        const categoryRegion = category ? regions.get(category) : null;
+        if (categoryRegion?.count === 1) {
+          const nextOffsetX = categoryRegion.x - constrainedPoint.x;
+          const nextOffsetY = categoryRegion.y - constrainedPoint.y;
+          if (
+            pointer.dragNode.categoryCenterOffsetX !== nextOffsetX ||
+            pointer.dragNode.categoryCenterOffsetY !== nextOffsetY
+          ) {
+            pointer.dragNode.categoryCenterOffsetX = nextOffsetX;
+            pointer.dragNode.categoryCenterOffsetY = nextOffsetY;
+            simulationClientRef.current?.setNodeCategoryCenterOffset(
+              pointer.dragNode.id,
+              nextOffsetX,
+              nextOffsetY
+            );
+          }
+        }
+        pointer.dragNode.fx = constrainedPoint.x;
+        pointer.dragNode.fy = constrainedPoint.y;
+        pointer.dragNode.x = constrainedPoint.x;
+        pointer.dragNode.y = constrainedPoint.y;
+        constrainBubbleNodeSpacing(graphNodes, latestOptionsRef.current, anchoredNodeIds);
+        constrainBubbleCategorySpacing(graphNodes, anchoredNodeIds);
       }
-      const category = normalizeBubbleCategory(pointer.dragNode.category);
-      const categoryRegion = category ? regions.get(category) : null;
-      if (categoryRegion?.count === 1) {
-        pointer.dragNode.categoryCenterOffsetX = categoryRegion.x - constrainedPoint.x;
-        pointer.dragNode.categoryCenterOffsetY = categoryRegion.y - constrainedPoint.y;
-        simulationClientRef.current?.setNodeCategoryCenterOffset(
-          pointer.dragNode.id,
-          pointer.dragNode.categoryCenterOffsetX,
-          pointer.dragNode.categoryCenterOffsetY
-        );
-      }
-      pointer.dragNode.fx = constrainedPoint.x;
-      pointer.dragNode.fy = constrainedPoint.y;
-      pointer.dragNode.x = pointer.dragNode.fx;
-      pointer.dragNode.y = pointer.dragNode.fy;
       pointer.nodeVelocityX = 0;
       pointer.nodeVelocityY = 0;
+      for (const node of graphNodes) {
+        if (node === pointer.dragNode || node.fx !== null || node.fy !== null) continue;
+        const initial = initialPositions.get(node.id);
+        if (!initial || (node.x === initial.x && node.y === initial.y)) continue;
+        simulationClientRef.current?.moveNode(node.id, node.x, node.y);
+      }
       simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, pointer.dragNode.x, pointer.dragNode.y);
       requestDraw();
       return;

@@ -36,6 +36,36 @@ describe("bubbleNodeCollisionModel", () => {
     expect(closingNodes[0]!.vx).toBeLessThanOrEqual(0);
     expect(closingNodes[1]!.vx).toBeGreaterThanOrEqual(0);
 
+    const anchored = {
+      backlinkCount: 0,
+      fx: 0,
+      fy: 0,
+      id: "dragged.md",
+      linkCount: 0,
+      vx: 0,
+      vy: 0,
+      x: 0,
+      y: 0
+    };
+    const pushed = {
+      backlinkCount: 0,
+      id: "target.md",
+      linkCount: 0,
+      vx: 0,
+      vy: 0,
+      x: 10,
+      y: 0
+    };
+    constrainBubbleNodeSpacing([anchored, pushed], options, new Set([anchored.id]));
+    expect(anchored).toMatchObject({ x: 0, y: 0 });
+    expect(pushed.x).toBeGreaterThan(10);
+    expect(Math.hypot(anchored.x - pushed.x, anchored.y - pushed.y))
+      .toBeGreaterThanOrEqual(
+        bubbleNodeCollisionRadius(anchored, options) +
+        bubbleNodeCollisionRadius(pushed, options) -
+        0.001
+      );
+
     const dragged = { ...nodes[0]!, x: 0, y: 0 };
     const constrained = constrainBubbleNodePosition(
       dragged,

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceGraph } from "../../shared/ipc";
 import { makeRelicApi } from "../../test/rendererTestUtils";
+import type { BubbleSimulationPositionsMessage, BubbleSimNode } from "../bubble/bubbleTypes";
 import { I18nProvider } from "../i18n";
 import { BubbleView } from "./BubbleView";
 
@@ -17,6 +18,7 @@ const bubbleSimulationMocks = vi.hoisted(() => ({
   setCategoryDragTarget: vi.fn(),
   setNodeCategoryCenterOffset: vi.fn(),
   setNodeFixed: vi.fn(),
+  onPositions: vi.fn<(message: BubbleSimulationPositionsMessage) => void>(),
   sync: vi.fn()
 }));
 
@@ -28,18 +30,21 @@ vi.mock("../bubble/bubbleViewModel", async (importOriginal) => ({
 
 vi.mock("../bubble/bubbleSimulationClient", async (importOriginal) => ({
   ...await importOriginal<typeof import("../bubble/bubbleSimulationClient")>(),
-  createBubbleSimulationClient: () => ({
-    dispose: vi.fn(),
-    moveNode: bubbleSimulationMocks.moveNode,
-    pause: bubbleSimulationMocks.pause,
-    restart: vi.fn(),
-    resume: bubbleSimulationMocks.resume,
-    setCategoryDragTarget: bubbleSimulationMocks.setCategoryDragTarget,
-    setNodeCategoryCenterOffset: bubbleSimulationMocks.setNodeCategoryCenterOffset,
-    setNodeFixed: bubbleSimulationMocks.setNodeFixed,
-    sync: bubbleSimulationMocks.sync,
-    updateOptions: vi.fn()
-  })
+  createBubbleSimulationClient: (onPositions: (message: BubbleSimulationPositionsMessage) => void) => {
+    bubbleSimulationMocks.onPositions.mockImplementation(onPositions);
+    return {
+      dispose: vi.fn(),
+      moveNode: bubbleSimulationMocks.moveNode,
+      pause: bubbleSimulationMocks.pause,
+      restart: vi.fn(),
+      resume: bubbleSimulationMocks.resume,
+      setCategoryDragTarget: bubbleSimulationMocks.setCategoryDragTarget,
+      setNodeCategoryCenterOffset: bubbleSimulationMocks.setNodeCategoryCenterOffset,
+      setNodeFixed: bubbleSimulationMocks.setNodeFixed,
+      sync: bubbleSimulationMocks.sync,
+      updateOptions: vi.fn()
+    };
+  }
 }));
 
 function renderBubbleView(
@@ -76,6 +81,7 @@ afterEach(() => {
   bubbleSimulationMocks.setCategoryDragTarget.mockReset();
   bubbleSimulationMocks.setNodeFixed.mockReset();
   bubbleSimulationMocks.setNodeCategoryCenterOffset.mockReset();
+  bubbleSimulationMocks.onPositions.mockReset();
   bubbleSimulationMocks.sync.mockReset();
 });
 
@@ -239,6 +245,96 @@ describe("BubbleView", () => {
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 32, clientY: 30 }));
     fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 32, clientY: 30 }));
     expect(onOpenFile).toHaveBeenCalledWith("note.md");
+  });
+
+  it("ノードをドラッグ中もWorkerから届いた周囲ノードの移動を反映する", async () => {
+    const graph: WorkspaceGraph = {
+      links: [],
+      nodes: [
+        {
+          backlinkCount: 0,
+          exists: true,
+          id: "dragged.md",
+          label: "dragged",
+          linkCount: 0,
+          path: "dragged.md",
+          type: "file"
+        },
+        {
+          backlinkCount: 0,
+          exists: true,
+          id: "target.md",
+          label: "target",
+          linkCount: 0,
+          path: "target.md",
+          type: "file"
+        }
+      ]
+    };
+    const { getWorkspaceGraph } = renderBubbleView("ja", vi.fn(), vi.fn(), graph);
+    await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledOnce());
+    await waitFor(() => expect(bubbleSimulationMocks.sync).toHaveBeenCalled());
+
+    const canvas = screen.getByLabelText("バブル");
+    Object.defineProperty(canvas, "setPointerCapture", { configurable: true, value: vi.fn() });
+    Object.defineProperty(canvas, "hasPointerCapture", { configurable: true, value: vi.fn(() => true) });
+    Object.defineProperty(canvas, "releasePointerCapture", { configurable: true, value: vi.fn() });
+    let currentNodes: BubbleSimNode[] = [];
+    bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockImplementation(
+      (nodes: Iterable<BubbleSimNode>) => {
+        currentNodes = [...nodes];
+        return currentNodes.find((node) => node.id === "dragged.md") ?? null;
+      }
+    );
+
+    fireEvent(canvas, new MouseEvent("pointerdown", {
+      bubbles: true,
+      button: 0,
+      clientX: 20,
+      clientY: 20
+    }));
+    const draggedNode = currentNodes.find((node) => node.id === "dragged.md")!;
+    const targetNode = currentNodes.find((node) => node.id === "target.md")!;
+    draggedNode.fx = 0;
+    draggedNode.fy = 0;
+    draggedNode.x = 0;
+    draggedNode.y = 0;
+    targetNode.x = 0;
+    targetNode.y = 0;
+    fireEvent(canvas, new MouseEvent("pointermove", {
+      bubbles: true,
+      clientX: 30,
+      clientY: 20
+    }));
+    expect(bubbleSimulationMocks.moveNode).toHaveBeenCalledWith(
+      "target.md",
+      expect.any(Number),
+      expect.any(Number)
+    );
+
+    const buffer = new ArrayBuffer(2 * 6 * Float32Array.BYTES_PER_ELEMENT);
+    new Float32Array(buffer).set([
+      500, 600, 0, 0, 0, 0,
+      700, 800, 0, 0, 0, 0
+    ]);
+    bubbleSimulationMocks.onPositions({
+      buffer,
+      ids: ["dragged.md", "target.md"],
+      type: "positions"
+    });
+
+    expect(currentNodes.find((node) => node.id === "dragged.md")?.x)
+      .not.toBe(500);
+    expect(currentNodes.find((node) => node.id === "target.md")).toMatchObject({
+      x: 700,
+      y: 800
+    });
+
+    fireEvent(canvas, new MouseEvent("pointercancel", {
+      bubbles: true,
+      clientX: 20,
+      clientY: 20
+    }));
   });
 
   it("バブルのドラッグでは物理演算を続けながら接触した別バブルも押す", async () => {
