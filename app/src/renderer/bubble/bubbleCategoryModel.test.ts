@@ -438,6 +438,21 @@ describe("bubbleCategoryModel", () => {
     );
   });
 
+  it("固定ノードを含むバブルを動かさず、接触した周囲のバブルを押す", () => {
+    const nodes = [
+      { category: "人物", fx: -20, fy: 0, id: "person", x: -20, y: 0 },
+      { category: "資料", id: "material", x: 20, y: 0 }
+    ];
+
+    constrainBubbleCategorySpacing(nodes);
+    const layouts = bubbleCategoryDynamicLayouts(nodes);
+    const person = nodes[0]!;
+    const material = layouts.find((layout) => layout.category === "資料")!;
+
+    expect(person).toMatchObject({ x: -20, y: 0, fx: -20, fy: 0 });
+    expect(material.x).toBeGreaterThan(20);
+  });
+
   it("ドラッグしたバブルで接触した別のバブルを押して移動する", () => {
     const nodes = [
       { category: "人物", vx: 0, vy: 0, x: -100, y: 0 },

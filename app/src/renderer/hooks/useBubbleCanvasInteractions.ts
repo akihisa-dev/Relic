@@ -17,8 +17,7 @@ import {
   constrainBubbleNodeToCategoryRegions,
   bubbleCategoryDynamicLayouts,
   bubbleCategoryRegions,
-  normalizeBubbleCategory,
-  type BubbleCategoryRegion
+  normalizeBubbleCategory
 } from "../bubble/bubbleCategoryModel";
 import {
   translateBubbleCategoryNodesWithPush
@@ -96,7 +95,6 @@ export function useBubbleCanvasInteractions({
     dragCategory: string | null;
     dragCategoryTarget: BubbleCategoryDragTarget | null;
     dragNode: BubbleSimNode | null;
-    dragNodeRegions: ReadonlyMap<string, BubbleCategoryRegion> | null;
     lastX: number;
     lastY: number;
     moved: boolean;
@@ -156,17 +154,10 @@ export function useBubbleCanvasInteractions({
     requestDraw();
 
     if (node) {
-      simulationClientRef.current?.pause();
       node.fx = node.x;
       node.fy = node.y;
       simulationClientRef.current?.setNodeFixed(node.id, node.x, node.y);
     }
-    const dragNodeRegions = node
-      ? bubbleCategoryRegions(
-          bubbleCategoryDynamicLayouts(nodesRef.current.values()),
-          nodesRef.current.values()
-        )
-      : null;
     const categoryNodes = category
       ? [...nodesRef.current.values()].filter((candidate) =>
           normalizeBubbleCategory(candidate.category) === category
@@ -188,7 +179,6 @@ export function useBubbleCanvasInteractions({
       dragCategory: category,
       dragCategoryTarget,
       dragNode: node,
-      dragNodeRegions,
       lastX: event.clientX,
       lastY: event.clientY,
       moved: false,
@@ -237,7 +227,7 @@ export function useBubbleCanvasInteractions({
       );
       const graphNodes = [...nodesRef.current.values()];
       const layouts = bubbleCategoryDynamicLayouts(graphNodes);
-      const regions = pointer.dragNodeRegions ?? bubbleCategoryRegions(layouts, graphNodes);
+      const regions = bubbleCategoryRegions(layouts, graphNodes);
       let constrainedPoint = desiredPoint;
       for (let pass = 0; pass < 3; pass += 1) {
         constrainedPoint = constrainBubbleNodeToCategoryRegions(

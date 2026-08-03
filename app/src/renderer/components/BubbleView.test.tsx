@@ -202,7 +202,7 @@ describe("BubbleView", () => {
     expect(onOpenTagSearch).toHaveBeenCalledWith("project");
   });
 
-  it("ノードをドラッグしても選択を残し、再クリックでファイルを開ける", () => {
+  it("ノードをドラッグ中も物理演算を続け、選択を残して再クリックでファイルを開ける", () => {
     const onOpenFile = vi.fn();
     renderBubbleView("ja", onOpenFile);
     const canvas = screen.getByLabelText("バブル");
@@ -228,7 +228,8 @@ describe("BubbleView", () => {
     bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReturnValue(fileNode);
 
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
-    expect(bubbleSimulationMocks.pause).toHaveBeenCalledOnce();
+    expect(bubbleSimulationMocks.pause).not.toHaveBeenCalled();
+    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith("note.md", 20, 30);
     expect(bubbleSimulationMocks.resume).not.toHaveBeenCalled();
     fireEvent(canvas, new MouseEvent("pointermove", { bubbles: true, clientX: 32, clientY: 30 }));
     fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 32, clientY: 30 }));
