@@ -11,9 +11,9 @@ import {
 } from "d3-force";
 
 import {
-  bubbleNodeBaseRadiusFromWeight,
-  bubbleNodeWeight
-} from "./bubbleLayout";
+  bubbleNodeCollisionRadius,
+  constrainBubbleNodeSpacing
+} from "./bubbleNodeCollisionModel";
 import {
   applyBubbleCategoryMotion,
   bubbleCategoryDriftCenterStrength,
@@ -168,7 +168,10 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
         categoryDragTarget.centerY
       );
     }
-    if (!paused) constrainBubbleCategorySpacing(fallbackNodes, categoryDragNodeIds);
+    if (!paused) {
+      constrainBubbleNodeSpacing(fallbackNodes, currentOptions, categoryDragNodeIds);
+      constrainBubbleCategorySpacing(fallbackNodes, categoryDragNodeIds);
+    }
     const buffer = new ArrayBuffer(fallbackNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
     const values = new Float32Array(buffer);
     const ids: string[] = [];
@@ -216,8 +219,9 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
       .force(
         "collide",
         forceCollide<FallbackNode>()
-          .radius((node) => bubbleNodeBaseRadiusFromWeight(bubbleNodeWeight(node), currentOptions) + 6)
-          .strength(0.34)
+          .radius((node) => bubbleNodeCollisionRadius(node, currentOptions))
+          .strength(1)
+          .iterations(4)
       )
       .force(
         "category-boundary",

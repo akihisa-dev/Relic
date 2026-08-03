@@ -67,7 +67,11 @@ export function bubbleNodeBaseRadius(node: Pick<WorkspaceGraphNode, "backlinkCou
   return bubbleNodeBaseRadiusFromWeight(bubbleNodeWeight(node), options);
 }
 
-export function bubbleNodeScale(scale: number): number {
+export function bubbleNodeScale(_scale: number): number {
+  return 1;
+}
+
+export function bubbleLabelScale(scale: number): number {
   return Math.sqrt(1 / Math.max(bubbleMinScale, scale));
 }
 

@@ -7,8 +7,8 @@ import {
 } from "../graph/graphThemeModel";
 import {
   clamp,
+  bubbleLabelScale,
   bubbleLabelOpacity,
-  bubbleNodeScale,
   bubbleNodeVisualRadius,
   type BubbleHighlightState
 } from "./bubbleInteractionModel";
@@ -108,7 +108,7 @@ export function drawBubble(
     if (labelAlpha > 0.02) {
       context.globalAlpha = bubbleHighlightAlpha(active, highlightStrength, 1, bubbleDimmedLabelAlpha) * labelAlpha;
       context.fillStyle = theme.text;
-      const labelScale = node.id === focused?.id && view.scale < 1 ? 1 / view.scale : bubbleNodeScale(view.scale);
+      const labelScale = node.id === focused?.id && view.scale < 1 ? 1 / view.scale : bubbleLabelScale(view.scale);
       context.font = `${Math.max(10 / view.scale, 13 * labelScale)}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
       context.textAlign = "center";
       context.textBaseline = "top";

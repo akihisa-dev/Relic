@@ -11,9 +11,9 @@ import {
 } from "d3-force";
 
 import {
-  bubbleNodeBaseRadiusFromWeight,
-  bubbleNodeWeight
-} from "./bubbleLayout";
+  bubbleNodeCollisionRadius,
+  constrainBubbleNodeSpacing
+} from "./bubbleNodeCollisionModel";
 import {
   applyBubbleCategoryMotion,
   bubbleCategoryDriftCenterStrength,
@@ -204,8 +204,9 @@ function updateSimulationForces(): void {
     .force(
       "collide",
       forceCollide<WorkerNode>()
-        .radius((node) => bubbleNodeBaseRadiusFromWeight(bubbleNodeWeight(node), currentOptions) + 6)
-        .strength(0.34)
+        .radius((node) => bubbleNodeCollisionRadius(node, currentOptions))
+        .strength(1)
+        .iterations(4)
     )
     .force(
       "category-boundary",
@@ -327,7 +328,10 @@ function postBubblePositions(): void {
       categoryDragTarget.centerY
     );
   }
-  if (!simulationPaused) constrainBubbleCategorySpacing(workerNodes, categoryDragNodeIds);
+  if (!simulationPaused) {
+    constrainBubbleNodeSpacing(workerNodes, currentOptions, categoryDragNodeIds);
+    constrainBubbleCategorySpacing(workerNodes, categoryDragNodeIds);
+  }
   const buffer = new ArrayBuffer(workerNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
   const values = new Float32Array(buffer);
   const ids: string[] = [];

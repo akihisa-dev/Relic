@@ -365,10 +365,10 @@ describe("bubbleCategoryModel", () => {
 
   it("物理演算が収束した後もカテゴリーバブル間の余白を維持する", () => {
     const nodes = [
-      { category: "人物", vx: 0, vy: 0, x: -20, y: -5 },
-      { category: "人物", vx: 0, vy: 0, x: -20, y: 5 },
-      { category: "資料", vx: 0, vy: 0, x: 20, y: -5 },
-      { category: "資料", vx: 0, vy: 0, x: 20, y: 5 }
+      { category: "人物", vx: 8, vy: 0, x: -20, y: -5 },
+      { category: "人物", vx: 8, vy: 0, x: -20, y: 5 },
+      { category: "資料", vx: -8, vy: 0, x: 20, y: -5 },
+      { category: "資料", vx: -8, vy: 0, x: 20, y: 5 }
     ];
 
     applyBubbleCategoryMotion(nodes, 0);
@@ -385,6 +385,8 @@ describe("bubbleCategoryModel", () => {
       bubbleCategorySpacing -
       0.001
     );
+    expect(nodes[0]!.vx).toBeLessThanOrEqual(0);
+    expect(nodes[2]!.vx).toBeGreaterThanOrEqual(0);
   });
 
   it("中央に密集した複数カテゴリをすべて余白のある位置へ分離する", () => {

@@ -29,10 +29,12 @@ import {
   applyBubblePanInertia,
   applyBubbleZoomTransition,
   bubbleHoveredNodeContainsPoint,
+  bubbleLabelScale,
   bubbleLabelOpacity,
   bubbleNodeAtCanvasPoint,
   bubbleNodeBaseRadius,
   bubbleNodeScale,
+  bubbleNodeVisualRadius,
   bubblePointerMovedBeyondClickThreshold,
   bubbleWheelZoomPoint,
   graphNodePrimaryAction,
@@ -407,7 +409,7 @@ describe("App charts", () => {
     })).toBe(true);
   });
 
-  it("バブルビューのノードと文字はズーム係数で描画する", () => {
+  it("バブルビューのノードサイズはズームから独立し、文字だけ倍率に追従する", () => {
     const node = {
       backlinkCount: 8,
       linkCount: 8
@@ -419,8 +421,12 @@ describe("App charts", () => {
     expect(bubbleNodeBaseRadius(node, { ...bubbleTestOptions, nodeSizeMultiplier: 2 })).toBeCloseTo(6 * Math.sqrt(17));
 
     expect(bubbleNodeScale(1)).toBe(1);
-    expect(bubbleNodeScale(4)).toBe(0.5);
-    expect(bubbleNodeScale(0.25)).toBe(2);
+    expect(bubbleNodeScale(4)).toBe(1);
+    expect(bubbleNodeScale(0.25)).toBe(1);
+    expect(bubbleNodeVisualRadius(node, bubbleTestOptions, 4))
+      .toBe(bubbleNodeVisualRadius(node, bubbleTestOptions, 0.25));
+    expect(bubbleLabelScale(4)).toBe(0.5);
+    expect(bubbleLabelScale(0.25)).toBe(2);
 
     expect(bubbleLabelOpacity(0.5, 0)).toBe(0);
     expect(bubbleLabelOpacity(1, 0)).toBe(1);

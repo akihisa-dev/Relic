@@ -494,6 +494,36 @@ export function constrainBubbleCategorySpacing(
         left.y -= unitY * leftOffset;
         right.x += unitX * rightOffset;
         right.y += unitY * rightOffset;
+
+        const leftNodes = nodesByCategory.get(left.category) ?? [];
+        const rightNodes = nodesByCategory.get(right.category) ?? [];
+        const relativeVelocity = (
+          averageCategoryVelocity(rightNodes, unitX, unitY) -
+          averageCategoryVelocity(leftNodes, unitX, unitY)
+        );
+        if (relativeVelocity < 0) {
+          const closingSpeed = -relativeVelocity;
+          const leftVelocity = leftAnchored
+            ? 0
+            : rightAnchored
+              ? closingSpeed
+              : closingSpeed * right.count / (left.count + right.count);
+          const rightVelocity = rightAnchored
+            ? 0
+            : leftAnchored
+              ? closingSpeed
+              : closingSpeed * left.count / (left.count + right.count);
+          shiftCategoryVelocity(
+            leftNodes,
+            -unitX * leftVelocity,
+            -unitY * leftVelocity
+          );
+          shiftCategoryVelocity(
+            rightNodes,
+            unitX * rightVelocity,
+            unitY * rightVelocity
+          );
+        }
         corrected = true;
       }
     }
@@ -510,6 +540,18 @@ function shiftCategoryVelocity(
     node.vx = (node.vx ?? 0) + dx;
     node.vy = (node.vy ?? 0) + dy;
   }
+}
+
+function averageCategoryVelocity(
+  nodes: BubbleCategoryForceNode[],
+  axisX: number,
+  axisY: number
+): number {
+  if (nodes.length === 0) return 0;
+  return nodes.reduce(
+    (sum, node) => sum + (node.vx ?? 0) * axisX + (node.vy ?? 0) * axisY,
+    0
+  ) / nodes.length;
 }
 
 function shiftCategoryPosition(

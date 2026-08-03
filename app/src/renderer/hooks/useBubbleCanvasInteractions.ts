@@ -10,6 +10,10 @@ import {
 
 import type { BubbleSimulationClient } from "../bubble/bubbleSimulationClient";
 import {
+  bubbleNodeCollisionRadius,
+  constrainBubbleNodePosition
+} from "../bubble/bubbleNodeCollisionModel";
+import {
   constrainBubbleNodeToCategoryRegions,
   bubbleCategoryDynamicLayouts,
   bubbleCategoryRegions,
@@ -27,7 +31,6 @@ import {
   bubbleCategoryAtWorldPoint,
   bubbleNodeAtCanvasPoint,
   graphNodePrimaryAction,
-  bubbleNodeVisualRadius,
   bubblePointerMovedBeyondClickThreshold,
   bubbleWheelZoomPoint,
   initialBubbleViewTransform,
@@ -228,20 +231,28 @@ export function useBubbleCanvasInteractions({
         x: (pointer.dragNode.fx ?? pointer.dragNode.x) + dx / viewRef.current.scale,
         y: (pointer.dragNode.fy ?? pointer.dragNode.y) + dy / viewRef.current.scale
       };
-      const dragPadding = bubbleNodeVisualRadius(
+      const dragPadding = bubbleNodeCollisionRadius(
         pointer.dragNode,
-        latestOptionsRef.current,
-        viewRef.current.scale
-      ) + 6 / viewRef.current.scale;
+        latestOptionsRef.current
+      );
       const graphNodes = [...nodesRef.current.values()];
       const layouts = bubbleCategoryDynamicLayouts(graphNodes);
       const regions = pointer.dragNodeRegions ?? bubbleCategoryRegions(layouts, graphNodes);
-      const constrainedPoint = constrainBubbleNodeToCategoryRegions(
-        pointer.dragNode,
-        regions,
-        desiredPoint,
-        dragPadding
-      );
+      let constrainedPoint = desiredPoint;
+      for (let pass = 0; pass < 3; pass += 1) {
+        constrainedPoint = constrainBubbleNodeToCategoryRegions(
+          pointer.dragNode,
+          regions,
+          constrainedPoint,
+          dragPadding
+        );
+        constrainedPoint = constrainBubbleNodePosition(
+          pointer.dragNode,
+          graphNodes,
+          constrainedPoint,
+          latestOptionsRef.current
+        );
+      }
       const category = normalizeBubbleCategory(pointer.dragNode.category);
       const categoryRegion = category ? regions.get(category) : null;
       if (categoryRegion?.count === 1) {
