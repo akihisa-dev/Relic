@@ -11,7 +11,8 @@ import {
 import type { BubbleSimulationClient } from "../bubble/bubbleSimulationClient";
 import {
   bubbleNodeCollisionRadius,
-  constrainBubbleNodeSpacing
+  constrainBubbleNodeSpacing,
+  dampenBubbleNodeDragReaction
 } from "../bubble/bubbleNodeCollisionModel";
 import {
   bubbleCategoryContactOverlap,
@@ -51,6 +52,7 @@ import type {
 import { useLatest } from "./useLatest";
 
 export const bubbleCanvasSizeFallback = { height: 600, width: 900 };
+const bubbleNodeDragSimulationAlpha = 0.08;
 
 interface UseBubbleCanvasInteractionsOptions {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -158,7 +160,12 @@ export function useBubbleCanvasInteractions({
     if (node) {
       node.fx = node.x;
       node.fy = node.y;
-      simulationClientRef.current?.setNodeFixed(node.id, node.x, node.y);
+      simulationClientRef.current?.setNodeFixed(
+        node.id,
+        node.x,
+        node.y,
+        bubbleNodeDragSimulationAlpha
+      );
     }
     const categoryNodes = category
       ? [...nodesRef.current.values()].filter((candidate) =>
@@ -273,6 +280,7 @@ export function useBubbleCanvasInteractions({
         constrainBubbleNodeSpacing(graphNodes, latestOptionsRef.current, anchoredNodeIds);
         constrainBubbleCategorySpacing(graphNodes, anchoredNodeIds, true);
       }
+      dampenBubbleNodeDragReaction(graphNodes, initialPositions, anchoredNodeIds);
       pointer.nodeVelocityX = 0;
       pointer.nodeVelocityY = 0;
       for (const node of graphNodes) {
@@ -281,7 +289,12 @@ export function useBubbleCanvasInteractions({
         if (!initial || (node.x === initial.x && node.y === initial.y)) continue;
         simulationClientRef.current?.moveNode(node.id, node.x, node.y);
       }
-      simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, pointer.dragNode.x, pointer.dragNode.y);
+      simulationClientRef.current?.setNodeFixed(
+        pointer.dragNode.id,
+        pointer.dragNode.x,
+        pointer.dragNode.y,
+        bubbleNodeDragSimulationAlpha
+      );
       requestDraw();
       return;
     }

@@ -18,6 +18,8 @@ const bubbleNodeSpacingProjectionTolerance = 0.001;
 const bubbleNodeSpatialHashNeighborRange = 1;
 const bubbleSpiralAngle = 2.399963229728653;
 
+export const bubbleNodeDragReactionStrength = 0.24;
+
 export function bubbleNodeCollisionRadius(
   node: Pick<BubbleCollisionNode, "backlinkCount" | "linkCount">,
   options: Pick<BubbleOptions, "nodeSizeMultiplier">
@@ -158,6 +160,24 @@ export function constrainBubbleNodePosition<T extends BubbleCollisionNode>(
   }
 
   return constrained;
+}
+
+export function dampenBubbleNodeDragReaction<T extends BubbleCollisionNode>(
+  nodes: Iterable<T>,
+  initialPositions: ReadonlyMap<string, { x: number; y: number }>,
+  anchoredNodeIds: ReadonlySet<string>,
+  strength = bubbleNodeDragReactionStrength
+): void {
+  const clampedStrength = Math.max(0, Math.min(1, strength));
+  for (const node of nodes) {
+    if (isBubbleNodeAnchored(node, anchoredNodeIds) || node.id === undefined ||
+        node.x === undefined || node.y === undefined) continue;
+
+    const initial = initialPositions.get(node.id);
+    if (!initial) continue;
+    node.x = initial.x + (node.x - initial.x) * clampedStrength;
+    node.y = initial.y + (node.y - initial.y) * clampedStrength;
+  }
 }
 
 function buildSpatialHash<T extends BubbleCollisionNode>(

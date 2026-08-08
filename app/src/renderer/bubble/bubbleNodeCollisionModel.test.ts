@@ -3,10 +3,28 @@ import { describe, expect, it } from "vitest";
 import {
   bubbleNodeCollisionRadius,
   constrainBubbleNodePosition,
-  constrainBubbleNodeSpacing
+  constrainBubbleNodeSpacing,
+  dampenBubbleNodeDragReaction
 } from "./bubbleNodeCollisionModel";
 
 describe("bubbleNodeCollisionModel", () => {
+  it("ドラッグ中は掴んでいないノードへの補正を弱めて反応を残す", () => {
+    const nodes = [
+      { backlinkCount: 0, fx: 20, fy: 0, id: "dragged.md", linkCount: 0, x: 20, y: 0 },
+      { backlinkCount: 0, fx: null, fy: null, id: "nearby.md", linkCount: 0, x: 40, y: 12 }
+    ];
+    const initialPositions = new Map([
+      ["dragged.md", { x: 0, y: 0 }],
+      ["nearby.md", { x: 40, y: 0 }]
+    ]);
+
+    dampenBubbleNodeDragReaction(nodes, initialPositions, new Set(["dragged.md"]));
+
+    expect(nodes[0]).toMatchObject({ x: 20, y: 0 });
+    expect(nodes[1]!.y).toBeGreaterThan(0);
+    expect(nodes[1]!.y).toBeLessThan(12);
+  });
+
   it("ノードの衝突半径を直接投影して重なりを残さない", () => {
     const options = { nodeSizeMultiplier: 1 };
     const nodes = [

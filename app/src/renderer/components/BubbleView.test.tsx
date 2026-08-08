@@ -235,7 +235,7 @@ describe("BubbleView", () => {
 
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
     expect(bubbleSimulationMocks.pause).not.toHaveBeenCalled();
-    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith("note.md", 20, 30);
+    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith("note.md", 20, 30, 0.08);
     expect(bubbleSimulationMocks.resume).not.toHaveBeenCalled();
     fireEvent(canvas, new MouseEvent("pointermove", { bubbles: true, clientX: 32, clientY: 30 }));
     fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 32, clientY: 30 }));
@@ -306,10 +306,15 @@ describe("BubbleView", () => {
       clientX: 30,
       clientY: 20
     }));
-    expect(bubbleSimulationMocks.moveNode).toHaveBeenCalledWith(
-      "target.md",
+    const targetMove = bubbleSimulationMocks.moveNode.mock.calls.find(([id]) => id === "target.md");
+    expect(targetMove).toBeDefined();
+    expect(Math.hypot(targetMove![1], targetMove![2])).toBeGreaterThan(0);
+    expect(Math.hypot(targetMove![1], targetMove![2])).toBeLessThan(24);
+    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenLastCalledWith(
+      "dragged.md",
       expect.any(Number),
-      expect.any(Number)
+      expect.any(Number),
+      0.08
     );
 
     const buffer = new ArrayBuffer(2 * 6 * Float32Array.BYTES_PER_ELEMENT);
