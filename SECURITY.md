@@ -32,9 +32,8 @@ RelicはGitHub Public Repositoryとして公開する前提で管理する。脆
 ## ローカル公開前検証
 
 - GitHubへのpushを外部公開境界とし、GitHub Actionsの結果を公開前の安全証拠として扱わない。
-- `pnpm verify:local:push` は固定lockfile、全テスト、型、構造、文書、ライセンス、SBOM、Renderer production build、重要度を問わないproduction依存監査、差分形式を確認する。
-- `pnpm verify:local:release` は通常pushの検証に加え、Apple Silicon向けmacOS安全ビルドと、その作業で生成した配布版の自動起動スモークを実行する。
-- production依存に既知の脆弱性が1件でもある場合や、監査先へ接続できず結果を確定できない場合はpushしない。
+- 通常push前は `pnpm verify:local:push`、タグpush前は `pnpm verify:local:release` を実行する。検証項目と追加される安全ビルド・起動スモークの範囲は、[開発手順の公開前検証](docs/development.md#検証とテスト)を正本とする。
+- production依存に既知の脆弱性が1件でもある場合、監査先へ接続できず結果を確定できない場合、またはいずれかの検査に失敗した場合はpushしない。
 
 ## GitHub Actions
 

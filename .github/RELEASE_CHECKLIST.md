@@ -45,7 +45,7 @@ GitタグをGitHubへpushすると、`.github/workflows/draft-release.yml` がma
 
 ## ローカル公開前検証
 
-タグを作成またはGitHubへpushする前に、Apple Silicon搭載Macの `app/` で `pnpm verify:local:release` を実行する。このコマンドは固定lockfile、全テスト、型、構造、文書、ライセンス、SBOM、Renderer production build、重要度を問わないproduction依存監査、差分形式、macOS安全ビルド、配布DMGの生成、配布版起動スモークを確認する。
+タグを作成またはGitHubへpushする前に、Apple Silicon搭載Macの `app/` で `pnpm verify:local:release` を実行する。検証項目と公開境界の詳細は、[開発手順の公開前検証](../docs/development.md#検証とテスト)を正本とする。
 
 GitHub Actionsの結果は公開後の別環境確認と成果物生成として扱い、ローカル公開前検証の代わりにしない。ローカル検証が失敗または未実施ならタグをpushしない。
 
