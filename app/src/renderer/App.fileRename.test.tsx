@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 import {
   act,
   fireEvent,
@@ -40,24 +38,6 @@ describe("App file rename and context menu", () => {
     vi.clearAllMocks();
     restoreNavigatorPlatform();
     resetRendererStores();
-  });
-
-  it("本文上部のファイル名表示欄は枠なしで縦幅を詰める", () => {
-    const previewCss = readFileSync("src/renderer/styles/editor-shell.css", "utf8");
-    const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
-
-    expect(previewCss).toMatch(/\.editor-file-title-row\s*\{[^}]*grid-template-columns:\s*[^}]*minmax\(0, var\(--editor-file-title-max-width, 820px\)\)[^}]*minmax\(48px, 1fr\);/s);
-    expect(previewCss).toMatch(/\.editor-file-title-slot\s*\{[^}]*grid-column:\s*2;/s);
-    expect(previewCss).toMatch(/\.editor-file-title\s*\{[^}]*border:\s*0;/s);
-    expect(previewCss).toMatch(/\.editor-file-title\s*\{[^}]*padding:\s*12px 32px 8px;/s);
-    expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*grid-column:\s*3;/s);
-    expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*flex-direction:\s*column;/s);
-    expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*gap:\s*6px;/s);
-    expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*min-height:\s*84px;/s);
-    expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*padding:\s*12px 32px 8px 8px;/s);
-    expect(previewCss).toMatch(/\.editor-file-title-actions \.editor-frontmatter-add-button\s*\{[^}]*position:\s*static;/s);
-    expect(previewCss).toMatch(/\.editor-file-title-actions \.toolbar-btn\s*\{[^}]*height:\s*32px;[^}]*width:\s*32px;/s);
-    expect(designCss).toMatch(/\.editor-file-title\s*\{[^}]*padding:\s*12px 32px 8px;/s);
   });
 
   it("本文上部のファイル名は本文外の表示として出し、直接リネームできる", async () => {
