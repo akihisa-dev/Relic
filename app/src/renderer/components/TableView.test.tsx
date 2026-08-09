@@ -41,7 +41,7 @@ function preferences(overrides: Partial<WorkspaceTablePreferences> = {}): Worksp
 function renderTable(overrides: Partial<typeof window.relic> = {}, value: WorkspaceTable = table): void {
   window.relic = makeRelicApi({
     getWorkspaceTable: vi.fn().mockResolvedValue({ ok: true, value }),
-    saveWorkspaceTablePreferences: vi.fn(async (input) => ({ ok: true as const, value: input })),
+    saveWorkspaceTablePreferences: vi.fn(async (input) => ({ ok: true as const, value: input.preferences })),
     ...overrides
   });
   render(
@@ -73,7 +73,10 @@ describe("TableView", () => {
   });
 
   it("検索と複数条件の絞り込みを表示件数へ反映して保存する", async () => {
-    const save = vi.fn(async (input: WorkspaceTablePreferences) => ({ ok: true as const, value: input }));
+    const save = vi.fn(async (input: {
+      preferences: WorkspaceTablePreferences;
+      workspaceId: string;
+    }) => ({ ok: true as const, value: input.preferences }));
     renderTable({ saveWorkspaceTablePreferences: save }, {
       ...table,
       preferences: preferences({ selectedProperties: ["status", "count"] })
@@ -147,7 +150,10 @@ describe("TableView", () => {
   });
 
   it("列選択、並び替え、幅、折り返しをキーボード操作で保存する", async () => {
-    const save = vi.fn(async (input: WorkspaceTablePreferences) => ({ ok: true as const, value: input }));
+    const save = vi.fn(async (input: {
+      preferences: WorkspaceTablePreferences;
+      workspaceId: string;
+    }) => ({ ok: true as const, value: input.preferences }));
     renderTable({ saveWorkspaceTablePreferences: save });
 
     await screen.findByText("2件");
@@ -164,14 +170,18 @@ describe("TableView", () => {
       const last = save.mock.calls.at(-1)?.[0];
       expect(last).toBeDefined();
       if (!last) return;
-      expect(last.columnWidths).toContainEqual({ property: "count", width: 206 });
-      expect(last.wrappedProperties).toEqual(["count"]);
+      expect(last.workspaceId).toBe("workspace-1");
+      expect(last.preferences.columnWidths).toContainEqual({ property: "count", width: 206 });
+      expect(last.preferences.wrappedProperties).toEqual(["count"]);
     });
     expect(screen.getByText("2").closest(".table-view-row")).toHaveStyle({ height: "80px" });
   });
 
   it("列ドラッグは中断では保存せず、ドロップで表示順を保存する", async () => {
-    const save = vi.fn(async (input: WorkspaceTablePreferences) => ({ ok: true as const, value: input }));
+    const save = vi.fn(async (input: {
+      preferences: WorkspaceTablePreferences;
+      workspaceId: string;
+    }) => ({ ok: true as const, value: input.preferences }));
     renderTable({ saveWorkspaceTablePreferences: save }, {
       ...table,
       preferences: preferences({ selectedProperties: ["count", "status"] })
@@ -199,13 +209,16 @@ describe("TableView", () => {
     fireEvent.dragStart(countHandle, { dataTransfer });
     fireEvent.dragOver(statusHeader, { clientX: 190, dataTransfer });
     fireEvent.drop(statusHeader, { clientX: 190, dataTransfer });
-    await waitFor(() => expect(save.mock.calls.at(-1)?.[0].selectedProperties).toEqual(["status", "count"]));
+    await waitFor(() => expect(save.mock.calls.at(-1)?.[0].preferences.selectedProperties).toEqual(["status", "count"]));
   });
 
   it("列順の保存に失敗した場合は確定前の順へ戻して再試行できる", async () => {
     const save = vi.fn()
       .mockResolvedValueOnce({ error: { code: "WRITE_FAILED", message: "保存できません" }, ok: false })
-      .mockImplementation(async (input: WorkspaceTablePreferences) => ({ ok: true as const, value: input }));
+      .mockImplementation(async (input: {
+        preferences: WorkspaceTablePreferences;
+        workspaceId: string;
+      }) => ({ ok: true as const, value: input.preferences }));
     renderTable({ saveWorkspaceTablePreferences: save }, {
       ...table,
       preferences: preferences({ selectedProperties: ["count", "status"] })
@@ -231,11 +244,14 @@ describe("TableView", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "再試行" }));
     await waitFor(() => expect(save).toHaveBeenCalledTimes(2));
-    expect(save.mock.calls[1]?.[0].selectedProperties).toEqual(["status", "count"]);
+    expect(save.mock.calls[1]?.[0].preferences.selectedProperties).toEqual(["status", "count"]);
   });
 
   it("列幅ドラッグの中断では保存せず、次の操作を確定できる", async () => {
-    const save = vi.fn(async (input: WorkspaceTablePreferences) => ({ ok: true as const, value: input }));
+    const save = vi.fn(async (input: {
+      preferences: WorkspaceTablePreferences;
+      workspaceId: string;
+    }) => ({ ok: true as const, value: input.preferences }));
     renderTable({ saveWorkspaceTablePreferences: save }, {
       ...table,
       preferences: preferences({ selectedProperties: ["count"] })
@@ -252,7 +268,7 @@ describe("TableView", () => {
     dispatchPointer(separator, "pointerdown", 100, 2);
     dispatchPointer(separator, "pointermove", 140, 2);
     dispatchPointer(separator, "pointerup", 140, 2);
-    await waitFor(() => expect(save.mock.calls.at(-1)?.[0].columnWidths).toContainEqual({ property: "count", width: 230 }));
+    await waitFor(() => expect(save.mock.calls.at(-1)?.[0].preferences.columnWidths).toContainEqual({ property: "count", width: 230 }));
   });
 
   it("Escapeでポップオーバーを閉じて開いたボタンへフォーカスを戻す", async () => {
@@ -270,7 +286,10 @@ describe("TableView", () => {
   it("保存失敗を表示し、現在の表示設定で再試行する", async () => {
     const save = vi.fn()
       .mockResolvedValueOnce({ error: { code: "WRITE_FAILED", message: "保存できません" }, ok: false })
-      .mockImplementation(async (input: WorkspaceTablePreferences) => ({ ok: true as const, value: input }));
+      .mockImplementation(async (input: {
+        preferences: WorkspaceTablePreferences;
+        workspaceId: string;
+      }) => ({ ok: true as const, value: input.preferences }));
     renderTable({ saveWorkspaceTablePreferences: save });
 
     await screen.findByText("2件");
@@ -283,12 +302,15 @@ describe("TableView", () => {
 
   it("連続保存では古い失敗を後の成功へ反映しない", async () => {
     const pending: Array<{
-      input: WorkspaceTablePreferences;
+      input: { preferences: WorkspaceTablePreferences; workspaceId: string };
       resolve: (result:
         | { error: { code: string; message: string }; ok: false }
         | { ok: true; value: WorkspaceTablePreferences }) => void;
     }> = [];
-    const save = vi.fn((input: WorkspaceTablePreferences) => new Promise<
+    const save = vi.fn((input: {
+      preferences: WorkspaceTablePreferences;
+      workspaceId: string;
+    }) => new Promise<
       | { error: { code: string; message: string }; ok: false }
       | { ok: true; value: WorkspaceTablePreferences }
     >((resolve) => pending.push({ input, resolve })));
@@ -301,7 +323,7 @@ describe("TableView", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "status" }));
     await waitFor(() => expect(pending).toHaveLength(2));
 
-    pending[1]!.resolve({ ok: true, value: pending[1]!.input });
+    pending[1]!.resolve({ ok: true, value: pending[1]!.input.preferences });
     await waitFor(() => {
       expect(screen.getByRole("columnheader", { name: /count/ })).toBeInTheDocument();
       expect(screen.getByRole("columnheader", { name: /status/ })).toBeInTheDocument();

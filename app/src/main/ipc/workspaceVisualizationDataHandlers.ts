@@ -12,16 +12,21 @@ import { readWorkspaceCharts, updateWorkspaceChartEntry } from "../files/charts"
 import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
 import { workspaceDataProvider } from "../files/workspaceDataProvider";
 import { readWorkspaceTable } from "../files/workspaceTable";
+import { runWorkspaceRegistrationTask } from "../workspace/workspaceRegistrationGate";
 import {
   normalizeWorkspaceRelativeSettingPath,
   readWorkspaceSettings,
   updateWorkspaceSettings
 } from "../settings/workspaceSettings";
-import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
+import {
+  getActiveWorkspaceContext,
+  getRegisteredWorkspaceContext,
+  ipcErrorDetails
+} from "./activeWorkspace";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
   isChartsInput,
-  isWorkspaceTablePreferencesInput,
+  isSaveWorkspaceTablePreferencesInput,
   isUpdateChartEntryInput
 } from "./workspaceVisualizationHandlerValidators";
 
@@ -69,11 +74,20 @@ export function registerWorkspaceVisualizationDataHandlers(): void {
       );
 
       if (result.ok && !sameTablePreferences(result.value.preferences, workspaceSettings.tablePreferences)) {
-        await updateWorkspaceSettings(
-          context.value.userDataPath,
-          context.value.activeWorkspace.id,
-          (settings) => ({ ...settings, tablePreferences: result.value.preferences })
-        );
+        await runWorkspaceRegistrationTask(async () => {
+          const registered = await getRegisteredWorkspaceContext(context.value.activeWorkspace.id);
+          if (!registered.ok) return;
+          await updateWorkspaceSettings(
+            registered.value.userDataPath,
+            registered.value.workspace.id,
+            (settings) => sameTablePreferences(
+              settings.tablePreferences,
+              workspaceSettings.tablePreferences
+            )
+              ? { ...settings, tablePreferences: result.value.preferences }
+              : settings
+          );
+        });
       }
       return result;
     } catch (error) {
@@ -91,30 +105,31 @@ export function registerWorkspaceVisualizationDataHandlers(): void {
         return fail("INVALID_CHARTS", "チャート設定が正しくありません。");
       }
 
-      const context = await getActiveWorkspaceContext();
-      if (!context.ok) return context;
-
       const savedCharts = normalizeChartSettingsForSave(input);
-      const workspaceSettings = await updateWorkspaceSettings(
-        context.value.userDataPath,
-        context.value.activeWorkspace.id,
-        (workspaceSettings) => ({
-          ...workspaceSettings,
-          charts: savedCharts
-        })
-      );
-      const data = await workspaceDataProvider.get({
-        userDataPath: context.value.userDataPath,
-        workspaceId: context.value.activeWorkspace.id,
-        workspacePath: context.value.activeWorkspace.path
-      });
+      return await runWorkspaceRegistrationTask(async () => {
+        const context = await getActiveWorkspaceContext();
+        if (!context.ok) return context;
+        const workspaceSettings = await updateWorkspaceSettings(
+          context.value.userDataPath,
+          context.value.activeWorkspace.id,
+          (workspaceSettings) => ({
+            ...workspaceSettings,
+            charts: savedCharts
+          })
+        );
+        const data = await workspaceDataProvider.get({
+          userDataPath: context.value.userDataPath,
+          workspaceId: context.value.activeWorkspace.id,
+          workspacePath: context.value.activeWorkspace.path
+        });
 
-      return readWorkspaceCharts(
-        data.workspacePath,
-        savedCharts,
-        workspaceSettings.chronicleCalendarSettings ?? defaultChronicleCalendarSettings,
-        data.options
-      );
+        return readWorkspaceCharts(
+          data.workspacePath,
+          savedCharts,
+          workspaceSettings.chronicleCalendarSettings ?? defaultChronicleCalendarSettings,
+          data.options
+        );
+      });
     } catch (error) {
       return fail(
         "WORKSPACE_CHARTS_SAVE_FAILED",
@@ -125,18 +140,20 @@ export function registerWorkspaceVisualizationDataHandlers(): void {
   });
   handleLocalizedIpc(saveWorkspaceTablePreferencesChannel, async (_event, input: unknown) => {
     try {
-      if (!isWorkspaceTablePreferencesInput(input)) {
+      if (!isSaveWorkspaceTablePreferencesInput(input)) {
         return fail("INVALID_TABLE_PREFERENCES", "テーブルの表示設定が正しくありません。");
       }
 
-      const context = await getActiveWorkspaceContext();
-      if (!context.ok) return context;
-      const workspaceSettings = await updateWorkspaceSettings(
-        context.value.userDataPath,
-        context.value.activeWorkspace.id,
-        (settings) => ({ ...settings, tablePreferences: input })
-      );
-      return { ok: true as const, value: workspaceSettings.tablePreferences };
+      return await runWorkspaceRegistrationTask(async () => {
+        const context = await getRegisteredWorkspaceContext(input.workspaceId);
+        if (!context.ok) return context;
+        const workspaceSettings = await updateWorkspaceSettings(
+          context.value.userDataPath,
+          context.value.workspace.id,
+          (settings) => ({ ...settings, tablePreferences: input.preferences })
+        );
+        return { ok: true as const, value: workspaceSettings.tablePreferences };
+      });
     } catch (error) {
       return fail(
         "WORKSPACE_TABLE_PREFERENCES_SAVE_FAILED",
@@ -152,23 +169,25 @@ export function registerWorkspaceVisualizationDataHandlers(): void {
         return fail("CHART_ENTRY_UPDATE_INVALID_INPUT", "チャートの変更内容が正しくありません。");
       }
 
-      const context = await getActiveWorkspaceContext();
-      if (!context.ok) return context;
+      return await runWorkspaceRegistrationTask(async () => {
+        const context = await getActiveWorkspaceContext();
+        if (!context.ok) return context;
 
-      const workspaceSettings = await readWorkspaceSettings(
-        context.value.userDataPath,
-        context.value.activeWorkspace.id
-      );
-      const result = await updateWorkspaceChartEntry(
-        context.value.activeWorkspace.path,
-        workspaceSettings.charts,
-        workspaceSettings.chronicleCalendarSettings ?? defaultChronicleCalendarSettings,
-        input
-      );
-      if (result.ok) {
-        invalidateWorkspaceData(context.value.activeWorkspace.id);
-      }
-      return result;
+        const workspaceSettings = await readWorkspaceSettings(
+          context.value.userDataPath,
+          context.value.activeWorkspace.id
+        );
+        const result = await updateWorkspaceChartEntry(
+          context.value.activeWorkspace.path,
+          workspaceSettings.charts,
+          workspaceSettings.chronicleCalendarSettings ?? defaultChronicleCalendarSettings,
+          input
+        );
+        if (result.ok) {
+          invalidateWorkspaceData(context.value.activeWorkspace.id);
+        }
+        return result;
+      });
     } catch (error) {
       return fail(
         "CHART_ENTRY_UPDATE_FAILED",

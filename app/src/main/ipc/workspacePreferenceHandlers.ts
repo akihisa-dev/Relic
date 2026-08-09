@@ -10,6 +10,7 @@ import {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readAppSettings, updateAppSettings } from "../settings/appSettings";
+import { runWorkspaceRegistrationTask } from "../workspace/workspaceRegistrationGate";
 import { ipcErrorDetails } from "./activeWorkspace";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
@@ -33,10 +34,10 @@ export function registerWorkspacePreferenceHandlers(): void {
         return fail("USER_DEFINED_FIELDS_INVALID_INPUT", "カスタムフィールドの値が正しくありません。");
       }
 
-      await updateAppSettings(app.getPath("userData"), (settings) => ({
+      await runWorkspaceRegistrationTask(() => updateAppSettings(app.getPath("userData"), (settings) => ({
         ...settings,
         userDefinedFields: input
-      }));
+      })));
       return ok(undefined);
     } catch (error) {
       return fail("USER_DEFINED_FIELDS_SAVE_FAILED", "カスタムフィールドを保存できませんでした。", ipcErrorDetails(error));
@@ -58,10 +59,10 @@ export function registerWorkspacePreferenceHandlers(): void {
         return fail("FRONTMATTER_TEMPLATES_INVALID_INPUT", "フロントマターテンプレートの値が正しくありません。");
       }
 
-      await updateAppSettings(app.getPath("userData"), (settings) => ({
+      await runWorkspaceRegistrationTask(() => updateAppSettings(app.getPath("userData"), (settings) => ({
         ...settings,
         frontmatterTemplates: input
-      }));
+      })));
       return ok(undefined);
     } catch (error) {
       return fail("FRONTMATTER_TEMPLATES_SAVE_FAILED", "フロントマターテンプレートを保存できませんでした。", ipcErrorDetails(error));

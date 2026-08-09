@@ -31,6 +31,7 @@ import {
   saveFrontmatterTemplatesChannel,
   saveUserDefinedFieldsChannel,
 } from "../../shared/ipc";
+import { runWorkspaceRegistrationTask } from "../workspace/workspaceRegistrationGate";
 import { registerWorkspacePreferenceHandlers } from "./workspacePreferenceHandlers";
 
 type RegisteredHandler = (...args: unknown[]) => Promise<unknown>;
@@ -129,6 +130,22 @@ describe("registerWorkspacePreferenceHandlers", () => {
     const update = settingsMock.updateAppSettings.mock.calls[0][1];
     const updated = await update(baseSettings);
     expect(updated).toEqual({ ...baseSettings, [key]: input });
+  });
+
+  it("登録gate保持中のアプリ設定保存は解放後に実行する", async () => {
+    let release!: () => void;
+    const hold = runWorkspaceRegistrationTask(() => new Promise<void>((resolve) => {
+      release = resolve;
+    }));
+    const save = handlerFor(saveUserDefinedFieldsChannel)({}, userDefinedFields);
+
+    await Promise.resolve();
+    expect(settingsMock.updateAppSettings).not.toHaveBeenCalled();
+    release();
+
+    await expect(hold).resolves.toBeUndefined();
+    await expect(save).resolves.toEqual({ ok: true, value: undefined });
+    expect(settingsMock.updateAppSettings).toHaveBeenCalledTimes(1);
   });
 
   it.each([

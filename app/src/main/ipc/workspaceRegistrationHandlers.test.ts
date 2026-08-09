@@ -411,9 +411,6 @@ describe("registerWorkspaceRegistrationHandlers", () => {
     { current: [] as string[], expected: ["note.md"], label: "追加" },
     { current: ["note.md"], expected: [] as string[], label: "解除" },
   ])("ピン留めを$labelし、保存後の状態を返す", async ({ current, expected }) => {
-    dependencies.readWorkspaceSettings.mockResolvedValueOnce({
-      pinnedPaths: current,
-    });
     dependencies.updateWorkspaceSettings.mockImplementationOnce(
       async (_userDataPath, _workspaceId, update) =>
         update({ pinnedPaths: current }),
@@ -431,6 +428,22 @@ describe("registerWorkspaceRegistrationHandlers", () => {
     expect(update({ pinnedPaths: current })).toMatchObject({
       pinnedPaths: expected,
     });
+  });
+
+  it("設定の事前読込値が古くても更新callback時のピン留め状態を維持する", async () => {
+    dependencies.updateWorkspaceSettings.mockImplementationOnce(
+      async (_userDataPath, _workspaceId, update) =>
+        update({ pinnedPaths: ["other.md"] }),
+    );
+
+    const result = await handlerFor(togglePinChannel)({}, "note.md");
+
+    expect(result).toMatchObject({ ok: true });
+    const update = dependencies.updateWorkspaceSettings.mock.calls[0][2];
+    expect(update({ pinnedPaths: ["other.md"] })).toMatchObject({
+      pinnedPaths: ["other.md", "note.md"],
+    });
+    expect(dependencies.readWorkspaceSettings).not.toHaveBeenCalled();
   });
 
   it.each([

@@ -6,6 +6,14 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { readWorkspaceAliases } from "./aliases";
 import { readWorkspaceTags } from "./tags";
+import {
+  aliasesForRecord,
+  chartEntriesForRecord,
+  frontmatterForRecord,
+  inspectedFrontmatterForRecord,
+  markdownContentForRecord,
+  tagsForRecord
+} from "./workspaceDerivedData";
 import { WorkspaceDerivedDataSession } from "./workspaceDerivedDataSession";
 
 const temporaryPaths: string[] = [];
@@ -62,6 +70,32 @@ describe("WorkspaceDerivedDataSession", () => {
 
     expect(first).toBe(second);
     expect(readCount).toBe(1);
+  });
+
+  it("初回読込が失敗した場合は直後の再要求で読み直す", async () => {
+    const workspacePath = await createWorkspace();
+    const session = new WorkspaceDerivedDataSession(() => 1000);
+    let failInitialRead = true;
+    const request = {
+      filePaths: ["note.md"],
+      operations: {
+        readFile: (filePath: string) => readFile(filePath, "utf8"),
+        get stat() {
+          if (failInitialRead) {
+            failInitialRead = false;
+            throw new Error("initial read failed");
+          }
+          return stat;
+        }
+      },
+      workspaceId: "ws-1",
+      workspacePath
+    };
+
+    await expect(session.getSnapshot(request)).rejects.toThrow("initial read failed");
+    await expect(session.getSnapshot(request)).resolves.toMatchObject({
+      fileIndex: { records: [{ path: "note.md", readStatus: "ok" }] }
+    });
   });
 
   it("明示的な破棄後は次の要求でMarkdownを読み直す", async () => {
@@ -123,6 +157,113 @@ describe("WorkspaceDerivedDataSession", () => {
     expect(statCount).toBe(1);
     expect(refreshed.fileIndex.records.map((record) => record.path)).toEqual(["note.md", "other.md"]);
     expect(refreshed.fileIndex.records.find((record) => record.path === "note.md")?.lines).toEqual(["# Updated", ""]);
+  });
+
+  it("増分更新の失敗後も直後の再要求で最新スナップショットを再構築する", async () => {
+    const workspacePath = await createWorkspace();
+    const session = new WorkspaceDerivedDataSession(() => 1000);
+    let failRefresh = false;
+    const request = {
+      filePaths: ["note.md"],
+      operations: {
+        readFile: (filePath: string) => readFile(filePath, "utf8"),
+        get stat() {
+          if (failRefresh) throw new Error("incremental refresh failed");
+          return stat;
+        }
+      },
+      workspaceId: "ws-1",
+      workspacePath
+    };
+
+    await session.getSnapshot(request);
+    await writeFile(path.join(workspacePath, "note.md"), "# Recovered\n", "utf8");
+    failRefresh = true;
+    session.invalidate("ws-1", ["note.md"]);
+
+    await expect(session.getSnapshot(request)).rejects.toThrow("incremental refresh failed");
+    failRefresh = false;
+    const recovered = await session.getSnapshot(request);
+
+    expect(recovered.fileIndex.records.find((record) => record.path === "note.md")?.lines)
+      .toEqual(["# Recovered", ""]);
+  });
+
+  it("同じパスの連続更新で解析キャッシュを最新1世代だけ保持する", async () => {
+    const workspacePath = await createWorkspace();
+    const session = new WorkspaceDerivedDataSession(() => 1000);
+    const request = {
+      filePaths: ["note.md"],
+      operations: {
+        readFile: (filePath: string) => readFile(filePath, "utf8"),
+        stat
+      },
+      workspaceId: "ws-1",
+      workspacePath
+    };
+    const cacheSizes = (snapshot: Awaited<ReturnType<typeof session.getSnapshot>>) => ({
+      aliases: snapshot.parseCache.aliases.size,
+      chartEntries: snapshot.parseCache.chartEntries.size,
+      content: snapshot.parseCache.content.size,
+      frontmatter: snapshot.parseCache.frontmatter.size,
+      frontmatterInspection: snapshot.parseCache.frontmatterInspection.size,
+      tags: snapshot.parseCache.tags.size
+    });
+    const populateParseCache = (snapshot: Awaited<ReturnType<typeof session.getSnapshot>>) => {
+      const record = snapshot.fileIndex.records.find((item) => item.path === "note.md");
+      if (!record) throw new Error("note.md record is missing");
+      markdownContentForRecord(record, snapshot.parseCache);
+      frontmatterForRecord(record, snapshot.parseCache);
+      inspectedFrontmatterForRecord(record, snapshot.parseCache);
+      tagsForRecord(record, snapshot.parseCache);
+      aliasesForRecord(record, snapshot.parseCache);
+      chartEntriesForRecord(record, snapshot.parseCache);
+      snapshot.parseCache.backlinksByTarget = new Map([["note.md", []]]);
+      return record;
+    };
+
+    const first = await session.getSnapshot(request);
+    populateParseCache(first);
+    expect(cacheSizes(first)).toEqual({
+      aliases: 1,
+      chartEntries: 1,
+      content: 1,
+      frontmatter: 1,
+      frontmatterInspection: 1,
+      tags: 1
+    });
+
+    for (const version of [2, 3]) {
+      await writeFile(
+        path.join(workspacePath, "note.md"),
+        [
+          "---",
+          "tags:",
+          `  - 資料-${version}`,
+          "aliases:",
+          `  - ノート別名-${version}`,
+          "---",
+          `# Note ${version}`
+        ].join("\n"),
+        "utf8"
+      );
+      session.invalidate("ws-1", ["note.md"]);
+      const refreshed = await session.getSnapshot(request);
+      expect(refreshed.parseCache.backlinksByTarget).toBeNull();
+      const record = populateParseCache(refreshed);
+
+      expect(cacheSizes(refreshed)).toEqual({
+        aliases: 1,
+        chartEntries: 1,
+        content: 1,
+        frontmatter: 1,
+        frontmatterInspection: 1,
+        tags: 1
+      });
+      expect(tagsForRecord(record, refreshed.parseCache)).toEqual([`資料-${version}`]);
+      expect(aliasesForRecord(record, refreshed.parseCache)).toEqual([`ノート別名-${version}`]);
+      expect(markdownContentForRecord(record, refreshed.parseCache)).toContain(`# Note ${version}`);
+    }
   });
 
   it("検索用のファイルサイズ上限が異なる要求は別スナップショットとして扱う", async () => {

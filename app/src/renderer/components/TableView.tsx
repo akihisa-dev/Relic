@@ -90,15 +90,17 @@ export function TableView({
       onCategoryChoicesSave={onCategoryChoicesSave}
       onOpenFile={onOpenFile}
       table={state.table}
+      workspaceId={workspaceId}
     />
   );
 }
 
-function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table }: {
+function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table, workspaceId }: {
   categoryChoices: FrontmatterCategoryChoice[];
   onCategoryChoicesSave: (choices: FrontmatterCategoryChoice[]) => void;
   onOpenFile: (path: string) => void;
   table: WorkspaceTable;
+  workspaceId: string;
 }): ReactElement {
   const t = useT();
   const [search, setSearch] = useState("");
@@ -123,7 +125,8 @@ function ReadyTable({ categoryChoices, onCategoryChoicesSave, onOpenFile, table 
     setPreferences
   } = useWorkspaceTablePreferences({
     initialPreferences: table.preferences,
-    saveFailedMessage: t("table.saveFailed")
+    saveFailedMessage: t("table.saveFailed"),
+    workspaceId
   });
 
   const selectedProperties = preferences.selectedProperties;

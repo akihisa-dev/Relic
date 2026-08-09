@@ -37,6 +37,10 @@ describe("useWorkspaceFrontmatterCategoryChoices", () => {
     await act(async () => loadA.resolve({ ok: true, value: ["Alpha"] }));
     act(() => result.current.handleSaveCategoryChoices(["Saved A"]));
     expect(result.current.categoryChoices).toEqual(["Saved A"]);
+    expect(window.relic?.saveWorkspaceFrontmatterCategoryChoices).toHaveBeenCalledWith({
+      choices: ["Saved A"],
+      workspaceId: "workspace-a"
+    });
 
     rerender({ workspaceState: workspaceB });
     expect(result.current.categoryChoices).toEqual([]);

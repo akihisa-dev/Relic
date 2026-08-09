@@ -19,6 +19,7 @@ import {
   prepareWorkspace
 } from "../workspace/workspaceService";
 import { syncWorkspaceWatcher } from "../workspace/workspaceWatcher";
+import { runWorkspaceRegistrationTask } from "../workspace/workspaceRegistrationGate";
 import { ipcErrorDetails } from "./activeWorkspace";
 import { buildWorkspaceState } from "./workspaceState";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
@@ -41,11 +42,14 @@ export function registerWorkspaceSelectionHandlers(): void {
       const workspace = createWorkspaceSummary(selection.filePaths[0]);
       await prepareWorkspace(workspace.path);
 
-      const userDataPath = app.getPath("userData");
-      const settings = await readAppSettings(userDataPath);
-      const nextSettings = addOrActivateWorkspace(settings, workspace);
-      const savedSettings = await updateAppSettings(userDataPath, () => nextSettings);
-      syncWorkspaceWatcher(savedSettings);
+      const savedSettings = await runWorkspaceRegistrationTask(async () => {
+        const userDataPath = app.getPath("userData");
+        const settings = await readAppSettings(userDataPath);
+        const nextSettings = addOrActivateWorkspace(settings, workspace);
+        const savedSettings = await updateAppSettings(userDataPath, () => nextSettings);
+        syncWorkspaceWatcher(savedSettings);
+        return savedSettings;
+      });
 
       return ok(await buildWorkspaceState(savedSettings));
     } catch (error) {
@@ -75,11 +79,14 @@ export function registerWorkspaceSelectionHandlers(): void {
       const workspace = createWorkspaceSummary(selection.filePath);
       await prepareWorkspace(workspace.path);
 
-      const userDataPath = app.getPath("userData");
-      const settings = await readAppSettings(userDataPath);
-      const nextSettings = addOrActivateWorkspace(settings, workspace);
-      const savedSettings = await updateAppSettings(userDataPath, () => nextSettings);
-      syncWorkspaceWatcher(savedSettings);
+      const savedSettings = await runWorkspaceRegistrationTask(async () => {
+        const userDataPath = app.getPath("userData");
+        const settings = await readAppSettings(userDataPath);
+        const nextSettings = addOrActivateWorkspace(settings, workspace);
+        const savedSettings = await updateAppSettings(userDataPath, () => nextSettings);
+        syncWorkspaceWatcher(savedSettings);
+        return savedSettings;
+      });
 
       return ok(await buildWorkspaceState(savedSettings));
     } catch (error) {
@@ -118,34 +125,43 @@ export function registerWorkspaceSelectionHandlers(): void {
 
         const selectedWorkspace = createWorkspaceSummary(selection.filePaths[0]);
         await prepareWorkspace(selectedWorkspace.path);
-        const duplicate = settings.workspaces.some((item) => (
-          item.id !== workspace.id &&
-          normalizeWorkspacePathForId(item.path) === normalizeWorkspacePathForId(selectedWorkspace.path)
-        ));
-        if (duplicate) {
-          return fail("WORKSPACE_RELINK_ALREADY_REGISTERED", t("files.workspaceRelinkAlreadyRegistered"));
-        }
+        const savedSettings = await runWorkspaceRegistrationTask(async () => {
+          const latestSettings = await readAppSettings(userDataPath);
+          const latestWorkspace = latestSettings.workspaces.find((item) => item.id === input.workspaceId);
+          if (!latestWorkspace) {
+            return fail("WORKSPACE_NOT_FOUND", t("errors.notFound"));
+          }
+          const duplicate = latestSettings.workspaces.some((item) => (
+            item.id !== latestWorkspace.id &&
+            normalizeWorkspacePathForId(item.path) === normalizeWorkspacePathForId(selectedWorkspace.path)
+          ));
+          if (duplicate) {
+            return fail("WORKSPACE_RELINK_ALREADY_REGISTERED", t("files.workspaceRelinkAlreadyRegistered"));
+          }
 
-        const nextSettings = {
-          ...settings,
-          lastWorkspaceId: workspace.id,
-          workspaces: settings.workspaces.map((item) => (
-            item.id === workspace.id
-              ? { ...item, path: selectedWorkspace.path }
-              : item
-          ))
-        };
-        const savedSettings = await updateAppSettings(userDataPath, () => nextSettings);
-        await workspaceSettings.updateWorkspaceSettings(
-          userDataPath,
-          workspace.id,
-          (current) => ({
-            ...current,
-            workspacePath: selectedWorkspace.path
-          })
-        ).catch(() => undefined);
-        syncWorkspaceWatcher(savedSettings);
-        return ok(await buildWorkspaceState(savedSettings));
+          const nextSettings = {
+            ...latestSettings,
+            lastWorkspaceId: latestWorkspace.id,
+            workspaces: latestSettings.workspaces.map((item) => (
+              item.id === latestWorkspace.id
+                ? { ...item, path: selectedWorkspace.path }
+                : item
+            ))
+          };
+          const savedSettings = await updateAppSettings(userDataPath, () => nextSettings);
+          await workspaceSettings.updateWorkspaceSettings(
+            userDataPath,
+            latestWorkspace.id,
+            (current) => ({
+              ...current,
+              workspacePath: selectedWorkspace.path
+            })
+          ).catch(() => undefined);
+          syncWorkspaceWatcher(savedSettings);
+          return ok(savedSettings);
+        });
+        if (!savedSettings.ok) return savedSettings;
+        return ok(await buildWorkspaceState(savedSettings.value));
       } catch (error) {
         return fail(
           "WORKSPACE_RELINK_FAILED",
@@ -158,7 +174,10 @@ export function registerWorkspaceSelectionHandlers(): void {
 }
 
 async function currentWorkspaceState(): Promise<RelicResult<WorkspaceState>> {
-  const settings = await readAppSettings(app.getPath("userData"));
-  syncWorkspaceWatcher(settings);
+  const settings = await runWorkspaceRegistrationTask(async () => {
+    const currentSettings = await readAppSettings(app.getPath("userData"));
+    syncWorkspaceWatcher(currentSettings);
+    return currentSettings;
+  });
   return ok(await buildWorkspaceState(settings));
 }

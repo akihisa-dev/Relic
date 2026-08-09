@@ -1,5 +1,6 @@
 import {
   createWorkspaceDerivedDataCache,
+  discardWorkspaceDerivedDataForRecord,
   readWorkspaceDerivedFileIndex,
   type WorkspaceDerivedDataCache,
   type WorkspaceDerivedDataOptions
@@ -69,6 +70,7 @@ export class WorkspaceDerivedDataSession {
       request: copySnapshotRequest(request),
       workspaceId: request.workspaceId
     });
+    this.trackPromiseFailure(key, promise);
     this.pruneOverflow();
 
     return promise;
@@ -91,10 +93,12 @@ export class WorkspaceDerivedDataSession {
       const relevantPaths = relevantChangedPaths(entry.request, changedPaths);
       if (relevantPaths.length === 0) continue;
 
-      entry.promise = entry.promise.then((snapshot) =>
+      const promise = entry.promise.then((snapshot) =>
         refreshSnapshotPaths(snapshot, entry.request, relevantPaths)
       );
+      entry.promise = promise;
       entry.createdAt = this.now();
+      this.trackPromiseFailure(key, promise);
     }
   }
 
@@ -120,6 +124,15 @@ export class WorkspaceDerivedDataSession {
       if (!oldest) return;
       this.entries.delete(oldest[0]);
     }
+  }
+
+  private trackPromiseFailure(key: string, promise: Promise<WorkspaceDerivedDataSnapshot>): void {
+    promise.catch(() => {
+      const current = this.entries.get(key);
+      if (current?.promise === promise) {
+        this.entries.delete(key);
+      }
+    });
   }
 }
 
@@ -166,19 +179,25 @@ async function refreshSnapshotPaths(
   request: WorkspaceDerivedDataSnapshotRequest,
   changedPaths: string[]
 ): Promise<WorkspaceDerivedDataSnapshot> {
+  const changedPathSet = new Set(changedPaths);
+  for (const record of snapshot.fileIndex.records) {
+    if (changedPathSet.has(record.path)) {
+      discardWorkspaceDerivedDataForRecord(snapshot.parseCache, record);
+    }
+  }
+  // A newly added path has no old record key, but still changes the aggregate.
+  snapshot.parseCache.backlinksByTarget = null;
+
   const refreshed = await readWorkspaceDerivedFileIndex(request.workspacePath, {
     filePaths: changedPaths,
     maxSearchFileBytes: request.maxSearchFileBytes,
     operations: request.operations,
     parseCache: snapshot.parseCache
   });
-  const changedPathSet = new Set(changedPaths);
   const records = snapshot.fileIndex.records
     .filter((record) => !changedPathSet.has(record.path))
     .concat(refreshed.records)
     .sort((a, b) => a.path.localeCompare(b.path, "ja"));
-  snapshot.parseCache.backlinksByTarget = null;
-
   return {
     fileIndex: {
       entries: records.map(({ lines: _lines, searchable: _searchable, contentHash: _contentHash, ...entry }) => entry),

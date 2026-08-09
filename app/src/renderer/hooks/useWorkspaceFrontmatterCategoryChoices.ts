@@ -52,7 +52,10 @@ export function useWorkspaceFrontmatterCategoryChoices({
     if (!workspaceId || !client) return;
     const isCurrentRequest = beginRequest();
     setSnapshot({ choices: normalizedChoices, workspaceId });
-    void client.saveWorkspaceFrontmatterCategoryChoices(normalizedChoices).then((result) => {
+    void client.saveWorkspaceFrontmatterCategoryChoices({
+      choices: normalizedChoices,
+      workspaceId
+    }).then((result) => {
       if (!isCurrentRequest()) return;
       if (result.ok) {
         setSnapshot({ choices: result.value, workspaceId });

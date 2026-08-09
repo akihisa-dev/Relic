@@ -27,6 +27,7 @@ import {
 import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
 import { setMainTranslator } from "../i18n";
 import { readAppSettings, updateAppSettings } from "../settings/appSettings";
+import { runWorkspaceRegistrationTask } from "../workspace/workspaceRegistrationGate";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
@@ -152,12 +153,14 @@ export function registerEditorHandlers(): void {
           return fail("EDITOR_SETTINGS_INVALID", "無効なエディタ設定です。");
         }
 
-        await updateAppSettings(app.getPath("userData"), (settings) => ({
-          ...settings,
-          editorSettings: input
-        }));
-        setMainTranslator(input.language);
-        refreshApplicationMenu();
+        await runWorkspaceRegistrationTask(async () => {
+          await updateAppSettings(app.getPath("userData"), (settings) => ({
+            ...settings,
+            editorSettings: input
+          }));
+          setMainTranslator(input.language);
+          refreshApplicationMenu();
+        });
 
         return ok(undefined);
       } catch (error) {

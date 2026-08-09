@@ -38,6 +38,10 @@ describe("useWorkspaceChronicleCalendarSettings", () => {
 
     act(() => result.current.handleSaveCalendarSettings(next));
     expect(result.current.calendarSettings).toEqual(next);
+    expect(window.relic?.saveWorkspaceChronicleCalendarSettings).toHaveBeenCalledWith({
+      settings: next,
+      workspaceId: "workspace-a"
+    });
     await act(async () => save.resolve({
       error: { code: "SAVE_FAILED", message: "保存できませんでした。" },
       ok: false

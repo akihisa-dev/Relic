@@ -17,6 +17,7 @@ import {
   renameWorkspaceRegistration
 } from "../workspace/workspaceService";
 import { syncWorkspaceWatcher } from "../workspace/workspaceWatcher";
+import { runWorkspaceRegistrationTask } from "../workspace/workspaceRegistrationGate";
 import { ipcErrorDetails } from "./activeWorkspace";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
 import { isWorkspaceIdInput } from "./inputValidation";
@@ -42,32 +43,31 @@ function registerTogglePinHandler(): void {
         return fail("TOGGLE_PIN_INVALID_INPUT", "パスが無効です。");
       }
 
-      const userDataPath = app.getPath("userData");
-      const settings = await readAppSettings(userDataPath);
-      const activeWorkspace = settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId);
+      const settings = await runWorkspaceRegistrationTask(async () => {
+        const userDataPath = app.getPath("userData");
+        const settings = await readAppSettings(userDataPath);
+        const activeWorkspace = settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId);
 
-      if (!activeWorkspace) {
-        return fail("TOGGLE_PIN_NO_WORKSPACE", "アクティブなワークスペースがありません。");
-      }
+        if (!activeWorkspace) {
+          return fail("TOGGLE_PIN_NO_WORKSPACE", "アクティブなワークスペースがありません。");
+        }
 
-      const currentWorkspaceSettings = await workspaceSettings.readWorkspaceSettings(
-        userDataPath,
-        activeWorkspace.id
-      );
-      const updated = currentWorkspaceSettings.pinnedPaths.includes(pinnedPath)
-        ? currentWorkspaceSettings.pinnedPaths.filter((path) => path !== pinnedPath)
-        : [...currentWorkspaceSettings.pinnedPaths, pinnedPath];
+        await workspaceSettings.updateWorkspaceSettings(
+          userDataPath,
+          activeWorkspace.id,
+          (currentWorkspaceSettings) => ({
+            ...currentWorkspaceSettings,
+            pinnedPaths: currentWorkspaceSettings.pinnedPaths.includes(pinnedPath)
+              ? currentWorkspaceSettings.pinnedPaths.filter((path) => path !== pinnedPath)
+              : [...currentWorkspaceSettings.pinnedPaths, pinnedPath]
+          })
+        );
+        return ok(settings);
+      });
 
-      await workspaceSettings.updateWorkspaceSettings(
-        userDataPath,
-        activeWorkspace.id,
-        (previousWorkspaceSettings) => ({
-          ...previousWorkspaceSettings,
-          pinnedPaths: updated
-        })
-      );
+      if (!settings.ok) return settings;
 
-      return ok(await buildWorkspaceState(settings));
+      return ok(await buildWorkspaceState(settings.value));
     } catch (error) {
       return fail(
         "TOGGLE_PIN_FAILED",
@@ -87,27 +87,32 @@ function registerSwitchWorkspaceHandler(): void {
           return fail("WORKSPACE_SWITCH_INVALID_INPUT", "ワークスペースを選択してください。");
         }
 
-        const userDataPath = app.getPath("userData");
-        const settings = await readAppSettings(userDataPath);
-        const nextSettings = activateWorkspace(settings, input.workspaceId);
+        const savedSettings = await runWorkspaceRegistrationTask(async () => {
+          const userDataPath = app.getPath("userData");
+          const settings = await readAppSettings(userDataPath);
+          const nextSettings = activateWorkspace(settings, input.workspaceId);
 
-        if (!nextSettings.ok) {
-          return nextSettings;
-        }
+          if (!nextSettings.ok) {
+            return nextSettings;
+          }
 
-        const activeWorkspace = nextSettings.value.workspaces.find(
-          (workspace) => workspace.id === input.workspaceId
-        );
+          const activeWorkspace = nextSettings.value.workspaces.find(
+            (workspace) => workspace.id === input.workspaceId
+          );
 
-        if (!activeWorkspace) {
-          return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
-        }
+          if (!activeWorkspace) {
+            return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
+          }
 
-        await prepareWorkspace(activeWorkspace.path);
-        const savedSettings = await updateAppSettings(userDataPath, () => nextSettings.value);
-        syncWorkspaceWatcher(savedSettings);
+          await prepareWorkspace(activeWorkspace.path);
+          const savedSettings = await updateAppSettings(userDataPath, () => nextSettings.value);
+          syncWorkspaceWatcher(savedSettings);
+          return ok(savedSettings);
+        });
 
-        return ok(await buildWorkspaceState(savedSettings));
+        if (!savedSettings.ok) return savedSettings;
+
+        return ok(await buildWorkspaceState(savedSettings.value));
       } catch (error) {
         return fail(
           "WORKSPACE_SWITCH_FAILED",
@@ -128,18 +133,23 @@ function registerRemoveWorkspaceHandler(): void {
           return fail("WORKSPACE_REMOVE_INVALID_INPUT", "ワークスペースを選択してください。");
         }
 
-        const userDataPath = app.getPath("userData");
-        const settings = await readAppSettings(userDataPath);
-        const nextSettings = removeWorkspaceRegistration(settings, input.workspaceId);
+        const savedSettings = await runWorkspaceRegistrationTask(async () => {
+          const userDataPath = app.getPath("userData");
+          const settings = await readAppSettings(userDataPath);
+          const nextSettings = removeWorkspaceRegistration(settings, input.workspaceId);
 
-        if (!nextSettings.ok) {
-          return nextSettings;
-        }
+          if (!nextSettings.ok) {
+            return nextSettings;
+          }
 
-        const savedSettings = await updateAppSettings(userDataPath, () => nextSettings.value);
-        syncWorkspaceWatcher(savedSettings);
+          const savedSettings = await updateAppSettings(userDataPath, () => nextSettings.value);
+          syncWorkspaceWatcher(savedSettings);
+          return ok(savedSettings);
+        });
 
-        return ok(await buildWorkspaceState(savedSettings));
+        if (!savedSettings.ok) return savedSettings;
+
+        return ok(await buildWorkspaceState(savedSettings.value));
       } catch (error) {
         return fail(
           "WORKSPACE_REMOVE_FAILED",
@@ -160,39 +170,44 @@ function registerRenameWorkspaceHandler(): void {
           return fail("WORKSPACE_RENAME_INVALID_INPUT", "ワークスペース名を入力してください。");
         }
 
-        const userDataPath = app.getPath("userData");
-        const settings = await readAppSettings(userDataPath);
-        const renameResult = await renameWorkspaceRegistration(settings, input.workspaceId, input.name);
+        const savedSettings = await runWorkspaceRegistrationTask(async () => {
+          const userDataPath = app.getPath("userData");
+          const settings = await readAppSettings(userDataPath);
+          const renameResult = await renameWorkspaceRegistration(settings, input.workspaceId, input.name);
 
-        if (!renameResult.ok) {
-          return renameResult;
-        }
+          if (!renameResult.ok) {
+            return renameResult;
+          }
 
-        if (renameResult.value.oldWorkspaceId !== renameResult.value.newWorkspaceId) {
-          const migratedWorkspaceSettings = await workspaceSettings.readWorkspaceSettings(
+          if (renameResult.value.oldWorkspaceId !== renameResult.value.newWorkspaceId) {
+            const migratedWorkspaceSettings = await workspaceSettings.readWorkspaceSettings(
+              userDataPath,
+              renameResult.value.oldWorkspaceId
+            );
+            await workspaceSettings.updateWorkspaceSettings(
+              userDataPath,
+              renameResult.value.newWorkspaceId,
+              () => migratedWorkspaceSettings
+            );
+          }
+
+          const savedSettings = await updateAppSettings(
             userDataPath,
-            renameResult.value.oldWorkspaceId
+            () => renameResult.value.nextSettings
           );
-          await workspaceSettings.updateWorkspaceSettings(
-            userDataPath,
-            renameResult.value.newWorkspaceId,
-            () => migratedWorkspaceSettings
-          );
-        }
+          if (renameResult.value.oldWorkspaceId !== renameResult.value.newWorkspaceId) {
+            await workspaceSettings.removeWorkspaceSettings(
+              userDataPath,
+              renameResult.value.oldWorkspaceId
+            ).catch(() => undefined);
+          }
+          syncWorkspaceWatcher(savedSettings);
+          return ok(savedSettings);
+        });
 
-        const savedSettings = await updateAppSettings(
-          userDataPath,
-          () => renameResult.value.nextSettings
-        );
-        if (renameResult.value.oldWorkspaceId !== renameResult.value.newWorkspaceId) {
-          await workspaceSettings.removeWorkspaceSettings(
-            userDataPath,
-            renameResult.value.oldWorkspaceId
-          ).catch(() => undefined);
-        }
-        syncWorkspaceWatcher(savedSettings);
+        if (!savedSettings.ok) return savedSettings;
 
-        return ok(await buildWorkspaceState(savedSettings));
+        return ok(await buildWorkspaceState(savedSettings.value));
       } catch (error) {
         return fail(
           "WORKSPACE_RENAME_FAILED",

@@ -2,10 +2,12 @@ import type {
   ChartSettings,
   ChartSource,
   UpdateChartEntryInput,
+  SaveWorkspaceTablePreferencesInput,
   WorkspaceTablePreferences
 } from "../../shared/ipc";
 import { workspaceTablePreferenceLimits } from "../../shared/ipc";
 import { isWorkspaceRelativeInputPath } from "../files/paths";
+import { isWorkspaceIdInput } from "./inputValidation";
 
 const chartSources: ChartSource[] = ["chronicle"];
 
@@ -151,6 +153,16 @@ export function isWorkspaceTablePreferencesInput(
     return false;
   }
   return candidate.filters.every(validTableFilter);
+}
+
+export function isSaveWorkspaceTablePreferencesInput(
+  input: unknown
+): input is SaveWorkspaceTablePreferencesInput {
+  return typeof input === "object" &&
+    input !== null &&
+    !Array.isArray(input) &&
+    isWorkspaceIdInput(input) &&
+    isWorkspaceTablePreferencesInput((input as Record<string, unknown>).preferences);
 }
 
 function validTableProperties(input: unknown): input is string[] {

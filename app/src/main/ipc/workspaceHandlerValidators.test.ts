@@ -5,6 +5,8 @@ import {
   isChronicleCalendarSettingsInput,
   isFrontmatterCategoryChoicesInput,
   isFrontmatterTemplatesInput,
+  isSaveWorkspaceChronicleCalendarSettingsInput,
+  isSaveWorkspaceFrontmatterCategoryChoicesInput,
   isUserDefinedFieldsInput
 } from "./workspacePreferenceHandlerValidators";
 import {
@@ -14,6 +16,7 @@ import {
 } from "./workspaceRegistrationHandlerValidators";
 import {
   isChartsInput,
+  isSaveWorkspaceTablePreferencesInput,
   isWorkspaceTablePreferencesInput,
   isUpdateChartEntryInput
 } from "./workspaceVisualizationHandlerValidators";
@@ -70,6 +73,29 @@ describe("workspaceHandlerValidators", () => {
     expect(isFrontmatterCategoryChoicesInput([""])).toBe(false);
     expect(isFrontmatterCategoryChoicesInput(["政治", "政治"])).toBe(false);
     expect(isFrontmatterCategoryChoicesInput(["政治", 1])).toBe(false);
+  });
+
+  it("ワークスペース設定保存は所有IDと入れ子payloadを一体で検証する", () => {
+    const calendarSettings = {
+      baseCalendarName: "基準暦",
+      calendars: [],
+      visibleCalendarNames: ["基準暦"]
+    };
+    const preferences = {
+      columnWidths: [],
+      fileColumnWidth: 280,
+      filters: [],
+      selectedProperties: [],
+      sort: { direction: "asc" as const, property: null },
+      wrappedProperties: []
+    };
+    expect(isSaveWorkspaceFrontmatterCategoryChoicesInput({ choices: ["政治"], workspaceId: "workspace-a" })).toBe(true);
+    expect(isSaveWorkspaceFrontmatterCategoryChoicesInput({ choices: ["政治"], workspaceId: "../outside" })).toBe(false);
+    expect(isSaveWorkspaceFrontmatterCategoryChoicesInput(["政治"])).toBe(false);
+    expect(isSaveWorkspaceChronicleCalendarSettingsInput({ settings: calendarSettings, workspaceId: "workspace-a" })).toBe(true);
+    expect(isSaveWorkspaceChronicleCalendarSettingsInput({ settings: { ...calendarSettings, visibleCalendarNames: [] }, workspaceId: "workspace-a" })).toBe(false);
+    expect(isSaveWorkspaceTablePreferencesInput({ preferences, workspaceId: "workspace-a" })).toBe(true);
+    expect(isSaveWorkspaceTablePreferencesInput({ preferences: { ...preferences, fileColumnWidth: 20 }, workspaceId: "workspace-a" })).toBe(false);
   });
 
   it("validates the required chronicle chart source", () => {

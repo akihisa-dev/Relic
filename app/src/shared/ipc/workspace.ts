@@ -214,6 +214,22 @@ export interface WorkspaceTablePreferences {
   wrappedProperties: string[];
 }
 
+/** Workspace-specific preference mutations carry their owner explicitly. */
+export interface SaveWorkspaceFrontmatterCategoryChoicesInput {
+  choices: FrontmatterCategoryChoice[];
+  workspaceId: string;
+}
+
+export interface SaveWorkspaceChronicleCalendarSettingsInput {
+  settings: ChronicleCalendarSettings;
+  workspaceId: string;
+}
+
+export interface SaveWorkspaceTablePreferencesInput {
+  preferences: WorkspaceTablePreferences;
+  workspaceId: string;
+}
+
 export const defaultWorkspaceTablePreferences: WorkspaceTablePreferences = {
   columnWidths: [],
   fileColumnWidth: 260,
@@ -276,10 +292,10 @@ export interface WorkspaceApi {
   getWorkspaceTable: () => Promise<RelicResult<WorkspaceTable>>;
   getWorkspaceFrontmatterCategoryChoices: () => Promise<RelicResult<FrontmatterCategoryChoice[]>>;
   getWorkspaceChronicleCalendarSettings: () => Promise<RelicResult<ChronicleCalendarSettings>>;
-  saveWorkspaceFrontmatterCategoryChoices: (input: FrontmatterCategoryChoice[]) => Promise<RelicResult<FrontmatterCategoryChoice[]>>;
-  saveWorkspaceChronicleCalendarSettings: (input: ChronicleCalendarSettings) => Promise<RelicResult<ChronicleCalendarSettings>>;
+  saveWorkspaceFrontmatterCategoryChoices: (input: SaveWorkspaceFrontmatterCategoryChoicesInput) => Promise<RelicResult<FrontmatterCategoryChoice[]>>;
+  saveWorkspaceChronicleCalendarSettings: (input: SaveWorkspaceChronicleCalendarSettingsInput) => Promise<RelicResult<ChronicleCalendarSettings>>;
   saveWorkspaceCharts: (input: ChartSettings[]) => Promise<RelicResult<WorkspaceChart[]>>;
-  saveWorkspaceTablePreferences: (input: WorkspaceTablePreferences) => Promise<RelicResult<WorkspaceTablePreferences>>;
+  saveWorkspaceTablePreferences: (input: SaveWorkspaceTablePreferencesInput) => Promise<RelicResult<WorkspaceTablePreferences>>;
   updateChartEntry: (input: UpdateChartEntryInput) => Promise<RelicResult<WorkspaceChart[]>>;
   onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => () => void;
   onWorkspaceWatcherStatus: (callback: (event: WorkspaceWatcherStatusEvent) => void) => () => void;

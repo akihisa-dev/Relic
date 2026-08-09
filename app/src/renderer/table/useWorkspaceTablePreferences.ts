@@ -7,6 +7,7 @@ import { resetWorkspaceTableCache } from "./workspaceTableLoader";
 interface UseWorkspaceTablePreferencesInput {
   initialPreferences: WorkspaceTablePreferences;
   saveFailedMessage: string;
+  workspaceId: string;
 }
 
 interface WorkspaceTablePreferencesState {
@@ -22,7 +23,8 @@ interface WorkspaceTablePreferencesState {
 
 export function useWorkspaceTablePreferences({
   initialPreferences,
-  saveFailedMessage
+  saveFailedMessage,
+  workspaceId
 }: UseWorkspaceTablePreferencesInput): WorkspaceTablePreferencesState {
   const [preferences, setPreferences] = useState(initialPreferences);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -44,7 +46,10 @@ export function useWorkspaceTablePreferences({
     setPreferences(next);
     setSaveError(null);
     try {
-      const result = await relicClient.current?.saveWorkspaceTablePreferences(next);
+      const result = await relicClient.current?.saveWorkspaceTablePreferences({
+        preferences: next,
+        workspaceId
+      });
       if (revision !== saveRevisionRef.current) return;
       if (!result?.ok) {
         failedPreferencesRef.current = next;
@@ -62,7 +67,7 @@ export function useWorkspaceTablePreferences({
         setSaveError(saveFailedMessage);
       }
     }
-  }, [saveFailedMessage]);
+  }, [saveFailedMessage, workspaceId]);
 
   const retry = useCallback(
     () => persist(failedPreferencesRef.current ?? preferences, preferences),

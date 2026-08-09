@@ -43,7 +43,7 @@ export function useWorkspaceChronicleCalendarSettings({
       ? snapshot.settings
       : defaultChronicleCalendarSettings;
     setSnapshot({ settings, workspaceId });
-    void client.saveWorkspaceChronicleCalendarSettings(settings).then((result) => {
+    void client.saveWorkspaceChronicleCalendarSettings({ settings, workspaceId }).then((result) => {
       if (!current()) return;
       if (result.ok) {
         setSnapshot({ settings: result.value, workspaceId });

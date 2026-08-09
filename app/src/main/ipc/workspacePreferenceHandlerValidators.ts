@@ -9,8 +9,11 @@ import type {
   ChronicleCalendarSettings,
   FrontmatterCategoryChoice,
   FrontmatterTemplate,
+  SaveWorkspaceChronicleCalendarSettingsInput,
+  SaveWorkspaceFrontmatterCategoryChoicesInput,
   UserDefinedField
 } from "../../shared/ipc";
+import { isWorkspaceIdInput } from "./inputValidation";
 
 export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
   if (!Array.isArray(input)) return false;
@@ -65,6 +68,13 @@ export function isFrontmatterCategoryChoicesInput(
     choices.add(choice);
     return true;
   });
+}
+
+export function isSaveWorkspaceFrontmatterCategoryChoicesInput(
+  input: unknown
+): input is SaveWorkspaceFrontmatterCategoryChoicesInput {
+  if (!isMutationRecord(input) || !isWorkspaceIdInput(input)) return false;
+  return isFrontmatterCategoryChoicesInput((input as Record<string, unknown>).choices);
 }
 
 export function isChronicleCalendarSettingsInput(
@@ -128,6 +138,13 @@ export function isChronicleCalendarSettingsInput(
     );
 }
 
+export function isSaveWorkspaceChronicleCalendarSettingsInput(
+  input: unknown
+): input is SaveWorkspaceChronicleCalendarSettingsInput {
+  if (!isMutationRecord(input) || !isWorkspaceIdInput(input)) return false;
+  return isChronicleCalendarSettingsInput((input as Record<string, unknown>).settings);
+}
+
 export function isFrontmatterTemplatesInput(
   input: unknown
 ): input is FrontmatterTemplate[] {
@@ -160,4 +177,8 @@ function validCalendarName(name: string): boolean {
     name.length <= 100 &&
     name.trim() === name &&
     !name.includes("\0");
+}
+
+function isMutationRecord(input: unknown): input is Record<string, unknown> {
+  return typeof input === "object" && input !== null && !Array.isArray(input);
 }

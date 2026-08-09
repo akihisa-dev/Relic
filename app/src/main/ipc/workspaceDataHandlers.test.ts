@@ -6,6 +6,7 @@ const electronMock = vi.hoisted(() => ({
 
 const dependencies = vi.hoisted(() => ({
   getActiveWorkspaceContext: vi.fn(),
+  getRegisteredWorkspaceContext: vi.fn(),
   invalidateWorkspaceData: vi.fn(),
   normalizeWorkspaceRelativeSettingPath: vi.fn(
     (path: string): string | null => path,
@@ -31,6 +32,7 @@ vi.mock("electron", () => ({
 
 vi.mock("./activeWorkspace", () => ({
   getActiveWorkspaceContext: dependencies.getActiveWorkspaceContext,
+  getRegisteredWorkspaceContext: dependencies.getRegisteredWorkspaceContext,
   ipcErrorDetails: (error: unknown) =>
     error instanceof Error ? error.message : "Unknown error",
 }));
@@ -163,6 +165,14 @@ describe("registerWorkspaceDataHandlers", () => {
         activeWorkspace: workspace,
         settings: { activeWorkspaceId: workspace.id },
         userDataPath: "/user-data",
+      },
+    });
+    dependencies.getRegisteredWorkspaceContext.mockResolvedValue({
+      ok: true,
+      value: {
+        settings: { activeWorkspaceId: workspace.id },
+        userDataPath: "/user-data",
+        workspace,
       },
     });
     dependencies.providerGet.mockResolvedValue({
@@ -309,6 +319,38 @@ describe("registerWorkspaceDataHandlers", () => {
       workspace.id,
       expect.any(Function),
     );
+    const update = dependencies.updateWorkspaceSettings.mock.calls[0][2];
+    expect(update(workspaceSettings)).toMatchObject({
+      tablePreferences: table.preferences,
+    });
+  });
+
+  it("テーブル読取中に更新された表示設定を自動補正で上書きしない", async () => {
+    const normalizedPreferences = {
+      ...workspaceSettings.tablePreferences,
+      selectedProperties: ["status"],
+    };
+    const currentPreferences = {
+      ...workspaceSettings.tablePreferences,
+      selectedProperties: ["count"],
+    };
+    dependencies.readWorkspaceTable.mockResolvedValueOnce({
+      ok: true,
+      value: { availableProperties: ["status"], preferences: normalizedPreferences, rows: [] },
+    });
+    dependencies.updateWorkspaceSettings.mockImplementationOnce(
+      async (_userDataPath, _workspaceId, update) => update({
+        ...workspaceSettings,
+        tablePreferences: currentPreferences,
+      }),
+    );
+
+    await handlerFor(getWorkspaceTableChannel)();
+
+    const update = dependencies.updateWorkspaceSettings.mock.calls[0][2];
+    expect(update({ ...workspaceSettings, tablePreferences: currentPreferences })).toMatchObject({
+      tablePreferences: currentPreferences,
+    });
   });
 
   it.each([
@@ -341,15 +383,18 @@ describe("registerWorkspaceDataHandlers", () => {
     },
     {
       channel: saveWorkspaceFrontmatterCategoryChoicesChannel,
-      input: ["人物", "人物"],
+      input: { choices: ["人物", "人物"], workspaceId: workspace.id },
       label: "重複したカテゴリ候補",
     },
     {
       channel: saveWorkspaceChronicleCalendarSettingsChannel,
       input: {
-        baseCalendarName: "基準暦",
-        calendars: [{ name: "別暦", range: { end: 1, start: 10 }, yearOne: 450 }],
-        visibleCalendarNames: ["基準暦", "別暦"]
+        settings: {
+          baseCalendarName: "基準暦",
+          calendars: [{ name: "別暦", range: { end: 1, start: 10 }, yearOne: 450 }],
+          visibleCalendarNames: ["基準暦", "別暦"]
+        },
+        workspaceId: workspace.id
       },
       label: "逆転した暦面範囲",
     },
@@ -360,7 +405,10 @@ describe("registerWorkspaceDataHandlers", () => {
     },
     {
       channel: saveWorkspaceTablePreferencesChannel,
-      input: { ...workspaceSettings.tablePreferences, fileColumnWidth: 20 },
+      input: {
+        preferences: { ...workspaceSettings.tablePreferences, fileColumnWidth: 20 },
+        workspaceId: workspace.id
+      },
       label: "不正なテーブル表示設定",
     },
   ])("$label は状態を読む前に拒否する", async ({ channel, input }) => {
@@ -368,6 +416,7 @@ describe("registerWorkspaceDataHandlers", () => {
 
     expect(result).toMatchObject({ ok: false });
     expect(dependencies.getActiveWorkspaceContext).not.toHaveBeenCalled();
+    expect(dependencies.getRegisteredWorkspaceContext).not.toHaveBeenCalled();
     expect(dependencies.updateWorkspaceSettings).not.toHaveBeenCalled();
     expect(dependencies.updateWorkspaceChartEntry).not.toHaveBeenCalled();
     expect(dependencies.providerGet).not.toHaveBeenCalled();
@@ -421,7 +470,7 @@ describe("registerWorkspaceDataHandlers", () => {
 
     const result = await handlerFor(
       saveWorkspaceFrontmatterCategoryChoicesChannel,
-    )({}, choices);
+    )({}, { choices, workspaceId: workspace.id });
 
     expect(result).toEqual({ ok: true, value: choices });
     expect(dependencies.updateWorkspaceSettings).toHaveBeenCalledWith(
@@ -429,7 +478,35 @@ describe("registerWorkspaceDataHandlers", () => {
       workspace.id,
       expect.any(Function),
     );
+    expect(dependencies.getRegisteredWorkspaceContext).toHaveBeenCalledWith(workspace.id);
+    expect(dependencies.getActiveWorkspaceContext).not.toHaveBeenCalled();
     expect(dependencies.invalidateWorkspaceData).not.toHaveBeenCalled();
+  });
+
+  it("アクティブ変更後も要求元workspaceIdの設定へ保存する", async () => {
+    const workspaceA = { id: "workspace-a", name: "A", path: "/workspace-a" };
+    const workspaceB = { id: "workspace-b", name: "B", path: "/workspace-b" };
+    dependencies.getRegisteredWorkspaceContext.mockResolvedValueOnce({
+      ok: true,
+      value: {
+        settings: { activeWorkspaceId: workspaceB.id },
+        userDataPath: "/user-data",
+        workspace: workspaceA
+      }
+    });
+
+    const result = await handlerFor(saveWorkspaceFrontmatterCategoryChoicesChannel)(
+      {},
+      { choices: ["人物"], workspaceId: workspaceA.id }
+    );
+
+    expect(result).toEqual({ ok: true, value: ["人物"] });
+    expect(dependencies.updateWorkspaceSettings).toHaveBeenCalledWith(
+      "/user-data",
+      workspaceA.id,
+      expect.any(Function)
+    );
+    expect(dependencies.getActiveWorkspaceContext).not.toHaveBeenCalled();
   });
 
   it("有効な暦面範囲だけをワークスペース設定へ保存する", async () => {
@@ -442,7 +519,10 @@ describe("registerWorkspaceDataHandlers", () => {
       async (_userDataPath, _workspaceId, update) => update(workspaceSettings)
     );
 
-    const result = await handlerFor(saveWorkspaceChronicleCalendarSettingsChannel)({}, input);
+    const result = await handlerFor(saveWorkspaceChronicleCalendarSettingsChannel)(
+      {},
+      { settings: input, workspaceId: workspace.id }
+    );
 
     expect(result).toEqual({ ok: true, value: input });
     expect(dependencies.updateWorkspaceSettings).toHaveBeenCalledWith(
@@ -450,6 +530,8 @@ describe("registerWorkspaceDataHandlers", () => {
       workspace.id,
       expect.any(Function)
     );
+    expect(dependencies.getRegisteredWorkspaceContext).toHaveBeenCalledWith(workspace.id);
+    expect(dependencies.getActiveWorkspaceContext).not.toHaveBeenCalled();
   });
 
   it("テーブル表示設定をワークスペース設定へ保存する", async () => {
@@ -459,7 +541,10 @@ describe("registerWorkspaceDataHandlers", () => {
       selectedProperties: ["status", "tags"]
     };
 
-    const result = await handlerFor(saveWorkspaceTablePreferencesChannel)({}, preferences);
+    const result = await handlerFor(saveWorkspaceTablePreferencesChannel)(
+      {},
+      { preferences, workspaceId: workspace.id }
+    );
 
     expect(result).toEqual({ ok: true, value: preferences });
     expect(dependencies.updateWorkspaceSettings).toHaveBeenCalledWith(
@@ -467,6 +552,8 @@ describe("registerWorkspaceDataHandlers", () => {
       workspace.id,
       expect.any(Function),
     );
+    expect(dependencies.getRegisteredWorkspaceContext).toHaveBeenCalledWith(workspace.id);
+    expect(dependencies.getActiveWorkspaceContext).not.toHaveBeenCalled();
   });
 
   it("チャート項目更新が成功した時だけ派生データを無効化する", async () => {

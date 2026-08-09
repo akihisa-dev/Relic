@@ -20,10 +20,11 @@ describe("useWorkspaceTablePreferences", () => {
       error: { code: "WRITE_FAILED"; message: string };
       ok: false;
     }) => void) | undefined;
+    const saveWorkspaceTablePreferences = vi.fn(() => new Promise((resolve) => {
+      resolveSave = resolve;
+    }));
     restores.push(installRelicClientProvider(() => ({
-      saveWorkspaceTablePreferences: vi.fn(() => new Promise((resolve) => {
-        resolveSave = resolve;
-      }))
+      saveWorkspaceTablePreferences
     } as unknown as RelicClient)));
     const initialPreferences = preferences({ selectedProperties: ["count"] });
     const refreshedPreferences = preferences({ selectedProperties: ["status"] });
@@ -31,7 +32,8 @@ describe("useWorkspaceTablePreferences", () => {
     const { result, rerender } = renderHook(
       ({ current }) => useWorkspaceTablePreferences({
         initialPreferences: current,
-        saveFailedMessage: "保存できません"
+        saveFailedMessage: "保存できません",
+        workspaceId: "workspace-a"
       }),
       { initialProps: { current: initialPreferences } }
     );
@@ -40,6 +42,10 @@ describe("useWorkspaceTablePreferences", () => {
       void result.current.persist(pendingPreferences);
     });
     expect(result.current.preferences).toEqual(pendingPreferences);
+    expect(saveWorkspaceTablePreferences).toHaveBeenCalledWith({
+      preferences: pendingPreferences,
+      workspaceId: "workspace-a"
+    });
 
     rerender({ current: refreshedPreferences });
     await waitFor(() => expect(result.current.preferences).toEqual(refreshedPreferences));

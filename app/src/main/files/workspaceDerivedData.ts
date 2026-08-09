@@ -56,6 +56,27 @@ export function createWorkspaceDerivedDataCache(): WorkspaceDerivedDataCache {
   };
 }
 
+/**
+ * Discard all derived values associated with one file-index record.
+ *
+ * Record metadata is part of every parse-cache key, so an updated record
+ * cannot reuse the old content or frontmatter-derived values. Backlinks are
+ * an aggregate over all records and therefore need full invalidation too.
+ */
+export function discardWorkspaceDerivedDataForRecord(
+  cache: WorkspaceDerivedDataCache,
+  record: WorkspaceFileIndexRecord
+): void {
+  const key = cacheKeyForRecord(record);
+  cache.aliases.delete(key);
+  cache.chartEntries.delete(key);
+  cache.content.delete(key);
+  cache.frontmatter.delete(key);
+  cache.frontmatterInspection.delete(key);
+  cache.tags.delete(key);
+  cache.backlinksByTarget = null;
+}
+
 export function normalizeWorkspaceDerivedDataOptions(
   optionsOrOperations: WorkspaceDerivedDataOptions | WorkspaceMarkdownReadOperations = {}
 ): WorkspaceDerivedDataOptions {
