@@ -1,10 +1,12 @@
 ---
 name: Feature request
-about: Suggest an improvement for Relic
+about: Share an optional proposal; review is not guaranteed
 title: "[Feature]: "
 labels: enhancement
 assignees: ""
 ---
+
+> Relic is owner-led and does not actively solicit external feature requests. A submission does not guarantee a response, review, or implementation. Read [CONTRIBUTING.md](../../CONTRIBUTING.md) before continuing.
 
 ## Summary
 

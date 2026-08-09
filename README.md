@@ -8,7 +8,7 @@ Relic is a local app for keeping information as plain Markdown files while exten
 
 Relic treats Markdown text as the source of truth: body text, headings, lists, tables, links, tags, front matter, and code blocks remain readable and portable as Markdown. Mermaid and D2 diagrams are also handled as Markdown code blocks, not as Relic-only diagram data.
 
-Relic is open source software licensed under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later).
+Relic is an owner-led open source project licensed under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later). Development and project decisions are expected to be handled primarily by the project owner; external issues and pull requests are not actively solicited.
 
 > Status: In development
 
@@ -263,11 +263,17 @@ Development commands that send information to external services, such as depende
 
 ---
 
-## Contributing
+## Development and Contributions
 
-Contributions to Relic are welcome. Before opening a pull request, please read [CONTRIBUTING.md](CONTRIBUTING.md).
+Relic is developed and maintained primarily by the project owner. Public source code does not imply shared control of the roadmap or an invitation to participate in development.
+
+External issues, feature requests, and pull requests are not actively solicited. Submitting one is not prohibited, but no response, investigation, review, acceptance, merge, implementation, or schedule is promised. The owner may close a submission without taking action.
+
+If you still choose to submit an issue or pull request, read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 Unless otherwise agreed, submitted code and documentation are treated as AGPL-3.0-or-later, the same license as Relic itself.
+
+This development policy does not limit the rights to use, modify, or redistribute Relic under AGPL-3.0-or-later.
 
 ---
 
@@ -287,7 +293,7 @@ Relicは、Markdownに書ける情報をMarkdownファイルのまま保ち、�
 
 本文、見出し、リスト、表、リンク、タグ、フロントマター、コードブロックなど、Markdown内にテキストとして書ける情報を正本として扱います。MermaidやD2の図表も、Relic独自の図データではなく、Markdownコードブロックとして書ける情報だから扱います。
 
-Relicはオープンソースソフトウェアです。ライセンスは GNU Affero General Public License v3.0 or later（AGPL-3.0-or-later）です。
+Relicは、GNU Affero General Public License v3.0 or later（AGPL-3.0-or-later）で公開する、オーナー主導のオープンソースプロジェクトです。開発とプロジェクト上の意思決定は基本的にプロジェクトオーナー本人が行い、外部からのIssueやPull Requestは積極的に募集しません。
 
 > ステータス: 開発中
 
@@ -542,11 +548,17 @@ Markdown本文はRelic専用の形式へ変換せず、ユーザーが選んだ�
 
 ---
 
-## コントリビューション
+## 開発体制と外部投稿
 
-Relicへのコントリビューションを歓迎します。Pull Requestを送る前に [CONTRIBUTING.md](CONTRIBUTING.md) を確認してください。
+Relicの開発と保守は、基本的にプロジェクトオーナー本人が行います。ソースコードを公開していることは、ロードマップを共同で決定することや、開発への参加を求めることを意味しません。
+
+外部からのIssue、機能要望、Pull Requestは積極的に募集していません。投稿は禁止しませんが、返信、調査、レビュー、採用、マージ、実装、対応時期のいずれも約束しません。オーナー判断で、対応せずに投稿をcloseする場合があります。
+
+それでもIssueやPull Requestを送る場合は、先に [CONTRIBUTING.md](CONTRIBUTING.md) を確認してください。
 
 提出されたコードやドキュメントは、特別な合意がない限り、Relic本体と同じAGPL-3.0-or-laterとして取り扱います。
+
+この開発方針は、AGPL-3.0-or-laterに基づくRelicの利用、改変、再配布の権利を制限しません。
 
 ---
 

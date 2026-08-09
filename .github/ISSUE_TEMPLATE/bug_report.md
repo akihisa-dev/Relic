@@ -1,10 +1,12 @@
 ---
 name: Bug report
-about: Report a reproducible problem in Relic
+about: Share a reproducible problem; a response is not guaranteed
 title: "[Bug]: "
 labels: bug
 assignees: ""
 ---
+
+> Relic is owner-led and does not actively solicit external issues. A submission does not guarantee a response, investigation, or fix. Read [CONTRIBUTING.md](../../CONTRIBUTING.md) before continuing.
 
 ## Summary
 

@@ -1,3 +1,5 @@
+> Relic is owner-led and does not actively solicit external pull requests. A submission does not guarantee a response, review, acceptance, or merge. Read [CONTRIBUTING.md](../CONTRIBUTING.md) before continuing.
+
 ## Summary
 
 -
