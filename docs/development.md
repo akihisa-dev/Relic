@@ -119,6 +119,8 @@ UI文言は辞書へ集約し、コンポーネント内へ散在させない。
 `pnpm performance:workspace` は再現可能な1,000ファイルfixture、`pnpm performance:workspace:large` は10,000ファイルfixtureで、ファイルツリー、索引、変更ファイルだけの再読込、検索、タグ、バックリンク、グラフ、年表を複数回測定して中央値とI/O回数を表示する。
 性能を比較するときは、同じfixture fingerprint、実行回数、warmup回数を使い、単発値ではなく中央値と読み取り・stat回数を確認する。保存済み基準にある指標が現在の測定結果にない場合は比較不能として検証を失敗させる。
 
+`pnpm performance:sphere` は、既存のmacOS package実行ファイルを起動し、一時ワークスペース上のスフィアについて初回操作可能時間、操作中frame time、待機時CPU・memory、任意の開閉cycleをCDP経由で記録する内部診断scriptである。`--size small|medium|baseline|large`、`--runs`、`--cycles`、`--output`、`--executable` を受け付ける。ただし現行scriptのfixtureは現在のアプリ設定schemaに同期していないため、現在の検証経路や性能基準としては使わない。package版Electronを起動するため、修正後に利用する場合もユーザーが実行を明示した作業だけで使う。
+
 ---
 
 ## セキュリティと依存関係
@@ -195,6 +197,7 @@ E2E、配布ビルド、実アプリ操作、スクリーンショット、起�
 macOSのsafe buildはApple Silicon搭載Macだけで実行でき、Forgeへ`darwin`と`arm64`を固定して`out/darwin/Relic-darwin-arm64`と版付きDMGを生成する。safe checkは、配布用ASARの許可内容と必須entry、`LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOM、Electron本体を除くアプリ固有resourcesの容量とファイル数、およびDMGの存在を確認する。Draft Releaseでは確認済みDMGを`Relic-macOS-arm64.dmg`として添付する。
 `.githooks/pre-push` は送信refがcleanな現在のHEADを指すこと、送信commitの秘密情報、version、SBOM、空白を確認してから、通常refでは `verify:local:push`、タグでは `verify:local:release` を実行する。hookを使わない公開手順でも同じ検査を明示実行する。
 GitHubのCode CIとRelease workflowは公開後の別環境確認と成果物生成を行うが、その成功をローカル公開前検証の代わりにしない。
+手動の `Pre-release Verification` workflowは、選択したrefをApple SiliconのmacOS runnerで `build:mac:safe` と `smoke:package` に通し、失敗時の起動証拠をartifactとして保存する補助確認である。repositoryへの書き込みやRelease作成は行わず、タグpush前のローカル `verify:local:release` の代わりにはしない。
 ユーザーが実アプリ確認を明示した場合は、`pnpm start:isolated -- --user-data-dir <absolute-temp-path>` で一時データの開発版を起動する。起動元のterminalに出る `RELIC_DEV_APP_IDENTITY` のPIDと完全な実行pathを操作対象の確認に使い、表示名だけで既存ウインドウを選ばない。この切り替えはVite開発server起動時だけ有効で、package版では既定のユーザーデータ保存先を変更しない。
 
 ### 優先してテストする領域

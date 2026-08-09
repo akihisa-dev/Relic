@@ -25,6 +25,8 @@ RelicのローカルGitタグ作成、タグのGitHubへのpush、Draft Release�
 
 GitタグをGitHubへpushすると、`.github/workflows/draft-release.yml` がmacOSの配布版起動スモークに成功した成果物だけをDraft Releaseへ添付する。
 
+必要な場合は、タグpush前に手動の `Pre-release Verification` workflowで選択したrefのmacOS packageと起動を別環境確認できる。この補助確認はrepositoryやReleaseを書き換えず、ローカル `pnpm verify:local:release` の代わりにはしない。
+
 ## 成果物
 
 - [ ] Release tagが `app/package.json` の `version` と一致している
@@ -33,7 +35,7 @@ GitタグをGitHubへpushすると、`.github/workflows/draft-release.yml` がma
 - [ ] packageディレクトリが`Relic-darwin-arm64`で、Universal Binaryまたはx64成果物が混在していない
 - [ ] `THIRD_PARTY_NOTICES.md` が添付されている
 - [ ] `relic-dependencies.cdx.json` が添付されている
-- [ ] workflowが `release-assets` に集めた確認済みファイルだけが添付され、途中生成物や未確認の成果物が混ざっていない
+- [ ] workflowが `release-assets` に集めた確認済みDMG・checksumと、checkout済みの `THIRD_PARTY_NOTICES.md`・SBOMだけが添付され、途中生成物や未確認の成果物が混ざっていない
 
 ## 公開前確認
 

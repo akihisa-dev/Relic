@@ -63,12 +63,12 @@ Relic is an owner-led open source project licensed under the GNU Affero General 
 
 - Internal links using `[[...]]` and relative Markdown links.
 - Backlinks, outgoing links, and unlinked references.
-- Bubble view for Markdown, tags, attachments, and unresolved links.
+- Bubble view for relationships between existing Markdown files.
 - Sphere view for exploring the same workspace graph in 3D.
 - Outline view.
 - Quick switcher.
 - Command palette.
-- Full-text search, filename search, tag search, and front matter search.
+- Quick switching by file name, path, or alias, plus search and filtering within supported views.
 
 ![Relic Sphere view screenshot](assets/relic-sphere-screenshot.png)
 
@@ -348,12 +348,12 @@ Relicは、GNU Affero General Public License v3.0 or later（AGPL-3.0-or-later�
 
 - 内部リンク `[[...]]` とMarkdown相対リンク
 - バックリンク、アウトゴーイングリンク、未リンク参照
-- Markdown、タグ、添付画像、未解決リンクの関係を表示するバブルビュー
+- 実在するMarkdownファイル同士の関係を表示するバブルビュー
 - 同じワークスペースグラフを3次元で見渡すスフィアビュー
 - アウトライン表示
 - クイックスイッチャー
 - コマンドパレット
-- 全文検索、ファイル名検索、タグ検索、フロントマター検索
+- ファイル名・パス・別名によるクイック切り替えと、対応ビュー内の検索・絞り込み
 
 ![Relicスフィアビューのスクリーンショット](assets/relic-sphere-screenshot.png)
 
