@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 import {
   fireEvent,
   screen,
@@ -40,41 +38,6 @@ describe("App workspaces", () => {
     vi.unstubAllGlobals();
     restoreNavigatorPlatform();
     resetRendererStores();
-  });
-
-  it("開いているワークスペースの切り替え操作をサイドバー下部の青い領域として表示する", () => {
-    const css = readFileSync("src/renderer/styles/file-tree-search.css", "utf8");
-
-    expect(css).toMatch(/\.sidebar-section:has\(> \.workspace-actions\)\s*\{[^}]*min-height:\s*100%;/s);
-    expect(css).toMatch(/\.sidebar:has\(\.workspace-actions\)::after\s*\{[^}]*display:\s*none;/s);
-    expect(css).toMatch(/\.workspace-actions\s*\{[^}]*background:\s*var\(--color-primary-dark\);/s);
-    expect(css).not.toMatch(/\.workspace-actions\s*\{[^}]*position:\s*sticky;/s);
-    expect(css).toMatch(/\.workspace-actions\s*\{[^}]*margin:\s*0 -16px;/s);
-    expect(css).toMatch(/\.workspace-actions\s*\{[^}]*padding:\s*6px 24px 8px;/s);
-    expect(css).not.toMatch(/\.workspace-actions\s*\{[^}]*min-height:/s);
-    expect(css).toMatch(/\.workspace-actions \.workspace-action-button\s*\{[^}]*color:\s*color-mix\(in srgb, #fff 88%, var\(--color-primary-dark\) 12%\);/s);
-    expect(css).toMatch(/\.workspace-actions \.workspace-action-button\s*\{[^}]*min-height:\s*28px;/s);
-  });
-
-  it("ファイル作成操作は一覧スクロールから外して固定する", () => {
-    const css = readFileSync("src/renderer/styles/file-tree-search.css", "utf8");
-
-    expect(css).toMatch(/\.sidebar-body:has\(> \.files-sidebar-section\)\s*\{[^}]*overflow:\s*hidden;/s);
-    expect(css).toMatch(/\.files-sidebar-section\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\) auto;/s);
-    expect(css).toMatch(/\.files-sidebar-section\s*\{[^}]*height:\s*calc\(100% \+ 32px\);/s);
-    expect(css).toMatch(/\.files-sidebar-section\s*\{[^}]*margin:\s*-16px;/s);
-    expect(css).toMatch(/\.files-sidebar-section\s*\{[^}]*padding:\s*16px 16px 0;/s);
-    expect(css).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*position:\s*relative;/s);
-    expect(css).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*z-index:\s*6;/s);
-    expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*min-height:\s*0;/s);
-    expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*overflow-y:\s*auto;/s);
-  });
-
-  it("ファイルツリー行は通常時にクリック可能なカーソルを表示する", () => {
-    const css = readFileSync("src/renderer/styles/file-tree-search.css", "utf8");
-
-    expect(css).toMatch(/\.file-tree-row\s*\{[^}]*cursor:\s*pointer;/s);
-    expect(css).toMatch(/\.file-tree-row\.dragging\s*\{[^}]*cursor:\s*grabbing;/s);
   });
 
   it("読込不能ワークスペースを空表示と区別し、ファイル操作を隠して復旧操作を示す", async () => {

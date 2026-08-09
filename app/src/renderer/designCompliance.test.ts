@@ -110,3 +110,36 @@ describe("DESIGN.md compliance", () => {
     expect(designCss).not.toMatch(/url\([^)]*noise/i);
   });
 });
+
+describe("Workspace layout CSS contracts", () => {
+  const fileTreeCss = readFileSync("src/renderer/styles/file-tree-search.css", "utf8");
+
+  it("開いているワークスペースの切り替え操作をサイドバー下部の青い領域として表示する", () => {
+    expect(fileTreeCss).toMatch(/\.sidebar-section:has\(> \.workspace-actions\)\s*\{[^}]*min-height:\s*100%;/s);
+    expect(fileTreeCss).toMatch(/\.sidebar:has\(\.workspace-actions\)::after\s*\{[^}]*display:\s*none;/s);
+    expect(fileTreeCss).toMatch(/\.workspace-actions\s*\{[^}]*background:\s*var\(--color-primary-dark\);/s);
+    expect(fileTreeCss).not.toMatch(/\.workspace-actions\s*\{[^}]*position:\s*sticky;/s);
+    expect(fileTreeCss).toMatch(/\.workspace-actions\s*\{[^}]*margin:\s*0 -16px;/s);
+    expect(fileTreeCss).toMatch(/\.workspace-actions\s*\{[^}]*padding:\s*6px 24px 8px;/s);
+    expect(fileTreeCss).not.toMatch(/\.workspace-actions\s*\{[^}]*min-height:/s);
+    expect(fileTreeCss).toMatch(/\.workspace-actions \.workspace-action-button\s*\{[^}]*color:\s*color-mix\(in srgb, #fff 88%, var\(--color-primary-dark\) 12%\);/s);
+    expect(fileTreeCss).toMatch(/\.workspace-actions \.workspace-action-button\s*\{[^}]*min-height:\s*28px;/s);
+  });
+
+  it("ファイル作成操作は一覧スクロールから外して固定する", () => {
+    expect(fileTreeCss).toMatch(/\.sidebar-body:has\(> \.files-sidebar-section\)\s*\{[^}]*overflow:\s*hidden;/s);
+    expect(fileTreeCss).toMatch(/\.files-sidebar-section\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\) auto;/s);
+    expect(fileTreeCss).toMatch(/\.files-sidebar-section\s*\{[^}]*height:\s*calc\(100% \+ 32px\);/s);
+    expect(fileTreeCss).toMatch(/\.files-sidebar-section\s*\{[^}]*margin:\s*-16px;/s);
+    expect(fileTreeCss).toMatch(/\.files-sidebar-section\s*\{[^}]*padding:\s*16px 16px 0;/s);
+    expect(fileTreeCss).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*position:\s*relative;/s);
+    expect(fileTreeCss).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*z-index:\s*6;/s);
+    expect(fileTreeCss).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*min-height:\s*0;/s);
+    expect(fileTreeCss).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*overflow-y:\s*auto;/s);
+  });
+
+  it("ファイルツリー行は通常時にクリック可能なカーソルを表示する", () => {
+    expect(fileTreeCss).toMatch(/\.file-tree-row\s*\{[^}]*cursor:\s*pointer;/s);
+    expect(fileTreeCss).toMatch(/\.file-tree-row\.dragging\s*\{[^}]*cursor:\s*grabbing;/s);
+  });
+});
