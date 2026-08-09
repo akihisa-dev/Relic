@@ -2,7 +2,7 @@
   "version": 3,
   "environment": {
     "repository": "akihisa-dev/Relic",
-    "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
+    "head": "aa85d663849528ffd21146a99ffe53117645925a",
     "skillRoot": ".agents/skills",
     "externalCatalogs": [
       "openai-system",
@@ -13,8 +13,8 @@
     "sameNameVariants": false,
     "historyScope": "full",
     "executionAvailable": true,
-    "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5",
-    "notes": "段階別routing schemaへ移行した。期待結果を渡さない独立評価で現行成功を確認し、過去の段階情報がない観測はlegacyObservationへ保持する。routingSurfaceDigestは現行のAGENTS.md、全repository-owned SKILL.md、routing-cases.jsonへ同期する。"
+    "routingSurfaceDigest": "0decb27e141734853bc037811911a194ed873b234039539cb96708c1ff34209e",
+    "notes": "現行routing surfaceに対する独立実行証拠はskill-audit caseだけで確認した。過去のexecution-passは旧digestの証拠として保持し、未実行caseとenvironment mismatchを成功扱いしないため、repository-owned Skill全体の現行routing品質は主張しない。"
   },
   "cases": [
     {
@@ -388,8 +388,23 @@
       "caseId": "skill-audit",
       "staticStatus": "static-pass",
       "execution": {
-        "status": "environment-mismatch",
-        "reason": "過去観測は段階別のactualSkillsByPhaseを記録していない"
+        "status": "execution-pass",
+        "actualSkillsByPhase": {
+          "orientation": [
+            "relic-audit-skills"
+          ],
+          "preWrite": [
+            "relic-guard-task"
+          ],
+          "verification": [],
+          "commit": [
+            "relic-manage-version",
+            "relic-commit"
+          ],
+          "publication": []
+        },
+        "head": "aa85d663849528ffd21146a99ffe53117645925a",
+        "routingSurfaceDigest": "0decb27e141734853bc037811911a194ed873b234039539cb96708c1ff34209e"
       },
       "legacyObservation": {
         "status": "execution-pass",
