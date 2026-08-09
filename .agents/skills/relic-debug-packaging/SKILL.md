@@ -16,7 +16,7 @@ description: RelicのElectron Forge・ViteによるmacOS向けpackage・make、A
 
 ## 失敗段階を切り分ける
 
-1. 依存導入、Vite build、Forge package、maker、ASAR監査、legal resources、ZIP生成を分ける。
+1. 依存導入、Vite build、Forge package、maker、ASAR監査、legal resources、配布DMGと補助ZIPの生成を分ける。
 2. ログ末尾だけで決めず、最初の失敗と、その直前に作成されたファイルを確認する。
 3. package処理だけなら現行のmacOS package script、makerまでならmacOS make scriptで狭く再現する。
 4. 既存成果物の内容確認だけならmacOS safe checkを使い、古い成果物の成功を現行buildの成功としない。
@@ -32,7 +32,7 @@ description: RelicのElectron Forge・ViteによるmacOS向けpackage・make、A
 3. source map、ソース、テスト、設定、不要な依存など、許可外entryがASARへ混入していないことを確認する。
 4. `LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOMがASAR外のresourcesに含まれることを確認する。
 5. 現行方針外のinstaller・更新用成果物を残さない。
-6. macOS workflowのpackage・make・ZIP化を現行定義どおり保つ。
+6. macOS workflowのpackage・make・配布DMG検査を現行定義どおり保ち、補助ZIPを配布対象と混同しない。
 7. 現行成果物を未署名・未公証として扱い、署名、公証、自動更新を診断修正へ混ぜない。
 
 ## 修正して再検証する
@@ -44,7 +44,7 @@ description: RelicのElectron Forge・ViteによるmacOS向けpackage・make、A
 5. `app/` で対象scriptテスト、`pnpm typecheck`、必要に応じて `pnpm verify` を実行する。
 6. macOSのsafe buildを再実行し、成功表示だけでなくASAR reportと成果物構成を確認する。
 7. 配布内容や運用を変えた場合は `docs/development.md`、README、workflow、release checklistを同期する。
-8. タグ前のmacOS確認は手動の `Pre-release Verification` workflowで既存safe buildを再利用する。タグ、Release、pushを行わず、remote runnerの結果はローカルで実行済みと表現しない。
+8. タグ前のmacOS確認は手動の `Pre-release Verification` workflowでsafe buildと配布版起動スモークを実行する。タグ、Release、pushを行わず、remote runnerの結果はローカルで実行済みと表現しない。
 9. `git diff --check` と全差分を確認し、`out/`、一時ログ、ローカル絶対パスをコミット対象へ含めない。
 
 ## 完了する

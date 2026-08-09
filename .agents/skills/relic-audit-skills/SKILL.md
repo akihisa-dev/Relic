@@ -37,6 +37,8 @@ description: Relicリポジトリで利用可能なSkill集合と本監査Skill�
      --format json
    ```
 
+   この基本形はrepository-ownedだけを収集する。全体監査では利用可能カタログの各entryを `--catalog-entry` で渡し、root全走査をカタログ全件の代わりにしない。
+
 4. ワークスペース内をrepository-owned、外部カタログだけから得たSkillをexternalとして分離する。`--fail-on-issues` はrepository-ownedの構造、重複名、確定参照切れだけで失敗させ、外部Skillの追加frontmatter、folder規約差、未解決ローカル参照はinformational findingとして残す。
 5. repository-ownedの各 `SKILL.md` と `agents/openai.yaml` を読み、必要な `references/` と `scripts/` も確認する。各Skillについて、名前、description、主目的、発火条件、入力、出力、使用ツール、参照ファイル、実行スクリプト、他Skillとの関係を収集する。
 6. descriptionを発火判定の一次根拠とする。本文だけに発火条件や除外条件がある場合は、読み込まれる前に選択へ寄与しないためrouting上の問題候補とする。
