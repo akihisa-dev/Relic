@@ -114,7 +114,7 @@ UI文言は辞書へ集約し、コンポーネント内へ散在させない。
 `app/` で `pnpm source:size` を実行すると、production、test、test-support、tooling、CSSの行数を責務別に多い順で確認できる。
 保存済みの `scripts/baselines/source-lines.json` には分類と行数を記録し、productionは50行以上かつ20%以上、それ以外は100行以上かつ20%以上の増加を急増警告にする。
 絶対行数と急増はいずれも責務を確認するための警告であり、行数だけを理由にCIを失敗させたり、機械的に分割したりしない。意図した構造変更を確認した場合だけ `pnpm source:size:baseline` で基準を更新する。
-`pnpm renderer:production:check` はrendererのproduction buildを実行し、Markdownプレビュー、Mermaid、D2のentryが出力され、初期entryから続く静的import経路へ含まれないことを確認する。
+`pnpm renderer:production:check` はrendererのproduction buildを実行し、Markdownプレビュー、Mermaid、D2のentryと、Markdownプレビューが静的に使う `marked`・`highlight.js` の専用chunkが出力されることを確認する。これらを初期entryから続く静的import経路へ含めず、依存chunkはMarkdownプレビューentryから続く静的import経路上に保つ。ライブプレビュー数式とHTML安全化で同期利用するKaTeX・DOMPurifyのchunkは初期静的import経路に保つ。
 個別chunk、JavaScript、CSS、assetの容量と増加率はCIの合否条件にしない。
 `pnpm performance:workspace` は再現可能な1,000ファイルfixture、`pnpm performance:workspace:large` は10,000ファイルfixtureで、ファイルツリー、索引、変更ファイルだけの再読込、検索、タグ、バックリンク、グラフ、年表を複数回測定して中央値とI/O回数を表示する。
 性能を比較するときは、同じfixture fingerprint、実行回数、warmup回数を使い、単発値ではなく中央値と読み取り・stat回数を確認する。保存済み基準にある指標が現在の測定結果にない場合は比較不能として検証を失敗させる。

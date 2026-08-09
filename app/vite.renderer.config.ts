@@ -25,9 +25,9 @@ export default mergeConfig(baseConfig, {
           if (!id.includes("node_modules")) return undefined;
 
           if (id.includes("@codemirror")) return "codemirror";
-          if (id.includes("katex") || id.includes("highlight.js") || id.includes("dompurify") || id.includes("marked")) {
-            return "markdown-preview";
-          }
+          if (id.includes("highlight.js") && !/\.css(?:$|\?)/u.test(id)) return "markdown-highlight";
+          if (id.includes("marked")) return "markdown-parser";
+          if (id.includes("katex") || id.includes("dompurify")) return "markdown-runtime";
           if (id.includes("react") || id.includes("react-dom") || id.includes("scheduler")) return "react-vendor";
 
           return undefined;
