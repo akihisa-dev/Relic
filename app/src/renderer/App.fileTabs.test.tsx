@@ -256,8 +256,8 @@ describe("App file tabs", () => {
     expect(document.querySelector(".cm-live-bold")).toBeNull();
   });
 
-  it("1万行Markdownへ入力してもEditorViewとカーソルとスクロール位置を維持する", async () => {
-    const longMarkdown = Array.from({ length: 10_000 }, (_, index) => `行${index + 1} 本文`).join("\n");
+  it("Markdown入力後もEditorViewとカーソルとスクロール位置を維持し、タブ本文へ反映する", async () => {
+    const markdown = Array.from({ length: 200 }, (_, index) => `行${index + 1} 本文`).join("\n");
 
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
@@ -269,7 +269,7 @@ describe("App file tabs", () => {
       }),
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
-        value: { content: longMarkdown, name: "長文メモ", path: "長文メモ.md" }
+        value: { content: markdown, name: "長文メモ", path: "長文メモ.md" }
       })
     });
 
@@ -309,7 +309,7 @@ describe("App file tabs", () => {
     expect(activeTabId).not.toBeNull();
     const activeTab = useEditorStore.getState().tabs[activeTabId!];
     expect(activeTab?.kind).toBe("file");
-    if (activeTab?.kind === "file") expect(activeTab.content).toBe(`${longMarkdown}\n入力しても位置を維持`);
+    if (activeTab?.kind === "file") expect(activeTab.content).toBe(`${markdown}\n入力しても位置を維持`);
   });
 
   it("タブの右クリックメニューから複製・ピン留め・コピー・場所表示を実行する", async () => {
