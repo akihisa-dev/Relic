@@ -13,6 +13,47 @@ describe("useWorkspaceFileOpenActions", () => {
     window.relic = undefined;
   });
 
+  it("既に開いているMarkdownファイルは再読込せず即時にアクティブ化する", () => {
+    const readMarkdownFile = vi.fn();
+    const openFileInPane = vi.fn();
+    window.relic = makeRelicApi({ readMarkdownFile });
+    const pane = { activeTabId: "chart-graph", history: [], tabIds: ["chart-graph"] };
+    const existingFile = file("A.md");
+    const { result } = renderHook(() => {
+      const guard = useWorkspaceRequestGuard("workspace-a");
+      return useWorkspaceFileOpenActions({
+        ...guard,
+        activeWorkspaceId: "workspace-a",
+        aliasesByPath: {},
+        existingMarkdownPaths: ["A.md"],
+        focusedPane: "left",
+        leftPane: pane,
+        openFileInPane,
+        openImageInPane: vi.fn(),
+        openPdfInPane: vi.fn(),
+        rightPane: pane,
+        setLeftPaneScrollHeading: vi.fn(),
+        setRightPaneScrollHeading: vi.fn(),
+        setWorkspaceError: vi.fn(),
+        setWorkspaceState: vi.fn(),
+        tabs: {
+          "chart-graph": { chartId: "graph", id: "chart-graph", kind: "chart", name: "Bubble" },
+          "tab-a": {
+            ...existingFile,
+            id: "tab-a",
+            kind: "file",
+            savedContent: existingFile.content
+          }
+        }
+      });
+    });
+
+    act(() => result.current.handleOpenFile("A.md"));
+
+    expect(openFileInPane).toHaveBeenCalledWith("left", existingFile);
+    expect(readMarkdownFile).not.toHaveBeenCalled();
+  });
+
   it("ワークスペース切替後に完了した旧読込をタブへ適用しない", async () => {
     const first = deferred<RelicResult<MarkdownFileContent>>();
     const second = deferred<RelicResult<MarkdownFileContent>>();

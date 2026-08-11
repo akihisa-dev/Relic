@@ -145,13 +145,18 @@ describe("BubbleView", () => {
   });
 
   it("ノードのpointercancelでは開かず、通常クリックでは1回で開く", () => {
-    const onOpenFile = vi.fn();
+    let canvas: HTMLElement;
+    const releasePointerCapture = vi.fn();
+    const onOpenFile = vi.fn(() => {
+      expect(canvas).toHaveStyle("cursor: grab");
+      expect(releasePointerCapture).toHaveBeenCalledOnce();
+    });
     const onOpenTagSearch = vi.fn();
     renderBubbleView("ja", onOpenFile, onOpenTagSearch);
-    const canvas = screen.getByLabelText("バブル");
+    canvas = screen.getByLabelText("バブル");
     Object.defineProperty(canvas, "setPointerCapture", { configurable: true, value: vi.fn() });
     Object.defineProperty(canvas, "hasPointerCapture", { configurable: true, value: vi.fn(() => true) });
-    Object.defineProperty(canvas, "releasePointerCapture", { configurable: true, value: vi.fn() });
+    Object.defineProperty(canvas, "releasePointerCapture", { configurable: true, value: releasePointerCapture });
     const fileNode = {
       backlinkCount: 0,
       category: "人物",
@@ -190,6 +195,7 @@ describe("BubbleView", () => {
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
     fireEvent(canvas, new MouseEvent("pointercancel", { bubbles: true, clientX: 20, clientY: 30 }));
     expect(onOpenTagSearch).not.toHaveBeenCalled();
+    releasePointerCapture.mockClear();
 
     bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReturnValue(fileNode);
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));

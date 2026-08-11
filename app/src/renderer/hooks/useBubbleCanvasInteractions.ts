@@ -299,6 +299,9 @@ export function useBubbleCanvasInteractions({
   const handlePointerUp = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
     const pointer = pointerRef.current;
     if (!pointer) return;
+    const primaryAction = pointer.dragNode && !pointer.moved
+      ? graphNodePrimaryAction(pointer.dragNode)
+      : null;
 
     if (event.currentTarget.hasPointerCapture(pointer.pointerId)) {
       event.currentTarget.releasePointerCapture(pointer.pointerId);
@@ -314,11 +317,6 @@ export function useBubbleCanvasInteractions({
         0,
         0
       );
-      if (!pointer.moved) {
-        const action = graphNodePrimaryAction(pointer.dragNode);
-        if (action?.type === "file") openFileRef.current(action.path);
-        if (action?.type === "tagSearch") openTagSearchRef.current(action.tag);
-      }
     }
     if (pointer.dragCategory) simulationClientRef.current?.setCategoryDragTarget(null);
 
@@ -332,6 +330,15 @@ export function useBubbleCanvasInteractions({
     }
     pointerRef.current = null;
     event.currentTarget.style.cursor = "grab";
+
+    if (primaryAction?.type === "file") {
+      openFileRef.current(primaryAction.path);
+      return;
+    }
+    if (primaryAction?.type === "tagSearch") {
+      openTagSearchRef.current(primaryAction.tag);
+      return;
+    }
     requestDraw();
   }, [openFileRef, openTagSearchRef, requestDraw, simulationClientRef]);
 

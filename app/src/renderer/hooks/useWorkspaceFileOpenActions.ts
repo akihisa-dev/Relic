@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import { resolveMarkdownLinkPath, resolveWikiLinkPathWithAliases } from "../../shared/links";
 import { isSupportedPdfPath } from "../../shared/pdfFiles";
+import type { FileTab } from "../store/editorStoreTypes";
 import { useAsyncRequestGuard } from "./useAsyncRequestGuard";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
@@ -66,6 +67,18 @@ export function useWorkspaceFileOpenActions({
         (activeTab?.kind === "file" || activeTab?.kind === "image" || activeTab?.kind === "pdf") &&
         activeTab.path === path
       ) {
+        return;
+      }
+
+      const existingFileTab = Object.values(tabs).find(
+        (tab): tab is FileTab => tab.kind === "file" && tab.path === path
+      );
+      if (existingFileTab) {
+        openFileInPane(focusedPane, {
+          content: existingFileTab.content,
+          name: existingFileTab.name,
+          path: existingFileTab.path
+        });
         return;
       }
 
