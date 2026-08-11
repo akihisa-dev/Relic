@@ -144,7 +144,7 @@ describe("BubbleView", () => {
     expect(canvas).toHaveStyle("cursor: grabbing");
   });
 
-  it("ノードのpointercancelでは固定だけを解除し、選択と再クリックによる起動を維持する", () => {
+  it("ノードのpointercancelでは開かず、通常クリックでは1回で開く", () => {
     const onOpenFile = vi.fn();
     const onOpenTagSearch = vi.fn();
     renderBubbleView("ja", onOpenFile, onOpenTagSearch);
@@ -194,21 +194,15 @@ describe("BubbleView", () => {
     bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReturnValue(fileNode);
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
     fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 20, clientY: 30 }));
-    expect(onOpenFile).not.toHaveBeenCalled();
-
-    fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
-    fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 20, clientY: 30 }));
     expect(onOpenFile).toHaveBeenCalledWith("note.md");
 
     bubbleViewModelMocks.bubbleNodeAtCanvasPoint.mockReturnValue(tagNode);
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
     fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 20, clientY: 30 }));
-    fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
-    fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 20, clientY: 30 }));
     expect(onOpenTagSearch).toHaveBeenCalledWith("project");
   });
 
-  it("ノードをドラッグ中も物理演算を続け、選択を残して再クリックでファイルを開ける", () => {
+  it("ノードのドラッグでは開かず、次の通常クリックでファイルを開ける", () => {
     const onOpenFile = vi.fn();
     renderBubbleView("ja", onOpenFile);
     const canvas = screen.getByLabelText("バブル");
