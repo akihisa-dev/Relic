@@ -77,6 +77,7 @@ describe("bubbleLayout", () => {
     applyBubbleSimulationPositions(nodes, {
       buffer,
       ids: snapshots.map((node) => node.id),
+      sequence: 0,
       type: "positions"
     });
 
@@ -131,6 +132,7 @@ describe("bubbleLayout", () => {
     applyBubbleSimulationPositions(nodes, {
       buffer,
       ids: ["A.md", "B.md"],
+      sequence: 0,
       type: "positions"
     });
 

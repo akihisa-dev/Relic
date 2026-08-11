@@ -93,6 +93,7 @@ export interface BubbleSimulationOptionsMessage {
 export interface BubbleSimulationFixedNodeMessage {
   alpha?: number;
   id: string;
+  sequence: number;
   type: "fixedNode";
   velocityX?: number;
   velocityY?: number;
@@ -160,6 +161,7 @@ export type BubbleSimulationRequest =
 export interface BubbleSimulationPositionsMessage {
   buffer: ArrayBuffer;
   ids: string[];
+  sequence: number;
   type: "positions";
 }
 

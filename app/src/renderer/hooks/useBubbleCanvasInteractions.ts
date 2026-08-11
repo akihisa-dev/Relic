@@ -9,14 +9,9 @@ import {
 } from "react";
 
 import type { BubbleSimulationClient } from "../bubble/bubbleSimulationClient";
-import {
-  bubbleNodeCollisionRadius,
-  constrainBubbleNodeSpacing,
-  dampenBubbleNodeDragReaction
-} from "../bubble/bubbleNodeCollisionModel";
+import { bubbleNodeCollisionRadius } from "../bubble/bubbleNodeCollisionModel";
 import {
   bubbleCategoryContactOverlap,
-  constrainBubbleCategorySpacing,
   constrainBubbleNodeToCategoryRegions,
   bubbleCategoryDynamicLayouts,
   bubbleCategoryRegions,
@@ -52,7 +47,7 @@ import type {
 import { useLatest } from "./useLatest";
 
 export const bubbleCanvasSizeFallback = { height: 600, width: 900 };
-const bubbleNodeDragSimulationAlpha = 0.08;
+const bubbleNodeDragSimulationAlpha = 0;
 
 interface UseBubbleCanvasInteractionsOptions {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -102,8 +97,6 @@ export function useBubbleCanvasInteractions({
     lastX: number;
     lastY: number;
     moved: boolean;
-    nodeVelocityX: number;
-    nodeVelocityY: number;
     pointerId: number;
     startX: number;
     startY: number;
@@ -191,8 +184,6 @@ export function useBubbleCanvasInteractions({
       lastX: event.clientX,
       lastY: event.clientY,
       moved: false,
-      nodeVelocityX: 0,
-      nodeVelocityY: 0,
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
@@ -235,60 +226,38 @@ export function useBubbleCanvasInteractions({
         latestOptionsRef.current
       );
       const graphNodes = [...nodesRef.current.values()];
-      const anchoredNodeIds = new Set([pointer.dragNode.id]);
-      const initialPositions = new Map(
-        graphNodes.map((node) => [node.id, { x: node.x, y: node.y }])
-      );
-      let regions = bubbleCategoryRegions(
+      const regions = bubbleCategoryRegions(
         bubbleCategoryDynamicLayouts(graphNodes),
         graphNodes
       );
       const category = normalizeBubbleCategory(pointer.dragNode.category);
-      let constrainedPoint = desiredPoint;
-      for (let pass = 0; pass < 3; pass += 1) {
-        regions = bubbleCategoryRegions(
-          bubbleCategoryDynamicLayouts(graphNodes),
-          graphNodes
-        );
-        constrainedPoint = constrainBubbleNodeToCategoryRegions(
-          pointer.dragNode,
-          regions,
-          constrainedPoint,
-          dragPadding
-        );
-        const categoryRegion = category ? regions.get(category) : null;
-        if (categoryRegion?.count === 1) {
-          const nextOffsetX = categoryRegion.x - constrainedPoint.x;
-          const nextOffsetY = categoryRegion.y - constrainedPoint.y;
-          if (
-            pointer.dragNode.categoryCenterOffsetX !== nextOffsetX ||
-            pointer.dragNode.categoryCenterOffsetY !== nextOffsetY
-          ) {
-            pointer.dragNode.categoryCenterOffsetX = nextOffsetX;
-            pointer.dragNode.categoryCenterOffsetY = nextOffsetY;
-            simulationClientRef.current?.setNodeCategoryCenterOffset(
-              pointer.dragNode.id,
-              nextOffsetX,
-              nextOffsetY
-            );
-          }
+      const constrainedPoint = constrainBubbleNodeToCategoryRegions(
+        pointer.dragNode,
+        regions,
+        desiredPoint,
+        dragPadding
+      );
+      const categoryRegion = category ? regions.get(category) : null;
+      if (categoryRegion?.count === 1) {
+        const nextOffsetX = categoryRegion.x - constrainedPoint.x;
+        const nextOffsetY = categoryRegion.y - constrainedPoint.y;
+        if (
+          pointer.dragNode.categoryCenterOffsetX !== nextOffsetX ||
+          pointer.dragNode.categoryCenterOffsetY !== nextOffsetY
+        ) {
+          pointer.dragNode.categoryCenterOffsetX = nextOffsetX;
+          pointer.dragNode.categoryCenterOffsetY = nextOffsetY;
+          simulationClientRef.current?.setNodeCategoryCenterOffset(
+            pointer.dragNode.id,
+            nextOffsetX,
+            nextOffsetY
+          );
         }
-        pointer.dragNode.fx = constrainedPoint.x;
-        pointer.dragNode.fy = constrainedPoint.y;
-        pointer.dragNode.x = constrainedPoint.x;
-        pointer.dragNode.y = constrainedPoint.y;
-        constrainBubbleNodeSpacing(graphNodes, latestOptionsRef.current, anchoredNodeIds);
-        constrainBubbleCategorySpacing(graphNodes, anchoredNodeIds, true);
       }
-      dampenBubbleNodeDragReaction(graphNodes, initialPositions, anchoredNodeIds);
-      pointer.nodeVelocityX = 0;
-      pointer.nodeVelocityY = 0;
-      for (const node of graphNodes) {
-        if (node === pointer.dragNode || node.fx !== null || node.fy !== null) continue;
-        const initial = initialPositions.get(node.id);
-        if (!initial || (node.x === initial.x && node.y === initial.y)) continue;
-        simulationClientRef.current?.moveNode(node.id, node.x, node.y);
-      }
+      pointer.dragNode.fx = constrainedPoint.x;
+      pointer.dragNode.fy = constrainedPoint.y;
+      pointer.dragNode.x = constrainedPoint.x;
+      pointer.dragNode.y = constrainedPoint.y;
       simulationClientRef.current?.setNodeFixed(
         pointer.dragNode.id,
         pointer.dragNode.x,
@@ -346,11 +315,10 @@ export function useBubbleCanvasInteractions({
         pointer.dragNode.id,
         null,
         null,
-        0.08,
-        pointer.nodeVelocityX,
-        pointer.nodeVelocityY
+        0,
+        0,
+        0
       );
-      simulationClientRef.current?.resume(pointer.moved ? 0.08 : 0);
       if (!pointer.moved && wasSelected) {
         const action = graphNodePrimaryAction(pointer.dragNode);
         if (action?.type === "file") openFileRef.current(action.path);
@@ -386,8 +354,7 @@ export function useBubbleCanvasInteractions({
     if (pointer.dragNode) {
       pointer.dragNode.fx = null;
       pointer.dragNode.fy = null;
-      simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, null, null, 0.08);
-      simulationClientRef.current?.resume();
+      simulationClientRef.current?.setNodeFixed(pointer.dragNode.id, null, null, 0, 0, 0);
     }
     if (pointer.dragCategory) simulationClientRef.current?.setCategoryDragTarget(null);
 

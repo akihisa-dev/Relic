@@ -18,6 +18,7 @@ import {
   applyBubbleCategoryMotion,
   bubbleCategorySpacing,
   bubbleCategoryDriftCenterStrength,
+  constrainBubbleNodesToCategoryRegions,
   constrainBubbleCategorySpacing
 } from "./bubbleCategoryModel";
 import { alignBubbleNodesToCenter } from "./bubbleCategoryTranslation";
@@ -56,6 +57,7 @@ const ctx = self as unknown as BubbleSimulationWorkerScope;
 let currentOptions: BubbleOptions = defaultBubbleOptions;
 let categoryDragNodeIds = new Set<string>();
 let categoryDragTarget: BubbleCategoryDragTarget | null = null;
+let positionSequence = 0;
 let simulationPaused = false;
 let simulation: Simulation<WorkerNode, WorkerLink> | null = null;
 let workerLinks: WorkerLink[] = [];
@@ -86,6 +88,7 @@ function handleBubbleSimulationRequest(message: BubbleSimulationRequest): void {
       message.id,
       message.x,
       message.y,
+      message.sequence,
       message.alpha,
       message.velocityX,
       message.velocityY
@@ -225,12 +228,14 @@ function updateFixedNode(
   id: string,
   x: number | null,
   y: number | null,
+  sequence: number,
   alpha = 0.3,
   velocityX?: number,
   velocityY?: number
 ): void {
   const node = workerNodes.find((candidate) => candidate.id === id);
   if (!node || !simulation) return;
+  positionSequence = sequence;
 
   node.fx = x;
   node.fy = y;
@@ -245,7 +250,7 @@ function updateFixedNode(
       return;
     }
     simulation.alphaTarget(0);
-    restartSimulation(0.08);
+    restartSimulation(alpha);
     return;
   }
 
@@ -340,6 +345,7 @@ function postBubblePositions(): void {
       categoryDragNodeIds,
       hasActiveCategoryContact()
     );
+    constrainBubbleNodesToCategoryRegions(workerNodes);
   }
   const buffer = new ArrayBuffer(workerNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
   const values = new Float32Array(buffer);
@@ -356,7 +362,7 @@ function postBubblePositions(): void {
     values[offset + 5] = node.categoryCenterOffsetY;
   });
 
-  postBubbleSimulationMessage({ buffer, ids, type: "positions" }, [buffer]);
+  postBubbleSimulationMessage({ buffer, ids, sequence: positionSequence, type: "positions" }, [buffer]);
 }
 
 function hasActiveCategoryContact(): boolean {

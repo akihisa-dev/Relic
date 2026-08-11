@@ -15,6 +15,7 @@ import {
   bubbleCategorySpacing,
   bubbleCategoryTarget,
   constrainBubbleCategorySpacing,
+  constrainBubbleNodesToCategoryRegions,
   normalizeBubbleCategory
 } from "./bubbleCategoryModel";
 import {
@@ -452,6 +453,21 @@ describe("bubbleCategoryModel", () => {
 
     expect(person).toMatchObject({ x: -20, y: 0, fx: -20, fy: 0 });
     expect(material.x).toBeGreaterThan(20);
+  });
+
+  it("衝突補正後のカテゴリーノードをバブル内へ戻す", () => {
+    const nodes = [
+      { category: "人物", id: "A.md", vx: 0, vy: 0, x: -200, y: 0 },
+      { category: "人物", id: "B.md", vx: 0, vy: 0, x: 200, y: 0 }
+    ];
+
+    const regions = constrainBubbleNodesToCategoryRegions(nodes);
+    const region = regions.get("人物")!;
+
+    for (const node of nodes) {
+      expect(Math.hypot(node.x - region.x, node.y - region.y))
+        .toBeLessThanOrEqual(region.radius - 36);
+    }
   });
 
   it("ドラッグ中はバブル同士の接触と膜の凹みを許す", () => {

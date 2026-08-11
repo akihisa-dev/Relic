@@ -235,11 +235,19 @@ describe("BubbleView", () => {
 
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 20, clientY: 30 }));
     expect(bubbleSimulationMocks.pause).not.toHaveBeenCalled();
-    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith("note.md", 20, 30, 0.08);
+    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenCalledWith("note.md", 20, 30, 0);
     expect(bubbleSimulationMocks.resume).not.toHaveBeenCalled();
     fireEvent(canvas, new MouseEvent("pointermove", { bubbles: true, clientX: 32, clientY: 30 }));
     fireEvent(canvas, new MouseEvent("pointerup", { bubbles: true, clientX: 32, clientY: 30 }));
-    expect(bubbleSimulationMocks.resume).toHaveBeenCalledWith(0.08);
+    expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenLastCalledWith(
+      "note.md",
+      null,
+      null,
+      0,
+      0,
+      0
+    );
+    expect(bubbleSimulationMocks.resume).not.toHaveBeenCalled();
     expect(onOpenFile).not.toHaveBeenCalled();
 
     fireEvent(canvas, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 32, clientY: 30 }));
@@ -247,7 +255,7 @@ describe("BubbleView", () => {
     expect(onOpenFile).toHaveBeenCalledWith("note.md");
   });
 
-  it("ノードをドラッグ中もWorkerから届いた周囲ノードの移動を反映する", async () => {
+  it("ノードのドラッグで周囲を直接動かさず、Workerから届く自然な移動は反映する", async () => {
     const graph: WorkspaceGraph = {
       links: [],
       nodes: [
@@ -306,15 +314,14 @@ describe("BubbleView", () => {
       clientX: 30,
       clientY: 20
     }));
-    const targetMove = bubbleSimulationMocks.moveNode.mock.calls.find(([id]) => id === "target.md");
-    expect(targetMove).toBeDefined();
-    expect(Math.hypot(targetMove![1], targetMove![2])).toBeGreaterThan(0);
-    expect(Math.hypot(targetMove![1], targetMove![2])).toBeLessThan(24);
+    expect(bubbleSimulationMocks.moveNode).not.toHaveBeenCalled();
+    expect(bubbleSimulationMocks.pause).not.toHaveBeenCalled();
+    expect(bubbleSimulationMocks.resume).not.toHaveBeenCalled();
     expect(bubbleSimulationMocks.setNodeFixed).toHaveBeenLastCalledWith(
       "dragged.md",
       expect.any(Number),
       expect.any(Number),
-      0.08
+      0
     );
 
     const buffer = new ArrayBuffer(2 * 6 * Float32Array.BYTES_PER_ELEMENT);
@@ -325,6 +332,7 @@ describe("BubbleView", () => {
     bubbleSimulationMocks.onPositions({
       buffer,
       ids: ["dragged.md", "target.md"],
+      sequence: 0,
       type: "positions"
     });
 
@@ -513,8 +521,8 @@ describe("BubbleView", () => {
       "guide.md",
       null,
       null,
-      0.08,
-      expect.any(Number),
+      0,
+      0,
       0
     );
   });

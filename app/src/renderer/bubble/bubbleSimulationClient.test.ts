@@ -68,6 +68,7 @@ describe("createBubbleSimulationClient", () => {
     expect(worker.postMessage).toHaveBeenCalledWith({
       alpha: 0.08,
       id: "A.md",
+      sequence: 1,
       type: "fixedNode",
       velocityX: 4,
       velocityY: -2,
@@ -87,7 +88,9 @@ describe("createBubbleSimulationClient", () => {
     client.dispose();
     client.dispose();
     client.restart();
-    worker.onmessage?.({ data: { buffer: new ArrayBuffer(0), ids: [], type: "positions" } } as MessageEvent);
+    worker.onmessage?.({
+      data: { buffer: new ArrayBuffer(0), ids: [], sequence: 0, type: "positions" }
+    } as MessageEvent);
     worker.onerror?.({ message: "late error" } as ErrorEvent);
 
     expect(worker.postMessage).toHaveBeenCalledTimes(1);
@@ -95,6 +98,24 @@ describe("createBubbleSimulationClient", () => {
     expect(worker.terminate).toHaveBeenCalledTimes(1);
     expect(onPositions).not.toHaveBeenCalled();
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("固定解除より前に生成されたWorker座標を破棄する", () => {
+    vi.stubGlobal("Worker", MockWorker);
+    const onPositions = vi.fn();
+    const client = createBubbleSimulationClient(onPositions);
+    const worker = MockWorker.instances[0]!;
+    client.setNodeFixed("A.md", null, null, 0, 0, 0);
+
+    worker.onmessage?.({
+      data: { buffer: new ArrayBuffer(0), ids: [], sequence: 0, type: "positions" }
+    } as MessageEvent);
+    expect(onPositions).not.toHaveBeenCalled();
+
+    worker.onmessage?.({
+      data: { buffer: new ArrayBuffer(0), ids: [], sequence: 1, type: "positions" }
+    } as MessageEvent);
+    expect(onPositions).toHaveBeenCalledOnce();
   });
 
   it("終了メッセージの送信に失敗してもWorkerを終了する", () => {

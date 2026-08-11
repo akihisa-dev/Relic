@@ -339,6 +339,29 @@ export function constrainBubbleNodeToCategoryRegions(
   );
 }
 
+export function constrainBubbleNodesToCategoryRegions(
+  nodes: Iterable<BubbleCategoryForceNode>
+): Map<string, BubbleCategoryRegion> {
+  const orderedNodes = [...nodes];
+  const regions = bubbleCategoryRegions(
+    bubbleCategoryDynamicLayouts(orderedNodes),
+    orderedNodes
+  );
+  for (const node of orderedNodes) {
+    if (node.x === undefined || node.y === undefined) continue;
+    const constrained = constrainBubbleNodeToCategoryRegions(
+      node,
+      regions,
+      { x: node.x, y: node.y }
+    );
+    node.vx = (node.vx ?? 0) + constrained.x - node.x;
+    node.vy = (node.vy ?? 0) + constrained.y - node.y;
+    node.x = constrained.x;
+    node.y = constrained.y;
+  }
+  return regions;
+}
+
 export function applyBubbleCategoryMotion(
   nodes: Iterable<BubbleCategoryForceNode>,
   alpha: number,

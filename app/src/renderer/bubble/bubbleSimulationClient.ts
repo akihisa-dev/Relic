@@ -18,6 +18,7 @@ import {
   applyBubbleCategoryMotion,
   bubbleCategorySpacing,
   bubbleCategoryDriftCenterStrength,
+  constrainBubbleNodesToCategoryRegions,
   constrainBubbleCategorySpacing
 } from "./bubbleCategoryModel";
 import { alignBubbleNodesToCenter } from "./bubbleCategoryTranslation";
@@ -101,12 +102,15 @@ function createWorkerBubbleSimulationClient(
     type: "module"
   });
   let disposed = false;
+  let minimumPositionSequence = 0;
+  let nextPositionSequence = 1;
 
   worker.onmessage = (event: MessageEvent<BubbleSimulationResponse>) => {
     if (disposed) return;
 
     const message = event.data;
     if (message.type === "positions") {
+      if (message.sequence < minimumPositionSequence) return;
       onPositions(message);
       return;
     }
@@ -141,7 +145,10 @@ function createWorkerBubbleSimulationClient(
       post({ id, offsetX, offsetY, type: "categoryCenterOffset" });
     },
     setNodeFixed: (id, x, y, alpha, velocityX, velocityY) => {
-      post({ alpha, id, type: "fixedNode", velocityX, velocityY, x, y });
+      const sequence = nextPositionSequence;
+      nextPositionSequence += 1;
+      minimumPositionSequence = sequence;
+      post({ alpha, id, sequence, type: "fixedNode", velocityX, velocityY, x, y });
     },
     sync: (nodes, links, options, alpha) => post({ alpha, links, nodes, options, type: "sync" }),
     updateOptions: (options, alpha) => post({ alpha, options, type: "options" })
@@ -156,6 +163,7 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
   let fallbackLinks: FallbackLink[] = [];
   let fallbackNodes: FallbackNode[] = [];
   let paused = false;
+  let positionSequence = 0;
   let simulation: Simulation<FallbackNode, FallbackLink> | null = null;
 
   const postPositions = () => {
@@ -176,6 +184,7 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
         categoryDragNodeIds,
         hasActiveCategoryContact()
       );
+      constrainBubbleNodesToCategoryRegions(fallbackNodes);
     }
     const buffer = new ArrayBuffer(fallbackNodes.length * 6 * Float32Array.BYTES_PER_ELEMENT);
     const values = new Float32Array(buffer);
@@ -192,7 +201,7 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
       values[offset + 5] = node.categoryCenterOffsetY;
     });
 
-    onPositions({ buffer, ids, type: "positions" });
+    onPositions({ buffer, ids, sequence: positionSequence, type: "positions" });
   };
 
   const updateForces = () => {
@@ -311,6 +320,7 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
     setNodeFixed: (id, x, y, alpha = 0.3, velocityX, velocityY) => {
       const node = fallbackNodes.find((candidate) => candidate.id === id);
       if (!node || !simulation) return;
+      positionSequence += 1;
 
       node.fx = x;
       node.fy = y;
@@ -325,7 +335,7 @@ function createFallbackBubbleSimulationClient(onPositions: BubbleSimulationPosit
           return;
         }
         simulation.alphaTarget(0);
-        restart(0.08);
+        restart(alpha);
         return;
       }
 
