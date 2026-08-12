@@ -75,6 +75,14 @@ describe("isSavePreviewAsPdfInput", () => {
     expect(runtimeMock.renderPreviewHtmlToPdf).not.toHaveBeenCalled();
   });
 
+  it("出力CSPへ余分な外部sourceやdirectiveを追加したHTMLを拒否する", async () => {
+    const extraSources = validOutputHtml().replace("img-src data:", "img-src data: https://example.com");
+    const extraDirective = validOutputHtml().replace("img-src data:", "img-src data:; connect-src https://example.com");
+
+    await expectInvalidHtml(extraSources);
+    await expectInvalidHtml(extraDirective);
+  });
+
   it("出力HTMLの必須構造がない場合は入力エラーになる", async () => {
     const invalidHtmlValues = [
       '<html><head><meta http-equiv="Content-Security-Policy" content="default-src \'none\'"></head><body><main class="relic-output-body">本文</main></body></html>',
@@ -98,6 +106,11 @@ describe("isSavePreviewAsPdfInput", () => {
 
     expect(electronMock.showSaveDialog).not.toHaveBeenCalled();
     expect(runtimeMock.renderPreviewHtmlToPdf).not.toHaveBeenCalled();
+  });
+
+  it("画像以外のdata URLをhref/srcへ指定したHTMLは入力エラーになる", async () => {
+    await expectInvalidHtml(validOutputHtml('<a href="data:text/html;base64,SGVsbG8=">link</a>'));
+    await expectInvalidHtml(validOutputHtml('<img src="data:text/html;base64,SGVsbG8=" alt="image">'));
   });
 
   it("攻撃文字列コーパスを含むHTMLは出力処理前に拒否する", async () => {

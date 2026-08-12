@@ -1,9 +1,10 @@
-import { chmod, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, rm, stat, symlink, truncate, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { maxMarkdownReadBytes } from "../../shared/ipc/files";
 import { readMarkdownFile, writeMarkdownFileContent } from "./markdownFileContent";
 import { createRealpathRaceOperations } from "./test/markdownFileTestUtils";
 
@@ -77,6 +78,38 @@ describe("readMarkdownFile", () => {
       workspacePath
     }))).resolves.toMatchObject({
       error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+  });
+
+  it("上限を超えるMarkdownはreadFileせず拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-read-file-"));
+    temporaryPaths.push(workspacePath);
+    const notePath = path.join(workspacePath, "large.md");
+    await writeFile(notePath, "x", "utf8");
+    await truncate(notePath, maxMarkdownReadBytes + 1);
+    const read = async () => {
+      throw new Error("readFile must not be called");
+    };
+
+    await expect(readMarkdownFile(workspacePath, "large.md", { readFile: read })).resolves.toMatchObject({
+      error: { code: "FILE_READ_TOO_LARGE" },
+      ok: false
+    });
+  });
+
+  it("stat後に本文が上限を超えたMarkdownは開かない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-read-file-"));
+    temporaryPaths.push(workspacePath);
+    const notePath = path.join(workspacePath, "grown.md");
+    await writeFile(notePath, "x", "utf8");
+
+    const result = await readMarkdownFile(workspacePath, "grown.md", {
+      readFile: async () => "x".repeat(maxMarkdownReadBytes + 1)
+    });
+
+    expect(result).toMatchObject({
+      error: { code: "FILE_READ_TOO_LARGE" },
       ok: false
     });
   });

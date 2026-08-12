@@ -61,7 +61,8 @@ export function localizeIpcResult<Result>(
   return fail(
     failedResult.error.code,
     t(errorTranslationKey(failedResult.error.code)),
-    failedResult.error.details
+    failedResult.error.details,
+    failedResult.error.recovery
   ) as Result;
 }
 

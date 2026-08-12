@@ -5,6 +5,7 @@ import {
   isMarkdownOffsetInRanges,
   normalizeMarkdownPathSegments
 } from "./markdownScan";
+import { normalizeUrlForSecurity } from "./urlSafety";
 
 export type WikiLinkKind = "embed" | "link";
 
@@ -143,9 +144,10 @@ export function resolveWikiLinkPath(target: string, sourcePath: string): string 
 }
 
 export function resolveMarkdownLinkPath(href: string, sourcePath: string): MarkdownLinkTarget | null {
-  const trimmedHref = href.trim();
+  const trimmedHref = normalizeUrlForSecurity(href);
 
   if (
+    trimmedHref === null ||
     trimmedHref === "" ||
     /^[a-z][a-z0-9+.-]*:/i.test(trimmedHref) ||
     trimmedHref.startsWith("//") ||

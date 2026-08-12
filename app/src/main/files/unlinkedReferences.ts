@@ -14,6 +14,14 @@ import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
 import { resolveExistingWorkspacePath, resolveWorkspaceRelativePath, verifyExistingWorkspacePath } from "./paths";
 import {
+  assertMarkdownMutationSnapshotCurrent,
+  captureMarkdownMutationSnapshot,
+  isMarkdownMutationConflict,
+  runMarkdownFileMutation,
+  type MarkdownMutationOperations,
+  type MarkdownMutationSnapshot
+} from "./markdownMutationCoordinator";
+import {
   applyUnlinkedReferenceToMarkdown,
   collectUnlinkedReferencesInMarkdown
 } from "./unlinkedReferencesModel";
@@ -30,6 +38,7 @@ import { finishPerformanceMeasure, startPerformanceMeasure } from "./performance
 
 interface UnlinkedReferenceWriteOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+  stat?: MarkdownMutationOperations["stat"];
   writeTextFile(filePath: string, content: string): Promise<void>;
 }
 
@@ -148,48 +157,74 @@ export async function applyUnlinkedReference(
   if (!safeWritePath.ok) return safeWritePath;
 
   try {
-    const content = await operations.readFile(sourcePath.value, "utf8");
-    const fileIndex = await readWorkspaceDerivedFileIndex(workspacePath);
-    const existingMarkdownPaths = fileIndex.entries.map((entry) => entry.path);
-    const targetBasename = path.posix.basename(input.targetPath);
-    const targetBasenameCount = existingMarkdownPaths.filter((entryPath) => path.posix.basename(entryPath) === targetBasename).length;
-    const linkText = collectUnlinkedReferencesInMarkdown(content, {
-      existingMarkdownPaths,
-      sourcePath: input.sourcePath,
-      targetBasenameCount,
-      targetPath: input.targetPath
-    }).find((reference) => (
-      reference.from === input.from &&
-      reference.to === input.to &&
-      reference.matchText === input.matchText
-    ))?.linkText;
+    return await runMarkdownFileMutation(sourcePath.value, async () => {
+      const snapshot = await captureMarkdownMutationSnapshot(sourcePath.value, operations);
+      const content = snapshot.content;
+      const fileIndex = await readWorkspaceDerivedFileIndex(workspacePath);
+      const existingMarkdownPaths = fileIndex.entries.map((entry) => entry.path);
+      const targetBasename = path.posix.basename(input.targetPath);
+      const targetBasenameCount = existingMarkdownPaths.filter((entryPath) => path.posix.basename(entryPath) === targetBasename).length;
+      const linkText = collectUnlinkedReferencesInMarkdown(content, {
+        existingMarkdownPaths,
+        sourcePath: input.sourcePath,
+        targetBasenameCount,
+        targetPath: input.targetPath
+      }).find((reference) => (
+        reference.from === input.from &&
+        reference.to === input.to &&
+        reference.matchText === input.matchText
+      ))?.linkText;
 
-    if (!linkText) {
-      return fail("UNLINKED_REFERENCE_STALE", "未リンク参照の候補が更新されています。再読み込みしてからリンク化してください。");
-    }
+      if (!linkText) {
+        return fail("UNLINKED_REFERENCE_STALE", "未リンク参照の候補が更新されています。再読み込みしてからリンク化してください。");
+      }
 
-    const updated = applyUnlinkedReferenceToMarkdown(content, {
-      from: input.from,
-      linkText,
-      matchText: input.matchText,
-      to: input.to
-    });
+      const updated = applyUnlinkedReferenceToMarkdown(content, {
+        from: input.from,
+        linkText,
+        matchText: input.matchText,
+        to: input.to
+      });
 
-    if (updated === null) {
-      return fail("UNLINKED_REFERENCE_STALE", "未リンク参照の候補が更新されています。再読み込みしてからリンク化してください。");
-    }
+      if (updated === null) {
+        return fail("UNLINKED_REFERENCE_STALE", "未リンク参照の候補が更新されています。再読み込みしてからリンク化してください。");
+      }
 
-    await operations.writeTextFile(sourcePath.value, updated);
+      const safeMutationPath = await verifyExistingWorkspacePath(workspacePath, sourcePath.value);
+      if (!safeMutationPath.ok) return safeMutationPath;
+      await writeUnlinkedMutation(sourcePath.value, updated, snapshot, operations);
 
-    return ok({
-      content: updated,
-      sourcePath: input.sourcePath
+      return ok({
+        content: updated,
+        sourcePath: input.sourcePath
+      });
     });
   } catch (error) {
+    if (isMarkdownMutationConflict(error)) {
+      return fail("UNLINKED_REFERENCE_STALE", "未リンク参照の候補が更新されています。再読み込みしてからリンク化してください。");
+    }
     return fail(
       "UNLINKED_REFERENCE_APPLY_FAILED",
       "未リンク参照をリンク化できませんでした。",
       errorDetails(error)
     );
   }
+}
+
+async function writeUnlinkedMutation(
+  filePath: string,
+  content: string,
+  snapshot: MarkdownMutationSnapshot,
+  operations: UnlinkedReferenceWriteOperations
+): Promise<void> {
+  await assertMarkdownMutationSnapshotCurrent(filePath, snapshot, operations);
+
+  if (operations.writeTextFile === atomicWriteTextFile) {
+    await atomicWriteTextFile(filePath, content, undefined, {
+      beforeRename: () => assertMarkdownMutationSnapshotCurrent(filePath, snapshot, operations)
+    });
+    return;
+  }
+
+  await operations.writeTextFile(filePath, content);
 }

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 
 import type {
   ApplySearchAndReplaceResult,
@@ -9,21 +9,32 @@ import type {
   SearchAndReplacePreviewResult
 } from "../../shared/ipc";
 import { hasMarkdownExtension } from "../../shared/markdownExtension";
+import { maxMarkdownReadBytes } from "../../shared/ipc/files";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { mapWithConcurrency } from "./concurrency";
 import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
+import {
+  assertMarkdownMutationSnapshotCurrent,
+  captureMarkdownMutationSnapshot,
+  isMarkdownMutationConflict,
+  runMarkdownFileMutation,
+  type MarkdownMutationOperations,
+  type MarkdownMutationSnapshot
+} from "./markdownMutationCoordinator";
 import { resolveExistingWorkspacePath, verifyExistingWorkspacePath } from "./paths";
 import { applyReplacement, buildReplacementPreviewLine, buildReplacementRegex, canMatchEmptyTextInContent } from "./replaceModel";
 import { isRegexSafeLine, validateRegexTargetText } from "./regexSafety";
 
 interface SearchAndReplaceReadOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+  stat?: MarkdownMutationOperations["stat"];
 }
 
 interface SearchAndReplaceWriteOperations extends SearchAndReplaceReadOperations {
+  stat?: MarkdownMutationOperations["stat"];
   writeTextFile?: (filePath: string, content: string) => Promise<void>;
 }
 
@@ -39,10 +50,14 @@ interface SearchAndReplaceTargetsResult {
 }
 
 export const searchAndReplacePreviewMaxResults = 500;
+export const maxReplaceTargetFiles = 50_000;
+export const maxReplaceReadBytes = maxMarkdownReadBytes;
+export const maxReplaceAggregateReadBytes = 64 * 1024 * 1024;
 const maxConcurrentReplaceReads = 8;
 
-const defaultSearchAndReplaceOperations: Required<SearchAndReplaceWriteOperations> = {
+const defaultSearchAndReplaceOperations: SearchAndReplaceWriteOperations = {
   readFile,
+  stat,
   writeTextFile: atomicWriteTextFile
 };
 
@@ -51,7 +66,8 @@ export async function replaceInFile(
   relativePath: string,
   searchQuery: string,
   replacement: string,
-  isRegex: boolean
+  isRegex: boolean,
+  operations: SearchAndReplaceWriteOperations = defaultSearchAndReplaceOperations
 ): Promise<RelicResult<ReplaceInFileResult>> {
   if (searchQuery.trim() === "") {
     return fail("REPLACE_EMPTY_QUERY", "検索語句を入力してください。");
@@ -74,35 +90,60 @@ export async function replaceInFile(
   }
 
   try {
-    const content = await readFile(absolutePath.value, "utf8");
-    if (isRegex) {
-      const safeTarget = validateRegexTargetText(content, "置換");
-      if (!safeTarget.ok) return safeTarget;
-    }
+    return await runMarkdownFileMutation(absolutePath.value, async () => {
+      const snapshot = await captureMarkdownMutationSnapshot(absolutePath.value, operations);
+      const content = snapshot.content;
+      if (isRegex) {
+        const safeTarget = validateRegexTargetText(content, "置換");
+        if (!safeTarget.ok) return safeTarget;
+      }
 
-    if (isRegex && canMatchEmptyTextInContent(regex.value, content)) {
-      return fail("REPLACE_REGEX_EMPTY_MATCH", "空文字に一致する正規表現は置換できません。");
-    }
+      if (isRegex && canMatchEmptyTextInContent(regex.value, content)) {
+        return fail("REPLACE_REGEX_EMPTY_MATCH", "空文字に一致する正規表現は置換できません。");
+      }
 
-    const matches = content.match(regex.value);
-    const count = matches ? matches.length : 0;
+      const matches = content.match(regex.value);
+      const count = matches ? matches.length : 0;
 
-    if (count > 0) {
-      const updated = applyReplacement(content, regex.value, replacement, isRegex);
-      const safeWritePath = await verifyExistingWorkspacePath(workspacePath, absolutePath.value);
-      if (!safeWritePath.ok) return safeWritePath;
+      if (count > 0) {
+        const updated = applyReplacement(content, regex.value, replacement, isRegex);
+        const safeWritePath = await verifyExistingWorkspacePath(workspacePath, absolutePath.value);
+        if (!safeWritePath.ok) return safeWritePath;
 
-      await atomicWriteTextFile(absolutePath.value, updated);
-    }
+        await writeReplaceMutation(absolutePath.value, updated, snapshot, operations);
+      }
 
-    return ok({ count });
+      return ok({ count });
+    });
   } catch (error) {
+    if (isMarkdownMutationConflict(error)) {
+      return fail("REPLACE_FAILED", "ファイルが外部で変更されています。再読み込みしてから置換してください。");
+    }
     return fail(
       "REPLACE_FAILED",
       "置換できませんでした。",
       errorDetails(error)
     );
   }
+}
+
+async function writeReplaceMutation(
+  filePath: string,
+  content: string,
+  snapshot: MarkdownMutationSnapshot,
+  operations: SearchAndReplaceWriteOperations
+): Promise<void> {
+  const mutationOperations = operations;
+  await assertMarkdownMutationSnapshotCurrent(filePath, snapshot, mutationOperations);
+
+  if (!operations.writeTextFile || operations.writeTextFile === atomicWriteTextFile) {
+    await atomicWriteTextFile(filePath, content, undefined, {
+      beforeRename: () => assertMarkdownMutationSnapshotCurrent(filePath, snapshot, mutationOperations)
+    });
+    return;
+  }
+
+  await operations.writeTextFile(filePath, content);
 }
 
 export async function searchAndReplace(
@@ -198,7 +239,7 @@ export async function applySearchAndReplace(
 
   try {
     let count = 0;
-    const writeTextFile = operations.writeTextFile ?? defaultSearchAndReplaceOperations.writeTextFile;
+    const writeTextFile = operations.writeTextFile ?? atomicWriteTextFile;
     const targets = await readReplaceTargets(
       workspacePath,
       regex.value,
@@ -225,10 +266,18 @@ export async function applySearchAndReplace(
         if (matches && matches.length > 0) {
           regex.value.lastIndex = 0;
           const updated = applyReplacement(content, regex.value, replacement, isRegex);
-          const safeWritePath = await verifyExistingWorkspacePath(workspacePath, absolutePath);
-          if (!safeWritePath.ok) return safeWritePath;
+          await runMarkdownFileMutation(absolutePath, async () => {
+            const snapshot = await captureMarkdownMutationSnapshot(absolutePath, operations);
+            if (snapshot.content !== content) throw new Error("Replace target changed during write.");
 
-          await writeTextFile(absolutePath, updated);
+            const safeWritePath = await verifyExistingWorkspacePath(workspacePath, absolutePath);
+            if (!safeWritePath.ok) throw new Error(safeWritePath.error.code);
+
+            await writeReplaceMutation(absolutePath, updated, snapshot, {
+              ...operations,
+              writeTextFile
+            });
+          });
           writtenPatches.push({ absolutePath, previousContent: content, writtenContent: updated });
           count += matches.length;
         }
@@ -237,19 +286,22 @@ export async function applySearchAndReplace(
       }
     } catch (error) {
       await Promise.all(
-        writtenPatches.map(async (patch) => {
+        writtenPatches.map((patch) => runMarkdownFileMutation(patch.absolutePath, async () => {
           try {
-            const currentContent = await operations.readFile(patch.absolutePath, "utf8");
-            if (currentContent === patch.writtenContent) {
+            const snapshot = await captureMarkdownMutationSnapshot(patch.absolutePath, operations);
+            if (snapshot.content === patch.writtenContent) {
               const safeRollbackPath = await verifyExistingWorkspacePath(workspacePath, patch.absolutePath);
               if (!safeRollbackPath.ok) return;
 
-              await writeTextFile(patch.absolutePath, patch.previousContent);
+              await writeReplaceMutation(patch.absolutePath, patch.previousContent, snapshot, {
+                ...operations,
+                writeTextFile
+              });
             }
           } catch {
             // If another process changed or removed the file, avoid overwriting it during rollback.
           }
-        })
+        }))
       );
       throw error;
     }
@@ -272,18 +324,57 @@ async function readReplaceTargets(
   operations: SearchAndReplaceReadOperations
 ): Promise<RelicResult<SearchAndReplaceTargetsResult>> {
   const fileTree = await readWorkspaceFileTree(workspacePath);
-  const files = await collectSafeMarkdownFiles(workspacePath, collectMarkdownPaths(fileTree));
+  const relativePaths = collectMarkdownPaths(fileTree);
+  if (relativePaths.length > maxReplaceTargetFiles) {
+    return fail("REPLACE_FAILED", "置換対象のファイル数が上限を超えています。");
+  }
+  const files = await collectSafeMarkdownFiles(workspacePath, relativePaths);
+  const boundedFiles: Array<{ absolutePath: string; relativePath: string; size: number }> = [];
+  let aggregateBytes = 0;
+  for (const file of files) {
+    let fileStat;
+    try {
+      fileStat = await (operations.stat ?? stat)(file.absolutePath);
+    } catch {
+      return fail("REPLACE_FAILED", "置換対象のファイルサイズを確認できませんでした。");
+    }
+    if (!Number.isSafeInteger(fileStat.size) || fileStat.size < 0) {
+      return fail("REPLACE_FAILED", "置換対象のファイルサイズを確認できませんでした。");
+    }
+    if (fileStat.size > maxReplaceReadBytes) {
+      return fail("REPLACE_FAILED", "置換対象のファイルが大きすぎます。");
+    }
+    aggregateBytes += fileStat.size;
+    if (aggregateBytes > maxReplaceAggregateReadBytes) {
+      return fail("REPLACE_FAILED", "置換対象の合計サイズが大きすぎます。");
+    }
+    boundedFiles.push({ ...file, size: fileStat.size });
+  }
   const fileContents = await mapWithConcurrency(
-    files,
+    boundedFiles,
     maxConcurrentReplaceReads,
     async (file) => {
+      const { size: _size, ...targetFile } = file;
+      if (file.size < 0) return { ...targetFile, unreadable: true };
       try {
-        return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
+        return { ...targetFile, content: await operations.readFile(file.absolutePath, "utf8") };
       } catch {
-        return { ...file, unreadable: true };
+        return { ...targetFile, unreadable: true };
       }
     }
   );
+  let actualAggregateBytes = 0;
+  for (const fileContent of fileContents) {
+    if (!("content" in fileContent)) continue;
+    const contentBytes = Buffer.byteLength(fileContent.content, "utf8");
+    if (contentBytes > maxReplaceReadBytes) {
+      return fail("REPLACE_FAILED", "置換対象のファイルが大きすぎます。");
+    }
+    actualAggregateBytes += contentBytes;
+    if (actualAggregateBytes > maxReplaceAggregateReadBytes) {
+      return fail("REPLACE_FAILED", "置換対象の合計サイズが大きすぎます。");
+    }
+  }
   const targets = fileContents.filter((fileContent): fileContent is SearchAndReplaceTarget => "content" in fileContent);
   const skippedUnreadableFiles = fileContents
     .filter((fileContent): fileContent is { absolutePath: string; relativePath: string; unreadable: true } => "unreadable" in fileContent)

@@ -291,6 +291,80 @@ describe("moveFolder", () => {
     );
   });
 
+  it("リンク更新失敗時は外部変更がなければ安全に元へ戻す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-folder-"));
+    temporaryPaths.push(workspacePath);
+    await mkdir(path.join(workspacePath, "資料"));
+    await mkdir(path.join(workspacePath, "archive"));
+
+    const result = await moveFolder(workspacePath, "資料", "archive", {
+      updateLinks: async () => ({
+        error: { code: "LINK_UPDATE_FAILED", message: "リンク更新失敗" },
+        ok: false,
+        recovery: { appliedPaths: [], conflictedPaths: [], rolledBackPaths: [], rollbackFailedPaths: [] }
+      })
+    });
+
+    expect(result).toMatchObject({ error: { code: "LINK_UPDATE_FAILED" }, ok: false });
+    expect((await stat(path.join(workspacePath, "資料"))).isDirectory()).toBe(true);
+    await expect(stat(path.join(workspacePath, "archive", "資料"))).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("リンク更新中に元の場所が外部作成された場合は上書きせず復旧要求を返す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
+    temporaryPaths.push(workspacePath);
+    await mkdir(path.join(workspacePath, "資料"));
+
+    const result = await renameFolder(workspacePath, "資料", "Archive", {
+      updateLinks: async () => {
+        await mkdir(path.join(workspacePath, "資料"));
+        return {
+          error: { code: "LINK_UPDATE_FAILED", message: "リンク更新失敗" },
+          ok: false,
+          recovery: { appliedPaths: [], conflictedPaths: [], rolledBackPaths: [], rollbackFailedPaths: [] }
+        };
+      }
+    });
+
+    expect(result).toMatchObject({
+      error: {
+        code: "FOLDER_RENAME_FAILED",
+        recovery: { reason: "source-occupied", status: "recovery-required" }
+      },
+      ok: false
+    });
+    expect((await stat(path.join(workspacePath, "資料"))).isDirectory()).toBe(true);
+    expect((await stat(path.join(workspacePath, "Archive"))).isDirectory()).toBe(true);
+  });
+
+  it("リンク更新中に移動先が置き換えられた場合は外部フォルダを上書きしない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
+    temporaryPaths.push(workspacePath);
+    await mkdir(path.join(workspacePath, "資料"));
+
+    const result = await renameFolder(workspacePath, "資料", "Archive", {
+      updateLinks: async () => {
+        await rm(path.join(workspacePath, "Archive"), { recursive: true });
+        await mkdir(path.join(workspacePath, "Archive"));
+        return {
+          error: { code: "LINK_UPDATE_FAILED", message: "リンク更新失敗" },
+          ok: false,
+          recovery: { appliedPaths: [], conflictedPaths: [], rolledBackPaths: [], rollbackFailedPaths: [] }
+        };
+      }
+    });
+
+    expect(result).toMatchObject({
+      error: {
+        code: "FOLDER_RENAME_FAILED",
+        recovery: { reason: "destination-changed", status: "recovery-required" }
+      },
+      ok: false
+    });
+    await expect(stat(path.join(workspacePath, "資料"))).rejects.toMatchObject({ code: "ENOENT" });
+    expect((await stat(path.join(workspacePath, "Archive"))).isDirectory()).toBe(true);
+  });
+
   it("移動先に同名フォルダがある場合は上書きしない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-folder-"));
     temporaryPaths.push(workspacePath);

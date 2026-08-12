@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import type { WorkspaceState } from "../../shared/ipc";
 import type { AliasIndex } from "../../shared/links";
+import { useT } from "../i18n";
 
 interface UseWorkspaceAliasesInput {
   setWorkspaceError: (message: string | null) => void;
@@ -13,6 +14,7 @@ export function useWorkspaceAliases({
   setWorkspaceError,
   workspaceState
 }: UseWorkspaceAliasesInput): AliasIndex {
+  const t = useT();
   const workspaceId = workspaceState?.activeWorkspace?.id ?? null;
   const [snapshot, setSnapshot] = useState<{ aliasesByPath: AliasIndex; workspaceId: string } | null>(null);
 
@@ -33,12 +35,16 @@ export function useWorkspaceAliases({
         setSnapshot({ aliasesByPath: {}, workspaceId });
         setWorkspaceError(result.error.message);
       }
+    }).catch(() => {
+      if (canceled) return;
+      setSnapshot({ aliasesByPath: {}, workspaceId });
+      setWorkspaceError(t("errors.operationFailed"));
     });
 
     return () => {
       canceled = true;
     };
-  }, [setWorkspaceError, workspaceId, workspaceState?.fileTree]);
+  }, [setWorkspaceError, t, workspaceId, workspaceState?.fileTree]);
 
   return workspaceId && snapshot?.workspaceId === workspaceId ? snapshot.aliasesByPath : {};
 }

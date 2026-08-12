@@ -5,7 +5,8 @@ import {
   __resetPreviewImageLoaderForTests,
   hydratePreviewImages,
   loadPreviewImage,
-  previewImageContextKey
+  previewImageContextKey,
+  resolvePreviewImages
 } from "./previewImageLoader";
 
 function deferred<T>() {
@@ -98,5 +99,47 @@ describe("previewImageLoader", () => {
 
     expect(root.querySelector("img")).toBeNull();
     expect(root.textContent).toBe("図");
+  });
+
+  it("画像の一括読込を有限並列に制限する", async () => {
+    const gates = new Map<string, ReturnType<typeof deferred<{ ok: true; value: { dataUrl: string } }>>>();
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const readImageFile = vi.fn().mockImplementation(({ path }: { path: string }) => {
+      const gate = deferred<{ ok: true; value: { dataUrl: string } }>();
+      gates.set(path, gate);
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      return gate.promise.finally(() => {
+        inFlight -= 1;
+      });
+    });
+    window.relic = makeRelicApi({ readImageFile });
+    const root = document.createElement("div");
+    root.innerHTML = Array.from({ length: 8 }, (_, index) =>
+      `<span data-relic-image-alt="${index}" data-relic-image-path="image-${index}.png">${index}</span>`
+    ).join("");
+
+    const result = resolvePreviewImages(root, previewImageContextKey("/workspace", 1));
+    await vi.waitFor(() => expect(readImageFile).toHaveBeenCalledTimes(4));
+    expect(maxInFlight).toBe(4);
+
+    for (let index = 0; index < 4; index += 1) {
+      gates.get(`image-${index}.png`)!.resolve({
+        ok: true,
+        value: { dataUrl: "data:image/png;base64,aW1hZ2U=" }
+      });
+    }
+    await vi.waitFor(() => expect(readImageFile).toHaveBeenCalledTimes(8));
+    for (let index = 4; index < 8; index += 1) {
+      gates.get(`image-${index}.png`)!.resolve({
+        ok: true,
+        value: { dataUrl: "data:image/png;base64,aW1hZ2U=" }
+      });
+    }
+    await result;
+
+    expect(maxInFlight).toBe(4);
+    expect(root.querySelectorAll("img")).toHaveLength(8);
   });
 });

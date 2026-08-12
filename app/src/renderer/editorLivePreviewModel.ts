@@ -1,6 +1,7 @@
 import { type Text } from "@codemirror/state";
 
 import { scanWikiLinks } from "../shared/links";
+import { largeMarkdownMaxLineLength } from "./largeMarkdown";
 
 export interface SourceRevealRange {
   from: number;
@@ -134,6 +135,15 @@ function findHtmlTagRanges(text: string): Array<{ from: number; to: number }> {
     const from = text.indexOf("<", searchFrom);
     if (from < 0) break;
 
+    // An unterminated tag cannot contain a later valid tag on the same line.
+    // Jump to the next line instead of rescanning the suffix for every '<'.
+    const lineBreak = text.indexOf("\n", from + 1);
+    const nextClose = text.indexOf(">", from + 1);
+    if (nextClose < 0 || (lineBreak >= 0 && lineBreak < nextClose)) {
+      searchFrom = lineBreak >= 0 ? lineBreak + 1 : text.length;
+      continue;
+    }
+
     let quote: '"' | "'" | null = null;
     let to = -1;
     for (let index = from + 1; index < text.length; index += 1) {
@@ -154,7 +164,7 @@ function findHtmlTagRanges(text: string): Array<{ from: number; to: number }> {
     }
 
     if (to < 0) {
-      searchFrom = from + 1;
+      searchFrom = lineBreak >= 0 ? lineBreak + 1 : text.length;
       continue;
     }
 
@@ -167,6 +177,8 @@ function findHtmlTagRanges(text: string): Array<{ from: number; to: number }> {
 
 function findMarkdownLinkMatches(text: string): MarkdownLinkMatch[] {
   const matches: MarkdownLinkMatch[] = [];
+  let failedHrefScans = 0;
+  const maxFailedHrefScans = 64;
   let searchFrom = 0;
 
   while (searchFrom < text.length) {
@@ -174,8 +186,10 @@ function findMarkdownLinkMatches(text: string): MarkdownLinkMatch[] {
     if (from < 0) break;
 
     const textTo = text.indexOf("]", from + 1);
-    if (textTo < 0 || hasNewlineBetween(text, from + 1, textTo)) {
-      searchFrom = from + 1;
+    if (textTo < 0) break;
+    const lineBreak = text.indexOf("\n", from + 1);
+    if (lineBreak >= 0 && lineBreak < textTo) {
+      searchFrom = lineBreak + 1;
       continue;
     }
 
@@ -208,7 +222,18 @@ function findMarkdownLinkMatches(text: string): MarkdownLinkMatch[] {
     }
 
     if (hrefClose < 0 || hrefClose === hrefFrom) {
-      searchFrom = from + 1;
+      // Keep looking for a later link (malformed links may contain one), but
+      // cap repeated unterminated URL scans so adversarial delimiters remain
+      // bounded instead of rescanning the suffix quadratically.
+      failedHrefScans += 1;
+      if (failedHrefScans >= maxFailedHrefScans) return matches;
+      const nextOpen = text.indexOf("[", from + 1);
+      if (nextOpen >= 0) {
+        searchFrom = nextOpen;
+        continue;
+      }
+      const hrefLineBreak = text.indexOf("\n", hrefFrom);
+      searchFrom = hrefLineBreak >= 0 ? hrefLineBreak + 1 : text.length;
       continue;
     }
 
@@ -236,6 +261,10 @@ function findMarkdownImageMatches(text: string): MarkdownImageMatch[] {
 }
 
 export function collectInlineMatches(lineFrom: number, text: string): InlineMatch[] {
+  // PaneContentSurface switches files over this line length to source mode.
+  // Keep direct/early calls bounded as well, before delimiter scanners run.
+  if (text.length > largeMarkdownMaxLineLength) return [];
+
   const occupied: Array<{ from: number; to: number }> = [];
   const htmlTagRanges = findHtmlTagRanges(text).map((range) => ({
     from: lineFrom + range.from,

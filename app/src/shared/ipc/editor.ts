@@ -4,7 +4,6 @@ import type { IpcFeatureContract } from "./contract";
 export const getEditorSettingsChannel = "editor:getSettings";
 export const saveEditorSettingsChannel = "editor:saveSettings";
 export const copyEditorTextToClipboardChannel = "editor:copyTextToClipboard";
-export const readEditorTextFromClipboardChannel = "editor:readTextFromClipboard";
 export const writeMarkdownFileChannel = "workspace:writeMarkdownFile";
 export const listFileRecoverySnapshotsChannel = "workspace:listFileRecoverySnapshots";
 export const readFileRecoverySnapshotChannel = "workspace:readFileRecoverySnapshot";
@@ -12,6 +11,7 @@ export const windowCloseRequestedChannel = "window:closeRequested";
 export const windowCloseResponseChannel = "window:closeResponse";
 
 export const maxMarkdownWriteBytes = 5 * 1024 * 1024;
+export const editorClipboardMaxTextLength = 1_000_000;
 
 export type EditorFont = "system" | "gothic" | "mincho" | "mono";
 export type EditorMaxWidth = "550px" | "660px" | "800px" | "none";
@@ -98,7 +98,6 @@ export interface EditorApi {
   listFileRecoverySnapshots: (input: FileRecoveryInput) => Promise<RelicResult<FileRecoveryList>>;
   readFileRecoverySnapshot: (input: ReadFileRecoverySnapshotInput) => Promise<RelicResult<FileRecoverySnapshot>>;
   copyEditorTextToClipboard: (input: CopyEditorTextToClipboardInput) => Promise<RelicResult<void>>;
-  readEditorTextFromClipboard: () => Promise<RelicResult<string>>;
   onWindowCloseRequested: (callback: (event: WindowCloseRequestEvent) => void) => () => void;
   respondToWindowCloseRequest: (input: WindowCloseResponseInput) => void;
 }
@@ -110,7 +109,6 @@ export const editorIpcContract = {
   listFileRecoverySnapshots: { channel: listFileRecoverySnapshotsChannel, main: "handle", transport: "invoke", validatesInput: true },
   readFileRecoverySnapshot: { channel: readFileRecoverySnapshotChannel, main: "handle", transport: "invoke", validatesInput: true },
   copyEditorTextToClipboard: { channel: copyEditorTextToClipboardChannel, main: "handle", transport: "invoke", validatesInput: true },
-  readEditorTextFromClipboard: { channel: readEditorTextFromClipboardChannel, main: "handle", transport: "invoke", validatesInput: false },
   onWindowCloseRequested: { channel: windowCloseRequestedChannel, main: "sender", transport: "subscribe", validatesInput: false },
   respondToWindowCloseRequest: { channel: windowCloseResponseChannel, main: "lifecycle", transport: "send", validatesInput: true }
 } as const satisfies IpcFeatureContract;

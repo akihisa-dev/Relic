@@ -1,6 +1,7 @@
 import { relicClient } from "../relicClient";
 import { useCallback } from "react";
 
+import { useT } from "../i18n";
 import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import { isSupportedPdfPath } from "../../shared/pdfFiles";
 import type { MarkdownFileContent, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
@@ -52,6 +53,7 @@ export function useAppPaneFileActions({
   openTreeFileInOtherPane: (path: string) => void;
   openWorkspacePathInOtherPane: (path: string, heading?: string) => void;
 } {
+  const t = useT();
   const openFileInOtherPane = useCallback((fromPane: PaneId, tabId: string): void => {
     const tab = tabs[tabId];
     if (!tab || !isSplit) return;
@@ -92,8 +94,10 @@ export function useAppPaneFileActions({
       } else {
         setWorkspaceError(result.error.message);
       }
+    }).catch(() => {
+      if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
     });
-  }, [beginWorkspaceRequest, focusedPane, isSplit, openFileInPane, openImageInPane, openPdfInPane, setWorkspaceError]);
+  }, [beginWorkspaceRequest, focusedPane, isSplit, openFileInPane, openImageInPane, openPdfInPane, setWorkspaceError, t]);
 
   const openWorkspacePathInOtherPane = useCallback((path: string, heading?: string): void => {
     if (!relicClient.current || !isSplit) return;
@@ -120,7 +124,11 @@ export function useAppPaneFileActions({
         } else {
           setWorkspaceError(createResult.error.message);
         }
+      }).catch(() => {
+        if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
       });
+    }).catch(() => {
+      if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
     });
   }, [
     focusedPane,
@@ -130,7 +138,8 @@ export function useAppPaneFileActions({
     setLeftPaneScrollHeading,
     setRightPaneScrollHeading,
     setWorkspaceError,
-    setWorkspaceState
+    setWorkspaceState,
+    t
   ]);
 
   const handleCreateFileInFolder = useCallback((folderPath: string, name: string): void => {
@@ -152,8 +161,10 @@ export function useAppPaneFileActions({
       } else {
         setWorkspaceError(result.error.message);
       }
+    }).catch(() => {
+      if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
     });
-  }, [beginWorkspaceRequest, focusedPane, openFileInPane, setWorkspaceError, setWorkspaceState]);
+  }, [beginWorkspaceRequest, focusedPane, openFileInPane, setWorkspaceError, setWorkspaceState, t]);
 
   const handleCreateFolderInFolder = useCallback((folderPath: string, name: string): void => {
     const relic = relicClient.current;
@@ -171,8 +182,10 @@ export function useAppPaneFileActions({
       } else {
         setWorkspaceError(result.error.message);
       }
+    }).catch(() => {
+      if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
     });
-  }, [beginWorkspaceRequest, setWorkspaceError, setWorkspaceState]);
+  }, [beginWorkspaceRequest, setWorkspaceError, setWorkspaceState, t]);
 
   const handleRevealWorkspaceItem = useCallback((path: string): void => {
     const relic = relicClient.current;
@@ -184,8 +197,10 @@ export function useAppPaneFileActions({
     void relic.revealWorkspaceItem({ path }).then((result) => {
       if (!isCurrentWorkspace()) return;
       if (!result.ok) setWorkspaceError(result.error.message);
+    }).catch(() => {
+      if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
     });
-  }, [beginWorkspaceRequest, setWorkspaceError]);
+  }, [beginWorkspaceRequest, setWorkspaceError, t]);
 
   const handleDuplicateTabFile = useCallback((tabId: string): void => {
     const tab = tabs[tabId];

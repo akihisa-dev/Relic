@@ -2,6 +2,7 @@ import { relicClient } from "../relicClient";
 import { useEffect, useState } from "react";
 
 import type { Backlink, WorkspaceTreeNode } from "../../shared/ipc";
+import { useT } from "../i18n";
 
 interface UseBacklinksStateInput {
   activeFilePath: string | null;
@@ -18,6 +19,7 @@ export function useBacklinksState({
   fileTree,
   setWorkspaceError
 }: UseBacklinksStateInput) {
+  const t = useT();
   const [backlinkState, setBacklinkState] = useState<{ backlinks: Backlink[]; path: string | null }>({
     backlinks: emptyBacklinks,
     path: null
@@ -42,12 +44,17 @@ export function useBacklinksState({
           setBacklinkState({ backlinks: emptyBacklinks, path: activeFilePath });
           setWorkspaceError(result.error.message);
         }
+      })
+      .catch(() => {
+        if (canceled) return;
+        setBacklinkState({ backlinks: emptyBacklinks, path: activeFilePath });
+        setWorkspaceError(t("errors.operationFailed"));
       });
 
     return () => {
       canceled = true;
     };
-  }, [activeFilePath, enabled, fileTree, setWorkspaceError]);
+  }, [activeFilePath, enabled, fileTree, setWorkspaceError, t]);
 
   return {
     backlinks: hasActiveFile && backlinkState.path === activeFilePath ? backlinkState.backlinks : emptyBacklinks,

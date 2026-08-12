@@ -1,8 +1,9 @@
 import { constants } from "node:fs";
-import { copyFile, readFile, stat } from "node:fs/promises";
+import { copyFile, readFile, realpath, stat } from "node:fs/promises";
 import path from "node:path";
 
 import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
+import { maxImageReadBytes } from "../../shared/ipc/files";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { errorDetails, isFileExistsError } from "./fileSystem";
 import { createCopyRelativePath } from "./markdownFilePaths";
@@ -11,7 +12,8 @@ import {
   resolveNewWorkspacePath,
   toWorkspaceRelativePath,
   verifyExistingWorkspacePath,
-  verifyNewWorkspacePath
+  verifyNewWorkspacePath,
+  type RealpathOperations
 } from "./paths";
 import { validateBaseName } from "./names";
 
@@ -26,6 +28,7 @@ export interface ReadImageFile {
 export interface ImageFileOperations {
   copyFile: typeof copyFile;
   readFile: typeof readFile;
+  realpath?: RealpathOperations["realpath"];
   stat: typeof stat;
 }
 
@@ -130,6 +133,9 @@ export async function readImageFile(
     if (!fileStat.isFile()) {
       return fail("IMAGE_READ_INVALID_FILE", "表示できる画像ファイルを指定してください。");
     }
+    if (!Number.isSafeInteger(fileStat.size) || fileStat.size < 0 || fileStat.size > maxImageReadBytes) {
+      return fail("IMAGE_READ_TOO_LARGE", "画像ファイルが大きすぎるため表示できません。", `上限: ${maxImageReadBytes} bytes`);
+    }
 
     const extension = path.extname(relativePath).toLowerCase();
     const mimeType = imageMimeTypes.get(extension);
@@ -137,10 +143,23 @@ export async function readImageFile(
       return fail("IMAGE_READ_TYPE_UNSUPPORTED", "対応している画像ファイルだけを表示できます。");
     }
 
-    const safeReadPath = await verifyExistingWorkspacePath(workspacePath, resolvedPath.value);
+    const safeReadPath = await verifyExistingWorkspacePath(
+      workspacePath,
+      resolvedPath.value,
+      ops.realpath ? { realpath: ops.realpath } : {}
+    );
     if (!safeReadPath.ok) return safeReadPath;
 
+    const readRealpath = ops.realpath ?? realpath;
+    const identityBeforeRead = await readRealpath(safeReadPath.value);
     const imageBuffer = await ops.readFile(safeReadPath.value);
+    const identityAfterRead = await readRealpath(safeReadPath.value);
+    if (identityAfterRead !== identityBeforeRead) {
+      return fail("WORKSPACE_PATH_OUTSIDE", "読み込み中に画像の実体が変更されたため表示できません。");
+    }
+    if (imageBuffer.byteLength > maxImageReadBytes) {
+      return fail("IMAGE_READ_TOO_LARGE", "画像ファイルが大きすぎるため表示できません。", `上限: ${maxImageReadBytes} bytes`);
+    }
     return ok({ dataUrl: `data:${mimeType};base64,${imageBuffer.toString("base64")}` });
   } catch (error) {
     return fail(

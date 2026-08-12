@@ -60,10 +60,14 @@ export function useWorkspaceFileCreationActions({
             if (isCurrentWorkspace() && readResult.ok) {
               openFileInPane(focusedPane, readResult.value);
             }
+          }).catch(() => {
+            if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
           });
         } else {
           setWorkspaceError(workspaceFileErrorMessage(result.error, t));
         }
+      }).catch(() => {
+        if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
       })
       .finally(() => setIsCreatingFile(false));
   }, [
@@ -103,11 +107,15 @@ export function useWorkspaceFileCreationActions({
               if (isCurrentWorkspace() && readResult.ok) {
                 openFileInPane(focusedPane, readResult.value);
               }
+            }).catch(() => {
+              if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
             });
           }
         } else {
           setWorkspaceError(workspaceFileErrorMessage(result.error, t));
         }
+      }).catch(() => {
+        if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
       });
   }, [
     beginWorkspaceRequest,
@@ -142,6 +150,8 @@ export function useWorkspaceFileCreationActions({
         } else {
           setWorkspaceError(workspaceFileErrorMessage(result.error, t));
         }
+      }).catch(() => {
+        if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
       })
       .finally(() => setIsCreatingFolder(false));
   }, [beginWorkspaceRequest, folderNameDraft, setWorkspaceError, setWorkspaceState, t, workspaceState]);

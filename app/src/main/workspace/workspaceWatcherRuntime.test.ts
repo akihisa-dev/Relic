@@ -11,7 +11,8 @@ import type { AppSettings } from "../settings/appSettings";
 import {
   WorkspaceWatcherRuntime,
   type WorkspaceWatchListener,
-  workspaceChangeNotifyDelayMs
+  workspaceChangeNotifyDelayMs,
+  workspaceWatcherMaxPendingEvents
 } from "./workspaceWatcherRuntime";
 
 class FakeWatcher {
@@ -99,6 +100,40 @@ describe("WorkspaceWatcherRuntime", () => {
     expect(notifyArchiveChanged).toHaveBeenCalledWith(
       { id: "ws-2", path: "/tmp/archive" },
       [{ eventType: "change", filename: "active.md" }]
+    );
+  });
+
+  it("同一パスの変更を束ね、イベント上限超過時は全再走査へ倒す", () => {
+    const watcher = new FakeWatcher();
+    let listener: WorkspaceWatchListener | undefined;
+    const notifyChanged = vi.fn();
+    const runtime = new WorkspaceWatcherRuntime({
+      notifyWorkspaceChanged: notifyChanged,
+      notifyWorkspaceWatcherStatus: vi.fn(),
+      watchWorkspace: vi.fn((_path, _options, nextListener) => {
+        listener = nextListener;
+        return watcher as unknown as FSWatcher;
+      })
+    });
+    runtimes.push(runtime);
+    runtime.sync(appSettings("ws-1"));
+
+    listener?.("change", "notes\\a.md");
+    listener?.("change", "notes/a.md");
+    vi.advanceTimersByTime(workspaceChangeNotifyDelayMs);
+    expect(notifyChanged).toHaveBeenCalledWith(
+      { id: "ws-1", path: "/tmp/notes" },
+      [{ eventType: "change", filename: "notes\\a.md" }]
+    );
+
+    notifyChanged.mockClear();
+    for (let index = 0; index <= workspaceWatcherMaxPendingEvents; index += 1) {
+      listener?.("change", `notes/${index}.md`);
+    }
+    vi.advanceTimersByTime(workspaceChangeNotifyDelayMs);
+    expect(notifyChanged).toHaveBeenCalledWith(
+      { id: "ws-1", path: "/tmp/notes" },
+      []
     );
   });
 });

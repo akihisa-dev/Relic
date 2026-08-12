@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -154,9 +154,44 @@ describe("WorkspaceDerivedDataSession", () => {
     const refreshed = await session.getSnapshot(request);
 
     expect(readCount).toBe(1);
-    expect(statCount).toBe(1);
+    expect(statCount).toBe(2);
     expect(refreshed.fileIndex.records.map((record) => record.path)).toEqual(["note.md", "other.md"]);
     expect(refreshed.fileIndex.records.find((record) => record.path === "note.md")?.lines).toEqual(["# Updated", ""]);
+  });
+
+  it("変更パスはsizeとmtimeが同じでも永続cacheを使わず本文を再読込する", async () => {
+    const workspacePath = await createWorkspace();
+    const notePath = path.join(workspacePath, "note.md");
+    const cachePath = path.join(workspacePath, "cache", "index.json");
+    await writeFile(notePath, "old!", "utf8");
+    const fixedTime = new Date("2026-01-02T00:00:00.000Z");
+    await utimes(notePath, fixedTime, fixedTime);
+    const session = new WorkspaceDerivedDataSession(() => 1000);
+    let readCount = 0;
+    const request = {
+      cachePath,
+      filePaths: ["note.md"],
+      operations: {
+        readFile: async (filePath: string) => {
+          readCount += 1;
+          return readFile(filePath, "utf8");
+        },
+        stat
+      },
+      workspaceId: "ws-1",
+      workspacePath
+    };
+    await session.getSnapshot(request);
+    readCount = 0;
+    await writeFile(notePath, "new!", "utf8");
+    await utimes(notePath, fixedTime, fixedTime);
+
+    session.invalidate("ws-1", ["note.md"]);
+    const refreshed = await session.getSnapshot(request);
+
+    expect(readCount).toBe(1);
+    expect(refreshed.fileIndex.records[0]?.lines).toEqual(["new!"]);
+    expect(refreshed.fileIndex.records[0]?.contentHash).not.toBeUndefined();
   });
 
   it("増分更新の失敗後も直後の再要求で最新スナップショットを再構築する", async () => {
@@ -266,7 +301,7 @@ describe("WorkspaceDerivedDataSession", () => {
     }
   });
 
-  it("検索用のファイルサイズ上限が異なる要求は別スナップショットとして扱う", async () => {
+  it("検索用のファイルサイズ上限は同じsnapshotを単調に再利用する", async () => {
     const workspacePath = await createWorkspace();
     const session = new WorkspaceDerivedDataSession(() => 1000);
     let readCount = 0;
@@ -293,8 +328,8 @@ describe("WorkspaceDerivedDataSession", () => {
       workspacePath
     });
 
-    expect(allFiles).not.toBe(searchLimited);
-    expect(readCount).toBe(2);
+    expect(allFiles).toBe(searchLimited);
+    expect(readCount).toBe(1);
   });
 
   it("派生データ取得時に maxSearchFileBytes を渡すと上限内の再読込判定が効く", async () => {
@@ -352,7 +387,7 @@ describe("WorkspaceDerivedDataSession", () => {
       workspacePath
     });
 
-    expect(limitedSnapshot.fileIndex.records.find((record) => record.path === "large.md")?.searchable).toBe(false);
+    expect(limitedSnapshot.fileIndex.records.find((record) => record.path === "large.md")?.searchable).toBe(true);
     expect(readCount).toBe(0);
   });
 
@@ -390,5 +425,220 @@ describe("WorkspaceDerivedDataSession", () => {
     });
 
     expect(readCount).toBe(1);
+  });
+
+  it("2MiB相当のprime後は不足するlarge本文だけをupgradeする", async () => {
+    const workspacePath = await createWorkspace();
+    await writeFile(path.join(workspacePath, "small.md"), "# Small\nok", "utf8");
+    await writeFile(
+      path.join(workspacePath, "large.md"),
+      `---\naliases: [大きな別名]\n---\n# Large\n${"x".repeat(64)}`,
+      "utf8"
+    );
+    const session = new WorkspaceDerivedDataSession(() => 1000);
+    let readCount = 0;
+    const operations = {
+      readFile: async (filePath: string) => {
+        readCount += 1;
+        return readFile(filePath, "utf8");
+      },
+      stat
+    };
+
+    const prime = await session.getSnapshot({
+      filePaths: ["large.md", "small.md"],
+      maxSearchFileBytes: 16,
+      operations,
+      workspaceId: "ws-1",
+      workspacePath
+    });
+    expect(prime.fileIndex.records.find((record) => record.path === "large.md")?.searchable).toBe(false);
+
+    const upgraded = await session.getSnapshot({
+      filePaths: ["large.md", "small.md"],
+      maxSearchFileBytes: Number.MAX_SAFE_INTEGER,
+      operations,
+      workspaceId: "ws-1",
+      workspacePath
+    });
+
+    expect(upgraded.fileIndex.records.find((record) => record.path === "large.md")?.searchable).toBe(true);
+    expect(readCount).toBe(2);
+
+    await expect(readWorkspaceAliases(workspacePath, {
+      fileIndex: upgraded.fileIndex,
+      parseCache: upgraded.parseCache
+    })).resolves.toEqual({
+      ok: true,
+      value: { "large.md": ["大きな別名"] }
+    });
+    expect(readCount).toBe(2);
+  });
+
+  it("無効化後に完了した旧世代snapshotを公開しない", async () => {
+    const workspacePath = await createWorkspace();
+    const session = new WorkspaceDerivedDataSession(() => 1000);
+    let releaseRead!: () => void;
+    const readGate = new Promise<void>((resolve) => { releaseRead = resolve; });
+    const request = {
+      filePaths: ["note.md"],
+      operations: {
+        readFile: async (filePath: string) => {
+          await readGate;
+          return readFile(filePath, "utf8");
+        },
+        stat
+      },
+      workspaceId: "ws-1",
+      workspacePath
+    };
+    const stale = session.getSnapshot(request);
+    session.invalidate("ws-1");
+    releaseRead();
+
+    await expect(stale).rejects.toThrow("generation is stale");
+    await expect(session.getSnapshot(request)).resolves.toMatchObject({
+      fileIndex: { records: [{ path: "note.md", readStatus: "ok" }] }
+    });
+  });
+
+  it("初回読込中の変更を旧Promiseの連鎖にせず最新snapshotへ反映する", async () => {
+    const workspacePath = await createWorkspace();
+    const session = new WorkspaceDerivedDataSession(() => 1000);
+    let readCount = 0;
+    let releaseFirst!: () => void;
+    let releaseSecond!: () => void;
+    const firstGate = new Promise<void>((resolve) => { releaseFirst = resolve; });
+    const secondGate = new Promise<void>((resolve) => { releaseSecond = resolve; });
+    const request = {
+      filePaths: ["note.md"],
+      operations: {
+        readFile: async (filePath: string) => {
+          readCount += 1;
+          if (readCount === 1) {
+            const content = await readFile(filePath, "utf8");
+            await firstGate;
+            return content;
+          }
+          await secondGate;
+          return readFile(filePath, "utf8");
+        },
+        stat
+      },
+      workspaceId: "ws-1",
+      workspacePath
+    };
+
+    const stale = session.getSnapshot(request);
+    for (let attempt = 0; attempt < 10 && readCount < 1; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    await writeFile(path.join(workspacePath, "note.md"), "# Updated\n", "utf8");
+    session.invalidate("ws-1", ["note.md"]);
+    const latest = session.getSnapshot(request);
+    for (let attempt = 0; attempt < 10 && readCount < 2; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    releaseSecond();
+    const snapshot = await latest;
+    releaseFirst();
+
+    await expect(stale).rejects.toThrow("generation is stale");
+    expect(snapshot.fileIndex.records[0]?.lines).toEqual(["# Updated", ""]);
+    expect(readCount).toBe(2);
+  });
+
+  it("upgrade失敗時もlow snapshotを保持し、high要求を再試行できる", async () => {
+    const workspacePath = await createWorkspace();
+    await writeFile(path.join(workspacePath, "large.md"), `# Large\n${"x".repeat(64)}`, "utf8");
+    const session = new WorkspaceDerivedDataSession(() => 1000);
+    let failUpgrade = false;
+    const request = {
+      filePaths: ["large.md"],
+      maxSearchFileBytes: 8,
+      operations: {
+        readFile: async (filePath: string) => {
+          return readFile(filePath, "utf8");
+        },
+        get stat() {
+          if (failUpgrade) throw new Error("upgrade failed");
+          return stat;
+        }
+      },
+      workspaceId: "ws-1",
+      workspacePath
+    };
+    const low = await session.getSnapshot(request);
+    expect(low.fileIndex.records[0]?.searchable).toBe(false);
+
+    failUpgrade = true;
+    await expect(session.getSnapshot({
+      ...request,
+      maxSearchFileBytes: Number.MAX_SAFE_INTEGER
+    })).rejects.toThrow("upgrade failed");
+    await expect(session.getSnapshot(request)).resolves.toBe(low);
+
+    failUpgrade = false;
+    const high = await session.getSnapshot({
+      ...request,
+      maxSearchFileBytes: Number.MAX_SAFE_INTEGER
+    });
+    expect(high.fileIndex.records[0]?.searchable).toBe(true);
+  });
+
+  it("pending readはTTLとsession上限で重複開始しない", async () => {
+    const workspacePath = await createWorkspace();
+    await writeFile(path.join(workspacePath, "other.md"), "# Other", "utf8");
+    let now = 0;
+    let releaseRead!: () => void;
+    const readGate = new Promise<void>((resolve) => { releaseRead = resolve; });
+    let readCount = 0;
+    const session = new WorkspaceDerivedDataSession(() => now, 10, 1);
+    const request = {
+      filePaths: ["note.md"],
+      operations: {
+        readFile: async (filePath: string) => {
+          readCount += 1;
+          await readGate;
+          return readFile(filePath, "utf8");
+        },
+        stat
+      },
+      workspaceId: "ws-1",
+      workspacePath
+    };
+    const first = session.getSnapshot(request);
+    now = 100;
+    const second = session.getSnapshot(request);
+    expect(second).toBe(first);
+    const other = session.getSnapshot({
+      ...request,
+      filePaths: ["other.md"]
+    });
+    expect(session.size()).toBe(2);
+    releaseRead();
+    await first;
+    await other;
+    expect(readCount).toBe(2);
+  });
+
+  it("settled snapshotはTTL後に破棄され、同じkeyを増殖させない", async () => {
+    const workspacePath = await createWorkspace();
+    let now = 0;
+    const session = new WorkspaceDerivedDataSession(() => now, 10, 4);
+    const request = {
+      filePaths: ["note.md"],
+      operations: { readFile: (filePath: string) => readFile(filePath, "utf8"), stat },
+      workspaceId: "ws-1",
+      workspacePath
+    };
+
+    const first = await session.getSnapshot(request);
+    expect(session.size()).toBe(1);
+    now = 11;
+    const second = await session.getSnapshot(request);
+
+    expect(second).not.toBe(first);
+    expect(session.size()).toBe(1);
   });
 });

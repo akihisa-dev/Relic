@@ -2,6 +2,7 @@ import { EditorState } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 
 import { collectInlineMatches, findClickableLinkAtPosition, overlaps } from "./editorLivePreviewModel";
+import { largeMarkdownMaxLineLength } from "./largeMarkdown";
 
 describe("editorLivePreviewModel", () => {
   it("主要なインライン記法を検出する", () => {
@@ -106,6 +107,26 @@ describe("editorLivePreviewModel", () => {
     const matches = collectInlineMatches(0, "Go [site](https://example.com/a_(b)");
 
     expect(matches.filter((match) => match.className === "cm-live-link")).toHaveLength(0);
+  });
+
+  it("壊れたリンクの後ろにある有効なリンクは検出する", () => {
+    const matches = collectInlineMatches(0, "[bad](url [good](ok)");
+
+    expect(matches.filter((match) => match.className === "cm-live-link").map((match) => (
+      "[bad](url [good](ok)".slice(match.contentFrom, match.contentTo)
+    ))).toEqual(["good"]);
+  });
+
+  it("未完了のdelimiterが多数ある行でもリンク走査を再走査しない", () => {
+    const text = `[${"x".repeat(largeMarkdownMaxLineLength - 32)}`;
+
+    expect(collectInlineMatches(0, text)).toEqual([]);
+  });
+
+  it("Paneのsource fallback対象の長大な単一行は装飾走査を早期終了する", () => {
+    const text = "[".repeat(largeMarkdownMaxLineLength + 1);
+
+    expect(collectInlineMatches(0, text)).toEqual([]);
   });
 
   it("範囲の重なりを判定する", () => {

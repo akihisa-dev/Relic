@@ -155,6 +155,67 @@ describe("useAppPreviewOutputActions", () => {
     await waitFor(() => expect(setWorkspaceError).toHaveBeenCalledWith("diagram render failed"));
     expect(savePreviewAsPdf).not.toHaveBeenCalled();
   });
+
+  it("ワークスペース切替後に旧PDFの保存と通知を行わない", async () => {
+    let resolveOutput!: (value: typeof outputPayload) => void;
+    outputMock.buildPreviewOutputHtml.mockReturnValueOnce(new Promise((resolve) => {
+      resolveOutput = resolve;
+    }));
+    const savePreviewAsPdf = vi.fn<SavePreviewAsPdf>().mockResolvedValue({
+      ok: true,
+      value: { status: "saved" }
+    });
+    installApi(savePreviewAsPdf);
+    const setWorkspaceError = vi.fn();
+    const showToast = vi.fn();
+    let current = true;
+    const beginWorkspaceRequest = vi.fn(() => () => current);
+    const { result } = renderHook(() => useAppPreviewOutputActions({
+      activeFileTab,
+      beginWorkspaceRequest,
+      setWorkspaceError,
+      showToast,
+      t: createTranslator("en"),
+      workspacePath: "/workspace-a"
+    }));
+
+    act(() => result.current.handleSavePreviewAsPdf());
+    current = false;
+    resolveOutput(outputPayload);
+    await waitFor(() => expect(outputMock.buildPreviewOutputHtml).toHaveBeenCalled());
+    await Promise.resolve();
+
+    expect(savePreviewAsPdf).not.toHaveBeenCalled();
+    expect(setWorkspaceError).not.toHaveBeenCalled();
+    expect(showToast).not.toHaveBeenCalled();
+  });
+
+  it("ワークスペース切替後の旧生成エラーを表示しない", async () => {
+    let rejectOutput!: (error: Error) => void;
+    outputMock.buildPreviewOutputHtml.mockReturnValueOnce(new Promise((_, reject) => {
+      rejectOutput = reject;
+    }));
+    const savePreviewAsPdf = vi.fn<SavePreviewAsPdf>();
+    installApi(savePreviewAsPdf);
+    const setWorkspaceError = vi.fn();
+    let current = true;
+    const { result } = renderHook(() => useAppPreviewOutputActions({
+      activeFileTab,
+      beginWorkspaceRequest: () => () => current,
+      setWorkspaceError,
+      showToast: vi.fn(),
+      t: createTranslator("en")
+    }));
+
+    act(() => result.current.handleSavePreviewAsPdf());
+    current = false;
+    rejectOutput(new Error("stale output failure"));
+    await waitFor(() => expect(outputMock.buildPreviewOutputHtml).toHaveBeenCalled());
+    await Promise.resolve();
+
+    expect(setWorkspaceError).not.toHaveBeenCalled();
+    expect(savePreviewAsPdf).not.toHaveBeenCalled();
+  });
 });
 
 function installApi(savePreviewAsPdf: SavePreviewAsPdf): void {

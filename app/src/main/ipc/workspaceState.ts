@@ -10,7 +10,10 @@ import type {
 } from "../../shared/ipc";
 import { redactSensitiveText } from "../../shared/securityRedaction";
 import { readWorkspaceFileTree } from "../files/fileTree";
-import { getWorkspaceFileIndexCachePath, readWorkspaceFileIndex } from "../files/workspaceFileIndex";
+import {
+  defaultWorkspaceFileIndexMaxSearchFileBytes
+} from "../files/workspaceFileIndex";
+import { workspaceDataProvider } from "../files/workspaceDataProvider";
 import { finishPerformanceMeasure, startPerformanceMeasure } from "../files/performanceLog";
 import { type AppSettings } from "../settings/appSettings";
 import { readWorkspaceSettings } from "../settings/workspaceSettings";
@@ -48,11 +51,17 @@ export async function buildWorkspaceState(
 
   if (fileTreeResult.status === "fulfilled") {
     try {
-      const fileIndex = await readWorkspaceFileIndex(activeWorkspace.path, {
-        cachePath: getWorkspaceFileIndexCachePath(userDataPath, activeWorkspace.id),
+      const data = await workspaceDataProvider.get({
         fileTree,
-        includeSearchContent: false
+        maxSearchFileBytes: defaultWorkspaceFileIndexMaxSearchFileBytes,
+        userDataPath,
+        workspaceId: activeWorkspace.id,
+        workspacePath: activeWorkspace.path
       });
+      const fileIndex = data.options.fileIndex;
+      if (!fileIndex) {
+        throw new Error("Workspace file index is unavailable.");
+      }
       fileIndexEntries = fileIndex.entries;
     } catch (error) {
       issues.push(workspaceReadIssue("file-index", error));

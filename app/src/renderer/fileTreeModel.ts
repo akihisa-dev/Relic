@@ -43,6 +43,12 @@ export interface VisibleFileTreeRow {
   node: WorkspaceTreeNode;
 }
 
+export const largeFileTreeRowThreshold = 1000;
+
+export function shouldSuppressFileTreeOpeningAnimation(isRoot: boolean, visibleRowCount: number): boolean {
+  return isRoot && visibleRowCount >= largeFileTreeRowThreshold;
+}
+
 export function findNodeByPath(nodes: WorkspaceTreeNode[], targetPath: string): WorkspaceTreeNode | null {
   for (const node of nodes) {
     if (node.path === targetPath) return node;

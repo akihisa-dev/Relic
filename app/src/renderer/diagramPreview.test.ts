@@ -349,12 +349,71 @@ describe("diagramPreview", () => {
     vi.useRealTimers();
   });
 
+  it("Mermaidがタイムアウトしてもunderlying描画の完了まで次の描画を開始しない", async () => {
+    vi.useFakeTimers();
+    const { renderDiagramElement } = await loadDiagramPreviewModule();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const firstContainer = createAttachedContainer();
+    const secondContainer = createAttachedContainer();
+    const renderGate = createDeferred<{ svg: string }>();
+    renderMock.mockReturnValueOnce(renderGate.promise);
+
+    const firstResult = renderDiagramElement(firstContainer, "mermaid", "stuck");
+    await vi.waitFor(() => expect(renderMock).toHaveBeenCalledTimes(1));
+    await vi.advanceTimersByTimeAsync(diagramRenderTimeoutMs);
+    await expect(firstResult).resolves.toBeNull();
+
+    renderMock.mockResolvedValueOnce({ svg: "<svg><text>next</text></svg>" });
+    const secondResult = renderDiagramElement(secondContainer, "mermaid", "next");
+    await Promise.resolve();
+    expect(renderMock).toHaveBeenCalledTimes(1);
+
+    renderGate.resolve({ svg: "<svg><text>stale</text></svg>" });
+    await vi.waitFor(() => expect(renderMock).toHaveBeenCalledTimes(2));
+    await expect(secondResult).resolves.toEqual(expect.objectContaining({
+      fitToViewport: expect.any(Function)
+    }));
+    expect(secondContainer.textContent).toContain("next");
+    warn.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it("Mermaidがタイムアウトしたソースは完了後にcacheから削除して再描画できる", async () => {
+    vi.useFakeTimers();
+    const { renderDiagramElement } = await loadDiagramPreviewModule();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const firstContainer = createAttachedContainer();
+    const secondContainer = createAttachedContainer();
+    const renderGate = createDeferred<{ svg: string }>();
+    renderMock.mockReturnValueOnce(renderGate.promise);
+
+    const firstResult = renderDiagramElement(firstContainer, "mermaid", "same");
+    await vi.waitFor(() => expect(renderMock).toHaveBeenCalledTimes(1));
+    await vi.advanceTimersByTimeAsync(diagramRenderTimeoutMs);
+    await expect(firstResult).resolves.toBeNull();
+
+    renderMock.mockResolvedValueOnce({ svg: "<svg><text>retried</text></svg>" });
+
+    const secondResult = renderDiagramElement(secondContainer, "mermaid", "same");
+    await Promise.resolve();
+    expect(renderMock).toHaveBeenCalledTimes(1);
+    renderGate.resolve({ svg: "<svg><text>stale</text></svg>" });
+    await vi.waitFor(() => expect(renderMock).toHaveBeenCalledTimes(2));
+    await expect(secondResult).resolves.toEqual(expect.objectContaining({
+      fitToViewport: expect.any(Function)
+    }));
+    expect(secondContainer.textContent).toContain("retried");
+    warn.mockRestore();
+    vi.useRealTimers();
+  });
+
   it("D2描画が一定時間を超える場合はエラーUIを表示する", async () => {
     vi.useFakeTimers();
     const { renderDiagramElement } = await loadDiagramPreviewModule();
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const container = createAttachedContainer();
-    compileD2Mock.mockReturnValueOnce(new Promise(() => undefined));
+    const compileGate = createDeferred<{ diagram: { root: true }; renderOptions: Record<string, never> }>();
+    compileD2Mock.mockReturnValueOnce(compileGate.promise);
 
     const result = renderDiagramElement(container, "d2", "x -> y");
     await vi.advanceTimersByTimeAsync(diagramRenderTimeoutMs);
@@ -363,6 +422,10 @@ describe("diagramPreview", () => {
     expect(container.dataset.diagramRenderStatus).toBe("error");
     expect(container.querySelector(".preview-diagram-error")).not.toBeNull();
     expect(container.textContent).toContain("D2 diagram rendering timed out.");
+    // The timeout only stops waiting for the caller; the underlying D2 operation
+    // must settle before the serialized queue can safely accept another render.
+    compileGate.resolve({ diagram: { root: true }, renderOptions: {} });
+    await vi.waitFor(() => expect(renderD2Mock).toHaveBeenCalledTimes(1));
     warn.mockRestore();
     vi.useRealTimers();
   });
@@ -373,7 +436,8 @@ describe("diagramPreview", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const firstContainer = createAttachedContainer();
     const secondContainer = createAttachedContainer();
-    compileD2Mock.mockReturnValueOnce(new Promise(() => undefined));
+    const compileGate = createDeferred<{ diagram: { root: true }; renderOptions: Record<string, never> }>();
+    compileD2Mock.mockReturnValueOnce(compileGate.promise);
 
     const firstResult = renderDiagramElement(firstContainer, "d2", "stuck -> diagram");
     await vi.waitFor(() => {
@@ -383,6 +447,10 @@ describe("diagramPreview", () => {
 
     await expect(firstResult).resolves.toBeNull();
     expect(firstContainer.dataset.diagramRenderStatus).toBe("error");
+
+    renderD2Mock.mockResolvedValueOnce('<svg viewBox="0 0 120 80"><text>stale</text></svg>');
+    compileGate.resolve({ diagram: { root: true }, renderOptions: {} });
+    await vi.waitFor(() => expect(compileD2Mock).toHaveBeenCalledTimes(1));
 
     compileD2Mock.mockResolvedValueOnce({
       diagram: { root: true },
@@ -403,13 +471,47 @@ describe("diagramPreview", () => {
     vi.useRealTimers();
   });
 
+  it("D2の旧render失敗が同一sourceの新しいcacheを削除しない", async () => {
+    vi.useFakeTimers();
+    await loadDiagramPreviewModule();
+    const { enqueueD2Render } = await import("./d2Renderer");
+    const firstCompile = createDeferred<{ diagram: { root: "first" }; renderOptions: Record<string, never> }>();
+    const secondCompile = createDeferred<{ diagram: { root: "second" }; renderOptions: Record<string, never> }>();
+    compileD2Mock
+      .mockReturnValueOnce(firstCompile.promise)
+      .mockReturnValueOnce(secondCompile.promise);
+
+    const firstResult = enqueueD2Render("same -> diagram");
+    await vi.waitFor(() => expect(compileD2Mock).toHaveBeenCalledTimes(1));
+    await vi.advanceTimersByTimeAsync(diagramRenderTimeoutMs);
+    await expect(firstResult).rejects.toThrow("timed out");
+
+    const secondResult = enqueueD2Render("same -> diagram");
+
+    firstCompile.reject(new Error("old render failed"));
+    await vi.waitFor(() => expect(compileD2Mock).toHaveBeenCalledTimes(2));
+
+    // If the old queue rejection deleted the new cache entry, this request
+    // would enqueue a third compile instead of sharing secondResult.
+    const thirdResult = enqueueD2Render("same -> diagram");
+    expect(compileD2Mock).toHaveBeenCalledTimes(2);
+
+    renderD2Mock.mockResolvedValue("<svg>recovered</svg>");
+    secondCompile.resolve({ diagram: { root: "second" }, renderOptions: {} });
+    await expect(secondResult).resolves.toBe("<svg>recovered</svg>");
+    await expect(thirdResult).resolves.toBe("<svg>recovered</svg>");
+    expect(renderD2Mock).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
   it("D2描画がタイムアウトしたソースはcacheから削除して再描画できる", async () => {
     vi.useFakeTimers();
     const { renderDiagramElement } = await loadDiagramPreviewModule();
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const firstContainer = createAttachedContainer();
     const secondContainer = createAttachedContainer();
-    compileD2Mock.mockReturnValueOnce(new Promise(() => undefined));
+    const compileGate = createDeferred<{ diagram: { root: true }; renderOptions: Record<string, never> }>();
+    compileD2Mock.mockReturnValueOnce(compileGate.promise);
 
     const firstResult = renderDiagramElement(firstContainer, "d2", "same -> diagram");
     await vi.waitFor(() => {
@@ -418,6 +520,10 @@ describe("diagramPreview", () => {
     await vi.advanceTimersByTimeAsync(diagramRenderTimeoutMs);
 
     await expect(firstResult).resolves.toBeNull();
+
+    renderD2Mock.mockResolvedValueOnce('<svg viewBox="0 0 120 80"><text>stale</text></svg>');
+    compileGate.resolve({ diagram: { root: true }, renderOptions: {} });
+    await vi.waitFor(() => expect(compileD2Mock).toHaveBeenCalledTimes(1));
 
     compileD2Mock.mockResolvedValueOnce({
       diagram: { root: true },
@@ -712,13 +818,14 @@ describe("diagramPreview", () => {
       expect(renderMock).toHaveBeenCalledWith(expect.stringMatching(/^relic-mermaid-/), "old");
     });
 
-    await renderDiagramElement(container, "mermaid", "new");
-    expect(container.dataset.diagramRenderStatus).toBe("rendered");
-    expect(container.textContent).toContain("new");
-
+    const newResult = renderDiagramElement(container, "mermaid", "new");
     oldRender.resolve({ svg: '<svg viewBox="0 0 640 320"><text>old</text></svg>' });
     await expect(oldResult).resolves.toBeNull();
+    await expect(newResult).resolves.toEqual(expect.objectContaining({
+      fitToViewport: expect.any(Function)
+    }));
 
+    expect(container.dataset.diagramRenderStatus).toBe("rendered");
     expect(container.textContent).toContain("new");
     expect(container.textContent).not.toContain("old");
   });

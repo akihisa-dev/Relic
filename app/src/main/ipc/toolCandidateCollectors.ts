@@ -5,6 +5,7 @@ import type { MergeFilesInput, WorkspaceTreeNode } from "../../shared/ipc";
 import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import { parseMarkdownTags } from "../../shared/tags";
 import { parseFrontmatter } from "../files/frontmatter";
+import { mapWithConcurrency } from "../files/concurrency";
 
 export interface FileCandidate {
   ctime: number;
@@ -18,6 +19,53 @@ export interface ToolActionFileOperations {
   stat(filePath: string): Promise<Stats>;
 }
 
+export const maxToolCandidateFiles = 50_000;
+export const maxToolCandidateReadBytes = 4 * 1024 * 1024;
+export const maxToolCandidateAggregateReadBytes = 64 * 1024 * 1024;
+const maxConcurrentToolCandidateReads = 8;
+
+export interface ToolCandidateReadBudget {
+  statAggregateBytes: number;
+  actualAggregateBytes: number;
+}
+
+export class ToolCandidateLimitError extends Error {
+  readonly code = "TOOL_CANDIDATE_LIMIT";
+
+  constructor(message: string) {
+    super(message);
+    this.name = "ToolCandidateLimitError";
+  }
+}
+
+export async function readToolCandidateContent(
+  workspacePath: string,
+  candidate: Pick<FileCandidate, "relPath">,
+  operations: ToolActionFileOperations,
+  budget: ToolCandidateReadBudget
+): Promise<string> {
+  const filePath = path.join(workspacePath, candidate.relPath);
+  const stats = await operations.stat(filePath);
+  if (!Number.isSafeInteger(stats.size) || stats.size < 0 || stats.size > maxToolCandidateReadBytes) {
+    throw new ToolCandidateLimitError("Tool candidate file size limit exceeded.");
+  }
+  budget.statAggregateBytes += stats.size;
+  if (!Number.isSafeInteger(budget.statAggregateBytes) || budget.statAggregateBytes > maxToolCandidateAggregateReadBytes) {
+    throw new ToolCandidateLimitError("Tool candidate aggregate read limit exceeded.");
+  }
+
+  const content = await operations.readFile(filePath, "utf-8");
+  const actualBytes = Buffer.byteLength(content, "utf8");
+  if (actualBytes > maxToolCandidateReadBytes) {
+    throw new ToolCandidateLimitError("Tool candidate file size limit exceeded.");
+  }
+  budget.actualAggregateBytes += actualBytes;
+  if (!Number.isSafeInteger(budget.actualAggregateBytes) || budget.actualAggregateBytes > maxToolCandidateAggregateReadBytes) {
+    throw new ToolCandidateLimitError("Tool candidate aggregate read limit exceeded.");
+  }
+  return content;
+}
+
 function isFileCandidate(candidate: FileCandidate | null): candidate is FileCandidate {
   return candidate !== null;
 }
@@ -27,26 +75,17 @@ export async function collectMergeCandidates(
   nodes: WorkspaceTreeNode[],
   operations: ToolActionFileOperations
 ): Promise<FileCandidate[]> {
-  const candidates: FileCandidate[] = [];
-
-  async function collect(items: WorkspaceTreeNode[]): Promise<void> {
-    await Promise.all(items.map(async (node) => {
-      if (node.type === "folder") {
-        await collect(node.children);
-      } else {
-        const absPath = path.join(workspacePath, node.path);
-        try {
-          const s = await operations.stat(absPath);
-          candidates.push({ relPath: node.path, mtime: s.mtimeMs, ctime: s.birthtimeMs });
-        } catch {
-          return;
-        }
-      }
-    }));
-  }
-
-  await collect(nodes);
-  return candidates;
+  const files = flattenTreeFiles(nodes);
+  assertCandidateCount(files.length);
+  const candidates = await mapWithConcurrency(files, maxConcurrentToolCandidateReads, async (node) => {
+    try {
+      const s = await operations.stat(path.join(workspacePath, node.path));
+      return { relPath: node.path, mtime: s.mtimeMs, ctime: s.birthtimeMs } satisfies FileCandidate;
+    } catch {
+      return null;
+    }
+  });
+  return candidates.filter(isFileCandidate);
 }
 
 export async function filterMergeCandidates(
@@ -64,14 +103,9 @@ export async function filterMergeCandidates(
 
   if (input.filterType === "tag" && input.filterValue) {
     const tag = input.filterValue.trim().replace(/^#/, "");
-    const taggedCandidates = await Promise.all(candidates.map(async (candidate) => {
-      try {
-        const content = await operations.readFile(path.join(workspacePath, candidate.relPath), "utf-8");
-        return new Set(parseMarkdownTags(content).tags).has(tag) ? candidate : null;
-      } catch {
-        return null;
-      }
-    }));
+      const taggedCandidates = await mapCandidatesWithBoundedRead(workspacePath, candidates, operations, (content, candidate) =>
+      new Set(parseMarkdownTags(content).tags).has(tag) ? candidate : null
+    );
     return taggedCandidates.filter(isFileCandidate);
   }
 
@@ -80,16 +114,12 @@ export async function filterMergeCandidates(
     const value = input.filterValue.trim();
 
     if (field && value) {
-      const frontmatterFiltered = await Promise.all(candidates.map(async (candidate) => {
-        try {
-          const content = await operations.readFile(path.join(workspacePath, candidate.relPath), "utf-8");
-          const { data } = parseFrontmatter(content);
-
-          return matchesFrontmatterField(data[field], value) ? candidate : null;
-        } catch {
-          return null;
-        }
-      }));
+      const frontmatterFiltered = await mapCandidatesWithBoundedRead(workspacePath, candidates, operations, (content, candidate) => {
+        const { data } = parseFrontmatter(content);
+        return Object.prototype.hasOwnProperty.call(data, field) && matchesFrontmatterField(data[field], value)
+          ? candidate
+          : null;
+      });
       return frontmatterFiltered.filter(isFileCandidate);
     }
 
@@ -111,31 +141,19 @@ export async function collectTitleListFiles(
   filterFolder: string | undefined,
   operations: ToolActionFileOperations
 ): Promise<{ name: string; path: string; mtime: number }[]> {
-  const collected: { name: string; path: string; mtime: number }[] = [];
-
-  async function collectFiles(items: WorkspaceTreeNode[], folderRelPath: string): Promise<void> {
-    await Promise.all(items.map(async (node) => {
-      if (node.type === "folder") {
-        if (!filterFolder || folderRelPath === filterFolder || node.path === filterFolder) {
-          await collectFiles(node.children, node.path);
-        } else if (!filterFolder) {
-          await collectFiles(node.children, node.path);
-        }
-      } else {
-        if (filterFolder && !node.path.startsWith(filterFolder + "/") && node.path !== filterFolder) return;
-        const absPath = path.join(workspacePath, node.path);
-        try {
-          const s = await operations.stat(absPath);
-          collected.push({ name: node.name.replace(/\.md$/, ""), path: node.path, mtime: s.mtimeMs });
-        } catch {
-          return;
-        }
-      }
-    }));
-  }
-
-  await collectFiles(nodes, "");
-  return collected;
+  const files = flattenTreeFiles(nodes).filter((node) =>
+    !filterFolder || node.path === filterFolder || node.path.startsWith(`${filterFolder}/`)
+  );
+  assertCandidateCount(files.length);
+  const collected = await mapWithConcurrency(files, maxConcurrentToolCandidateReads, async (node) => {
+    try {
+      const s = await operations.stat(path.join(workspacePath, node.path));
+      return { name: node.name.replace(/\.md$/, ""), path: node.path, mtime: s.mtimeMs };
+    } catch {
+      return null;
+    }
+  });
+  return collected.filter((candidate): candidate is { name: string; path: string; mtime: number } => candidate !== null);
 }
 
 export async function collectTagIndexFiles(
@@ -143,33 +161,58 @@ export async function collectTagIndexFiles(
   nodes: WorkspaceTreeNode[],
   operations: ToolActionFileOperations
 ): Promise<FileCandidate[]> {
-  const collected: FileCandidate[] = [];
+  const files = flattenTreeFiles(nodes).filter((node) => hasMarkdownExtension(node.path));
+  assertCandidateCount(files.length);
+  const collected = await mapWithConcurrency(files, maxConcurrentToolCandidateReads, async (node) => {
+    try {
+      const s = await operations.stat(path.join(workspacePath, node.path));
+      return {
+        ctime: s.birthtimeMs,
+        mtime: s.mtimeMs,
+        name: node.name.replace(/\.md$/i, ""),
+        relPath: node.path
+      } satisfies FileCandidate;
+    } catch {
+      return null;
+    }
+  });
+  return collected.filter((candidate): candidate is { ctime: number; mtime: number; name: string; relPath: string } => candidate !== null);
+}
 
-  async function collect(items: WorkspaceTreeNode[]): Promise<void> {
-    await Promise.all(items.map(async (node) => {
-      if (node.type === "folder") {
-        await collect(node.children);
-        return;
-      }
-
-      if (!hasMarkdownExtension(node.path)) return;
-
-      try {
-        const s = await operations.stat(path.join(workspacePath, node.path));
-        collected.push({
-          ctime: s.birthtimeMs,
-          mtime: s.mtimeMs,
-          name: node.name.replace(/\.md$/i, ""),
-          relPath: node.path
-        });
-      } catch {
-        return;
-      }
-    }));
+function flattenTreeFiles(nodes: WorkspaceTreeNode[]): Array<Extract<WorkspaceTreeNode, { type: "file" }>> {
+  const files: Array<Extract<WorkspaceTreeNode, { type: "file" }>> = [];
+  const pending = [...nodes];
+  while (pending.length > 0) {
+    const node = pending.pop()!;
+    if (node.type === "folder") pending.push(...node.children);
+    else files.push(node);
   }
+  return files;
+}
 
-  await collect(nodes);
-  return collected;
+function assertCandidateCount(count: number): void {
+  if (count > maxToolCandidateFiles) {
+    throw new ToolCandidateLimitError("Tool candidate file limit exceeded.");
+  }
+}
+
+async function mapCandidatesWithBoundedRead<TResult>(
+  workspacePath: string,
+  candidates: FileCandidate[],
+  operations: ToolActionFileOperations,
+  mapper: (content: string, candidate: FileCandidate) => TResult
+): Promise<TResult[]> {
+  assertCandidateCount(candidates.length);
+  const budget: ToolCandidateReadBudget = { actualAggregateBytes: 0, statAggregateBytes: 0 };
+  return mapWithConcurrency(candidates, maxConcurrentToolCandidateReads, async (candidate) => {
+    try {
+      const content = await readToolCandidateContent(workspacePath, candidate, operations, budget);
+      return mapper(content, candidate);
+    } catch (error) {
+      if (error instanceof ToolCandidateLimitError) throw error;
+      return null as TResult;
+    }
+  });
 }
 
 function matchesFrontmatterField(value: unknown, query: string): boolean {

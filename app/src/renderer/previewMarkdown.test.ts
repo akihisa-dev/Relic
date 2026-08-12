@@ -29,6 +29,7 @@ describe("previewMarkdown", () => {
     expect(normalizeEmbedTarget("Folder/image.png")).toBeNull();
     expect(normalizeEmbedTarget("../secret")).toBeNull();
     expect(normalizeEmbedTarget("https://example.com/note.md")).toBeNull();
+    expect(normalizeEmbedTarget("Folder/Note\u0000.md")).toBeNull();
   });
 
   it("指定した順番のチェックボックスだけを切り替える", () => {
@@ -114,7 +115,7 @@ describe("previewMarkdown", () => {
 
   it("file URLをリンク先として残さない", () => {
     const html = renderMarkdown(
-      "[local](file:///Users/example/secret.md)\n[protocol-relative](//example.com/note)",
+      "[local](file:///Users/example/secret.md)\n[protocol-relative](//example.com/note)\n[obfuscated](java\u0000script:alert(1))",
       null,
       new Map(),
       true,
@@ -174,6 +175,7 @@ describe("previewMarkdown", () => {
     expect(resolveWorkspaceImagePath("../secret.png")).toBeNull();
     expect(resolveWorkspaceImagePath("https://example.com/a.png")).toBeNull();
     expect(resolveWorkspaceImagePath("/tmp/a.png")).toBeNull();
+    expect(resolveWorkspaceImagePath("images/diagram\n.png")).toBeNull();
   });
 
   it("mermaidコードブロックをDiagram表示用HTMLとして残す", () => {

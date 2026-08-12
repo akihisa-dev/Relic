@@ -1,5 +1,6 @@
 import { ensureMarkdownExtension } from "../shared/markdownExtension";
 import { formatWikiLinkTargetReference, scanWikiLinks } from "../shared/links";
+import { normalizeUrlForSecurity } from "../shared/urlSafety";
 
 export const maxEmbeddedFileLength = 20_000;
 
@@ -37,7 +38,9 @@ export function escapeHtmlAttribute(value: string): string {
 }
 
 export function normalizeEmbedTarget(target: string): string | null {
-  const [targetWithoutHeading = ""] = target.trim().split("#", 1);
+  const normalizedTargetInput = normalizeUrlForSecurity(target);
+  if (normalizedTargetInput === null) return null;
+  const [targetWithoutHeading = ""] = normalizedTargetInput.split("#", 1);
   const [targetWithoutBlock = ""] = targetWithoutHeading.split("^", 1);
   const normalized = targetWithoutBlock.replace(/\\/g, "/");
   if (
@@ -52,12 +55,13 @@ export function normalizeEmbedTarget(target: string): string | null {
 }
 
 export function resolveWorkspaceImagePath(href: string | null | undefined): string | null {
-  const normalizedHref = (href?.trim() ?? "").replace(/\\/g, "/");
+  const normalizedHrefInput = normalizeUrlForSecurity(href ?? "");
+  if (normalizedHrefInput === null) return null;
+  const normalizedHref = normalizedHrefInput.replace(/\\/g, "/");
   if (
     normalizedHref === "" ||
     normalizedHref.startsWith("/") ||
     normalizedHref.startsWith("//") ||
-    normalizedHref.includes("\0") ||
     normalizedHref.includes("?") ||
     normalizedHref.includes("#") ||
     /^[a-z][a-z0-9+.-]*:/i.test(normalizedHref)

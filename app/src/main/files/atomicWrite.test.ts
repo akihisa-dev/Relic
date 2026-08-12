@@ -45,6 +45,22 @@ describe("atomicWriteTextFile", () => {
     expect(unlink).toHaveBeenCalledWith(temporaryWrites[0]);
   });
 
+  it("rename直前の再検証失敗時は元ファイルと一時ファイル cleanupを保つ", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-atomic-write-guard-"));
+    temporaryPaths.push(workspacePath);
+    const filePath = path.join(workspacePath, "note.md");
+    await writeFile(filePath, "original", "utf8");
+
+    await expect(atomicWriteTextFile(filePath, "next", undefined, {
+      beforeRename: async () => {
+        throw new Error("changed before rename");
+      }
+    })).rejects.toThrow("changed before rename");
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe("original");
+    await expect(readdir(workspacePath)).resolves.toEqual(["note.md"]);
+  });
+
   it("一時ファイル名を判定できる", () => {
     expect(isAtomicWriteTemporaryPath("/tmp/workspace/.note.md.1234.1700000000000.xyz.tmp")).toBe(true);
     expect(isAtomicWriteTemporaryPath("/tmp/workspace/.note.md.tmp")).toBe(false);

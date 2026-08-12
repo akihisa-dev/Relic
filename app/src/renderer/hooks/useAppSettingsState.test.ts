@@ -163,6 +163,29 @@ describe("useAppSettingsState", () => {
       expect(setWorkspaceError).toHaveBeenCalledWith("カスタムフィールドの保存に失敗しました");
     });
   });
+
+  it("設定のIPC transport rejection rolls back without exposing the rejection", async () => {
+    const setEditorSettings = vi.fn();
+    const setWorkspaceError = vi.fn();
+    window.relic = makeRelicApi({
+      saveEditorSettings: vi.fn().mockRejectedValue(new Error("secret transport detail"))
+    });
+
+    const { result } = renderHook(() => useAppSettingsState({
+      beginWorkspaceRequest: beginCurrentWorkspaceRequest,
+      setEditorSettings,
+      setWorkspaceError,
+      setWorkspaceState: vi.fn()
+    }));
+
+    await waitFor(() => expect(window.relic?.getEditorSettings).toHaveBeenCalled());
+    act(() => result.current.handleSaveSettings(editorSettings));
+
+    await waitFor(() => expect(setWorkspaceError).toHaveBeenCalled());
+
+    expect(setEditorSettings).toHaveBeenLastCalledWith({ ...defaultEditorSettings, language: "ja" });
+    expect(setWorkspaceError).not.toHaveBeenCalledWith(expect.stringContaining("secret transport detail"));
+  });
 });
 
 function deferred<T>(): {

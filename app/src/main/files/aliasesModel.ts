@@ -2,6 +2,7 @@ const maxAliasLength = 256;
 const maxAliasesPerFile = 64;
 
 export function extractAliasesFromFrontmatterData(data: Record<string, unknown>): string[] {
+  if (!Object.prototype.hasOwnProperty.call(data, "aliases")) return [];
   const value = data.aliases;
 
   if (Array.isArray(value)) {

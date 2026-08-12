@@ -35,9 +35,11 @@ export function headingFoldRange(state: EditorState, lineStart: number): { from:
 
   const maxLineNumber = Math.min(doc.lines, headingLine.number + maxHeadingFoldScanLines);
   const scanTo = doc.line(maxLineNumber).to;
-  const tree = syntaxTreeAvailable(state, scanTo)
-    ? syntaxTree(state)
-    : ensureSyntaxTree(state, scanTo, 25);
+  // `ensureSyntaxTree` advances the parser context without updating the
+  // immutable EditorState field. Always use its returned tree when parsing is
+  // needed so a completed parse cannot leave us traversing a stale snapshot.
+  const ensuredTree = ensureSyntaxTree(state, scanTo, 25);
+  const tree = ensuredTree ?? (syntaxTreeAvailable(state, scanTo) ? syntaxTree(state) : null);
   if (!tree) return null;
   let currentHeadingFound = false;
   let boundaryFrom: number | null = null;

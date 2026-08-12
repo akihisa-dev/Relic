@@ -3,7 +3,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import { makeRelicApi } from "../../test/rendererTestUtils";
-import { clearOutboundFileTreeDrag, FILE_TREE_OUTBOUND_FILE_DRAG_EVENT } from "../fileTreeModel";
+import {
+  clearOutboundFileTreeDrag,
+  FILE_TREE_OUTBOUND_FILE_DRAG_EVENT,
+  shouldSuppressFileTreeOpeningAnimation
+} from "../fileTreeModel";
 import { I18nProvider } from "../i18n";
 import { FileTree, FileTreeItem, type FileTreeProps } from "./FileTree";
 
@@ -52,6 +56,10 @@ function openContextMenu(name: string): void {
   fireEvent.contextMenu(rowButton(name), { clientX: 40, clientY: 50 });
 }
 
+function stubRelicApi(api: Partial<typeof window.relic>): void {
+  vi.stubGlobal("relic", api);
+}
+
 function makeDataTransfer(files: File[] = []): DataTransfer {
   const data = new Map<string, string>();
   const types: string[] = files.length > 0 ? ["Files"] : [];
@@ -69,24 +77,6 @@ function makeDataTransfer(files: File[] = []): DataTransfer {
   };
 
   return dataTransfer as unknown as DataTransfer;
-}
-
-function makeLargeFileTree(rowCount = 1000): WorkspaceTreeNode[] {
-  const files = Array.from({ length: rowCount }, (_, index) => ({
-    name: `ノート${index + 1}`,
-    path: `notes/ノート${index + 1}.md`,
-    type: "file" as const
-  }));
-
-  return [
-    ...files,
-    {
-      children: [{ name: "nested", path: "LargeFolder/詳細.md", type: "file" }],
-      name: "LargeFolder",
-      path: "LargeFolder",
-      type: "folder"
-    }
-  ];
 }
 
 function makeProgressiveFolder(): WorkspaceTreeNode[] {
@@ -113,6 +103,7 @@ function makeProgressiveFolder(): WorkspaceTreeNode[] {
 afterEach(() => {
   clearOutboundFileTreeDrag();
   cleanup();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -311,26 +302,40 @@ describe("FileTree", () => {
     expect(rowButton("Root")).not.toHaveClass("open");
   });
 
-  it("大規模rootツリーではopening演出を抑制し、子ツリーへopeningFilePathを伝播しない", () => {
-    const largeTreeNodes = makeLargeFileTree();
+  it.each([
+    [999, false],
+    [1000, true],
+    [1001, true]
+  ])("rootの表示行数%sでopening演出抑制を%sと判定する", (visibleRowCount, expected) => {
+    expect(shouldSuppressFileTreeOpeningAnimation(true, visibleRowCount)).toBe(expected);
+    expect(shouldSuppressFileTreeOpeningAnimation(false, visibleRowCount)).toBe(false);
+  });
+
+  it("opening演出を抑制したrootは子ツリーへopeningFilePathを伝播しない", () => {
+    const nodes: WorkspaceTreeNode[] = [{
+      children: [{ name: "nested", path: "LargeFolder/詳細.md", type: "file" }],
+      name: "LargeFolder",
+      path: "LargeFolder",
+      type: "folder"
+    }];
 
     const { container } = render(
       <I18nProvider language="en">
         <FileTree
           isRoot
-          nodes={largeTreeNodes}
+          nodes={nodes}
           onOpenFile={vi.fn()}
           onSelectFolder={vi.fn()}
           openingFilePath="LargeFolder/詳細.md"
+          suppressOpeningAnimation
         />
       </I18nProvider>
     );
 
     const rootTree = container.querySelector(".file-tree");
     expect(rootTree).not.toBeNull();
-    expect(rootTree).toHaveAttribute("data-visible-row-count", "1002");
-    expect(rootTree).toHaveClass("file-tree--large");
-    expect(screen.getByText("ノート1000").closest("button")).not.toHaveClass("file-tree-row--opening");
+    expect(rootTree).toHaveAttribute("data-visible-row-count", "2");
+    expect(rootTree).not.toHaveClass("file-tree--large");
     expect(screen.getByText("nested").closest("button")).not.toHaveClass("file-tree-row--opening");
   });
 
@@ -362,7 +367,7 @@ describe("FileTree", () => {
   it("runs file context menu actions", async () => {
     const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     const copyWorkspaceItemPath = vi.fn().mockResolvedValue({ ok: true, value: undefined });
-    window.relic = makeRelicApi({ copyEditorTextToClipboard, copyWorkspaceItemPath });
+    stubRelicApi(makeRelicApi({ copyEditorTextToClipboard, copyWorkspaceItemPath }));
     const onDuplicateFile = vi.fn();
     const onMoveFile = vi.fn();
     const onOpenInOtherPane = vi.fn();
@@ -567,10 +572,7 @@ describe("FileTree", () => {
 
   it("starts only an external attachment drag with selected files", () => {
     const startWorkspaceFileDrag = vi.fn();
-    Object.defineProperty(window, "relic", {
-      configurable: true,
-      value: { startWorkspaceFileDrag }
-    });
+    stubRelicApi({ startWorkspaceFileDrag });
     renderFileTree({
       selectedItems: [
         { path: "Root.md", type: "file" },
@@ -592,10 +594,7 @@ describe("FileTree", () => {
     const startWorkspaceFileDrag = vi.fn();
     const onImportMarkdownFiles = vi.fn();
     const onMoveFile = vi.fn();
-    Object.defineProperty(window, "relic", {
-      configurable: true,
-      value: { startWorkspaceFileDrag }
-    });
+    stubRelicApi({ startWorkspaceFileDrag });
     renderFileTree({ onImportMarkdownFiles, onMoveFile });
 
     fireEvent.dragStart(rowButton("Root"), { dataTransfer: makeDataTransfer() });
@@ -610,10 +609,7 @@ describe("FileTree", () => {
 
   it("does not start an attachment drag for folders without selected files", () => {
     const startWorkspaceFileDrag = vi.fn();
-    Object.defineProperty(window, "relic", {
-      configurable: true,
-      value: { startWorkspaceFileDrag }
-    });
+    stubRelicApi({ startWorkspaceFileDrag });
     renderFileTree();
 
     fireEvent.dragStart(rowButton("Folder"), { dataTransfer: makeDataTransfer() });
@@ -624,12 +620,7 @@ describe("FileTree", () => {
   it("drops external files into a folder for import", () => {
     const onImportMarkdownFiles = vi.fn();
     const file = new File(["# Dropped"], "Dropped.md", { type: "text/markdown" });
-    Object.defineProperty(window, "relic", {
-      configurable: true,
-      value: {
-        getDroppedFilePath: vi.fn().mockReturnValue("/tmp/Dropped.md")
-      }
-    });
+    stubRelicApi({ getDroppedFilePath: vi.fn().mockReturnValue("/tmp/Dropped.md") });
 
     renderFileTree({ onImportMarkdownFiles });
     const dataTransfer = makeDataTransfer([file]);
@@ -644,12 +635,7 @@ describe("FileTree", () => {
   it("drops external files onto the root file list for import", () => {
     const onImportMarkdownFiles = vi.fn();
     const file = new File(["# Root"], "Root Import.md", { type: "text/markdown" });
-    Object.defineProperty(window, "relic", {
-      configurable: true,
-      value: {
-        getDroppedFilePath: vi.fn().mockReturnValue("/tmp/Root Import.md")
-      }
-    });
+    stubRelicApi({ getDroppedFilePath: vi.fn().mockReturnValue("/tmp/Root Import.md") });
 
     renderFileTree({ isRoot: true, onImportMarkdownFiles });
     const dataTransfer = makeDataTransfer([file]);

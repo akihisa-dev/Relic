@@ -267,6 +267,23 @@ describe("fileSearchHandlers", () => {
     });
   });
 
+  it("拒否対象の曖昧な正規表現をIPC境界から実行せず本文を変更しない", async () => {
+    const { workspacePath } = await createActiveWorkspace({ "Note.md": "aaaaaaaa!" });
+
+    const result = await handlerFor(replaceInFileChannel)(undefined, {
+      isRegex: true,
+      path: "Note.md",
+      replacement: "ok",
+      searchQuery: "^((a|aa))+$"
+    });
+
+    expect(result).toMatchObject({
+      error: { code: "REGEX_TOO_COMPLEX" },
+      ok: false
+    });
+    await expect(readFile(path.join(workspacePath, "Note.md"), "utf8")).resolves.toBe("aaaaaaaa!");
+  });
+
   it("returns an empty frontmatter result for fields that are not registered", async () => {
     await createActiveWorkspace({ "Note.md": "---\nstatus: draft\n---\n" });
 

@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import type { MergeFilesInput } from "../../shared/ipc";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, type RelicResult } from "../../shared/result";
@@ -8,6 +6,7 @@ import { readWorkspaceFileTree } from "../files/fileTree";
 import {
   collectMergeCandidates,
   filterMergeCandidates,
+  readToolCandidateContent,
   sortMergeCandidates,
   type ToolActionFileOperations
 } from "./toolCandidateCollectors";
@@ -39,8 +38,9 @@ export async function mergeFiles(
   if (filtered.length === 0) return fail("TOOL_TARGET_EMPTY", "対象になるMarkdownファイルがありません。");
 
   sortMergeCandidates(filtered, input.sortBy);
+  const readBudget = { actualAggregateBytes: 0, statAggregateBytes: 0 };
   const parts = await mapWithConcurrency(filtered, maxConcurrentToolReads, async (file) => {
-    const content = await fileOperations.readFile(path.join(workspacePath, file.relPath), "utf-8");
+    const content = await readToolCandidateContent(workspacePath, file, fileOperations, readBudget);
     const name = stripMarkdownExtension(file.relPath.split("/").at(-1) ?? file.relPath);
     return input.insertFilenameHeading
       ? `# ${formatGeneratedMarkdownHeadingText(name)}\n\n${content.trim()}`

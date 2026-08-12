@@ -5,6 +5,7 @@ import {
   type ChronicleCalendarSettings
 } from "../../shared/chronicleCalendar";
 import type { WorkspaceState } from "../../shared/ipc";
+import { useT } from "../i18n";
 import { relicClient } from "../relicClient";
 import { useAsyncRequestGuard } from "./useAsyncRequestGuard";
 
@@ -20,6 +21,7 @@ export function useWorkspaceChronicleCalendarSettings({
   calendarSettings: ChronicleCalendarSettings;
   handleSaveCalendarSettings: (settings: ChronicleCalendarSettings) => void;
 } {
+  const t = useT();
   const workspaceId = workspaceState?.activeWorkspace?.id ?? null;
   const [snapshot, setSnapshot] = useState<{ settings: ChronicleCalendarSettings; workspaceId: string } | null>(null);
   const beginRequest = useAsyncRequestGuard([workspaceId]);
@@ -32,8 +34,11 @@ export function useWorkspaceChronicleCalendarSettings({
       if (!current()) return;
       if (result.ok) setSnapshot({ settings: result.value, workspaceId });
       else setWorkspaceError(result.error.message);
+    }).catch(() => {
+      if (!current()) return;
+      setWorkspaceError(t("errors.operationFailed"));
     });
-  }, [beginRequest, setWorkspaceError, workspaceId]);
+  }, [beginRequest, setWorkspaceError, t, workspaceId]);
 
   const handleSaveCalendarSettings = useCallback((settings: ChronicleCalendarSettings): void => {
     const client = relicClient.current;
@@ -52,8 +57,12 @@ export function useWorkspaceChronicleCalendarSettings({
         setSnapshot({ settings: previousSettings, workspaceId });
         setWorkspaceError(result.error.message);
       }
+    }).catch(() => {
+      if (!current()) return;
+      setSnapshot({ settings: previousSettings, workspaceId });
+      setWorkspaceError(t("errors.operationFailed"));
     });
-  }, [beginRequest, onSaved, setWorkspaceError, snapshot, workspaceId]);
+  }, [beginRequest, onSaved, setWorkspaceError, snapshot, t, workspaceId]);
 
   return {
     calendarSettings: snapshot?.workspaceId === workspaceId ? snapshot.settings : defaultChronicleCalendarSettings,

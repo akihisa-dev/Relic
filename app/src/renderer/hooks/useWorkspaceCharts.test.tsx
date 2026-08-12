@@ -68,6 +68,25 @@ describe("useWorkspaceCharts API contract", () => {
 
     expect(result.current.charts.flatMap((item) => item.filePaths)).toEqual(["chart-b.md"]);
   });
+
+  it("IPC transport rejection clears charts and reports a localized fallback", async () => {
+    const setWorkspaceError = vi.fn();
+    window.relic = makeRelicApi({
+      getWorkspaceCharts: vi.fn().mockRejectedValue(new Error("secret transport detail"))
+    });
+
+    const { result } = renderHook(() => useWorkspaceCharts({
+      hasOpenChart: true,
+      setWorkspaceError,
+      workspaceState: workspace("workspace-a")
+    }));
+
+    await act(async () => undefined);
+
+    expect(result.current.charts).toEqual([]);
+    expect(setWorkspaceError).toHaveBeenCalled();
+    expect(setWorkspaceError).not.toHaveBeenCalledWith(expect.stringContaining("secret transport detail"));
+  });
 });
 
 function workspace(id: string): WorkspaceState {

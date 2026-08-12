@@ -1,4 +1,5 @@
 import { mkdir } from "node:fs/promises";
+import { isDeepStrictEqual } from "node:util";
 
 import { app, dialog } from "electron";
 
@@ -10,7 +11,10 @@ import {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { getMainTranslator } from "../i18n";
-import { readAppSettings, updateAppSettings } from "../settings/appSettings";
+import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
+import { transitionWorkspaceFileIndexCacheOwner } from "../files/workspaceFileIndexCache";
+import { getWorkspaceFileIndexCachePath } from "../files/workspaceFileIndex";
+import { readAppSettings, updateAppSettings, type AppSettings } from "../settings/appSettings";
 import * as workspaceSettings from "../settings/workspaceSettings";
 import {
   addOrActivateWorkspace,
@@ -148,19 +152,88 @@ export function registerWorkspaceSelectionHandlers(): void {
                 : item
             ))
           };
-          const savedSettings = await updateAppSettings(userDataPath, () => nextSettings);
-          await workspaceSettings.updateWorkspaceSettings(
+          const previousWorkspaceSettings = await workspaceSettings.readWorkspaceSettings(
             userDataPath,
-            latestWorkspace.id,
-            (current) => ({
-              ...current,
-              workspacePath: selectedWorkspace.path
-            })
-          ).catch(() => undefined);
+            latestWorkspace.id
+          );
+          const nextWorkspaceSettings = {
+            ...previousWorkspaceSettings,
+            workspacePath: selectedWorkspace.path
+          };
+
+          try {
+            await workspaceSettings.updateWorkspaceSettings(
+              userDataPath,
+              latestWorkspace.id,
+              () => nextWorkspaceSettings
+            );
+          } catch (error) {
+            const compensation = await compensateWorkspaceSettings(
+              userDataPath,
+              latestWorkspace.id,
+              previousWorkspaceSettings,
+              nextWorkspaceSettings
+            );
+            return fail(
+              "WORKSPACE_RELINK_FAILED",
+              t("files.workspaceRelinkFailed"),
+              ipcErrorDetails(error),
+              relinkRecovery(
+                latestWorkspace.path,
+                selectedWorkspace.path,
+                compensation.status === "restored" || compensation.status === "old-preserved"
+                  ? "rolled-back"
+                  : "recovery-required",
+                { status: compensation.status },
+                { status: "not-started" }
+              )
+            );
+          }
+
+          let savedSettings: Awaited<ReturnType<typeof updateAppSettings>>;
+          try {
+            savedSettings = await updateAppSettings(userDataPath, () => nextSettings);
+          } catch (error) {
+            const appCompensation = await compensateAppSettings(
+              userDataPath,
+              latestSettings,
+              nextSettings
+            );
+            const settingsCompensation = await compensateWorkspaceSettings(
+              userDataPath,
+              latestWorkspace.id,
+              previousWorkspaceSettings,
+              nextWorkspaceSettings
+            );
+            return fail(
+              "WORKSPACE_RELINK_FAILED",
+              t("files.workspaceRelinkFailed"),
+              ipcErrorDetails(error),
+              relinkRecovery(
+                latestWorkspace.path,
+                selectedWorkspace.path,
+                appCompensation.status !== "conflict" && appCompensation.status !== "failed" &&
+                  (settingsCompensation.status === "restored" || settingsCompensation.status === "old-preserved")
+                  ? "rolled-back"
+                  : "recovery-required",
+                { status: settingsCompensation.status },
+                { status: appCompensation.status }
+              )
+            );
+          }
+
           syncWorkspaceWatcher(savedSettings);
           return ok(savedSettings);
         });
         if (!savedSettings.ok) return savedSettings;
+        // The workspace id (and therefore its cache path) is retained across
+        // relink. Invalidate the old path generation before priming the new
+        // provider snapshot so an old in-flight read cannot win the cache write.
+        invalidateWorkspaceData(input.workspaceId);
+        await transitionWorkspaceFileIndexCacheOwner(
+          getWorkspaceFileIndexCachePath(userDataPath, input.workspaceId),
+          savedSettings.value.workspaces.find((item) => item.id === input.workspaceId)?.path ?? selectedWorkspace.path
+        );
         return ok(await buildWorkspaceState(savedSettings.value));
       } catch (error) {
         return fail(
@@ -180,4 +253,74 @@ async function currentWorkspaceState(): Promise<RelicResult<WorkspaceState>> {
     return currentSettings;
   });
   return ok(await buildWorkspaceState(settings));
+}
+
+type RelinkCompensationStatus = {
+  status: "conflict" | "failed" | "old-preserved" | "restored";
+};
+
+async function compensateWorkspaceSettings(
+  userDataPath: string,
+  workspaceId: string,
+  previousSettings: Awaited<ReturnType<typeof workspaceSettings.readWorkspaceSettings>>,
+  expectedNextSettings: Awaited<ReturnType<typeof workspaceSettings.readWorkspaceSettings>>
+): Promise<RelinkCompensationStatus> {
+  try {
+    const current = await workspaceSettings.readWorkspaceSettings(userDataPath, workspaceId);
+    if (isDeepStrictEqual(current, previousSettings)) return { status: "old-preserved" };
+    if (!isDeepStrictEqual(current, expectedNextSettings)) return { status: "conflict" };
+
+    await workspaceSettings.updateWorkspaceSettings(userDataPath, workspaceId, (candidate) => {
+      if (!isDeepStrictEqual(candidate, expectedNextSettings)) {
+        throw new Error("Workspace settings changed during relink compensation.");
+      }
+      return previousSettings;
+    });
+    return { status: "restored" };
+  } catch {
+    return { status: "failed" };
+  }
+}
+
+async function compensateAppSettings(
+  userDataPath: string,
+  previousSettings: AppSettings,
+  expectedNextSettings: AppSettings
+): Promise<RelinkCompensationStatus> {
+  try {
+    const current = await readAppSettings(userDataPath);
+    if (isDeepStrictEqual(current, previousSettings)) return { status: "old-preserved" };
+    if (!isDeepStrictEqual(current, expectedNextSettings)) return { status: "conflict" };
+
+    await updateAppSettings(userDataPath, (candidate) => {
+      if (!isDeepStrictEqual(candidate, expectedNextSettings)) {
+        throw new Error("App settings changed during relink compensation.");
+      }
+      return previousSettings;
+    });
+    return { status: "restored" };
+  } catch {
+    return { status: "failed" };
+  }
+}
+
+function relinkRecovery(
+  oldPath: string,
+  currentPath: string,
+  status: "recovery-required" | "rolled-back",
+  workspaceSettingsState: Record<string, unknown>,
+  appSettingsState: Record<string, unknown>
+): Record<string, unknown> {
+  return {
+    appSettings: appSettingsState,
+    currentPath,
+    oldPath,
+    reason: appSettingsState.status === "failed" || appSettingsState.status === "conflict"
+      ? "rollback-failed"
+      : workspaceSettingsState.status === "failed" || workspaceSettingsState.status === "conflict"
+        ? "rollback-failed"
+        : "rollback-completed",
+    settingsMigration: workspaceSettingsState,
+    status
+  };
 }

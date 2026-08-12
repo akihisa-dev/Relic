@@ -15,19 +15,26 @@ export function enqueueD2Render(source: string): Promise<string> {
 
   if (cached) return cached;
 
-  const renderOperation = d2RenderQueue.then(() =>
-    withDiagramRenderTimeout(renderD2Svg(source), "d2")
-  );
-  rememberD2Render(cacheKey, renderOperation);
+  // Keep the queue chained to the underlying renderer, not the timeout wrapper.
+  // A timed-out promise must not let a later request overlap an uncancelled D2 render.
+  const renderOperation = d2RenderQueue.then(() => renderD2Svg(source));
+  const timedOperation = withDiagramRenderTimeout(renderOperation, "d2");
+  rememberD2Render(cacheKey, timedOperation);
+  // A timeout rejects the caller before the underlying render settles. Remove
+  // only this cache entry so the same source may be retried after the queue
+  // reaches a safe boundary, while preserving serialization of the renderer.
+  void timedOperation.catch(() => {
+    if (d2RenderCache.get(cacheKey) === timedOperation) d2RenderCache.delete(cacheKey);
+  });
   d2RenderQueue = renderOperation.then(
     () => undefined,
     () => {
-      d2RenderCache.delete(cacheKey);
+      if (d2RenderCache.get(cacheKey) === timedOperation) d2RenderCache.delete(cacheKey);
       d2RendererPromise = null;
     }
   );
 
-  return renderOperation;
+  return timedOperation;
 }
 
 function createD2RenderCacheKey(source: string): string {

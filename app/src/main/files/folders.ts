@@ -1,9 +1,10 @@
-import { mkdir, rename, stat } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { errorDetails, isFileExistsError } from "./fileSystem";
 import { updateLinksForFolderRename } from "./linkUpdater";
+import type { LinkUpdateRecovery, LinkUpdateTransactionResult } from "./linkUpdater";
 import { validateBaseName } from "./names";
 import {
   resolveExistingWorkspacePath,
@@ -15,12 +16,27 @@ import {
 } from "./paths";
 import {
   getRenameDestinationCollision,
-  renameFileSystemEntry
+  readFileSystemEntryIdentity,
+  renameFileSystemEntry,
+  rollbackRenamedDirectoryWithoutOverwrite,
+  type FileSystemEntryIdentity
 } from "./renameOperations";
 
 export interface CreatedFolder {
   path: string;
 }
+
+export interface FolderRelocationOperations {
+  updateLinks(
+    workspacePath: string,
+    oldRelativePath: string,
+    newRelativePath: string
+  ): Promise<LinkUpdateTransactionResult>;
+}
+
+const defaultFolderRelocationOperations: FolderRelocationOperations = {
+  updateLinks: updateLinksForFolderRename
+};
 
 export async function createFolder(
   workspacePath: string,
@@ -72,7 +88,8 @@ export async function createFolder(
 export async function renameFolder(
   workspacePath: string,
   relativePath: string,
-  newName: string
+  newName: string,
+  relocationOperations: Partial<FolderRelocationOperations> = {}
 ): Promise<RelicResult<{ path: string }>> {
   const sourcePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
 
@@ -102,14 +119,16 @@ export async function renameFolder(
     notDirectoryMessage: "フォルダだけをリネームできます。",
     relativePath,
     samePathReturnPath: relativePath,
-    sourcePath: sourcePath.value
+    sourcePath: sourcePath.value,
+    relocationOperations
   });
 }
 
 export async function moveFolder(
   workspacePath: string,
   relativePath: string,
-  destinationFolder: string
+  destinationFolder: string,
+  relocationOperations: Partial<FolderRelocationOperations> = {}
 ): Promise<RelicResult<{ path: string }>> {
   const sourcePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
 
@@ -146,7 +165,8 @@ export async function moveFolder(
     notDirectoryCode: "FOLDER_MOVE_NOT_DIRECTORY",
     notDirectoryMessage: "フォルダだけを移動できます。",
     relativePath,
-    sourcePath: sourcePath.value
+    sourcePath: sourcePath.value,
+    relocationOperations
   });
 }
 
@@ -163,6 +183,7 @@ async function moveFolderToPath(
     relativePath: string;
     samePathReturnPath?: string;
     sourcePath: string;
+    relocationOperations?: Partial<FolderRelocationOperations>;
   }
 ): Promise<RelicResult<{ path: string }>> {
   if (!options.destinationPath.ok) {
@@ -186,9 +207,9 @@ async function moveFolderToPath(
     const safeDestinationPath = await verifyNewWorkspacePath(workspacePath, options.destinationPath.value);
     if (!safeDestinationPath.ok) return safeDestinationPath;
 
-    const sourceStats = await stat(options.sourcePath);
+    const sourceIdentity = await readFileSystemEntryIdentity(options.sourcePath);
 
-    if (!sourceStats.isDirectory()) {
+    if (sourceIdentity.kind !== "directory") {
       return fail(options.notDirectoryCode, options.notDirectoryMessage);
     }
 
@@ -198,9 +219,49 @@ async function moveFolderToPath(
       collision,
       path.basename(options.sourcePath)
     );
-    const links = await updateLinksForFolderRename(workspacePath, options.relativePath, options.nextRelativePath);
+    const expectedIdentity: FileSystemEntryIdentity = {
+      dev: sourceIdentity.dev,
+      ino: sourceIdentity.ino,
+      kind: "directory"
+    };
+    let movedIdentity: FileSystemEntryIdentity;
+    try {
+      movedIdentity = await readFileSystemEntryIdentity(options.destinationPath.value);
+    } catch (error) {
+      return folderRollbackFailure(
+        options,
+        "destination-missing",
+        error
+      );
+    }
+    if (movedIdentity.dev !== expectedIdentity.dev || movedIdentity.ino !== expectedIdentity.ino) {
+      return folderRollbackFailure(options, "destination-changed");
+    }
+
+    let links: LinkUpdateTransactionResult;
+    try {
+      links = await {
+        ...defaultFolderRelocationOperations,
+        ...options.relocationOperations
+      }.updateLinks(workspacePath, options.relativePath, options.nextRelativePath);
+    } catch (error) {
+      const rollback = await rollbackRenamedDirectoryWithoutOverwrite(
+        options.destinationPath.value,
+        options.sourcePath,
+        movedIdentity
+      );
+      if (!rollback.ok) return folderRollbackFailure(options, rollback.reason, rollback.error ?? error);
+      return fail(options.failureCode, options.failureMessage, errorDetails(error));
+    }
     if (!links.ok) {
-      await rename(options.destinationPath.value, options.sourcePath).catch(() => undefined);
+      const rollback = await rollbackRenamedDirectoryWithoutOverwrite(
+        options.destinationPath.value,
+        options.sourcePath,
+        movedIdentity
+      );
+      if (!rollback.ok) {
+        return folderRollbackFailure(options, rollback.reason, rollback.error, links.recovery);
+      }
       return links;
     }
 
@@ -212,4 +273,29 @@ async function moveFolderToPath(
       errorDetails(error)
     );
   }
+}
+
+function folderRollbackFailure(
+  options: {
+    failureCode: "FOLDER_RENAME_FAILED" | "FOLDER_MOVE_FAILED";
+    failureMessage: string;
+    nextRelativePath: string;
+    relativePath: string;
+  },
+  reason: string,
+  error?: unknown,
+  linkRecovery?: LinkUpdateRecovery
+): RelicResult<never> {
+  return fail(
+    options.failureCode,
+    `${options.failureMessage}安全に元へ戻せませんでした。外部変更を確認してください。`,
+    error ? errorDetails(error) : undefined,
+    {
+      status: "recovery-required",
+      currentPath: options.nextRelativePath,
+      oldPath: options.relativePath,
+      reason,
+      ...(linkRecovery ? { linkUpdates: linkRecovery } : {})
+    }
+  );
 }

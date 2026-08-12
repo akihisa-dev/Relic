@@ -12,6 +12,7 @@ export function redactSensitiveText(value: string): string {
       return separator >= 0 ? `${match.slice(0, separator).trim()}=[redacted]` : "[token redacted]";
     })
     .replace(/\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|redis):\/\/[^\s"']+/gi, "[connection redacted]")
+    .replace(/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]*PRIVATE KEY-----/g, "[private key redacted]")
     .replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----/g, "[private key redacted]")
     .replace(/[A-Z0-9_]*API_KEY\s*=\s*[^\s"']+/gi, (match) => `${match.split("=")[0].trim()}=[redacted]`)
     .replace(/(^|[^A-Za-z0-9_])api[_-]?key["']?\s*[:=]\s*["']?[^"',\s}]+/gi, "$1apiKey=[redacted]")

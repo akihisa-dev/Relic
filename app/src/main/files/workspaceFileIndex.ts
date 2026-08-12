@@ -10,13 +10,19 @@ import { mapWithConcurrency } from "./concurrency";
 import { finishPerformanceMeasure, startPerformanceMeasure } from "./performanceLog";
 import {
   readCachedWorkspaceFileIndexRecords,
-  writeCachedWorkspaceFileIndexRecords
+  writeCachedWorkspaceFileIndexRecords,
+  getWorkspaceFileIndexCacheGeneration
 } from "./workspaceFileIndexCache";
 import {
   defaultWorkspaceFileIndexOperations,
   workspaceFileContentHash,
   type WorkspaceFileIndexOperations
 } from "./workspaceFileIndexIO";
+import {
+  maxWorkspaceFileIndexAggregateLineBytes,
+  maxWorkspaceFileIndexLinesPerRecord,
+  maxWorkspaceFileIndexRecords
+} from "./workspaceFileIndexTypes";
 import type {
   WorkspaceFileIndex,
   WorkspaceFileIndexRecord,
@@ -31,15 +37,19 @@ export type {
 } from "./workspaceFileIndexTypes";
 
 export interface WorkspaceFileIndexOptions {
+  cacheGeneration?: number;
+  cacheOwnerPath?: string;
   cachePath?: string;
+  completeSnapshot?: boolean;
   filePaths?: string[];
   fileTree?: WorkspaceTreeNode[];
+  forceReadPaths?: string[];
   includeSearchContent?: boolean;
   maxSearchFileBytes?: number;
   operations?: Partial<WorkspaceFileIndexOperations>;
 }
 
-const defaultMaxSearchFileBytes = 2 * 1024 * 1024;
+export const defaultWorkspaceFileIndexMaxSearchFileBytes = 2 * 1024 * 1024;
 const mapMarkerHeadBytes = 256;
 const safeWorkspaceIndexIdPattern = /^[A-Za-z0-9_-]+$/;
 const maxConcurrentIndexReads = 8;
@@ -69,19 +79,31 @@ export async function readWorkspaceFileIndex(
     unreadableCount: 0
   };
   const includeSearchContent = options.includeSearchContent ?? true;
-  const maxSearchFileBytes = options.maxSearchFileBytes ?? defaultMaxSearchFileBytes;
-  const cachedRecords = options.cachePath
-    ? await readCachedWorkspaceFileIndexRecords(options.cachePath, operations)
-    : [];
+  const maxSearchFileBytes = options.maxSearchFileBytes ?? defaultWorkspaceFileIndexMaxSearchFileBytes;
+  let cacheGeneration = options.cacheGeneration ??
+    (options.cachePath ? getWorkspaceFileIndexCacheGeneration(options.cachePath) : 0);
+  const cacheOwnerPath = options.cacheOwnerPath ?? workspacePath;
+  const completeSnapshot = options.completeSnapshot ?? options.filePaths === undefined;
+  const cacheRead = options.cachePath
+    ? await readCachedWorkspaceFileIndexRecords(options.cachePath, operations, {
+      expectedOwnerPath: cacheOwnerPath,
+      minimumGeneration: cacheGeneration
+    })
+    : { generation: cacheGeneration, records: [] };
+  cacheGeneration = cacheRead.generation;
+  const cachedRecords = cacheRead.records;
   const cacheByPath = new Map(cachedRecords.map((record) => [record.path, record]));
+  const forceReadPaths = new Set(options.forceReadPaths ?? []);
+  const lineBudget = { bytes: 0 };
   const paths = options.filePaths ??
     (options.fileTree !== undefined
       ? collectMarkdownPaths(options.fileTree)
       : collectMarkdownPaths(await readWorkspaceFileTree(workspacePath)));
-  stats.targetPathCount = paths.length;
+  const boundedPaths = paths.slice(0, maxWorkspaceFileIndexRecords);
+  stats.targetPathCount = boundedPaths.length;
 
   const records = await mapWithConcurrency(
-    paths,
+    boundedPaths,
     maxConcurrentIndexReads,
     async (relativePath) => {
       const absolutePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
@@ -99,6 +121,7 @@ export async function readWorkspaceFileIndex(
       const cached = cacheByPath.get(relativePath);
       const isWithinCurrentSearchLimit = fileStats.size <= maxSearchFileBytes;
       if (
+        !forceReadPaths.has(relativePath) &&
         cached?.readStatus === "ok" &&
         typeof cached.contentHash === "string" &&
         cached.size === fileStats.size &&
@@ -119,11 +142,11 @@ export async function readWorkspaceFileIndex(
             }
           }
 
-          return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats);
+          return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats, lineBudget);
         }
 
         if (!cached.searchable) {
-          return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats);
+          return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats, lineBudget);
         }
 
         if (!includeSearchContent) {
@@ -138,26 +161,46 @@ export async function readWorkspaceFileIndex(
         try {
           stats.readFileCount += 1;
           const content = await operations.readFile(absolutePath.value);
+          const postReadStats = await stablePostReadStats(
+            absolutePath.value,
+            fileStats,
+            operations,
+            stats
+          );
+          if (!postReadStats) return unreadableRecord(relativePath);
           const contentHash = workspaceFileContentHash(content);
 
           if (cached.contentHash === contentHash) {
-            return recordFor(relativePath, fileStats, cached.kind, content.split("\n"), cached.searchable, cached.contentHash);
+            const bounded = boundedSearchLines(content, lineBudget);
+            return recordFor(
+              relativePath,
+              postReadStats,
+              cached.kind,
+              bounded.lines,
+              cached.searchable && bounded.searchable,
+              cached.contentHash,
+              cached.headHash ?? workspaceFileHeadHash(content)
+            );
           }
         } catch {
           stats.unreadableCount += 1;
-          return unreadableRecord(relativePath, fileStats);
+          return unreadableRecord(relativePath);
         }
       }
 
       stats.cacheMissCount += 1;
-      return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats);
+      return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats, lineBudget);
     }
   );
 
   const sortedRecords = records.sort((a, b) => a.path.localeCompare(b.path, "ja"));
 
   if (options.cachePath) {
-    await writeCachedWorkspaceFileIndexRecords(options.cachePath, sortedRecords, cacheByPath, operations);
+    await writeCachedWorkspaceFileIndexRecords(options.cachePath, sortedRecords, cacheByPath, operations, {
+      completeSnapshot,
+      generation: cacheGeneration,
+      ownerPath: cacheOwnerPath
+    });
   }
 
   finishPerformanceMeasure("readWorkspaceFileIndex", startedAt, {
@@ -172,10 +215,29 @@ export async function readWorkspaceFileIndex(
   });
 
   return {
-    entries: sortedRecords.map(({ lines: _lines, searchable: _searchable, contentHash: _contentHash, ...entry }) => entry),
+    entries: sortedRecords.map(({
+      contentHash: _contentHash,
+      headHash: _headHash,
+      lines: _lines,
+      searchable: _searchable,
+      ...entry
+    }) => entry),
     stats,
     records: sortedRecords
   };
+}
+
+function boundedSearchLines(content: string, budget: { bytes: number }): { lines: string[]; searchable: boolean } {
+  const lines = content.split("\n");
+  const bytes = Buffer.byteLength(content, "utf8");
+  if (
+    lines.length > maxWorkspaceFileIndexLinesPerRecord ||
+    budget.bytes + bytes > maxWorkspaceFileIndexAggregateLineBytes
+  ) {
+    return { lines: [], searchable: false };
+  }
+  budget.bytes += bytes;
+  return { lines, searchable: true };
 }
 
 async function readIndexRecord(
@@ -185,41 +247,82 @@ async function readIndexRecord(
   maxSearchFileBytes: number,
   operations: WorkspaceFileIndexOperations,
   includeSearchContent: boolean,
-  stats: WorkspaceFileIndexStats
+  stats: WorkspaceFileIndexStats,
+  lineBudget: { bytes: number }
 ): Promise<WorkspaceFileIndexRecord> {
   if (fileStats.size > maxSearchFileBytes) {
     try {
       stats.readHeadCount += 1;
       const head = await operations.readHead(absolutePath, mapMarkerHeadBytes);
+      const postReadStats = await stablePostReadStats(
+        absolutePath,
+        fileStats,
+        operations,
+        stats
+      );
+      if (!postReadStats) return unreadableRecord(relativePath);
       return recordFor(
         relativePath,
-        fileStats,
+        postReadStats,
         "markdown",
         [],
         false,
+        workspaceFileContentHash(head),
         workspaceFileContentHash(head)
       );
     } catch {
       stats.unreadableCount += 1;
-      return unreadableRecord(relativePath, fileStats);
+      return unreadableRecord(relativePath);
     }
   }
 
   try {
     stats.readFileCount += 1;
     const content = await operations.readFile(absolutePath);
+    const postReadStats = await stablePostReadStats(
+      absolutePath,
+      fileStats,
+      operations,
+      stats
+    );
+    if (!postReadStats) return unreadableRecord(relativePath);
+    const bounded = includeSearchContent ? boundedSearchLines(content, lineBudget) : { lines: [], searchable: false };
     return recordFor(
       relativePath,
-      fileStats,
+      postReadStats,
       "markdown",
-      includeSearchContent ? content.split("\n") : [],
-      true,
-      workspaceFileContentHash(content)
+      bounded.lines,
+      includeSearchContent && bounded.searchable,
+      workspaceFileContentHash(content),
+      workspaceFileHeadHash(content)
     );
   } catch {
     stats.unreadableCount += 1;
-    return unreadableRecord(relativePath, fileStats);
+    return unreadableRecord(relativePath);
   }
+}
+
+async function stablePostReadStats(
+  absolutePath: string,
+  initialStats: Stats,
+  operations: WorkspaceFileIndexOperations,
+  stats: WorkspaceFileIndexStats
+): Promise<Stats | undefined> {
+  let postReadStats: Stats;
+  try {
+    stats.statCount += 1;
+    postReadStats = await operations.stat(absolutePath);
+  } catch {
+    stats.unreadableCount += 1;
+    return undefined;
+  }
+
+  if (initialStats.size !== postReadStats.size || initialStats.mtimeMs !== postReadStats.mtimeMs) {
+    stats.unreadableCount += 1;
+    return undefined;
+  }
+
+  return postReadStats;
 }
 
 function recordFor(
@@ -228,7 +331,8 @@ function recordFor(
   kind: WorkspaceFileKind,
   lines: string[],
   searchable: boolean,
-  contentHash?: string
+  contentHash?: string,
+  headHash?: string
 ): WorkspaceFileIndexRecord {
   return {
     kind,
@@ -239,8 +343,13 @@ function recordFor(
     readStatus: "ok",
     searchable,
     size: fileStats.size,
-    contentHash
+    contentHash,
+    headHash
   };
+}
+
+function workspaceFileHeadHash(content: string): string {
+  return workspaceFileContentHash(Buffer.from(content, "utf8").subarray(0, mapMarkerHeadBytes).toString("utf8"));
 }
 
 function unreadableRecord(relativePath: string, fileStats?: Stats): WorkspaceFileIndexRecord {

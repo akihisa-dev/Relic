@@ -4,7 +4,6 @@ import {
   copyEditorTextToClipboardChannel,
   getEditorSettingsChannel,
   listFileRecoverySnapshotsChannel,
-  readEditorTextFromClipboardChannel,
   readFileRecoverySnapshotChannel,
   saveEditorSettingsChannel,
   windowCloseRequestedChannel,
@@ -24,8 +23,6 @@ export const editorApiFragment: EditorApi = {
     ipcRenderer.invoke(readFileRecoverySnapshotChannel, input),
   copyEditorTextToClipboard: (input) =>
     ipcRenderer.invoke(copyEditorTextToClipboardChannel, input),
-  readEditorTextFromClipboard: () =>
-    ipcRenderer.invoke(readEditorTextFromClipboardChannel),
   onWindowCloseRequested: (callback) => {
     const listener = (_event: IpcRendererEvent, payload: WindowCloseRequestEvent): void => {
       callback(payload);

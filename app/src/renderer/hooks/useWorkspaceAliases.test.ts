@@ -42,6 +42,25 @@ describe("useWorkspaceAliases", () => {
     await act(async () => second.resolve({ ok: true, value: { "B.md": ["Beta"] } }));
     expect(result.current).toEqual({ "B.md": ["Beta"] });
   });
+
+  it("IPC transport rejection clears aliases without exposing the rejection", async () => {
+    const setWorkspaceError = vi.fn();
+    const workspaceState = workspace("workspace-a");
+    window.relic = makeRelicApi({
+      getWorkspaceAliases: vi.fn().mockRejectedValue(new Error("secret transport detail"))
+    });
+
+    const { result } = renderHook(() => useWorkspaceAliases({
+      setWorkspaceError,
+      workspaceState
+    }));
+
+    await act(async () => undefined);
+
+    expect(result.current).toEqual({});
+    expect(setWorkspaceError).toHaveBeenCalled();
+    expect(setWorkspaceError).not.toHaveBeenCalledWith(expect.stringContaining("secret transport detail"));
+  });
 });
 
 function workspace(id: string): WorkspaceState {

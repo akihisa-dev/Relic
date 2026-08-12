@@ -49,6 +49,29 @@ describe("useWorkspaceFrontmatterCategoryChoices", () => {
     await act(async () => saveA.resolve({ ok: true, value: ["Late A"] }));
     expect(result.current.categoryChoices).toEqual(["Beta"]);
   });
+
+  it("保存IPC transport rejection rolls back optimistic choices", async () => {
+    const setWorkspaceError = vi.fn();
+    window.relic = makeRelicApi({
+      getWorkspaceFrontmatterCategoryChoices: vi.fn().mockResolvedValue({ ok: true, value: ["Before"] }),
+      saveWorkspaceFrontmatterCategoryChoices: vi.fn().mockRejectedValue(new Error("secret transport detail"))
+    });
+
+    const { result } = renderHook(() => useWorkspaceFrontmatterCategoryChoices({
+      setWorkspaceError,
+      workspaceState: workspace("workspace-a")
+    }));
+
+    await act(async () => undefined);
+    act(() => result.current.handleSaveCategoryChoices(["After"]));
+    expect(result.current.categoryChoices).toEqual(["After"]);
+
+    await act(async () => undefined);
+
+    expect(result.current.categoryChoices).toEqual(["Before"]);
+    expect(setWorkspaceError).toHaveBeenCalled();
+    expect(setWorkspaceError).not.toHaveBeenCalledWith(expect.stringContaining("secret transport detail"));
+  });
 });
 
 function workspace(id: string): WorkspaceState {

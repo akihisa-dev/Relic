@@ -3,12 +3,25 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 
 import type { WorkspaceFileIndexEntry, WorkspaceState, WorkspaceSummary, WorkspaceTreeNode } from "../../shared/ipc";
-import { fail, ok, type RelicResult } from "../../shared/result";
+import { fail, ok, type RelicResult, type WorkspaceMutationRecovery } from "../../shared/result";
 import type { AppSettings } from "../settings/appSettings";
 import { errorDetails } from "../files/fileSystem";
 import { validateBaseName } from "../files/names";
 
 const DEFAULT_MAX_RENAME_TEMPORARY_PATH_CANDIDATES = 1000;
+
+export interface WorkspaceRenameStats {
+  dev: number;
+  ino: number;
+  isDirectory(): boolean;
+}
+
+export interface WorkspaceRenameFileOperations {
+  rename: (oldPath: string, newPath: string) => Promise<void>;
+  stat: (filePath: string) => Promise<WorkspaceRenameStats>;
+}
+
+const defaultRenameFileOperations: WorkspaceRenameFileOperations = { rename, stat };
 
 export function createWorkspaceSummary(workspacePath: string): WorkspaceSummary {
   const normalizedPath = path.resolve(workspacePath);
@@ -98,7 +111,8 @@ export interface RenamedWorkspaceRegistration {
 export async function renameWorkspaceRegistration(
   settings: AppSettings,
   workspaceId: string,
-  name: string
+  name: string,
+  fileOperations: WorkspaceRenameFileOperations = defaultRenameFileOperations
 ): Promise<RelicResult<RenamedWorkspaceRegistration>> {
   const validatedName = validateBaseName(name, "ワークスペース名を入力してください。");
 
@@ -124,7 +138,7 @@ export async function renameWorkspaceRegistration(
   }
 
   try {
-    const sourceStats = await stat(workspace.path);
+    const sourceStats = await fileOperations.stat(workspace.path);
 
     if (!sourceStats.isDirectory()) {
       return fail("WORKSPACE_RENAME_NOT_DIRECTORY", "ワークスペースフォルダが見つかりませんでした。");
@@ -133,7 +147,7 @@ export async function renameWorkspaceRegistration(
     let targetIsSourceDirectory = false;
 
     try {
-      const targetStats = await stat(nextWorkspace.path);
+      const targetStats = await fileOperations.stat(nextWorkspace.path);
       if (sourceStats.dev !== targetStats.dev || sourceStats.ino !== targetStats.ino) {
         return fail("WORKSPACE_ALREADY_EXISTS", "同じ名前のフォルダがすでにあります。");
       }
@@ -145,15 +159,38 @@ export async function renameWorkspaceRegistration(
     if (targetIsSourceDirectory) {
       const temporaryPath = await findAvailableRenameTemporaryPath(
         path.dirname(workspace.path),
-        nextWorkspace.id
+        nextWorkspace.id,
+        DEFAULT_MAX_RENAME_TEMPORARY_PATH_CANDIDATES,
+        fileOperations
       );
       if (!temporaryPath.ok) return temporaryPath;
-      await rename(workspace.path, temporaryPath.value);
+      await fileOperations.rename(workspace.path, temporaryPath.value);
 
       try {
-        await rename(temporaryPath.value, nextWorkspace.path);
+        await fileOperations.rename(temporaryPath.value, nextWorkspace.path);
       } catch (error) {
-        await rename(temporaryPath.value, workspace.path).catch(() => undefined);
+        const rollback = await recoverCaseOnlyRename(
+          temporaryPath.value,
+          workspace.path,
+          sourceStats,
+          fileOperations
+        );
+        if (rollback.status === "recovery-required") {
+          return fail(
+            "WORKSPACE_RENAME_FAILED",
+            "ワークスペース名を変更できませんでした。",
+            errorDetails(error),
+            rollback.recovery
+          );
+        }
+        if (rollback.status === "rolled-back") {
+          return fail(
+            "WORKSPACE_RENAME_FAILED",
+            "ワークスペース名を変更できませんでした。",
+            errorDetails(error),
+            rollback.recovery
+          );
+        }
         throw error;
       }
     } else {
@@ -214,7 +251,8 @@ function isMissingFileError(error: unknown): boolean {
 export async function findAvailableRenameTemporaryPath(
   parentPath: string,
   workspaceId: string,
-  maxCandidates = DEFAULT_MAX_RENAME_TEMPORARY_PATH_CANDIDATES
+  maxCandidates = DEFAULT_MAX_RENAME_TEMPORARY_PATH_CANDIDATES,
+  fileOperations: WorkspaceRenameFileOperations = defaultRenameFileOperations
 ): Promise<RelicResult<string>> {
   const basePath = path.join(parentPath, `.relic-rename-${workspaceId}-${Date.now()}`);
 
@@ -222,7 +260,7 @@ export async function findAvailableRenameTemporaryPath(
     const candidatePath = index === 0 ? basePath : `${basePath}-${index}`;
 
     try {
-      await stat(candidatePath);
+      await fileOperations.stat(candidatePath);
     } catch (error) {
       if (isMissingFileError(error)) return ok(candidatePath);
       throw error;
@@ -230,4 +268,72 @@ export async function findAvailableRenameTemporaryPath(
   }
 
   return fail("WORKSPACE_RENAME_TEMPORARY_PATH_EXHAUSTED", "ワークスペース名変更用の一時フォルダ名候補が多すぎます。");
+}
+
+type CaseOnlyRenameRecoveryResult = {
+  recovery: WorkspaceMutationRecovery;
+  status: "recovery-required" | "rolled-back";
+};
+
+async function recoverCaseOnlyRename(
+  temporaryPath: string,
+  sourcePath: string,
+  sourceStats: WorkspaceRenameStats,
+  fileOperations: WorkspaceRenameFileOperations
+): Promise<CaseOnlyRenameRecoveryResult> {
+  let rollbackError: unknown;
+  try {
+    await fileOperations.rename(temporaryPath, sourcePath);
+  } catch (error) {
+    rollbackError = error;
+  }
+
+  const sourceState = await inspectRenameIdentity(sourcePath, sourceStats, fileOperations);
+  const temporaryState = await inspectRenameIdentity(temporaryPath, sourceStats, fileOperations);
+
+  if (sourceState === "match" && temporaryState !== "match") {
+    return {
+      status: "rolled-back",
+      recovery: {
+        currentPath: sourcePath,
+        oldPath: sourcePath,
+        reason: "rollback-completed",
+        settingsMigration: { status: "not-started" },
+        status: "rolled-back"
+      }
+    };
+  }
+
+  return {
+    status: "recovery-required",
+    recovery: {
+      currentPath: temporaryState === "match" ? temporaryPath : null,
+      oldPath: sourcePath,
+      reason: sourceState === "different"
+        ? "source-occupied"
+        : temporaryState === "different"
+          ? "destination-changed"
+          : rollbackError
+            ? "rollback-failed"
+            : "unknown",
+      status: "recovery-required",
+      // The directory move failed before workspace settings were touched.
+      // Preserve that state through the transaction and localized IPC layers
+      // so recovery UI can distinguish it from a settings migration failure.
+      settingsMigration: { status: "not-started" }
+    }
+  };
+}
+
+async function inspectRenameIdentity(
+  candidatePath: string,
+  expected: WorkspaceRenameStats,
+  fileOperations: WorkspaceRenameFileOperations
+): Promise<"match" | "different" | "missing"> {
+  try {
+    const current = await fileOperations.stat(candidatePath);
+    return current.dev === expected.dev && current.ino === expected.ino ? "match" : "different";
+  } catch (error) {
+    return isMissingFileError(error) ? "missing" : "different";
+  }
 }

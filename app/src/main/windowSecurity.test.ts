@@ -82,6 +82,11 @@ describe("installWindowSecurityPolicy", () => {
     expect(blockedNavigation.preventDefault).toHaveBeenCalledOnce();
     expect(onNavigationDenied).toHaveBeenCalledWith("https://example.com");
 
+    const redirectHandler = fixture.webContentsListeners.get("will-redirect");
+    const blockedRedirect = { preventDefault: vi.fn() };
+    redirectHandler?.(blockedRedirect, "https://example.com");
+    expect(blockedRedirect.preventDefault).toHaveBeenCalledOnce();
+
     const attachWebviewHandler = fixture.webContentsListeners.get("will-attach-webview");
     const attachWebviewEvent = { preventDefault: vi.fn() };
     attachWebviewHandler?.(attachWebviewEvent);
@@ -106,8 +111,9 @@ describe("installWindowSecurityPolicy", () => {
     cleanup();
     openHandler?.({ url: "https://example.com" });
 
-    expect(fixture.webContentsRemoveListener).toHaveBeenCalledTimes(2);
+    expect(fixture.webContentsRemoveListener).toHaveBeenCalledTimes(3);
     expect(fixture.webContentsListeners.has("will-navigate")).toBe(false);
+    expect(fixture.webContentsListeners.has("will-redirect")).toBe(false);
     expect(fixture.webContentsListeners.has("will-attach-webview")).toBe(false);
     expect(fixture.windowRemoveListener).toHaveBeenCalledOnce();
     expect(fixture.browserWindowListeners.has("closed")).toBe(false);
@@ -123,7 +129,7 @@ describe("installWindowSecurityPolicy", () => {
 
     fixture.browserWindowListeners.get("closed")?.();
 
-    expect(fixture.webContentsRemoveListener).toHaveBeenCalledTimes(2);
+    expect(fixture.webContentsRemoveListener).toHaveBeenCalledTimes(3);
     expect(fixture.webContentsListeners.size).toBe(0);
   });
 });
@@ -136,6 +142,7 @@ describe("isAllowedExternalUrl", () => {
     expect(isAllowedExternalUrl("http://github.com")).toBe(false);
     expect(isAllowedExternalUrl("https://platform.openai.com")).toBe(false);
     expect(isAllowedExternalUrl("javascript:alert(1)")).toBe(false);
+    expect(isAllowedExternalUrl("https://github.com/\u0000evil")).toBe(false);
     expect(isAllowedExternalUrl("data:text/html,<script>alert(1)</script>")).toBe(false);
     expect(isAllowedExternalUrl("file:///etc/passwd")).toBe(false);
     expect(isAllowedExternalUrl("https://github.com.evil.com")).toBe(false);
@@ -153,6 +160,7 @@ describe("isAllowedPackagedAppNavigation", () => {
     expect(isAllowedPackagedAppNavigation(`${indexUrl}#settings`, indexUrl)).toBe(true);
 
     expect(isAllowedPackagedAppNavigation("file:///etc/passwd", indexUrl)).toBe(false);
+    expect(isAllowedPackagedAppNavigation(`${indexUrl}#settings\u0000`, indexUrl)).toBe(false);
     expect(isAllowedPackagedAppNavigation("javascript:alert(1)", indexUrl)).toBe(false);
     expect(isAllowedPackagedAppNavigation("data:text/html,<script>alert(1)</script>", indexUrl)).toBe(false);
     expect(isAllowedPackagedAppNavigation("https://github.com/akihisa-dev/Relic", indexUrl)).toBe(false);
@@ -181,6 +189,7 @@ describe("isAllowedDevelopmentNavigation", () => {
     "http://user@localhost:5173/",
     "http://user%40name@localhost:5173/",
     "javascript:alert(1)",
+    "http://localhost:5173/\u0000evil",
     "data:text/html,hello",
     "file:///tmp/index.html",
     "not a url"

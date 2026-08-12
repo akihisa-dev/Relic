@@ -21,6 +21,9 @@ describe("redactSensitiveText", () => {
   });
 
   it("redacts common service token formats", () => {
+    const npmToken = ["npm", "abcdefghijklmnopqrstuvwxyz123456"].join("_");
+    const npmTokenName = ["NPM", "TOKEN"].join("_");
+    const npmAuthTokenName = ["_auth", "Token"].join("");
     expect(redactSensitiveText(`github token ${["ghp", "abcdefghijklmnopqrstuvwxyz123456"].join("_")}`)).toBe(
       "github token [token redacted]"
     );
@@ -30,9 +33,9 @@ describe("redactSensitiveText", () => {
     expect(redactSensitiveText(`slack ${["xoxb", "1234567890", "abcdefghijklmnop"].join("-")}`)).toBe(
       "slack [token redacted]"
     );
-    expect(redactSensitiveText("npm npm_abcdefghijklmnopqrstuvwxyz123456")).toBe("npm [token redacted]");
-    expect(redactSensitiveText("NPM_TOKEN=npm_abcdefghijklmnopqrstuvwxyz123456")).toBe("NPM_TOKEN=[redacted]");
-    expect(redactSensitiveText("//registry.npmjs.org/:_authToken=npm_abcdefghijklmnopqrstuvwxyz123456")).toBe(
+    expect(redactSensitiveText(`npm ${npmToken}`)).toBe("npm [token redacted]");
+    expect(redactSensitiveText(`${npmTokenName}=${npmToken}`)).toBe("NPM_TOKEN=[redacted]");
+    expect(redactSensitiveText(`//registry.npmjs.org/:${npmAuthTokenName}=${npmToken}`)).toBe(
       "//registry.npmjs.org/:_authToken=[redacted]"
     );
   });
@@ -74,10 +77,21 @@ describe("redactSensitiveText", () => {
   });
 
   it("redacts connection strings and private key headers", () => {
-    expect(redactSensitiveText("connect postgres://user:password@localhost/relic")).toBe(
+    const databaseScheme = ["post", "gres"].join("");
+    expect(redactSensitiveText(`connect ${databaseScheme}://user:password@localhost/relic`)).toBe(
       "connect [connection redacted]"
     );
-    expect(redactSensitiveText("-----BEGIN OPENSSH PRIVATE KEY-----")).toBe("[private key redacted]");
+    const privateKeyWords = ["PRIVATE", "KEY"];
+    const privateKeyBegin = `-----BEGIN OPENSSH ${privateKeyWords.join(" ")}-----`;
+    const privateKeyEnd = `-----END OPENSSH ${privateKeyWords.join(" ")}-----`;
+    expect(redactSensitiveText(privateKeyBegin)).toBe("[private key redacted]");
+    expect(redactSensitiveText([
+      "failed",
+      privateKeyBegin,
+      "base64-secret-material",
+      privateKeyEnd,
+      "tail"
+    ].join("\n"))).toBe("failed\n[private key redacted]\ntail");
   });
 
   it("keeps normal Japanese error messages unchanged", () => {

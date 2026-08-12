@@ -7,6 +7,7 @@ import {
   firstH1,
   safeOutputFileName
 } from "./outputHtml";
+import { maxOutputDiagramSourceChars, maxPreviewMarkdownBytes } from "../shared/ipc/output";
 
 describe("outputHtml", () => {
   afterEach(() => {
@@ -106,5 +107,37 @@ describe("outputHtml", () => {
     expect(safeOutputFileName('A/B:C*D?"E.md')).toBe("A_B_C_D__E");
     expect(firstH1("前\n# 見出し\n本文")).toBe("見出し");
     expect(buildDiagramDefaultFileName("Note", 2, "d2")).toBe("Note-diagram-2-d2");
+  });
+
+  it("大きすぎるMarkdownはレンダリング前にPDF生成を拒否する", async () => {
+    await expect(buildPreviewOutputHtml({
+      content: "x".repeat(maxPreviewMarkdownBytes + 1),
+      fileName: "Large",
+      path: "Large.md",
+      t: createTranslator("ja"),
+      title: "Large"
+    })).rejects.toThrow("Markdownが大きすぎるためPDFを生成できません。");
+  });
+
+  it("チルダ fenced のMermaidも出力対象として事前に制限する", async () => {
+    const result = await buildPreviewOutputHtml({
+      content: "~~~mermaid\ngraph TD; A-->B\n~~~",
+      fileName: "Tilde",
+      path: "Tilde.md",
+      t: createTranslator("ja"),
+      title: "Tilde"
+    });
+
+    expect(result.html).toContain('data-diagram-language="mermaid"');
+  });
+
+  it("チルダ fenced の図表ソース上限をパース前に拒否する", async () => {
+    await expect(buildPreviewOutputHtml({
+      content: `~~~d2\n${"x".repeat(maxOutputDiagramSourceChars + 1)}\n~~~`,
+      fileName: "Large diagram",
+      path: "Large-diagram.md",
+      t: createTranslator("ja"),
+      title: "Large diagram"
+    })).rejects.toThrow("図表ソースが大きすぎるためPDFを生成できません。");
   });
 });

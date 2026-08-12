@@ -26,17 +26,16 @@ describe("Editor markdown editing", () => {
 
   it("本文の右クリックメニューからコピー・ペーストを実行して本文へ反映できる", async () => {
     const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
-    const readEditorTextFromClipboard = vi.fn().mockResolvedValue({ ok: true, value: "!" });
+    const readText = vi.fn().mockResolvedValue("!");
     const writeText = vi.fn().mockResolvedValue(undefined);
     const execCommand = vi.fn().mockReturnValue(true);
     window.relic = makeRelicApi({
-      copyEditorTextToClipboard,
-      readEditorTextFromClipboard
+      copyEditorTextToClipboard
     });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: {
-        readText: vi.fn().mockResolvedValue("!"),
+        readText,
         writeText
       }
     });
@@ -70,8 +69,7 @@ describe("Editor markdown editing", () => {
       expect(view.state.doc.toString()).toBe("hello! world");
     });
     expect(execCommand).not.toHaveBeenCalled();
-    expect(readEditorTextFromClipboard).toHaveBeenCalled();
-    expect(navigator.clipboard.readText).not.toHaveBeenCalled();
+    expect(readText).toHaveBeenCalled();
     expect(undo(view)).toBe(true);
     expect(view.state.doc.toString()).toBe("hello world");
   });
@@ -220,9 +218,7 @@ describe("Editor markdown editing", () => {
   it("右クリックメニューのペーストはClipboard APIで読めない場合だけ標準貼り付けへ委ねる", async () => {
     const readText = vi.fn().mockRejectedValue(new Error("clipboard read denied"));
     const execCommand = vi.fn().mockReturnValue(true);
-    window.relic = makeRelicApi({
-      readEditorTextFromClipboard: undefined
-    });
+    window.relic = makeRelicApi();
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: {
@@ -249,6 +245,33 @@ describe("Editor markdown editing", () => {
       expect(execCommand).toHaveBeenCalledWith("paste");
     });
     expect(readText).toHaveBeenCalled();
+    expect(view.state.doc.toString()).toBe("前後");
+  });
+
+  it("Clipboard APIの上限超過時も本文へ無制限にdispatchせず標準貼り付けへ委ねる", async () => {
+    const readText = vi.fn().mockResolvedValue("x".repeat(1_000_001));
+    const execCommand = vi.fn().mockReturnValue(true);
+    window.relic = makeRelicApi();
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { readText, writeText: vi.fn() }
+    });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: execCommand
+    });
+
+    const { view } = await renderEditorWithView({
+      content: "前後",
+      settings: { ...settings, language: "ja" }
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: 1 } });
+    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Paste" }));
+
+    await waitFor(() => expect(execCommand).toHaveBeenCalledWith("paste"));
     expect(view.state.doc.toString()).toBe("前後");
   });
 

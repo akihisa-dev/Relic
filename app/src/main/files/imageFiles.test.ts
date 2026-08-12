@@ -1,9 +1,10 @@
-import { mkdir, mkdtemp, readFile, rm, stat, symlink, unlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, symlink, truncate, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { maxImageReadBytes } from "../../shared/ipc/files";
 import { importImageFile, readImageFile } from "./imageFiles";
 
 describe("importImageFile", () => {
@@ -178,6 +179,38 @@ describe("readImageFile", () => {
 
     expect(result).toMatchObject({
       error: { code: "IMAGE_READ_TYPE_UNSUPPORTED" },
+      ok: false
+    });
+  });
+
+  it("上限を超える画像はreadFileせず拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-workspace-"));
+    temporaryPaths.push(workspacePath);
+    const imagePath = path.join(workspacePath, "large.png");
+    await writeFile(imagePath, "x");
+    await truncate(imagePath, maxImageReadBytes + 1);
+    const read = async () => {
+      throw new Error("readFile must not be called");
+    };
+
+    await expect(readImageFile(workspacePath, "large.png", { readFile: read })).resolves.toMatchObject({
+      error: { code: "IMAGE_READ_TOO_LARGE" },
+      ok: false
+    });
+  });
+
+  it("stat後に本文が上限を超えた画像はdata URLを作らない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-image-workspace-"));
+    temporaryPaths.push(workspacePath);
+    const imagePath = path.join(workspacePath, "grown.png");
+    await writeFile(imagePath, "x");
+
+    const result = await readImageFile(workspacePath, "grown.png", {
+      readFile: async () => Buffer.alloc(maxImageReadBytes + 1) as never
+    });
+
+    expect(result).toMatchObject({
+      error: { code: "IMAGE_READ_TOO_LARGE" },
       ok: false
     });
   });

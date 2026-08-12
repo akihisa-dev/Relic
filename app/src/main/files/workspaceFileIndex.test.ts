@@ -262,7 +262,7 @@ describe("readWorkspaceFileIndex", () => {
     const cache = JSON.parse(cacheRaw);
 
     expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["current"]);
-    expect(cache.version).toBe(5);
+    expect(cache.version).toBe(6);
     expect(cache.records[0].lines).toEqual(["current"]);
   });
 
@@ -395,6 +395,29 @@ describe("readWorkspaceFileIndex", () => {
       { path: "blocked.md", readStatus: "unreadable" },
       { path: "visible.md", readStatus: "ok" }
     ]);
+  });
+
+  it("本文読み取り中の変更は古いメタデータで索引化しない", async () => {
+    const workspacePath = await createWorkspace();
+    const notePath = path.join(workspacePath, "note.md");
+    await writeFile(notePath, "before", "utf8");
+
+    const index = await readWorkspaceFileIndex(workspacePath, {
+      operations: {
+        readFile: async (filePath) => {
+          const content = await readFile(filePath, "utf8");
+          await writeFile(filePath, `${content}\nafter`, "utf8");
+          return content;
+        },
+        stat: readStat
+      }
+    });
+
+    expect(index.records).toMatchObject([{
+      path: "note.md",
+      readStatus: "unreadable",
+      lines: []
+    }]);
   });
 
   it("ワークスペース外を指すシンボリックリンクはMarkdown一覧に含めない", async () => {

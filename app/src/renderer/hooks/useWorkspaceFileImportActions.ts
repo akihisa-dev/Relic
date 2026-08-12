@@ -24,34 +24,38 @@ export function useWorkspaceFileImportActions({
     const { imageSourcePaths, markdownSourcePaths } = splitDroppedWorkspaceFiles(sourcePaths);
 
     void (async () => {
-      if (markdownSourcePaths.length > 0) {
-        const result = await relic.importMarkdownFiles({ destinationFolder, sourcePaths: markdownSourcePaths });
-        if (!isCurrentWorkspace()) return;
-        if (!result.ok) {
-          setWorkspaceError(workspaceFileErrorMessage(result.error, t));
-          return;
+      try {
+        if (markdownSourcePaths.length > 0) {
+          const result = await relic.importMarkdownFiles({ destinationFolder, sourcePaths: markdownSourcePaths });
+          if (!isCurrentWorkspace()) return;
+          if (!result.ok) {
+            setWorkspaceError(workspaceFileErrorMessage(result.error, t));
+            return;
+          }
+          setWorkspaceState(result.value);
         }
-        setWorkspaceState(result.value);
-      }
 
-      const importedImagePaths: string[] = [];
-      for (const sourcePath of imageSourcePaths) {
-        if (!isCurrentWorkspace()) return;
-        const result = await relic.importImageFile({ destinationFolder, sourcePath });
-        if (!isCurrentWorkspace()) return;
-        if (!result.ok) {
-          setWorkspaceError(workspaceFileErrorMessage(result.error, t));
-          return;
+        const importedImagePaths: string[] = [];
+        for (const sourcePath of imageSourcePaths) {
+          if (!isCurrentWorkspace()) return;
+          const result = await relic.importImageFile({ destinationFolder, sourcePath });
+          if (!isCurrentWorkspace()) return;
+          if (!result.ok) {
+            setWorkspaceError(workspaceFileErrorMessage(result.error, t));
+            return;
+          }
+          importedImagePaths.push(result.value.path);
         }
-        importedImagePaths.push(result.value.path);
-      }
-      if (importedImagePaths.length > 0) {
-        const stateResult = await relic.getWorkspaceState();
-        if (!isCurrentWorkspace()) return;
-        if (stateResult.ok) setWorkspaceState(stateResult.value);
-      }
-      for (const imagePath of importedImagePaths) {
-        openImageInPane(focusedPane, { name: imagePath.split("/").at(-1) ?? imagePath, path: imagePath });
+        if (importedImagePaths.length > 0) {
+          const stateResult = await relic.getWorkspaceState();
+          if (!isCurrentWorkspace()) return;
+          if (stateResult.ok) setWorkspaceState(stateResult.value);
+        }
+        for (const imagePath of importedImagePaths) {
+          openImageInPane(focusedPane, { name: imagePath.split("/").at(-1) ?? imagePath, path: imagePath });
+        }
+      } catch {
+        if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
       }
     })();
   }, [beginWorkspaceRequest, focusedPane, openImageInPane, setWorkspaceError, setWorkspaceState, t]);

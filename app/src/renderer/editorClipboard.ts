@@ -1,4 +1,5 @@
 import { relicClient } from "./relicClient";
+import { editorClipboardMaxTextLength } from "../shared/ipc";
 
 export async function copyWorkspaceItemPathToClipboard(path: string): Promise<void> {
   if (!relicClient.current) throw new Error("Relic API is unavailable");
@@ -47,21 +48,12 @@ export async function writeEditorClipboardText(text: string): Promise<void> {
 }
 
 export async function readEditorClipboardTextForPaste(): Promise<string> {
-  if (relicClient.current?.readEditorTextFromClipboard) {
-    let receivedIpcResult = false;
-    try {
-      const result = await relicClient.current.readEditorTextFromClipboard();
-      receivedIpcResult = true;
-      if (result.ok) return result.value;
-      throw new Error(result.error.message);
-    } catch (error) {
-      if (receivedIpcResult) throw error;
-      // Fall through to the browser Clipboard API.
-    }
-  }
-
   if (navigator.clipboard?.readText) {
-    return navigator.clipboard.readText();
+    const text = await navigator.clipboard.readText();
+    if (text.length > editorClipboardMaxTextLength || new TextEncoder().encode(text).byteLength > editorClipboardMaxTextLength) {
+      throw new Error("Clipboard text is too large");
+    }
+    return text;
   }
 
   throw new Error("Clipboard paste failed");

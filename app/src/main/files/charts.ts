@@ -17,6 +17,13 @@ import {
 } from "./chronicleData";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
+import {
+  assertMarkdownMutationSnapshotCurrent,
+  captureMarkdownMutationSnapshot,
+  isMarkdownMutationConflict,
+  runMarkdownFileMutation,
+  type MarkdownMutationSnapshot
+} from "./markdownMutationCoordinator";
 import { resolveExistingWorkspacePath } from "./paths";
 import {
   chartEntriesForRecord,
@@ -36,6 +43,7 @@ interface ChartReadOperations {
 }
 
 interface ChartWriteOperations extends ChartReadOperations {
+  stat?: WorkspaceMarkdownReadOperations["stat"];
   writeTextFile(filePath: string, content: string): Promise<void>;
 }
 
@@ -131,30 +139,49 @@ export async function updateWorkspaceChartEntry(
       return absolutePath;
     }
 
-    const content = await activeOperations.readFile(absolutePath.value, "utf8");
-    const nextContent = updateChartFrontmatterContent(content, input, calendarSettings);
+    return await runMarkdownFileMutation(absolutePath.value, async () => {
+      const snapshot = await captureMarkdownMutationSnapshot(absolutePath.value, activeOperations);
+      const nextContent = updateChartFrontmatterContent(snapshot.content, input, calendarSettings);
 
-    if (!nextContent.ok) return nextContent;
+      if (!nextContent.ok) return nextContent;
 
-    const currentContent = await activeOperations.readFile(absolutePath.value, "utf8");
+      const safeMutationPath = await resolveExistingWorkspacePath(workspacePath, input.path);
+      if (!safeMutationPath.ok) return safeMutationPath;
+      await writeChartMutation(absolutePath.value, nextContent.value, snapshot, activeOperations);
 
-    if (currentContent !== content) {
+      return readWorkspaceCharts(workspacePath, charts, calendarSettings, { operations: activeOperations });
+    });
+  } catch (error) {
+    if (isMarkdownMutationConflict(error)) {
       return fail(
         "CHART_ENTRY_UPDATE_CONFLICT",
         "ファイルが外部で変更されています。再読み込みしてからもう一度操作してください。"
       );
     }
-
-    await activeOperations.writeTextFile(absolutePath.value, nextContent.value);
-
-    return readWorkspaceCharts(workspacePath, charts, calendarSettings, { operations: activeOperations });
-  } catch (error) {
     return fail(
       "CHART_ENTRY_UPDATE_FAILED",
       "チャートの変更をファイルへ保存できませんでした。",
       errorDetails(error)
     );
   }
+}
+
+async function writeChartMutation(
+  filePath: string,
+  content: string,
+  snapshot: MarkdownMutationSnapshot,
+  operations: ChartWriteOperations
+): Promise<void> {
+  await assertMarkdownMutationSnapshotCurrent(filePath, snapshot, operations);
+
+  if (operations.writeTextFile === atomicWriteTextFile) {
+    await atomicWriteTextFile(filePath, content, undefined, {
+      beforeRename: () => assertMarkdownMutationSnapshotCurrent(filePath, snapshot, operations)
+    });
+    return;
+  }
+
+  await operations.writeTextFile(filePath, content);
 }
 
 function isCalendarSettings(value: unknown): value is ChronicleCalendarSettings {

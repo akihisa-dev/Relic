@@ -67,15 +67,25 @@ function refreshWorkspaceState(
     try {
       const userDataPath = app.getPath("userData");
       const settings = await readAppSettings(userDataPath);
-      if (settings.lastWorkspaceId !== workspaceId) {
+      const startingWorkspace = settings.workspaces.find((workspace) => workspace.id === workspaceId);
+      if (
+        settings.lastWorkspaceId !== workspaceId ||
+        !startingWorkspace
+      ) {
         return fail("WORKSPACE_REFRESH_STALE", t("refresh.workspaceChanged"));
       }
+      const startingRegistration = workspaceRegistrationFingerprint(startingWorkspace);
 
       invalidateWorkspaceData(workspaceId);
       await rm(getWorkspaceFileIndexCachePath(userDataPath, workspaceId), { force: true });
       const state = await buildWorkspaceState(settings);
       const latestSettings = await readAppSettings(userDataPath);
-      if (latestSettings.lastWorkspaceId !== workspaceId) {
+      const latestWorkspace = latestSettings.workspaces.find((workspace) => workspace.id === workspaceId);
+      if (
+        latestSettings.lastWorkspaceId !== workspaceId ||
+        !latestWorkspace ||
+        workspaceRegistrationFingerprint(latestWorkspace) !== startingRegistration
+      ) {
         return fail("WORKSPACE_REFRESH_STALE", t("refresh.workspaceChanged"));
       }
 
@@ -95,4 +105,8 @@ function refreshWorkspaceState(
   });
   workspaceRefreshPromises.set(workspaceId, promise);
   return promise;
+}
+
+function workspaceRegistrationFingerprint(workspace: { id: string; name: string; path: string }): string {
+  return [workspace.id, workspace.path, workspace.name].join("\0");
 }

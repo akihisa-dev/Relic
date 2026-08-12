@@ -3,6 +3,7 @@ import type {
   ChartEntry,
   WorkspaceTreeNode
 } from "../../shared/ipc";
+import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { parseMarkdownTags } from "../../shared/tags";
 import { extractAliasesFromFrontmatterData } from "./aliasesModel";
 import { collectChartEntriesForFrontmatterData } from "./chronicleData";
@@ -25,10 +26,14 @@ export interface WorkspaceMarkdownReadOperations {
 }
 
 export interface WorkspaceDerivedDataOptions {
+  cacheGeneration?: number;
+  cacheOwnerPath?: string;
   cachePath?: string;
+  completeSnapshot?: boolean;
   fileIndex?: WorkspaceFileIndex;
   filePaths?: string[];
   fileTree?: WorkspaceTreeNode[];
+  forceReadPaths?: string[];
   maxSearchFileBytes?: number;
   operations?: WorkspaceMarkdownReadOperations;
   parseCache?: WorkspaceDerivedDataCache;
@@ -44,6 +49,20 @@ export interface WorkspaceDerivedDataCache {
   tags: Map<string, string[]>;
 }
 
+/** Finite safety budgets for derived-data requests.  Callers cannot opt into
+ * an effectively unbounded parser/index build via MAX_SAFE_INTEGER. */
+export const maxWorkspaceDerivedSearchFileBytes = 16 * 1024 * 1024;
+export const maxWorkspaceDerivedRecords = 100_000;
+
+export class WorkspaceDerivedDataLimitError extends Error {
+  readonly code = "WORKSPACE_DERIVED_DATA_LIMIT";
+
+  constructor(message: string) {
+    super(message);
+    this.name = "WorkspaceDerivedDataLimitError";
+  }
+}
+
 export function createWorkspaceDerivedDataCache(): WorkspaceDerivedDataCache {
   return {
     aliases: new Map(),
@@ -53,6 +72,25 @@ export function createWorkspaceDerivedDataCache(): WorkspaceDerivedDataCache {
     frontmatter: new Map(),
     frontmatterInspection: new Map(),
     tags: new Map()
+  };
+}
+
+/**
+ * Create an isolated parse-cache generation for an incremental refresh.
+ * Consumers holding the previous snapshot must not observe invalidation
+ * mutations while they are still deriving data from that snapshot.
+ */
+export function cloneWorkspaceDerivedDataCache(
+  cache: WorkspaceDerivedDataCache
+): WorkspaceDerivedDataCache {
+  return {
+    aliases: new Map(cache.aliases),
+    backlinksByTarget: cache.backlinksByTarget ? new Map(cache.backlinksByTarget) : null,
+    chartEntries: new Map(cache.chartEntries),
+    content: new Map(cache.content),
+    frontmatter: new Map(cache.frontmatter),
+    frontmatterInspection: new Map(cache.frontmatterInspection),
+    tags: new Map(cache.tags)
   };
 }
 
@@ -84,7 +122,11 @@ export function normalizeWorkspaceDerivedDataOptions(
     "fileIndex" in optionsOrOperations ||
     "fileTree" in optionsOrOperations ||
     "filePaths" in optionsOrOperations ||
+    "forceReadPaths" in optionsOrOperations ||
     "cachePath" in optionsOrOperations ||
+    "cacheGeneration" in optionsOrOperations ||
+    "cacheOwnerPath" in optionsOrOperations ||
+    "completeSnapshot" in optionsOrOperations ||
     "maxSearchFileBytes" in optionsOrOperations ||
     "parseCache" in optionsOrOperations) {
     return optionsOrOperations;
@@ -102,7 +144,10 @@ export async function readWorkspaceDerivedFileIndex(
   options: WorkspaceDerivedDataOptions = {}
 ): Promise<WorkspaceFileIndex> {
   const startedAt = startPerformanceMeasure();
-  const maxSearchFileBytes = options.maxSearchFileBytes ?? Number.MAX_SAFE_INTEGER;
+  const maxSearchFileBytes = boundedDerivedSearchFileBytes(options.maxSearchFileBytes);
+  if (options.fileIndex && options.fileIndex.records.length > maxWorkspaceDerivedRecords) {
+    throw new WorkspaceDerivedDataLimitError("Workspace derived-data record limit exceeded.");
+  }
   if (options.fileIndex && hasContentForDerivedData(options.fileIndex, maxSearchFileBytes)) {
     finishPerformanceMeasure("readWorkspaceDerivedFileIndex", startedAt, {
       reusedFileIndex: true,
@@ -118,18 +163,94 @@ export async function readWorkspaceDerivedFileIndex(
     }
     : undefined;
 
+  const targetPaths = options.filePaths ?? (
+    options.fileTree !== undefined
+      ? collectMarkdownPaths(options.fileTree)
+      : options.fileIndex?.records.map((record) => record.path)
+  );
+  const pathsToRead = options.fileIndex && targetPaths
+    ? targetPaths.filter((relativePath) => {
+      const record = options.fileIndex?.records.find((item) => item.path === relativePath);
+      return !record || !hasContentForDerivedData({
+        entries: [],
+        records: [record],
+        stats: options.fileIndex?.stats ?? emptyWorkspaceFileIndexStats()
+      }, maxSearchFileBytes);
+    })
+    : targetPaths;
+
+  const pathsToReturn = options.fileIndex && targetPaths
+    ? targetPaths
+    : undefined;
+  if (targetPaths && targetPaths.length > maxWorkspaceDerivedRecords) {
+    throw new WorkspaceDerivedDataLimitError("Workspace derived-data path limit exceeded.");
+  }
+  if (options.fileIndex && pathsToRead && pathsToRead.length === 0) {
+    if (!pathsToReturn) return options.fileIndex;
+    const records = pathsToReturn
+      .map((relativePath) => options.fileIndex?.records.find((record) => record.path === relativePath))
+      .filter((record): record is WorkspaceFileIndexRecord => !!record)
+      .sort((a, b) => a.path.localeCompare(b.path, "ja"));
+    return {
+      ...options.fileIndex,
+      entries: records.map(({
+        contentHash: _contentHash,
+        headHash: _headHash,
+        lines: _lines,
+        searchable: _searchable,
+        ...entry
+      }) => entry),
+      records
+    };
+  }
+
   const fileIndex = await readWorkspaceFileIndex(workspacePath, {
     cachePath: options.cachePath,
-    filePaths: options.filePaths ?? options.fileIndex?.entries.map((entry) => entry.path),
+    cacheGeneration: options.cacheGeneration,
+    cacheOwnerPath: options.cacheOwnerPath ?? workspacePath,
+    completeSnapshot: options.completeSnapshot ?? options.fileIndex === undefined,
+    filePaths: pathsToRead,
     fileTree: options.fileTree,
+    forceReadPaths: options.forceReadPaths,
     maxSearchFileBytes,
     operations
   });
+  if (fileIndex.records.length > maxWorkspaceDerivedRecords) {
+    throw new WorkspaceDerivedDataLimitError("Workspace derived-data record limit exceeded.");
+  }
+  if (!options.fileIndex || !pathsToRead) return fileIndex;
+
+  const refreshedByPath = new Map(fileIndex.records.map((record) => [record.path, record]));
+  const existingByPath = new Map(options.fileIndex.records.map((record) => [record.path, record]));
+  const records = (pathsToReturn ?? pathsToRead)
+    .map((relativePath) => refreshedByPath.get(relativePath) ?? existingByPath.get(relativePath))
+    .filter((record): record is WorkspaceFileIndexRecord => !!record)
+    .sort((a, b) => a.path.localeCompare(b.path, "ja"));
+  const mergedFileIndex: WorkspaceFileIndex = {
+    entries: records.map(({
+      contentHash: _contentHash,
+      headHash: _headHash,
+      lines: _lines,
+      searchable: _searchable,
+      ...entry
+    }) => entry),
+    records,
+    stats: {
+      ...fileIndex.stats,
+      targetPathCount: records.length
+    }
+  };
   finishPerformanceMeasure("readWorkspaceDerivedFileIndex", startedAt, {
-    records: fileIndex.records.length,
+    records: mergedFileIndex.records.length,
     reusedFileIndex: false
   });
-  return fileIndex;
+  return mergedFileIndex;
+}
+
+function boundedDerivedSearchFileBytes(requested: number | undefined): number {
+  if (requested === undefined) return maxWorkspaceDerivedSearchFileBytes;
+  if (!Number.isFinite(requested) || requested < 0) return 0;
+  return Math.min(Math.floor(requested), maxWorkspaceDerivedSearchFileBytes);
 }
 
 export function readableWorkspaceMarkdownRecords(fileIndex: WorkspaceFileIndex): WorkspaceFileIndexRecord[] {
@@ -233,6 +354,19 @@ function hasContentForDerivedData(fileIndex: WorkspaceFileIndex, maxSearchFileBy
 
     return record.searchable && record.lines.length > 0;
   });
+}
+
+function emptyWorkspaceFileIndexStats(): WorkspaceFileIndex["stats"] {
+  return {
+    cacheHitCount: 0,
+    cachedContentHitCount: 0,
+    cacheMissCount: 0,
+    readFileCount: 0,
+    readHeadCount: 0,
+    statCount: 0,
+    targetPathCount: 0,
+    unreadableCount: 0
+  };
 }
 
 function cacheKeyForRecord(record: WorkspaceFileIndexRecord): string {

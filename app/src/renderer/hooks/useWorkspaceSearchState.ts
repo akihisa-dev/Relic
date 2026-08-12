@@ -9,6 +9,7 @@ import type {
   WorkspaceState
 } from "../../shared/ipc";
 import { knownFrontmatterSearchFields } from "../filesSidebarModel";
+import { useT } from "../i18n";
 
 interface UseWorkspaceSearchStateInput {
   setWorkspaceError: (message: string | null) => void;
@@ -54,6 +55,7 @@ export function useWorkspaceSearchState({
   userDefinedFields,
   workspaceState
 }: UseWorkspaceSearchStateInput) {
+  const t = useT();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState<SearchMode>("fullText");
   const [searchFrontmatterField, setSearchFrontmatterField] = useState("");
@@ -115,12 +117,19 @@ export function useWorkspaceSearchState({
         });
         setWorkspaceError(result.error.message);
       }
+    }).catch(() => {
+      if (canceled) return;
+      setFrontmatterCandidateSnapshot({
+        candidates: {},
+        workspaceId: requestedWorkspaceId
+      });
+      setWorkspaceError(t("errors.operationFailed"));
     });
 
     return () => {
       canceled = true;
     };
-  }, [setWorkspaceError, workspaceId, workspaceState?.fileTree]);
+  }, [setWorkspaceError, t, workspaceId, workspaceState?.fileTree]);
 
   useEffect(() => {
     if (!hasActiveWorkspace || searchQuery.trim() === "") {
@@ -193,6 +202,15 @@ export function useWorkspaceSearchState({
             results: []
           });
         }
+      })
+      .catch(() => {
+        if (canceled) return;
+        setSearchSnapshot({
+          error: t("errors.operationFailed"),
+          key: activeDebouncedSearch.key,
+          limitNotice: null,
+          results: []
+        });
       });
 
     return () => {
@@ -200,6 +218,7 @@ export function useWorkspaceSearchState({
     };
   }, [
     activeDebouncedSearch,
+    t,
     workspaceState?.activeWorkspace?.id,
     workspaceState?.fileTree
   ]);

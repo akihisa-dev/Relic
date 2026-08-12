@@ -6,6 +6,12 @@ export const saveDiagramSvgChannel = "output:saveDiagramSvg";
 export const copyDiagramSvgChannel = "output:copyDiagramSvg";
 export const previewOutputHtmlMaxBytes = 2 * 1024 * 1024;
 export const maxSvgInputBytes = 2 * 1024 * 1024;
+export const maxPreviewMarkdownBytes = 2 * 1024 * 1024;
+export const maxPreviewImageCount = 64;
+export const maxPreviewImageAggregateBytes = 32 * 1024 * 1024;
+export const maxPreviewImageDataUrlBytes = 24 * 1024 * 1024;
+export const maxOutputDiagramCount = 64;
+export const maxOutputDiagramSourceChars = 500_000;
 
 export type OutputDiagramLanguage = "d2" | "mermaid";
 

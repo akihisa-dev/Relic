@@ -14,10 +14,12 @@ export async function renderPreviewHtmlToPdf(
   title: string,
   pdfOptions?: OutputPdfOptions
 ): Promise<Buffer> {
-  const runtime = createPreviewPdfWindow(title);
+  const encoded = Buffer.from(html, "utf8").toString("base64");
+  const initialUrl = `data:text/html;base64,${encoded}`;
+  const runtime = createPreviewPdfWindow(title, initialUrl);
 
   try {
-    await loadPreviewOutputHtml(runtime.window, html);
+    await runtime.window.loadURL(initialUrl);
     return await runtime.window.webContents.printToPDF({
       displayHeaderFooter: false,
       generateDocumentOutline: true,
@@ -39,7 +41,7 @@ export async function renderPreviewHtmlToPdf(
   }
 }
 
-function createPreviewPdfWindow(title: string): PreviewPdfWindowRuntime {
+function createPreviewPdfWindow(title: string, initialUrl: string): PreviewPdfWindowRuntime {
   const window = new BrowserWindow({
     autoHideMenuBar: true,
     backgroundColor: "#ffffff",
@@ -57,16 +59,16 @@ function createPreviewPdfWindow(title: string): PreviewPdfWindowRuntime {
     },
     width: 780
   });
+  let initialNavigationAllowed = true;
   const disposeSecurityPolicy = installWindowSecurityPolicy(window, {
-    isNavigationAllowed: (url) => url.startsWith("data:text/html")
+    isNavigationAllowed: (url) => {
+      if (!initialNavigationAllowed || url !== initialUrl) return false;
+      initialNavigationAllowed = false;
+      return true;
+    }
   });
 
   return { disposeSecurityPolicy, window };
-}
-
-async function loadPreviewOutputHtml(window: BrowserWindow, html: string): Promise<void> {
-  const encoded = Buffer.from(html, "utf8").toString("base64");
-  await window.loadURL(`data:text/html;base64,${encoded}`);
 }
 
 function destroyPreviewPdfWindow(window: BrowserWindow): void {

@@ -37,6 +37,13 @@ export const workspaceChangeMaxNotifyDelayMs = 2000;
 export const workspaceWatcherRetryBaseDelayMs = 1000;
 export const workspaceWatcherRetryMaxDelayMs = 30_000;
 export const workspaceWatcherFailureNotifyDelayMs = 5000;
+/**
+ * Keep watcher bursts bounded.  File-system watchers are untrusted input and
+ * must not be allowed to retain an unbounded event queue while the debounce
+ * timer is pending.  Overflow intentionally falls back to a full resync by
+ * sending an empty event list to the invalidation coordinator.
+ */
+export const workspaceWatcherMaxPendingEvents = 256;
 
 const defaultWatchWorkspace: WorkspaceWatch = (targetPath, options, listener) =>
   watch(targetPath, options, listener);
@@ -47,6 +54,7 @@ export class WorkspaceWatcherRuntime {
   private notifyTimer: NodeJS.Timeout | null = null;
   private firstPendingNotifyAt: number | null = null;
   private pendingWatchEvents: WorkspaceWatchEvent[] = [];
+  private pendingEventsRequireFullResync = false;
   private retryTimer: NodeJS.Timeout | null = null;
   private failureNotifyTimer: NodeJS.Timeout | null = null;
   private retryAttempt = 0;
@@ -156,6 +164,7 @@ export class WorkspaceWatcherRuntime {
     }
     this.firstPendingNotifyAt = null;
     this.pendingWatchEvents = [];
+    this.pendingEventsRequireFullResync = false;
 
     this.workspaceWatcher?.close();
     this.workspaceWatcher = null;
@@ -181,7 +190,7 @@ export class WorkspaceWatcherRuntime {
     eventType: string,
     filename?: string | null
   ): void {
-    this.pendingWatchEvents.push({ eventType, filename });
+    this.enqueueWatchEvent(eventType, filename);
 
     const now = Date.now();
     this.firstPendingNotifyAt ??= now;
@@ -193,10 +202,40 @@ export class WorkspaceWatcherRuntime {
     this.notifyTimer = setTimeout(() => {
       this.notifyTimer = null;
       this.firstPendingNotifyAt = null;
-      const events = this.pendingWatchEvents;
+      const events = this.pendingEventsRequireFullResync
+        ? []
+        : this.pendingWatchEvents;
       this.pendingWatchEvents = [];
+      this.pendingEventsRequireFullResync = false;
       this.notifications.notifyWorkspaceChanged(target, events);
     }, delay);
+  }
+
+  private enqueueWatchEvent(eventType: string, filename?: string | null): void {
+    if (this.pendingEventsRequireFullResync) return;
+
+    // Rename events can represent directory changes or an unknown path.  The
+    // invalidation coordinator treats them as a full resync, so collapse the
+    // whole burst immediately rather than retaining every noisy event.
+    if (eventType === "rename" || !filename) {
+      this.pendingEventsRequireFullResync = true;
+      this.pendingWatchEvents = [];
+      return;
+    }
+
+    const normalizedFilename = filename.replaceAll("\\", "/");
+    const existingIndex = this.pendingWatchEvents.findIndex((event) =>
+      event.eventType === eventType && event.filename?.replaceAll("\\", "/") === normalizedFilename
+    );
+    if (existingIndex >= 0) return;
+
+    if (this.pendingWatchEvents.length >= workspaceWatcherMaxPendingEvents) {
+      this.pendingEventsRequireFullResync = true;
+      this.pendingWatchEvents = [];
+      return;
+    }
+
+    this.pendingWatchEvents.push({ eventType, filename });
   }
 }
 

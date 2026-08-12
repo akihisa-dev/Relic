@@ -13,6 +13,7 @@ export interface AtomicWriteOperations {
 }
 
 interface AtomicWriteOptions {
+  beforeRename?: (temporaryPath: string) => Promise<void>;
   mode?: number;
 }
 
@@ -65,6 +66,7 @@ export async function atomicWriteFile(
   try {
     const mode = options.mode ?? await existingFileMode(filePath, operations);
     await operations.writeFile(temporaryPath, content, mode === undefined ? encoding : { encoding, mode });
+    await options.beforeRename?.(temporaryPath);
     await operations.rename(temporaryPath, filePath);
   } catch (error) {
     await operations.unlink(temporaryPath).catch(() => undefined);

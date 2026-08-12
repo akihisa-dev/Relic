@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { waitFor } from "@testing-library/react";
 
 import { createTranslator } from "./i18nModel";
+import { maxOutputDiagramCount, maxOutputDiagramSourceChars } from "../shared/ipc/output";
 
 type DiagramRenderGate = {
   promise: Promise<void>;
@@ -111,5 +112,28 @@ describe("outputHtml", () => {
     expect(firstDiagramIndex).toBeLessThan(thirdDiagramIndex);
     expect(thirdDiagramIndex).toBeLessThan(secondDiagramIndex);
     expect(secondDiagramIndex).toBeLessThan(fourthDiagramIndex);
+  });
+
+  it("図表数と図表ソース総量の上限をレンダリング前に拒否する", async () => {
+    const tooMany = Array.from({ length: maxOutputDiagramCount + 1 }, () => ["```mermaid", "A --> B", "```"].join("\n")).join("\n");
+    await expect(buildPreviewOutputHtml({
+      content: tooMany,
+      fileName: "Many",
+      path: "many.md",
+      t: createTranslator("ja"),
+      title: "Many"
+    })).rejects.toThrow("図表が多すぎるためPDFを生成できません。");
+    expect(renderDiagramElement).not.toHaveBeenCalled();
+
+    const source = "A --> B\n".repeat(Math.ceil(maxOutputDiagramSourceChars / 8));
+    const tooMuchSource = ["```mermaid", source, "```", "```mermaid", "A --> B", "```"].join("\n");
+    await expect(buildPreviewOutputHtml({
+      content: tooMuchSource,
+      fileName: "Large diagrams",
+      path: "large-diagrams.md",
+      t: createTranslator("ja"),
+      title: "Large diagrams"
+    })).rejects.toThrow("図表ソースが大きすぎるためPDFを生成できません。");
+    expect(renderDiagramElement).not.toHaveBeenCalled();
   });
 });

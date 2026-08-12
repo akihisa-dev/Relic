@@ -2,10 +2,12 @@ import { chmod, mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, writeFile 
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   applySearchAndReplace,
+  maxReplaceAggregateReadBytes,
+  maxReplaceReadBytes,
   replaceInFile,
   searchAndReplace,
   searchAndReplacePreviewMaxResults
@@ -115,6 +117,10 @@ describe("replaceInFile", () => {
       error: expect.objectContaining({ code: "REGEX_TOO_COMPLEX" }),
       ok: false
     });
+    await expect(replaceInFile(ws, "note.md", "^(a|aa)+$", "ok", true)).resolves.toMatchObject({
+      error: expect.objectContaining({ code: "REGEX_TOO_COMPLEX" }),
+      ok: false
+    });
     await expect(replaceInFile(ws, "note.md", "a".repeat(regexMaxPatternLength + 1), "ok", true)).resolves.toMatchObject({
       error: expect.objectContaining({ code: "REGEX_TOO_COMPLEX" }),
       ok: false
@@ -210,6 +216,64 @@ describe("replaceInFile", () => {
       ok: false
     });
     await expect(readFile(path.join(outside, "outside.md"), "utf8")).resolves.toBe("foo");
+  });
+});
+
+describe("searchAndReplace read budgets", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(temporaryPaths.splice(0).map((p) => rm(p, { force: true, recursive: true })));
+  });
+
+  it("拒否する大きすぎる対象をreadFile前に検出する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-budget-"));
+    temporaryPaths.push(ws);
+    await writeFile(path.join(ws, "large.md"), "small", "utf8");
+    const read = vi.fn().mockResolvedValue("should not be read");
+    const statOperation = vi.fn().mockResolvedValue({ isFile: () => true, size: maxReplaceReadBytes + 1 });
+
+    const result = await searchAndReplace(ws, "needle", "replacement", false, {
+      readFile: read,
+      stat: statOperation as never
+    });
+
+    expect(result).toMatchObject({ ok: false, error: { code: "REPLACE_FAILED" } });
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it("合計サイズ上限をreadFile前に検出する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-budget-"));
+    temporaryPaths.push(ws);
+    await writeFile(path.join(ws, "first.md"), "small", "utf8");
+    await writeFile(path.join(ws, "second.md"), "small", "utf8");
+    const read = vi.fn().mockResolvedValue("should not be read");
+    const statOperation = vi.fn().mockResolvedValue({
+      isFile: () => true,
+      size: Math.floor(maxReplaceAggregateReadBytes / 2) + 1
+    });
+
+    const result = await searchAndReplace(ws, "needle", "replacement", false, {
+      readFile: read,
+      stat: statOperation as never
+    });
+
+    expect(result).toMatchObject({ ok: false, error: { code: "REPLACE_FAILED" } });
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it("stat失敗時はサイズ不明の本文を読み込まない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-stat-failure-"));
+    temporaryPaths.push(ws);
+    await writeFile(path.join(ws, "unknown.md"), "small", "utf8");
+    const read = vi.fn().mockResolvedValue("should not be read");
+    const result = await searchAndReplace(ws, "needle", "replacement", false, {
+      readFile: read,
+      stat: vi.fn().mockRejectedValue(new Error("stat failed")) as never
+    });
+
+    expect(result).toMatchObject({ ok: false, error: { code: "REPLACE_FAILED" } });
+    expect(read).not.toHaveBeenCalled();
   });
 });
 

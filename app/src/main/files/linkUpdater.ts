@@ -1,13 +1,23 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 import type { LinkUpdateImpact, LinkUpdateImpactKind } from "../../shared/ipc";
+import { maxMarkdownReadBytes } from "../../shared/ipc/files";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicError, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
+import {
+  assertMarkdownMutationSnapshotCurrent,
+  captureMarkdownMutationSnapshot,
+  isMarkdownMutationConflict,
+  MarkdownMutationConflictError,
+  runMarkdownFileMutation,
+  type MarkdownMutationOperations,
+  type MarkdownMutationSnapshot
+} from "./markdownMutationCoordinator";
 import {
   replaceFileLinksWithCount,
   replaceMovedSourceBasenameLinksWithCount,
@@ -34,9 +44,11 @@ interface LinkUpdatePatchResult {
 
 interface LinkUpdateReadOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+  stat?: MarkdownMutationOperations["stat"];
 }
 
 export interface LinkUpdateWriteOperations extends LinkUpdateReadOperations {
+  stat?: MarkdownMutationOperations["stat"];
   writeTextFile(filePath: string, content: string): Promise<void>;
 }
 
@@ -58,12 +70,17 @@ export type LinkUpdateTransactionResult =
       recovery: LinkUpdateRecovery;
     };
 
+export const maxLinkUpdateFiles = 50_000;
+export const maxLinkUpdateReadBytes = maxMarkdownReadBytes;
+export const maxLinkUpdateAggregateReadBytes = 64 * 1024 * 1024;
+
 export interface PreparedLinkUpdate {
   apply(operations?: LinkUpdateWriteOperations): Promise<LinkUpdateTransactionResult>;
 }
 
 const defaultLinkUpdateReadOperations: LinkUpdateReadOperations = {
-  readFile
+  readFile,
+  stat
 };
 
 const defaultLinkUpdateWriteOperations: LinkUpdateWriteOperations = {
@@ -181,20 +198,53 @@ async function buildLinkUpdatePatches(
 
   const fileTree = await readWorkspaceFileTree(workspacePath);
   const markdownPaths = collectMarkdownPaths(fileTree);
+  if (markdownPaths.length > maxLinkUpdateFiles) {
+    return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新の対象ファイル数が上限を超えています。");
+  }
+  const sourceFiles: Array<{ absolutePath: string; sourcePath: string }> = [];
+  let skippedUnreadableFileCount = 0;
+  let aggregateBytes = 0;
+  for (const sourcePath of markdownPaths) {
+    const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, sourcePath);
+    if (!absoluteSourcePath.ok) return absoluteSourcePath;
+
+    let fileStats;
+    try {
+      fileStats = await (options.operations.stat ?? stat)(absoluteSourcePath.value);
+    } catch (error) {
+      if (options.skipUnreadableFiles) {
+        skippedUnreadableFileCount += 1;
+        continue;
+      }
+      return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新のためにファイルを読み込めませんでした。", errorDetails(error));
+    }
+    if (!Number.isSafeInteger(fileStats.size) || fileStats.size < 0) {
+      if (options.skipUnreadableFiles) {
+        skippedUnreadableFileCount += 1;
+        continue;
+      }
+      return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新の対象ファイルを確認できませんでした。");
+    }
+    if (fileStats.size > maxLinkUpdateReadBytes) {
+      return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新の対象ファイルが大きすぎます。");
+    }
+    aggregateBytes += fileStats.size;
+    if (aggregateBytes > maxLinkUpdateAggregateReadBytes) {
+      return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新の合計サイズが大きすぎます。");
+    }
+    sourceFiles.push({ absolutePath: absoluteSourcePath.value, sourcePath });
+  }
   const patches: LinkUpdatePatch[] = [];
   const newBaseName = stripMarkdownExtension(path.posix.basename(normalizedNewPath));
   const newPathWithoutExt = stripMarkdownExtension(normalizedNewPath);
   const oldBaseName = stripMarkdownExtension(path.posix.basename(normalizedOldPath));
   const oldPathWithoutExt = stripMarkdownExtension(normalizedOldPath);
-  let skippedUnreadableFileCount = 0;
-
-  for (const sourcePath of markdownPaths) {
-    const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, sourcePath);
-    if (!absoluteSourcePath.ok) return absoluteSourcePath;
+  let actualAggregateBytes = 0;
+  for (const { absolutePath, sourcePath } of sourceFiles) {
 
     let content: string;
     try {
-      content = await options.operations.readFile(absoluteSourcePath.value, "utf8");
+      content = await options.operations.readFile(absolutePath, "utf8");
     } catch (err) {
       if (options.skipUnreadableFiles) {
         skippedUnreadableFileCount += 1;
@@ -202,6 +252,15 @@ async function buildLinkUpdatePatches(
       }
 
       return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新のためにファイルを読み込めませんでした。", errorDetails(err));
+    }
+
+    const contentBytes = Buffer.byteLength(content, "utf8");
+    if (contentBytes > maxLinkUpdateReadBytes) {
+      return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新の対象ファイルが大きすぎます。");
+    }
+    actualAggregateBytes += contentBytes;
+    if (actualAggregateBytes > maxLinkUpdateAggregateReadBytes) {
+      return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新の合計サイズが大きすぎます。");
     }
 
     const effectiveSourcePath = options.movedFile?.oldRelativePath === sourcePath
@@ -240,7 +299,7 @@ async function buildLinkUpdatePatches(
     replacement.count += movedSourceReplacement.count;
 
     if (replacement.content !== content) {
-      let patchAbsolutePath = absoluteSourcePath.value;
+      let patchAbsolutePath = absolutePath;
       if (effectiveSourcePath !== sourcePath) {
         const movedAbsolutePath = resolveWorkspaceRelativePath(workspacePath, effectiveSourcePath);
         if (!movedAbsolutePath.ok) return movedAbsolutePath;
@@ -332,19 +391,13 @@ async function applyLinkUpdatePatches(
   try {
     for (const patch of patches) {
       activePatch = patch;
-      const currentContent = await operations.readFile(patch.absolutePath, "utf8");
-      if (currentContent !== patch.previousContent) {
-        const recovery = await rollbackAppliedPatches(applied, operations);
-        recovery.conflictedPaths.push(patch.relativePath);
-        return failureWithRecovery(
-          "LINK_UPDATE_CONFLICT",
-          "内部リンク更新対象のファイルが外部で変更されています。再読み込みしてから実行してください。",
-          undefined,
-          recovery
-        );
-      }
-
-      await operations.writeTextFile(patch.absolutePath, patch.nextContent);
+      await runMarkdownFileMutation(patch.absolutePath, async () => {
+        const snapshot = await captureMarkdownMutationSnapshot(patch.absolutePath, operations);
+        if (snapshot.content !== patch.previousContent) {
+          throw new MarkdownMutationConflictError();
+        }
+        await writeLinkMutation(patch.absolutePath, patch.nextContent, snapshot, operations);
+      });
       applied.push(patch);
       activePatch = null;
     }
@@ -368,13 +421,38 @@ async function applyLinkUpdatePatches(
     const recovery = await rollbackAppliedPatches(rollbackCandidates, operations);
     recovery.conflictedPaths.push(...conflictedPaths);
 
-    return failureWithRecovery(
-      "LINK_UPDATE_WRITE_FAILED",
-      "内部リンクを更新できませんでした。",
-      errorDetails(error),
-      recovery
-    );
+    return isMarkdownMutationConflict(error)
+      ? failureWithRecovery(
+        "LINK_UPDATE_CONFLICT",
+        "内部リンク更新対象のファイルが外部で変更されています。再読み込みしてから実行してください。",
+        undefined,
+        recovery
+      )
+      : failureWithRecovery(
+        "LINK_UPDATE_WRITE_FAILED",
+        "内部リンクを更新できませんでした。",
+        errorDetails(error),
+        recovery
+      );
   }
+}
+
+async function writeLinkMutation(
+  filePath: string,
+  content: string,
+  snapshot: MarkdownMutationSnapshot,
+  operations: LinkUpdateWriteOperations
+): Promise<void> {
+  await assertMarkdownMutationSnapshotCurrent(filePath, snapshot, operations);
+
+  if (operations.writeTextFile === atomicWriteTextFile) {
+    await atomicWriteTextFile(filePath, content, undefined, {
+      beforeRename: () => assertMarkdownMutationSnapshotCurrent(filePath, snapshot, operations)
+    });
+    return;
+  }
+
+  await operations.writeTextFile(filePath, content);
 }
 
 async function rollbackAppliedPatches(
@@ -390,13 +468,19 @@ async function rollbackAppliedPatches(
 
   for (const patch of applied.toReversed()) {
     try {
-      const currentContent = await operations.readFile(patch.absolutePath, "utf8");
-      if (currentContent === patch.nextContent) {
-        await operations.writeTextFile(patch.absolutePath, patch.previousContent);
-        recovery.rolledBackPaths.push(patch.relativePath);
-      } else if (currentContent !== patch.previousContent) {
-        recovery.conflictedPaths.push(patch.relativePath);
-      }
+      let rolledBack = false;
+      let conflicted = false;
+      await runMarkdownFileMutation(patch.absolutePath, async () => {
+        const snapshot = await captureMarkdownMutationSnapshot(patch.absolutePath, operations);
+        if (snapshot.content === patch.nextContent) {
+          await writeLinkMutation(patch.absolutePath, patch.previousContent, snapshot, operations);
+          rolledBack = true;
+        } else if (snapshot.content !== patch.previousContent) {
+          conflicted = true;
+        }
+      });
+      if (rolledBack) recovery.rolledBackPaths.push(patch.relativePath);
+      if (conflicted) recovery.conflictedPaths.push(patch.relativePath);
     } catch {
       recovery.rollbackFailedPaths.push(patch.relativePath);
     }

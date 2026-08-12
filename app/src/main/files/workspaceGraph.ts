@@ -34,6 +34,16 @@ import { finishPerformanceMeasure, startPerformanceMeasure } from "./performance
 
 type LinkKind = WorkspaceGraphLink["type"];
 
+export const maxWorkspaceGraphNodes = 100_000;
+export const maxWorkspaceGraphLinks = 500_000;
+
+class WorkspaceGraphLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "WorkspaceGraphLimitError";
+  }
+}
+
 export async function readWorkspaceGraph(
   workspacePath: string,
   optionsOrOperations: WorkspaceDerivedDataOptions | WorkspaceMarkdownReadOperations = {}
@@ -163,6 +173,7 @@ function addFileNode(
   category?: string
 ): void {
   if (nodeMap.has(filePath)) return;
+  assertGraphNodeBudget(nodeMap);
 
   nodeMap.set(filePath, {
     backlinkCount: 0,
@@ -178,6 +189,7 @@ function addFileNode(
 
 function addAttachmentNode(nodeMap: Map<string, WorkspaceGraphNode>, attachmentPath: string): void {
   if (nodeMap.has(attachmentPath)) return;
+  assertGraphNodeBudget(nodeMap);
 
   nodeMap.set(attachmentPath, {
     backlinkCount: 0,
@@ -192,6 +204,7 @@ function addAttachmentNode(nodeMap: Map<string, WorkspaceGraphNode>, attachmentP
 
 function addUnresolvedNode(nodeMap: Map<string, WorkspaceGraphNode>, targetPath: string): void {
   if (nodeMap.has(targetPath)) return;
+  assertGraphNodeBudget(nodeMap);
 
   nodeMap.set(targetPath, {
     backlinkCount: 0,
@@ -206,6 +219,7 @@ function addUnresolvedNode(nodeMap: Map<string, WorkspaceGraphNode>, targetPath:
 
 function addTagNode(nodeMap: Map<string, WorkspaceGraphNode>, id: string, tag: string): void {
   if (nodeMap.has(id)) return;
+  assertGraphNodeBudget(nodeMap);
 
   nodeMap.set(id, {
     backlinkCount: 0,
@@ -233,7 +247,17 @@ function addLink(
     return;
   }
 
+  if (linkCounts.size >= maxWorkspaceGraphLinks) {
+    throw new WorkspaceGraphLimitError("Workspace graph link limit exceeded.");
+  }
+
   linkCounts.set(key, { count: 1, source, target, type });
+}
+
+function assertGraphNodeBudget(nodeMap: Map<string, WorkspaceGraphNode>): void {
+  if (nodeMap.size >= maxWorkspaceGraphNodes) {
+    throw new WorkspaceGraphLimitError("Workspace graph node limit exceeded.");
+  }
 }
 
 function scanMarkdownLinks(markdown: string): string[] {

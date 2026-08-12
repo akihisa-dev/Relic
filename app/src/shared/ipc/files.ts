@@ -23,6 +23,10 @@ export const moveFolderChannel = "workspace:moveFolder";
 
 export const maxWorkspaceRelativePathLength = 1024;
 export const maxImportMarkdownFiles = 500;
+/** Upper bounds for renderer-facing file reads. Check the file size before reading or encoding. */
+export const maxMarkdownReadBytes = 5 * 1024 * 1024;
+export const maxImageReadBytes = 16 * 1024 * 1024;
+export const maxPdfReadBytes = 32 * 1024 * 1024;
 
 export interface CreateMarkdownFileInput {
   name: string;

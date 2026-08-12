@@ -34,7 +34,10 @@ describe("WorkspaceDataProvider", () => {
     });
 
     expect(getSnapshot).toHaveBeenCalledWith({
+      cacheGeneration: 0,
+      cacheOwnerPath: "/workspace",
       cachePath: "/user-data/workspace-1.json",
+      fileTree: undefined,
       maxSearchFileBytes: 1024,
       workspaceId: "workspace-1",
       workspacePath: "/workspace"

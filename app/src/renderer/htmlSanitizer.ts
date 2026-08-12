@@ -1,9 +1,11 @@
 import DOMPurify from "dompurify";
 
+import { normalizeUrlForSecurity } from "../shared/urlSafety";
+
 // Markdown preview keeps normal http links as text navigation targets, but window-level opening is separately restricted to an https allowlist.
-const allowedPreviewUriPattern = /^(?!\/\/)(?:(?:https?|mailto):|#|\/|\.{0,2}\/|(?![a-z][a-z0-9+.-]*:)[^\s]*)/i;
-const allowedPreviewImageUriPattern = /^data:image\/(?:avif|bmp|gif|jpeg|png|svg\+xml|webp);base64,/i;
-const allowedSanitizedPreviewUriPattern = /^(?:data:image\/(?:avif|bmp|gif|jpeg|png|svg\+xml|webp);base64,|(?!\/\/)(?:(?:https?|mailto):|#|\/|\.{0,2}\/|(?![a-z][a-z0-9+.-]*:)[^\s]*))/i;
+const allowedPreviewUriPattern = /^(?![\s\S]*[\u0000-\u001f\u007f])(?!\/\/)(?:(?:https?|mailto):|#|\/|\.{0,2}\/|(?![a-z][a-z0-9+.-]*:)[^\s]*)/i;
+const allowedPreviewImageUriPattern = /^(?![\s\S]*[\u0000-\u001f\u007f])data:image\/(?:avif|bmp|gif|jpeg|png|svg\+xml|webp);base64,/i;
+const allowedSanitizedPreviewUriPattern = /^(?![\s\S]*[\u0000-\u001f\u007f])(?:data:image\/(?:avif|bmp|gif|jpeg|png|svg\+xml|webp);base64,|(?!\/\/)(?:(?:https?|mailto):|#|\/|\.{0,2}\/|(?![a-z][a-z0-9+.-]*:)[^\s]*))/i;
 
 const forbiddenEventAttributes = [
   "onabort",
@@ -85,7 +87,8 @@ export function sanitizeSvgHtml(svg: string): string {
 }
 
 export function isSafePreviewUrl(value: string): boolean {
-  return allowedPreviewUriPattern.test(value.trim());
+  const normalizedValue = normalizeUrlForSecurity(value);
+  return normalizedValue !== null && allowedPreviewUriPattern.test(normalizedValue);
 }
 
 function stripUnsafeMarkdownLinkText(html: string): string {
@@ -121,7 +124,7 @@ function stripUnsafePreviewImages(html: string, allowedImageSrcs: ReadonlySet<st
   for (const image of Array.from(template.content.querySelectorAll("img"))) {
     const src = image.getAttribute("src") ?? "";
 
-    if (!image.classList.contains("preview-image") || !allowedPreviewImageUriPattern.test(src) || !allowedImageSrcs.has(src)) {
+    if (!image.classList.contains("preview-image") || normalizeUrlForSecurity(src) === null || !allowedPreviewImageUriPattern.test(src) || !allowedImageSrcs.has(src)) {
       image.replaceWith(document.createTextNode(image.getAttribute("alt") ?? ""));
     }
   }
@@ -137,8 +140,9 @@ function stripUnsafePreviewLinks(html: string): string {
 
   for (const link of Array.from(template.content.querySelectorAll("a"))) {
     const href = link.getAttribute("href") ?? "";
+    const normalizedHref = normalizeUrlForSecurity(href);
 
-    if (/^(?:data|file|javascript):/i.test(href.trim())) {
+    if (normalizedHref === null || /^(?:data|file|javascript):/i.test(normalizedHref)) {
       link.replaceWith(...Array.from(link.childNodes));
     }
   }
@@ -155,6 +159,10 @@ function stripUnsafePreviewDataUris(html: string, allowedImageSrcs: ReadonlySet<
   for (const element of Array.from(template.content.querySelectorAll<HTMLElement>("*"))) {
     for (const attribute of Array.from(element.attributes)) {
       if (!/^(?:href|src|xlink:href)$/i.test(attribute.name) || !/^data:/i.test(attribute.value.trim())) continue;
+      if (normalizeUrlForSecurity(attribute.value) === null) {
+        element.removeAttribute(attribute.name);
+        continue;
+      }
       const isAllowedPreviewImage = element instanceof HTMLImageElement &&
         element.classList.contains("preview-image") &&
         allowedImageSrcs.has(attribute.value);

@@ -1,4 +1,4 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceState } from "../../shared/ipc";
@@ -41,6 +41,25 @@ describe("useWorkspaceSearchState", () => {
 
     await act(async () => second.resolve({ ok: true, value: { status: ["Beta"] } }));
     expect(result.current.frontmatterCandidates).toEqual({ status: ["Beta"] });
+  });
+
+  it("検索IPC transport rejection keeps an error snapshot for the active key", async () => {
+    const setWorkspaceError = vi.fn();
+    window.relic = makeRelicApi({
+      searchWorkspace: vi.fn().mockRejectedValue(new Error("secret transport detail"))
+    });
+    const { result } = renderHook(() => useWorkspaceSearchState({
+      setWorkspaceError,
+      userDefinedFields: [],
+      workspaceState: workspace("workspace-a")
+    }));
+
+    act(() => result.current.setSearchQuery("needle"));
+    await waitFor(() => expect(result.current.searchError).toBeTruthy(), { timeout: 1000 });
+
+    expect(result.current.searchResults).toEqual([]);
+    expect(result.current.searchError).toBeTruthy();
+    expect(result.current.searchError).not.toContain("secret transport detail");
   });
 });
 

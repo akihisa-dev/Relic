@@ -5,7 +5,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { readWorkspaceFileTree } from "./fileTree";
+import { readWorkspaceFileTree, WorkspaceFileTreeLimitError } from "./fileTree";
 
 describe("readWorkspaceFileTree", () => {
   const temporaryPaths: string[] = [];
@@ -160,6 +160,18 @@ describe("readWorkspaceFileTree", () => {
         type: "file"
       }
     ]);
+  });
+
+  it("過長な相対パスを明示的な上限エラーで拒否する", async () => {
+    const workspacePath = path.join(path.sep, "workspace");
+    const longName = `${"a".repeat(4096)}.md`;
+
+    await expect(readWorkspaceFileTree(workspacePath, {
+      async readdir(directoryPath) {
+        if (directoryPath === workspacePath) return [createDirectoryEntry(longName, "file")];
+        return [];
+      }
+    })).rejects.toBeInstanceOf(WorkspaceFileTreeLimitError);
   });
 });
 

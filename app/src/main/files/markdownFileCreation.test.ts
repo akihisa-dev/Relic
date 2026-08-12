@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -277,5 +277,121 @@ describe("importMarkdownFiles", () => {
       ok: false
     });
     await expect(readFile(path.join(workspacePath, "既存.md"), "utf8")).resolves.toBe("old");
+  });
+
+  it("複数ファイル追加の途中失敗では未変更の先行コピーだけを戻す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-workspace-"));
+    const sourcePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-source-"));
+    temporaryPaths.push(workspacePath, sourcePath);
+    const firstSource = path.join(sourcePath, "first.md");
+    const secondSource = path.join(sourcePath, "second.md");
+    await writeFile(firstSource, "first", "utf8");
+    await writeFile(secondSource, "second", "utf8");
+    const firstDestination = path.join(workspacePath, "first.md");
+
+    const result = await importMarkdownFiles(workspacePath, [firstSource, secondSource], "", {}, {
+      copyFile: async (source, destination, flags) => {
+        await copyFile(source, destination, flags);
+        if (source === secondSource) {
+          await writeFile(firstDestination, "edited", "utf8");
+          throw new Error("second copy failed");
+        }
+      }
+    });
+
+    expect(result).toMatchObject({
+      error: {
+        code: "FILE_IMPORT_FAILED",
+        recovery: { reasonCode: "IMPORT_CLEANUP_REQUIRED", remainingPaths: ["first.md"] }
+      },
+      ok: false
+    });
+    await expect(readFile(firstDestination, "utf8")).resolves.toBe("edited");
+  });
+
+  it("複数ファイル追加の途中で先行コピーがシンボリックリンクへ置換された場合は保持する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-workspace-"));
+    const sourcePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-source-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-outside-"));
+    temporaryPaths.push(workspacePath, sourcePath, outsidePath);
+    const firstSource = path.join(sourcePath, "first.md");
+    const secondSource = path.join(sourcePath, "second.md");
+    const outsideTarget = path.join(outsidePath, "outside.md");
+    const firstDestination = path.join(workspacePath, "first.md");
+    await writeFile(firstSource, "first", "utf8");
+    await writeFile(secondSource, "second", "utf8");
+    await writeFile(outsideTarget, "outside", "utf8");
+
+    const result = await importMarkdownFiles(workspacePath, [firstSource, secondSource], "", {}, {
+      copyFile: async (source, destination, flags) => {
+        await copyFile(source, destination, flags);
+        if (source === secondSource) {
+          await rm(firstDestination);
+          await symlink(outsideTarget, firstDestination);
+          throw new Error("second copy failed");
+        }
+      }
+    });
+
+    expect(result).toMatchObject({
+      error: {
+        code: "FILE_IMPORT_FAILED",
+        recovery: { reasonCode: "IMPORT_CLEANUP_REQUIRED", remainingPaths: ["first.md"] }
+      },
+      ok: false
+    });
+    await expect(readFile(firstDestination, "utf8")).resolves.toBe("outside");
+    await expect(readFile(outsideTarget, "utf8")).resolves.toBe("outside");
+  });
+
+  it("複数ファイル追加の通常失敗では先行コピーを安全に削除する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-workspace-"));
+    const sourcePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-source-"));
+    temporaryPaths.push(workspacePath, sourcePath);
+    const firstSource = path.join(sourcePath, "first.md");
+    const secondSource = path.join(sourcePath, "second.md");
+    await writeFile(firstSource, "first", "utf8");
+    await writeFile(secondSource, "second", "utf8");
+
+    const result = await importMarkdownFiles(workspacePath, [firstSource, secondSource], "", {}, {
+      copyFile: async (source, destination, flags) => {
+        if (source === secondSource) throw new Error("second copy failed");
+        await copyFile(source, destination, flags);
+      }
+    });
+
+    expect(result).toMatchObject({ error: { code: "FILE_IMPORT_FAILED" }, ok: false });
+    if (!result.ok) expect(result.error.recovery).toBeUndefined();
+    await expect(readFile(path.join(workspacePath, "first.md"), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("複数ファイル追加のクリーンアップ失敗を復旧要求として返す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-workspace-"));
+    const sourcePath = await mkdtemp(path.join(os.tmpdir(), "relic-import-source-"));
+    temporaryPaths.push(workspacePath, sourcePath);
+    const firstSource = path.join(sourcePath, "first.md");
+    const secondSource = path.join(sourcePath, "second.md");
+    const firstDestination = path.join(workspacePath, "first.md");
+    await writeFile(firstSource, "first", "utf8");
+    await writeFile(secondSource, "second", "utf8");
+
+    const result = await importMarkdownFiles(workspacePath, [firstSource, secondSource], "", {}, {
+      copyFile: async (source, destination, flags) => {
+        if (source === secondSource) throw new Error("second copy failed");
+        await copyFile(source, destination, flags);
+      },
+      unlink: async () => {
+        throw new Error("cleanup failed");
+      }
+    });
+
+    expect(result).toMatchObject({
+      error: {
+        code: "FILE_IMPORT_FAILED",
+        recovery: { reasonCode: "IMPORT_CLEANUP_REQUIRED", remainingPaths: ["first.md"] }
+      },
+      ok: false
+    });
+    await expect(readFile(firstDestination, "utf8")).resolves.toBe("first");
   });
 });

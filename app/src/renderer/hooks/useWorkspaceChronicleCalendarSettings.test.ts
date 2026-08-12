@@ -50,6 +50,40 @@ describe("useWorkspaceChronicleCalendarSettings", () => {
     expect(result.current.calendarSettings).toEqual(before);
     expect(setWorkspaceError).toHaveBeenLastCalledWith("保存できませんでした。");
   });
+
+  it("保存IPC transport rejection rolls back without exposing the rejection", async () => {
+    const before: ChronicleCalendarSettings = {
+      baseCalendarName: "基準暦",
+      calendars: [],
+      visibleCalendarNames: ["基準暦"]
+    };
+    const next: ChronicleCalendarSettings = {
+      ...before,
+      calendars: [{ name: "別暦", range: null, yearOne: 100 }],
+      visibleCalendarNames: ["基準暦", "別暦"]
+    };
+    const setWorkspaceError = vi.fn();
+    window.relic = makeRelicApi({
+      getWorkspaceChronicleCalendarSettings: vi.fn().mockResolvedValue({ ok: true, value: before }),
+      saveWorkspaceChronicleCalendarSettings: vi.fn().mockRejectedValue(new Error("secret transport detail"))
+    });
+
+    const { result } = renderHook(() => useWorkspaceChronicleCalendarSettings({
+      onSaved: vi.fn(),
+      setWorkspaceError,
+      workspaceState: workspace("workspace-a")
+    }));
+
+    await act(async () => undefined);
+    act(() => result.current.handleSaveCalendarSettings(next));
+    expect(result.current.calendarSettings).toEqual(next);
+
+    await act(async () => undefined);
+
+    expect(result.current.calendarSettings).toEqual(before);
+    expect(setWorkspaceError).toHaveBeenCalled();
+    expect(setWorkspaceError).not.toHaveBeenCalledWith(expect.stringContaining("secret transport detail"));
+  });
 });
 
 function workspace(id: string): WorkspaceState {

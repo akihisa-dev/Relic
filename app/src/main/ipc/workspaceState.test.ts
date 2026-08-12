@@ -4,6 +4,7 @@ const dependencies = vi.hoisted(() => ({
   finishPerformanceMeasure: vi.fn(),
   getPath: vi.fn(),
   getWorkspaceFileIndexCachePath: vi.fn(),
+  getWorkspaceData: vi.fn(),
   readWorkspaceFileIndex: vi.fn(),
   readWorkspaceFileTree: vi.fn(),
   readWorkspaceSettings: vi.fn(),
@@ -19,8 +20,15 @@ vi.mock("../files/fileTree", () => ({
 }));
 
 vi.mock("../files/workspaceFileIndex", () => ({
+  defaultWorkspaceFileIndexMaxSearchFileBytes: 2 * 1024 * 1024,
   getWorkspaceFileIndexCachePath: dependencies.getWorkspaceFileIndexCachePath,
   readWorkspaceFileIndex: dependencies.readWorkspaceFileIndex
+}));
+
+vi.mock("../files/workspaceDataProvider", () => ({
+  workspaceDataProvider: {
+    get: dependencies.getWorkspaceData
+  }
 }));
 
 vi.mock("../files/performanceLog", () => ({
@@ -64,6 +72,15 @@ describe("buildWorkspaceState availability", () => {
       entries: [],
       records: [],
       stats: {}
+    });
+    dependencies.getWorkspaceData.mockResolvedValue({
+      options: {
+        fileIndex: {
+          entries: [],
+          records: [],
+          stats: {}
+        }
+      }
     });
     dependencies.readWorkspaceSettings.mockResolvedValue({ pinnedPaths: [] });
   });
@@ -123,7 +140,7 @@ describe("buildWorkspaceState availability", () => {
   it("索引だけ失敗した場合はファイル一覧と操作可能状態を維持する", async () => {
     const fileTree = [{ name: "Note", path: "Note.md", type: "file" as const }];
     dependencies.readWorkspaceFileTree.mockResolvedValueOnce(fileTree);
-    dependencies.readWorkspaceFileIndex.mockRejectedValueOnce(fileSystemError("EIO"));
+    dependencies.getWorkspaceData.mockRejectedValueOnce(fileSystemError("EIO"));
 
     const result = await buildWorkspaceState(settings);
     expect(result).toMatchObject({
@@ -135,14 +152,13 @@ describe("buildWorkspaceState availability", () => {
       fileIndex: [],
       fileTree
     });
-    expect(dependencies.readWorkspaceFileIndex).toHaveBeenCalledWith(
-      "/workspace",
-      {
-        cachePath: "/cache/index.json",
-        fileTree,
-        includeSearchContent: false
-      }
-    );
+    expect(dependencies.getWorkspaceData).toHaveBeenCalledWith({
+      fileTree,
+      maxSearchFileBytes: 2 * 1024 * 1024,
+      userDataPath: "/user-data",
+      workspaceId: "ws-1",
+      workspacePath: "/workspace"
+    });
     expect(dependencies.finishPerformanceMeasure).toHaveBeenCalledWith(
       "buildWorkspaceState",
       10,

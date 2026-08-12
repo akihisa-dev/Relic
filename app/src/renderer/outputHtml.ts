@@ -6,7 +6,12 @@ import { sanitizePreviewHtml, sanitizeSvgHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
 import { escapeHtml } from "./previewMarkdownModel";
 import { previewImageContextKey, resolvePreviewImages } from "./previewImageLoader";
-import type { OutputPdfOptions } from "../shared/ipc/output";
+import {
+  maxOutputDiagramCount,
+  maxOutputDiagramSourceChars,
+  maxPreviewMarkdownBytes,
+  type OutputPdfOptions
+} from "../shared/ipc/output";
 import { runWithConcurrency } from "./concurrency";
 import { outputCss } from "./outputCss";
 
@@ -29,6 +34,10 @@ export async function buildPreviewOutputHtml({
   workspacePath,
   workspaceRevision = 0
 }: BuildPreviewOutputHtmlInput): Promise<{ defaultFileName: string; html: string; pdfOptions?: OutputPdfOptions; title: string }> {
+  if (new Blob([content]).size > maxPreviewMarkdownBytes) {
+    throw new Error("Markdownが大きすぎるためPDFを生成できません。");
+  }
+  assertOutputDiagramLimits(content);
   const documentTitle = title?.trim() ||
     firstH1(content) ||
     outputFileNameFromPath(path) ||
@@ -47,7 +56,9 @@ export async function buildPreviewOutputHtml({
   document.body.append(root);
 
   try {
-    await resolvePreviewImages(root, previewImageContextKey(workspacePath, workspaceRevision));
+    await resolvePreviewImages(root, previewImageContextKey(workspacePath, workspaceRevision), () => true, {
+      rejectOnLimit: true
+    });
     await renderOutputDiagrams(root, t);
     normalizeOutputDiagramDom(root);
     const sanitizedBody = sanitizePreviewHtml(root.innerHTML, outputImageSrcs(root));
@@ -103,8 +114,35 @@ export function outputFileNameFromPath(path: string | null | undefined): string 
 
 const maxConcurrentDiagramRender = 2;
 
+/**
+ * Check the bounded output contract before Markdown parsing, DOM creation, or
+ * any diagram renderer is loaded. This keeps hostile-sized diagram input from
+ * consuming renderer time merely to discover a limit violation later.
+ */
+function assertOutputDiagramLimits(content: string): void {
+  const fencedDiagram = /^ {0,3}(```|~~~)[ \t]*(mermaid|d2)(?:[ \t].*)?\r?\n([\s\S]*?)^ {0,3}\1[ \t]*$/gim;
+  let diagramCount = 0;
+  let sourceChars = 0;
+
+  for (const match of content.matchAll(fencedDiagram)) {
+    diagramCount += 1;
+    sourceChars += match[3].length;
+    if (diagramCount > maxOutputDiagramCount) {
+      throw new Error("図表が多すぎるためPDFを生成できません。");
+    }
+    if (sourceChars > maxOutputDiagramSourceChars) {
+      throw new Error("図表ソースが大きすぎるためPDFを生成できません。");
+    }
+  }
+}
+
 async function renderOutputDiagrams(root: ParentNode, t: Translator): Promise<void> {
   const diagrams = Array.from(root.querySelectorAll<HTMLElement>(".preview-diagram"));
+  if (diagrams.length > maxOutputDiagramCount) {
+    throw new Error("図表が多すぎるためPDFを生成できません。");
+  }
+
+  let sourceChars = 0;
 
   const renderTasks = diagrams.map((diagram) => async () => {
     const language = diagramLanguageFor(diagram.dataset.diagramLanguage);
@@ -114,6 +152,11 @@ async function renderOutputDiagrams(root: ParentNode, t: Translator): Promise<vo
       ? ""
       : decodeDiagramSourceAttribute(diagram.dataset.diagramSource);
     if (!source) return;
+
+    sourceChars += source.length;
+    if (sourceChars > maxOutputDiagramSourceChars) {
+      throw new Error("図表ソースが大きすぎるためPDFを生成できません。");
+    }
 
     await renderDiagramElement(diagram, language, source, t);
   });

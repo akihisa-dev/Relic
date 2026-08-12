@@ -1,5 +1,7 @@
 import type { BrowserWindow } from "electron";
 
+import { normalizeUrlForSecurity } from "../shared/urlSafety";
+
 interface WindowSecurityPolicy {
   isNavigationAllowed: (url: string) => boolean;
   onNavigationDenied?: (url: string) => void;
@@ -31,6 +33,7 @@ export function installWindowSecurityPolicy(
   };
 
   webContents.on("will-navigate", handleNavigation);
+  webContents.on("will-redirect", handleNavigation);
   webContents.on("will-attach-webview", denyWebview);
   webContents.session.setPermissionRequestHandler((_webContents, _permission, callback) => {
     callback(false);
@@ -40,6 +43,7 @@ export function installWindowSecurityPolicy(
     if (!installed) return;
     installed = false;
     webContents.removeListener("will-navigate", handleNavigation);
+    webContents.removeListener("will-redirect", handleNavigation);
     webContents.removeListener("will-attach-webview", denyWebview);
     window.removeListener("closed", cleanup);
   };
@@ -48,8 +52,11 @@ export function installWindowSecurityPolicy(
 }
 
 export function isAllowedExternalUrl(url: string): boolean {
+  const normalizedUrl = normalizeUrlForSecurity(url);
+  if (normalizedUrl === null) return false;
+
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(normalizedUrl);
 
     return parsed.protocol === "https:" && (
       parsed.hostname === "github.com" ||
@@ -61,14 +68,16 @@ export function isAllowedExternalUrl(url: string): boolean {
 }
 
 export function isAllowedPackagedAppNavigation(url: string, rendererIndexUrl: string): boolean {
+  if (normalizeUrlForSecurity(url) === null) return false;
   return url === rendererIndexUrl || url.startsWith(`${rendererIndexUrl}#`);
 }
 
 export function isAllowedDevelopmentNavigation(url: string, allowedUrls: string[]): boolean {
-  if (url.includes("\\")) return false;
+  const normalizedUrl = normalizeUrlForSecurity(url);
+  if (normalizedUrl === null || normalizedUrl.includes("\\")) return false;
 
   try {
-    const target = new URL(url);
+    const target = new URL(normalizedUrl);
     if (target.username !== "" || target.password !== "") return false;
 
     return allowedUrls.some((allowedUrl) => {

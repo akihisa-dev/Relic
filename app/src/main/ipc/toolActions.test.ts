@@ -21,6 +21,7 @@ import { createTranslator } from "../../shared/i18n";
 import { resolveWikiLinks } from "../../shared/links";
 import { writeAppSettings } from "../settings/appSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
+import { maxToolCandidateReadBytes } from "./toolCandidateCollectors";
 import {
   generateTagIndex,
   generateTableOfContents,
@@ -759,6 +760,53 @@ describe("toolActions", () => {
     await expect(readFile(path.join(workspacePath, "Tags.md"), "utf8")).rejects.toMatchObject({
       code: "ENOENT"
     });
+  });
+
+  it("結合はstat上限超過時に本文を読み込まない", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await writeFile(path.join(workspacePath, "oversize.md"), "visible", "utf8");
+    const readFileOperation = vi.fn().mockResolvedValue("should not be read");
+    await expect(mergeFiles(
+      {
+        filterType: "all",
+        filterValue: "",
+        insertFilenameHeading: false,
+        outputFolder: ".",
+        outputName: "Merged",
+        sortBy: "name",
+        target: { kind: "workspace" }
+      },
+      {
+        readFile: readFileOperation,
+        async stat(filePath) {
+          const current = await stat(filePath);
+          return path.basename(filePath) === "oversize.md"
+            ? { ...current, size: maxToolCandidateReadBytes + 1 }
+            : current;
+        }
+      }
+    )).rejects.toMatchObject({ code: "TOOL_CANDIDATE_LIMIT" });
+    expect(readFileOperation).not.toHaveBeenCalled();
+  });
+
+  it("タグ別索引はstat後の本文肥大化を拒否する", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await writeFile(path.join(workspacePath, "grown.md"), "visible", "utf8");
+    const readFileOperation = vi.fn().mockImplementation((filePath: string, encoding: BufferEncoding) =>
+      path.basename(filePath) === "grown.md"
+        ? Promise.resolve("x".repeat(maxToolCandidateReadBytes + 1))
+        : readFile(filePath, encoding)
+    );
+    await expect(generateTagIndex(
+      {
+        includeUntagged: true,
+        outputFolder: ".",
+        outputName: "Tags",
+        sortBy: "name",
+        target: { kind: "workspace" }
+      },
+      { readFile: readFileOperation }
+    )).rejects.toMatchObject({ code: "TOOL_CANDIDATE_LIMIT" });
   });
 
   async function prepareActiveWorkspace(): Promise<{

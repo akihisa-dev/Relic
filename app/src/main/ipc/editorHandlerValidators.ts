@@ -1,6 +1,7 @@
-import type { EditorSettings, WindowCloseResponseInput } from "../../shared/ipc";
+import { editorClipboardMaxTextLength, type EditorSettings, type WindowCloseResponseInput } from "../../shared/ipc";
 
-export const editorClipboardMaxTextLength = 1_000_000;
+export { editorClipboardMaxTextLength } from "../../shared/ipc";
+
 export const windowCloseRequestIdMaxLength = 256;
 
 export function isCopyEditorTextToClipboardInput(input: unknown): input is { text: string } {

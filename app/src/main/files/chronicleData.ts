@@ -51,6 +51,7 @@ export function collectChartEntriesForFrontmatterData(
 }
 
 export function extractFrontmatterCategory(data: Record<string, unknown>): string | null {
+  if (!Object.prototype.hasOwnProperty.call(data, "category")) return null;
   const value = data.category;
   if (typeof value !== "string") return null;
 

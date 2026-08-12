@@ -5,6 +5,7 @@ import {
   childMotionPathsForAppearingFolder,
   buildVisibleFileTreeRows,
   countFilesInFolder,
+  shouldSuppressFileTreeOpeningAnimation,
   shouldUseSelectedFileTreeItems,
   type FileTreeMoveItem
 } from "../fileTreeModel";
@@ -22,7 +23,6 @@ export type { FileTreeActions, FileTreeItemProps, FileTreeProps } from "../fileT
 
 const defaultSelectedItems: FileTreeMoveItem[] = [];
 const defaultSelectedPaths = new Set<string>();
-const largeFileTreeRowThreshold = 1000;
 const initialFolderFileLimit = 10;
 export const FileTreeItem = memo(function FileTreeItem({
   actions: providedActions,
@@ -308,7 +308,7 @@ export const FileTree = memo(function FileTree({
     () => buildVisibleFileTreeRows(nodes, { pinnedPaths }),
     [nodes, pinnedPaths]
   );
-  const isLargeTree = isRoot && visibleRows.length >= largeFileTreeRowThreshold;
+  const isLargeTree = shouldSuppressFileTreeOpeningAnimation(isRoot, visibleRows.length);
   const effectiveSuppressOpeningAnimation = suppressOpeningAnimation || isLargeTree;
   const effectiveOpeningFilePath = effectiveSuppressOpeningAnimation ? null : openingFilePath;
   const actions = useMemo(() => (

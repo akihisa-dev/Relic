@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { ChronicleCalendarSettings } from "../../shared/chronicleCalendar";
 import type { FrontmatterCategoryChoice, WorkspaceChart } from "../../shared/ipc";
 import { preloadWorkspaceGraph } from "../graph/workspaceGraphLoader";
+import type { WorkspaceResourceRequest } from "../workspaceResourceLoader";
 import { useEditorStore, type PaneId } from "../store/editorStore";
 import {
   LazyCardView,
@@ -38,6 +39,34 @@ const defaultChroniclePaneViewState = (workspaceId: string): ChroniclePaneViewSt
   railCollapsed: false,
   workspaceId
 });
+
+type SphereViewLoader = () => Promise<unknown>;
+
+/**
+ * Schedule non-critical chart warm-up work while keeping it owned by the
+ * effect that requested it. The module import itself cannot be cancelled, so
+ * its continuation checks the effect lifetime before starting graph I/O.
+ */
+export function scheduleAppChartTabPreload(
+  request: WorkspaceResourceRequest,
+  loadSphereView: SphereViewLoader = () => import("../components/SphereView"),
+  preloadGraph: (request: WorkspaceResourceRequest) => void = preloadWorkspaceGraph
+): () => void {
+  let active = true;
+  const timer = window.setTimeout(() => {
+    if (!active) return;
+    void loadSphereView()
+      .then(() => {
+        if (active) preloadGraph(request);
+      })
+      .catch(() => undefined);
+  }, 0);
+
+  return () => {
+    active = false;
+    window.clearTimeout(timer);
+  };
+}
 
 export function useAppChartTabRenderer({
   calendarSettings,
@@ -75,11 +104,7 @@ export function useAppChartTabRenderer({
 
   useEffect(() => {
     if (workspaceId === "none") return;
-    const timer = window.setTimeout(() => {
-      void import("../components/SphereView");
-      preloadWorkspaceGraph({ revision: workspaceDataRevision, workspaceId });
-    }, 0);
-    return () => window.clearTimeout(timer);
+    return scheduleAppChartTabPreload({ revision: workspaceDataRevision, workspaceId });
   }, [workspaceDataRevision, workspaceId]);
 
   useEffect(() => {

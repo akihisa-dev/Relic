@@ -189,8 +189,10 @@ export function useSidebarFileInteractions({
       } else {
         setWorkspaceError(result.error.message);
       }
+    }).catch(() => {
+      if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
     });
-  }, [beginWorkspaceRequest, handleOpenFile, markOpeningFile, onFileOpenMotion, openFileInPane, openImagePath, openPdfPath, scrollToLine, setTabActive, setWorkspaceError]);
+  }, [beginWorkspaceRequest, handleOpenFile, markOpeningFile, onFileOpenMotion, openFileInPane, openImagePath, openPdfPath, scrollToLine, setTabActive, setWorkspaceError, t]);
 
   const handleCreateFileFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
     void event;

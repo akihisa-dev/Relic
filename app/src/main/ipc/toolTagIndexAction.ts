@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import type { GenerateTagIndexInput } from "../../shared/ipc";
 import { createTranslator, type Translator } from "../../shared/i18n";
 import { fail, type RelicResult } from "../../shared/result";
@@ -8,6 +6,8 @@ import { mapWithConcurrency } from "../files/concurrency";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import {
   collectTagIndexFiles,
+  readToolCandidateContent,
+  ToolCandidateLimitError,
   type FileCandidate,
   type ToolActionFileOperations
 } from "./toolCandidateCollectors";
@@ -40,13 +40,15 @@ export async function generateTagIndex(
 
   const wikiLinkForPath = createWikiLinkFormatter(collectMarkdownPathsFromTree(fileTree));
   const grouped = new Map<string, FileCandidate[]>();
+  const readBudget = { actualAggregateBytes: 0, statAggregateBytes: 0 };
   await mapWithConcurrency(collected, maxConcurrentToolReads, async (file) => {
     try {
-      const content = await fileOperations.readFile(path.join(workspacePath, file.relPath), "utf-8");
+      const content = await readToolCandidateContent(workspacePath, file, fileOperations, readBudget);
       const tags = parseMarkdownTags(content).frontmatterTags;
       const targetTags = tags.length > 0 ? tags : input.includeUntagged ? [t("tools.untagged")] : [];
       for (const tag of targetTags) grouped.set(tag, [...(grouped.get(tag) ?? []), file]);
-    } catch {
+    } catch (error) {
+      if (error instanceof ToolCandidateLimitError) throw error;
       return;
     }
   });

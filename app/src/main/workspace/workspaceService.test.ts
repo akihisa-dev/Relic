@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rename as fsRename, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -407,6 +407,98 @@ describe("workspaceService", () => {
       }
     });
     await expect(stat(nextWorkspace.path)).resolves.toBeTruthy();
+  });
+
+  it("大小文字変更の移動先失敗を元のフォルダへ補償する", async () => {
+    const parentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
+    temporaryPaths.push(parentPath);
+    const workspacePath = path.join(parentPath, "Relic Notes");
+    await mkdir(workspacePath);
+    const workspace = createWorkspaceSummary(workspacePath);
+    const nextWorkspace = createWorkspaceSummary(path.join(parentPath, "relic notes"));
+    const settings = { ...baseSettings, lastWorkspaceId: workspace.id, workspaces: [workspace] };
+    const sourceStats = await stat(workspacePath);
+    vi.spyOn(Date, "now").mockReturnValue(12345);
+    let renameCall = 0;
+    const fileOperations = {
+      stat: async (candidatePath: string) => candidatePath === nextWorkspace.path
+        ? sourceStats
+        : stat(candidatePath),
+      rename: async (sourcePath: string, destinationPath: string) => {
+        renameCall += 1;
+        if (renameCall === 2) throw new Error("destination changed");
+        return fsRename(sourcePath, destinationPath);
+      }
+    };
+
+    const result = await renameWorkspaceRegistration(
+      settings,
+      workspace.id,
+      "relic notes",
+      fileOperations
+    );
+
+    expect(result).toMatchObject({
+      error: {
+        recovery: {
+          currentPath: workspacePath,
+          oldPath: workspacePath,
+          reason: "rollback-completed",
+          status: "rolled-back"
+        }
+      },
+      ok: false
+    });
+    await expect(stat(workspacePath)).resolves.toBeTruthy();
+  });
+
+  it("大小文字変更の補償失敗では隠し一時フォルダを現在位置として返す", async () => {
+    const parentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
+    temporaryPaths.push(parentPath);
+    const workspacePath = path.join(parentPath, "Relic Notes");
+    await mkdir(workspacePath);
+    const workspace = createWorkspaceSummary(workspacePath);
+    const nextWorkspace = createWorkspaceSummary(path.join(parentPath, "relic notes"));
+    const settings = { ...baseSettings, lastWorkspaceId: workspace.id, workspaces: [workspace] };
+    const sourceStats = await stat(workspacePath);
+    vi.spyOn(Date, "now").mockReturnValue(12345);
+    let renameCall = 0;
+    const fileOperations = {
+      stat: async (candidatePath: string) => candidatePath === nextWorkspace.path
+        ? sourceStats
+        : stat(candidatePath),
+      rename: async (sourcePath: string, destinationPath: string) => {
+        renameCall += 1;
+        if (renameCall === 2 || renameCall === 3) throw new Error("rename failed");
+        return fsRename(sourcePath, destinationPath);
+      }
+    };
+
+    const result = await renameWorkspaceRegistration(
+      settings,
+      workspace.id,
+      "relic notes",
+      fileOperations
+    );
+    const temporaryPath = path.join(
+      parentPath,
+      `.relic-rename-${nextWorkspace.id}-${Date.now()}`
+    );
+
+    expect(result).toMatchObject({
+      error: {
+        recovery: {
+          currentPath: temporaryPath,
+          oldPath: workspacePath,
+          reason: "rollback-failed",
+          settingsMigration: { status: "not-started" },
+          status: "recovery-required"
+        }
+      },
+      ok: false
+    });
+    await expect(stat(temporaryPath)).resolves.toBeTruthy();
+    await expect(stat(workspacePath)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("ワークスペース名変更用の一時フォルダ名候補が上限まで埋まっている場合は停止する", async () => {

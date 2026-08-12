@@ -30,6 +30,18 @@ import {
 } from "../test/rendererTestUtils";
 import { useEditorStore } from "./store/editorStore";
 
+// App file-tab assertions only cover CodeMirror's diagram block discovery and
+// its edit affordance.  SVG generation is exercised by diagramPreview tests;
+// keep this integration suite independent from Mermaid/D2's browser-only
+// measurement APIs (which jsdom does not implement).
+vi.mock("./diagramPreview", async () => {
+  const actual = await vi.importActual<typeof import("./diagramPreview")>("./diagramPreview");
+  return {
+    ...actual,
+    renderDiagramElement: vi.fn().mockResolvedValue(null)
+  };
+});
+
 describe("App file tabs", () => {
   beforeAll(installMatchMediaMock);
 

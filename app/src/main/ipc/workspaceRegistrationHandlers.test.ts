@@ -23,8 +23,11 @@ const dependencies = vi.hoisted(() => ({
   removeWorkspaceRegistration: vi.fn(),
   removeWorkspaceSettings: vi.fn(),
   renameWorkspaceRegistration: vi.fn(),
+  readFileSystemEntryIdentity: vi.fn(),
+  rollbackRenamedDirectoryWithoutOverwrite: vi.fn(),
   rm: vi.fn(),
   syncWorkspaceWatcher: vi.fn(),
+  transitionWorkspaceFileIndexCacheOwner: vi.fn(),
   updateAppSettings: vi.fn(),
   updateWorkspaceSettings: vi.fn(),
 }));
@@ -55,6 +58,15 @@ vi.mock("../i18n", async () => {
 
 vi.mock("../files/workspaceDataInvalidation", () => ({
   invalidateWorkspaceData: dependencies.invalidateWorkspaceData,
+}));
+
+vi.mock("../files/workspaceFileIndexCache", () => ({
+  transitionWorkspaceFileIndexCacheOwner: dependencies.transitionWorkspaceFileIndexCacheOwner,
+}));
+
+vi.mock("../files/renameOperations", () => ({
+  readFileSystemEntryIdentity: dependencies.readFileSystemEntryIdentity,
+  rollbackRenamedDirectoryWithoutOverwrite: dependencies.rollbackRenamedDirectoryWithoutOverwrite,
 }));
 
 vi.mock("../settings/appSettings", () => ({
@@ -208,7 +220,10 @@ describe("registerWorkspaceRegistrationHandlers", () => {
     dependencies.prepareWorkspace.mockResolvedValue(undefined);
     dependencies.mkdir.mockResolvedValue(undefined);
     dependencies.removeWorkspaceSettings.mockResolvedValue(undefined);
+    dependencies.readFileSystemEntryIdentity.mockResolvedValue({ dev: 1, ino: 1, kind: "directory" });
+    dependencies.rollbackRenamedDirectoryWithoutOverwrite.mockResolvedValue({ ok: true });
     dependencies.rm.mockResolvedValue(undefined);
+    dependencies.transitionWorkspaceFileIndexCacheOwner.mockResolvedValue(1);
 
     registerWorkspaceRegistrationHandlers();
   });
@@ -231,6 +246,33 @@ describe("registerWorkspaceRegistrationHandlers", () => {
     expect(dependencies.invalidateWorkspaceData).toHaveBeenCalledWith(workspaceOne.id);
     expect(dependencies.buildWorkspaceState).toHaveBeenCalledWith(baseSettings);
     expect(result).toMatchObject({
+      error: { code: "WORKSPACE_REFRESH_STALE" },
+      ok: false
+    });
+    expect(dependencies.syncWorkspaceWatcher).not.toHaveBeenCalled();
+  });
+
+  it("リフレッシュ中に同じIDのワークスペースが再指定された場合は古い結果を返さない", async () => {
+    let resolveBuild!: (value: ReturnType<typeof stateFor>) => void;
+    dependencies.buildWorkspaceState.mockReturnValueOnce(new Promise((resolve) => {
+      resolveBuild = resolve;
+    }));
+    dependencies.readAppSettings
+      .mockResolvedValueOnce(baseSettings)
+      .mockResolvedValueOnce({
+        ...baseSettings,
+        workspaces: baseSettings.workspaces.map((workspace) => (
+          workspace.id === workspaceOne.id
+            ? { ...workspace, name: "Relinked", path: "/workspaces/relinked" }
+            : workspace
+        ))
+      });
+
+    const refresh = handlerFor(refreshWorkspaceChannel)({}, { workspaceId: workspaceOne.id });
+    await vi.waitFor(() => expect(dependencies.buildWorkspaceState).toHaveBeenCalledOnce());
+    resolveBuild(stateFor());
+
+    await expect(refresh).resolves.toMatchObject({
       error: { code: "WORKSPACE_REFRESH_STALE" },
       ok: false
     });
@@ -332,6 +374,10 @@ describe("registerWorkspaceRegistrationHandlers", () => {
     const updateWorkspacePath = dependencies.updateWorkspaceSettings.mock.calls.at(-1)?.[2];
     expect(updateWorkspacePath?.({ pinnedPaths: [], workspacePath: workspaceOne.path }))
       .toMatchObject({ workspacePath: relinkedPath });
+    expect(dependencies.transitionWorkspaceFileIndexCacheOwner).toHaveBeenCalledWith(
+      "/user-data/workspace-indexes/workspace-1.json",
+      relinkedPath
+    );
     const savedSettings = dependencies.buildWorkspaceState.mock.calls.at(-1)?.[0];
     expect(savedSettings).toMatchObject({
       lastWorkspaceId: workspaceOne.id,
@@ -341,6 +387,56 @@ describe("registerWorkspaceRegistrationHandlers", () => {
       ]
     });
     expect(result).toMatchObject({ ok: true });
+  });
+
+  it("relinkのworkspace settings保存失敗を成功扱いにせず、app settingsを書き込まない", async () => {
+    electronMock.showOpenDialog.mockResolvedValueOnce({
+      canceled: false,
+      filePaths: ["/workspaces/relinked"]
+    });
+    dependencies.createWorkspaceSummary.mockReturnValueOnce({
+      id: "path-derived-id",
+      name: "relinked",
+      path: "/workspaces/relinked"
+    });
+    dependencies.updateWorkspaceSettings.mockRejectedValueOnce(new Error("settings rejected"));
+
+    const result = await handlerFor(relinkWorkspaceChannel)(
+      {},
+      { workspaceId: workspaceOne.id }
+    );
+
+    expect(result).toMatchObject({
+      error: { code: "WORKSPACE_RELINK_FAILED", recovery: { status: "rolled-back" } },
+      ok: false
+    });
+    expect(dependencies.updateAppSettings).not.toHaveBeenCalled();
+    expect(dependencies.invalidateWorkspaceData).not.toHaveBeenCalled();
+  });
+
+  it("relinkのapp settings保存失敗ではworkspace settingsを補償する", async () => {
+    electronMock.showOpenDialog.mockResolvedValueOnce({
+      canceled: false,
+      filePaths: ["/workspaces/relinked"]
+    });
+    dependencies.createWorkspaceSummary.mockReturnValueOnce({
+      id: "path-derived-id",
+      name: "relinked",
+      path: "/workspaces/relinked"
+    });
+    dependencies.updateAppSettings.mockRejectedValueOnce(new Error("app settings rejected"));
+
+    const result = await handlerFor(relinkWorkspaceChannel)(
+      {},
+      { workspaceId: workspaceOne.id }
+    );
+
+    expect(result).toMatchObject({
+      error: { code: "WORKSPACE_RELINK_FAILED", recovery: { status: "rolled-back" } },
+      ok: false
+    });
+    expect(dependencies.updateWorkspaceSettings).toHaveBeenCalledTimes(1);
+    expect(dependencies.invalidateWorkspaceData).not.toHaveBeenCalled();
   });
 
   it("新規フォルダを作成してから登録・有効化する", async () => {
@@ -524,11 +620,14 @@ describe("registerWorkspaceRegistrationHandlers", () => {
       expect.any(Function),
     );
     const migrate = dependencies.updateWorkspaceSettings.mock.calls[0][2];
-    expect(migrate({ pinnedPaths: [] })).toBe(migratedSettings);
-    expect(dependencies.removeWorkspaceSettings).toHaveBeenCalledWith(
-      "/user-data",
-      workspaceOne.id,
-    );
+    await expect(migrate({ pinnedPaths: [] })).resolves.toMatchObject({
+      ...migratedSettings,
+      workspacePath: workspaceTwo.path
+    });
+    // The mocked user-data folder has no old settings file; safe cleanup is
+    // intentionally a no-op rather than deleting a path that could appear
+    // concurrently.
+    expect(dependencies.removeWorkspaceSettings).not.toHaveBeenCalled();
   });
 
   it("IDが変わらないrenameでは設定移行を行わない", async () => {

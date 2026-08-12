@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -109,5 +109,37 @@ describe("unlinkedReferences", () => {
       ok: false
     });
     await expect(readFile(path.join(workspacePath, "source.md"), "utf8")).resolves.toBe("Changed");
+  });
+
+  it("書き込み直前の外部変更を検知して古い候補を上書きしない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-unlinked-references-conflict-"));
+    temporaryPaths.push(workspacePath);
+    const sourcePath = path.join(workspacePath, "source.md");
+    await writeFile(path.join(workspacePath, "Target.md"), "# Target", "utf8");
+    await writeFile(sourcePath, "Target", "utf8");
+
+    let statCalls = 0;
+    const result = await applyUnlinkedReference(workspacePath, {
+      from: 0,
+      matchText: "Target",
+      sourcePath: "source.md",
+      targetPath: "Target.md",
+      to: 6
+    }, {
+      readFile,
+      stat: async (filePath) => {
+        const current = await stat(filePath);
+        statCalls += 1;
+        if (statCalls === 1) await writeFile(sourcePath, "external", "utf8");
+        return current;
+      },
+      writeTextFile: async (filePath, content) => writeFile(filePath, content, "utf8")
+    });
+
+    expect(result).toMatchObject({
+      error: { code: "UNLINKED_REFERENCE_STALE" },
+      ok: false
+    });
+    await expect(readFile(sourcePath, "utf8")).resolves.toBe("external");
   });
 });

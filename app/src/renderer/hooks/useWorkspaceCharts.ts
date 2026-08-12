@@ -8,6 +8,7 @@ import type {
 } from "../../shared/ipc";
 import { relicApiContractVersion } from "../../shared/ipc";
 import { normalizeWorkspaceCharts } from "../chartData";
+import { useT } from "../i18n";
 import { useAsyncRequestGuard } from "./useAsyncRequestGuard";
 
 interface UseWorkspaceChartsInput {
@@ -24,6 +25,7 @@ export function useWorkspaceCharts({
   charts: WorkspaceChart[];
   reloadCharts: () => Promise<boolean>;
 } {
+  const t = useT();
   const workspaceId = workspaceState?.activeWorkspace?.id ?? null;
   const [snapshot, setSnapshot] = useState<{ charts: WorkspaceChart[]; workspaceId: string } | null>(null);
   const beginRequest = useAsyncRequestGuard([workspaceId]);
@@ -41,18 +43,25 @@ export function useWorkspaceCharts({
       return false;
     }
 
-    const result = await client.getWorkspaceCharts();
-    if (!isCurrentRequest()) return false;
+    try {
+      const result = await client.getWorkspaceCharts();
+      if (!isCurrentRequest()) return false;
 
-    if (result.ok) {
-      setSnapshot({ charts: normalizeWorkspaceCharts(result.value), workspaceId });
-      return true;
-    } else {
+      if (result.ok) {
+        setSnapshot({ charts: normalizeWorkspaceCharts(result.value), workspaceId });
+        return true;
+      } else {
+        setSnapshot({ charts: [], workspaceId });
+        setWorkspaceError(result.error.message);
+        return false;
+      }
+    } catch {
+      if (!isCurrentRequest()) return false;
       setSnapshot({ charts: [], workspaceId });
-      setWorkspaceError(result.error.message);
+      setWorkspaceError(t("errors.operationFailed"));
       return false;
     }
-  }, [beginRequest, setWorkspaceError, workspaceId]);
+  }, [beginRequest, setWorkspaceError, t, workspaceId]);
 
   useEffect(() => {
     if (!hasOpenChart) return;

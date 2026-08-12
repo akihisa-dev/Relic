@@ -2,9 +2,15 @@ import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/pr
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { readLinkUpdateImpact, updateLinksForFileRename, updateLinksForFolderRename } from "./linkUpdater";
+import {
+  maxLinkUpdateAggregateReadBytes,
+  maxLinkUpdateReadBytes,
+  readLinkUpdateImpact,
+  updateLinksForFileRename,
+  updateLinksForFolderRename
+} from "./linkUpdater";
 
 describe("updateLinksForFileRename", () => {
   const temporaryPaths: string[] = [];
@@ -445,6 +451,78 @@ describe("updateLinksForFileRename", () => {
     });
     await expect(readFile(firstPath, "utf8")).resolves.toBe("[[new]]");
     await expect(readFile(secondPath, "utf8")).resolves.toBe("[[old]]");
+  });
+});
+
+describe("link update read budgets", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(temporaryPaths.splice(0).map((p) => rm(p, { force: true, recursive: true })));
+  });
+
+  it("大きすぎる対象をreadFile前に拒否し、影響計算で黙ってskipしない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-budget-"));
+    temporaryPaths.push(ws);
+    await writeFile(path.join(ws, "source.md"), "[[old]]", "utf8");
+    const read = vi.fn().mockResolvedValue("[[old]]");
+    const statOperation = vi.fn().mockResolvedValue({ isFile: () => true, size: maxLinkUpdateReadBytes + 1 });
+
+    const result = await readLinkUpdateImpact(ws, "file", "old.md", "new.md", {
+      readFile: read,
+      stat: statOperation as never
+    });
+
+    expect(result).toMatchObject({ ok: false, error: { code: "LINK_UPDATE_READ_FAILED" } });
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it("合計サイズ上限を超える場合はreadFile前に失敗する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-budget-"));
+    temporaryPaths.push(ws);
+    await writeFile(path.join(ws, "first.md"), "[[old]]", "utf8");
+    await writeFile(path.join(ws, "second.md"), "[[old]]", "utf8");
+    const read = vi.fn().mockResolvedValue("[[old]]");
+    const statOperation = vi.fn().mockResolvedValue({
+      isFile: () => true,
+      size: Math.floor(maxLinkUpdateAggregateReadBytes / 2) + 1
+    });
+
+    const result = await readLinkUpdateImpact(ws, "file", "old.md", "new.md", {
+      readFile: read,
+      stat: statOperation as never
+    });
+
+    expect(result).toMatchObject({ ok: false, error: { code: "LINK_UPDATE_READ_FAILED" } });
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it("rename transactionは予算超過を空のrecoveryで失敗させる", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-budget-"));
+    temporaryPaths.push(ws);
+    await writeFile(path.join(ws, "source.md"), "[[old]]", "utf8");
+    const read = vi.fn().mockResolvedValue("[[old]]");
+    const write = vi.fn().mockResolvedValue(undefined);
+    const statOperation = vi.fn().mockResolvedValue({ size: maxLinkUpdateReadBytes + 1 });
+
+    const result = await updateLinksForFileRename(ws, "old.md", "new.md", {
+      readFile: read,
+      stat: statOperation as never,
+      writeTextFile: write
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: { code: "LINK_UPDATE_READ_FAILED" },
+      recovery: {
+        appliedPaths: [],
+        conflictedPaths: [],
+        rolledBackPaths: [],
+        rollbackFailedPaths: []
+      }
+    });
+    expect(read).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
   });
 });
 

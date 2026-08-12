@@ -58,7 +58,7 @@ describe("renderPreviewHtmlToPdf", () => {
     ).rejects.toThrow("load failed");
 
     expect(electronMock.printToPDF).not.toHaveBeenCalled();
-    expect(electronMock.webContentsRemoveListener).toHaveBeenCalledTimes(2);
+    expect(electronMock.webContentsRemoveListener).toHaveBeenCalledTimes(3);
     expect(electronMock.browserWindowRemoveListener).toHaveBeenCalledWith(
       "closed",
       expect.any(Function)
@@ -114,7 +114,8 @@ describe("renderPreviewHtmlToPdf", () => {
   });
 
   it("新規ウィンドウ、許可外ナビゲーション、webview、権限要求を拒否する", async () => {
-    await renderPreviewHtmlToPdf(validOutputHtml(), "Note");
+    const html = validOutputHtml();
+    await renderPreviewHtmlToPdf(html, "Note");
 
     const openHandler = electronMock.setWindowOpenHandler.mock.calls.at(-1)?.[0];
     expect(openHandler?.({ url: "https://example.com" })).toEqual({ action: "deny" });
@@ -127,8 +128,20 @@ describe("renderPreviewHtmlToPdf", () => {
     expect(blockedNavigation.preventDefault).toHaveBeenCalled();
 
     const dataNavigation = { preventDefault: vi.fn() };
-    navigateHandler?.(dataNavigation, "data:text/html;base64,PGh0bWw+PC9odG1sPg==");
+    const loadUrl = electronMock.loadURL.mock.calls.at(-1)?.[0] as string;
+    navigateHandler?.(dataNavigation, loadUrl);
     expect(dataNavigation.preventDefault).not.toHaveBeenCalled();
+
+    const secondDataNavigation = { preventDefault: vi.fn() };
+    navigateHandler?.(secondDataNavigation, loadUrl);
+    expect(secondDataNavigation.preventDefault).toHaveBeenCalled();
+
+    const redirectHandler = electronMock.webContentsOn.mock.calls
+      .filter(([channel]) => channel === "will-redirect")
+      .at(-1)?.[1];
+    const blockedRedirect = { preventDefault: vi.fn() };
+    redirectHandler?.(blockedRedirect, "https://example.com");
+    expect(blockedRedirect.preventDefault).toHaveBeenCalled();
 
     const attachWebviewHandler = electronMock.webContentsOn.mock.calls
       .filter(([channel]) => channel === "will-attach-webview")

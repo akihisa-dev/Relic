@@ -443,6 +443,7 @@ export function App(): ReactElement {
 
   const { handleSavePreviewAsPdf } = useAppPreviewOutputActions({
     activeFileTab: activeFileTabInFocusedPane,
+    beginWorkspaceRequest,
     setWorkspaceError,
     showToast,
     t,

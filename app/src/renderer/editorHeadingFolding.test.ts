@@ -33,6 +33,31 @@ describe("editorHeadingFolding", () => {
     expect(__getHeadingFoldVisitedNodesForTests()).toBeLessThan(30);
   });
 
+  it("未構築の構文木を対象範囲まで進めた戻り値から折りたたみ範囲を求める", () => {
+    const targetLine = 1000;
+    const lines = Array.from({ length: 5000 }, (_, index) => (
+      index === targetLine
+        ? "# Target"
+        : index === targetLine + 3
+          ? "# Next"
+          : `- **row ${index}** [x](url) \`code\``
+    ));
+    const content = lines.join("\n");
+    const state = EditorState.create({
+      doc: content,
+      extensions: markdown({ extensions: GFM })
+    });
+    const targetFrom = content.indexOf("# Target");
+    const scanTo = state.doc.line(targetLine + 2001).to;
+    expect(ensureSyntaxTree(state, scanTo, 5000)).not.toBeNull();
+
+    expect(headingFoldRange(state, targetFrom)).toEqual({
+      from: targetFrom + "# Target".length,
+      to: content.indexOf("# Next") - 1
+    });
+    expect(__getHeadingFoldVisitedNodesForTests()).toBeLessThan(100);
+  });
+
   it("コードフェンス内の見出しを折りたたみ対象にしない", async () => {
     const content = "```md\n# code heading\n```\n# Real\nbody";
     const state = EditorState.create({ doc: content, extensions: markdown({ extensions: GFM }) });

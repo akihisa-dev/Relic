@@ -1,9 +1,23 @@
-import { link, rename, stat, unlink } from "node:fs/promises";
+import { link, lstat, rename, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 
 const DEFAULT_MAX_RENAME_TEMPORARY_PATH_CANDIDATES = 1000;
 
 export type RenameDestinationCollision = "missing" | "same-entry" | "different-entry";
+
+export interface FileSystemEntryIdentity {
+  dev: number;
+  ino: number;
+  kind: "directory" | "file" | "other";
+}
+
+export type SafeDirectoryRollbackResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason: "source-occupied" | "destination-changed" | "destination-missing" | "rollback-failed";
+      error?: unknown;
+    };
 
 export async function getRenameDestinationCollision(
   sourcePath: string,
@@ -65,6 +79,57 @@ export async function rollbackRenamedFileWithoutOverwrite(
   }
 }
 
+export async function readFileSystemEntryIdentity(filePath: string): Promise<FileSystemEntryIdentity> {
+  const entry = await lstat(filePath);
+  return {
+    dev: entry.dev,
+    ino: entry.ino,
+    kind: entry.isDirectory() ? "directory" : entry.isFile() ? "file" : "other"
+  };
+}
+
+export async function rollbackRenamedDirectoryWithoutOverwrite(
+  currentPath: string,
+  originalPath: string,
+  expectedCurrent: FileSystemEntryIdentity
+): Promise<SafeDirectoryRollbackResult> {
+  let original: FileSystemEntryIdentity | undefined;
+  try {
+    original = await readFileSystemEntryIdentity(originalPath);
+  } catch (error) {
+    if (!isMissingFileError(error)) {
+      return { error, ok: false, reason: "rollback-failed" };
+    }
+    original = undefined;
+  }
+
+  if (original) {
+    return { ok: false, reason: "source-occupied" };
+  }
+
+  let current: FileSystemEntryIdentity;
+  try {
+    current = await readFileSystemEntryIdentity(currentPath);
+  } catch (error) {
+    return {
+      error,
+      ok: false,
+      reason: isMissingFileError(error) ? "destination-missing" : "rollback-failed"
+    };
+  }
+
+  if (!sameFileSystemEntryIdentity(current, expectedCurrent)) {
+    return { ok: false, reason: "destination-changed" };
+  }
+
+  try {
+    await rename(currentPath, originalPath);
+    return { ok: true };
+  } catch (error) {
+    return { error, ok: false, reason: "rollback-failed" };
+  }
+}
+
 async function findAvailableTemporaryPath(
   parentPath: string,
   prefix: string,
@@ -93,4 +158,11 @@ function isMissingFileError(error: unknown): boolean {
     "code" in error &&
     (error as { code?: string }).code === "ENOENT"
   );
+}
+
+function sameFileSystemEntryIdentity(
+  left: FileSystemEntryIdentity,
+  right: FileSystemEntryIdentity
+): boolean {
+  return left.dev === right.dev && left.ino === right.ino && left.kind === right.kind;
 }

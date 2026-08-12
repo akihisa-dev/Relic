@@ -1,7 +1,7 @@
 import { enqueueD2Render } from "./d2Renderer";
 import { buildDiagramError } from "./diagramErrorView";
 import { diagramLabel, diagramLanguageFor, type DiagramLanguage } from "./diagramLanguage";
-import { assertDiagramSourceWithinLimit, withDiagramRenderTimeout } from "./diagramLimits";
+import { assertDiagramSourceWithinLimit } from "./diagramLimits";
 import { initializeDiagramPanZoom, type DiagramRenderHandle } from "./diagramPanZoom";
 import { beginDiagramRender } from "./diagramRenderState";
 import { decodeDiagramSourceAttribute } from "./diagramSourceAttribute";
@@ -243,9 +243,7 @@ async function renderDiagramSvg(language: DiagramLanguage, source: string): Prom
     ? renderMermaidSvg(source)
     : enqueueD2Render(source);
 
-  return language === "mermaid"
-    ? withDiagramRenderTimeout(operation, language)
-    : operation;
+  return operation;
 }
 
 function applyDiagramSvgIntrinsicSize(diagram: HTMLElement): void {

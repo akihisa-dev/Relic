@@ -6,17 +6,44 @@ import { atomicWriteTextFile } from "../files/atomicWrite";
 export const privateSettingsDirectoryMode = 0o700;
 export const privateSettingsFileMode = 0o600;
 
-export async function ensurePrivateSettingsDirectory(directoryPath: string): Promise<void> {
-  await mkdir(directoryPath, { recursive: true, mode: privateSettingsDirectoryMode });
-  await chmodPrivate(directoryPath, privateSettingsDirectoryMode);
+interface SecureSettingsFileOperations {
+  chmod: (targetPath: string, mode: number) => Promise<void>;
+  mkdir: (directoryPath: string, options: { mode: number; recursive: true }) => Promise<string | undefined>;
 }
 
-export async function writePrivateSettingsTextFile(filePath: string, content: string): Promise<void> {
-  await ensurePrivateSettingsDirectory(path.dirname(filePath));
-  await atomicWriteTextFile(filePath, content, undefined, { mode: privateSettingsFileMode });
-  await chmodPrivate(filePath, privateSettingsFileMode);
+const defaultOperations: SecureSettingsFileOperations = {
+  chmod: (targetPath, mode) => chmod(targetPath, mode),
+  mkdir: (directoryPath, options) => mkdir(directoryPath, options)
+};
+
+export async function ensurePrivateSettingsDirectory(
+  directoryPath: string,
+  operations: SecureSettingsFileOperations = defaultOperations
+): Promise<void> {
+  await operations.mkdir(directoryPath, { recursive: true, mode: privateSettingsDirectoryMode });
+  await chmodPrivate(directoryPath, privateSettingsDirectoryMode, operations);
 }
 
-async function chmodPrivate(targetPath: string, mode: number): Promise<void> {
-  await chmod(targetPath, mode).catch(() => undefined);
+export async function writePrivateSettingsTextFile(
+  filePath: string,
+  content: string,
+  operations: SecureSettingsFileOperations = defaultOperations
+): Promise<void> {
+  await ensurePrivateSettingsDirectory(path.dirname(filePath), operations);
+  await atomicWriteTextFile(filePath, content, undefined, {
+    beforeRename: (temporaryPath) => chmodPrivate(temporaryPath, privateSettingsFileMode, operations),
+    mode: privateSettingsFileMode
+  });
+}
+
+async function chmodPrivate(
+  targetPath: string,
+  mode: number,
+  operations: SecureSettingsFileOperations
+): Promise<void> {
+  try {
+    await operations.chmod(targetPath, mode);
+  } catch {
+    throw new Error("設定ファイルの権限を保護できませんでした。");
+  }
 }

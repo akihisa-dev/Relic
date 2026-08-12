@@ -52,6 +52,26 @@ describe("parseFrontmatter", () => {
     expect(result.data).toEqual({});
     expect(result.body).toBe("本文");
   });
+
+  it("危険なprototypeキーを含むYAMLを無効として扱う", () => {
+    const result = parseFrontmatter("---\n__proto__:\n  polluted: true\n---\n本文");
+
+    expect(result.data).toEqual({});
+    expect(result.body).toContain("__proto__");
+  });
+
+  it("YAMLの過大な本文を解析せず無効として扱う", () => {
+    const content = `---\nvalue: ${"x".repeat(1_048_577)}\n---\n本文`;
+
+    expect(parseFrontmatter(content).data).toEqual({});
+  });
+
+  it("flow YAMLの深いnestingとalias展開後の深いkeyを無効にする", () => {
+    const nested = Array.from({ length: 66 }, (_, index) => `[${index}: `).join("") + "value" + "]".repeat(66);
+    expect(parseFrontmatter(`---\nvalue: ${nested}\n---\n本文`).data).toEqual({});
+    const deepKey = `${"  ".repeat(65)}__proto__: { polluted: true }`;
+    expect(parseFrontmatter(`---\nroot:\n${deepKey}\n---\n本文`).data).toEqual({});
+  });
 });
 
 describe("writeFrontmatter", () => {

@@ -7,6 +7,7 @@ import type {
   UnlinkedReferencesResult,
   WorkspaceTreeNode
 } from "../../shared/ipc";
+import { useT } from "../i18n";
 import type { Tab } from "../store/editorStore";
 
 interface UseUnlinkedReferencesStateInput {
@@ -32,6 +33,7 @@ export function useUnlinkedReferencesState({
   tabs,
   updateTabContent
 }: UseUnlinkedReferencesStateInput) {
+  const t = useT();
   const [state, setState] = useState<{ path: string | null; result: UnlinkedReferencesResult }>({
     path: null,
     result: emptyUnlinkedReferences
@@ -57,6 +59,12 @@ export function useUnlinkedReferencesState({
         } else {
           setState({ path: activeFilePath, result: emptyUnlinkedReferences });
           setWorkspaceError(result.error.message);
+        }
+      })
+      .catch(() => {
+        if (!canceled) {
+          setState({ path: activeFilePath, result: emptyUnlinkedReferences });
+          setWorkspaceError(t("errors.operationFailed"));
         }
       });
 
@@ -100,10 +108,12 @@ export function useUnlinkedReferencesState({
         setWorkspaceError(result.error.message);
         setRefreshKey((current) => current + 1);
       }
+    } catch {
+      setWorkspaceError(t("errors.operationFailed"));
     } finally {
       setApplyingReferenceKey(null);
     }
-  }, [openFileTabsByPath, setWorkspaceError, updateTabContent]);
+  }, [openFileTabsByPath, setWorkspaceError, t, updateTabContent]);
 
   return {
     applyingReferenceKey,

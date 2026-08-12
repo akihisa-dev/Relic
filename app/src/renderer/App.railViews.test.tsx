@@ -1,6 +1,16 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("./components/SphereView", () => ({
+  SphereView: () => null
+}));
+
+vi.mock("./hooks/appTabLazyViews", async (importOriginal) => {
+  const original = await importOriginal<typeof import("./hooks/appTabLazyViews")>();
+  const { TableView } = await import("./components/TableView");
+  return { ...original, LazyTableView: TableView };
+});
+
 import { defaultWorkspaceTablePreferences } from "../shared/ipc";
 import {
   installMatchMediaMock,

@@ -65,8 +65,31 @@ function hasRequiredOutputCsp(html: string): boolean {
   return Array.from(html.matchAll(/<meta\b[^>]*>/gi)).some(([tag]) => {
     const httpEquiv = /\bhttp-equiv\s*=\s*(["'])content-security-policy\1/i.test(tag);
     const content = /\bcontent\s*=\s*(["'])([\s\S]*?)\1/i.exec(tag)?.[2] ?? "";
-    return httpEquiv && /\bdefault-src\s+'none'/.test(content);
+    return httpEquiv && isExactOutputCsp(content);
   });
+}
+
+function isExactOutputCsp(content: string): boolean {
+  if (/[\u0000-\u001f\u007f]/.test(content)) return false;
+
+  const expected = new Map([
+    ["default-src", ["'none'"]],
+    ["style-src", ["'unsafe-inline'"]],
+    ["img-src", ["data:"]]
+  ]);
+  const directives = new Map<string, string[]>();
+  for (const rawDirective of content.split(";")) {
+    const tokens = rawDirective.trim().split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) continue;
+    const name = tokens[0]!.toLowerCase();
+    if (!expected.has(name) || directives.has(name)) return false;
+    directives.set(name, tokens.slice(1));
+  }
+
+  if (directives.size !== expected.size) return false;
+  return [...expected].every(([name, values]) =>
+    JSON.stringify(directives.get(name)) === JSON.stringify(values)
+  );
 }
 
 function hasUnsafeOutputHtml(html: string): boolean {
@@ -74,6 +97,8 @@ function hasUnsafeOutputHtml(html: string): boolean {
     /<meta\b[^>]*http-equiv\s*=\s*(["'])refresh\1/i.test(html) ||
     /\son[a-z]+\s*=/i.test(html) ||
     /\bstyle\s*=\s*(["'])[\s\S]*?(?:url\s*\(|@import)[\s\S]*?\1/i.test(html) ||
+    /\b(?:href|xlink:href)\s*=\s*(["'])\s*data:/i.test(html) ||
+    /\bsrc\s*=\s*(["'])\s*data:(?!image\/(?:avif|bmp|gif|jpeg|png|svg\+xml|webp);base64,)/i.test(html) ||
     /\b(?:href|src|xlink:href)\s*=\s*(["'])\s*(?:javascript|file):/i.test(html) ||
     /\b(?:href|src|xlink:href)\s*=\s*(?:javascript|file):/i.test(html);
 }

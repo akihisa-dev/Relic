@@ -43,6 +43,31 @@ describe("localizeIpcResult", () => {
     expect(localizeIpcResult(result, "ja", createTranslator("ja"))).toBe(result);
   });
 
+  it("英語へのローカライズでも復旧状態をそのまま保持する", () => {
+    const recovery = {
+      currentPath: "/tmp/.relic-rename-hidden",
+      oldPath: "/tmp/Notes",
+      reason: "rollback-failed",
+      settingsMigration: { status: "not-started" },
+      status: "recovery-required"
+    };
+    const result = localizeIpcResult(
+      fail("WORKSPACE_RENAME_FAILED", "ワークスペース名を変更できませんでした。", "diagnostic", recovery),
+      "en",
+      createTranslator("en")
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: "WORKSPACE_RENAME_FAILED",
+        details: "diagnostic",
+        message: "The operation could not be completed.",
+        recovery
+      }
+    });
+  });
+
   it("すでに翻訳済みのエラーは変更しない", () => {
     const result = fail("OUTPUT_PDF_FAILED", "PDFとして保存できませんでした。");
     expect(localizeIpcResult(result, "en", createTranslator("en"))).toBe(result);

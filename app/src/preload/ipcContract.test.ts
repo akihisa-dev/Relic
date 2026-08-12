@@ -52,7 +52,7 @@ describe("preload IPC contract", () => {
     expect(electronMock.exposeInMainWorld).toHaveBeenCalledTimes(1);
     expect(electronMock.exposeInMainWorld).toHaveBeenCalledWith("relic", api);
     expect(api.apiContractVersion).toBe(relicApiContractVersion);
-    expect(relicApiContractVersion).toBe(7);
+    expect(relicApiContractVersion).toBe(8);
     expect(Object.keys(api).sort()).toEqual([
       "apiContractVersion",
       ...Object.keys(relicIpcContract)

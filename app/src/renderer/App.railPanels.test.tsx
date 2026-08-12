@@ -21,6 +21,12 @@ import {
 } from "../test/rendererTestUtils";
 import { useEditorStore } from "./store/editorStore";
 
+vi.mock("./hooks/appTabLazyViews", async (importOriginal) => {
+  const original = await importOriginal<typeof import("./hooks/appTabLazyViews")>();
+  const { TableView } = await import("./components/TableView");
+  return { ...original, LazyTableView: TableView };
+});
+
 describe("App rail panels", () => {
   beforeAll(installMatchMediaMock);
 

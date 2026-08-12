@@ -23,6 +23,59 @@ export interface YamlFieldEntry {
 
 const topLevelYamlFieldPattern = /^([^#\s][^:]*):(?:\s|$)/;
 
+// Keep renderer-side validation bounded before js-yaml receives workspace/editor text.
+// These limits mirror the main-process frontmatter parser and intentionally do
+// not restrict otherwise valid unknown keys or scalar values within the budget.
+export const maxFrontmatterYamlBytes = 1 * 1024 * 1024;
+export const maxFrontmatterYamlLines = 20_000;
+export const maxFrontmatterYamlAliases = 100;
+export const maxFrontmatterYamlDepth = 64;
+
+function isUnsafeFrontmatterKey(key: string): boolean {
+  return key === "__proto__" || key === "prototype" || key === "constructor";
+}
+
+function containsUnsafeFrontmatterKey(value: unknown, depth = 0, seen = new WeakSet<object>()): boolean {
+  if (depth > maxFrontmatterYamlDepth) return true;
+  if (value === null || typeof value !== "object") return false;
+  if (seen.has(value)) return false;
+  seen.add(value);
+  if (Array.isArray(value)) return value.some((item) => containsUnsafeFrontmatterKey(item, depth + 1, seen));
+  return Object.entries(value).some(([key, child]) =>
+    isUnsafeFrontmatterKey(key) || containsUnsafeFrontmatterKey(child, depth + 1, seen)
+  );
+}
+
+function isFrontmatterYamlWithinBudget(yamlText: string): boolean {
+  if (new Blob([yamlText]).size > maxFrontmatterYamlBytes) return false;
+  const lines = yamlText.split(/\r?\n/);
+  if (lines.length > maxFrontmatterYamlLines) return false;
+  const aliases = (yamlText.match(/(^|[\s,:\[\]{])(?:&|\*)[-A-Za-z0-9_.\/]+/gm) ?? []).length;
+  if (aliases > maxFrontmatterYamlAliases) return false;
+
+  for (const line of lines) {
+    const indentation = line.match(/^[ \t]*/)?.[0] ?? "";
+    const spaces = indentation.replace(/\t/g, "  ").length;
+    if (Math.floor(spaces / 2) > maxFrontmatterYamlDepth) return false;
+  }
+  return true;
+}
+
+function parseSafeYamlObject(yamlText: string): Record<string, unknown> | null {
+  if (yamlText.trim() === "") return {};
+  if (!isFrontmatterYamlWithinBudget(yamlText)) return null;
+
+  try {
+    const parsed = yaml.load(yamlText);
+    if (parsed === null || parsed === undefined) return {};
+    if (typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    if (containsUnsafeFrontmatterKey(parsed)) return null;
+    return parsed as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 function findYamlInlineComment(line: string): string | null {
   let quote: "'" | "\"" | null = null;
 
@@ -285,12 +338,7 @@ function parseFrontmatterValidation(content: string, revision: number): Frontmat
 function invalidYamlObject(yamlText: string): boolean {
   if (yamlText.trim() === "") return false;
   frontmatterYamlParseCount += 1;
-  try {
-    const parsed = yaml.load(yamlText);
-    return parsed !== null && parsed !== undefined && (typeof parsed !== "object" || Array.isArray(parsed));
-  } catch {
-    return true;
-  }
+  return parseSafeYamlObject(yamlText) === null;
 }
 
 export function findFrontmatterBlock(state: EditorState): FrontmatterBlock | null {
@@ -313,32 +361,16 @@ export function findFrontmatterBlock(state: EditorState): FrontmatterBlock | nul
     };
   }
 
-  try {
-    const parsed = yaml.load(yamlText);
+  const parsed = parseSafeYamlObject(yamlText);
+  if (parsed === null) return null;
 
-    if (parsed === null || parsed === undefined) {
-      return {
-        bodyFrom: closeLine.to + 1,
-        data: {},
-        endLine: range.end,
-        from: openLine.from,
-        startLine: range.start,
-        to: closeLine.to,
-        yamlText
-      };
-    }
-    if (typeof parsed !== "object" || Array.isArray(parsed)) return null;
-
-    return {
+  return {
       bodyFrom: closeLine.to + 1,
-      data: parsed as Record<string, unknown>,
+      data: parsed,
       endLine: range.end,
       from: openLine.from,
       startLine: range.start,
       to: closeLine.to,
       yamlText
-    };
-  } catch {
-    return null;
-  }
+  };
 }

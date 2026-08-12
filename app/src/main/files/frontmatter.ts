@@ -10,6 +10,10 @@ export interface InspectedFrontmatter extends ParsedFrontmatter {
 }
 
 const DELIMITER = "---";
+export const maxFrontmatterYamlBytes = 1 * 1024 * 1024;
+export const maxFrontmatterYamlLines = 20_000;
+export const maxFrontmatterYamlAliases = 100;
+export const maxFrontmatterYamlDepth = 64;
 
 export function parseFrontmatter(content: string): ParsedFrontmatter {
   const { data, body } = inspectFrontmatter(content);
@@ -37,6 +41,10 @@ export function inspectFrontmatter(content: string): InspectedFrontmatter {
     return { data: {}, body, status: "valid" };
   }
 
+  if (!isFrontmatterYamlWithinBudget(yamlText)) {
+    return { data: {}, body: content, status: "invalid" };
+  }
+
   try {
     const parsed = yaml.load(yamlText);
 
@@ -48,10 +56,45 @@ export function inspectFrontmatter(content: string): InspectedFrontmatter {
       return { data: {}, body: content, status: "invalid" };
     }
 
-    return { data: parsed as Record<string, unknown>, body, status: "valid" };
+    const data = parsed as Record<string, unknown>;
+    if (containsUnsafeFrontmatterKey(data)) {
+      return { data: {}, body: content, status: "invalid" };
+    }
+
+    return { data, body, status: "valid" };
   } catch {
     return { data: {}, body: content, status: "invalid" };
   }
+}
+
+export function isUnsafeFrontmatterKey(key: string): boolean {
+  return key === "__proto__" || key === "prototype" || key === "constructor";
+}
+
+function containsUnsafeFrontmatterKey(value: unknown, depth = 0, seen = new WeakSet<object>()): boolean {
+  if (depth > maxFrontmatterYamlDepth) return true;
+  if (value === null || typeof value !== "object") return false;
+  if (seen.has(value)) return false;
+  seen.add(value);
+  if (Array.isArray(value)) return value.some((item) => containsUnsafeFrontmatterKey(item, depth + 1, seen));
+  return Object.entries(value).some(([key, child]) =>
+    isUnsafeFrontmatterKey(key) || containsUnsafeFrontmatterKey(child, depth + 1, seen)
+  );
+}
+
+function isFrontmatterYamlWithinBudget(yamlText: string): boolean {
+  if (Buffer.byteLength(yamlText, "utf8") > maxFrontmatterYamlBytes) return false;
+  const lines = yamlText.split(/\r?\n/);
+  if (lines.length > maxFrontmatterYamlLines) return false;
+  const aliases = (yamlText.match(/(^|[\s,:\[\]{])(?:&|\*)[-A-Za-z0-9_.\/]+/gm) ?? []).length;
+  if (aliases > maxFrontmatterYamlAliases) return false;
+
+  for (const line of lines) {
+    const indentation = line.match(/^[ \t]*/)?.[0] ?? "";
+    const spaces = indentation.replace(/\t/g, "  ").length;
+    if (Math.floor(spaces / 2) > maxFrontmatterYamlDepth) return false;
+  }
+  return true;
 }
 
 export function writeFrontmatter(body: string, data: Record<string, unknown>): string {

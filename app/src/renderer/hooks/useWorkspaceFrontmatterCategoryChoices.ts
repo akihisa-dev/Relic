@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { FrontmatterCategoryChoice, WorkspaceState } from "../../shared/ipc";
 import { uniqueChoices } from "../frontmatterSettingsModel";
+import { useT } from "../i18n";
 import { useAsyncRequestGuard } from "./useAsyncRequestGuard";
 
 interface UseWorkspaceFrontmatterCategoryChoicesInput {
@@ -17,6 +18,7 @@ export function useWorkspaceFrontmatterCategoryChoices({
   categoryChoices: FrontmatterCategoryChoice[];
   handleSaveCategoryChoices: (choices: FrontmatterCategoryChoice[]) => void;
 } {
+  const t = useT();
   const workspaceId = workspaceState?.activeWorkspace?.id ?? null;
   const [snapshot, setSnapshot] = useState<{
     choices: FrontmatterCategoryChoice[];
@@ -40,8 +42,12 @@ export function useWorkspaceFrontmatterCategoryChoices({
       } else {
         setWorkspaceError(result.error.message);
       }
+    }).catch(() => {
+      if (!isCurrentRequest()) return;
+      setSnapshot({ choices: [], workspaceId });
+      setWorkspaceError(t("errors.operationFailed"));
     });
-  }, [beginRequest, setWorkspaceError, workspaceId]);
+  }, [beginRequest, setWorkspaceError, t, workspaceId]);
 
   const handleSaveCategoryChoices = useCallback((choices: FrontmatterCategoryChoice[]): void => {
     const normalizedChoices = uniqueChoices(choices.flatMap((choice) => {
@@ -51,6 +57,7 @@ export function useWorkspaceFrontmatterCategoryChoices({
     const client = relicClient.current;
     if (!workspaceId || !client) return;
     const isCurrentRequest = beginRequest();
+    const previousChoices = snapshot?.workspaceId === workspaceId ? snapshot.choices : [];
     setSnapshot({ choices: normalizedChoices, workspaceId });
     void client.saveWorkspaceFrontmatterCategoryChoices({
       choices: normalizedChoices,
@@ -60,10 +67,15 @@ export function useWorkspaceFrontmatterCategoryChoices({
       if (result.ok) {
         setSnapshot({ choices: result.value, workspaceId });
       } else {
+        setSnapshot({ choices: previousChoices, workspaceId });
         setWorkspaceError(result.error.message);
       }
+    }).catch(() => {
+      if (!isCurrentRequest()) return;
+      setSnapshot({ choices: previousChoices, workspaceId });
+      setWorkspaceError(t("errors.operationFailed"));
     });
-  }, [beginRequest, setWorkspaceError, workspaceId]);
+  }, [beginRequest, setWorkspaceError, snapshot, t, workspaceId]);
 
   return {
     categoryChoices: workspaceId && snapshot?.workspaceId === workspaceId ? snapshot.choices : [],

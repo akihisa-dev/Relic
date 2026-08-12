@@ -1,6 +1,7 @@
 import { relicClient } from "../relicClient";
 import { useCallback } from "react";
 
+import { useT } from "../i18n";
 import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import { resolveMarkdownLinkPath, resolveWikiLinkPathWithAliases } from "../../shared/links";
 import { isSupportedPdfPath } from "../../shared/pdfFiles";
@@ -45,6 +46,7 @@ export function useWorkspaceFileOpenActions({
   setWorkspaceState,
   tabs
 }: WorkspaceFileOpenInput) {
+  const t = useT();
   const beginLatestOpenRequest = useAsyncRequestGuard([activeWorkspaceId]);
   const beginOpenRequest = useCallback(() => {
     const isLatestRequest = beginLatestOpenRequest();
@@ -99,9 +101,11 @@ export function useWorkspaceFileOpenActions({
         } else {
           setWorkspaceError(result.error.message);
         }
+      }).catch(() => {
+        if (isCurrentRequest()) setWorkspaceError(t("errors.operationFailed"));
       });
     },
-    [beginOpenRequest, focusedPane, leftPane, openFileInPane, openImageInPane, openPdfInPane, rightPane, setWorkspaceError, tabs]
+    [beginOpenRequest, focusedPane, leftPane, openFileInPane, openImageInPane, openPdfInPane, rightPane, setWorkspaceError, t, tabs]
   );
 
   const handleOpenWikiLink = useCallback(
@@ -133,7 +137,11 @@ export function useWorkspaceFileOpenActions({
           } else {
             setWorkspaceError(createResult.error.message);
           }
+        }).catch(() => {
+          if (isCurrentRequest()) setWorkspaceError(t("errors.operationFailed"));
         });
+      }).catch(() => {
+        if (isCurrentRequest()) setWorkspaceError(t("errors.operationFailed"));
       });
     },
     [
@@ -148,6 +156,7 @@ export function useWorkspaceFileOpenActions({
       setRightPaneScrollHeading,
       setWorkspaceError,
       setWorkspaceState,
+      t,
       tabs
     ]
   );
@@ -184,7 +193,11 @@ export function useWorkspaceFileOpenActions({
           } else {
             setWorkspaceError(createResult.error.message);
           }
+        }).catch(() => {
+          if (isCurrentRequest()) setWorkspaceError(t("errors.operationFailed"));
         });
+      }).catch(() => {
+        if (isCurrentRequest()) setWorkspaceError(t("errors.operationFailed"));
       });
     },
     [
@@ -197,6 +210,7 @@ export function useWorkspaceFileOpenActions({
       setRightPaneScrollHeading,
       setWorkspaceError,
       setWorkspaceState,
+      t,
       tabs
     ]
   );

@@ -1,5 +1,6 @@
 import { constants } from "node:fs";
-import { copyFile, mkdir, stat, unlink } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { copyFile, lstat, mkdir, readFile, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 
 import type { MarkdownFileContent } from "../../shared/ipc";
@@ -19,6 +20,28 @@ import { readMarkdownFile } from "./markdownFileContent";
 export interface CreatedMarkdownFile {
   path: string;
 }
+
+interface ImportedFileSnapshot {
+  contentHash: string;
+  dev: number;
+  ino: number;
+  isFile: boolean;
+  isSymbolicLink: boolean;
+  mtimeMs: number;
+  size: number;
+}
+
+interface MarkdownImportFileOperations {
+  copyFile(sourcePath: string, destinationPath: string, flags: number): Promise<void>;
+  snapshot(filePath: string): Promise<ImportedFileSnapshot>;
+  unlink(filePath: string): Promise<void>;
+}
+
+const defaultMarkdownImportFileOperations: MarkdownImportFileOperations = {
+  copyFile,
+  snapshot: snapshotImportedFile,
+  unlink
+};
 export { normalizeMarkdownFileName } from "./markdownFilePaths";
 
 export async function createMarkdownFile(
@@ -116,7 +139,8 @@ export async function importMarkdownFiles(
   workspacePath: string,
   sourcePaths: string[],
   destinationFolder: string,
-  operations: Partial<RealpathOperations> = {}
+  operations: Partial<RealpathOperations> = {},
+  fileOperations: Partial<MarkdownImportFileOperations> = {}
 ): Promise<RelicResult<MarkdownFileContent[]>> {
   const destinationEntries: Array<{
     absolutePath: string;
@@ -184,30 +208,122 @@ export async function importMarkdownFiles(
     });
   }
 
-  const copiedPaths: string[] = [];
+  const copiedEntries: Array<{ absolutePath: string; relativePath: string; snapshot: ImportedFileSnapshot | null }> = [];
+  const importFileOperations = {
+    ...defaultMarkdownImportFileOperations,
+    ...fileOperations
+  };
   for (const entry of destinationEntries) {
     try {
-      await copyFile(entry.sourcePath, entry.absolutePath, constants.COPYFILE_EXCL);
-      copiedPaths.push(entry.absolutePath);
+      await importFileOperations.copyFile(entry.sourcePath, entry.absolutePath, constants.COPYFILE_EXCL);
+      let snapshot: ImportedFileSnapshot | null = null;
+      try {
+        snapshot = await importFileOperations.snapshot(entry.absolutePath);
+      } finally {
+        copiedEntries.push({ absolutePath: entry.absolutePath, relativePath: entry.relativePath, snapshot });
+      }
       const importedFile = await readMarkdownFile(workspacePath, entry.relativePath);
       if (!importedFile.ok) {
-        await Promise.all(copiedPaths.map((copiedPath) => unlink(copiedPath).catch(() => undefined)));
-        return importedFile;
+        return withImportCleanup(importedFile, copiedEntries, importFileOperations);
       }
       importedFiles.push(importedFile.value);
     } catch (error) {
-      await Promise.all(copiedPaths.map((copiedPath) => unlink(copiedPath).catch(() => undefined)));
+      const cleanup = await cleanupImportedFiles(copiedEntries, importFileOperations);
       if (isFileExistsError(error)) {
-        return fail("FILE_ALREADY_EXISTS", "追加先に同じ名前のファイルがすでにあります。");
+        return withCleanupRecovery(
+          fail("FILE_ALREADY_EXISTS", "追加先に同じ名前のファイルがすでにあります。"),
+          cleanup
+        );
       }
 
-      return fail(
-        "FILE_IMPORT_FAILED",
-        "ファイルを追加できませんでした。",
-        errorDetails(error)
+      return withCleanupRecovery(
+        fail(
+          "FILE_IMPORT_FAILED",
+          "ファイルを追加できませんでした。",
+          errorDetails(error)
+        ),
+        cleanup
       );
     }
   }
 
   return ok(importedFiles);
+}
+
+async function snapshotImportedFile(filePath: string): Promise<ImportedFileSnapshot> {
+  const entry = await lstat(filePath);
+  const content = entry.isFile() ? await readFile(filePath, "utf8") : "";
+  return {
+    contentHash: createHash("sha256").update(content).digest("hex"),
+    dev: entry.dev,
+    ino: entry.ino,
+    isFile: entry.isFile(),
+    isSymbolicLink: entry.isSymbolicLink(),
+    mtimeMs: entry.mtimeMs,
+    size: entry.size
+  };
+}
+
+async function cleanupImportedFiles(
+  copiedEntries: Array<{ absolutePath: string; relativePath: string; snapshot: ImportedFileSnapshot | null }>,
+  operations: MarkdownImportFileOperations
+): Promise<string[]> {
+  const remainingPaths: string[] = [];
+  for (const copiedEntry of copiedEntries) {
+    if (!copiedEntry.snapshot) {
+      remainingPaths.push(copiedEntry.relativePath);
+      continue;
+    }
+
+    let currentSnapshot: ImportedFileSnapshot;
+    try {
+      currentSnapshot = await operations.snapshot(copiedEntry.absolutePath);
+    } catch {
+      remainingPaths.push(copiedEntry.relativePath);
+      continue;
+    }
+    if (!sameImportedFileSnapshot(currentSnapshot, copiedEntry.snapshot)) {
+      remainingPaths.push(copiedEntry.relativePath);
+      continue;
+    }
+
+    try {
+      await operations.unlink(copiedEntry.absolutePath);
+    } catch {
+      remainingPaths.push(copiedEntry.relativePath);
+    }
+  }
+  return remainingPaths;
+}
+
+async function withImportCleanup<T>(
+  result: RelicResult<T>,
+  copiedEntries: Array<{ absolutePath: string; relativePath: string; snapshot: ImportedFileSnapshot | null }>,
+  operations: MarkdownImportFileOperations
+): Promise<RelicResult<T>> {
+  return withCleanupRecovery(result, await cleanupImportedFiles(copiedEntries, operations));
+}
+
+function withCleanupRecovery<T>(result: RelicResult<T>, remainingPaths: string[]): RelicResult<T> {
+  if (remainingPaths.length === 0 || result.ok) return result;
+  return {
+    ok: false,
+    error: {
+      ...result.error,
+      recovery: {
+        status: "recovery-required",
+        remainingPaths,
+        reasonCode: "IMPORT_CLEANUP_REQUIRED"
+      }
+    }
+  };
+}
+
+function sameImportedFileSnapshot(left: ImportedFileSnapshot, right: ImportedFileSnapshot): boolean {
+  return left.isFile && !left.isSymbolicLink &&
+    left.dev === right.dev &&
+    left.ino === right.ino &&
+    left.mtimeMs === right.mtimeMs &&
+    left.size === right.size &&
+    left.contentHash === right.contentHash;
 }

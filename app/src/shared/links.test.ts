@@ -154,6 +154,11 @@ describe("resolveMarkdownLinkPath", () => {
     expect(resolveMarkdownLinkPath("https://example.com", "source.md")).toBeNull();
     expect(resolveMarkdownLinkPath("//example.com/note", "source.md")).toBeNull();
   });
+
+  it("制御文字を含むURL偽装をワークスペース内リンクとして扱わない", () => {
+    expect(resolveMarkdownLinkPath("java\u0000script:alert(1)", "source.md")).toBeNull();
+    expect(resolveMarkdownLinkPath("notes/child\n.md", "source.md")).toBeNull();
+  });
 });
 
 describe("resolveWikiLinks", () => {

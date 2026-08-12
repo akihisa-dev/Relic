@@ -138,9 +138,9 @@ function fileNameForDisplay(value: string): string | undefined {
 
 function chronicleSummary(value: object): string | undefined {
   const record = value as Record<string, unknown>;
-  const calendar = displayScalar(record.calendar);
-  const start = displayScalar(record.start);
-  const end = displayScalar(record.end);
+  const calendar = Object.prototype.hasOwnProperty.call(record, "calendar") ? displayScalar(record.calendar) : undefined;
+  const start = Object.prototype.hasOwnProperty.call(record, "start") ? displayScalar(record.start) : undefined;
+  const end = Object.prototype.hasOwnProperty.call(record, "end") ? displayScalar(record.end) : undefined;
   const period = start && end ? (start === end ? start : `${start}–${end}`) : start ?? end;
   if (calendar && period) return `${calendar} · ${period}`;
   return calendar ?? period;

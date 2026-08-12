@@ -1,4 +1,10 @@
 import { relicClient } from "./relicClient";
+import {
+  maxPreviewImageAggregateBytes,
+  maxPreviewImageCount,
+  maxPreviewImageDataUrlBytes
+} from "../shared/ipc/output";
+import { runWithConcurrency } from "./concurrency";
 
 const previewImagePathAttribute = "data-relic-image-path";
 const supportedImageDataUrlPattern = /^data:image\/(?:avif|bmp|gif|jpeg|png|svg\+xml|webp);base64,[a-z0-9+/]*={0,2}$/i;
@@ -7,6 +13,7 @@ let activeContextKey = "";
 let activeGeneration = 0;
 const successfulImages = new Map<string, string>();
 const pendingImages = new Map<string, Promise<string | null>>();
+const maxConcurrentPreviewImages = 4;
 
 export function previewImageContextKey(workspacePath: string | null | undefined, revision = 0): string {
   return `${workspacePath?.trim() ?? ""}\0${revision}`;
@@ -32,7 +39,11 @@ export function loadPreviewImage(path: string, contextKey: string): Promise<stri
   const request = relicClient.current?.readImageFile({ path })
     .then((result) => {
       if (generation !== activeGeneration || contextKey !== activeContextKey) return null;
-      if (!result.ok || !supportedImageDataUrlPattern.test(result.value.dataUrl)) return null;
+      if (
+        !result.ok ||
+        !supportedImageDataUrlPattern.test(result.value.dataUrl) ||
+        new Blob([result.value.dataUrl]).size > maxPreviewImageDataUrlBytes
+      ) return null;
       successfulImages.set(path, result.value.dataUrl);
       return result.value.dataUrl;
     })
@@ -56,26 +67,52 @@ export function hydratePreviewImages(root: ParentNode, contextKey: string): () =
 export async function resolvePreviewImages(
   root: ParentNode,
   contextKey: string,
-  isActive: () => boolean = () => true
+  isActive: () => boolean = () => true,
+  options: { rejectOnLimit?: boolean } = {}
 ): Promise<void> {
   activatePreviewImageContext(contextKey);
   const placeholders = Array.from(root.querySelectorAll<HTMLElement>(`[${previewImagePathAttribute}]`));
-
-  await Promise.all(placeholders.map(async (placeholder) => {
+  const placeholdersByPath = new Map<string, HTMLElement[]>();
+  for (const placeholder of placeholders) {
     const path = placeholder.getAttribute(previewImagePathAttribute);
-    if (!path) return;
-    const dataUrl = await loadPreviewImage(path, contextKey);
-    if (!dataUrl || !isActive() || contextKey !== activeContextKey || placeholder.getAttribute(previewImagePathAttribute) !== path) {
-      return;
+    if (!path) continue;
+    const entries = placeholdersByPath.get(path) ?? [];
+    entries.push(placeholder);
+    placeholdersByPath.set(path, entries);
+  }
+  const paths = [...placeholdersByPath.keys()];
+  if (paths.length > maxPreviewImageCount) {
+    if (options.rejectOnLimit) {
+      throw new Error("画像が多すぎるためプレビューを生成できません。");
     }
+    paths.splice(maxPreviewImageCount);
+  }
 
-    const image = document.createElement("img");
-    image.alt = placeholder.dataset.relicImageAlt ?? placeholder.textContent ?? "";
-    image.className = placeholder.dataset.relicImageClass ?? "preview-image";
-    image.src = dataUrl;
-    if (placeholder.title) image.title = placeholder.title;
-    placeholder.replaceWith(image);
-  }));
+  let aggregateBytes = 0;
+  const loaded = await runWithConcurrency(
+    paths.map((path) => async () => {
+      const dataUrl = await loadPreviewImage(path, contextKey);
+      if (!dataUrl) return { dataUrl: null, path };
+      const bytes = new Blob([dataUrl]).size;
+      if (aggregateBytes + bytes > maxPreviewImageAggregateBytes) return { dataUrl: null, path };
+      aggregateBytes += bytes;
+      return { dataUrl, path };
+    }),
+    maxConcurrentPreviewImages
+  );
+
+  for (const { dataUrl, path } of loaded) {
+    if (!dataUrl || !isActive() || contextKey !== activeContextKey) continue;
+    for (const placeholder of placeholdersByPath.get(path) ?? []) {
+      if (placeholder.getAttribute(previewImagePathAttribute) !== path) continue;
+      const image = document.createElement("img");
+      image.alt = placeholder.dataset.relicImageAlt ?? placeholder.textContent ?? "";
+      image.className = placeholder.dataset.relicImageClass ?? "preview-image";
+      image.src = dataUrl;
+      if (placeholder.title) image.title = placeholder.title;
+      placeholder.replaceWith(image);
+    }
+  }
 }
 
 /** @internal Test-only reset for module cache isolation. */

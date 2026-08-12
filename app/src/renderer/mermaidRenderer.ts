@@ -1,3 +1,5 @@
+import { withDiagramRenderTimeout } from "./diagramLimits";
+
 type MermaidThemeKey = "light" | "dark";
 type MermaidModule = typeof import("mermaid").default;
 type MermaidThemeVariables = Record<string, string>;
@@ -9,6 +11,7 @@ interface RelicMermaidTheme {
 
 let initializedTheme: MermaidThemeKey | null = null;
 let renderId = 0;
+let mermaidRenderQueue: Promise<void> = Promise.resolve();
 const maxMermaidCacheEntries = 24;
 const mermaidRenderCache = new Map<string, Promise<string>>();
 
@@ -19,9 +22,24 @@ export async function renderMermaidSvg(source: string): Promise<string> {
 
   if (cached) return cached;
 
-  const renderPromise = renderMermaidSvgUncached(source, theme);
-  rememberMermaidRender(cacheKey, renderPromise);
-  return renderPromise;
+  // Mermaid uses a process-global renderer. Keep the queue chained to the
+  // uncancelled operation so a caller timeout cannot let two renders overlap.
+  const renderOperation = mermaidRenderQueue.then(() => renderMermaidSvgUncached(source, theme));
+  const timedOperation = withDiagramRenderTimeout(renderOperation, "mermaid");
+  rememberMermaidRender(cacheKey, timedOperation);
+  // A timed-out caller may retry this source, but only after the underlying
+  // operation settles at the queue boundary. Do not evict a newer retry.
+  void timedOperation.catch(() => {
+    if (mermaidRenderCache.get(cacheKey) === timedOperation) mermaidRenderCache.delete(cacheKey);
+  });
+  mermaidRenderQueue = renderOperation.then(
+    () => undefined,
+    () => {
+      if (mermaidRenderCache.get(cacheKey) === timedOperation) mermaidRenderCache.delete(cacheKey);
+    }
+  );
+
+  return timedOperation;
 }
 
 async function renderMermaidSvgUncached(source: string, theme: RelicMermaidTheme): Promise<string> {

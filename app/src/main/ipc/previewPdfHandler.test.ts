@@ -147,7 +147,7 @@ describe("savePreviewAsPdf", () => {
     });
     expect(electronMock.printToPDF).not.toHaveBeenCalled();
     expect(fsMock.writeFile).not.toHaveBeenCalled();
-    expect(electronMock.webContentsRemoveListener).toHaveBeenCalledTimes(2);
+    expect(electronMock.webContentsRemoveListener).toHaveBeenCalledTimes(3);
     expect(electronMock.browserWindowRemoveListener).toHaveBeenCalledWith(
       "closed",
       expect.any(Function)
@@ -184,6 +184,10 @@ describe("savePreviewAsPdf", () => {
     );
     expect(electronMock.webContentsRemoveListener).toHaveBeenCalledWith(
       "will-navigate",
+      expect.any(Function)
+    );
+    expect(electronMock.webContentsRemoveListener).toHaveBeenCalledWith(
+      "will-redirect",
       expect.any(Function)
     );
     expect(electronMock.webContentsRemoveListener).toHaveBeenCalledWith(
