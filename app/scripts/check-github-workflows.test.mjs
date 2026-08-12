@@ -6,6 +6,9 @@ import {
   validateWorkflow
 } from "./check-github-workflows.mjs";
 
+const checkoutSha = "3d3c42e5aac5ba805825da76410c181273ba90b1";
+const setupNodeSha = "249970729cb0ef3589644e2896645e5dc5ba9c38";
+
 const validWorkflow = `
 name: Verify
 on:
@@ -19,7 +22,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@${checkoutSha}
         with:
           persist-credentials: false
       - run: pnpm test
@@ -60,12 +63,26 @@ jobs:
   it("mutableなAction参照とpull_request_targetを拒否する", () => {
     const workflow = parseWorkflow(validWorkflow
       .replace("pull_request:", "pull_request_target:")
-      .replace("actions/checkout@v7", "actions/checkout@main"), "mutable.yml");
+      .replace(`actions/checkout@${checkoutSha}`, "actions/checkout@v7"), "mutable.yml");
     expect(validateWorkflow(workflow, "mutable.yml")).toContain(
       "mutable.yml: pull_request_target requires a separate explicit security review.",
     );
     expect(validateWorkflow(workflow, "mutable.yml")).toContain(
-      "mutable.yml: job test step 1 uses a missing or mutable Action reference: actions/checkout@main.",
+      "mutable.yml: job test step 1 uses a missing or mutable Action reference: actions/checkout@v7.",
+    );
+  });
+
+  it("完全な40桁SHA以外のAction参照を拒否する", () => {
+    const workflow = parseWorkflow(validWorkflow
+      .replace(`actions/checkout@${checkoutSha}`, "actions/checkout@main"), "mutable-branch.yml");
+    expect(validateWorkflow(workflow, "mutable-branch.yml")).toContain(
+      "mutable-branch.yml: job test step 1 uses a missing or mutable Action reference: actions/checkout@main."
+    );
+
+    const tagWorkflow = parseWorkflow(validWorkflow
+      .replace(`actions/checkout@${checkoutSha}`, "actions/checkout@v7"), "mutable-tag.yml");
+    expect(validateWorkflow(tagWorkflow, "mutable-tag.yml")).toContain(
+      "mutable-tag.yml: job test step 1 uses a missing or mutable Action reference: actions/checkout@v7."
     );
   });
 
@@ -83,7 +100,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@${setupNodeSha}
         with:
           node-version: 22
       - run: corepack enable
@@ -199,6 +216,34 @@ jobs:
       ".github/workflows/draft-release.yml: missing macOS release asset Relic-macOS-arm64.dmg.",
       ".github/workflows/draft-release.yml: missing macOS release asset Relic-macOS-arm64.dmg.sha256."
     ]));
+  });
+
+  it("ドラフト配布の書込jobがrelease環境を経由しない場合は報告する", () => {
+    const draftWorkflow = parseWorkflow(`
+name: Draft
+on: push
+permissions:
+  contents: read
+concurrency:
+  group: draft
+  cancel-in-progress: false
+jobs:
+  draft-release:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - run: gh release upload
+`, "draft-release.yml");
+    const errors = validateRepositoryWorkflowPolicy(new Map([
+      [".github/workflows/draft-release.yml", draftWorkflow]
+    ]), {
+      engines: { node: ">=22 <27" },
+      packageManager: "pnpm@10.10.0"
+    });
+
+    expect(errors).toContain(
+      ".github/workflows/draft-release.yml: draft-release job must use the protected release environment."
+    );
   });
 
   it("arm64確認より先にmacOS buildを実行するjobを報告する", () => {

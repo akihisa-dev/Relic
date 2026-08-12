@@ -112,7 +112,7 @@ export function validateWorkflow(workflow, source = "workflow") {
       if (!step.uses.startsWith("./") && !step.uses.startsWith("docker://")) {
         const separator = step.uses.lastIndexOf("@");
         const reference = separator >= 0 ? step.uses.slice(separator + 1) : "";
-        if (separator <= 0 || reference === "" || /^(HEAD|main|master)$/iu.test(reference)) {
+        if (separator <= 0 || !/^[0-9a-f]{40}$/u.test(reference)) {
           errors.push(`${location} uses a missing or mutable Action reference: ${step.uses}.`);
         }
       }
@@ -199,6 +199,10 @@ export function validateRepositoryWorkflowPolicy(workflows, packageJson) {
     errors.push(".github/workflows/pre-release-verification.yml: pre-release verification must be manual-only.");
   }
   const draftRelease = workflows.get(".github/workflows/draft-release.yml");
+  const draftReleaseJob = draftRelease?.jobs?.["draft-release"];
+  if (draftReleaseJob && draftReleaseJob.environment !== "release") {
+    errors.push(".github/workflows/draft-release.yml: draft-release job must use the protected release environment.");
+  }
   const draftReleaseCommands = draftRelease ? workflowCommands(draftRelease) : [];
   for (const assetName of ["Relic-macOS-arm64.dmg", "Relic-macOS-arm64.dmg.sha256"]) {
     if (!draftReleaseCommands.some((command) => command.includes(assetName))) {
