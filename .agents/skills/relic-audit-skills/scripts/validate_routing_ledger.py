@@ -170,13 +170,18 @@ def validate(
                 )
             commit_phase_skills = set(phases["commit"])
             if permission_mode.startswith("local-commit"):
-                commit_phase_skills.update(
-                    set(phases["orientation"])
-                    & {"relic-manage-version", "relic-commit"}
-                )
+                if "relic-commit" not in set(phases["orientation"]):
+                    errors.append(
+                        f"{case_id}: local-commit case must use relic-commit as the orientation entry"
+                    )
+                if "relic-manage-version" not in commit_phase_skills:
+                    errors.append(
+                        f"{case_id}: local-commit case must use relic-manage-version in commit"
+                    )
+                commit_phase_skills.discard("relic-commit")
             missing_commit_skills = {
                 "relic-manage-version", "relic-commit"
-            } - commit_phase_skills
+            } - (commit_phase_skills | (set(phases["orientation"]) & {"relic-commit"}))
             if missing_commit_skills:
                 errors.append(
                     f"{case_id}: local mutation case is missing commit phase skills: "
@@ -397,6 +402,23 @@ def self_test() -> None:
             workspace, ledger_path, results_path, known_commits={valid_head}
         )
         assert initial_errors == [], initial_errors
+        local_commit_phases = ledger["cases"][2]["expectedSkillsByPhase"]
+        local_commit_phases["orientation"] = ["relic-commit"]
+        local_commit_phases["commit"] = ["relic-manage-version"]
+        ledger["cases"][2]["permissionMode"] = "local-commit-no-push"
+        ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
+        assert validate(workspace, ledger_path, results_path, known_commits={valid_head}) == []
+        local_commit_phases["orientation"] = ["relic-manage-version", "relic-commit"]
+        local_commit_phases["commit"] = []
+        ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
+        local_commit_errors = validate(
+            workspace, ledger_path, results_path, known_commits={valid_head}
+        )
+        assert any("must use relic-manage-version in commit" in error for error in local_commit_errors)
+        local_commit_phases["orientation"] = ["example"]
+        local_commit_phases["commit"] = ["relic-manage-version", "relic-commit"]
+        ledger["cases"][2]["permissionMode"] = "local-change"
+        ledger_path.write_text(json.dumps(ledger), encoding="utf-8")
         ledger["cases"][1]["request"] = "positive request"
         ledger["cases"][1]["permissionMode"] = "gui-check"
         ledger_path.write_text(json.dumps(ledger), encoding="utf-8")

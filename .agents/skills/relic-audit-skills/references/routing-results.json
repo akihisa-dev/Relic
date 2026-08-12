@@ -13,7 +13,7 @@
     "sameNameVariants": false,
     "historyScope": "full",
     "executionAvailable": true,
-    "routingSurfaceDigest": "0decb27e141734853bc037811911a194ed873b234039539cb96708c1ff34209e",
+    "routingSurfaceDigest": "8e0de010da817e58a65929d84fdede86d3852b00c4ad980441ede01cac08de25",
     "notes": "現行routing surfaceに対する独立実行証拠はskill-audit caseだけで確認した。過去のexecution-passは旧digestの証拠として保持し、未実行caseとenvironment mismatchを成功扱いしないため、repository-owned Skill全体の現行routing品質は主張しない。"
   },
   "cases": [
@@ -446,21 +446,8 @@
       "caseId": "commit-and-version",
       "staticStatus": "static-pass",
       "execution": {
-        "status": "execution-pass",
-        "actualSkillsByPhase": {
-          "orientation": [
-            "relic-manage-version",
-            "relic-commit"
-          ],
-          "preWrite": [
-            "relic-guard-task"
-          ],
-          "verification": [],
-          "commit": [],
-          "publication": []
-        },
-        "head": "0fe40c89fcdcdcbe7e06ae4639bc84a5bc162891",
-        "routingSurfaceDigest": "31aa16c65b4af28f35ef9343ad964bffcaa535267b077eda82639d5aa40c57a5"
+        "status": "not-executed",
+        "reason": "routing ownership was corrected after the recorded observation; no independent model routing execution was rerun"
       }
     },
     {

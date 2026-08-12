@@ -777,14 +777,15 @@
       "misrouteImpact": "無断push、版不整合、無関係差分混入になる",
       "expectedSkillsByPhase": {
         "orientation": [
-          "relic-manage-version",
           "relic-commit"
         ],
         "preWrite": [
           "relic-guard-task"
         ],
         "verification": [],
-        "commit": [],
+        "commit": [
+          "relic-manage-version"
+        ],
         "publication": []
       }
     },
