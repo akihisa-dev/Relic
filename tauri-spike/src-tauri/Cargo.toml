@@ -1,0 +1,24 @@
+[package]
+name = "relic-tauri-spike"
+version = "0.0.0"
+description = "Isolated Tauri 2 feasibility spike for Relic"
+authors = ["Relic maintainers"]
+edition = "2021"
+
+[lib]
+name = "relic_tauri_spike_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.3", features = [] }
+
+[dependencies]
+tauri = { version = "2.11.5", features = [] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.145"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+strip = true
