@@ -21,3 +21,15 @@ The release decision is recorded in [`DECISION_MATRIX.md`](DECISION_MATRIX.md). 
 ## Verification
 
 Run `pnpm typecheck`, `pnpm build`, `pnpm exec node scripts/verify-spike-decision.mjs`, and the Rust `cargo check`/`cargo test` commands from this directory. Do not launch the GUI as part of the normal spike verification.
+
+## Decision reproduction
+
+From a new clone, or after removing ignored dependencies and build outputs, run the following without starting the GUI:
+
+```sh
+cd tauri-spike
+pnpm install --frozen-lockfile
+pnpm verify:decision
+```
+
+The Rust stable toolchain must already be installed through `rustup`; the verifier uses the installed stable toolchain for `cargo check` and `cargo test`. `pnpm verify:decision` runs the Rust tests, adapter contract test, direct TypeScript check, Vite production build, and static decision gates. `node_modules/`, `dist/`, `src-tauri/target/`, and `src-tauri/gen/` are ignored generated outputs and may be removed before repeating the procedure. Do not run `pnpm dev`, `pnpm tauri dev`, or any other GUI-launching command during this evidence run.
