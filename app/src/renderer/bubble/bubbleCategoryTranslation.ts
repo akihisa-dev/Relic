@@ -1,7 +1,7 @@
 import {
   bubbleCategoryDynamicLayouts,
+  bubbleCategoryGroupKey,
   bubbleCategorySpacing,
-  normalizeBubbleCategory,
   stableBubbleCategoryAngle,
   type BubbleCategoryForceNode,
   type BubbleCategoryPoint
@@ -55,12 +55,11 @@ export function translateBubbleCategoryNodes<T extends BubbleCategoryForceNode>(
   dx: number,
   dy: number
 ): T[] {
-  const normalizedCategory = normalizeBubbleCategory(category);
-  if (!normalizedCategory) return [];
+  const normalizedCategory = bubbleCategoryGroupKey(category);
 
   const translated: T[] = [];
   for (const node of nodes) {
-    if (normalizeBubbleCategory(node.category) !== normalizedCategory ||
+    if (bubbleCategoryGroupKey(node.category) !== normalizedCategory ||
         node.x === undefined || node.y === undefined) continue;
     node.x += dx;
     node.y += dy;
@@ -77,8 +76,8 @@ export function translateBubbleCategoryNodesWithPush<T extends BubbleCategoryFor
   categorySpacing = bubbleCategorySpacing
 ): T[] {
   const orderedNodes = [...nodes];
-  const normalizedCategory = normalizeBubbleCategory(category);
-  if (!normalizedCategory || (dx === 0 && dy === 0)) return [];
+  const normalizedCategory = bubbleCategoryGroupKey(category);
+  if (dx === 0 && dy === 0) return [];
 
   const distance = Math.hypot(dx, dy);
   const stepCount = Math.max(1, Math.ceil(distance / bubbleCategoryTranslationStep));

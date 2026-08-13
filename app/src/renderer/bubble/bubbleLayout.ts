@@ -1,8 +1,8 @@
 import type { WorkspaceGraph } from "../../shared/ipc";
 import {
   bubbleCategoryLayouts,
-  bubbleCategoryTarget,
-  normalizeBubbleCategory
+  bubbleCategoryGroupKey,
+  bubbleCategoryTarget
 } from "./bubbleCategoryModel";
 import type {
   BubbleOptions,
@@ -29,9 +29,9 @@ export function syncBubbleLayout(
   graph.nodes.forEach((node, index) => {
     const current = nodes.get(node.id);
     if (current) {
-      const previousCategory = normalizeBubbleCategory(current.category);
+      const previousCategory = bubbleCategoryGroupKey(current.category);
       Object.assign(current, node);
-      if (previousCategory !== normalizeBubbleCategory(node.category)) {
+      if (previousCategory !== bubbleCategoryGroupKey(node.category)) {
         current.categoryCenterOffsetX = 0;
         current.categoryCenterOffsetY = 0;
       }
@@ -55,12 +55,12 @@ export function syncBubbleLayout(
 
   const categoryCounts = new Map<string, number>();
   for (const node of nodes.values()) {
-    const category = normalizeBubbleCategory(node.category);
-    if (category) categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
+    const category = bubbleCategoryGroupKey(node.category);
+    categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
   }
   for (const node of nodes.values()) {
-    const category = normalizeBubbleCategory(node.category);
-    if (!category || categoryCounts.get(category) === 1) continue;
+    const category = bubbleCategoryGroupKey(node.category);
+    if (categoryCounts.get(category) === 1) continue;
     node.categoryCenterOffsetX = 0;
     node.categoryCenterOffsetY = 0;
   }

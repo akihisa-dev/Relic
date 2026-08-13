@@ -43,7 +43,7 @@ describe("bubbleDrawingModel", () => {
     expect(graphNodeColor(graphNode("file"), theme)).toBe("#333333");
   });
 
-  it("カテゴリを持つファイルだけを所属バブルへ含める", () => {
+  it("カテゴリがないファイルも共通の未分類バブルへ所属させる", () => {
     const createNode = (
       id: string,
       x: number,
@@ -69,8 +69,8 @@ describe("bubbleDrawingModel", () => {
       createNode("D.md", 0, 0, "資料")
     ]);
 
-    expect(bubbles).toHaveLength(2);
-    expect(bubbles.map((bubble) => bubble.category)).toEqual(["資料", "人物"]);
+    expect(bubbles).toHaveLength(3);
+    expect(bubbles.map((bubble) => bubble.label)).toEqual(["Uncategorized", "資料", "人物"]);
     expect(bubbles.every((bubble) => bubble.points.length === 72)).toBe(true);
     expect(bubbles.some((bubble) => bubble.points.some((point) =>
       Math.hypot(point.x - bubble.x, point.y - bubble.y) < bubble.radius - 1

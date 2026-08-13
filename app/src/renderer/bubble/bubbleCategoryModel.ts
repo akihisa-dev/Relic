@@ -6,7 +6,7 @@ import {
 } from "./bubblePhysicsModel";
 
 export interface BubbleCategoryNode {
-  category?: string | null;
+  category?: unknown;
 }
 
 export interface BubbleCategoryLayout {
@@ -53,6 +53,9 @@ export interface BubbleCategoryForceNode extends BubbleCategoryNode {
   y?: number;
 }
 
+/** Internal group key used for files whose `category` value is absent or invalid. */
+export const bubbleUncategorizedCategory = "__relic_uncategorized__";
+
 export const bubbleCategoryDriftCenterStrength = 0.003;
 export const bubbleCategorySpacing = 24;
 export const bubbleCategoryContactOverlap = 28;
@@ -72,6 +75,14 @@ export function normalizeBubbleCategory(category: unknown): string | null {
   return normalized || null;
 }
 
+export function bubbleCategoryGroupKey(category: unknown): string {
+  return normalizeBubbleCategory(category) ?? bubbleUncategorizedCategory;
+}
+
+export function isBubbleUncategorizedCategory(category: unknown): boolean {
+  return bubbleCategoryGroupKey(category) === bubbleUncategorizedCategory;
+}
+
 export function bubbleCategoryRadius(nodeCount: number): number {
   return Math.max(
     bubbleCategoryMinimumRadius,
@@ -82,8 +93,8 @@ export function bubbleCategoryRadius(nodeCount: number): number {
 export function bubbleCategoryLayouts(nodes: Iterable<BubbleCategoryNode>): BubbleCategoryLayout[] {
   const counts = new Map<string, number>();
   for (const node of nodes) {
-    const category = normalizeBubbleCategory(node.category);
-    if (category) counts.set(category, (counts.get(category) ?? 0) + 1);
+    const category = bubbleCategoryGroupKey(node.category);
+    counts.set(category, (counts.get(category) ?? 0) + 1);
   }
 
   const categories = [...counts.keys()].toSorted((left, right) => left.localeCompare(right, "ja"));
@@ -123,8 +134,8 @@ export function bubbleCategoryDynamicLayouts(
     sumY: number;
   }>();
   for (const node of nodes) {
-    const category = normalizeBubbleCategory(node.category);
-    if (!category || node.x === undefined || node.y === undefined) continue;
+    const category = bubbleCategoryGroupKey(node.category);
+    if (node.x === undefined || node.y === undefined) continue;
     const group = groups.get(category) ?? {
       count: 0,
       singleNode: node,
@@ -160,8 +171,7 @@ export function bubbleCategoryCenterOffsetForNodeDrag(
   point: BubbleCategoryPoint,
   padding = bubbleCategoryBoundaryPadding
 ): BubbleCategoryPoint | null {
-  const category = normalizeBubbleCategory(node.category);
-  if (!category) return null;
+  const category = bubbleCategoryGroupKey(node.category);
   const layout = [...layouts].find((candidate) => candidate.category === category);
   if (!layout || layout.count !== 1) return null;
   const dx = point.x - layout.x;
@@ -200,7 +210,7 @@ export function bubbleCategoryRegions(
       }];
     });
     const obstacles = orderedNodes.flatMap((node): BubbleCategoryObstacle[] => {
-      if (normalizeBubbleCategory(node.category) === layout.category ||
+      if (bubbleCategoryGroupKey(node.category) === layout.category ||
           node.x === undefined || node.y === undefined) return [];
       const dx = node.x - layout.x;
       const dy = node.y - layout.y;
@@ -217,8 +227,7 @@ export function bubbleCategoryTarget<T extends BubbleCategoryLayout>(
   node: BubbleCategoryNode,
   layouts: ReadonlyMap<string, T>
 ): T | null {
-  const category = normalizeBubbleCategory(node.category);
-  return category ? layouts.get(category) ?? null : null;
+  return layouts.get(bubbleCategoryGroupKey(node.category)) ?? null;
 }
 
 export function bubbleCategoryBoundaryRadius(
@@ -374,8 +383,7 @@ export function applyBubbleCategoryMotion(
   );
   const nodesByCategory = new Map<string, BubbleCategoryForceNode[]>();
   for (const node of orderedNodes) {
-    const category = normalizeBubbleCategory(node.category);
-    if (!category) continue;
+    const category = bubbleCategoryGroupKey(node.category);
     const categoryNodes = nodesByCategory.get(category) ?? [];
     categoryNodes.push(node);
     nodesByCategory.set(category, categoryNodes);
@@ -452,8 +460,8 @@ export function constrainBubbleCategorySpacing(
   const nodesByCategory = new Map<string, BubbleCategoryForceNode[]>();
   const anchoredCategories = new Set<string>();
   for (const node of orderedNodes) {
-    const category = normalizeBubbleCategory(node.category);
-    if (!category || node.x === undefined || node.y === undefined) continue;
+    const category = bubbleCategoryGroupKey(node.category);
+    if (node.x === undefined || node.y === undefined) continue;
     const categoryNodes = nodesByCategory.get(category) ?? [];
     categoryNodes.push(node);
     nodesByCategory.set(category, categoryNodes);
@@ -640,7 +648,7 @@ function applyBubbleCategoryExteriorReaction(
 ): void {
   for (const region of regions) {
     for (const node of nodes) {
-      if (normalizeBubbleCategory(node.category) === region.category ||
+      if (bubbleCategoryGroupKey(node.category) === region.category ||
           node.x === undefined || node.y === undefined) continue;
       const dx = region.x - node.x;
       const dy = region.y - node.y;
@@ -651,7 +659,7 @@ function applyBubbleCategoryExteriorReaction(
 
       const fallbackAngle = stableBubbleCategoryAngle(
         region.category,
-        normalizeBubbleCategory(node.category) ?? "uncategorized"
+        bubbleCategoryGroupKey(node.category)
       );
       const unitX = distance === 0 ? Math.cos(fallbackAngle) : dx / distance;
       const unitY = distance === 0 ? Math.sin(fallbackAngle) : dy / distance;
@@ -674,7 +682,7 @@ function constrainBubbleCategoryExteriorPoint(
   regions: ReadonlyMap<string, BubbleCategoryRegion>,
   point: BubbleCategoryPoint
 ): BubbleCategoryPoint {
-  const ownCategory = normalizeBubbleCategory(node.category);
+  const ownCategory = bubbleCategoryGroupKey(node.category);
   let constrained = point;
   for (let pass = 0; pass < 2; pass += 1) {
     for (const region of regions.values()) {

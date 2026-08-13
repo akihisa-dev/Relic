@@ -17,7 +17,11 @@ import {
   bubbleCategoryDynamicLayouts,
   bubbleCategoryRegions
 } from "./bubbleCategoryModel";
-import type { BubbleCategoryPoint } from "./bubbleCategoryModel";
+import {
+  bubbleUncategorizedCategory,
+  isBubbleUncategorizedCategory,
+  type BubbleCategoryPoint
+} from "./bubbleCategoryModel";
 import type {
   BubbleOptions,
   BubbleSimLink,
@@ -37,7 +41,8 @@ export function drawBubble(
   theme: GraphDrawTheme,
   categoryColors: ReadonlyMap<string, string>,
   width: number,
-  height: number
+  height: number,
+  uncategorizedLabel = "Uncategorized"
 ): void {
   context.save();
   context.translate(view.panX + width / 2, view.panY + height / 2);
@@ -60,7 +65,14 @@ export function drawBubble(
   const focusedColor = focused
     ? bubbleNodeHighlightColor(focused, theme, categoryColors)
     : null;
-  drawBubbleCategoryBubbles(context, nodes, view.scale, theme, categoryColors);
+  drawBubbleCategoryBubbles(
+    context,
+    nodes,
+    view.scale,
+    theme,
+    categoryColors,
+    uncategorizedLabel
+  );
   if (focused && focusedColor) {
     drawBubbleNodeHalo(context, focused, focusedColor, options, view.scale, highlightStrength, 0.7);
     for (const neighborId of neighbors) {
@@ -82,7 +94,9 @@ export function drawBubble(
   for (const node of nodes) {
     const active = !focused || node.id === focused.id || neighbors.has(node.id);
     const radius = bubbleNodeVisualRadius(node, options, view.scale);
-    const color = graphNodeColor(node, theme, categoryColors);
+    const color = isBubbleUncategorizedCategory(node.category)
+      ? theme.textSecondary
+      : graphNodeColor(node, theme, categoryColors);
     const nodeAlpha = bubbleHighlightAlpha(active, highlightStrength, 1, bubbleDimmedNodeAlpha);
     drawBubbleBubbleNode(context, node, radius, color, theme, view.scale, nodeAlpha);
 
@@ -127,6 +141,7 @@ export function bubbleNodeHighlightColor(
   theme: GraphDrawTheme,
   categoryColors: ReadonlyMap<string, string>
 ): string {
+  if (isBubbleUncategorizedCategory(node.category)) return theme.textSecondary;
   return graphNodeColor(node, theme, categoryColors);
 }
 
@@ -277,16 +292,23 @@ function drawBubbleNodeConnectionRing(
 
 export interface BubbleCategoryBubble {
   category: string;
+  label: string;
   points: BubbleCategoryPoint[];
   radius: number;
   x: number;
   y: number;
 }
 
-export function bubbleCategoryBubbles(nodes: BubbleSimNode[]): BubbleCategoryBubble[] {
+export function bubbleCategoryBubbles(
+  nodes: BubbleSimNode[],
+  uncategorizedLabel = "Uncategorized"
+): BubbleCategoryBubble[] {
   const regions = bubbleCategoryRegions(bubbleCategoryDynamicLayouts(nodes), nodes);
   return [...regions.values()].map((region) => ({
     category: region.category,
+    label: region.category === bubbleUncategorizedCategory
+      ? uncategorizedLabel
+      : region.category,
     points: bubbleCategoryContour(region),
     radius: region.radius,
     x: region.x,
@@ -311,10 +333,13 @@ function drawBubbleCategoryBubbles(
   nodes: BubbleSimNode[],
   scale: number,
   theme: GraphDrawTheme,
-  categoryColors: ReadonlyMap<string, string>
+  categoryColors: ReadonlyMap<string, string>,
+  uncategorizedLabel: string
 ): void {
-  for (const bubble of bubbleCategoryBubbles(nodes)) {
-    const color = categoryColors.get(bubble.category) ?? graphCategoryColor(bubble.category, theme);
+  for (const bubble of bubbleCategoryBubbles(nodes, uncategorizedLabel)) {
+    const color = bubble.category === bubbleUncategorizedCategory
+      ? theme.textSecondary
+      : categoryColors.get(bubble.category) ?? graphCategoryColor(bubble.category, theme);
     const palette = bubbleMembranePalette(color, theme);
 
     context.save();
@@ -371,7 +396,7 @@ function drawBubbleCategoryBubbles(
     context.textAlign = "center";
     context.textBaseline = "top";
     context.fillText(
-      bubble.category,
+      bubble.label,
       bubble.x,
       Math.min(...bubble.points.map((point) => point.y)) + 12 / scale,
       Math.max(80 / scale, bubble.radius * 1.5)

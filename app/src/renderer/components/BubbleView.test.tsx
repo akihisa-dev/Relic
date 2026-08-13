@@ -443,12 +443,8 @@ describe("BubbleView", () => {
       expect.any(Number),
       expect.any(Number)
     );
-    expect(bubbleSimulationMocks.moveNode).toHaveBeenCalledWith(
-      "C.md",
-      expect.any(Number),
-      expect.any(Number)
-    );
-    expect(bubbleSimulationMocks.moveNode.mock.calls.some(([id]) => id === "D.md")).toBe(false);
+    expect(bubbleSimulationMocks.moveNode.mock.calls.some(([id]) => id === "D.md")).toBe(true);
+    expect(bubbleSimulationMocks.moveNode.mock.calls.some(([id]) => id === "C.md")).toBe(false);
     expect(bubbleSimulationMocks.setNodeFixed).not.toHaveBeenCalled();
     expect(bubbleSimulationMocks.setCategoryDragTarget).toHaveBeenNthCalledWith(2, {
       centerX: expect.any(Number),

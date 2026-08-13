@@ -8,6 +8,7 @@ import {
   bubbleSimulationNodes,
   syncBubbleLayout
 } from "../bubble/bubbleLayout";
+import { fitBubbleViewToNodes } from "../bubble/bubbleViewportModel";
 import { createBubbleSimulationClient, type BubbleSimulationClient } from "../bubble/bubbleSimulationClient";
 import {
   defaultBubbleOptions,
@@ -66,6 +67,7 @@ export function BubbleView({
   const nodesRef = useRef<Map<string, BubbleSimNode>>(initialNodes);
   const linksRef = useRef<BubbleSimLink[]>(initialLinks);
   const viewRef = useRef<BubbleViewTransform>(initialView);
+  const fitPendingRef = useRef(false);
   const simulationClientRef = useRef<BubbleSimulationClient | null>(null);
   const graphState = useWorkspaceGraphState({
     loadFailedMessage: t("bubble.loadFailed"),
@@ -106,6 +108,19 @@ export function BubbleView({
     viewRef
   });
 
+  const fitInitialView = useCallback(() => {
+    const canvas = canvasRef.current;
+    const rect = canvas?.getBoundingClientRect();
+    fitBubbleViewToNodes(
+      viewRef.current,
+      nodesRef.current.values(),
+      latestOptionsRef.current,
+      rect?.width || bubbleCanvasSizeFallback.width,
+      rect?.height || bubbleCanvasSizeFallback.height
+    );
+    requestDraw();
+  }, [requestDraw]);
+
   const updateTheme = useCallback(() => {
     themeRef.current = readGraphDrawTheme(canvasRef.current ?? document.documentElement);
     categoryColorsRef.current = graphCategoryColors(
@@ -138,6 +153,10 @@ export function BubbleView({
   useEffect(() => {
     const client = createBubbleSimulationClient((message) => {
       applyBubbleSimulationPositions(nodesRef.current, message);
+      if (fitPendingRef.current) {
+        fitPendingRef.current = false;
+        fitInitialView();
+      }
       requestDraw();
     });
     simulationClientRef.current = client;
@@ -146,7 +165,7 @@ export function BubbleView({
       client.dispose();
       simulationClientRef.current = null;
     };
-  }, [requestDraw]);
+  }, [fitInitialView, requestDraw]);
 
   const filteredGraph = useMemo(() => {
     return deriveVisibleGraph(graphState.graph);
@@ -155,6 +174,8 @@ export function BubbleView({
   useEffect(() => {
     const links = syncBubbleLayout(filteredGraph, nodesRef.current);
     linksRef.current = links;
+    fitPendingRef.current = true;
+    fitInitialView();
     categoryColorsRef.current = graphCategoryColors(
       [...nodesRef.current.values()].flatMap((node) =>
         typeof node.category === "string" ? [node.category] : []
@@ -167,7 +188,7 @@ export function BubbleView({
       latestOptionsRef.current
     );
     requestDraw();
-  }, [filteredGraph, requestDraw]);
+  }, [filteredGraph, fitInitialView, requestDraw]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -218,7 +239,8 @@ export function BubbleView({
       themeRef.current,
       categoryColorsRef.current,
       cssWidth,
-      cssHeight
+      cssHeight,
+      t("chronicle.uncategorized")
     );
 
     if (shouldContinueBubbleFrame({
@@ -231,7 +253,7 @@ export function BubbleView({
     })) {
       requestDraw();
     }
-  }, [pinnedNodeId, requestDraw]);
+  }, [pinnedNodeId, requestDraw, t]);
 
   drawRef.current = draw;
 

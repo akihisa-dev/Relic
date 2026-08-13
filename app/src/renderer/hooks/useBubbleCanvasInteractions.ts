@@ -12,10 +12,10 @@ import type { BubbleSimulationClient } from "../bubble/bubbleSimulationClient";
 import { bubbleNodeCollisionRadius } from "../bubble/bubbleNodeCollisionModel";
 import {
   bubbleCategoryContactOverlap,
+  bubbleCategoryGroupKey,
   constrainBubbleNodeToCategoryRegions,
   bubbleCategoryDynamicLayouts,
   bubbleCategoryRegions,
-  normalizeBubbleCategory
 } from "../bubble/bubbleCategoryModel";
 import {
   translateBubbleCategoryNodesWithPush
@@ -158,7 +158,7 @@ export function useBubbleCanvasInteractions({
     }
     const categoryNodes = category
       ? [...nodesRef.current.values()].filter((candidate) =>
-          normalizeBubbleCategory(candidate.category) === category
+          bubbleCategoryGroupKey(candidate.category) === category
         )
       : [];
     const dragCategoryTarget = categoryNodes.length > 0 ? {
@@ -226,7 +226,7 @@ export function useBubbleCanvasInteractions({
         bubbleCategoryDynamicLayouts(graphNodes),
         graphNodes
       );
-      const category = normalizeBubbleCategory(pointer.dragNode.category);
+      const category = bubbleCategoryGroupKey(pointer.dragNode.category);
       const constrainedPoint = constrainBubbleNodeToCategoryRegions(
         pointer.dragNode,
         regions,

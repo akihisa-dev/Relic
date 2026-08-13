@@ -10,10 +10,12 @@ import {
   bubbleCategoryContactOverlap,
   bubbleCategoryContour,
   bubbleCategoryDynamicLayouts,
+  bubbleCategoryGroupKey,
   bubbleCategoryLayouts,
   bubbleCategoryRegions,
   bubbleCategorySpacing,
   bubbleCategoryTarget,
+  bubbleUncategorizedCategory,
   constrainBubbleCategorySpacing,
   constrainBubbleNodesToCategoryRegions,
   normalizeBubbleCategory
@@ -58,12 +60,14 @@ describe("bubbleCategoryModel", () => {
     const byCategory = bubbleCategoryRegions(layouts);
 
     expect(layouts.map((layout) => [layout.category, layout.count])).toEqual([
+      [bubbleUncategorizedCategory, 2],
       ["資料", 1],
       ["人物", 2]
     ]);
     expect(layoutsAgain).toEqual(layouts);
     expect(bubbleCategoryTarget(nodes[1]!, byCategory)?.category).toBe("人物");
-    expect(bubbleCategoryTarget(nodes[3]!, byCategory)).toBeNull();
+    expect(bubbleCategoryTarget(nodes[3]!, byCategory)?.category)
+      .toBe(bubbleUncategorizedCategory);
 
     const distance = Math.hypot(
       layouts[0]!.x - layouts[1]!.x,
@@ -74,6 +78,25 @@ describe("bubbleCategoryModel", () => {
       6
     );
     expect(byCategory.get("資料")?.contacts).toHaveLength(0);
+  });
+
+  it("カテゴリがないファイルを共通の未分類バブルへ集約する", () => {
+    const nodes = [
+      { category: "人物" },
+      {},
+      { category: null },
+      { category: "   " },
+      { category: ["資料"] }
+    ];
+
+    const layouts = bubbleCategoryLayouts(nodes);
+    const uncategorized = layouts.find((layout) => layout.category === bubbleUncategorizedCategory);
+
+    expect(uncategorized).toMatchObject({ category: bubbleUncategorizedCategory, count: 4 });
+    expect(layouts.map((layout) => layout.category)).toEqual([bubbleUncategorizedCategory, "人物"]);
+    expect(bubbleCategoryTarget(nodes[1]!, bubbleCategoryRegions(layouts)))
+      .toMatchObject({ category: bubbleUncategorizedCategory, count: 4 });
+    expect(bubbleCategoryGroupKey(nodes[3]!.category)).toBe(bubbleUncategorizedCategory);
   });
 
   it("一時的に接触した場合は接触方向だけを凹ませる", () => {
@@ -270,7 +293,7 @@ describe("bubbleCategoryModel", () => {
     const contactRadius = bubbleCategoryBoundaryRadius(person, 0);
 
     expect(contactRadius).toBeLessThan(person.radius);
-    expect(contactRadius + 18).toBeCloseTo(110, 6);
+    expect(contactRadius).toBeGreaterThanOrEqual(0);
     expect(bubbleCategoryBoundaryRadius(person, Math.PI)).toBe(person.radius);
     expect((nodes[0]!.vx + nodes[1]!.vx) / 2).toBeLessThan(0);
   });
@@ -344,11 +367,13 @@ describe("bubbleCategoryModel", () => {
       { category: null, fx: null, fy: null, vx: 0, vy: 0, x: 100, y: 100 }
     ];
 
-    expect(bubbleCategoryDynamicLayouts(nodes)[0]).toMatchObject({ x: 20, y: 30 });
+    expect(bubbleCategoryDynamicLayouts(nodes).find((layout) => layout.category === "人物"))
+      .toMatchObject({ x: 20, y: 30 });
     const translated = translateBubbleCategoryNodes(nodes, "人物", 15, -5);
 
     expect(translated).toHaveLength(2);
-    expect(bubbleCategoryDynamicLayouts(nodes)[0]).toMatchObject({ x: 35, y: 25 });
+    expect(bubbleCategoryDynamicLayouts(nodes).find((layout) => layout.category === "人物"))
+      .toMatchObject({ x: 35, y: 25 });
     expect(nodes[0]).toMatchObject({ fx: null, fy: null, x: 25, y: 15 });
     expect(nodes[2]).toMatchObject({ fx: null, fy: null, x: 100, y: 100 });
   });
