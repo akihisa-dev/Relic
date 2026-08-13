@@ -1,11 +1,12 @@
+import { realpath } from "node:fs/promises";
 import type { Stats } from "node:fs";
-import path from "node:path";
 
 import type { MergeFilesInput, WorkspaceTreeNode } from "../../shared/ipc";
 import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import { parseMarkdownTags } from "../../shared/tags";
 import { parseFrontmatter } from "../files/frontmatter";
 import { mapWithConcurrency } from "../files/concurrency";
+import { resolveExistingWorkspacePath, verifyExistingWorkspacePath } from "../files/paths";
 
 export interface FileCandidate {
   ctime: number;
@@ -15,6 +16,7 @@ export interface FileCandidate {
 }
 
 export interface ToolActionFileOperations {
+  realpath?: (filePath: string) => Promise<string>;
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
   stat(filePath: string): Promise<Stats>;
 }
@@ -38,14 +40,20 @@ export class ToolCandidateLimitError extends Error {
   }
 }
 
+interface ToolCandidateSnapshot {
+  absolutePath: string;
+  realPath: string;
+  stats: Stats;
+}
+
 export async function readToolCandidateContent(
   workspacePath: string,
   candidate: Pick<FileCandidate, "relPath">,
   operations: ToolActionFileOperations,
   budget: ToolCandidateReadBudget
 ): Promise<string> {
-  const filePath = path.join(workspacePath, candidate.relPath);
-  const stats = await operations.stat(filePath);
+  const initial = await readToolCandidateSnapshot(workspacePath, candidate.relPath, operations);
+  const stats = initial.stats;
   if (!Number.isSafeInteger(stats.size) || stats.size < 0 || stats.size > maxToolCandidateReadBytes) {
     throw new ToolCandidateLimitError("Tool candidate file size limit exceeded.");
   }
@@ -54,7 +62,14 @@ export async function readToolCandidateContent(
     throw new ToolCandidateLimitError("Tool candidate aggregate read limit exceeded.");
   }
 
-  const content = await operations.readFile(filePath, "utf-8");
+  const content = await operations.readFile(initial.absolutePath, "utf-8");
+  const postRead = await readToolCandidateSnapshot(workspacePath, candidate.relPath, operations);
+  if (!sameToolCandidateIdentity(initial, postRead)) {
+    throw createToolCandidatePathError(
+      "WORKSPACE_PATH_OUTSIDE",
+      "読み込み中に候補ファイルの実体が変更されたため読み込めません。"
+    );
+  }
   const actualBytes = Buffer.byteLength(content, "utf8");
   if (actualBytes > maxToolCandidateReadBytes) {
     throw new ToolCandidateLimitError("Tool candidate file size limit exceeded.");
@@ -79,8 +94,12 @@ export async function collectMergeCandidates(
   assertCandidateCount(files.length);
   const candidates = await mapWithConcurrency(files, maxConcurrentToolCandidateReads, async (node) => {
     try {
-      const s = await operations.stat(path.join(workspacePath, node.path));
-      return { relPath: node.path, mtime: s.mtimeMs, ctime: s.birthtimeMs } satisfies FileCandidate;
+      const snapshot = await readToolCandidateSnapshot(workspacePath, node.path, operations);
+      return {
+        relPath: node.path,
+        mtime: snapshot.stats.mtimeMs,
+        ctime: snapshot.stats.birthtimeMs
+      } satisfies FileCandidate;
     } catch {
       return null;
     }
@@ -147,8 +166,10 @@ export async function collectTitleListFiles(
   assertCandidateCount(files.length);
   const collected = await mapWithConcurrency(files, maxConcurrentToolCandidateReads, async (node) => {
     try {
-      const s = await operations.stat(path.join(workspacePath, node.path));
-      return { name: node.name.replace(/\.md$/, ""), path: node.path, mtime: s.mtimeMs };
+      const initial = await readToolCandidateSnapshot(workspacePath, node.path, operations);
+      const postStat = await readToolCandidateSnapshot(workspacePath, node.path, operations);
+      if (!sameToolCandidateIdentity(initial, postStat)) return null;
+      return { name: node.name.replace(/\.md$/, ""), path: node.path, mtime: postStat.stats.mtimeMs };
     } catch {
       return null;
     }
@@ -165,10 +186,10 @@ export async function collectTagIndexFiles(
   assertCandidateCount(files.length);
   const collected = await mapWithConcurrency(files, maxConcurrentToolCandidateReads, async (node) => {
     try {
-      const s = await operations.stat(path.join(workspacePath, node.path));
+      const snapshot = await readToolCandidateSnapshot(workspacePath, node.path, operations);
       return {
-        ctime: s.birthtimeMs,
-        mtime: s.mtimeMs,
+        ctime: snapshot.stats.birthtimeMs,
+        mtime: snapshot.stats.mtimeMs,
         name: node.name.replace(/\.md$/i, ""),
         relPath: node.path
       } satisfies FileCandidate;
@@ -188,6 +209,55 @@ function flattenTreeFiles(nodes: WorkspaceTreeNode[]): Array<Extract<WorkspaceTr
     else files.push(node);
   }
   return files;
+}
+
+async function readToolCandidateSnapshot(
+  workspacePath: string,
+  relativePath: string,
+  operations: ToolActionFileOperations
+): Promise<ToolCandidateSnapshot> {
+  const realpathOperation = operations.realpath ?? realpath;
+  const resolved = await resolveExistingWorkspacePath(workspacePath, relativePath, {
+    realpath: realpathOperation
+  });
+  if (!resolved.ok) {
+    throw createToolCandidatePathError(resolved.error.code, resolved.error.message);
+  }
+
+  const firstRealPath = await realpathOperation(resolved.value);
+  const verified = await verifyExistingWorkspacePath(workspacePath, resolved.value, {
+    realpath: realpathOperation
+  });
+  if (!verified.ok) {
+    throw createToolCandidatePathError(verified.error.code, verified.error.message);
+  }
+
+  const verifiedRealPath = await realpathOperation(resolved.value);
+  if (firstRealPath !== verifiedRealPath) {
+    throw createToolCandidatePathError(
+      "WORKSPACE_PATH_OUTSIDE",
+      "確認中に候補ファイルの実体が変更されたため読み込めません。"
+    );
+  }
+
+  return {
+    absolutePath: resolved.value,
+    realPath: verifiedRealPath,
+    stats: await operations.stat(resolved.value)
+  };
+}
+
+function sameToolCandidateIdentity(first: ToolCandidateSnapshot, second: ToolCandidateSnapshot): boolean {
+  return first.realPath === second.realPath &&
+    first.stats.dev === second.stats.dev &&
+    first.stats.ino === second.stats.ino;
+}
+
+function createToolCandidatePathError(code: string, message: string): Error & { code: string } {
+  const error = new Error(message) as Error & { code: string };
+  error.name = "ToolCandidatePathError";
+  error.code = code;
+  return error;
 }
 
 function assertCandidateCount(count: number): void {

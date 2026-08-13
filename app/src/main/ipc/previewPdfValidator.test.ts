@@ -75,6 +75,21 @@ describe("isSavePreviewAsPdfInput", () => {
     expect(runtimeMock.renderPreviewHtmlToPdf).not.toHaveBeenCalled();
   });
 
+  it("PDF出力CSPはhead内のmetaだけを有効な入力として扱う", async () => {
+    expect(isSavePreviewAsPdfInput({
+      defaultFileName: "Note",
+      html: validOutputHtml(),
+      title: "Note"
+    })).toBe(true);
+
+    const headCsp = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:;">';
+    const bodyCsp = validOutputHtml().replace(headCsp, "").replace("</head>", `</head>${headCsp}`);
+
+    await expectInvalidHtml(bodyCsp);
+    expect(electronMock.showSaveDialog).not.toHaveBeenCalled();
+    expect(runtimeMock.renderPreviewHtmlToPdf).not.toHaveBeenCalled();
+  });
+
   it("出力CSPへ余分な外部sourceやdirectiveを追加したHTMLを拒否する", async () => {
     const extraSources = validOutputHtml().replace("img-src data:", "img-src data: https://example.com");
     const extraDirective = validOutputHtml().replace("img-src data:", "img-src data:; connect-src https://example.com");

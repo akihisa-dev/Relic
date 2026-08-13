@@ -1,4 +1,15 @@
-import { mkdir, mkdtemp, readFile, rm, stat as readStat, symlink, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  realpath,
+  readFile,
+  rename,
+  rm,
+  stat as readStat,
+  symlink,
+  utimes,
+  writeFile
+} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -262,7 +273,7 @@ describe("readWorkspaceFileIndex", () => {
     const cache = JSON.parse(cacheRaw);
 
     expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["current"]);
-    expect(cache.version).toBe(6);
+    expect(cache.version).toBe(7);
     expect(cache.records[0].lines).toEqual(["current"]);
   });
 
@@ -418,6 +429,102 @@ describe("readWorkspaceFileIndex", () => {
       readStatus: "unreadable",
       lines: []
     }]);
+  });
+
+  it("同じサイズとmtimeの外部実体へ本文読み取り中に差し替えられた場合は拒否する", async () => {
+    const workspacePath = await createWorkspace();
+    const outsidePath = await createWorkspace("relic-index-outside-");
+    const notePath = path.join(workspacePath, "note.md");
+    const backupPath = path.join(workspacePath, "note.old.md");
+    const outsideNotePath = path.join(outsidePath, "note.md");
+    await writeFile(notePath, "inside", "utf8");
+    await writeFile(outsideNotePath, "secret", "utf8");
+    const fixedTime = new Date("2026-01-04T00:00:00.000Z");
+    await utimes(notePath, fixedTime, fixedTime);
+    await utimes(outsideNotePath, fixedTime, fixedTime);
+
+    let swapped = false;
+    const index = await readWorkspaceFileIndex(workspacePath, {
+      fileTree: [{ name: "note.md", path: "note.md", type: "file" }],
+      operations: {
+        realpath,
+        readFile: async (filePath) => {
+          if (!swapped) {
+            swapped = true;
+            await rename(notePath, backupPath);
+            await symlink(outsideNotePath, notePath);
+          }
+          return readFile(filePath, "utf8");
+        },
+        stat: readStat
+      }
+    });
+
+    expect(swapped).toBe(true);
+    expect(index.records).toMatchObject([{
+      path: "note.md",
+      readStatus: "unreadable",
+      lines: []
+    }]);
+  });
+
+  it("キャッシュ利用前に外部実体へ差し替えられた同サイズ本文を再利用しない", async () => {
+    const workspacePath = await createWorkspace();
+    const outsidePath = await createWorkspace("relic-index-outside-");
+    const userDataPath = await createWorkspace("relic-index-user-data-");
+    const cachePath = getWorkspaceFileIndexCachePath(userDataPath, "workspace_1");
+    const notePath = path.join(workspacePath, "note.md");
+    const backupPath = path.join(workspacePath, "note.old.md");
+    const outsideNotePath = path.join(outsidePath, "note.md");
+    await writeFile(notePath, "inside", "utf8");
+    await writeFile(outsideNotePath, "secret", "utf8");
+    const fixedTime = new Date("2026-01-05T00:00:00.000Z");
+    await utimes(notePath, fixedTime, fixedTime);
+    await utimes(outsideNotePath, fixedTime, fixedTime);
+
+    const fileTree = [{ name: "note.md", path: "note.md", type: "file" as const }];
+    await readWorkspaceFileIndex(workspacePath, { cachePath, fileTree });
+    await rename(notePath, backupPath);
+    await symlink(outsideNotePath, notePath);
+
+    const index = await readWorkspaceFileIndex(workspacePath, { cachePath, fileTree });
+
+    expect(index.records).toMatchObject([{
+      path: "note.md",
+      readStatus: "unreadable",
+      lines: []
+    }]);
+    expect(index.records.find((record) => record.path === "note.md")?.lines).not.toContain("secret");
+  });
+
+  it("同じワークスペース内で別inodeへ差し替えられた同サイズ本文はキャッシュを再利用しない", async () => {
+    const workspacePath = await createWorkspace();
+    const userDataPath = await createWorkspace("relic-index-user-data-");
+    const cachePath = getWorkspaceFileIndexCachePath(userDataPath, "workspace_1");
+    const notePath = path.join(workspacePath, "note.md");
+    const replacementPath = path.join(workspacePath, "replacement.md");
+    const backupPath = path.join(workspacePath, "note.old.md");
+    const fixedTime = new Date("2026-01-06T00:00:00.000Z");
+    await writeFile(notePath, "inside", "utf8");
+    await utimes(notePath, fixedTime, fixedTime);
+    await readWorkspaceFileIndex(workspacePath, {
+      cachePath,
+      fileTree: [{ name: "note.md", path: "note.md", type: "file" }]
+    });
+
+    await writeFile(replacementPath, "secret", "utf8");
+    await utimes(replacementPath, fixedTime, fixedTime);
+    await rename(notePath, backupPath);
+    await rename(replacementPath, notePath);
+
+    const index = await readWorkspaceFileIndex(workspacePath, {
+      cachePath,
+      fileTree: [{ name: "note.md", path: "note.md", type: "file" }]
+    });
+
+    expect(index.stats.cacheHitCount).toBe(0);
+    expect(index.stats.readFileCount).toBe(1);
+    expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["secret"]);
   });
 
   it("ワークスペース外を指すシンボリックリンクはMarkdown一覧に含めない", async () => {

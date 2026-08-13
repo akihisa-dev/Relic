@@ -20,13 +20,16 @@ interface PersistedWorkspaceFileIndex {
 
 interface PersistedWorkspaceFileIndexRecord {
   contentHash?: unknown;
+  dev?: unknown;
   headHash?: unknown;
+  ino?: unknown;
   lines?: unknown;
   kind?: unknown;
   mtimeMs?: unknown;
   name?: unknown;
   path?: unknown;
   readStatus?: unknown;
+  realPath?: unknown;
   searchable?: unknown;
   size?: unknown;
 }
@@ -58,7 +61,7 @@ interface WorkspaceFileIndexCacheRuntimeState {
   ownerPath?: string;
 }
 
-export const workspaceFileIndexCacheVersion = 6;
+export const workspaceFileIndexCacheVersion = 7;
 
 const cacheWriteQueues = new Map<string, Promise<void>>();
 const cacheRuntimeStates = new Map<string, WorkspaceFileIndexCacheRuntimeState>();
@@ -222,7 +225,10 @@ function sameRecordIdentity(
     first.path !== second.path ||
     first.size !== second.size ||
     first.mtimeMs !== second.mtimeMs ||
-    first.readStatus !== second.readStatus
+    first.readStatus !== second.readStatus ||
+    first.dev !== second.dev ||
+    first.ino !== second.ino ||
+    first.realPath !== second.realPath
   ) return false;
   if (first.headHash && second.headHash) return first.headHash === second.headHash;
   return first.contentHash === second.contentHash;
@@ -244,6 +250,9 @@ function hasUnchangedSearchableRecordMetadata(
     cached.path === record.path &&
     cached.size === record.size &&
     cached.mtimeMs === record.mtimeMs &&
+    cached.dev === record.dev &&
+    cached.ino === record.ino &&
+    cached.realPath === record.realPath &&
     cached.contentHash === record.contentHash &&
     cached.headHash === record.headHash &&
     cached.searchable === record.searchable
@@ -333,6 +342,8 @@ function parseCachedRecord(raw: unknown): WorkspaceFileIndexRecord | null {
 
   return {
     kind: record.kind,
+    dev: isSafeNonNegativeInteger(record.dev) ? record.dev : undefined,
+    ino: isSafeNonNegativeInteger(record.ino) ? record.ino : undefined,
     lines,
     mtimeMs: record.mtimeMs,
     name: record.name,
@@ -340,6 +351,9 @@ function parseCachedRecord(raw: unknown): WorkspaceFileIndexRecord | null {
     readStatus: record.readStatus,
     searchable: record.searchable,
     size: record.size,
+    realPath: typeof record.realPath === "string" && record.realPath !== ""
+      ? record.realPath
+      : undefined,
     contentHash: record.readStatus === "ok" ? (record.contentHash as string | undefined) : undefined,
     headHash
   };

@@ -11,8 +11,12 @@ export interface WorkspaceFileIndex {
 }
 
 export interface WorkspaceFileIndexRecord extends WorkspaceFileIndexEntry {
+  /** Identity of the filesystem entry used to build this record. */
+  dev?: number;
+  ino?: number;
   lines: string[];
   searchable: boolean;
+  realPath?: string;
   contentHash?: string;
   /** Hash of the same bounded prefix used for large-file markers. */
   headHash?: string;

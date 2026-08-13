@@ -6,7 +6,7 @@
     "component": {
       "type": "application",
       "name": "relic",
-      "version": "0.59.37",
+      "version": "0.59.38",
       "licenses": [
         {
           "license": {
@@ -210,8 +210,8 @@
     {
       "type": "library",
       "name": "dompurify",
-      "version": "3.4.12",
-      "purl": "pkg:npm/dompurify@3.4.12",
+      "version": "3.4.13",
+      "purl": "pkg:npm/dompurify@3.4.13",
       "licenses": [
         {
           "license": {
@@ -324,8 +324,8 @@
     {
       "type": "library",
       "name": "mermaid",
-      "version": "11.16.0",
-      "purl": "pkg:npm/mermaid@11.16.0",
+      "version": "11.16.1",
+      "purl": "pkg:npm/mermaid@11.16.1",
       "licenses": [
         {
           "license": {

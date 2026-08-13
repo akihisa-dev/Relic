@@ -47,6 +47,34 @@ describe("sanitizeOutputSvg", () => {
     expect(result).toBe('<svg><defs><marker id="arrow"/></defs><path marker-end="url(#arrow)" href="#arrow"/></svg>');
   });
 
+  it("正常図の内部CSSとfragment参照を保持する", () => {
+    const input = '<svg><style>.node{fill:#fff} .edge{marker-end:url(#arrow)}</style><path fill="url(#gradient)" stroke="none"/></svg>';
+    const result = sanitizeOutputSvg(input);
+
+    expect(result).toContain(".node{fill:#fff}");
+    expect(result).toContain("marker-end:url(#arrow)");
+    expect(result).toContain('fill="url(#gradient)"');
+  });
+
+  it("SVGの外部CSS・外部URL属性・base・stylesheet処理命令を除去する", () => {
+    const input = [
+      '<svg xml:base="https://evil.example/">',
+      '<?xml-stylesheet type="text/css" href="https://evil.example/style.css"?>',
+      '<base href="https://evil.example/">',
+      '<style>@import url("https://evil.example/import.css"); .node{fill:url(file:///tmp/fill)} .safe{fill:url(#gradient)}</style>',
+      '<rect fill="url(https://evil.example/fill)" filter="url(#safe-filter)" style="fill:url(https://evil.example/style)"/>',
+      '</svg>'
+    ].join("");
+    const result = sanitizeOutputSvg(input);
+
+    expect(result).not.toMatch(/xml:base|<base|xml-stylesheet/i);
+    expect(result).not.toMatch(/https:\/\/evil\.example|file:\/\/\/tmp/i);
+    expect(result).not.toContain('fill="url(');
+    expect(result).toContain(".safe{fill:url(#gradient)}");
+    expect(result).toContain('filter="url(#safe-filter)"');
+    expect(result).not.toContain("style=");
+  });
+
   it("空白入り制御文字入りの危険スキームは除去する", () => {
     const input = '<svg><a href="ja va script:alert(1)">bad</a></svg>';
     const result = sanitizeOutputSvg(input);

@@ -1,9 +1,22 @@
 const outputSvgUriAttributes = new Set(["href", "xlink:href", "src"]);
-const forbiddenOutputSvgTags = new Set(["foreignobject", "script"]);
+const outputSvgUrlFunctionAttributes = new Set([
+  "clip-path",
+  "cursor",
+  "fill",
+  "filter",
+  "marker-end",
+  "marker-mid",
+  "marker-start",
+  "mask",
+  "stroke"
+]);
+const forbiddenOutputSvgTags = new Set(["base", "foreignobject", "script"]);
 const forbiddenOutputSvgBlockPatterns = [...forbiddenOutputSvgTags].map((tagName) => new RegExp(
   `<\\s*${tagName}\\b[^>]*(?:\\/>|[\\s\\S]*?<\\s*\\/\\s*${tagName}\\s*>)`,
   "gi"
 ));
+const processingInstructionPattern = /<\?[\s\S]*?\?>/gi;
+const svgStyleBlockPattern = /(<\s*style\b[^>]*>)([\s\S]*?)(<\s*\/\s*style\s*>)/gi;
 
 export function hasRenderableSvg(svg: string): boolean {
   const match = /<svg\b[^>]*>([\s\S]*?)<\/svg>/i.exec(svg.trim());
@@ -18,11 +31,15 @@ export function sanitizeOutputSvg(svg: string): string {
 }
 
 function sanitizeOutputSvgMarkup(svg: string): string {
-  let sanitized = svg;
+  let sanitized = svg.replace(processingInstructionPattern, "");
 
   for (const forbiddenBlockPattern of forbiddenOutputSvgBlockPatterns) {
     sanitized = sanitized.replace(forbiddenBlockPattern, "");
   }
+
+  sanitized = sanitized.replace(svgStyleBlockPattern, (_match, openingTag: string, cssText: string, closingTag: string) => (
+    `${openingTag}${sanitizeOutputSvgCss(cssText)}${closingTag}`
+  ));
 
   return sanitized.replace(/<([A-Za-z][\w:.-]*)([^<>]*?)(\/?)>/g, (_tag, tagName: string, rawAttributes: string, selfClosing: string) => {
     if (forbiddenOutputSvgTags.has(tagName.toLowerCase())) return "";
@@ -40,7 +57,14 @@ function sanitizeOutputSvgAttributes(rawAttributes: string): string {
     const name = rawName.toLowerCase();
     const value = match[2] ?? match[3] ?? match[4] ?? "";
 
-    if (name.startsWith("on") || (outputSvgUriAttributes.has(name) && !isSafeOutputSvgUri(value))) {
+    if (
+      name === "base" ||
+      name === "xml:base" ||
+      name === "style" ||
+      name.startsWith("on") ||
+      (outputSvgUriAttributes.has(name) && !isSafeOutputSvgUri(value)) ||
+      (outputSvgUrlFunctionAttributes.has(name) && !isSafeOutputSvgUrlFunction(value))
+    ) {
       continue;
     }
 
@@ -55,6 +79,31 @@ function isSafeOutputSvgUri(value: string): boolean {
   const normalized = trimmed.replace(/[\u0000-\u0020]+/g, "");
 
   return /^#[A-Za-z_][\w:.-]*$/.test(normalized);
+}
+
+function isSafeOutputSvgUrlFunction(value: string): boolean {
+  const decoded = decodeNumericCharacterReferences(value);
+  const urlPattern = /url\s*\(\s*(['"]?)(.*?)\1\s*\)/gi;
+  let foundUrl = false;
+
+  for (const match of decoded.matchAll(urlPattern)) {
+    foundUrl = true;
+    const url = (match[2] ?? "").replace(/[\u0000-\u0020]+/g, "");
+    if (!/^#[A-Za-z_][\w:.-]*$/.test(url)) return false;
+  }
+
+  return foundUrl || !/url\s*\(/i.test(decoded);
+}
+
+function sanitizeOutputSvgCss(cssText: string): string {
+  let sanitized = cssText.replace(/@import\b[^;{}]*(?:;|$)/gi, "");
+  const decoded = decodeNumericCharacterReferences(sanitized);
+  const urlPattern = /url\s*\(\s*(['"]?)(.*?)\1\s*\)/gi;
+
+  return decoded.replace(urlPattern, (match, _quote: string, rawUrl: string) => {
+    const url = rawUrl.replace(/[\u0000-\u0020]+/g, "");
+    return /^#[A-Za-z_][\w:.-]*$/.test(url) ? match : "";
+  });
 }
 
 function decodeNumericCharacterReferences(value: string): string {

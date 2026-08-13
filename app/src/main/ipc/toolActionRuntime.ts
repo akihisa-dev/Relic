@@ -1,4 +1,4 @@
-import { readFile, stat } from "node:fs/promises";
+import { readFile, realpath, stat } from "node:fs/promises";
 
 import { app } from "electron";
 
@@ -13,6 +13,7 @@ interface ToolWorkspaceContext {
 
 const defaultToolActionFileOperations: ToolActionFileOperations = {
   readFile,
+  realpath,
   stat
 };
 

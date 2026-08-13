@@ -45,6 +45,7 @@ describe("workspaceFileIndexCache", () => {
 
   it("旧versionと壊れたJSONを拒否する", () => {
     expect(parseCachedWorkspaceFileIndex(JSON.stringify({ records: [], version: 1 }))).toBeNull();
+    expect(parseCachedWorkspaceFileIndex(JSON.stringify({ records: [], version: workspaceFileIndexCacheVersion - 1 }))).toBeNull();
     expect(parseCachedWorkspaceFileIndex("{" )).toBeNull();
   });
 

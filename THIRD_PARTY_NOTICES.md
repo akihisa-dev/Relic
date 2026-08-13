@@ -18,13 +18,13 @@ Relic 本体は AGPL-3.0-or-later で公開されています。
 | `@terrastruct/d2` | `0.1.33` | MPL-2.0 | [link](https://github.com/terrastruct/d2) |
 | `3d-force-graph` | `1.80.0` | MIT | [link](https://github.com/vasturiano/3d-force-graph) |
 | `d3-force` | `3.0.0` | ISC | [link](https://github.com/d3/d3-force) |
-| `dompurify` | `3.4.12` | (MPL-2.0 OR Apache-2.0) | [link](https://github.com/cure53/DOMPurify) |
+| `dompurify` | `3.4.13` | (MPL-2.0 OR Apache-2.0) | [link](https://github.com/cure53/DOMPurify) |
 | `highlight.js` | `11.11.1` | BSD-3-Clause | [link](https://github.com/highlightjs/highlight.js) |
 | `js-yaml` | `5.2.2` | MIT | [link](https://github.com/nodeca/js-yaml) |
 | `katex` | `0.17.0` | MIT | [link](https://github.com/KaTeX/KaTeX) |
 | `marked` | `18.0.5` | MIT | [link](https://github.com/markedjs/marked) |
 | `marked-footnote` | `1.4.0` | MIT | [link](https://github.com/bent10/marked-extensions) |
-| `mermaid` | `11.16.0` | MIT | [link](https://github.com/mermaid-js/mermaid) |
+| `mermaid` | `11.16.1` | MIT | [link](https://github.com/mermaid-js/mermaid) |
 | `react` | `19.2.7` | MIT | [link](https://github.com/facebook/react) |
 | `react-dom` | `19.2.7` | MIT | [link](https://github.com/facebook/react) |
 | `three` | `0.185.1` | MIT | [link](https://github.com/mrdoob/three.js) |

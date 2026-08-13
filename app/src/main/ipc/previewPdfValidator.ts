@@ -62,7 +62,10 @@ function isSafePreviewOutputHtml(html: string): boolean {
 }
 
 function hasRequiredOutputCsp(html: string): boolean {
-  return Array.from(html.matchAll(/<meta\b[^>]*>/gi)).some(([tag]) => {
+  const headContent = /<head\b[^>]*>([\s\S]*?)<\/head>/i.exec(html)?.[1];
+  if (headContent === undefined) return false;
+
+  return Array.from(headContent.matchAll(/<meta\b[^>]*>/gi)).some(([tag]) => {
     const httpEquiv = /\bhttp-equiv\s*=\s*(["'])content-security-policy\1/i.test(tag);
     const content = /\bcontent\s*=\s*(["'])([\s\S]*?)\1/i.exec(tag)?.[2] ?? "";
     return httpEquiv && isExactOutputCsp(content);

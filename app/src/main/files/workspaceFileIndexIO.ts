@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { Stats } from "node:fs";
-import { open, readFile, stat } from "node:fs/promises";
+import { open, readFile, realpath, stat } from "node:fs/promises";
 
 import { ensurePrivateSettingsDirectory, writePrivateSettingsTextFile } from "../settings/secureSettingsFile";
 
@@ -9,6 +9,7 @@ export interface WorkspaceFileIndexOperations {
   readCache(filePath: string): Promise<string>;
   readFile(filePath: string): Promise<string>;
   readHead(filePath: string, byteLength: number): Promise<string>;
+  realpath?: (filePath: string) => Promise<string>;
   stat(filePath: string): Promise<Stats>;
   writeCache(filePath: string, content: string): Promise<void>;
 }
@@ -29,6 +30,7 @@ export const defaultWorkspaceFileIndexOperations: WorkspaceFileIndexOperations =
   readCache: (filePath) => readFile(filePath, "utf8"),
   readFile: (filePath) => readFile(filePath, "utf8"),
   readHead: readFileHead,
+  realpath,
   stat,
   writeCache: writePrivateSettingsTextFile
 };

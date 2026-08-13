@@ -1,11 +1,12 @@
 import type { Stats } from "node:fs";
+import { realpath } from "node:fs/promises";
 import path from "node:path";
 
 import type { WorkspaceFileKind, WorkspaceTreeNode } from "../../shared/ipc";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceFileTree } from "./fileTree";
-import { resolveExistingWorkspacePath } from "./paths";
+import { resolveExistingWorkspacePath, verifyExistingWorkspacePath } from "./paths";
 import { mapWithConcurrency } from "./concurrency";
 import { finishPerformanceMeasure, startPerformanceMeasure } from "./performanceLog";
 import {
@@ -106,13 +107,13 @@ export async function readWorkspaceFileIndex(
     boundedPaths,
     maxConcurrentIndexReads,
     async (relativePath) => {
-      const absolutePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
-      if (!absolutePath.ok) return unreadableRecord(relativePath);
+      const readTarget = await resolveWorkspaceFileReadTarget(workspacePath, relativePath, operations);
+      if (!readTarget) return unreadableRecord(relativePath);
 
       let fileStats: Stats;
       try {
         stats.statCount += 1;
-        fileStats = await operations.stat(absolutePath.value);
+        fileStats = await operations.stat(readTarget.absolutePath);
       } catch {
         stats.unreadableCount += 1;
         return unreadableRecord(relativePath);
@@ -125,15 +126,34 @@ export async function readWorkspaceFileIndex(
         cached?.readStatus === "ok" &&
         typeof cached.contentHash === "string" &&
         cached.size === fileStats.size &&
-        cached.mtimeMs === fileStats.mtimeMs
+        cached.mtimeMs === fileStats.mtimeMs &&
+        cached.dev === fileStats.dev &&
+        cached.ino === fileStats.ino &&
+        cached.realPath === readTarget.realPath
       ) {
         stats.cacheHitCount += 1;
         if (!isWithinCurrentSearchLimit) {
           if (!cached.searchable) {
             try {
+              const latestReadTarget = await revalidateWorkspaceFileReadTarget(
+                workspacePath,
+                relativePath,
+                readTarget,
+                operations,
+                stats
+              );
+              if (!latestReadTarget) return unreadableRecord(relativePath, fileStats);
               stats.readHeadCount += 1;
-              const head = await operations.readHead(absolutePath.value, mapMarkerHeadBytes);
+              const head = await operations.readHead(latestReadTarget.absolutePath, mapMarkerHeadBytes);
               if (cached.contentHash === workspaceFileContentHash(head)) {
+                const postReadStats = await stablePostReadStats(
+                  latestReadTarget.absolutePath,
+                  fileStats,
+                  latestReadTarget.realPath,
+                  operations,
+                  stats
+                );
+                if (!postReadStats) return unreadableRecord(relativePath);
                 return { ...cached, lines: [] };
               }
             } catch {
@@ -142,28 +162,53 @@ export async function readWorkspaceFileIndex(
             }
           }
 
-          return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats, lineBudget);
+          return readIndexRecord(workspacePath, readTarget, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats, lineBudget);
         }
 
         if (!cached.searchable) {
-          return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats, lineBudget);
+          return readIndexRecord(workspacePath, readTarget, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats, lineBudget);
         }
 
         if (!includeSearchContent) {
+          const postReadStats = await stablePostReadStats(
+            readTarget.absolutePath,
+            fileStats,
+            readTarget.realPath,
+            operations,
+            stats
+          );
+          if (!postReadStats) return unreadableRecord(relativePath);
           return { ...cached, lines: [] };
         }
 
         if (cached.lines.length > 0) {
+          const postReadStats = await stablePostReadStats(
+            readTarget.absolutePath,
+            fileStats,
+            readTarget.realPath,
+            operations,
+            stats
+          );
+          if (!postReadStats) return unreadableRecord(relativePath);
           stats.cachedContentHitCount += 1;
           return cached;
         }
 
         try {
+          const latestReadTarget = await revalidateWorkspaceFileReadTarget(
+            workspacePath,
+            relativePath,
+            readTarget,
+            operations,
+            stats
+          );
+          if (!latestReadTarget) return unreadableRecord(relativePath, fileStats);
           stats.readFileCount += 1;
-          const content = await operations.readFile(absolutePath.value);
+          const content = await operations.readFile(latestReadTarget.absolutePath);
           const postReadStats = await stablePostReadStats(
-            absolutePath.value,
+            latestReadTarget.absolutePath,
             fileStats,
+            latestReadTarget.realPath,
             operations,
             stats
           );
@@ -175,6 +220,7 @@ export async function readWorkspaceFileIndex(
             return recordFor(
               relativePath,
               postReadStats,
+              latestReadTarget.realPath,
               cached.kind,
               bounded.lines,
               cached.searchable && bounded.searchable,
@@ -189,7 +235,7 @@ export async function readWorkspaceFileIndex(
       }
 
       stats.cacheMissCount += 1;
-      return readIndexRecord(absolutePath.value, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats, lineBudget);
+      return readIndexRecord(workspacePath, readTarget, relativePath, fileStats, maxSearchFileBytes, operations, includeSearchContent, stats, lineBudget);
     }
   );
 
@@ -217,8 +263,11 @@ export async function readWorkspaceFileIndex(
   return {
     entries: sortedRecords.map(({
       contentHash: _contentHash,
+      dev: _dev,
       headHash: _headHash,
+      ino: _ino,
       lines: _lines,
+      realPath: _realPath,
       searchable: _searchable,
       ...entry
     }) => entry),
@@ -240,8 +289,63 @@ function boundedSearchLines(content: string, budget: { bytes: number }): { lines
   return { lines, searchable: true };
 }
 
+interface WorkspaceFileReadTarget {
+  absolutePath: string;
+  realPath: string;
+}
+
+async function resolveWorkspaceFileReadTarget(
+  workspacePath: string,
+  relativePath: string,
+  operations: WorkspaceFileIndexOperations
+): Promise<WorkspaceFileReadTarget | undefined> {
+  const realpathOperation = operations.realpath ?? realpath;
+  const resolved = await resolveExistingWorkspacePath(workspacePath, relativePath, {
+    realpath: realpathOperation
+  });
+  if (!resolved.ok) return undefined;
+
+  const firstRealPath = await realpathOperation(resolved.value).catch(() => undefined);
+  if (!firstRealPath) return undefined;
+
+  const verified = await verifyExistingWorkspacePath(workspacePath, resolved.value, {
+    realpath: realpathOperation
+  });
+  if (!verified.ok) return undefined;
+
+  const verifiedRealPath = await realpathOperation(resolved.value).catch(() => undefined);
+  if (!verifiedRealPath || firstRealPath !== verifiedRealPath) return undefined;
+
+  return {
+    absolutePath: resolved.value,
+    realPath: verifiedRealPath
+  };
+}
+
+async function revalidateWorkspaceFileReadTarget(
+  workspacePath: string,
+  relativePath: string,
+  initialTarget: WorkspaceFileReadTarget,
+  operations: WorkspaceFileIndexOperations,
+  stats: WorkspaceFileIndexStats
+): Promise<WorkspaceFileReadTarget | undefined> {
+  const latestTarget = await resolveWorkspaceFileReadTarget(workspacePath, relativePath, operations);
+  if (!latestTarget) {
+    stats.unreadableCount += 1;
+    return undefined;
+  }
+
+  if (initialTarget.realPath !== latestTarget.realPath) {
+    stats.unreadableCount += 1;
+    return undefined;
+  }
+
+  return latestTarget;
+}
+
 async function readIndexRecord(
-  absolutePath: string,
+  workspacePath: string,
+  readTarget: WorkspaceFileReadTarget,
   relativePath: string,
   fileStats: Stats,
   maxSearchFileBytes: number,
@@ -250,13 +354,23 @@ async function readIndexRecord(
   stats: WorkspaceFileIndexStats,
   lineBudget: { bytes: number }
 ): Promise<WorkspaceFileIndexRecord> {
+  const latestReadTarget = await revalidateWorkspaceFileReadTarget(
+    workspacePath,
+    relativePath,
+    readTarget,
+    operations,
+    stats
+  );
+  if (!latestReadTarget) return unreadableRecord(relativePath, fileStats);
+
   if (fileStats.size > maxSearchFileBytes) {
     try {
       stats.readHeadCount += 1;
-      const head = await operations.readHead(absolutePath, mapMarkerHeadBytes);
+      const head = await operations.readHead(latestReadTarget.absolutePath, mapMarkerHeadBytes);
       const postReadStats = await stablePostReadStats(
-        absolutePath,
+        latestReadTarget.absolutePath,
         fileStats,
+        latestReadTarget.realPath,
         operations,
         stats
       );
@@ -264,6 +378,7 @@ async function readIndexRecord(
       return recordFor(
         relativePath,
         postReadStats,
+        latestReadTarget.realPath,
         "markdown",
         [],
         false,
@@ -278,10 +393,11 @@ async function readIndexRecord(
 
   try {
     stats.readFileCount += 1;
-    const content = await operations.readFile(absolutePath);
+    const content = await operations.readFile(latestReadTarget.absolutePath);
     const postReadStats = await stablePostReadStats(
-      absolutePath,
+      latestReadTarget.absolutePath,
       fileStats,
+      latestReadTarget.realPath,
       operations,
       stats
     );
@@ -290,6 +406,7 @@ async function readIndexRecord(
     return recordFor(
       relativePath,
       postReadStats,
+      latestReadTarget.realPath,
       "markdown",
       bounded.lines,
       includeSearchContent && bounded.searchable,
@@ -305,19 +422,28 @@ async function readIndexRecord(
 async function stablePostReadStats(
   absolutePath: string,
   initialStats: Stats,
+  initialRealPath: string,
   operations: WorkspaceFileIndexOperations,
   stats: WorkspaceFileIndexStats
 ): Promise<Stats | undefined> {
   let postReadStats: Stats;
+  let postReadRealPath: string;
   try {
     stats.statCount += 1;
     postReadStats = await operations.stat(absolutePath);
+    postReadRealPath = await (operations.realpath ?? realpath)(absolutePath);
   } catch {
     stats.unreadableCount += 1;
     return undefined;
   }
 
-  if (initialStats.size !== postReadStats.size || initialStats.mtimeMs !== postReadStats.mtimeMs) {
+  if (
+    initialRealPath !== postReadRealPath ||
+    initialStats.dev !== postReadStats.dev ||
+    initialStats.ino !== postReadStats.ino ||
+    initialStats.size !== postReadStats.size ||
+    initialStats.mtimeMs !== postReadStats.mtimeMs
+  ) {
     stats.unreadableCount += 1;
     return undefined;
   }
@@ -328,6 +454,7 @@ async function stablePostReadStats(
 function recordFor(
   relativePath: string,
   fileStats: Stats,
+  realPath: string,
   kind: WorkspaceFileKind,
   lines: string[],
   searchable: boolean,
@@ -335,12 +462,15 @@ function recordFor(
   headHash?: string
 ): WorkspaceFileIndexRecord {
   return {
+    dev: fileStats.dev,
+    ino: fileStats.ino,
     kind,
     lines,
     mtimeMs: fileStats.mtimeMs,
     name: stripMarkdownExtension(path.posix.basename(relativePath)),
     path: relativePath,
     readStatus: "ok",
+    realPath,
     searchable,
     size: fileStats.size,
     contentHash,
