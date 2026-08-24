@@ -12,14 +12,14 @@ export interface GraphDrawTheme {
 }
 
 export const defaultGraphDrawTheme: GraphDrawTheme = {
-  accent: "#f2691b",
-  background: "#ffffff",
-  border: "#3b3c33",
-  borderStrong: "#5b5d52",
-  primary: "#1a1b17",
-  text: "#1e1e1e",
-  textMuted: "#76756c",
-  textSecondary: "#62625b"
+  accent: "#050505",
+  background: "#fffffe",
+  border: "rgba(5, 5, 5, 0.18)",
+  borderStrong: "rgba(5, 5, 5, 0.42)",
+  primary: "#050505",
+  text: "#050505",
+  textMuted: "rgba(5, 5, 5, 0.56)",
+  textSecondary: "rgba(5, 5, 5, 0.72)"
 };
 
 export function readGraphDrawTheme(element: Element = document.documentElement): GraphDrawTheme {
@@ -40,9 +40,9 @@ export function readGraphDrawTheme(element: Element = document.documentElement):
 }
 
 export function graphCategoryColor(category: string, theme: GraphDrawTheme): string {
-  const hue = Math.abs(graphCategoryHash(category)) % 360;
-  const lightness = graphThemeIsDark(theme.background) ? 68 : 40;
-  return `hsl(${hue} 62% ${lightness}%)`;
+  const tone = Math.abs(graphCategoryHash(category)) % 41;
+  const lightness = graphThemeIsDark(theme.background) ? 82 - tone : 18 + tone;
+  return `hsl(0 0% ${lightness}%)`;
 }
 
 export function graphCategoryColors(
@@ -60,10 +60,13 @@ export function graphCategoryColors(
     return new Map([[category, graphCategoryColor(category, theme)]]);
   }
 
-  const lightness = graphThemeIsDark(theme.background) ? 68 : 40;
+  const dark = graphThemeIsDark(theme.background);
+  const toneStart = dark ? 82 : 18;
+  const toneSpan = dark ? -40 : 40;
   return new Map(orderedCategories.map((category, index) => {
-    const hue = Math.round((15 + index * 360 / orderedCategories.length) % 360);
-    return [category, `hsl(${hue} 62% ${lightness}%)`];
+    const progress = orderedCategories.length <= 1 ? 0 : index / (orderedCategories.length - 1);
+    const lightness = Math.round(toneStart + toneSpan * progress);
+    return [category, `hsl(0 0% ${lightness}%)`];
   }));
 }
 

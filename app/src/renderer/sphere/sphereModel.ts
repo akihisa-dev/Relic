@@ -240,16 +240,22 @@ export function sphereNodeAppearance(
 
 export function sphereRenderableColor(color: string): string {
   const modernHsl = /^hsl\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*\)$/iu.exec(color);
-  if (!modernHsl) return color;
-  return `hsl(${modernHsl[1]}, ${modernHsl[2]}%, ${modernHsl[3]}%)`;
+  if (modernHsl) return `hsl(${modernHsl[1]}, ${modernHsl[2]}%, ${modernHsl[3]}%)`;
+  const rgba = /^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*[\d.]+\s*\)$/iu.exec(color);
+  if (rgba) return `rgb(${rgba[1]}, ${rgba[2]}, ${rgba[3]})`;
+  return color;
 }
 
 export function sphereColorWithOpacity(color: string, opacity: number): string {
-  const match = /^#([0-9a-f]{6})$/iu.exec(color);
-  if (!match) return color;
-  const value = Number.parseInt(match[1]!, 16);
   const safeOpacity = Math.max(0, Math.min(1, opacity));
-  return `rgba(${value >> 16}, ${(value >> 8) & 0xff}, ${value & 0xff}, ${safeOpacity})`;
+  const hexadecimal = /^#([0-9a-f]{6})$/iu.exec(color);
+  if (hexadecimal) {
+    const value = Number.parseInt(hexadecimal[1]!, 16);
+    return `rgba(${value >> 16}, ${(value >> 8) & 0xff}, ${value & 0xff}, ${safeOpacity})`;
+  }
+  const rgb = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[\d.]+)?\s*\)$/iu.exec(color);
+  if (rgb) return `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, ${safeOpacity})`;
+  return color;
 }
 
 export function sphereFocusIds(data: SphereData, focusId: string | null): Set<string> {

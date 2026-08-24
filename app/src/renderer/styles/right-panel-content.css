@@ -106,17 +106,17 @@
 }
 
 .links-list-kind--embed {
-  background: rgba(31, 35, 40, 0.08);
+  background: transparent;
   color: var(--text-2);
 }
 
 .links-list-kind--backlink {
-  background: rgba(31, 35, 40, 0.08);
+  background: transparent;
   color: var(--text-2);
 }
 
 .links-list-kind--unlinked {
-  background: rgba(31, 35, 40, 0.08);
+  background: transparent;
   color: var(--text-2);
 }
 

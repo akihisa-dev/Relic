@@ -730,10 +730,10 @@
 
 .table-frontmatter-warning {
   align-items: center;
-  background: color-mix(in srgb, var(--warning, #c9852d) 16%, transparent);
-  border: 1px solid color-mix(in srgb, var(--warning, #c9852d) 52%, transparent);
+  background: color-mix(in srgb, var(--warning, var(--color-primary)) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning, var(--color-primary)) 42%, transparent);
   border-radius: 50%;
-  color: var(--warning, #c9852d);
+  color: var(--warning, var(--color-primary));
   display: inline-flex;
   flex: 0 0 auto;
   font-size: 10px;

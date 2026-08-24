@@ -8,7 +8,7 @@
   backdrop-filter: blur(18px) saturate(135%);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 12px 28px rgba(19, 35, 58, 0.12);
+  box-shadow: 0 12px 28px rgba(5, 5, 5, 0.12);
   color: var(--text-3);
   display: flex;
   font-size: 12px;

@@ -283,7 +283,7 @@ describe("sphereRuntime", () => {
     } as const;
     expect(linkWidthAccessor(unfocusedLink)).toBe(0);
     expect(linkColorAccessor(sphereData().links[0])).toBe(defaultGraphDrawTheme.primary);
-    expect(linkColorAccessor(unfocusedLink)).toBe("rgba(98, 98, 91, 0.12)");
+    expect(linkColorAccessor(unfocusedLink)).toBe("rgba(5, 5, 5, 0.12)");
     runtime.setFocus(null);
     expect(focusedMaterial.opacity).toBe(0.86);
     expect(connectedMaterial.opacity).toBe(0.86);

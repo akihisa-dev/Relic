@@ -1,7 +1,7 @@
 /* ─── Chronicle canvas ─── */
 .chronicle-panel {
   --chronicle-category-lightness: 40%;
-  --chronicle-category-saturation: 68%;
+  --chronicle-category-saturation: 0%;
   --chronicle-category-uncategorized: var(--color-text-muted);
   display: flex;
   flex-direction: column;
@@ -14,7 +14,7 @@
 
 [data-theme="dark"] .chronicle-panel {
   --chronicle-category-lightness: 70%;
-  --chronicle-category-saturation: 78%;
+  --chronicle-category-saturation: 0%;
 }
 
 .chronicle-body {
@@ -497,7 +497,7 @@
 .chronicle-calendar-number-field > span { color: var(--text-3); font-size: 11px; }
 .chronicle-calendar-range-status { color: var(--text-3); font-size: 10px; line-height: 1.4; margin: 7px 0 0; }
 .chronicle-calendar-range-status--error { color: var(--color-danger); }
-.chronicle-calendar-range-status--warning { color: var(--color-warning, #b45309); }
+.chronicle-calendar-range-status--warning { color: var(--color-warning, var(--color-primary)); }
 .chronicle-calendar-add {
   background: transparent;
   border: 1px dashed var(--border-medium);

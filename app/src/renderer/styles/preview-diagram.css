@@ -6,7 +6,7 @@
 }
 
 .preview-diagram pre {
-  background: rgba(31, 35, 40, 0.04);
+  background: transparent;
   border-radius: 6px;
   margin: 0;
   overflow-x: auto;
@@ -174,7 +174,7 @@
 
 .preview-diagram-overlay {
   align-items: center;
-  background: rgba(18, 24, 34, 0.62);
+  background: rgba(5, 5, 5, 0.62);
   box-sizing: border-box;
   display: flex;
   inset: 0;

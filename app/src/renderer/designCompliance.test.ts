@@ -10,25 +10,28 @@ describe("DESIGN.md compliance", () => {
   const workspaceEditorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
   it("uses the DESIGN.md color tokens", () => {
-    expect(designCss).toContain("--color-primary: #1a1b17;");
-    expect(designCss).toContain("--color-bg: #f4f0e6;");
-    expect(designCss).toContain("--color-overlay: rgba(255, 255, 255, 0.44);");
-    expect(designCss).toContain("--color-overlay-subtle: rgba(26, 27, 23, 0.06);");
-    expect(designCss).toContain("--color-surface: #faf7f0;");
-    expect(designCss).toContain("--color-surface-alt: #ebe5d9;");
-    expect(designCss).toContain("--color-border: #d8d0c1;");
-    expect(designCss).toContain("--color-border-strong: #b8af9f;");
-    expect(designCss).toContain("--color-text: #1a1b17;");
-    expect(designCss).toContain("--color-text-secondary: #62625b;");
-    expect(designCss).toContain("--color-text-muted: #76756c;");
-    expect(designCss).toContain("--color-tooltip-border: #b8af9f;");
-    expect(designCss).toContain("--color-tooltip-surface: #f4f0e6;");
-    expect(designCss).toContain("--color-tooltip-text: #1a1b17;");
-    expect(designCss).toContain("--color-accent-surface: rgba(242, 105, 27, 0.84);");
-    expect(designCss).toContain("--color-accent: #f2691b;");
-    expect(designCss).toContain("--color-accent-strong: #d95711;");
-    expect(designCss).toContain("--color-danger: #e23b30;");
+    expect(designCss).toContain("--color-primary: #050505;");
+    expect(designCss).toContain("--color-bg: #fffffe;");
+    expect(designCss).toContain("--color-overlay: rgba(5, 5, 5, 0.86);");
+    expect(designCss).toContain("--color-overlay-subtle: rgba(5, 5, 5, 0.06);");
+    expect(designCss).toContain("--color-surface: #fffffe;");
+    expect(designCss).toContain("--color-surface-alt: rgba(5, 5, 5, 0.08);");
+    expect(designCss).toContain("--color-border: rgba(5, 5, 5, 0.18);");
+    expect(designCss).toContain("--color-border-strong: rgba(5, 5, 5, 0.42);");
+    expect(designCss).toContain("--color-text: #050505;");
+    expect(designCss).toContain("--color-text-secondary: rgba(5, 5, 5, 0.72);");
+    expect(designCss).toContain("--color-text-muted: rgba(5, 5, 5, 0.56);");
+    expect(designCss).toContain("--color-tooltip-surface: rgba(5, 5, 5, 0.86);");
+    expect(designCss).toContain("--color-tooltip-text: #fffffe;");
+    expect(designCss).toContain("--color-glass-overlay: rgba(5, 5, 5, 0.86);");
+    expect(designCss).toContain("--color-glass-highlight: rgba(255, 255, 254, 0.12);");
+    expect(designCss).toContain("--color-accent-surface: var(--color-glass-overlay);");
+    expect(designCss).toContain("--color-accent: #050505;");
+    expect(designCss).toContain("--color-accent-strong: #000000;");
+    expect(designCss).toContain("--color-danger: #050505;");
     expect(designCss).toContain("--color-warning: var(--color-danger);");
+    expect(designCss).toContain("--color-success: #050505;");
+    expect(designCss).toContain("--color-info: #050505;");
   });
 
   it("uses the Liquid Charcoal font stack with system fallback", () => {
@@ -45,13 +48,14 @@ describe("DESIGN.md compliance", () => {
     expect(designCss).toMatch(/\.rail,\s*\.sidebar,\s*\.right-panel\s*\{[^}]*border-radius:\s*0;/s);
   });
 
-  it("uses translucent chrome while keeping borders and shadows restrained", () => {
+  it("uses black glass for operation layers and opaque white for broad panels", () => {
     expect(designCss).toMatch(/DESIGN\.md compliance overrides/);
-    expect(designCss).toMatch(/\.rail,\s*\.sidebar,\s*\.right-panel\s*\{[^}]*background:\s*var\(--color-overlay\);/s);
-    expect(designCss).toMatch(/\.rail,\s*\.sidebar,\s*\.right-panel\s*\{[^}]*backdrop-filter:\s*blur\(8px\)/s);
-    expect(designCss).toMatch(/\.rail,\s*\.sidebar,\s*\.right-panel\s*\{[^}]*box-shadow:\s*none;/s);
+    expect(designCss).toMatch(/\.rail\s*\{[^}]*background:\s*var\(--color-glass-overlay\);/s);
+    expect(designCss).toMatch(/\.rail\s*\{[^}]*backdrop-filter:\s*blur\(10px\) saturate\(100%\)/s);
+    expect(designCss).toMatch(/\.sidebar,\s*\.right-panel\s*\{[^}]*background:\s*var\(--color-bg\);/s);
+    expect(designCss).toMatch(/\.sidebar,\s*\.right-panel\s*\{[^}]*backdrop-filter:\s*none;/s);
     expect(designCss).toMatch(/\.settings-segmented\s*\{[^}]*background:\s*var\(--color-surface-alt\);/s);
-    expect(designCss).toMatch(/\.settings-segmented-indicator\s*\{[^}]*background:\s*var\(--color-accent\);/s);
+    expect(designCss).toMatch(/\.settings-segmented-indicator\s*\{[^}]*background:\s*var\(--color-glass-overlay\);/s);
     expect(designCss).toMatch(/\.setting-row input\[type="checkbox"\],\s*\.setting-row input\[type="checkbox"\]::after\s*\{[^}]*box-shadow:\s*none;/s);
   });
 
@@ -98,13 +102,14 @@ describe("DESIGN.md compliance", () => {
     expect(designCss).toContain("--material-ink: var(--color-accent-surface);");
     expect(designCss).toContain("--material-paper: var(--color-bg);");
     expect(designCss).toContain("--material-panel: var(--color-surface);");
-    expect(designCss).toMatch(/--material-concrete:\s*[\s\S]*var\(--color-surface-alt\);/);
+    expect(designCss).toMatch(/--material-concrete:\s*var\(--color-glass-overlay\);/);
     expect(designCss).toMatch(/--surface-texture:\s*var\(--material-paper\);/);
     expect(designCss).toMatch(/body\s*\{[^}]*background:\s*var\(--app-bg\);/s);
-    expect(designCss).toMatch(/\.rail,\s*\.sidebar,\s*\.right-panel\s*\{[^}]*background:\s*var\(--color-overlay\);/s);
-    expect(designCss).toMatch(/\.title-bar\s*\{[^}]*background:\s*var\(--color-overlay\);/s);
+    expect(designCss).toMatch(/\.rail\s*\{[^}]*background:\s*var\(--color-glass-overlay\);/s);
+    expect(designCss).toMatch(/\.sidebar,\s*\.right-panel\s*\{[^}]*background:\s*var\(--color-bg\);/s);
+    expect(designCss).toMatch(/\.title-bar\s*\{[^}]*background:\s*var\(--color-glass-overlay\);/s);
     expect(designCss).toMatch(/\.main-area\s*\{[^}]*background:\s*var\(--color-bg\);/s);
-    expect(designCss).toMatch(/\.primary-button\s*\{[^}]*background:\s*var\(--color-accent-surface\);/s);
+    expect(designCss).toMatch(/\.primary-button\s*\{[^}]*background:\s*var\(--color-accent-surface\);[^}]*color:\s*var\(--color-on-glass\);/s);
     expect(designCss).toMatch(/\.settings-group,[\s\S]*?\.preview-file-embed\s*\{[^}]*background:\s*var\(--material-paper\);/s);
     expect(designCss).toMatch(/\.editor-surface,\s*\.panel-tab-surface,\s*\.preview,\s*\.cm-editor,\s*\.frontmatter-field-card,\s*\.frontmatter-field-add,\s*\.frontmatter-format-guide,\s*\.tool-card,\s*\.tool-section,\s*\.settings-card\s*\{[^}]*background:\s*var\(--material-limestone\);/s);
     expect(designCss).not.toMatch(/url\([^)]*noise/i);
@@ -114,7 +119,7 @@ describe("DESIGN.md compliance", () => {
 describe("Workspace layout CSS contracts", () => {
   const fileTreeCss = readFileSync("src/renderer/styles/file-tree-search.css", "utf8");
 
-  it("開いているワークスペースの切り替え操作をサイドバー下部の青い領域として表示する", () => {
+  it("開いているワークスペースの切り替え操作をサイドバー下部の黒い操作面として表示する", () => {
     expect(fileTreeCss).toMatch(/\.sidebar-section:has\(> \.workspace-actions\)\s*\{[^}]*min-height:\s*100%;/s);
     expect(fileTreeCss).toMatch(/\.sidebar:has\(\.workspace-actions\)::after\s*\{[^}]*display:\s*none;/s);
     expect(fileTreeCss).toMatch(/\.workspace-actions\s*\{[^}]*background:\s*var\(--color-primary-dark\);/s);

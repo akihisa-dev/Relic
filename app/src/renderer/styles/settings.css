@@ -156,7 +156,7 @@
 
 .setting-row input[type="checkbox"] {
   appearance: none;
-  background: rgb(199, 199, 199);
+  background: var(--color-surface-alt);
   border: 0;
   border-radius: 999px;
   cursor: pointer;
@@ -455,7 +455,7 @@
 .setting-action-btn--danger:hover { background: var(--error-bg); color: var(--error); }
 
 .frontmatter-format-guide {
-  background: rgba(28, 28, 28, 0.035);
+  background: transparent;
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-2);
@@ -472,7 +472,7 @@
 }
 
 .frontmatter-format-guide code {
-  background: rgba(28, 28, 28, 0.045);
+  background: transparent;
   border: 1px solid var(--border);
   border-radius: 5px;
   color: var(--text);
@@ -676,7 +676,7 @@
 }
 
 .frontmatter-field-examples code {
-  background: rgba(28, 28, 28, 0.045);
+  background: transparent;
   border: 1px solid var(--border-medium);
   border-radius: 5px;
   color: var(--text);
@@ -707,7 +707,7 @@
 }
 
 .frontmatter-field-type {
-  background: rgba(28, 28, 28, 0.055);
+  background: transparent;
   border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--text-2);
@@ -776,7 +776,7 @@
 }
 
 .frontmatter-writing-example code {
-  background: rgba(28, 28, 28, 0.045);
+  background: transparent;
   border: 1px solid var(--border);
   border-radius: 5px;
   color: var(--text);
@@ -810,7 +810,7 @@
 }
 
 .frontmatter-field-summary-example code {
-  background: rgba(28, 28, 28, 0.045);
+  background: transparent;
   border: 1px solid var(--border);
   border-radius: 5px;
   color: var(--text);

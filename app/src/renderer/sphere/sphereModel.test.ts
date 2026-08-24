@@ -66,6 +66,7 @@ describe("sphereModel", () => {
     expect(sphereNodeValue({ backlinkCount: 0, linkCount: 0 })).toBe(3);
     expect(sphereNodeValue({ backlinkCount: 10_000, linkCount: 10_000 })).toBe(30);
     expect(sphereColorWithOpacity("#62625b", 0.12)).toBe("rgba(98, 98, 91, 0.12)");
+    expect(sphereColorWithOpacity("rgba(5, 5, 5, 0.72)", 0.12)).toBe("rgba(5, 5, 5, 0.12)");
     expect(sphereColorWithOpacity("currentColor", 0.12)).toBe("currentColor");
   });
 
@@ -91,6 +92,7 @@ describe("sphereModel", () => {
       opacity: 0.14
     });
     expect(sphereRenderableColor("hsl(15 62% 40%)")).toBe("hsl(15, 62%, 40%)");
+    expect(sphereRenderableColor("rgba(5, 5, 5, 0.42)")).toBe("rgb(5, 5, 5)");
     expect(sphereRenderableColor("#4477aa")).toBe("#4477aa");
   });
 

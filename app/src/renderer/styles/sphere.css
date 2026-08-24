@@ -38,7 +38,7 @@
   background: color-mix(in srgb, var(--color-surface-elevated) 88%, transparent);
   color: var(--color-text-secondary);
   font-size: 11px;
-  box-shadow: var(--shadow-popover, 0 12px 34px rgba(15, 23, 42, 0.14));
+  box-shadow: var(--shadow-popover, 0 12px 34px rgba(5, 5, 5, 0.14));
   backdrop-filter: blur(10px);
   pointer-events: none;
 }
@@ -58,7 +58,7 @@
   background: color-mix(in srgb, var(--color-surface-elevated) 88%, transparent);
   color: var(--color-text-secondary);
   font-size: 11px;
-  box-shadow: var(--shadow-popover, 0 12px 34px rgba(15, 23, 42, 0.14));
+  box-shadow: var(--shadow-popover, 0 12px 34px rgba(5, 5, 5, 0.14));
   backdrop-filter: blur(10px);
 }
 
@@ -92,7 +92,7 @@
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
-  box-shadow: var(--shadow-popover, 0 12px 34px rgba(15, 23, 42, 0.14));
+  box-shadow: var(--shadow-popover, 0 12px 34px rgba(5, 5, 5, 0.14));
   transform: translateX(-50%);
   pointer-events: none;
 }

@@ -49,11 +49,11 @@
 }
 
 .empty-pane-create-button {
-  background: #e8e8e8;
-  border: 1px solid #e8e8e8;
+  background: var(--color-accent-surface);
+  border: 1px solid var(--color-glass-border);
   border-radius: 0.5em;
-  box-shadow: 6px 6px 12px #c5c5c5, -6px -6px 12px #ffffff;
-  color: #090909;
+  box-shadow: none;
+  color: var(--color-on-glass);
   cursor: pointer;
   display: inline-block;
   font-size: 18px;
@@ -68,12 +68,12 @@
 }
 
 .empty-pane-create-button:hover {
-  background: #e8e8e8;
-  color: #090909;
+  background: var(--color-accent-strong);
+  color: var(--color-on-glass);
 }
 
 .empty-pane-create-button:active {
-  box-shadow: inset 4px 4px 12px #c5c5c5, inset -4px -4px 12px #ffffff;
-  color: #666666;
+  box-shadow: none;
+  color: var(--color-on-glass);
   transform: none;
 }

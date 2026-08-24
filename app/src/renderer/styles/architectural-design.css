@@ -3,31 +3,38 @@
 /* ────────────────────────────────── */
 
 :root {
-  --color-primary: #1a1b17;
+  --color-primary: #050505;
   --color-primary-dark: var(--color-primary);
-  --color-bg: #f4f0e6;
-  --color-overlay: rgba(255, 255, 255, 0.44);
-  --color-overlay-subtle: rgba(26, 27, 23, 0.06);
-  --color-surface: #faf7f0;
-  --color-surface-alt: #ebe5d9;
+  --color-bg: #fffffe;
+  --color-overlay: rgba(5, 5, 5, 0.86);
+  --color-overlay-subtle: rgba(5, 5, 5, 0.06);
+  --color-surface: #fffffe;
+  --color-surface-alt: rgba(5, 5, 5, 0.08);
   --color-surface-elevated: var(--color-surface);
-  --color-border: #d8d0c1;
-  --color-border-strong: #b8af9f;
-  --color-text: #1a1b17;
-  --color-text-secondary: #62625b;
-  --color-text-muted: #76756c;
-  --color-tooltip-border: #b8af9f;
-  --color-tooltip-surface: #f4f0e6;
-  --color-tooltip-text: #1a1b17;
-  --color-on-primary: #ffffff;
-  --color-accent-surface: rgba(242, 105, 27, 0.84);
-  --color-accent: #f2691b;
-  --color-accent-strong: #d95711;
-  --color-on-accent: #1a1b17;
-  --color-danger: #e23b30;
+  --color-border: rgba(5, 5, 5, 0.18);
+  --color-border-strong: rgba(5, 5, 5, 0.42);
+  --color-text: #050505;
+  --color-text-secondary: rgba(5, 5, 5, 0.72);
+  --color-text-muted: rgba(5, 5, 5, 0.56);
+  --color-tooltip-border: rgba(255, 255, 254, 0.2);
+  --color-tooltip-surface: rgba(5, 5, 5, 0.86);
+  --color-tooltip-text: #fffffe;
+  --color-on-primary: #fffffe;
+  --color-glass-overlay: rgba(5, 5, 5, 0.86);
+  --color-glass-border: rgba(255, 255, 254, 0.2);
+  --color-glass-highlight: rgba(255, 255, 254, 0.12);
+  --color-glass-hover: rgba(255, 255, 254, 0.1);
+  --color-on-glass: #fffffe;
+  --color-on-glass-secondary: rgba(255, 255, 254, 0.76);
+  --color-on-glass-muted: rgba(255, 255, 254, 0.58);
+  --color-accent-surface: var(--color-glass-overlay);
+  --color-accent: #050505;
+  --color-accent-strong: #000000;
+  --color-on-accent: #fffffe;
+  --color-danger: #050505;
   --color-warning: var(--color-danger);
-  --color-success: #008a5a;
-  --color-info: #2563eb;
+  --color-success: #050505;
+  --color-info: #050505;
   --font-display: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -40,14 +47,14 @@
   --texture-fibers: var(--color-bg);
   --texture-stone-wash: var(--color-surface);
   --material-ink: var(--color-accent-surface);
-  --material-charcoal: var(--color-accent-strong);
+  --material-charcoal: var(--color-primary);
   --material-paper: var(--color-bg);
   --material-panel: var(--color-surface);
   --material-control: var(--color-surface);
   --material-mineral-blue: var(--material-ink);
   --material-limestone: var(--material-paper);
   --material-stone-dust: var(--material-panel);
-  --material-concrete: var(--color-surface-alt);
+  --material-concrete: var(--color-glass-overlay);
   --texture-size-grain: auto;
   --texture-size-fibers: auto;
   --material-size-mineral-blue: auto;
@@ -61,9 +68,9 @@
   --surface: var(--color-surface-elevated);
   --surface-raised: var(--color-surface-elevated);
   --surface-subtle: var(--color-surface);
-  --rail-bg: var(--color-overlay);
-  --sidebar-bg: var(--color-overlay);
-  --popup-bg: var(--color-overlay);
+  --rail-bg: var(--color-glass-overlay);
+  --sidebar-bg: var(--color-bg);
+  --popup-bg: var(--color-glass-overlay);
   --text: var(--color-text);
   --text-2: var(--color-text-secondary);
   --text-3: var(--color-text-muted);
@@ -74,7 +81,7 @@
   --hover: var(--color-overlay-subtle);
   --hover-strong: color-mix(in srgb, var(--color-primary) 10%, transparent);
   --input-bg: var(--color-surface-elevated);
-  --selection: var(--color-surface-alt);
+  --selection: var(--color-glass-overlay);
   --shadow: transparent;
   --shadow-soft: transparent;
   --workspace-shadow: none;
@@ -103,28 +110,38 @@
 }
 
 :root[data-theme="dark"] {
-  --color-primary: #f4f0e6;
+  --color-primary: #fffffe;
   --color-primary-dark: var(--color-primary);
-  --color-bg: #11120f;
-  --color-overlay: rgba(17, 18, 15, 0.7);
-  --color-overlay-subtle: rgba(244, 240, 230, 0.08);
-  --color-surface: #191a16;
-  --color-surface-alt: #24251f;
+  --color-bg: #050505;
+  --color-overlay: rgba(255, 255, 254, 0.86);
+  --color-overlay-subtle: rgba(255, 255, 254, 0.08);
+  --color-surface: #050505;
+  --color-surface-alt: rgba(255, 255, 254, 0.1);
   --color-surface-elevated: var(--color-surface);
-  --color-border: #3b3c33;
-  --color-border-strong: #5b5d52;
-  --color-text: #f4f0e6;
-  --color-text-secondary: #b8b8ab;
-  --color-text-muted: #8e8e82;
-  --color-on-primary: #11120f;
-  --color-accent-surface: rgba(255, 155, 77, 0.82);
-  --color-accent: #ff9b4d;
-  --color-accent-strong: #ffd0ad;
-  --color-on-accent: #11120f;
-  --color-danger: #ff6b5f;
+  --color-border: rgba(255, 255, 254, 0.18);
+  --color-border-strong: rgba(255, 255, 254, 0.42);
+  --color-text: #fffffe;
+  --color-text-secondary: rgba(255, 255, 254, 0.74);
+  --color-text-muted: rgba(255, 255, 254, 0.56);
+  --color-tooltip-border: rgba(5, 5, 5, 0.2);
+  --color-tooltip-surface: rgba(255, 255, 254, 0.86);
+  --color-tooltip-text: #050505;
+  --color-on-primary: #050505;
+  --color-glass-overlay: rgba(255, 255, 254, 0.86);
+  --color-glass-border: rgba(5, 5, 5, 0.2);
+  --color-glass-highlight: rgba(5, 5, 5, 0.12);
+  --color-glass-hover: rgba(5, 5, 5, 0.1);
+  --color-on-glass: #050505;
+  --color-on-glass-secondary: rgba(5, 5, 5, 0.74);
+  --color-on-glass-muted: rgba(5, 5, 5, 0.56);
+  --color-accent-surface: var(--color-glass-overlay);
+  --color-accent: #fffffe;
+  --color-accent-strong: #ffffff;
+  --color-on-accent: #050505;
+  --color-danger: #fffffe;
   --color-warning: var(--color-danger);
-  --color-success: #45e39b;
-  --color-info: #68a5ff;
+  --color-success: #fffffe;
+  --color-info: #fffffe;
   --bg: var(--color-bg);
   --texture-grain: var(--color-bg);
   --texture-fibers: var(--color-bg);
@@ -137,16 +154,16 @@
   --material-mineral-blue: var(--material-ink);
   --material-limestone: var(--material-paper);
   --material-stone-dust: var(--material-panel);
-  --material-concrete: var(--color-surface-alt);
+  --material-concrete: var(--color-glass-overlay);
   --app-bg: var(--color-bg);
   --surface-texture: var(--material-paper);
   --surface-texture-subtle: var(--material-panel);
   --surface: var(--color-surface-elevated);
   --surface-raised: var(--color-surface-elevated);
   --surface-subtle: var(--color-surface);
-  --rail-bg: var(--color-overlay);
-  --sidebar-bg: var(--color-overlay);
-  --popup-bg: var(--color-overlay);
+  --rail-bg: var(--color-glass-overlay);
+  --sidebar-bg: var(--color-bg);
+  --popup-bg: var(--color-glass-overlay);
   --text: var(--color-text);
   --text-2: var(--color-text-secondary);
   --text-3: var(--color-text-muted);
@@ -157,7 +174,7 @@
   --hover: var(--color-overlay-subtle);
   --hover-strong: color-mix(in srgb, var(--color-primary) 12%, transparent);
   --input-bg: var(--color-surface-elevated);
-  --selection: rgba(255, 255, 255, 0.12);
+  --selection: var(--color-glass-overlay);
   --shadow: transparent;
   --shadow-soft: transparent;
   --accent: var(--color-primary);
@@ -180,28 +197,38 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-primary: #f4f0e6;
+    --color-primary: #fffffe;
     --color-primary-dark: var(--color-primary);
-    --color-bg: #11120f;
-    --color-overlay: rgba(17, 18, 15, 0.7);
-    --color-overlay-subtle: rgba(244, 240, 230, 0.08);
-    --color-surface: #191a16;
-    --color-surface-alt: #24251f;
+    --color-bg: #050505;
+    --color-overlay: rgba(255, 255, 254, 0.86);
+    --color-overlay-subtle: rgba(255, 255, 254, 0.08);
+    --color-surface: #050505;
+    --color-surface-alt: rgba(255, 255, 254, 0.1);
     --color-surface-elevated: var(--color-surface);
-    --color-border: #3b3c33;
-    --color-border-strong: #5b5d52;
-    --color-text: #f4f0e6;
-    --color-text-secondary: #b8b8ab;
-    --color-text-muted: #8e8e82;
-    --color-on-primary: #11120f;
-    --color-accent-surface: rgba(255, 155, 77, 0.82);
-    --color-accent: #ff9b4d;
-    --color-accent-strong: #ffd0ad;
-    --color-on-accent: #11120f;
-    --color-danger: #ff6b5f;
+    --color-border: rgba(255, 255, 254, 0.18);
+    --color-border-strong: rgba(255, 255, 254, 0.42);
+    --color-text: #fffffe;
+    --color-text-secondary: rgba(255, 255, 254, 0.74);
+    --color-text-muted: rgba(255, 255, 254, 0.56);
+    --color-tooltip-border: rgba(5, 5, 5, 0.2);
+    --color-tooltip-surface: rgba(255, 255, 254, 0.86);
+    --color-tooltip-text: #050505;
+    --color-on-primary: #050505;
+    --color-glass-overlay: rgba(255, 255, 254, 0.86);
+    --color-glass-border: rgba(5, 5, 5, 0.2);
+    --color-glass-highlight: rgba(5, 5, 5, 0.12);
+    --color-glass-hover: rgba(5, 5, 5, 0.1);
+    --color-on-glass: #050505;
+    --color-on-glass-secondary: rgba(5, 5, 5, 0.74);
+    --color-on-glass-muted: rgba(5, 5, 5, 0.56);
+    --color-accent-surface: var(--color-glass-overlay);
+    --color-accent: #fffffe;
+    --color-accent-strong: #ffffff;
+    --color-on-accent: #050505;
+    --color-danger: #fffffe;
     --color-warning: var(--color-danger);
-    --color-success: #45e39b;
-    --color-info: #68a5ff;
+    --color-success: #fffffe;
+    --color-info: #fffffe;
     --bg: var(--color-bg);
     --texture-grain: var(--color-bg);
     --texture-fibers: var(--color-bg);
@@ -214,16 +241,16 @@
     --material-mineral-blue: var(--material-ink);
     --material-limestone: var(--material-paper);
     --material-stone-dust: var(--material-panel);
-    --material-concrete: var(--color-surface-alt);
+    --material-concrete: var(--color-glass-overlay);
     --app-bg: var(--color-bg);
     --surface-texture: var(--material-paper);
     --surface-texture-subtle: var(--material-panel);
     --surface: var(--color-surface-elevated);
     --surface-raised: var(--color-surface-elevated);
     --surface-subtle: var(--color-surface);
-    --rail-bg: var(--color-overlay);
-    --sidebar-bg: var(--color-overlay);
-    --popup-bg: var(--color-overlay);
+    --rail-bg: var(--color-glass-overlay);
+    --sidebar-bg: var(--color-bg);
+    --popup-bg: var(--color-glass-overlay);
     --text: var(--color-text);
     --text-2: var(--color-text-secondary);
     --text-3: var(--color-text-muted);
@@ -231,10 +258,10 @@
     --border-soft: color-mix(in srgb, var(--color-border) 76%, transparent);
     --border-medium: var(--color-border-strong);
     --btn-bg: var(--color-surface-elevated);
-    --hover: rgba(255, 255, 255, 0.07);
-    --hover-strong: rgba(255, 255, 255, 0.1);
+    --hover: var(--color-overlay-subtle);
+    --hover-strong: color-mix(in srgb, var(--color-primary) 12%, transparent);
     --input-bg: var(--color-surface-elevated);
-    --selection: rgba(255, 255, 255, 0.12);
+    --selection: var(--color-glass-overlay);
     --shadow: rgba(0, 0, 0, 0.22);
     --shadow-soft: rgba(0, 0, 0, 0.12);
     --accent: var(--color-primary);
@@ -318,14 +345,30 @@ textarea {
 }
 
 .title-bar {
-  backdrop-filter: blur(8px);
-  background: var(--color-overlay);
-  box-shadow: inset 0 -1px 0 var(--chrome-top-border, var(--border));
+  --accent-ring: color-mix(in srgb, var(--color-on-glass) 58%, transparent);
+  --border: var(--color-glass-border);
+  --text: var(--color-on-glass);
+  --text-2: var(--color-on-glass-secondary);
+  --text-3: var(--color-on-glass-muted);
+  backdrop-filter: blur(10px) saturate(100%);
+  background: var(--color-glass-overlay);
+  border-color: var(--color-glass-border);
+  box-shadow: inset 0 1px 0 var(--color-glass-highlight);
+  color: var(--color-on-glass);
+}
+
+.title-bar .switch {
+  --off: var(--color-glass-hover);
+  --on: var(--color-on-glass);
+  --primary: var(--color-on-glass);
+  --secondary: var(--color-on-glass);
+  --surface: var(--color-glass-overlay);
+  --thumb: var(--color-glass-overlay);
 }
 
 .pane-tab-bar-shell {
   backdrop-filter: blur(8px);
-  background: var(--color-overlay);
+  background: var(--color-bg);
 }
 
 .workspace {
@@ -337,13 +380,31 @@ textarea {
 .rail,
 .sidebar,
 .right-panel {
-  backdrop-filter: blur(8px);
   border-color: var(--color-border);
   border-radius: 0;
   box-shadow: none;
   overflow: hidden;
   position: relative;
   z-index: 3;
+}
+
+.rail {
+  --accent-ring: color-mix(in srgb, var(--color-on-glass) 58%, transparent);
+  --border: var(--color-glass-border);
+  --text: var(--color-on-glass);
+  --text-2: var(--color-on-glass-secondary);
+  --text-3: var(--color-on-glass-muted);
+  backdrop-filter: blur(10px) saturate(100%);
+  background: var(--color-glass-overlay);
+  border-color: var(--color-glass-border);
+  box-shadow: inset -1px 0 0 var(--color-glass-highlight);
+  color: var(--color-on-glass);
+}
+
+.sidebar,
+.right-panel {
+  backdrop-filter: none;
+  background: var(--color-bg);
 }
 
 .rail {
@@ -359,7 +420,7 @@ textarea {
 
 .rail-button {
   border-radius: 0;
-  color: var(--color-primary-dark);
+  color: var(--color-on-glass-secondary);
   height: 42px;
   padding: 0 14px;
   position: relative;
@@ -369,12 +430,12 @@ textarea {
 .rail-button.active {
   background: transparent;
   border-radius: 0;
-  color: var(--color-primary-dark);
+  color: var(--color-on-glass);
 }
 
 .rail-button.active::before,
 .rail-button.open::before {
-  background: var(--color-primary);
+  background: var(--color-on-glass);
   bottom: 0;
   content: "";
   left: 0;
@@ -524,17 +585,17 @@ textarea {
 
 .editor-frontmatter-add-button {
   background: var(--color-accent-surface);
-  border-color: var(--color-accent);
+  border-color: var(--color-glass-border);
   border-radius: var(--radius-md);
   box-shadow: none;
-  color: var(--color-primary);
+  color: var(--color-on-glass);
 }
 
 .editor-frontmatter-add-button:hover,
 .editor-frontmatter-add-button[aria-expanded="true"] {
   background: var(--color-accent-strong);
   border-color: var(--color-accent-strong);
-  color: var(--color-primary);
+  color: var(--color-on-glass);
 }
 
 .editor-frontmatter-add-menu,
@@ -653,9 +714,12 @@ textarea {
 .file-tree-row--opening,
 .search-result-button--opening--active,
 .command-item--selected {
+  --text: var(--color-on-glass);
+  --text-2: var(--color-on-glass-secondary);
+  --text-3: var(--color-on-glass-muted);
   background: var(--material-concrete);
   background-size: var(--material-size-concrete);
-  color: var(--color-text);
+  color: var(--color-on-glass);
 }
 
 .file-tree-row.selected::before,
@@ -742,7 +806,7 @@ textarea {
 }
 
 .settings-segmented-indicator {
-  background: var(--color-accent);
+  background: var(--color-glass-overlay);
   border: 0;
 }
 
@@ -806,14 +870,15 @@ textarea {
 
 .primary-button {
   background: var(--color-accent-surface);
-  border-color: var(--color-accent);
+  border-color: var(--color-glass-border);
   border-radius: var(--radius-md);
-  color: var(--color-primary);
+  color: var(--color-on-glass);
 }
 
 .primary-button:hover {
   background: var(--color-accent-strong);
   border-color: var(--color-accent-strong);
+  color: var(--color-on-glass);
 }
 
 /* ────────────────────────────────── */
@@ -837,12 +902,19 @@ textarea {
 /* DESIGN.md compliance overrides      */
 /* ────────────────────────────────── */
 
-.rail,
+.rail {
+  background: var(--color-glass-overlay);
+  background-size: auto;
+  backdrop-filter: blur(10px) saturate(100%);
+  border-radius: 0;
+  box-shadow: inset -1px 0 0 var(--color-glass-highlight);
+}
+
 .sidebar,
 .right-panel {
-  background: var(--color-overlay);
+  background: var(--color-bg);
   background-size: auto;
-  backdrop-filter: blur(8px);
+  backdrop-filter: none;
   border-radius: 0;
   box-shadow: none;
 }
@@ -870,7 +942,11 @@ textarea {
 }
 
 .settings-segmented-indicator {
-  background: var(--color-accent);
+  background: var(--color-glass-overlay);
+}
+
+.settings-segmented-button[aria-pressed="true"] {
+  color: var(--color-on-glass);
 }
 
 .setting-row input[type="checkbox"],
@@ -902,37 +978,59 @@ textarea {
 .tab-context-menu,
 .toolbar-dropdown-menu,
 .toolbar-inline-dialog,
+.editor-frontmatter-add-menu,
+.editor-context-menu-inline-dialog,
+.frontmatter-dialog,
 .frontmatter-add-dialog,
+.file-search-panel,
+.new-file-form--primary,
 .page-preview-popover,
 .preview-diagram-overlay-panel,
 .command-palette,
 .quick-switcher,
 .cm-live-table-menu,
 .files-search-method-menu,
+.workspace-input-dialog,
 .toast {
-  backdrop-filter: blur(8px);
-  background: var(--color-overlay);
-  border: 1px solid var(--color-border-strong);
+  --accent-ring: color-mix(in srgb, var(--color-on-glass) 58%, transparent);
+  --bg: transparent;
+  --border: var(--color-glass-border);
+  --border-medium: var(--color-glass-border);
+  --color-primary: var(--color-on-glass);
+  --color-primary-dark: var(--color-on-glass);
+  --color-text: var(--color-on-glass);
+  --color-text-secondary: var(--color-on-glass-secondary);
+  --color-text-muted: var(--color-on-glass-muted);
+  --hover: var(--color-glass-hover);
+  --input-bg: transparent;
+  --surface: transparent;
+  --text: var(--color-on-glass);
+  --text-2: var(--color-on-glass-secondary);
+  --text-3: var(--color-on-glass-muted);
+  backdrop-filter: blur(10px) saturate(100%);
+  background: var(--color-glass-overlay);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-md);
-  box-shadow: none;
+  box-shadow: inset 0 1px 0 var(--color-glass-highlight);
+  color: var(--color-on-glass);
 }
 
 .rail-tab-flight,
 .sidebar-create-flight {
-  background: var(--color-overlay);
-  border-color: var(--color-border-strong);
+  background: var(--color-glass-overlay);
+  border-color: var(--color-glass-border);
   border-radius: var(--radius-md);
   box-shadow: none;
-  color: var(--color-text);
-  backdrop-filter: blur(8px);
+  color: var(--color-on-glass);
+  backdrop-filter: blur(10px) saturate(100%);
 }
 
 .empty-pane-create-button {
   background: var(--color-accent-surface);
-  border: 1px solid var(--color-accent);
+  border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-md);
   box-shadow: none;
-  color: var(--color-primary);
+  color: var(--color-on-glass);
 }
 
 .empty-pane-create-button:hover,
@@ -940,25 +1038,26 @@ textarea {
   background: var(--color-accent-strong);
   border-color: var(--color-accent-strong);
   box-shadow: none;
-  color: var(--color-primary);
+  color: var(--color-on-glass);
 }
 
 .workspace-actions {
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  --hover: var(--color-glass-hover);
+  background: var(--color-glass-overlay);
+  border-top: 1px solid var(--color-glass-border);
 }
 
 .workspace-actions .workspace-action-button {
-  color: var(--color-primary);
+  color: var(--color-on-glass-secondary);
 }
 
 .workspace-actions .workspace-action-button:hover:not(:disabled) {
-  background: var(--color-surface-alt);
-  color: var(--color-primary);
+  background: var(--color-glass-hover);
+  color: var(--color-on-glass);
 }
 
 .workspace-actions .workspace-action-button:disabled {
-  color: var(--color-text-muted);
+  color: var(--color-on-glass-muted);
 }
 
 .modal-overlay,
@@ -973,7 +1072,7 @@ textarea {
 }
 
 .preview-diagram-overlay-panel {
-  backdrop-filter: blur(8px);
-  background: var(--color-overlay);
-  border-color: var(--color-border-strong);
+  backdrop-filter: blur(10px) saturate(100%);
+  background: var(--color-glass-overlay);
+  border-color: var(--color-glass-border);
 }

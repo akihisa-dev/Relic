@@ -108,7 +108,7 @@ describe("AppTitleBar", () => {
     expect(css).toMatch(/\.title-bar-navigation--after-theme\s*\{[^}]*left:\s*150px;/s);
     expect(css).toMatch(/\.title-bar\s*\{[^}]*z-index:\s*40;/s);
     expect(designCss).toMatch(/--chrome-top-bg:\s*var\(--title-bar-bg\);/);
-    expect(designCss).toMatch(/\.title-bar\s*\{[^}]*box-shadow:\s*inset 0 -1px 0 var\(--chrome-top-border, var\(--border\)\);/s);
+    expect(designCss).toMatch(/\.title-bar\s*\{[^}]*box-shadow:\s*inset 0 1px 0 var\(--color-glass-highlight\);/s);
     expect(css).toMatch(/\.title-bar\s*\{[^}]*background:\s*var\(--chrome-top-bg, var\(--title-bar-bg\)\);/s);
   });
 

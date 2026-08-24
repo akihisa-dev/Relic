@@ -21,7 +21,7 @@
 * {
   box-sizing: border-box;
   scrollbar-width: thin;
-  scrollbar-color: rgba(26, 27, 23, 0.28) transparent;
+  scrollbar-color: rgba(5, 5, 5, 0.28) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -34,12 +34,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(26, 27, 23, 0.28);
+  background: rgba(5, 5, 5, 0.28);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(26, 27, 23, 0.4);
+  background: rgba(5, 5, 5, 0.4);
 }
 
 html,

@@ -97,11 +97,11 @@ export function useChronicleCanvasRuntime({
   const simulationActiveRef = useRef(false);
   const lastPanDeltaRef = useRef({ x: 0, y: 0 });
   const themeRef = useRef<ChronicleCanvasTheme>({
-    background: "#f4f0e6",
+    background: "#fffffe",
     categoryLightness: 40,
-    categorySaturation: 68,
-    mutedText: "#76756c",
-    text: "#1a1b17"
+    categorySaturation: 0,
+    mutedText: "rgba(5, 5, 5, 0.56)",
+    text: "#050505"
   });
 
   const updateTheme = useCallback(() => {
@@ -111,11 +111,11 @@ export function useChronicleCanvasRuntime({
     const token = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
     const percentage = (name: string, fallback: number) => Number.parseFloat(token(name, String(fallback))) || fallback;
     themeRef.current = {
-      background: token("--color-bg", "#f4f0e6"),
+      background: token("--color-bg", "#fffffe"),
       categoryLightness: percentage("--chronicle-category-lightness", 40),
-      categorySaturation: percentage("--chronicle-category-saturation", 68),
-      mutedText: token("--color-text-secondary", "#62625b"),
-      text: token("--color-text", "#1a1b17")
+      categorySaturation: percentage("--chronicle-category-saturation", 0),
+      mutedText: token("--color-text-secondary", "rgba(5, 5, 5, 0.72)"),
+      text: token("--color-text", "#050505")
     };
   }, []);
 

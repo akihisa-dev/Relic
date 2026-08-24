@@ -9,9 +9,9 @@
   background: var(--color-surface-elevated);
   color: var(--color-text-secondary);
   font-size: 12px;
-  box-shadow: var(--shadow-popover, 0 12px 34px rgba(15, 23, 42, 0.14));
+  box-shadow: var(--shadow-popover, 0 12px 34px rgba(5, 5, 5, 0.14));
 }
 
 .chart-view-status--error {
-  color: var(--color-danger, #b42318);
+  color: var(--color-danger, var(--color-primary));
 }

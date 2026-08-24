@@ -250,13 +250,13 @@ function drawCalendarSurfaces(
 
     if (surface.rangeState === "overflow") {
       context.globalAlpha = 0.08;
-      context.fillStyle = "#d97706";
+      context.fillStyle = theme.text;
       const leadingOverflow = contentStart < left ? clippedRect(contentStart, left) : null;
       const trailingOverflow = contentEnd > right ? clippedRect(right, contentEnd) : null;
       if (leadingOverflow) context.fillRect(leadingOverflow.left, top, leadingOverflow.width, height);
       if (trailingOverflow) context.fillRect(trailingOverflow.left, top, trailingOverflow.width, height);
       context.globalAlpha = 0.72;
-      context.strokeStyle = "#d97706";
+      context.strokeStyle = theme.text;
       context.lineWidth = 1.5;
       if ("setLineDash" in context) context.setLineDash([6, 5]);
       if (leadingOverflow) {
