@@ -125,7 +125,7 @@ border-color: var(--color-border);
 |------|----------|-------------|------------|------|
 | アクセント面 | `--color-accent-surface` | `rgba(5, 5, 5, 0.86)` | `rgba(255, 255, 254, 0.86)` | 主要操作、限定された前面のアクセント面 |
 | アクセント | `--color-accent` | `#050505` | `#FFFFFE` | 視線の起点、主要な区切り |
-| 強調境界 | `--color-accent-strong` | `#000000` | `#FFFFFF` | ホバー、アクティブ、強調境界 |
+| 強調境界 | `--color-accent-strong` | `#050505` | `#FFFFFE` | ホバー、アクティブ、強調境界 |
 
 #### Base Tokens
 
@@ -349,7 +349,7 @@ Overview
 
 - 明確な境界線
 - 過剰な影を使用しない
-- アクティブ状態はCharcoalの細線、Primary Text、Selected Surfaceで表現
+- アクティブ状態は黒いガラス面と反転文字で明確に示す。Dark Themeでは白いガラス面と黒い文字へ反転する
 - 非アクティブ状態はSecondary TextとHairline Borderで表現
 
 ---

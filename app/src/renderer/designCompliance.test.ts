@@ -10,28 +10,36 @@ describe("DESIGN.md compliance", () => {
   const workspaceEditorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
   it("uses the DESIGN.md color tokens", () => {
-    expect(designCss).toContain("--color-primary: #050505;");
-    expect(designCss).toContain("--color-bg: #fffffe;");
-    expect(designCss).toContain("--color-overlay: rgba(5, 5, 5, 0.86);");
+    expect(designCss).toContain("--color-white: #fffffe;");
+    expect(designCss).toContain("--color-black: #050505;");
+    expect(designCss).toContain("--color-primary: var(--color-black);");
+    expect(designCss).toContain("--color-bg: var(--color-white);");
+    expect(designCss).toContain("--color-overlay: var(--glass-surface);");
     expect(designCss).toContain("--color-overlay-subtle: rgba(5, 5, 5, 0.06);");
-    expect(designCss).toContain("--color-surface: #fffffe;");
+    expect(designCss).toContain("--color-surface: var(--color-white);");
     expect(designCss).toContain("--color-surface-alt: rgba(5, 5, 5, 0.08);");
     expect(designCss).toContain("--color-border: rgba(5, 5, 5, 0.18);");
     expect(designCss).toContain("--color-border-strong: rgba(5, 5, 5, 0.42);");
-    expect(designCss).toContain("--color-text: #050505;");
+    expect(designCss).toContain("--color-text: var(--color-black);");
     expect(designCss).toContain("--color-text-secondary: rgba(5, 5, 5, 0.72);");
     expect(designCss).toContain("--color-text-muted: rgba(5, 5, 5, 0.56);");
-    expect(designCss).toContain("--color-tooltip-surface: rgba(5, 5, 5, 0.86);");
-    expect(designCss).toContain("--color-tooltip-text: #fffffe;");
-    expect(designCss).toContain("--color-glass-overlay: rgba(5, 5, 5, 0.86);");
-    expect(designCss).toContain("--color-glass-highlight: rgba(255, 255, 254, 0.12);");
+    expect(designCss).toContain("--glass-surface: rgba(5, 5, 5, 0.86);");
+    expect(designCss).toContain("--glass-border: rgba(255, 255, 254, 0.2);");
+    expect(designCss).toContain("--glass-highlight: rgba(255, 255, 254, 0.12);");
+    expect(designCss).toContain("--glass-hover: rgba(255, 255, 254, 0.1);");
+    expect(designCss).toContain("--glass-text: var(--color-white);");
+    expect(designCss).toContain("--color-tooltip-surface: var(--glass-surface);");
+    expect(designCss).toContain("--color-tooltip-text: var(--glass-text);");
+    expect(designCss).toContain("--color-glass-overlay: var(--glass-surface);");
+    expect(designCss).toContain("--color-glass-highlight: var(--glass-highlight);");
     expect(designCss).toContain("--color-accent-surface: var(--color-glass-overlay);");
-    expect(designCss).toContain("--color-accent: #050505;");
-    expect(designCss).toContain("--color-accent-strong: #000000;");
-    expect(designCss).toContain("--color-danger: #050505;");
+    expect(designCss).toContain("--color-accent: var(--color-black);");
+    expect(designCss).toContain("--color-accent-strong: var(--color-black);");
+    expect(designCss).toContain("--color-danger: var(--color-black);");
     expect(designCss).toContain("--color-warning: var(--color-danger);");
-    expect(designCss).toContain("--color-success: #050505;");
-    expect(designCss).toContain("--color-info: #050505;");
+    expect(designCss).toContain("--color-success: var(--color-black);");
+    expect(designCss).toContain("--color-info: var(--color-black);");
+    expect(designCss).toMatch(/:root\s*\{[^}]*color-scheme:\s*light;/s);
   });
 
   it("uses the Liquid Charcoal font stack with system fallback", () => {
@@ -53,10 +61,19 @@ describe("DESIGN.md compliance", () => {
     expect(designCss).toMatch(/\.rail\s*\{[^}]*background:\s*var\(--color-glass-overlay\);/s);
     expect(designCss).toMatch(/\.rail\s*\{[^}]*backdrop-filter:\s*blur\(10px\) saturate\(100%\)/s);
     expect(designCss).toMatch(/\.sidebar,\s*\.right-panel\s*\{[^}]*background:\s*var\(--color-bg\);/s);
+    expect(designCss).toMatch(/\.app-shell,\s*\.workspace,\s*\.main-area,[\s\S]*?\.settings-page\s*\{[^}]*background:\s*var\(--color-bg\);/s);
     expect(designCss).toMatch(/\.sidebar,\s*\.right-panel\s*\{[^}]*backdrop-filter:\s*none;/s);
     expect(designCss).toMatch(/\.settings-segmented\s*\{[^}]*background:\s*var\(--color-surface-alt\);/s);
     expect(designCss).toMatch(/\.settings-segmented-indicator\s*\{[^}]*background:\s*var\(--color-glass-overlay\);/s);
     expect(designCss).toMatch(/\.setting-row input\[type="checkbox"\],\s*\.setting-row input\[type="checkbox"\]::after\s*\{[^}]*box-shadow:\s*none;/s);
+  });
+
+  it("shows the active tab as inverted liquid glass", () => {
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*backdrop-filter:\s*blur\(10px\) saturate\(100%\);/s);
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*background:\s*var\(--glass-surface\);/s);
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*border:\s*1px solid var\(--glass-border\);/s);
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*box-shadow:\s*inset 0 1px 0 var\(--glass-highlight\);/s);
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*color:\s*var\(--glass-text\);/s);
   });
 
   it("moves settings switch knobs through the on class with elastic feedback", () => {
