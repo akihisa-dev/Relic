@@ -14,12 +14,12 @@ export interface GraphDrawTheme {
 export const defaultGraphDrawTheme: GraphDrawTheme = {
   accent: "#050505",
   background: "#fffffe",
-  border: "rgba(5, 5, 5, 0.18)",
-  borderStrong: "rgba(5, 5, 5, 0.42)",
+  border: "rgba(5, 5, 5, 0.2)",
+  borderStrong: "rgba(5, 5, 5, 0.46)",
   primary: "#050505",
   text: "#050505",
-  textMuted: "rgba(5, 5, 5, 0.56)",
-  textSecondary: "rgba(5, 5, 5, 0.72)"
+  textMuted: "rgba(5, 5, 5, 0.6)",
+  textSecondary: "rgba(5, 5, 5, 0.74)"
 };
 
 export function readGraphDrawTheme(element: Element = document.documentElement): GraphDrawTheme {

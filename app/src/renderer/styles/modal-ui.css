@@ -2,7 +2,7 @@
 .modal-overlay {
   align-items: flex-start;
   animation: modal-overlay-in var(--motion-normal) var(--ease-standard);
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--modal-backdrop);
   bottom: 0;
   display: flex;
   justify-content: center;
@@ -102,7 +102,7 @@
 
 .workspace-input-dialog-overlay {
   align-items: center;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--modal-backdrop);
   display: flex;
   inset: 0;
   justify-content: center;

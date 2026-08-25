@@ -69,8 +69,8 @@
 
 .card-view-list-item[aria-current="true"] {
   background: var(--selection);
-  border-color: var(--color-glass-border);
-  color: var(--color-on-glass);
+  border-color: var(--color-selection-border);
+  color: var(--color-selection-text);
   font-weight: 650;
 }
 
@@ -84,13 +84,13 @@
 
 .card-view-item {
   align-self: start;
-  background: #050505;
-  border: 1px solid rgba(255, 255, 254, 0.42);
+  background: var(--card-preview-bg);
+  border: 1px solid var(--card-preview-border);
   border-radius: 3px;
   box-shadow:
-    inset 0 0 0 3px #050505,
+    inset 0 0 0 3px var(--card-preview-bg),
     0 12px 34px color-mix(in srgb, var(--shadow) 72%, transparent);
-  color: #fffffe;
+  color: var(--card-preview-text);
   container-type: inline-size;
   cursor: default;
   display: flex;
@@ -109,11 +109,11 @@
 
 .card-view-image-frame {
   aspect-ratio: 3 / 2;
-  background: #050505;
-  border: 1px solid rgba(255, 255, 254, 0.42);
+  background: var(--card-preview-bg);
+  border: 1px solid var(--card-preview-border);
   box-shadow:
-    inset 0 0 0 4px #050505,
-    inset 0 0 0 5px rgba(255, 255, 254, 0.24),
+    inset 0 0 0 4px var(--card-preview-bg),
+    inset 0 0 0 5px var(--card-preview-border),
     0 2px 15px color-mix(in srgb, var(--shadow) 58%, transparent);
   display: flex;
   flex: 0 1 auto;
@@ -123,10 +123,10 @@
 }
 
 .card-view-description {
-  background: #050505;
-  border: 1px solid rgba(255, 255, 254, 0.24);
-  box-shadow: inset 0 0 0 3px #050505;
-  color: rgba(255, 255, 254, 0.82);
+  background: var(--card-preview-bg);
+  border: 1px solid var(--card-preview-border);
+  box-shadow: inset 0 0 0 3px var(--card-preview-bg);
+  color: var(--card-preview-text-secondary);
   flex: 0 0 auto;
   height: clamp(56px, 18cqi, 138px);
   line-height: 1.65;
@@ -139,7 +139,7 @@
 
 .card-view-image {
   align-items: center;
-  background: #050505;
+  background: var(--card-preview-bg);
   display: flex;
   flex: 1;
   justify-content: center;
@@ -156,7 +156,7 @@
 }
 
 .card-view-image-placeholder {
-  background: rgba(255, 255, 254, 0.08);
+  background: var(--card-preview-placeholder);
   background-size: 220% 100%;
   height: 100%;
   width: 100%;
@@ -167,7 +167,7 @@
 }
 
 .card-view-image-fallback {
-  color: rgba(255, 255, 254, 0.64);
+  color: var(--card-preview-text-muted);
   font-size: 12px;
   line-height: 1.45;
   max-width: 15ch;

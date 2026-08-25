@@ -5,6 +5,10 @@
 :root {
   --color-white: #fffffe;
   --color-black: #050505;
+  --color-dark-bg: #10110f;
+  --color-dark-surface: #171815;
+  --color-dark-surface-elevated: #1e1f1b;
+  --color-dark-text: #f2f3ed;
   --color-primary: var(--color-black);
   --color-primary-dark: var(--color-primary);
   --color-bg: var(--color-white);
@@ -13,22 +17,37 @@
   --color-surface: var(--color-white);
   --color-surface-alt: rgba(5, 5, 5, 0.08);
   --color-surface-elevated: var(--color-surface);
-  --color-border: rgba(5, 5, 5, 0.18);
-  --color-border-strong: rgba(5, 5, 5, 0.42);
+  --color-border: rgba(5, 5, 5, 0.2);
+  --color-border-strong: rgba(5, 5, 5, 0.46);
   --color-text: var(--color-black);
-  --color-text-secondary: rgba(5, 5, 5, 0.72);
-  --color-text-muted: rgba(5, 5, 5, 0.56);
-  --color-tooltip-border: rgba(255, 255, 254, 0.2);
-  --glass-surface: rgba(5, 5, 5, 0.86);
-  --glass-border: rgba(255, 255, 254, 0.2);
-  --glass-highlight: rgba(255, 255, 254, 0.12);
-  --glass-hover: rgba(255, 255, 254, 0.1);
+  --color-text-secondary: rgba(5, 5, 5, 0.74);
+  --color-text-muted: rgba(5, 5, 5, 0.6);
+  --color-selection-bg: rgba(5, 5, 5, 0.09);
+  --color-selection-border: rgba(5, 5, 5, 0.3);
+  --color-selection-text: var(--color-black);
+  --focus-ring: rgba(5, 5, 5, 0.72);
+  --modal-backdrop: rgba(5, 5, 5, 0.38);
+  --glass-surface: rgba(18, 18, 16, 0.94);
+  --glass-border: rgba(255, 255, 254, 0.24);
+  --glass-highlight: rgba(255, 255, 254, 0.1);
+  --glass-hover: rgba(255, 255, 254, 0.09);
   --glass-text: var(--color-white);
-  --glass-text-secondary: rgba(255, 255, 254, 0.76);
-  --glass-text-muted: rgba(255, 255, 254, 0.58);
+  --glass-text-secondary: rgba(255, 255, 254, 0.8);
+  --glass-text-muted: rgba(255, 255, 254, 0.64);
+  --glass-control-bg: rgba(255, 255, 254, 0.055);
+  --glass-control-border: rgba(255, 255, 254, 0.28);
+  --glass-action-bg: var(--color-white);
+  --glass-action-text: var(--color-black);
+  --card-preview-bg: #151513;
+  --card-preview-border: rgba(255, 255, 254, 0.34);
+  --card-preview-text: var(--color-white);
+  --card-preview-text-secondary: rgba(255, 255, 254, 0.82);
+  --card-preview-text-muted: rgba(255, 255, 254, 0.66);
+  --card-preview-placeholder: rgba(255, 255, 254, 0.08);
+  --color-tooltip-border: var(--glass-border);
   --color-tooltip-surface: var(--glass-surface);
   --color-tooltip-text: var(--glass-text);
-  --color-on-primary: var(--glass-text);
+  --color-on-primary: var(--color-white);
   --color-glass-overlay: var(--glass-surface);
   --color-glass-border: var(--glass-border);
   --color-glass-highlight: var(--glass-highlight);
@@ -40,6 +59,7 @@
   --color-accent: var(--color-black);
   --color-accent-strong: var(--color-black);
   --color-on-accent: var(--color-white);
+  --accent-contrast: var(--color-white);
   --color-danger: var(--color-black);
   --color-warning: var(--color-danger);
   --color-success: var(--color-black);
@@ -90,9 +110,9 @@
   --hover: var(--color-overlay-subtle);
   --hover-strong: color-mix(in srgb, var(--color-primary) 10%, transparent);
   --input-bg: var(--color-surface-elevated);
-  --selection: var(--color-glass-overlay);
-  --shadow: transparent;
-  --shadow-soft: transparent;
+  --selection: var(--color-selection-bg);
+  --shadow: rgba(5, 5, 5, 0.16);
+  --shadow-soft: rgba(5, 5, 5, 0.09);
   --workspace-shadow: none;
   --floating-panel-shadow: none;
   --shadow-popover: none;
@@ -101,7 +121,7 @@
   --accent-hover: var(--color-primary);
   --accent-soft: var(--color-overlay-subtle);
   --accent-softer: color-mix(in srgb, var(--color-overlay-subtle) 60%, transparent);
-  --accent-ring: color-mix(in srgb, var(--color-primary) 54%, transparent);
+  --accent-ring: var(--focus-ring);
   --title-bar-bg: var(--color-overlay);
   --chrome-top-bg: var(--title-bar-bg);
   --chrome-top-border: var(--color-border);
@@ -120,30 +140,45 @@
 }
 
 :root[data-theme="dark"] {
-  --color-primary: var(--color-white);
+  --color-primary: var(--color-dark-text);
   --color-primary-dark: var(--color-primary);
-  --color-bg: var(--color-black);
+  --color-bg: var(--color-dark-bg);
   --color-overlay: var(--glass-surface);
-  --color-overlay-subtle: rgba(255, 255, 254, 0.08);
-  --color-surface: var(--color-black);
-  --color-surface-alt: rgba(255, 255, 254, 0.1);
-  --color-surface-elevated: var(--color-surface);
-  --color-border: rgba(255, 255, 254, 0.18);
-  --color-border-strong: rgba(255, 255, 254, 0.42);
-  --color-text: var(--color-white);
-  --color-text-secondary: rgba(255, 255, 254, 0.74);
-  --color-text-muted: rgba(255, 255, 254, 0.56);
-  --color-tooltip-border: rgba(5, 5, 5, 0.2);
-  --glass-surface: rgba(255, 255, 254, 0.86);
-  --glass-border: rgba(5, 5, 5, 0.2);
-  --glass-highlight: rgba(5, 5, 5, 0.12);
-  --glass-hover: rgba(5, 5, 5, 0.1);
-  --glass-text: var(--color-black);
-  --glass-text-secondary: rgba(5, 5, 5, 0.74);
-  --glass-text-muted: rgba(5, 5, 5, 0.56);
+  --color-overlay-subtle: rgba(242, 243, 237, 0.07);
+  --color-surface: var(--color-dark-surface);
+  --color-surface-alt: rgba(242, 243, 237, 0.1);
+  --color-surface-elevated: var(--color-dark-surface-elevated);
+  --color-border: rgba(242, 243, 237, 0.16);
+  --color-border-strong: rgba(242, 243, 237, 0.34);
+  --color-text: var(--color-dark-text);
+  --color-text-secondary: rgba(242, 243, 237, 0.76);
+  --color-text-muted: rgba(242, 243, 237, 0.6);
+  --color-selection-bg: rgba(242, 243, 237, 0.11);
+  --color-selection-border: rgba(242, 243, 237, 0.3);
+  --color-selection-text: var(--color-dark-text);
+  --focus-ring: rgba(242, 243, 237, 0.72);
+  --modal-backdrop: rgba(0, 0, 0, 0.58);
+  --glass-surface: rgba(21, 22, 19, 0.96);
+  --glass-border: rgba(242, 243, 237, 0.2);
+  --glass-highlight: rgba(242, 243, 237, 0.07);
+  --glass-hover: rgba(242, 243, 237, 0.09);
+  --glass-text: var(--color-dark-text);
+  --glass-text-secondary: rgba(242, 243, 237, 0.78);
+  --glass-text-muted: rgba(242, 243, 237, 0.62);
+  --glass-control-bg: rgba(242, 243, 237, 0.06);
+  --glass-control-border: rgba(242, 243, 237, 0.24);
+  --glass-action-bg: var(--color-dark-text);
+  --glass-action-text: var(--color-dark-bg);
+  --card-preview-bg: #20211d;
+  --card-preview-border: rgba(242, 243, 237, 0.26);
+  --card-preview-text: var(--color-dark-text);
+  --card-preview-text-secondary: rgba(242, 243, 237, 0.8);
+  --card-preview-text-muted: rgba(242, 243, 237, 0.64);
+  --card-preview-placeholder: rgba(242, 243, 237, 0.08);
+  --color-tooltip-border: var(--glass-border);
   --color-tooltip-surface: var(--glass-surface);
   --color-tooltip-text: var(--glass-text);
-  --color-on-primary: var(--glass-text);
+  --color-on-primary: var(--color-dark-bg);
   --color-glass-overlay: var(--glass-surface);
   --color-glass-border: var(--glass-border);
   --color-glass-highlight: var(--glass-highlight);
@@ -152,13 +187,14 @@
   --color-on-glass-secondary: var(--glass-text-secondary);
   --color-on-glass-muted: var(--glass-text-muted);
   --color-accent-surface: var(--color-glass-overlay);
-  --color-accent: var(--color-white);
-  --color-accent-strong: var(--color-white);
-  --color-on-accent: var(--color-black);
-  --color-danger: var(--color-white);
+  --color-accent: var(--color-dark-text);
+  --color-accent-strong: var(--color-dark-text);
+  --color-on-accent: var(--color-dark-bg);
+  --accent-contrast: var(--color-dark-bg);
+  --color-danger: var(--color-dark-text);
   --color-warning: var(--color-danger);
-  --color-success: var(--color-white);
-  --color-info: var(--color-white);
+  --color-success: var(--color-dark-text);
+  --color-info: var(--color-dark-text);
   --bg: var(--color-bg);
   --texture-grain: var(--color-bg);
   --texture-fibers: var(--color-bg);
@@ -191,14 +227,14 @@
   --hover: var(--color-overlay-subtle);
   --hover-strong: color-mix(in srgb, var(--color-primary) 12%, transparent);
   --input-bg: var(--color-surface-elevated);
-  --selection: var(--color-glass-overlay);
-  --shadow: transparent;
-  --shadow-soft: transparent;
+  --selection: var(--color-selection-bg);
+  --shadow: rgba(0, 0, 0, 0.38);
+  --shadow-soft: rgba(0, 0, 0, 0.22);
   --accent: var(--color-primary);
   --accent-hover: var(--color-primary);
   --accent-soft: var(--color-overlay-subtle);
   --accent-softer: color-mix(in srgb, var(--color-overlay-subtle) 60%, transparent);
-  --accent-ring: color-mix(in srgb, var(--color-primary) 54%, transparent);
+  --accent-ring: var(--focus-ring);
   --title-bar-bg: var(--color-overlay);
   --chrome-top-bg: var(--title-bar-bg);
   --chrome-top-border: var(--color-border);
@@ -214,30 +250,45 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-primary: var(--color-white);
+    --color-primary: var(--color-dark-text);
     --color-primary-dark: var(--color-primary);
-    --color-bg: var(--color-black);
+    --color-bg: var(--color-dark-bg);
     --color-overlay: var(--glass-surface);
-    --color-overlay-subtle: rgba(255, 255, 254, 0.08);
-    --color-surface: var(--color-black);
-    --color-surface-alt: rgba(255, 255, 254, 0.1);
-    --color-surface-elevated: var(--color-surface);
-    --color-border: rgba(255, 255, 254, 0.18);
-    --color-border-strong: rgba(255, 255, 254, 0.42);
-    --color-text: var(--color-white);
-    --color-text-secondary: rgba(255, 255, 254, 0.74);
-    --color-text-muted: rgba(255, 255, 254, 0.56);
-    --color-tooltip-border: rgba(5, 5, 5, 0.2);
-    --glass-surface: rgba(255, 255, 254, 0.86);
-    --glass-border: rgba(5, 5, 5, 0.2);
-    --glass-highlight: rgba(5, 5, 5, 0.12);
-    --glass-hover: rgba(5, 5, 5, 0.1);
-    --glass-text: var(--color-black);
-    --glass-text-secondary: rgba(5, 5, 5, 0.74);
-    --glass-text-muted: rgba(5, 5, 5, 0.56);
+    --color-overlay-subtle: rgba(242, 243, 237, 0.07);
+    --color-surface: var(--color-dark-surface);
+    --color-surface-alt: rgba(242, 243, 237, 0.1);
+    --color-surface-elevated: var(--color-dark-surface-elevated);
+    --color-border: rgba(242, 243, 237, 0.16);
+    --color-border-strong: rgba(242, 243, 237, 0.34);
+    --color-text: var(--color-dark-text);
+    --color-text-secondary: rgba(242, 243, 237, 0.76);
+    --color-text-muted: rgba(242, 243, 237, 0.6);
+    --color-selection-bg: rgba(242, 243, 237, 0.11);
+    --color-selection-border: rgba(242, 243, 237, 0.3);
+    --color-selection-text: var(--color-dark-text);
+    --focus-ring: rgba(242, 243, 237, 0.72);
+    --modal-backdrop: rgba(0, 0, 0, 0.58);
+    --glass-surface: rgba(21, 22, 19, 0.96);
+    --glass-border: rgba(242, 243, 237, 0.2);
+    --glass-highlight: rgba(242, 243, 237, 0.07);
+    --glass-hover: rgba(242, 243, 237, 0.09);
+    --glass-text: var(--color-dark-text);
+    --glass-text-secondary: rgba(242, 243, 237, 0.78);
+    --glass-text-muted: rgba(242, 243, 237, 0.62);
+    --glass-control-bg: rgba(242, 243, 237, 0.06);
+    --glass-control-border: rgba(242, 243, 237, 0.24);
+    --glass-action-bg: var(--color-dark-text);
+    --glass-action-text: var(--color-dark-bg);
+    --card-preview-bg: #20211d;
+    --card-preview-border: rgba(242, 243, 237, 0.26);
+    --card-preview-text: var(--color-dark-text);
+    --card-preview-text-secondary: rgba(242, 243, 237, 0.8);
+    --card-preview-text-muted: rgba(242, 243, 237, 0.64);
+    --card-preview-placeholder: rgba(242, 243, 237, 0.08);
+    --color-tooltip-border: var(--glass-border);
     --color-tooltip-surface: var(--glass-surface);
     --color-tooltip-text: var(--glass-text);
-    --color-on-primary: var(--glass-text);
+    --color-on-primary: var(--color-dark-bg);
     --color-glass-overlay: var(--glass-surface);
     --color-glass-border: var(--glass-border);
     --color-glass-highlight: var(--glass-highlight);
@@ -246,13 +297,14 @@
     --color-on-glass-secondary: var(--glass-text-secondary);
     --color-on-glass-muted: var(--glass-text-muted);
     --color-accent-surface: var(--color-glass-overlay);
-    --color-accent: var(--color-white);
-    --color-accent-strong: var(--color-white);
-    --color-on-accent: var(--color-black);
-    --color-danger: var(--color-white);
+    --color-accent: var(--color-dark-text);
+    --color-accent-strong: var(--color-dark-text);
+    --color-on-accent: var(--color-dark-bg);
+    --accent-contrast: var(--color-dark-bg);
+    --color-danger: var(--color-dark-text);
     --color-warning: var(--color-danger);
-    --color-success: var(--color-white);
-    --color-info: var(--color-white);
+    --color-success: var(--color-dark-text);
+    --color-info: var(--color-dark-text);
     --bg: var(--color-bg);
     --texture-grain: var(--color-bg);
     --texture-fibers: var(--color-bg);
@@ -285,14 +337,14 @@
     --hover: var(--color-overlay-subtle);
     --hover-strong: color-mix(in srgb, var(--color-primary) 12%, transparent);
     --input-bg: var(--color-surface-elevated);
-    --selection: var(--color-glass-overlay);
-    --shadow: rgba(0, 0, 0, 0.22);
-    --shadow-soft: rgba(0, 0, 0, 0.12);
+    --selection: var(--color-selection-bg);
+    --shadow: rgba(0, 0, 0, 0.38);
+    --shadow-soft: rgba(0, 0, 0, 0.22);
     --accent: var(--color-primary);
     --accent-hover: var(--color-primary);
     --accent-soft: var(--color-overlay-subtle);
     --accent-softer: color-mix(in srgb, var(--color-overlay-subtle) 60%, transparent);
-    --accent-ring: color-mix(in srgb, var(--color-primary) 54%, transparent);
+    --accent-ring: var(--focus-ring);
     --title-bar-bg: var(--color-overlay);
     --chrome-top-bg: var(--title-bar-bg);
     --chrome-top-border: var(--color-border);
@@ -572,21 +624,21 @@ textarea {
 }
 
 .pane-tab--active {
-  --accent: var(--glass-text);
-  --attention: var(--glass-text-secondary);
-  --text: var(--glass-text);
-  --text-2: var(--glass-text-secondary);
-  --text-3: var(--glass-text-muted);
-  backdrop-filter: blur(10px) saturate(100%);
-  background: var(--glass-surface);
-  border: 1px solid var(--glass-border);
-  box-shadow: inset 0 1px 0 var(--glass-highlight);
-  color: var(--glass-text);
+  --accent: var(--color-primary);
+  --attention: var(--color-text-secondary);
+  --text: var(--color-text);
+  --text-2: var(--color-text-secondary);
+  --text-3: var(--color-text-muted);
+  background: var(--color-selection-bg);
+  border: 1px solid var(--color-selection-border);
+  box-shadow: inset 0 -3px 0 var(--color-primary);
+  color: var(--color-selection-text);
+  font-weight: 750;
 }
 
 .pane-tab--chart.pane-tab--active,
 .pane-tab--active .pane-tab-pin-icon {
-  color: var(--glass-text);
+  color: var(--color-selection-text);
 }
 
 .pane-tab--drop-before::before,
@@ -625,8 +677,8 @@ textarea {
 
 .editor-frontmatter-add-button:hover,
 .editor-frontmatter-add-button[aria-expanded="true"] {
-  background: var(--color-accent-strong);
-  border-color: var(--color-accent-strong);
+  background: color-mix(in srgb, var(--glass-text) 9%, var(--glass-surface));
+  border-color: var(--glass-text-secondary);
   color: var(--color-on-glass);
 }
 
@@ -744,21 +796,35 @@ textarea {
 
 .file-tree-row.selected,
 .file-tree-row--opening,
-.search-result-button--opening--active,
-.command-item--selected {
-  --text: var(--color-on-glass);
-  --text-2: var(--color-on-glass-secondary);
-  --text-3: var(--color-on-glass-muted);
-  background: var(--material-concrete);
-  background-size: var(--material-size-concrete);
-  color: var(--color-on-glass);
+.search-result-button--opening--active {
+  --text: var(--color-selection-text);
+  --text-2: var(--color-text-secondary);
+  --text-3: var(--color-text-muted);
+  background: var(--color-selection-bg);
+  border-color: var(--color-selection-border);
+  color: var(--color-selection-text);
 }
 
 .file-tree-row.selected::before,
 .file-tree-row--opening::before,
-.outline-item-button[aria-current="true"]::before,
-.command-item--selected::before {
+.outline-item-button[aria-current="true"]::before {
   background: var(--color-primary);
+  bottom: 0;
+  content: "";
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 3px;
+}
+
+.command-item--selected {
+  background: var(--glass-hover);
+  color: var(--glass-text);
+  position: relative;
+}
+
+.command-item--selected::before {
+  background: var(--glass-text);
   bottom: 0;
   content: "";
   left: 0;
@@ -908,8 +974,8 @@ textarea {
 }
 
 .primary-button:hover {
-  background: var(--color-accent-strong);
-  border-color: var(--color-accent-strong);
+  background: color-mix(in srgb, var(--glass-text) 9%, var(--glass-surface));
+  border-color: var(--glass-text-secondary);
   color: var(--color-on-glass);
 }
 
@@ -1038,17 +1104,22 @@ textarea {
 .files-search-method-menu,
 .workspace-input-dialog,
 .toast {
-  --accent-ring: color-mix(in srgb, var(--color-on-glass) 58%, transparent);
+  --accent: var(--glass-text);
+  --accent-contrast: var(--glass-action-text);
+  --accent-ring: var(--glass-text);
   --bg: transparent;
-  --border: var(--color-glass-border);
-  --border-medium: var(--color-glass-border);
+  --border: var(--glass-control-border);
+  --border-medium: var(--glass-control-border);
+  --btn-bg: var(--glass-control-bg);
   --color-primary: var(--color-on-glass);
   --color-primary-dark: var(--color-on-glass);
+  --color-on-primary: var(--glass-action-text);
   --color-text: var(--color-on-glass);
   --color-text-secondary: var(--color-on-glass-secondary);
   --color-text-muted: var(--color-on-glass-muted);
+  --input-bg: var(--glass-control-bg);
+  --material-control: var(--glass-control-bg);
   --hover: var(--color-glass-hover);
-  --input-bg: transparent;
   --surface: transparent;
   --text: var(--color-on-glass);
   --text-2: var(--color-on-glass-secondary);
@@ -1059,6 +1130,70 @@ textarea {
   border-radius: var(--radius-md);
   box-shadow: inset 0 1px 0 var(--color-glass-highlight);
   color: var(--color-on-glass);
+}
+
+:where(
+  .tab-context-menu,
+  .toolbar-dropdown-menu,
+  .toolbar-inline-dialog,
+  .editor-frontmatter-add-menu,
+  .editor-context-menu-inline-dialog,
+  .frontmatter-dialog,
+  .frontmatter-add-dialog,
+  .file-search-panel,
+  .new-file-form--primary,
+  .page-preview-popover,
+  .preview-diagram-overlay-panel,
+  .command-palette,
+  .quick-switcher,
+  .cm-live-table-menu,
+  .files-search-method-menu,
+  .workspace-input-dialog,
+  .toast
+) :is(input, select, textarea) {
+  background: var(--glass-control-bg);
+  border-color: var(--glass-control-border);
+  color: var(--glass-text);
+}
+
+:where(
+  .tab-context-menu,
+  .toolbar-dropdown-menu,
+  .toolbar-inline-dialog,
+  .editor-frontmatter-add-menu,
+  .editor-context-menu-inline-dialog,
+  .frontmatter-dialog,
+  .frontmatter-add-dialog,
+  .file-search-panel,
+  .new-file-form--primary,
+  .page-preview-popover,
+  .preview-diagram-overlay-panel,
+  .command-palette,
+  .quick-switcher,
+  .cm-live-table-menu,
+  .files-search-method-menu,
+  .workspace-input-dialog,
+  .toast
+) :is(input, textarea)::placeholder {
+  color: var(--glass-text-muted);
+  opacity: 1;
+}
+
+:where(.frontmatter-add-dialog-actions, .workspace-input-dialog-actions) > button {
+  background: var(--glass-control-bg);
+  border-color: var(--glass-control-border);
+  color: var(--glass-text);
+}
+
+:where(.frontmatter-add-dialog-actions, .workspace-input-dialog-actions) > button:last-child {
+  background: var(--glass-action-bg);
+  border-color: var(--glass-action-bg);
+  color: var(--glass-action-text);
+  font-weight: 700;
+}
+
+:where(.frontmatter-add-dialog-actions, .workspace-input-dialog-actions) > button:hover:not(:disabled) {
+  border-color: var(--glass-text-secondary);
 }
 
 .rail-tab-flight,
@@ -1081,8 +1216,8 @@ textarea {
 
 .empty-pane-create-button:hover,
 .empty-pane-create-button:active {
-  background: var(--color-accent-strong);
-  border-color: var(--color-accent-strong);
+  background: color-mix(in srgb, var(--glass-text) 9%, var(--glass-surface));
+  border-color: var(--glass-text-secondary);
   box-shadow: none;
   color: var(--color-on-glass);
 }
@@ -1108,7 +1243,7 @@ textarea {
 
 .modal-overlay,
 .preview-diagram-overlay {
-  background: color-mix(in srgb, var(--color-primary) 35%, transparent);
+  background: var(--modal-backdrop);
 }
 
 .chart-view-status,

@@ -41,8 +41,8 @@
 }
 
 [data-theme="dark"] .empty-pane-create-button:hover {
-  background: var(--color-accent-strong);
-  color: var(--color-primary);
+  background: color-mix(in srgb, var(--glass-text) 9%, var(--glass-surface));
+  color: var(--color-on-glass);
 }
 
 [data-theme="dark"] .empty-pane-create-button:active {
@@ -51,7 +51,7 @@
 }
 
 [data-theme="dark"] .new-file-form--primary {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-overlay-subtle);
 }
 
 [data-theme="dark"] .frontmatter-format-guide,
@@ -61,7 +61,7 @@
 [data-theme="dark"] .frontmatter-writing-example code,
 [data-theme="dark"] .frontmatter-field-summary-example code,
 [data-theme="dark"] .frontmatter-field-type {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-overlay-subtle);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -86,15 +86,15 @@
     color: var(--color-primary);
   }
   :root:not([data-theme="light"]) .empty-pane-create-button:hover {
-    background: var(--color-accent-strong);
-    color: var(--color-primary);
+    background: color-mix(in srgb, var(--glass-text) 9%, var(--glass-surface));
+    color: var(--color-on-glass);
   }
   :root:not([data-theme="light"]) .empty-pane-create-button:active {
     box-shadow: none;
     color: var(--color-primary);
   }
   :root:not([data-theme="light"]) .new-file-form--primary {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--color-overlay-subtle);
   }
   :root:not([data-theme="light"]) .frontmatter-format-guide,
   :root:not([data-theme="light"]) .frontmatter-format-guide code,
@@ -103,7 +103,7 @@
   :root:not([data-theme="light"]) .frontmatter-writing-example code,
   :root:not([data-theme="light"]) .frontmatter-field-summary-example code,
   :root:not([data-theme="light"]) .frontmatter-field-type {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--color-overlay-subtle);
   }
   :root:not([data-theme="light"]) .preview-body {
     color: var(--text);

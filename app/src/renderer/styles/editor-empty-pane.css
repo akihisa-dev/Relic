@@ -68,11 +68,12 @@
 }
 
 .empty-pane-create-button:hover {
-  background: var(--color-accent-strong);
+  background: color-mix(in srgb, var(--glass-text) 9%, var(--glass-surface));
   color: var(--color-on-glass);
 }
 
 .empty-pane-create-button:active {
+  background: color-mix(in srgb, var(--glass-text) 9%, var(--glass-surface));
   box-shadow: none;
   color: var(--color-on-glass);
   transform: none;

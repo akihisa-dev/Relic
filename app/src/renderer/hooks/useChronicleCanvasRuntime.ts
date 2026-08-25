@@ -100,7 +100,7 @@ export function useChronicleCanvasRuntime({
     background: "#fffffe",
     categoryLightness: 40,
     categorySaturation: 0,
-    mutedText: "rgba(5, 5, 5, 0.56)",
+    mutedText: "rgba(5, 5, 5, 0.74)",
     text: "#050505"
   });
 
@@ -114,7 +114,7 @@ export function useChronicleCanvasRuntime({
       background: token("--color-bg", "#fffffe"),
       categoryLightness: percentage("--chronicle-category-lightness", 40),
       categorySaturation: percentage("--chronicle-category-saturation", 0),
-      mutedText: token("--color-text-secondary", "rgba(5, 5, 5, 0.72)"),
+      mutedText: token("--color-text-secondary", "rgba(5, 5, 5, 0.74)"),
       text: token("--color-text", "#050505")
     };
   }, []);

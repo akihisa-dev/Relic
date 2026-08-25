@@ -908,11 +908,14 @@ describe("diagramPreview", () => {
       securityLevel: "strict",
       theme: "base",
       themeVariables: expect.objectContaining({
-        background: "#050505",
-        mainBkg: "#050505",
-        primaryBorderColor: "#FFFFFE",
-        primaryTextColor: "#FFFFFE",
-        lineColor: "#FFFFFE",
+        background: "#10110F",
+        mainBkg: "#171815",
+        primaryColor: "#171815",
+        primaryBorderColor: "#777A70",
+        primaryTextColor: "#F2F3ED",
+        lineColor: "#C4C6BE",
+        noteBkgColor: "#252722",
+        noteTextColor: "#F2F3ED",
         fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
       })
     }));

@@ -174,7 +174,7 @@
 
 .preview-diagram-overlay {
   align-items: center;
-  background: rgba(5, 5, 5, 0.62);
+  background: var(--modal-backdrop);
   box-sizing: border-box;
   display: flex;
   inset: 0;

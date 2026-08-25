@@ -16,7 +16,7 @@
   -webkit-app-region: drag;
   background: var(--chrome-top-bg, var(--title-bar-bg));
   backdrop-filter: blur(18px) saturate(145%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: minmax(0, 1fr) auto;

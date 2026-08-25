@@ -391,7 +391,7 @@
   background: var(--surface);
   border: 1px solid var(--border-medium);
   border-radius: 7px;
-  box-shadow: 0 12px 28px color-mix(in srgb, #000 18%, transparent);
+  box-shadow: 0 12px 28px var(--shadow-soft);
   color: var(--text);
   container-type: inline-size;
   max-height: calc(100% - 24px);

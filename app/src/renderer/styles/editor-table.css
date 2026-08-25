@@ -1,9 +1,9 @@
 .cm-live-table {
-  --live-table-add-button-border-color: #e0e0e0;
-  --live-table-border-color: #e0e0e0;
+  --live-table-add-button-border-color: var(--border-medium);
+  --live-table-border-color: var(--border);
   --live-table-control-size: 16px;
   --live-table-drag-handle-size: 16px;
-  --live-table-handle-color: #ababab;
+  --live-table-handle-color: var(--text-3);
   --live-table-selection: color-mix(in srgb, var(--text) 8%, transparent);
   --live-table-selection-blend-mode: darken;
   margin: 18px 0;

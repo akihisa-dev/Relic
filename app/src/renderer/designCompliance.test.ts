@@ -1,6 +1,31 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+
+type Rgb = readonly [number, number, number];
+
+function hexRgb(value: string): Rgb {
+  const channels = [1, 3, 5].map((offset) => Number.parseInt(value.slice(offset, offset + 2), 16));
+  return [channels[0]!, channels[1]!, channels[2]!];
+}
+
+function blend(foreground: Rgb, alpha: number, background: Rgb): Rgb {
+  const channel = (index: number) => Math.round(foreground[index]! * alpha + background[index]! * (1 - alpha));
+  return [channel(0), channel(1), channel(2)];
+}
+
+function contrastRatio(left: Rgb, right: Rgb): number {
+  const luminance = (color: Rgb) => {
+    const channels = color.map((channel) => {
+      const normalized = channel / 255;
+      return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * channels[0]! + 0.7152 * channels[1]! + 0.0722 * channels[2]!;
+  };
+  const bright = Math.max(luminance(left), luminance(right));
+  const dark = Math.min(luminance(left), luminance(right));
+  return (bright + 0.05) / (dark + 0.05);
+}
 
 describe("DESIGN.md compliance", () => {
   const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
@@ -12,21 +37,25 @@ describe("DESIGN.md compliance", () => {
   it("uses the DESIGN.md color tokens", () => {
     expect(designCss).toContain("--color-white: #fffffe;");
     expect(designCss).toContain("--color-black: #050505;");
+    expect(designCss).toContain("--color-dark-bg: #10110f;");
+    expect(designCss).toContain("--color-dark-surface: #171815;");
+    expect(designCss).toContain("--color-dark-surface-elevated: #1e1f1b;");
+    expect(designCss).toContain("--color-dark-text: #f2f3ed;");
     expect(designCss).toContain("--color-primary: var(--color-black);");
     expect(designCss).toContain("--color-bg: var(--color-white);");
     expect(designCss).toContain("--color-overlay: var(--glass-surface);");
     expect(designCss).toContain("--color-overlay-subtle: rgba(5, 5, 5, 0.06);");
     expect(designCss).toContain("--color-surface: var(--color-white);");
     expect(designCss).toContain("--color-surface-alt: rgba(5, 5, 5, 0.08);");
-    expect(designCss).toContain("--color-border: rgba(5, 5, 5, 0.18);");
-    expect(designCss).toContain("--color-border-strong: rgba(5, 5, 5, 0.42);");
+    expect(designCss).toContain("--color-border: rgba(5, 5, 5, 0.2);");
+    expect(designCss).toContain("--color-border-strong: rgba(5, 5, 5, 0.46);");
     expect(designCss).toContain("--color-text: var(--color-black);");
-    expect(designCss).toContain("--color-text-secondary: rgba(5, 5, 5, 0.72);");
-    expect(designCss).toContain("--color-text-muted: rgba(5, 5, 5, 0.56);");
-    expect(designCss).toContain("--glass-surface: rgba(5, 5, 5, 0.86);");
-    expect(designCss).toContain("--glass-border: rgba(255, 255, 254, 0.2);");
-    expect(designCss).toContain("--glass-highlight: rgba(255, 255, 254, 0.12);");
-    expect(designCss).toContain("--glass-hover: rgba(255, 255, 254, 0.1);");
+    expect(designCss).toContain("--color-text-secondary: rgba(5, 5, 5, 0.74);");
+    expect(designCss).toContain("--color-text-muted: rgba(5, 5, 5, 0.6);");
+    expect(designCss).toContain("--glass-surface: rgba(18, 18, 16, 0.94);");
+    expect(designCss).toContain("--glass-border: rgba(255, 255, 254, 0.24);");
+    expect(designCss).toContain("--glass-highlight: rgba(255, 255, 254, 0.1);");
+    expect(designCss).toContain("--glass-hover: rgba(255, 255, 254, 0.09);");
     expect(designCss).toContain("--glass-text: var(--color-white);");
     expect(designCss).toContain("--color-tooltip-surface: var(--glass-surface);");
     expect(designCss).toContain("--color-tooltip-text: var(--glass-text);");
@@ -40,6 +69,37 @@ describe("DESIGN.md compliance", () => {
     expect(designCss).toContain("--color-success: var(--color-black);");
     expect(designCss).toContain("--color-info: var(--color-black);");
     expect(designCss).toMatch(/:root\s*\{[^}]*color-scheme:\s*light;/s);
+  });
+
+  it("tunes dark surfaces independently instead of inverting light colors", () => {
+    const darkTheme = designCss.match(/:root\[data-theme="dark"\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    expect(darkTheme).toContain("--color-bg: var(--color-dark-bg);");
+    expect(darkTheme).toContain("--color-surface: var(--color-dark-surface);");
+    expect(darkTheme).toContain("--color-surface-elevated: var(--color-dark-surface-elevated);");
+    expect(darkTheme).toContain("--glass-surface: rgba(21, 22, 19, 0.96);");
+    expect(darkTheme).toContain("--glass-text: var(--color-dark-text);");
+    expect(darkTheme).toContain("--color-on-primary: var(--color-dark-bg);");
+    expect(darkTheme).not.toContain("--glass-surface: rgba(255, 255, 254");
+  });
+
+  it("keeps readable text contrast on work, glass, and action surfaces", () => {
+    const white = hexRgb("#fffffe");
+    const black = hexRgb("#050505");
+    const darkBackground = hexRgb("#10110f");
+    const darkText = hexRgb("#f2f3ed");
+    const lightGlass = blend(hexRgb("#121210"), 0.94, white);
+    const darkGlass = blend(hexRgb("#151613"), 0.96, darkBackground);
+    const lightAction = white;
+    const lightActionText = black;
+    const darkAction = darkText;
+    const darkActionText = darkBackground;
+
+    expect(contrastRatio(black, white)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(darkText, darkBackground)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(white, lightGlass)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(darkText, darkGlass)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(lightActionText, lightAction)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(darkActionText, darkAction)).toBeGreaterThanOrEqual(4.5);
   });
 
   it("uses the Liquid Charcoal font stack with system fallback", () => {
@@ -68,12 +128,27 @@ describe("DESIGN.md compliance", () => {
     expect(designCss).toMatch(/\.setting-row input\[type="checkbox"\],\s*\.setting-row input\[type="checkbox"\]::after\s*\{[^}]*box-shadow:\s*none;/s);
   });
 
-  it("shows the active tab as inverted liquid glass", () => {
-    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*backdrop-filter:\s*blur\(10px\) saturate\(100%\);/s);
-    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*background:\s*var\(--glass-surface\);/s);
-    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*border:\s*1px solid var\(--glass-border\);/s);
-    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*box-shadow:\s*inset 0 1px 0 var\(--glass-highlight\);/s);
-    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*color:\s*var\(--glass-text\);/s);
+  it("shows the active tab with a dedicated surface and persistent indicator", () => {
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*background:\s*var\(--color-selection-bg\);/s);
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*border:\s*1px solid var\(--color-selection-border\);/s);
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*box-shadow:\s*inset 0 -3px 0 var\(--color-primary\);/s);
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*color:\s*var\(--color-selection-text\);/s);
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*font-weight:\s*750;/s);
+  });
+
+  it("keeps transient dialog controls readable on glass", () => {
+    expect(designCss).toMatch(/\.frontmatter-add-dialog,[\s\S]*?\.toast\s*\{[^}]*--btn-bg:\s*var\(--glass-control-bg\);[^}]*--text:\s*var\(--color-on-glass\);/s);
+    expect(designCss).toMatch(/:where\(\.frontmatter-add-dialog-actions, \.workspace-input-dialog-actions\) > button\s*\{[^}]*background:\s*var\(--glass-control-bg\);[^}]*color:\s*var\(--glass-text\);/s);
+    expect(designCss).toMatch(/:where\(\.frontmatter-add-dialog-actions, \.workspace-input-dialog-actions\) > button:last-child\s*\{[^}]*background:\s*var\(--glass-action-bg\);[^}]*color:\s*var\(--glass-action-text\);/s);
+  });
+
+  it("does not bypass theme tokens in component foregrounds and surfaces", () => {
+    const directColor = /^\s*(?:color|background(?:-color)?|border-color):\s*(?:white|black|#[\da-f]{3,8}|rgba?\()/gim;
+    const violations = readdirSync("src/renderer/styles")
+      .filter((file) => file.endsWith(".css") && file !== "architectural-design.css")
+      .flatMap((file) => [...readFileSync(`src/renderer/styles/${file}`, "utf8").matchAll(directColor)]
+        .map((match) => `${file}:${match[0].trim()}`));
+    expect(violations).toEqual([]);
   });
 
   it("moves settings switch knobs through the on class with elastic feedback", () => {
@@ -139,12 +214,12 @@ describe("Workspace layout CSS contracts", () => {
   it("開いているワークスペースの切り替え操作をサイドバー下部の黒い操作面として表示する", () => {
     expect(fileTreeCss).toMatch(/\.sidebar-section:has\(> \.workspace-actions\)\s*\{[^}]*min-height:\s*100%;/s);
     expect(fileTreeCss).toMatch(/\.sidebar:has\(\.workspace-actions\)::after\s*\{[^}]*display:\s*none;/s);
-    expect(fileTreeCss).toMatch(/\.workspace-actions\s*\{[^}]*background:\s*var\(--color-primary-dark\);/s);
+    expect(fileTreeCss).toMatch(/\.workspace-actions\s*\{[^}]*background:\s*var\(--glass-surface\);/s);
     expect(fileTreeCss).not.toMatch(/\.workspace-actions\s*\{[^}]*position:\s*sticky;/s);
     expect(fileTreeCss).toMatch(/\.workspace-actions\s*\{[^}]*margin:\s*0 -16px;/s);
     expect(fileTreeCss).toMatch(/\.workspace-actions\s*\{[^}]*padding:\s*6px 24px 8px;/s);
     expect(fileTreeCss).not.toMatch(/\.workspace-actions\s*\{[^}]*min-height:/s);
-    expect(fileTreeCss).toMatch(/\.workspace-actions \.workspace-action-button\s*\{[^}]*color:\s*color-mix\(in srgb, #fff 88%, var\(--color-primary-dark\) 12%\);/s);
+    expect(fileTreeCss).toMatch(/\.workspace-actions \.workspace-action-button\s*\{[^}]*color:\s*var\(--glass-text-secondary\);/s);
     expect(fileTreeCss).toMatch(/\.workspace-actions \.workspace-action-button\s*\{[^}]*min-height:\s*28px;/s);
   });
 

@@ -68,7 +68,7 @@
   align-items: center;
   background: var(--accent);
   border-radius: 999px;
-  color: var(--accent-contrast, #fff);
+  color: var(--accent-contrast);
   display: inline-flex;
   font-size: 10px;
   font-weight: 700;

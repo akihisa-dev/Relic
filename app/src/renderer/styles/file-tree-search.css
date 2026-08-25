@@ -365,7 +365,7 @@
 .primary-button {
   background: var(--accent);
   border-color: transparent;
-  color: white;
+  color: var(--accent-contrast);
 }
 .primary-button:hover {
   background: var(--accent-hover);
@@ -865,7 +865,7 @@
 }
 
 .workspace-actions {
-  background: var(--color-primary-dark);
+  background: var(--glass-surface);
   border-top: 0;
   gap: 2px;
   margin: 0 -16px;
@@ -906,7 +906,7 @@
 }
 
 .workspace-actions .workspace-action-button {
-  color: color-mix(in srgb, #fff 88%, var(--color-primary-dark) 12%);
+  color: var(--glass-text-secondary);
   min-height: 28px;
   padding: 0 8px;
 }
@@ -917,16 +917,16 @@
 }
 
 .workspace-actions .workspace-action-button:hover:not(:disabled) {
-  background: color-mix(in srgb, #fff 12%, transparent);
-  color: #fff;
+  background: var(--glass-hover);
+  color: var(--glass-text);
 }
 
 .workspace-actions .workspace-action-button:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, #fff 42%, transparent);
+  box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
 .workspace-actions .workspace-action-button:disabled {
-  color: color-mix(in srgb, #fff 44%, var(--color-primary-dark) 56%);
+  color: var(--glass-text-muted);
 }
 
 .workspace-empty {
