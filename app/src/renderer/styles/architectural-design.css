@@ -38,6 +38,10 @@
   --glass-control-border: rgba(255, 255, 254, 0.28);
   --glass-action-bg: var(--color-white);
   --glass-action-text: var(--color-black);
+  --tab-active-bg: var(--glass-surface);
+  --tab-active-border: var(--glass-border);
+  --tab-active-indicator: var(--glass-text);
+  --tab-active-text: var(--glass-text);
   --card-preview-bg: #151513;
   --card-preview-border: rgba(255, 255, 254, 0.34);
   --card-preview-text: var(--color-white);
@@ -169,6 +173,10 @@
   --glass-control-border: rgba(242, 243, 237, 0.24);
   --glass-action-bg: var(--color-dark-text);
   --glass-action-text: var(--color-dark-bg);
+  --tab-active-bg: #2b2d28;
+  --tab-active-border: rgba(242, 243, 237, 0.3);
+  --tab-active-indicator: var(--color-dark-text);
+  --tab-active-text: var(--color-dark-text);
   --card-preview-bg: #20211d;
   --card-preview-border: rgba(242, 243, 237, 0.26);
   --card-preview-text: var(--color-dark-text);
@@ -279,6 +287,10 @@
     --glass-control-border: rgba(242, 243, 237, 0.24);
     --glass-action-bg: var(--color-dark-text);
     --glass-action-text: var(--color-dark-bg);
+    --tab-active-bg: #2b2d28;
+    --tab-active-border: rgba(242, 243, 237, 0.3);
+    --tab-active-indicator: var(--color-dark-text);
+    --tab-active-text: var(--color-dark-text);
     --card-preview-bg: #20211d;
     --card-preview-border: rgba(242, 243, 237, 0.26);
     --card-preview-text: var(--color-dark-text);
@@ -629,16 +641,16 @@ textarea {
   --text: var(--color-text);
   --text-2: var(--color-text-secondary);
   --text-3: var(--color-text-muted);
-  background: var(--color-selection-bg);
-  border: 1px solid var(--color-selection-border);
-  box-shadow: inset 0 -3px 0 var(--color-primary);
-  color: var(--color-selection-text);
+  background: var(--tab-active-bg);
+  border: 1px solid var(--tab-active-border);
+  box-shadow: inset 0 -3px 0 var(--tab-active-indicator);
+  color: var(--tab-active-text);
   font-weight: 750;
 }
 
 .pane-tab--chart.pane-tab--active,
 .pane-tab--active .pane-tab-pin-icon {
-  color: var(--color-selection-text);
+  color: var(--tab-active-text);
 }
 
 .pane-tab--drop-before::before,

@@ -27,12 +27,35 @@ function contrastRatio(left: Rgb, right: Rgb): number {
   return (bright + 0.05) / (dark + 0.05);
 }
 
+function cssDeclarations(rule: string): Map<string, string> {
+  return new Map([...rule.matchAll(/^\s*(--[\w-]+|background|color):\s*([^;]+);/gm)]
+    .map((match) => [match[1]!, match[2]!.trim()]));
+}
+
+function resolveCssValue(value: string, tokens: ReadonlyMap<string, string>): string {
+  let resolved = value;
+  for (let depth = 0; depth < 12; depth += 1) {
+    const variable = resolved.match(/^var\((--[\w-]+)\)$/);
+    if (!variable) return resolved;
+    resolved = tokens.get(variable[1]!) ?? "";
+  }
+  return resolved;
+}
+
+function cssColorRgb(value: string, background: Rgb): Rgb {
+  if (value.startsWith("#")) return hexRgb(value);
+  const rgba = value.match(/^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/);
+  if (!rgba) throw new Error(`Unsupported CSS color in test: ${value}`);
+  return blend([Number(rgba[1]), Number(rgba[2]), Number(rgba[3])], Number(rgba[4]), background);
+}
+
 describe("DESIGN.md compliance", () => {
   const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
   const settingsCss = readFileSync("src/renderer/styles/settings.css", "utf8");
   const tableCss = readFileSync("src/renderer/styles/table-view.css", "utf8");
   const motionCss = readFileSync("src/renderer/styles/theme-motion.css", "utf8");
   const workspaceEditorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
+  const styleEntryCss = readFileSync("src/renderer/styles.css", "utf8");
 
   it("uses the DESIGN.md color tokens", () => {
     expect(designCss).toContain("--color-white: #fffffe;");
@@ -129,11 +152,47 @@ describe("DESIGN.md compliance", () => {
   });
 
   it("shows the active tab with a dedicated surface and persistent indicator", () => {
-    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*background:\s*var\(--color-selection-bg\);/s);
-    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*border:\s*1px solid var\(--color-selection-border\);/s);
-    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*box-shadow:\s*inset 0 -3px 0 var\(--color-primary\);/s);
-    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*color:\s*var\(--color-selection-text\);/s);
+    const darkTheme = designCss.match(/:root\[data-theme="dark"\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    expect(designCss).toContain("--tab-active-bg: var(--glass-surface);");
+    expect(designCss).toContain("--tab-active-text: var(--glass-text);");
+    expect(darkTheme).toContain("--tab-active-bg: #2b2d28;");
+    expect(darkTheme).toContain("--tab-active-text: var(--color-dark-text);");
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*background:\s*var\(--tab-active-bg\);/s);
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*border:\s*1px solid var\(--tab-active-border\);/s);
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*box-shadow:\s*inset 0 -3px 0 var\(--tab-active-indicator\);/s);
+    expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*color:\s*var\(--tab-active-text\);/s);
     expect(designCss).toMatch(/\.pane-tab--active\s*\{[^}]*font-weight:\s*750;/s);
+    expect(contrastRatio(hexRgb("#fffffe"), blend(hexRgb("#121210"), 0.94, hexRgb("#fffffe"))))
+      .toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(hexRgb("#f2f3ed"), hexRgb("#2b2d28"))).toBeGreaterThanOrEqual(4.5);
+    expect(styleEntryCss.indexOf('@import "./styles/architectural-design.css";'))
+      .toBeGreaterThan(styleEntryCss.indexOf('@import "./styles/workspace-editor.css";'));
+  });
+
+  it("resolves the final active tab foreground and background as a contrasting pair", () => {
+    const rootTokens = designCss.match(/:root\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const darkTokens = designCss.match(/:root\[data-theme="dark"\]\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const originalActiveTab = workspaceEditorCss.match(/\.pane-tab--active\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const finalActiveTab = designCss.match(/\.pane-tab--active\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+    const lightTokens = cssDeclarations(rootTokens);
+    const resolvedDarkTokens = new Map([...lightTokens, ...cssDeclarations(darkTokens)]);
+    const activeDeclarations = new Map([
+      ...cssDeclarations(originalActiveTab),
+      ...cssDeclarations(finalActiveTab)
+    ]);
+    const lightBackground = resolveCssValue(activeDeclarations.get("background") ?? "", lightTokens);
+    const lightText = resolveCssValue(activeDeclarations.get("color") ?? "", lightTokens);
+    const darkBackground = resolveCssValue(activeDeclarations.get("background") ?? "", resolvedDarkTokens);
+    const darkText = resolveCssValue(activeDeclarations.get("color") ?? "", resolvedDarkTokens);
+
+    expect(lightBackground).toBe("rgba(18, 18, 16, 0.94)");
+    expect(lightText).toBe("#fffffe");
+    expect(darkBackground).toBe("#2b2d28");
+    expect(darkText).toBe("#f2f3ed");
+    expect(contrastRatio(cssColorRgb(lightText, hexRgb("#fffffe")), cssColorRgb(lightBackground, hexRgb("#fffffe"))))
+      .toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(cssColorRgb(darkText, hexRgb("#10110f")), cssColorRgb(darkBackground, hexRgb("#10110f"))))
+      .toBeGreaterThanOrEqual(4.5);
   });
 
   it("keeps transient dialog controls readable on glass", () => {
