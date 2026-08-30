@@ -174,7 +174,7 @@ cd app
 pnpm verify
 ```
 
-Run the full set of locally reproducible checks, including coverage reporting, architecture, documentation, workflow, Skill structure, and dependency-license file checks:
+Run the full set of locally reproducible checks, including tests, architecture, documentation, workflow, Skill structure, and dependency-license file checks:
 
 ```sh
 cd app
@@ -200,12 +200,6 @@ Print the current Git-tracked file tree without changing documentation:
 
 ```sh
 pnpm docs:tree
-```
-
-macOS test alias:
-
-```sh
-pnpm test:mac
 ```
 
 Pull Requests, pushes to `main`, and manual Code CI runs execute `verify:ci` and an isolated development-app startup smoke check on macOS. Pull Requests additionally validate version policy against their base and head commits. The packaged app under `app/out/` is checked only when distribution build verification is explicitly requested. Before creating a release tag, the manual Pre-release Verification workflow can run the macOS safe build and a packaged-app startup smoke check without creating a tag, Release, push, or repository change.
@@ -459,7 +453,7 @@ cd app
 pnpm verify
 ```
 
-カバレッジ測定、アーキテクチャ、文書、workflow、Skill構造、依存ライセンス文書まで、ローカルで再現可能な包括確認を行う場合:
+全テスト、アーキテクチャ、文書、workflow、Skill構造、依存ライセンス文書まで、ローカルで再現可能な包括確認を行う場合:
 
 ```sh
 cd app
@@ -485,12 +479,6 @@ git -C .. diff --check
 
 ```sh
 pnpm docs:tree
-```
-
-macOS向けのテストエイリアス:
-
-```sh
-pnpm test:mac
 ```
 
 Pull Request、`main`へのpush、手動のCode CIは、macOSで `verify:ci` と隔離した開発版の自動起動スモークを実行します。Pull Requestではbase/head間のバージョン規則も追加確認します。`app/out/` 配下のパッケージ版アプリは、配布ビルド確認を明示した場合だけ確認対象にします。Releaseタグ作成前は手動のPre-release Verification workflowで、タグ、Release、push、リポジトリ変更を行わずにmacOSのsafe buildと配布版の自動起動スモークを実行できます。

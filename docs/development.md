@@ -182,12 +182,12 @@ pnpm verify:local:release
 ```
 
 Node APIを使うmain・preload・shared・scriptsのテストはNode環境、rendererのテストはjsdom環境で分離して実行する。
-`test:coverage` は全テストを実行して製品コードの未実行箇所を測定する。割合そのものはCIの合否条件にせず、測定用・診断用の `scripts/` はテスト対象に含めるが製品コードの集計からは除外する。未実行箇所は数値を埋めるためではなく、保存、拒否、状態遷移など重要な失敗経路の不足を判断する材料にする。
+`test:coverage` は全テストを実行して製品コードの未実行箇所を測定する診断用コマンドであり、通常の包括検証には含めない。割合そのものはCIの合否条件にせず、測定用・診断用の `scripts/` はテスト対象に含めるが製品コードの集計からは除外する。未実行箇所は数値を埋めるためではなく、保存、拒否、状態遷移など重要な失敗経路の不足を判断する材料にする。
 `architecture:check` はプロセス境界、未知のproduction層、RendererのPreload API直接参照、循環依存、未解決相対import、module alias禁止方針を確認する。保証範囲は [engineering/architecture.md](engineering/architecture.md) を正とする。
 `test:inventory` はVitestと共有する収集方針で全テストファイルを照合して失敗責務の層へ分類し、Electron実行とmacOS packageがVitest外の責務であることも表示する。
 `smoke:electron` は一時ユーザーデータを使ってmacOSの開発版Electronを起動し、メインウインドウ、Renderer、Preload API、初期IPC接続を確認して自動終了する。安全ビルド済みのmacOS配布版を確認する場合は `pnpm smoke:package` を使う。ローカルではユーザーが実行を明示した場合だけ使い、どちらも必要に応じて `-- --artifacts-dir <path>` でJSON reportとプロセスログの保存先を指定できる。
 `verify` は日常変更向けにNode.js環境、型、全テスト、依存通知・SBOM整合を確認する。
-`verify:full` はローカルで再現可能な包括確認として、Node.js環境、型、全テストとカバレッジ測定、Vitest収集台帳、アーキテクチャ境界、文書索引、workflow安全条件、Skill構造、監査器の自己テスト、指示量予算、依存通知・SBOM整合を確認する。
+`verify:full` はローカルで再現可能な包括確認として、Node.js環境、型、全テスト、Vitest収集台帳、アーキテクチャ境界、文書索引、workflow安全条件、Skill構造、監査器の自己テスト、指示量予算、依存通知・SBOM整合を確認する。未実行箇所の診断が必要な場合だけ、別途 `pnpm test:coverage` を実行する。
 `verify:ci` は `verify:full` にrendererのproduction build、初期静的import境界の検査、production依存関係の脆弱性監査を追加し、Code CIの再現可能部分をまとめる。依存関係監査はhigh以上の検出で失敗し、低・中リスクも監査出力で確認できる。Pull Requestのbase/headを使うバージョン検査はGitHubイベント固有のため別stepで実行する。
 `verify:local:push` はGitHubへ送信する前の必須検証で、固定lockfileからの依存配置、`verify:full`、Renderer production build、重要度を問わないproduction依存監査、差分形式を確認する。既知の脆弱性、監査通信の失敗、またはいずれかの検査失敗があればpushしない。
 `verify:local:release` はタグpush前の必須検証で、`verify:local:push` にmacOS安全ビルド、配布DMGの生成確認、その作業で生成した配布版の自動起動スモークを追加する。タグpushまたはリリースの明示指示はこの自動起動スモークの実施許可を含むが、既存アプリやGUI操作の許可は含まない。

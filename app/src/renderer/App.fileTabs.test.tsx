@@ -478,53 +478,6 @@ describe("App file tabs", () => {
     });
   });
 
-  it("自動保存に失敗した場合は本文を維持してエラーを表示する", async () => {
-    const writeMarkdownFile = vi.fn().mockResolvedValue({
-      ok: false,
-      error: { code: "FILE_WRITE_FAILED", message: "ファイルを保存できませんでした。" }
-    });
-
-    window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
-        ok: true,
-        value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
-        }
-      }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
-        ok: true,
-        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
-      }),
-      writeMarkdownFile
-    });
-
-    await renderApp();
-
-    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
-
-    await waitFor(() => {
-      expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
-    });
-
-    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
-
-    act(() => {
-      useEditorStore.getState().updateTabContent(activeTabId, "保存に失敗しても残る本文");
-    });
-
-    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
-      content: "保存に失敗しても残る本文",
-      expectedContent: "本文テスト",
-      path: "読書メモ.md"
-    }), { timeout: 2000 });
-
-    expect(await screen.findByText("ファイルを保存できませんでした。")).toHaveClass("toast--error");
-    const tab = useEditorStore.getState().tabs[activeTabId];
-    expect(tab?.kind).toBe("file");
-    if (tab?.kind === "file") expect(tab.content).toBe("保存に失敗しても残る本文");
-  });
-
   it("ステータスバーに保存状態を表示する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({

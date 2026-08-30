@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   screen,
   waitFor,
@@ -34,6 +35,7 @@ describe("App workspaces", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
     vi.unstubAllGlobals();
     restoreNavigatorPlatform();
@@ -509,16 +511,20 @@ describe("App workspaces", () => {
     const rail = screen.getByRole("navigation");
     fireEvent.doubleClick(await screen.findByRole("button", { name: "Notes" }));
     fireEvent.change(await screen.findByLabelText("名前を変更"), { target: { value: "Renamed" } });
+    vi.useFakeTimers();
     fireEvent.keyDown(screen.getByLabelText("名前を変更"), { key: "Enter" });
 
-    await waitFor(() => {
-      expect(renameWorkspace).toHaveBeenCalledWith({ name: "Renamed", workspaceId: "ws-1" });
+    await act(async () => {
+      await Promise.resolve();
     });
+    expect(renameWorkspace).toHaveBeenCalledWith({ name: "Renamed", workspaceId: "ws-1" });
     expect(rail).toHaveClass("rail--workspace-editing");
 
-    await waitFor(() => {
-      expect(rail).not.toHaveClass("rail--workspace-editing");
-    }, { timeout: 1500 });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900);
+    });
+
+    expect(rail).not.toHaveClass("rail--workspace-editing");
   });
 
   it("左レールのワークスペース名変更中はレールを開いたままにする", async () => {
