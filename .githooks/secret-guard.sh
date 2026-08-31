@@ -152,7 +152,7 @@ check_blob_content() {
 check_commit() {
   commit="$1"
   path_list=$(mktemp "${TMPDIR:-/tmp}/relic-secret-guard.paths.XXXXXX")
-  if ! git diff-tree --root --no-commit-id --name-only -r -z "$commit" > "$path_list"; then
+  if ! git diff-tree --root --no-commit-id --name-only --diff-filter=ACMR -r -z "$commit" > "$path_list"; then
     echo "Blocked unreadable commit tree: $commit" >&2
     blocked=1
   elif ! xargs -0 -n 1 "$script_path" --commit-path "$commit" < "$path_list"; then
@@ -277,6 +277,18 @@ run_self_test() {
       echo "Secret guard self-test failed: safe fixture was blocked." >&2
       exit 1
     fi
+
+    rm "safe fixture.txt"
+    git add "safe fixture.txt"
+    git commit -q -m "safe deletion"
+    deletion_commit=$(git rev-parse HEAD)
+    blocked=0
+    check_commit "$deletion_commit"
+    if [ "$blocked" -ne 0 ]; then
+      echo "Secret guard self-test failed: a deleted path was treated as an unreadable blob." >&2
+      exit 1
+    fi
+
     blocked=0
     check_new_ref "$safe_commit"
     if [ "$blocked" -ne 0 ]; then
