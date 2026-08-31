@@ -2,7 +2,6 @@ import { app } from "electron";
 
 import type {
   WorkspaceAvailability,
-  WorkspaceFileIndexEntry,
   WorkspaceReadArea,
   WorkspaceReadFailureKind,
   WorkspaceReadIssue,
@@ -47,8 +46,7 @@ export async function buildWorkspaceState(
   if (workspaceSettingsResult.status === "rejected") {
     issues.push(workspaceReadIssue("settings", workspaceSettingsResult.reason));
   }
-  let fileIndexEntries: WorkspaceFileIndexEntry[] = [];
-
+  let fileIndexEntryCount = 0;
   if (fileTreeResult.status === "fulfilled") {
     try {
       const data = await workspaceDataProvider.get({
@@ -62,7 +60,7 @@ export async function buildWorkspaceState(
       if (!fileIndex) {
         throw new Error("Workspace file index is unavailable.");
       }
-      fileIndexEntries = fileIndex.entries;
+      fileIndexEntryCount = fileIndex.entries.length;
     } catch (error) {
       issues.push(workspaceReadIssue("file-index", error));
     }
@@ -70,17 +68,18 @@ export async function buildWorkspaceState(
 
   const availability = workspaceAvailability(issues);
   const workspaceState = {
-    ...toWorkspaceState(settings, fileTree, pinnedPaths, fileIndexEntries),
+    ...toWorkspaceState(settings, fileTree, pinnedPaths),
     availability
   };
   finishPerformanceMeasure("buildWorkspaceState", startedAt, {
     activeWorkspace: true,
-    fileIndexEntries: fileIndexEntries.length,
+    fileIndexEntries: fileIndexEntryCount,
     readIssues: issues.length,
     fileTreeNodes: fileTree.length
   });
   return workspaceState;
 }
+
 
 export function workspaceReadIssue(
   area: WorkspaceReadArea,

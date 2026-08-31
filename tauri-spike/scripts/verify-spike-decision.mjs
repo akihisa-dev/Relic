@@ -8,13 +8,22 @@ const rustSource = await readFile(path.join(root, "src-tauri/src/lib.rs"), "utf8
 const clientSource = await readFile(path.join(root, "src/tauriRelicClient.ts"), "utf8");
 const config = await readFile(path.join(root, "src-tauri/tauri.conf.json"), "utf8");
 const matrix = await readFile(path.join(root, "DECISION_MATRIX.md"), "utf8");
+const rustcLookup = spawnSync("rustup", ["which", "rustc"], { encoding: "utf8" });
+const rustToolchainBin = rustcLookup.status === 0
+  ? path.dirname(rustcLookup.stdout.trim())
+  : "";
+const cargoExecutable = path.join(rustToolchainBin, "cargo");
+const rustEnvironment = {
+  ...process.env,
+  PATH: [rustToolchainBin, process.env.PATH].filter(Boolean).join(path.delimiter)
+};
 
 const adapterTest = spawnSync(process.execPath, [path.join(root, "scripts/adapter-contract.test.mjs")], { encoding: "utf8" });
-const toolchain = spawnSync("sh", ["-lc", "TOOLCHAIN_BIN=$(rustup which rustc | sed 's#/rustc$##'); PATH=\"$TOOLCHAIN_BIN:$PATH\" cargo test --manifest-path src-tauri/Cargo.toml"], { cwd: root, encoding: "utf8", timeout: 120000 });
+const toolchain = spawnSync(cargoExecutable, ["test", "--manifest-path", "src-tauri/Cargo.toml"], { cwd: root, encoding: "utf8", env: rustEnvironment, timeout: 120000 });
 const rustTestsPassed = toolchain.status === 0;
-const cargoCheck = spawnSync("sh", ["-lc", "TOOLCHAIN_BIN=$(rustup which rustc | sed 's#/rustc$##'); PATH=\"$TOOLCHAIN_BIN:$PATH\" cargo check --manifest-path src-tauri/Cargo.toml"], { cwd: root, encoding: "utf8", timeout: 120000 });
-const tsCheck = spawnSync("pnpm", ["exec", "tsc", "--noEmit", "--pretty", "false"], { cwd: root, encoding: "utf8", timeout: 120000 });
-const frontendBuild = spawnSync("pnpm", ["exec", "vite", "build", "--config", "vite.config.ts"], { cwd: root, encoding: "utf8", timeout: 120000 });
+const cargoCheck = spawnSync(cargoExecutable, ["check", "--manifest-path", "src-tauri/Cargo.toml"], { cwd: root, encoding: "utf8", env: rustEnvironment, timeout: 120000 });
+const tsCheck = spawnSync(process.execPath, [path.join(root, "node_modules", "typescript", "bin", "tsc"), "--noEmit", "--pretty", "false"], { cwd: root, encoding: "utf8", timeout: 120000 });
+const frontendBuild = spawnSync(process.execPath, [path.join(root, "node_modules", "vite", "bin", "vite.js"), "build", "--config", "vite.config.ts"], { cwd: root, encoding: "utf8", timeout: 120000 });
 
 const checks = [
   ["pdf is explicitly unsupported", /TAURI_SPIKE_UNSUPPORTED[\s\S]*PDF output is intentionally unsupported/u.test(rustSource)],
@@ -25,7 +34,7 @@ const checks = [
   ["strict CSP is configured", /default-src 'self'[\s\S]*object-src 'none'/u.test(config)],
   ["event listeners retain an unlisten cleanup", /listen<[\s\S]*then\(\(stop\)[\s\S]*unlisten = stop/u.test(clientSource)],
   ["PDF unsupported result is not silent", /TAURI_SPIKE_UNSUPPORTED/u.test(clientSource)],
-  ["RelicApi protocol version is retained", /apiContractVersion:\s*7/u.test(clientSource)],
+  ["RelicApi protocol version is retained", /apiContractVersion:\s*9/u.test(clientSource)],
   ["decision matrix records blocking and partial gates", /\| blocking \|/u.test(matrix) && /\| partial \|/u.test(matrix)],
   ["Rust safety tests execute successfully", rustTestsPassed],
   ["Rust cargo check executes successfully", cargoCheck.status === 0],

@@ -1,30 +1,16 @@
-import { readFile } from "node:fs/promises";
-
 import {
   type ChartEntry,
   type ChartSettings,
-  type UpdateChartEntryInput,
   type WorkspaceChart
 } from "../../shared/ipc";
 import type { ChronicleCalendarSettings } from "../../shared/chronicleCalendar";
 import { calendarYearToBaseYear, defaultChronicleCalendarSettings } from "../../shared/chronicleCalendar";
 import { pointToMonthAxis } from "../../shared/chartTime";
-import { updateChartFrontmatterContent } from "../../shared/chartFrontmatterUpdate";
-import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import {
   sortChronicleEntries
 } from "./chronicleData";
-import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
-import {
-  assertMarkdownMutationSnapshotCurrent,
-  captureMarkdownMutationSnapshot,
-  isMarkdownMutationConflict,
-  runMarkdownFileMutation,
-  type MarkdownMutationSnapshot
-} from "./markdownMutationCoordinator";
-import { resolveExistingWorkspacePath } from "./paths";
 import {
   chartEntriesForRecord,
   createWorkspaceDerivedDataCache,
@@ -37,20 +23,6 @@ import {
 import { finishPerformanceMeasure, startPerformanceMeasure } from "./performanceLog";
 
 export { extractChronicleRange } from "./chronicleData";
-
-interface ChartReadOperations {
-  readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
-}
-
-interface ChartWriteOperations extends ChartReadOperations {
-  stat?: WorkspaceMarkdownReadOperations["stat"];
-  writeTextFile(filePath: string, content: string): Promise<void>;
-}
-
-const defaultChartOperations: ChartWriteOperations = {
-  readFile,
-  writeTextFile: atomicWriteTextFile
-};
 
 export async function readWorkspaceCharts(
   workspacePath: string,
@@ -110,78 +82,6 @@ export async function readWorkspaceCharts(
       errorDetails(error)
     );
   }
-}
-
-export async function updateWorkspaceChartEntry(
-  workspacePath: string,
-  charts: ChartSettings[],
-  calendarSettingsOrInput: ChronicleCalendarSettings | UpdateChartEntryInput,
-  inputOrOperations?: UpdateChartEntryInput | ChartWriteOperations,
-  operations: ChartWriteOperations = defaultChartOperations
-): Promise<RelicResult<WorkspaceChart[]>> {
-  const calendarSettings = isCalendarSettings(calendarSettingsOrInput)
-    ? calendarSettingsOrInput
-    : defaultChronicleCalendarSettings;
-  const input = isCalendarSettings(calendarSettingsOrInput)
-    ? inputOrOperations as UpdateChartEntryInput
-    : calendarSettingsOrInput;
-  const activeOperations = !isCalendarSettings(calendarSettingsOrInput) && inputOrOperations
-    ? inputOrOperations as ChartWriteOperations
-    : operations;
-  try {
-    if (!hasMarkdownExtension(input.path)) {
-      return fail("CHART_ENTRY_NOT_MARKDOWN", "Markdownファイル以外は更新できません。");
-    }
-
-    const absolutePath = await resolveExistingWorkspacePath(workspacePath, input.path);
-
-    if (!absolutePath.ok) {
-      return absolutePath;
-    }
-
-    return await runMarkdownFileMutation(absolutePath.value, async () => {
-      const snapshot = await captureMarkdownMutationSnapshot(absolutePath.value, activeOperations);
-      const nextContent = updateChartFrontmatterContent(snapshot.content, input, calendarSettings);
-
-      if (!nextContent.ok) return nextContent;
-
-      const safeMutationPath = await resolveExistingWorkspacePath(workspacePath, input.path);
-      if (!safeMutationPath.ok) return safeMutationPath;
-      await writeChartMutation(absolutePath.value, nextContent.value, snapshot, activeOperations);
-
-      return readWorkspaceCharts(workspacePath, charts, calendarSettings, { operations: activeOperations });
-    });
-  } catch (error) {
-    if (isMarkdownMutationConflict(error)) {
-      return fail(
-        "CHART_ENTRY_UPDATE_CONFLICT",
-        "ファイルが外部で変更されています。再読み込みしてからもう一度操作してください。"
-      );
-    }
-    return fail(
-      "CHART_ENTRY_UPDATE_FAILED",
-      "チャートの変更をファイルへ保存できませんでした。",
-      errorDetails(error)
-    );
-  }
-}
-
-async function writeChartMutation(
-  filePath: string,
-  content: string,
-  snapshot: MarkdownMutationSnapshot,
-  operations: ChartWriteOperations
-): Promise<void> {
-  await assertMarkdownMutationSnapshotCurrent(filePath, snapshot, operations);
-
-  if (operations.writeTextFile === atomicWriteTextFile) {
-    await atomicWriteTextFile(filePath, content, undefined, {
-      beforeRename: () => assertMarkdownMutationSnapshotCurrent(filePath, snapshot, operations)
-    });
-    return;
-  }
-
-  await operations.writeTextFile(filePath, content);
 }
 
 function isCalendarSettings(value: unknown): value is ChronicleCalendarSettings {

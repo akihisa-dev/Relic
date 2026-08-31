@@ -2,6 +2,8 @@ import { readdirSync, readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
+import { readCssEntry } from "../test/cssTestUtils";
+
 type Rgb = readonly [number, number, number];
 
 function hexRgb(value: string): Rgb {
@@ -50,7 +52,7 @@ function cssColorRgb(value: string, background: Rgb): Rgb {
 }
 
 describe("DESIGN.md compliance", () => {
-  const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+  const designCss = readCssEntry("src/renderer/styles/architectural-design.css");
   const settingsCss = readFileSync("src/renderer/styles/settings.css", "utf8");
   const tableCss = readFileSync("src/renderer/styles/table-view.css", "utf8");
   const motionCss = readFileSync("src/renderer/styles/theme-motion.css", "utf8");
@@ -165,8 +167,11 @@ describe("DESIGN.md compliance", () => {
     expect(contrastRatio(hexRgb("#fffffe"), blend(hexRgb("#121210"), 0.94, hexRgb("#fffffe"))))
       .toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(hexRgb("#f2f3ed"), hexRgb("#2b2d28"))).toBeGreaterThanOrEqual(4.5);
-    expect(styleEntryCss.indexOf('@import "./styles/architectural-design.css";'))
-      .toBeGreaterThan(styleEntryCss.indexOf('@import "./styles/workspace-editor.css";'));
+    expect(styleEntryCss).toContain(
+      "@layer relic-vendor, relic-foundation, relic-shell, relic-feature, relic-theme, relic-refinements;"
+    );
+    expect(styleEntryCss.indexOf('@import "./styles/architectural-design.css" layer(relic-refinements);'))
+      .toBeGreaterThan(styleEntryCss.indexOf('@import "./styles/workspace-editor.css" layer(relic-shell);'));
   });
 
   it("resolves the final active tab foreground and background as a contrasting pair", () => {
@@ -268,7 +273,7 @@ describe("DESIGN.md compliance", () => {
 });
 
 describe("Workspace layout CSS contracts", () => {
-  const fileTreeCss = readFileSync("src/renderer/styles/file-tree-search.css", "utf8");
+  const fileTreeCss = readCssEntry("src/renderer/styles/file-tree-search.css");
 
   it("開いているワークスペースの切り替え操作をサイドバー下部の黒い操作面として表示する", () => {
     expect(fileTreeCss).toMatch(/\.sidebar-section:has\(> \.workspace-actions\)\s*\{[^}]*min-height:\s*100%;/s);
@@ -302,7 +307,7 @@ describe("Workspace layout CSS contracts", () => {
 
 describe("Editor title CSS contracts", () => {
   const editorShellCss = readFileSync("src/renderer/styles/editor-shell.css", "utf8");
-  const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+  const designCss = readCssEntry("src/renderer/styles/architectural-design.css");
 
   it("本文上部のファイル名表示欄は枠なしで縦幅を詰める", () => {
     expect(editorShellCss).toMatch(/\.editor-file-title-row\s*\{[^}]*grid-template-columns:\s*[^}]*minmax\(0, var\(--editor-file-title-max-width, 820px\)\)[^}]*minmax\(48px, 1fr\);/s);

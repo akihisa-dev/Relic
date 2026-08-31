@@ -13,17 +13,15 @@ import {
   relinkWorkspaceChannel,
   removeWorkspaceChannel,
   renameWorkspaceChannel,
-  saveWorkspaceChartsChannel,
   saveWorkspaceChronicleCalendarSettingsChannel,
   saveWorkspaceFrontmatterCategoryChoicesChannel,
   saveWorkspaceTablePreferencesChannel,
   switchWorkspaceChannel,
   togglePinChannel,
-  updateChartEntryChannel,
   workspaceChangedChannel,
   workspaceWatcherStatusChannel,
+  sanitizeWorkspaceChangedEvent,
   type WorkspaceApi,
-  type WorkspaceChangedEvent,
   type WorkspaceWatcherStatusEvent
 } from "../../shared/ipc/workspace";
 
@@ -48,13 +46,12 @@ export const workspaceApiFragment: WorkspaceApi = {
     ipcRenderer.invoke(saveWorkspaceFrontmatterCategoryChoicesChannel, input),
   saveWorkspaceChronicleCalendarSettings: (input) =>
     ipcRenderer.invoke(saveWorkspaceChronicleCalendarSettingsChannel, input),
-  saveWorkspaceCharts: (input) => ipcRenderer.invoke(saveWorkspaceChartsChannel, input),
   saveWorkspaceTablePreferences: (input) =>
     ipcRenderer.invoke(saveWorkspaceTablePreferencesChannel, input),
-  updateChartEntry: (input) => ipcRenderer.invoke(updateChartEntryChannel, input),
   onWorkspaceChanged: (callback) => {
-    const listener = (_event: IpcRendererEvent, payload: WorkspaceChangedEvent): void => {
-      callback(payload);
+    const listener = (_event: IpcRendererEvent, payload: unknown): void => {
+      const sanitized = sanitizeWorkspaceChangedEvent(payload);
+      if (sanitized) callback(sanitized);
     };
 
     ipcRenderer.on(workspaceChangedChannel, listener);

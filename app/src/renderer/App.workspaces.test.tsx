@@ -726,9 +726,12 @@ describe("App workspaces", () => {
 
     fireEvent.contextMenu(await screen.findByRole("button", { name: "Notes" }));
     const menu = await screen.findByRole("menu");
-    fireEvent.click(within(menu).getByRole("menuitem", { name: "Notes を一覧から削除" }));
+    await act(async () => {
+      fireEvent.click(within(menu).getByRole("menuitem", { name: "Notes を一覧から削除" }));
+    });
 
     expect(removeWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-1" });
+    expect(screen.queryByRole("button", { name: "Notes" })).not.toBeInTheDocument();
   });
 
   it("左レールのワークスペース右クリックメニューからフォルダーを開く", async () => {

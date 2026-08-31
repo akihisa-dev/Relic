@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   collectInitialManifestKeys,
   collectStaticManifestKeys,
+  protectedDeferredRendererSources,
   requiredDeferredRendererChunks,
   requiredDeferredRendererSources,
+  requiredDeferredRendererStyleEntries,
   requiredInitialRendererChunks,
   rendererInitialLoadViolations
 } from "./renderer-production-check.mjs";
@@ -36,24 +38,28 @@ describe("renderer-production-check", () => {
     expect([...imported]).toEqual(["importer", "shared", "transitive"]);
   });
 
-  it("Markdown preview、Mermaid、D2が初期静的importへ入る回帰を検出する", () => {
+  it("Markdown preview、Mermaid、D2、Sphereが初期静的importへ入る回帰を検出する", () => {
     const manifest = {
       d2: {
         src: "node_modules/@terrastruct/d2/dist/browser/index.js"
       },
-      entry: { imports: ["d2", "mermaid", "preview"], isEntry: true },
+      entry: { imports: ["d2", "mermaid", "preview", "sphere"], isEntry: true },
       mermaid: {
         src: "node_modules/mermaid/dist/mermaid.core.mjs"
       },
       preview: {
         src: "src/renderer/previewMarkdown.ts"
+      },
+      sphere: {
+        src: "src/renderer/components/SphereView.tsx"
       }
     };
 
     expect(rendererInitialLoadViolations(manifest, requiredSources)).toEqual([
       "Renderer dependency is loaded initially: node_modules/@terrastruct/d2/dist/browser/index.js",
       "Renderer dependency is loaded initially: node_modules/mermaid/dist/mermaid.core.mjs",
-      "Renderer dependency is loaded initially: src/renderer/previewMarkdown.ts"
+      "Renderer dependency is loaded initially: src/renderer/previewMarkdown.ts",
+      "Renderer dependency is loaded initially: src/renderer/components/SphereView.tsx"
     ]);
   });
 
@@ -61,7 +67,8 @@ describe("renderer-production-check", () => {
     expect(rendererInitialLoadViolations({ entry: { isEntry: true } }, requiredSources)).toEqual([
       "Required renderer dependency was not emitted: node_modules/@terrastruct/d2/dist/browser/index.js",
       "Required renderer dependency was not emitted: node_modules/mermaid/dist/mermaid.core.mjs",
-      "Required renderer dependency was not emitted: src/renderer/previewMarkdown.ts"
+      "Required renderer dependency was not emitted: src/renderer/previewMarkdown.ts",
+      "Required renderer dependency was not emitted: src/renderer/components/SphereView.tsx"
     ]);
   });
 
@@ -69,9 +76,10 @@ describe("renderer-production-check", () => {
     const manifest = {
       d2: { src: "node_modules/@terrastruct/d2/dist/browser/index.js" },
       entry: { dynamicImports: ["feature"], isEntry: true },
-      feature: { dynamicImports: ["d2", "mermaid", "preview"] },
+      feature: { dynamicImports: ["d2", "mermaid", "preview", "sphere"] },
       mermaid: { src: "node_modules/mermaid/dist/mermaid.core.mjs" },
-      preview: { src: "src/renderer/previewMarkdown.ts" }
+      preview: { src: "src/renderer/previewMarkdown.ts" },
+      sphere: { src: "src/renderer/components/SphereView.tsx" }
     };
 
     expect(rendererInitialLoadViolations(manifest, requiredSources)).toEqual([]);
@@ -82,12 +90,152 @@ describe("renderer-production-check", () => {
     const mermaid = "node_modules/.pnpm/mermaid@11.16.0/node_modules/mermaid/dist/mermaid.core.mjs";
     const manifest = {
       [d2]: { src: d2 },
-      entry: { dynamicImports: [d2, mermaid, "preview"], isEntry: true },
+      entry: { dynamicImports: [d2, mermaid, "preview", "sphere"], isEntry: true },
       [mermaid]: { src: mermaid },
-      preview: { src: "src/renderer/previewMarkdown.ts" }
+      preview: { src: "src/renderer/previewMarkdown.ts" },
+      sphere: { src: "src/renderer/components/SphereView.tsx" }
     };
 
     expect(rendererInitialLoadViolations(manifest, requiredSources)).toEqual([]);
+  });
+
+  it("Sphere runtimeと3D依存が初期静的グラフへ混入する回帰を検出する", () => {
+    const manifest = {
+      entry: {
+        dynamicImports: ["sphere"],
+        imports: ["sphereRuntime"],
+        isEntry: true
+      },
+      forceGraph: { src: "node_modules/3d-force-graph/dist/3d-force-graph.mjs" },
+      sphere: {
+        imports: ["sphereRuntime"],
+        src: "src/renderer/components/SphereView.tsx"
+      },
+      sphereRuntime: {
+        imports: ["forceGraph", "three"],
+        src: "src/renderer/sphere/sphereRuntime.ts"
+      },
+      three: { src: "node_modules/three/build/three.module.js" }
+    };
+
+    expect([...collectInitialManifestKeys(manifest)]).toEqual([
+      "entry",
+      "sphereRuntime",
+      "forceGraph",
+      "three"
+    ]);
+    expect(rendererInitialLoadViolations(
+      manifest,
+      ["src/renderer/components/SphereView.tsx"],
+      [],
+      [],
+      protectedDeferredRendererSources
+    )).toEqual([
+      "Renderer dependency is loaded initially: src/renderer/sphere/sphereRuntime.ts",
+      "Renderer dependency is loaded initially: node_modules/3d-force-graph/dist/3d-force-graph.mjs",
+      "Renderer dependency is loaded initially: node_modules/three/build/three.module.js"
+    ]);
+  });
+
+  it("workspace読込後のpreload対象でもSphereの静的グラフを遅延境界内に保つ", () => {
+    const manifest = {
+      entry: { dynamicImports: ["sphere"], isEntry: true },
+      forceGraph: { src: "node_modules/3d-force-graph/dist/3d-force-graph.mjs" },
+      sphere: {
+        imports: ["sphereRuntime"],
+        src: "src/renderer/components/SphereView.tsx"
+      },
+      sphereRuntime: {
+        imports: ["forceGraph", "three"],
+        src: "src/renderer/sphere/sphereRuntime.ts"
+      },
+      three: { src: "node_modules/three/build/three.module.js" }
+    };
+
+    expect([...collectInitialManifestKeys(manifest)]).toEqual(["entry"]);
+    expect(rendererInitialLoadViolations(
+      manifest,
+      ["src/renderer/components/SphereView.tsx"],
+      [],
+      [],
+      protectedDeferredRendererSources
+    )).toEqual([]);
+  });
+
+  it("機能別CSSを初期CSSから分離したmanifestを受理する", () => {
+    const manifest = {
+      entry: {
+        css: ["assets/index.css"],
+        dynamicImports: ["feature"],
+        file: "assets/index.js",
+        isEntry: true
+      },
+      feature: { file: "assets/feature.js" },
+      ...Object.fromEntries(requiredDeferredRendererStyleEntries.map((source, index) => [
+        source,
+        { css: [`assets/feature-${index}.css`], file: `assets/feature-${index}.js`, src: source }
+      ]))
+    };
+
+    expect(rendererInitialLoadViolations(
+      manifest,
+      [],
+      [],
+      [],
+      [],
+      requiredDeferredRendererStyleEntries
+    )).toEqual([]);
+  });
+
+  it("機能別CSSの欠落と初期CSSへの再混入を検出する", () => {
+    const [initialStyle, missingStyle, ...remainingStyles] = requiredDeferredRendererStyleEntries;
+    const manifest = {
+      entry: {
+        css: ["assets/index.css", "assets/feature-initial.css"],
+        file: "assets/index.js",
+        isEntry: true
+      },
+      [initialStyle]: {
+        css: ["assets/feature-initial.css"],
+        file: "assets/feature-initial.js",
+        src: initialStyle
+      },
+      ...Object.fromEntries(remainingStyles.map((source, index) => [
+        source,
+        { css: [`assets/feature-${index}.css`], file: `assets/feature-${index}.js`, src: source }
+      ]))
+    };
+
+    expect(rendererInitialLoadViolations(
+      manifest,
+      [],
+      [],
+      [],
+      [],
+      requiredDeferredRendererStyleEntries
+    )).toEqual([
+      `Renderer style is loaded initially: ${initialStyle}`,
+      `Required deferred renderer style entry was not emitted: ${missingStyle}`
+    ]);
+  });
+
+  it("遅延entryからCSSが外れる回帰を検出する", () => {
+    const [entrySource] = requiredDeferredRendererStyleEntries;
+    const manifest = {
+      entry: { file: "assets/index.js", isEntry: true },
+      feature: { file: "assets/feature.js", src: entrySource }
+    };
+
+    expect(rendererInitialLoadViolations(
+      manifest,
+      [],
+      [],
+      [],
+      [],
+      [entrySource]
+    )).toEqual([
+      `Required deferred renderer style was not emitted from entry: ${entrySource}`
+    ]);
   });
 
   it("markedとhighlight.jsをMarkdown previewの遅延静的経路に保つ", () => {

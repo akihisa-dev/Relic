@@ -12,6 +12,7 @@ import type { Tab } from "../store/editorStore";
 
 interface UseUnlinkedReferencesStateInput {
   activeFilePath: string | null;
+  contentRevision?: number;
   enabled: boolean;
   fileTree: WorkspaceTreeNode[] | undefined;
   setWorkspaceError: (message: string | null) => void;
@@ -27,6 +28,7 @@ const emptyUnlinkedReferences: UnlinkedReferencesResult = {
 
 export function useUnlinkedReferencesState({
   activeFilePath,
+  contentRevision = 0,
   enabled,
   fileTree,
   setWorkspaceError,
@@ -71,7 +73,7 @@ export function useUnlinkedReferencesState({
     return () => {
       canceled = true;
     };
-  }, [activeFilePath, enabled, fileTree, refreshKey, setWorkspaceError]);
+  }, [activeFilePath, contentRevision, enabled, fileTree, refreshKey, setWorkspaceError]);
 
   const openFileTabsByPath = useMemo(() => {
     const result = new Map<string, string[]>();

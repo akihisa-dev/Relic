@@ -10,6 +10,7 @@ const rendererExecArgv = process.allowedNodeEnvironmentFlags.has("--no-experimen
 export default defineConfig({
   plugins: [react()],
   test: {
+    allowOnly: false,
     coverage: {
       exclude: ["scripts/**"],
       provider: "v8",
@@ -17,6 +18,7 @@ export default defineConfig({
       reportsDirectory: "coverage",
     },
     globals: true,
+    maxWorkers: 2,
     projects: [
       {
         extends: true,
@@ -37,6 +39,11 @@ export default defineConfig({
           setupFiles: ["src/test/setup.ts"]
         }
       }
-    ]
+    ],
+    reporters: ["minimal"],
+    sequence: {
+      hooks: "stack"
+    },
+    silent: "passed-only"
   }
 });

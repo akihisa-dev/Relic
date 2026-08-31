@@ -1,11 +1,34 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import type { ComponentProps } from "react";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { makeRelicApi } from "../../test/rendererTestUtils";
 import { I18nProvider } from "../i18n";
 import { PagePreviewPopover } from "./PagePreviewPopover";
 
-function renderPopover(existingMarkdownPaths: string[] = []): HTMLSpanElement {
+const originalPointerEventDescriptor = Object.getOwnPropertyDescriptor(window, "PointerEvent");
+
+beforeAll(() => {
+  if (typeof window.PointerEvent === "undefined") {
+    Object.defineProperty(window, "PointerEvent", {
+      configurable: true,
+      value: window.MouseEvent
+    });
+  }
+});
+
+afterAll(() => {
+  if (originalPointerEventDescriptor) {
+    Object.defineProperty(window, "PointerEvent", originalPointerEventDescriptor);
+  } else {
+    Reflect.deleteProperty(window, "PointerEvent");
+  }
+});
+
+function renderPopover(
+  existingMarkdownPaths: string[] = [],
+  loadMarkdownRenderer?: ComponentProps<typeof PagePreviewPopover>["loadMarkdownRenderer"]
+): HTMLSpanElement {
   const link = document.createElement("span");
   link.dataset.previewSourcePath = "Source.md";
   link.dataset.previewTarget = "Target";
@@ -14,7 +37,11 @@ function renderPopover(existingMarkdownPaths: string[] = []): HTMLSpanElement {
 
   render(
     <I18nProvider language="ja">
-      <PagePreviewPopover aliasesByPath={{}} existingMarkdownPaths={existingMarkdownPaths} />
+      <PagePreviewPopover
+        aliasesByPath={{}}
+        existingMarkdownPaths={existingMarkdownPaths}
+        loadMarkdownRenderer={loadMarkdownRenderer}
+      />
     </I18nProvider>
   );
 
@@ -35,7 +62,11 @@ describe("PagePreviewPopover", () => {
 
     fireEvent.pointerOver(link, { clientX: 40, clientY: 50 });
     act(() => vi.advanceTimersByTime(240));
-    expect(screen.getByRole("complementary", { name: "ページプレビュー" })).toBeInTheDocument();
+    const popover = screen.getByRole("complementary", { name: "ページプレビュー" });
+    expect(popover).toBeInTheDocument();
+    expect(popover).toHaveStyle({ left: "54px", top: "64px" });
+    expect(Number.isFinite(Number.parseFloat(popover.style.left))).toBe(true);
+    expect(Number.isFinite(Number.parseFloat(popover.style.top))).toBe(true);
 
     fireEvent.pointerMove(document.body, { clientX: 200, clientY: 200 });
 
@@ -66,16 +97,33 @@ describe("PagePreviewPopover", () => {
       ok: true,
       value: { content: "# Target\n\n本文", encoding: "utf8", path: "Target.md" }
     });
+    const renderMarkdown = vi.fn(() => [
+      "<h1>Target</h1>",
+      "<p>本文</p>",
+      "<script>window.previewWasUnsafe = true</script>"
+    ].join(""));
+    const loadMarkdownRenderer = vi.fn().mockResolvedValue({ renderMarkdown });
     window.relic = makeRelicApi({ readMarkdownFile });
-    const link = renderPopover(["Target.md"]);
+    const link = renderPopover(["Target.md"], loadMarkdownRenderer);
 
     fireEvent.pointerOver(link, { clientX: 40, clientY: 50 });
-    act(() => vi.advanceTimersByTime(240));
-    vi.useRealTimers();
+    expect(readMarkdownFile).not.toHaveBeenCalled();
+    expect(loadMarkdownRenderer).not.toHaveBeenCalled();
 
-    expect(await screen.findByText("本文")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(239));
+    expect(readMarkdownFile).not.toHaveBeenCalled();
+    expect(loadMarkdownRenderer).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+
+    expect(screen.getByText("本文")).toBeInTheDocument();
     expect(readMarkdownFile).toHaveBeenCalledWith({ path: "Target.md" });
+    expect(loadMarkdownRenderer).toHaveBeenCalledOnce();
+    expect(renderMarkdown).toHaveBeenCalledWith("# Target\n\n本文", null, new Map(), false, expect.any(Function));
     expect(screen.getByRole("heading", { name: "Target" })).toBeInTheDocument();
+    expect(document.querySelector(".page-preview-body script")).toBeNull();
   });
 
   it("ワークスペース由来のpath集合が変わった後は旧要求の完了を表示しない", async () => {
@@ -87,6 +135,7 @@ describe("PagePreviewPopover", () => {
     const readMarkdownFile = vi.fn().mockReturnValue(new Promise((resolve) => {
       resolveRead = resolve;
     }));
+    const loadMarkdownRenderer = vi.fn().mockResolvedValue({ renderMarkdown: vi.fn(() => "<p>old</p>") });
     window.relic = makeRelicApi({ readMarkdownFile });
     const link = document.createElement("span");
     link.dataset.previewSourcePath = "Source.md";
@@ -94,7 +143,11 @@ describe("PagePreviewPopover", () => {
     document.body.append(link);
     const view = render(
       <I18nProvider language="ja">
-        <PagePreviewPopover aliasesByPath={{}} existingMarkdownPaths={["Target.md"]} />
+        <PagePreviewPopover
+          aliasesByPath={{}}
+          existingMarkdownPaths={["Target.md"]}
+          loadMarkdownRenderer={loadMarkdownRenderer}
+        />
       </I18nProvider>
     );
 
@@ -104,7 +157,11 @@ describe("PagePreviewPopover", () => {
 
     view.rerender(
       <I18nProvider language="ja">
-        <PagePreviewPopover aliasesByPath={{}} existingMarkdownPaths={["Other.md"]} />
+        <PagePreviewPopover
+          aliasesByPath={{}}
+          existingMarkdownPaths={["Other.md"]}
+          loadMarkdownRenderer={loadMarkdownRenderer}
+        />
       </I18nProvider>
     );
     expect(screen.queryByRole("complementary", { name: "ページプレビュー" })).toBeNull();
@@ -114,5 +171,6 @@ describe("PagePreviewPopover", () => {
       value: { content: "# Old workspace", encoding: "utf8", path: "Target.md" }
     }));
     expect(screen.queryByRole("complementary", { name: "ページプレビュー" })).toBeNull();
+    expect(loadMarkdownRenderer).not.toHaveBeenCalled();
   });
 });

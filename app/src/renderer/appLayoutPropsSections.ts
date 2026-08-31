@@ -54,20 +54,13 @@ export function createEditorWorkspaceProps(input: AppLayoutEditorWorkspaceInput)
     onOpenLink: input.handleOpenMarkdownLink,
     onOpenWikiLink: input.handleOpenWikiLink,
     onApplyUnlinkedReference: input.onApplyUnlinkedReference,
-    onRenameFile: (path, name) => input.handleRenameTreeItem(path, "file", name),
+    onRenameFile: input.handlePaneRenameFile,
     onRevealTabFile: input.handleRevealTabFile,
     onRightPanelResizeStart: input.startRightPanelResize,
     onRightPanelViewButton: input.handleRightPanelViewButton,
     onSavePreviewAsPdf: input.handleSavePreviewAsPdf,
     onSetFocusedPane: input.setFocusedPane,
-    onSourceModeToggle: (pane) => {
-      if (pane === "right") {
-        input.setIsRightSourceMode((value) => !value);
-        return;
-      }
-
-      input.setIsLeftSourceMode((value) => !value);
-    },
+    onSourceModeToggle: input.handlePaneSourceModeToggle,
     onSplitToggle: input.toggleSplitWithMotion,
     onTabClose: input.closeTabWithMotion,
     onTabMove: input.moveTab,
@@ -92,6 +85,7 @@ export function createEditorWorkspaceProps(input: AppLayoutEditorWorkspaceInput)
     showRightPanelRecoveryControl: input.showRightPanelRecoveryControl,
     userDefinedFields: input.userDefinedFields,
     workspaceDataRevision: input.workspaceDataRevision,
+    workspaceStructureRevision: input.workspaceStructureRevision,
     workspacePath: input.workspaceState?.activeWorkspace?.path
   };
 }

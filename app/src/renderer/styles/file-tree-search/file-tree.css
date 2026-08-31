@@ -1,0 +1,325 @@
+/* ────────────────────────────────── */
+/* File tree                          */
+/* ────────────────────────────────── */
+
+.file-tree {
+  display: grid;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.file-tree--large {
+  contain: layout style paint;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 720px;
+}
+
+.file-tree .file-tree {
+  border-left: 1px solid var(--border);
+  margin-left: 14px;
+  padding-left: 12px;
+  transition:
+    background-color var(--motion-normal) var(--ease-standard),
+    border-color var(--motion-normal) var(--ease-standard),
+    box-shadow var(--motion-normal) var(--ease-standard),
+    padding-left var(--motion-normal) var(--ease-enter),
+    transform var(--motion-normal) var(--ease-enter);
+}
+
+.file-tree--expanding {
+  animation: file-tree-expand var(--motion-normal) var(--ease-enter);
+  transform-origin: top left;
+}
+
+.file-tree-row {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-2);
+  display: grid;
+  font-size: 13px;
+  gap: 6px;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  min-height: 28px;
+  padding: 0 8px;
+  text-align: left;
+  cursor: pointer;
+  transform-origin: left center;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    outline-color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
+  width: 100%;
+}
+
+.file-tree-row:hover {
+  background: var(--hover);
+  transform: translateX(1px);
+}
+
+.file-tree-row.file {
+  color: var(--text);
+}
+
+.file-tree-row.selected {
+  animation: file-tree-select var(--motion-fast) var(--ease-press);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.file-tree-row--opening {
+  animation: file-tree-open-connect var(--motion-normal) var(--ease-press);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.file-tree-row--opening .file-tree-icon {
+  color: var(--accent);
+}
+
+.file-tree-row.selected .file-tree-icon {
+  color: var(--accent);
+}
+
+.file-tree-row.multi-selected .file-tree-icon {
+  color: var(--accent);
+}
+
+.file-tree-row.multi-selected {
+  outline: 1px dotted var(--accent-ring);
+  outline-offset: -3px;
+}
+
+.file-tree-row--appearing {
+  animation: file-tree-appear var(--motion-slow) var(--ease-enter);
+}
+
+.file-tree-row--removing {
+  animation: file-tree-remove var(--motion-normal) var(--ease-exit);
+}
+
+.file-tree-row-wrap {
+  align-items: center;
+  display: flex;
+  position: relative;
+}
+
+.file-tree .file-tree .file-tree-row-wrap::before {
+  background: var(--border);
+  content: "";
+  height: 1px;
+  left: -12px;
+  position: absolute;
+  top: 14px;
+  width: 8px;
+}
+
+.file-tree-row-wrap .file-tree-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-tree-pin-btn {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--attention);
+  cursor: pointer;
+  display: none;
+  height: 24px;
+  justify-content: center;
+  opacity: 0.5;
+  padding: 0;
+  width: 24px;
+}
+
+.file-tree-pin-btn.pinned {
+  display: block;
+  opacity: 1;
+}
+
+.file-tree-row-wrap:hover .file-tree-pin-btn {
+  display: block;
+}
+
+.pinned-section {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.system-folder-section {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 10px;
+}
+
+.pinned-section-heading {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.file-tree-row.drag-over {
+  background: var(--accent-soft);
+  box-shadow: none;
+  outline: none;
+  transform: none;
+}
+
+.file-tree--external-drag-over {
+  background: var(--accent-soft);
+  outline: 1px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+.file-tree-row.file.drag-over {
+  background: transparent;
+}
+
+.file-tree:has(> .file-tree-item > .file-tree-row-wrap .file-tree-row.file.drag-over) {
+  background: var(--accent-soft);
+  border-radius: 6px;
+}
+
+.file-tree .file-tree:has(> .file-tree-item > .file-tree-row-wrap .file-tree-row.file.drag-over) {
+  border-left-color: var(--accent);
+}
+
+.file-tree-row.dragging {
+  cursor: grabbing;
+}
+
+.file-tree--drag-over {
+  background: transparent;
+  box-shadow: none;
+}
+
+.file-tree .file-tree.file-tree--drag-over {
+  border-left-color: var(--border);
+  padding-left: 12px;
+  transform: none;
+}
+
+.file-tree-icon {
+  align-items: center;
+  color: var(--text-3);
+  display: inline-flex;
+  font-size: 10px;
+  gap: 2px;
+  justify-content: center;
+  min-width: 24px;
+  text-align: center;
+  transition:
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-normal) var(--ease-enter);
+}
+
+.file-tree-icon--folder {
+  transform: none;
+}
+
+.file-tree-icon--expanded .file-tree-folder-chevron {
+  transform: rotate(90deg);
+}
+
+.file-tree-folder-chevron {
+  display: inline-block;
+  font-size: 9px;
+  transition: transform var(--motion-normal) var(--ease-enter);
+}
+
+.file-tree-folder-icon {
+  display: block;
+  height: 15px;
+  width: 15px;
+}
+
+.file-tree-file-icon {
+  display: block;
+  height: 16px;
+  width: 16px;
+}
+
+.file-tree-file-accessible-dot {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+}
+
+.file-tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-tree-folder-count {
+  color: var(--text-3);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.file-tree-more-item {
+  list-style: none;
+}
+
+.file-tree-more-button {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-3);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  min-height: 28px;
+  padding: 0 8px 0 38px;
+  text-align: left;
+  width: 100%;
+}
+
+.file-tree-more-button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.file-tree-more-button:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: -2px;
+}
+
+.file-tree-rename-input {
+  animation: inline-control-in var(--motion-normal) var(--ease-enter);
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+  font: inherit;
+  min-width: 0;
+  padding: 2px 4px;
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
+  width: 100%;
+}
+
+.file-tree-rename-input:focus {
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  outline: none;
+  transform: scale(1.01);
+}
+
+.file-tree-context-menu {
+  position: fixed;
+  z-index: 1000;
+}

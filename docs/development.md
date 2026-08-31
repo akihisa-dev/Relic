@@ -114,12 +114,12 @@ UI文言は辞書へ集約し、コンポーネント内へ散在させない。
 `app/` で `pnpm source:size` を実行すると、production、test、test-support、tooling、CSSの行数を責務別に多い順で確認できる。
 保存済みの `scripts/baselines/source-lines.json` には分類と行数を記録し、productionは50行以上かつ20%以上、それ以外は100行以上かつ20%以上の増加を急増警告にする。
 絶対行数と急増はいずれも責務を確認するための警告であり、行数だけを理由にCIを失敗させたり、機械的に分割したりしない。意図した構造変更を確認した場合だけ `pnpm source:size:baseline` で基準を更新する。
-`pnpm renderer:production:check` はrendererのproduction buildを実行し、Markdownプレビュー、Mermaid、D2のentryと、Markdownプレビューが静的に使う `marked`・`highlight.js` の専用chunkが出力されることを確認する。これらを初期entryから続く静的import経路へ含めず、依存chunkはMarkdownプレビューentryから続く静的import経路上に保つ。ライブプレビュー数式とHTML安全化で同期利用するKaTeX・DOMPurifyのchunkは初期静的import経路に保つ。
+`pnpm renderer:production:check` はrendererのproduction buildを実行し、Markdownプレビュー、Mermaid、D2、SphereViewのentryと、Markdownプレビューが静的に使う `marked`・`highlight.js` の専用chunkが出力されることを確認する。これらを初期entryから続く静的import経路へ含めず、依存chunkはMarkdownプレビューentryから続く静的import経路上に保つ。Sphere runtime、Three、3d-force-graphはSphereViewから続く静的経路ごと遅延境界内に保つ。年表、カード、グラフ、スフィア、テーブル、設定の各CSSも機能別の遅延成果物として出力し、初期CSSへ戻さない。ライブプレビュー数式とHTML安全化で同期利用するKaTeX・DOMPurifyのchunkは初期静的import経路に保つ。
 個別chunk、JavaScript、CSS、assetの容量と増加率はCIの合否条件にしない。
 `pnpm performance:workspace` は再現可能な1,000ファイルfixture、`pnpm performance:workspace:large` は10,000ファイルfixtureで、ファイルツリー、索引、変更ファイルだけの再読込、検索、タグ、バックリンク、グラフ、年表を複数回測定して中央値とI/O回数を表示する。
-性能を比較するときは、同じfixture fingerprint、実行回数、warmup回数を使い、単発値ではなく中央値と読み取り・stat回数を確認する。保存済み基準にある指標が現在の測定結果にない場合は比較不能として検証を失敗させる。
+性能を比較するときは、同じfixture fingerprint、ファイル数、ディレクトリ数、Node.js major、platform、architecture、実行回数、warmup回数を使い、単発値ではなく中央値と読み取り・stat回数を確認する。CPU製品名は端末固有なので一致条件にしない。比較条件が違う場合や、保存済み基準にある指標が現在の測定結果にない場合は比較不能として検証を失敗させる。
 
-`pnpm performance:sphere` は、既存のmacOS package実行ファイルを起動し、一時ワークスペース上のスフィアについて初回操作可能時間、操作中frame time、待機時CPU・memory、任意の開閉cycleをCDP経由で記録する内部診断scriptである。`--size small|medium|baseline|large`、`--runs`、`--cycles`、`--output`、`--executable` を受け付ける。ただし現行scriptのfixtureは現在のアプリ設定schemaに同期していないため、現在の検証経路や性能基準としては使わない。package版Electronを起動するため、修正後に利用する場合もユーザーが実行を明示した作業だけで使う。
+`pnpm performance:sphere` は、既存のmacOS package実行ファイルを起動し、一時ワークスペース上のスフィアについて初回操作可能時間、操作中frame time、待機時CPU・memory、任意の開閉cycleをCDP経由で記録する内部診断scriptである。`--size small|medium|baseline|large`、`--runs`、`--cycles`、`--output`、`--executable` を受け付ける。fixtureのアプリ設定は現行schemaで読めることを自動テストで確認する。package版Electronを起動するため、ユーザーが実行を明示した作業だけで使う。
 
 ---
 
@@ -194,7 +194,7 @@ Node APIを使うmain・preload・shared・scriptsのテストはNode環境、re
 `skills:check` はrepository-owned Skillの構文、重複名、確定参照切れを検査する。`skills:audit:self-test` はSkill証拠収集器、routing台帳検査器、指示量検査器の回帰fixtureを実行する。`skills:instruction:check` は `AGENTS.md` とrepository-owned Skillのdescriptionを常時指示面、代表依頼で各段階までに選ぶSkill sourceを段階別指示面としてUnicode文字数で比較し、固定した基準を超える増加を拒否する。この文字数はモデル固有の実トークン数ではない。`skills:routing:audit` は代表依頼台帳の形式、正例としての網羅、段階所有、観測commit、証拠鮮度を監査する補助コマンドであり、通常成功だけでは現在のrouting成功を保証しない。特定caseの現在有効な実行証拠を必須にする場合は、validatorへ `--require-current-execution <case-id>` を渡す。
 変更に対して `verify` が過剰な場合も検証自体は省略せず、対象テスト、型チェック、文書確認、差分確認などへ絞る。
 E2E、配布ビルド、実アプリ操作、スクリーンショット、起動スモークは、ローカル作業ではユーザーの明示指示がない限り実行しない。未実施であることを通常変更の完了阻害条件にしない。
-macOSのsafe buildはApple Silicon搭載Macだけで実行でき、Forgeへ`darwin`と`arm64`を固定して`out/darwin/Relic-darwin-arm64`と版付きDMGを生成する。safe checkは、配布用ASARの許可内容と必須entry、`LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOM、Electron本体を除くアプリ固有resourcesの容量とファイル数、およびDMGの存在を確認する。Draft Releaseでは確認済みDMGを`Relic-macOS-arm64.dmg`として添付する。
+macOSのsafe buildはApple Silicon搭載Macだけで実行でき、Forgeへ`darwin`と`arm64`を固定して`out/darwin/Relic-darwin-arm64`と版付きDMGを生成する。safe checkは、配布用ASARの許可内容と必須entryに加え、Resources内のElectron runtime resource、`LICENSE`、`THIRD_PARTY_NOTICES.md`、SBOMを完全allowlistで照合し、SBOM配下を含む余分なファイルを拒否する。Electron本体を除くアプリ固有resourcesの容量とファイル数、およびDMGの存在も確認する。Draft Releaseでは確認済みDMGを`Relic-macOS-arm64.dmg`として添付する。
 `.githooks/pre-push` は送信refがcleanな現在のHEADを指すこと、送信commitの秘密情報、version、SBOM、空白を確認してから、通常refでは `verify:local:push`、タグでは `verify:local:release` を実行する。hookを使わない公開手順でも同じ検査を明示実行する。
 GitHubのCode CIとRelease workflowは公開後の別環境確認と成果物生成を行うが、その成功をローカル公開前検証の代わりにしない。
 手動の `Pre-release Verification` workflowは、選択したrefをApple SiliconのmacOS runnerで `build:mac:safe` と `smoke:package` に通し、失敗時の起動証拠をartifactとして保存する補助確認である。repositoryへの書き込みやRelease作成は行わず、タグpush前のローカル `verify:local:release` の代わりにはしない。
@@ -281,6 +281,7 @@ GitHubのCode CIとRelease workflowは公開後の別環境確認と成果物生
 - 配布場所はGitHub Releasesとする
 - `app/package.json` と同じ `MAJOR.MINOR.PATCH` 形式のGitタグをGitHubへpushしたときだけ、Draft Release workflowを実行する
 - 自動化の正本は [../.github/workflows/draft-release.yml](../.github/workflows/draft-release.yml) とする
+- `pnpm ci:workflows:check` はタグ限定trigger、タグとアプリ版数の照合、SBOM・第三者通知書の整合確認、DMG・checksum・第三者通知書・SBOMの添付を静的に検査する
 - タグ作成前と公開前の確認は [../.github/RELEASE_CHECKLIST.md](../.github/RELEASE_CHECKLIST.md) に従う
 - workflowは配布物を作成してDraft Releaseへ添付するところまでを担当し、Publishは人が判断する
 - 公開済みReleaseのAssetsは原則として差し替えず、重大な修正は新しいPATCHバージョンとして配布する

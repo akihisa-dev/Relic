@@ -1,12 +1,14 @@
 import { useCallback, useRef, useState } from "react";
 
 interface WorkspaceDataRevision {
-  markWorkspaceDataChanged: () => void;
+  markWorkspaceDataChanged: (kind?: "full" | "paths") => void;
+  workspaceStructureRevision: number;
   workspaceDataRevision: number;
 }
 
 export function useWorkspaceDataRevision(activeWorkspaceId: string | null): WorkspaceDataRevision {
   const [dataChangeRevision, setDataChangeRevision] = useState(0);
+  const [structureChangeRevision, setStructureChangeRevision] = useState(0);
   const activationRef = useRef({
     hasEstablishedWorkspace: activeWorkspaceId !== null,
     revision: 0,
@@ -24,12 +26,14 @@ export function useWorkspaceDataRevision(activeWorkspaceId: string | null): Work
     };
   }
 
-  const markWorkspaceDataChanged = useCallback((): void => {
+  const markWorkspaceDataChanged = useCallback((kind: "full" | "paths" = "full"): void => {
     setDataChangeRevision((revision) => revision + 1);
+    if (kind === "full") setStructureChangeRevision((revision) => revision + 1);
   }, []);
 
   return {
     markWorkspaceDataChanged,
-    workspaceDataRevision: activationRef.current.revision + dataChangeRevision
+    workspaceDataRevision: activationRef.current.revision + dataChangeRevision,
+    workspaceStructureRevision: activationRef.current.revision + structureChangeRevision
   };
 }

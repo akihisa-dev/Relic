@@ -36,6 +36,7 @@ import { useWorkspaceDataRevision } from "./hooks/useWorkspaceDataRevision";
 import { useWorkspaceRequestGuard } from "./hooks/useWorkspaceRequestGuard";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
+import { useStableCallback } from "./hooks/useStableCallback";
 import { useEditorStore } from "./store/editorStore";
 import { editorTabIndex } from "./editorTabIndexes";
 import { useUiStore } from "./store/uiStore";
@@ -71,6 +72,7 @@ export function App(): ReactElement {
   } = useAppPanePresentationState();
   const {
     markWorkspaceDataChanged,
+    workspaceStructureRevision,
     workspaceDataRevision
   } = useWorkspaceDataRevision(workspaceState?.activeWorkspace?.id ?? null);
   const {
@@ -188,6 +190,7 @@ export function App(): ReactElement {
     setSearchMode,
     setSearchQuery
   } = useWorkspaceSearchState({
+    contentRevision: workspaceDataRevision,
     setWorkspaceError,
     userDefinedFields,
     workspaceState
@@ -206,6 +209,7 @@ export function App(): ReactElement {
     registeredWorkspaces,
     reloadCharts
   } = useAppWorkspaceDerivedData({
+    contentRevision: workspaceDataRevision,
     frontmatterCandidates,
     hasOpenChart,
     setWorkspaceError,
@@ -213,12 +217,17 @@ export function App(): ReactElement {
     workspaceState
   });
 
+  const handleWorkspaceDataChanged = useCallback(async (): Promise<boolean> => {
+    markWorkspaceDataChanged("full");
+    return hasOpenChart ? reloadCharts() : true;
+  }, [hasOpenChart, markWorkspaceDataChanged, reloadCharts]);
+  const handleWorkspacePathsChanged = useCallback(async (): Promise<boolean> => {
+    markWorkspaceDataChanged("paths");
+    return hasOpenChart ? reloadCharts() : true;
+  }, [hasOpenChart, markWorkspaceDataChanged, reloadCharts]);
   const handleFileSaved = useAppFileSaved({
     beginWorkspaceRequest,
-    hasOpenChart,
-    reloadCharts,
-    setWorkspaceError,
-    setWorkspaceState
+    onWorkspaceDataChanged: handleWorkspacePathsChanged
   });
 
   const { flushTabsBeforeClose, saveStatusByTabId } = useEditorAutoSave({
@@ -292,6 +301,17 @@ export function App(): ReactElement {
     workspaceRequestGuard,
     workspaceState
   });
+  const handlePaneRenameFile = useStableCallback((path: string, name: string): void => {
+    handleRenameTreeItem(path, "file", name);
+  });
+  const handlePaneSourceModeToggle = useStableCallback((pane: "left" | "right"): void => {
+    if (pane === "right") {
+      setIsRightSourceMode((value) => !value);
+      return;
+    }
+
+    setIsLeftSourceMode((value) => !value);
+  });
   const appInlineHandlers = useAppInlineHandlers({
     focusedPane,
     setEditorActionPulse,
@@ -339,14 +359,11 @@ export function App(): ReactElement {
     tabs
   });
 
-  const handleWorkspaceDataChanged = useCallback(async (): Promise<boolean> => {
-    markWorkspaceDataChanged();
-    return hasOpenChart ? reloadCharts() : true;
-  }, [hasOpenChart, markWorkspaceDataChanged, reloadCharts]);
   const { isRefreshingWorkspace, refreshWorkspace } = useWorkspaceExternalRefresh({
     beginWorkspaceRequestFor,
     flushTabsBeforeClose,
     onWorkspaceDataChanged: handleWorkspaceDataChanged,
+    onWorkspacePathsChanged: handleWorkspacePathsChanged,
     setWorkspaceError,
     setWorkspaceState,
     showToast,
@@ -428,6 +445,7 @@ export function App(): ReactElement {
     unlinkedReferences
   } = useActiveDocumentContext({
     aliasesByPath,
+    contentRevision: workspaceDataRevision,
     existingMarkdownPaths,
     fileTree: workspaceState?.fileTree,
     focusedPane,
@@ -531,7 +549,8 @@ export function App(): ReactElement {
       handleOpenFile,
       handleOpenMarkdownLink,
       handleOpenWikiLink,
-      handleRenameTreeItem,
+      handlePaneRenameFile,
+      handlePaneSourceModeToggle,
       handleRevealTabFile,
       handleRightPanelViewButton,
       handleSavePreviewAsPdf,
@@ -563,8 +582,6 @@ export function App(): ReactElement {
       rightPanelView: effectiveRightPanelView,
       rightPanelWidth,
       setFocusedPane,
-      setIsLeftSourceMode,
-      setIsRightSourceMode,
       setLinkContextMenu,
       setTabActive,
       setWorkspaceError,
@@ -578,6 +595,7 @@ export function App(): ReactElement {
       unlinkedReferences,
       userDefinedFields,
       workspaceDataRevision,
+      workspaceStructureRevision,
       workspaceState
     },
     filesSidebar: {

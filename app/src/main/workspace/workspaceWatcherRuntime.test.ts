@@ -12,14 +12,23 @@ import {
   WorkspaceWatcherRuntime,
   type WorkspaceWatchListener,
   workspaceChangeNotifyDelayMs,
-  workspaceWatcherMaxPendingEvents
+  workspaceWatcherMaxPendingEvents,
+  workspaceWatcherRecoveryStabilityDelayMs,
+  workspaceWatcherRetryBaseDelayMs,
+  workspaceWatcherRetryMaxDelayMs
 } from "./workspaceWatcherRuntime";
 
 class FakeWatcher {
   readonly close = vi.fn();
+  private errorListener: (() => void) | null = null;
 
-  on(): this {
+  on(event: string, listener: () => void): this {
+    if (event === "error") this.errorListener = listener;
     return this;
+  }
+
+  emitError(): void {
+    this.errorListener?.();
   }
 }
 
@@ -135,5 +144,90 @@ describe("WorkspaceWatcherRuntime", () => {
       { id: "ws-1", path: "/tmp/notes" },
       []
     );
+  });
+
+  it("再試行直後の非同期errorではbackoffを維持し、安定後だけ全再走査する", () => {
+    const watchers: FakeWatcher[] = [];
+    const notifyChanged = vi.fn();
+    const notifyStatus = vi.fn();
+    const watchWorkspace = vi.fn((): FSWatcher => {
+      const watcher = new FakeWatcher();
+      watchers.push(watcher);
+      return watcher as unknown as FSWatcher;
+    });
+    const runtime = new WorkspaceWatcherRuntime({
+      notifyWorkspaceChanged: notifyChanged,
+      notifyWorkspaceWatcherStatus: notifyStatus,
+      watchWorkspace
+    });
+    runtimes.push(runtime);
+
+    runtime.sync(appSettings("ws-1"));
+    watchers.at(-1)?.emitError();
+
+    const retryDelays = [
+      workspaceWatcherRetryBaseDelayMs,
+      workspaceWatcherRetryBaseDelayMs * 2,
+      workspaceWatcherRetryBaseDelayMs * 4,
+      workspaceWatcherRetryBaseDelayMs * 8,
+      workspaceWatcherRetryBaseDelayMs * 16,
+      workspaceWatcherRetryMaxDelayMs
+    ];
+    for (const [index, delay] of retryDelays.entries()) {
+      vi.advanceTimersByTime(delay - 1);
+      expect(watchWorkspace).toHaveBeenCalledTimes(index + 1);
+      vi.advanceTimersByTime(1);
+      expect(watchWorkspace).toHaveBeenCalledTimes(index + 2);
+      expect(notifyChanged).not.toHaveBeenCalled();
+      watchers.at(-1)?.emitError();
+    }
+
+    expect(notifyStatus).toHaveBeenCalledTimes(1);
+    expect(notifyStatus).toHaveBeenCalledWith({ id: "ws-1", path: "/tmp/notes" });
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+
+    vi.advanceTimersByTime(workspaceWatcherRetryMaxDelayMs);
+    expect(watchWorkspace).toHaveBeenCalledTimes(retryDelays.length + 2);
+    vi.advanceTimersByTime(workspaceWatcherRecoveryStabilityDelayMs - 1);
+    expect(notifyChanged).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+
+    expect(notifyChanged).toHaveBeenCalledTimes(1);
+    expect(notifyChanged).toHaveBeenCalledWith({ id: "ws-1", path: "/tmp/notes" });
+    expect(notifyStatus).toHaveBeenCalledTimes(1);
+
+    watchers.at(-1)?.emitError();
+    vi.advanceTimersByTime(workspaceWatcherRetryBaseDelayMs - 1);
+    expect(watchWorkspace).toHaveBeenCalledTimes(retryDelays.length + 2);
+    vi.advanceTimersByTime(1);
+    expect(watchWorkspace).toHaveBeenCalledTimes(retryDelays.length + 3);
+  });
+
+  it("復旧安定待ちをstopとワークスペース切替で破棄する", () => {
+    const watchers: FakeWatcher[] = [];
+    const notifyChanged = vi.fn();
+    const runtime = new WorkspaceWatcherRuntime({
+      notifyWorkspaceChanged: notifyChanged,
+      notifyWorkspaceWatcherStatus: vi.fn(),
+      watchWorkspace: vi.fn((): FSWatcher => {
+        const watcher = new FakeWatcher();
+        watchers.push(watcher);
+        return watcher as unknown as FSWatcher;
+      })
+    });
+    runtimes.push(runtime);
+
+    runtime.sync(appSettings("ws-1"));
+    watchers.at(-1)?.emitError();
+    vi.advanceTimersByTime(workspaceWatcherRetryBaseDelayMs);
+    runtime.sync(appSettings("ws-2"));
+    vi.advanceTimersByTime(workspaceWatcherRecoveryStabilityDelayMs);
+    expect(notifyChanged).not.toHaveBeenCalled();
+
+    watchers.at(-1)?.emitError();
+    vi.advanceTimersByTime(workspaceWatcherRetryBaseDelayMs);
+    runtime.stop();
+    vi.advanceTimersByTime(workspaceWatcherRecoveryStabilityDelayMs);
+    expect(notifyChanged).not.toHaveBeenCalled();
   });
 });

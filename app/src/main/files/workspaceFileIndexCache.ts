@@ -1,3 +1,4 @@
+import { rm } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -56,6 +57,10 @@ export interface WorkspaceFileIndexCacheReadResult {
   records: WorkspaceFileIndexRecord[];
 }
 
+export interface WorkspaceFileIndexCacheDeleteOperations {
+  deleteCache(cachePath: string): Promise<void>;
+}
+
 interface WorkspaceFileIndexCacheRuntimeState {
   generation: number;
   ownerPath?: string;
@@ -63,8 +68,12 @@ interface WorkspaceFileIndexCacheRuntimeState {
 
 export const workspaceFileIndexCacheVersion = 7;
 
-const cacheWriteQueues = new Map<string, Promise<void>>();
+const cacheOperationQueues = new Map<string, Promise<void>>();
 const cacheRuntimeStates = new Map<string, WorkspaceFileIndexCacheRuntimeState>();
+
+const defaultWorkspaceFileIndexCacheDeleteOperations: WorkspaceFileIndexCacheDeleteOperations = {
+  deleteCache: (cachePath) => rm(cachePath, { force: true })
+};
 
 export function getWorkspaceFileIndexCacheGeneration(cachePath: string): number {
   return cacheRuntimeStates.get(cachePath)?.generation ?? 0;
@@ -77,69 +86,111 @@ export function bumpWorkspaceFileIndexCacheGeneration(cachePath: string): number
   return next;
 }
 
-export async function transitionWorkspaceFileIndexCacheOwner(
+export function transitionWorkspaceFileIndexCacheOwner(
   cachePath: string,
   ownerPath: string,
   operations: WorkspaceFileIndexOperations = defaultWorkspaceFileIndexOperations
 ): Promise<number> {
-  await cacheWriteQueues.get(cachePath)?.catch(() => undefined);
-  const snapshot = await readCacheSnapshot(cachePath, operations);
   const current = cacheRuntimeStates.get(cachePath);
-  const generation = Math.max(
-    current?.generation ?? 0,
-    snapshot?.generation ?? 0
-  ) + 1;
-  cacheRuntimeStates.set(cachePath, { generation, ownerPath });
-  return generation;
+  const requestedGeneration = (current?.generation ?? 0) + 1;
+  cacheRuntimeStates.set(cachePath, { generation: requestedGeneration, ownerPath });
+
+  return queueCacheOperation(cachePath, async () => {
+    const snapshot = await readCacheSnapshot(cachePath, operations);
+    const latest = cacheRuntimeStates.get(cachePath);
+    if (
+      latest?.generation !== requestedGeneration
+      || latest.ownerPath !== ownerPath
+    ) return requestedGeneration;
+
+    const generation = Math.max(
+      requestedGeneration,
+      (snapshot?.generation ?? 0) + 1
+    );
+    cacheRuntimeStates.set(cachePath, { generation, ownerPath });
+    return generation;
+  });
 }
 
-export async function readCachedWorkspaceFileIndexRecords(
+export function readCachedWorkspaceFileIndexRecords(
   cachePath: string,
   operations: WorkspaceFileIndexOperations,
   options: WorkspaceFileIndexCacheReadOptions
 ): Promise<WorkspaceFileIndexCacheReadResult> {
-  const snapshot = await readCacheSnapshot(cachePath, operations);
-  const current = cacheRuntimeStates.get(cachePath);
-  const persistedGeneration = snapshot?.generation ?? 0;
-  const minimumGeneration = options.minimumGeneration ?? 0;
+  const requestedGeneration = Math.max(
+    getWorkspaceFileIndexCacheGeneration(cachePath),
+    options.minimumGeneration ?? 0
+  );
 
-  if (current?.ownerPath && current.ownerPath !== options.expectedOwnerPath) {
-    return { generation: current.generation, records: [] };
-  }
+  return queueCacheOperation(cachePath, async () => {
+    const snapshot = await readCacheSnapshot(cachePath, operations);
+    const current = cacheRuntimeStates.get(cachePath);
+    if ((current?.generation ?? 0) > requestedGeneration) {
+      return { generation: requestedGeneration, records: [] };
+    }
+    const persistedGeneration = snapshot?.generation ?? 0;
 
-  const ownerMatches = snapshot?.ownerPath === options.expectedOwnerPath;
-  const generation = Math.max(
-    current?.generation ?? 0,
-    persistedGeneration,
-    minimumGeneration
-  ) + (!current?.ownerPath && snapshot !== null && !ownerMatches ? 1 : 0);
-  cacheRuntimeStates.set(cachePath, {
-    generation,
-    ownerPath: options.expectedOwnerPath
+    if (current?.ownerPath && current.ownerPath !== options.expectedOwnerPath) {
+      return { generation: requestedGeneration, records: [] };
+    }
+
+    const ownerMatches = snapshot?.ownerPath === options.expectedOwnerPath;
+    const generation = Math.max(
+      requestedGeneration,
+      persistedGeneration
+    ) + (!current?.ownerPath && snapshot !== null && !ownerMatches ? 1 : 0);
+    cacheRuntimeStates.set(cachePath, {
+      generation,
+      ownerPath: options.expectedOwnerPath
+    });
+    return {
+      generation,
+      records: ownerMatches ? snapshot.records : []
+    };
   });
-  return {
-    generation,
-    records: ownerMatches ? snapshot.records : []
-  };
 }
 
-export async function writeCachedWorkspaceFileIndexRecords(
+export function writeCachedWorkspaceFileIndexRecords(
   cachePath: string,
   records: WorkspaceFileIndexRecord[],
   cachedRecordsByPath: Map<string, WorkspaceFileIndexRecord>,
   operations: WorkspaceFileIndexOperations,
   options: WorkspaceFileIndexCacheWriteOptions = {}
 ): Promise<void> {
-  const previous = cacheWriteQueues.get(cachePath) ?? Promise.resolve();
-  const next = previous
-    .catch(() => undefined)
-    .then(() => writeCacheSnapshot(cachePath, records, cachedRecordsByPath, operations, options));
-  cacheWriteQueues.set(cachePath, next);
-  try {
-    await next;
-  } finally {
-    if (cacheWriteQueues.get(cachePath) === next) cacheWriteQueues.delete(cachePath);
-  }
+  return queueCacheOperation(
+    cachePath,
+    () => writeCacheSnapshot(cachePath, records, cachedRecordsByPath, operations, options)
+  );
+}
+
+export function invalidateWorkspaceFileIndexCache(
+  cachePath: string,
+  operations: WorkspaceFileIndexCacheDeleteOperations = defaultWorkspaceFileIndexCacheDeleteOperations
+): Promise<number> {
+  const generation = bumpWorkspaceFileIndexCacheGeneration(cachePath);
+  return queueCacheOperation(cachePath, async () => {
+    await operations.deleteCache(cachePath);
+    return generation;
+  });
+}
+
+function queueCacheOperation<T>(
+  cachePath: string,
+  operation: () => Promise<T>
+): Promise<T> {
+  const previous = cacheOperationQueues.get(cachePath) ?? Promise.resolve();
+  const result = previous.then(operation);
+  const tail = result.then(
+    () => undefined,
+    () => undefined
+  );
+  cacheOperationQueues.set(cachePath, tail);
+  void tail.then(() => {
+    if (cacheOperationQueues.get(cachePath) === tail) {
+      cacheOperationQueues.delete(cachePath);
+    }
+  });
+  return result;
 }
 
 async function writeCacheSnapshot(

@@ -99,7 +99,7 @@ describe("App external file changes", () => {
     const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
 
     act(() => {
-      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" });
+      workspaceChanged({ changedAt: new Date().toISOString(), kind: "full", revision: 1, workspaceId: "ws-1" });
     });
 
     await waitFor(() => {
@@ -111,6 +111,50 @@ describe("App external file changes", () => {
         expect(tab.externalConflict).toBeUndefined();
       }
     });
+  });
+
+  it("paths通知はworkspace stateを再取得せず一致する開きタブだけを読む", async () => {
+    let workspaceChanged: Parameters<NonNullable<typeof window.relic>["onWorkspaceChanged"]>[0] = () => undefined;
+    const getWorkspaceState = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        ...withWorkspace,
+        fileTree: [
+          { name: "読書メモ", path: "読書メモ.md", type: "file" },
+          { name: "未開封", path: "未開封.md", type: "file" }
+        ]
+      }
+    });
+    const readMarkdownFile = vi.fn()
+      .mockResolvedValueOnce({ ok: true, value: { content: "変更前", name: "読書メモ", path: "読書メモ.md" } })
+      .mockResolvedValueOnce({ ok: true, value: { content: "変更後", name: "読書メモ", path: "読書メモ.md" } });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState,
+      onWorkspaceChanged: vi.fn((callback) => {
+        workspaceChanged = callback;
+        return vi.fn();
+      }),
+      readMarkdownFile
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+    getWorkspaceState.mockClear();
+    readMarkdownFile.mockClear();
+
+    act(() => workspaceChanged({
+      changedAt: new Date().toISOString(),
+      kind: "paths",
+      paths: ["読書メモ.md", "未開封.md"],
+      revision: 1,
+      workspaceId: "ws-1"
+    }));
+
+    await waitFor(() => expect(readMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" }));
+    expect(readMarkdownFile).toHaveBeenCalledTimes(1);
+    expect(getWorkspaceState).not.toHaveBeenCalled();
   });
 
   it("編集中の開きタブは外部変更と衝突させ自動保存を止める", async () => {
@@ -152,7 +196,7 @@ describe("App external file changes", () => {
       useEditorStore.getState().updateTabContent(activeTabId, "Relic側の編集中本文");
     });
     act(() => {
-      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" });
+      workspaceChanged({ changedAt: new Date().toISOString(), kind: "full", revision: 1, workspaceId: "ws-1" });
     });
 
     expect(await screen.findByText("このファイルは外部で変更されました。自動保存を一時停止しています。")).toBeInTheDocument();
@@ -214,7 +258,7 @@ describe("App external file changes", () => {
       });
     });
     act(() => {
-      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" });
+      workspaceChanged({ changedAt: new Date().toISOString(), kind: "full", revision: 1, workspaceId: "ws-1" });
     });
 
     expect(await screen.findByText("このファイルは外部で変更されました。自動保存を一時停止しています。")).toBeInTheDocument();
@@ -274,7 +318,7 @@ describe("App external file changes", () => {
       useEditorStore.getState().updateTabContent(activeTabId, "Relic側に残す未保存本文");
     });
     act(() => {
-      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" });
+      workspaceChanged({ changedAt: new Date().toISOString(), kind: "full", revision: 1, workspaceId: "ws-1" });
     });
 
     expect(await screen.findByText("読書メモ は外部で移動または削除されたため、未保存本文を開いたまま保持しました。")).toHaveClass("toast--error");
@@ -323,7 +367,7 @@ describe("App external file changes", () => {
 
     act(() => {
       useEditorStore.getState().updateTabContent(activeTabId, "Relic側の編集中本文");
-      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" });
+      workspaceChanged({ changedAt: new Date().toISOString(), kind: "full", revision: 1, workspaceId: "ws-1" });
     });
 
     fireEvent.click(await screen.findByRole("button", { name: "外部版を読み込む" }));
@@ -382,7 +426,7 @@ describe("App external file changes", () => {
 
     act(() => {
       useEditorStore.getState().updateTabContent(activeTabId, "Relic側の編集中本文");
-      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" });
+      workspaceChanged({ changedAt: new Date().toISOString(), kind: "full", revision: 1, workspaceId: "ws-1" });
     });
 
     fireEvent.click(await screen.findByRole("button", { name: "Relic版を保存" }));

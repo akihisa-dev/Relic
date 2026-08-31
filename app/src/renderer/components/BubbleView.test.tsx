@@ -47,7 +47,7 @@ vi.mock("../bubble/bubbleSimulationClient", async (importOriginal) => ({
   }
 }));
 
-function renderBubbleView(
+async function renderBubbleView(
   language: "en" | "ja",
   onOpenFile = vi.fn(),
   onOpenTagSearch = vi.fn(),
@@ -59,11 +59,13 @@ function renderBubbleView(
   });
   window.relic = makeRelicApi({ getWorkspaceGraph });
 
-  render(
-    <I18nProvider language={language}>
-      <BubbleView onOpenFile={onOpenFile} onOpenTagSearch={onOpenTagSearch} />
-    </I18nProvider>
-  );
+  await act(async () => {
+    render(
+      <I18nProvider language={language}>
+        <BubbleView onOpenFile={onOpenFile} onOpenTagSearch={onOpenTagSearch} />
+      </I18nProvider>
+    );
+  });
 
   return { getWorkspaceGraph, onOpenFile, onOpenTagSearch };
 }
@@ -86,24 +88,24 @@ afterEach(() => {
 });
 
 describe("BubbleView", () => {
-  it("英語表示でも設定メニューを表示しない", () => {
-    renderBubbleView("en");
+  it("英語表示でも設定メニューを表示しない", async () => {
+    await renderBubbleView("en");
 
     expect(screen.getByLabelText("Bubble")).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
 
-  it("日本語表示でも設定メニューを表示しない", () => {
-    renderBubbleView("ja");
+  it("日本語表示でも設定メニューを表示しない", async () => {
+    await renderBubbleView("ja");
 
     expect(screen.getByLabelText("バブル")).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
 
-  it("バブルを押している間はgrabbingカーソルを表示する", () => {
-    renderBubbleView("en");
+  it("バブルを押している間はgrabbingカーソルを表示する", async () => {
+    await renderBubbleView("en");
 
     const canvas = screen.getByLabelText("Bubble");
     Object.defineProperty(canvas, "setPointerCapture", { configurable: true, value: vi.fn() });
@@ -120,8 +122,8 @@ describe("BubbleView", () => {
     expect(canvas).toHaveStyle("cursor: grab");
   });
 
-  it("背景パンのpointercancelでは操作を確定せず、次の操作を開始できる", () => {
-    const { onOpenFile, onOpenTagSearch } = renderBubbleView("ja");
+  it("背景パンのpointercancelでは操作を確定せず、次の操作を開始できる", async () => {
+    const { onOpenFile, onOpenTagSearch } = await renderBubbleView("ja");
     const canvas = screen.getByLabelText("バブル");
     const setPointerCapture = vi.fn();
     const releasePointerCapture = vi.fn();
@@ -144,7 +146,7 @@ describe("BubbleView", () => {
     expect(canvas).toHaveStyle("cursor: grabbing");
   });
 
-  it("ノードのpointercancelでは開かず、通常クリックでは1回で開く", () => {
+  it("ノードのpointercancelでは開かず、通常クリックでは1回で開く", async () => {
     let canvas: HTMLElement;
     const releasePointerCapture = vi.fn();
     const onOpenFile = vi.fn(() => {
@@ -152,7 +154,7 @@ describe("BubbleView", () => {
       expect(releasePointerCapture).toHaveBeenCalledOnce();
     });
     const onOpenTagSearch = vi.fn();
-    renderBubbleView("ja", onOpenFile, onOpenTagSearch);
+    await renderBubbleView("ja", onOpenFile, onOpenTagSearch);
     canvas = screen.getByLabelText("バブル");
     Object.defineProperty(canvas, "setPointerCapture", { configurable: true, value: vi.fn() });
     Object.defineProperty(canvas, "hasPointerCapture", { configurable: true, value: vi.fn(() => true) });
@@ -208,9 +210,9 @@ describe("BubbleView", () => {
     expect(onOpenTagSearch).toHaveBeenCalledWith("project");
   });
 
-  it("ノードのドラッグでは開かず、次の通常クリックでファイルを開ける", () => {
+  it("ノードのドラッグでは開かず、次の通常クリックでファイルを開ける", async () => {
     const onOpenFile = vi.fn();
-    renderBubbleView("ja", onOpenFile);
+    await renderBubbleView("ja", onOpenFile);
     const canvas = screen.getByLabelText("バブル");
     Object.defineProperty(canvas, "setPointerCapture", { configurable: true, value: vi.fn() });
     Object.defineProperty(canvas, "hasPointerCapture", { configurable: true, value: vi.fn(() => true) });
@@ -279,7 +281,7 @@ describe("BubbleView", () => {
         }
       ]
     };
-    const { getWorkspaceGraph } = renderBubbleView("ja", vi.fn(), vi.fn(), graph);
+    const { getWorkspaceGraph } = await renderBubbleView("ja", vi.fn(), vi.fn(), graph);
     await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledOnce());
     await waitFor(() => expect(bubbleSimulationMocks.sync).toHaveBeenCalled());
 
@@ -329,11 +331,13 @@ describe("BubbleView", () => {
       500, 600, 0, 0, 0, 0,
       700, 800, 0, 0, 0, 0
     ]);
-    bubbleSimulationMocks.onPositions({
-      buffer,
-      ids: ["dragged.md", "target.md"],
-      sequence: 0,
-      type: "positions"
+    act(() => {
+      bubbleSimulationMocks.onPositions({
+        buffer,
+        ids: ["dragged.md", "target.md"],
+        sequence: 0,
+        type: "positions"
+      });
     });
 
     expect(currentNodes.find((node) => node.id === "dragged.md")?.x)
@@ -395,7 +399,7 @@ describe("BubbleView", () => {
         }
       ]
     };
-    const { getWorkspaceGraph } = renderBubbleView("ja", vi.fn(), vi.fn(), graph);
+    const { getWorkspaceGraph } = await renderBubbleView("ja", vi.fn(), vi.fn(), graph);
     await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledOnce());
     await waitFor(() => expect(bubbleSimulationMocks.sync).toHaveBeenCalledWith(
       expect.arrayContaining([
@@ -472,7 +476,7 @@ describe("BubbleView", () => {
         type: "file"
       }]
     };
-    const { getWorkspaceGraph } = renderBubbleView("ja", vi.fn(), vi.fn(), graph);
+    const { getWorkspaceGraph } = await renderBubbleView("ja", vi.fn(), vi.fn(), graph);
     await waitFor(() => expect(getWorkspaceGraph).toHaveBeenCalledOnce());
     await waitFor(() => expect(bubbleSimulationMocks.sync).toHaveBeenCalled());
 
@@ -540,26 +544,34 @@ describe("BubbleView", () => {
     })));
     const computedStyle = vi.spyOn(window, "getComputedStyle");
 
-    renderBubbleView("ja");
+    await renderBubbleView("ja");
     const canvas = screen.getByLabelText("バブル");
     await waitFor(() => expect(computedStyle).toHaveBeenCalledWith(canvas));
 
     computedStyle.mockClear();
-    document.documentElement.dataset.theme = "dark";
+    act(() => {
+      document.documentElement.dataset.theme = "dark";
+    });
     await waitFor(() => expect(computedStyle).toHaveBeenCalledWith(canvas));
 
     computedStyle.mockClear();
-    notifyColorSchemeChange();
+    act(() => {
+      notifyColorSchemeChange();
+    });
     expect(computedStyle).not.toHaveBeenCalled();
 
-    document.documentElement.removeAttribute("data-theme");
+    act(() => {
+      document.documentElement.removeAttribute("data-theme");
+    });
     await waitFor(() => expect(computedStyle).toHaveBeenCalledWith(canvas));
     computedStyle.mockClear();
-    notifyColorSchemeChange();
+    act(() => {
+      notifyColorSchemeChange();
+    });
     expect(computedStyle).toHaveBeenCalledWith(canvas);
   });
 
-  it("静止時は描画予約を止め、最初の操作で重複なく再開する", () => {
+  it("静止時は描画予約を止め、最初の操作で重複なく再開する", async () => {
     const scheduled: FrameRequestCallback[] = [];
     const requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
       scheduled.push(callback);
@@ -567,7 +579,7 @@ describe("BubbleView", () => {
     });
     vi.stubGlobal("requestAnimationFrame", requestAnimationFrame);
 
-    renderBubbleView("ja");
+    await renderBubbleView("ja");
     const canvas = screen.getByLabelText("バブル");
     expect(requestAnimationFrame).toHaveBeenCalledOnce();
 

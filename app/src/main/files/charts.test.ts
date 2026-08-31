@@ -1,10 +1,10 @@
-import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { extractChronicleRange, readWorkspaceCharts, updateWorkspaceChartEntry } from "./charts";
+import { extractChronicleRange, readWorkspaceCharts } from "./charts";
 import { readWorkspaceFileIndex } from "./workspaceFileIndex";
 
 describe("extractChronicleRange", () => {
@@ -97,69 +97,5 @@ describe("readWorkspaceCharts", () => {
         }
       ]
     });
-  });
-});
-
-describe("updateWorkspaceChartEntry", () => {
-  it("年表entryの範囲をMarkdownフロントマターへ書き戻す", async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-chart-update-"));
-    const filePath = path.join(workspacePath, "main.md");
-    await writeFile(filePath, "---\nchronicle: 10\n---\n# Main\n", "utf8");
-
-    const result = await updateWorkspaceChartEntry(
-      workspacePath,
-      [{ filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" }],
-      {
-        chronicleEntryIndex: 0,
-        endValue: 145,
-        kind: "move",
-        originalEndValue: 108,
-        originalStartValue: 108,
-        path: "main.md",
-        source: "chronicle",
-        startValue: 132
-      }
-    );
-
-    expect(result.ok).toBe(true);
-    expect(await readFile(filePath, "utf8")).toContain("chronicle:\n  calendar: 基準暦\n  start: 12\n  end: 13");
-  });
-
-  it("書き込み直前の外部変更を検知して古いチャート本文を上書きしない", async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-chart-conflict-"));
-    const filePath = path.join(workspacePath, "main.md");
-    await writeFile(filePath, "---\nchronicle: 10\n---\n# Main\n", "utf8");
-
-    let statCalls = 0;
-    const result = await updateWorkspaceChartEntry(
-      workspacePath,
-      [{ filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" }],
-      {
-        chronicleEntryIndex: 0,
-        endValue: 145,
-        kind: "move",
-        originalEndValue: 108,
-        originalStartValue: 108,
-        path: "main.md",
-        source: "chronicle",
-        startValue: 132
-      },
-      {
-        readFile,
-        stat: async (candidate) => {
-          const current = await stat(candidate);
-          statCalls += 1;
-          if (statCalls === 1) await writeFile(filePath, "external", "utf8");
-          return current;
-        },
-        writeTextFile: async (candidate, content) => writeFile(candidate, content, "utf8")
-      }
-    );
-
-    expect(result).toMatchObject({
-      error: { code: "CHART_ENTRY_UPDATE_CONFLICT" },
-      ok: false
-    });
-    expect(await readFile(filePath, "utf8")).toBe("external");
   });
 });

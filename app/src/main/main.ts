@@ -1,12 +1,14 @@
 import { app, BrowserWindow, dialog, shell } from "electron";
 import path from "node:path";
 
+import { configureApplicationQuitLifecycle } from "./applicationQuitLifecycle";
 import { configureDevelopmentUserDataPath } from "./developmentUserData";
 import {
   configureElectronSmokeUserDataPath,
   resolveElectronSmokeConfig
 } from "./electronSmoke";
 import { getCachedMainTranslator, setMainTranslator } from "./i18n";
+import { stopAcceptingMainIpcRequestsAndWait } from "./ipc/ipcRequestLifecycle";
 import { createNormalMainWindow } from "./mainWindow";
 import { createNormalApplicationInitializer } from "./normalApplication";
 import {
@@ -34,6 +36,12 @@ const initializeNormalApplication = createNormalApplicationInitializer(() => mai
 app.setName(APP_NAME);
 configureDevelopmentUserDataPath(app, MAIN_WINDOW_VITE_DEV_SERVER_URL, process.env.RELIC_DEV_USER_DATA_DIR);
 configureElectronSmokeUserDataPath(app, electronSmokeConfig);
+configureApplicationQuitLifecycle({
+  app,
+  isImmediateQuitBypassed: () => isDevelopmentQuitInProgress,
+  stopAcceptingRequestsAndWait: stopAcceptingMainIpcRequestsAndWait,
+  stopWorkspaceWatcher
+});
 
 function createWindow(): void {
   if (settingsRecovery) {
@@ -115,5 +123,4 @@ app.whenReady().then(async () => {
 
 app.on("before-quit", () => {
   isDevelopmentQuitInProgress = Boolean(MAIN_WINDOW_VITE_DEV_SERVER_URL || electronSmokeConfig);
-  stopWorkspaceWatcher();
 });

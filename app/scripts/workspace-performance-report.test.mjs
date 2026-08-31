@@ -20,6 +20,7 @@ describe("workspace-performance-report", () => {
       "chronicle"
     ].map((name) => [name, { maximumMs: 12, medianMs: 10, minimumMs: 8 }]));
     const report = renderWorkspacePerformanceReport({
+      environment: { arch: "arm64", nodeMajor: 26, platform: "darwin" },
       fixture: { directoryCount: 20, fileCount: 1000, fingerprint: "abc" },
       indexStats: { readFileCount: 1000, statCount: 1000 },
       incrementalStats: { readFileCount: 1, statCount: 1 },
@@ -35,6 +36,7 @@ describe("workspace-performance-report", () => {
     });
 
     expect(report).toContain("fixture\t1000 files\t20 directories\tabc");
+    expect(report).toContain("runtime\tNode 26\tdarwin/arm64");
     expect(report).toContain("fileIndex\t10\t8\t12");
     expect(report).toContain("readFileCount\t1000");
     expect(report).toContain("Incremental refresh operations (median)");

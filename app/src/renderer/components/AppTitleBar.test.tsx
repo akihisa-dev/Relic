@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n";
+import { readCssEntry } from "../../test/cssTestUtils";
 import { AppTitleBar } from "./AppTitleBar";
 
 function renderTitleBar({
@@ -98,7 +99,7 @@ describe("AppTitleBar", () => {
 
   it("keeps the title bar draggable and visually separate from the workspace", () => {
     const css = readFileSync("src/renderer/styles/shell-layout.css", "utf8");
-    const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+    const designCss = readCssEntry("src/renderer/styles/architectural-design.css");
 
     expect(css).toMatch(/\.title-bar\s*\{[^}]*-webkit-app-region:\s*drag;/s);
     expect(css).toMatch(/\.app-shell\s*\{[^}]*grid-template-rows:\s*42px minmax\(0, 1fr\) 34px;/s);
@@ -138,7 +139,7 @@ describe("AppTitleBar", () => {
   });
 
   it("does not render diagonal blue panel decorations", () => {
-    const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+    const designCss = readCssEntry("src/renderer/styles/architectural-design.css");
 
     expect(designCss).not.toMatch(/clip-path:\s*polygon/);
     expect(designCss).not.toMatch(/\.workspace::before/);
@@ -148,7 +149,7 @@ describe("AppTitleBar", () => {
   });
 
   it("keeps the right panel header compact", () => {
-    const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+    const designCss = readCssEntry("src/renderer/styles/architectural-design.css");
 
     expect(designCss).toMatch(/\.right-panel-title\s*\{[^}]*min-height:\s*44px;[^}]*padding:\s*12px 18px 9px;/s);
     expect(designCss).toMatch(/\.right-panel-content\s*\{[^}]*padding-top:\s*14px;/s);

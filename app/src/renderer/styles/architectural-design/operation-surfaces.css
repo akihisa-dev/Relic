@@ -1,0 +1,278 @@
+/* ────────────────────────────────── */
+/* Status                             */
+/* ────────────────────────────────── */
+
+.status-bar {
+  background: var(--color-bg);
+  backdrop-filter: none;
+  border-color: var(--color-border);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--color-primary-dark);
+  font-size: 12px;
+  margin: 0;
+  min-height: 32px;
+  padding: 0 18px;
+}
+
+/* ────────────────────────────────── */
+/* DESIGN.md compliance overrides      */
+/* ────────────────────────────────── */
+
+.rail {
+  background: var(--color-glass-overlay);
+  background-size: auto;
+  backdrop-filter: blur(10px) saturate(100%);
+  border-radius: 0;
+  box-shadow: inset -1px 0 0 var(--color-glass-highlight);
+}
+
+.sidebar,
+.right-panel {
+  background: var(--color-bg);
+  background-size: auto;
+  backdrop-filter: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.app-shell,
+.workspace,
+.main-area,
+.pane,
+.editor-workspace,
+.editor-body,
+.editor-surface,
+.panel-tab-surface,
+.preview,
+.cm-editor,
+.settings-page {
+  background: var(--color-bg);
+}
+
+:where(.app-title-bar-button, .rail-button, .workspace-action-button, .file-tree-action-button, .pane-tab, .toolbar-button, .tool-card, .tool-section, .settings-panel, .settings-card, .settings-segmented, .editor-surface, .panel-tab-surface) {
+  border-radius: var(--radius-sm);
+}
+
+:where(.settings-segmented, .settings-segmented-indicator, .frontmatter-dialog, .file-search-panel, .command-palette, .quick-switcher, .tool-card, .tool-section) {
+  box-shadow: none;
+}
+
+:where(.frontmatter-dialog, .file-search-panel, .command-palette, .quick-switcher) {
+  backdrop-filter: blur(8px);
+  background: var(--popup-bg);
+}
+
+.settings-segmented,
+.settings-segmented-indicator {
+  background-size: auto;
+}
+
+.settings-segmented {
+  background: var(--color-surface-alt);
+}
+
+.settings-segmented-indicator {
+  background: var(--color-glass-overlay);
+}
+
+.settings-segmented-button[aria-pressed="true"] {
+  color: var(--color-on-glass);
+}
+
+.setting-row input[type="checkbox"],
+.setting-row input[type="checkbox"]::after {
+  box-shadow: none;
+}
+.editor-surface,
+.panel-tab-surface,
+.preview,
+.cm-editor,
+.frontmatter-field-card,
+.frontmatter-field-add,
+.frontmatter-format-guide,
+.tool-card,
+.tool-section,
+.settings-card {
+  background: var(--material-limestone);
+  background-size: var(--material-size-limestone);
+}
+
+@media (max-width: 760px) {
+  .layout-resize-boundary--right-panel,
+  .right-panel {
+    display: none;
+  }
+}
+
+/* Liquid Charcoal surface and foreground rules for transient UI. */
+.tab-context-menu,
+.toolbar-dropdown-menu,
+.toolbar-inline-dialog,
+.editor-frontmatter-add-menu,
+.editor-context-menu-inline-dialog,
+.frontmatter-dialog,
+.frontmatter-add-dialog,
+.file-search-panel,
+.new-file-form--primary,
+.page-preview-popover,
+.preview-diagram-overlay-panel,
+.command-palette,
+.quick-switcher,
+.cm-live-table-menu,
+.files-search-method-menu,
+.workspace-input-dialog,
+.toast {
+  --accent: var(--glass-text);
+  --accent-contrast: var(--glass-action-text);
+  --accent-ring: var(--glass-text);
+  --bg: transparent;
+  --border: var(--glass-control-border);
+  --border-medium: var(--glass-control-border);
+  --btn-bg: var(--glass-control-bg);
+  --color-primary: var(--color-on-glass);
+  --color-primary-dark: var(--color-on-glass);
+  --color-on-primary: var(--glass-action-text);
+  --color-text: var(--color-on-glass);
+  --color-text-secondary: var(--color-on-glass-secondary);
+  --color-text-muted: var(--color-on-glass-muted);
+  --input-bg: var(--glass-control-bg);
+  --material-control: var(--glass-control-bg);
+  --hover: var(--color-glass-hover);
+  --surface: transparent;
+  --text: var(--color-on-glass);
+  --text-2: var(--color-on-glass-secondary);
+  --text-3: var(--color-on-glass-muted);
+  backdrop-filter: blur(10px) saturate(100%);
+  background: var(--color-glass-overlay);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 1px 0 var(--color-glass-highlight);
+  color: var(--color-on-glass);
+}
+
+:where(
+  .tab-context-menu,
+  .toolbar-dropdown-menu,
+  .toolbar-inline-dialog,
+  .editor-frontmatter-add-menu,
+  .editor-context-menu-inline-dialog,
+  .frontmatter-dialog,
+  .frontmatter-add-dialog,
+  .file-search-panel,
+  .new-file-form--primary,
+  .page-preview-popover,
+  .preview-diagram-overlay-panel,
+  .command-palette,
+  .quick-switcher,
+  .cm-live-table-menu,
+  .files-search-method-menu,
+  .workspace-input-dialog,
+  .toast
+) :is(input, select, textarea) {
+  background: var(--glass-control-bg);
+  border-color: var(--glass-control-border);
+  color: var(--glass-text);
+}
+
+:where(
+  .tab-context-menu,
+  .toolbar-dropdown-menu,
+  .toolbar-inline-dialog,
+  .editor-frontmatter-add-menu,
+  .editor-context-menu-inline-dialog,
+  .frontmatter-dialog,
+  .frontmatter-add-dialog,
+  .file-search-panel,
+  .new-file-form--primary,
+  .page-preview-popover,
+  .preview-diagram-overlay-panel,
+  .command-palette,
+  .quick-switcher,
+  .cm-live-table-menu,
+  .files-search-method-menu,
+  .workspace-input-dialog,
+  .toast
+) :is(input, textarea)::placeholder {
+  color: var(--glass-text-muted);
+  opacity: 1;
+}
+
+:where(.frontmatter-add-dialog-actions, .workspace-input-dialog-actions) > button {
+  background: var(--glass-control-bg);
+  border-color: var(--glass-control-border);
+  color: var(--glass-text);
+}
+
+:where(.frontmatter-add-dialog-actions, .workspace-input-dialog-actions) > button:last-child {
+  background: var(--glass-action-bg);
+  border-color: var(--glass-action-bg);
+  color: var(--glass-action-text);
+  font-weight: 700;
+}
+
+:where(.frontmatter-add-dialog-actions, .workspace-input-dialog-actions) > button:hover:not(:disabled) {
+  border-color: var(--glass-text-secondary);
+}
+
+.rail-tab-flight,
+.sidebar-create-flight {
+  background: var(--color-glass-overlay);
+  border-color: var(--color-glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  color: var(--color-on-glass);
+  backdrop-filter: blur(10px) saturate(100%);
+}
+
+.empty-pane-create-button {
+  background: var(--color-accent-surface);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  color: var(--color-on-glass);
+}
+
+.empty-pane-create-button:hover,
+.empty-pane-create-button:active {
+  background: color-mix(in srgb, var(--glass-text) 9%, var(--glass-surface));
+  border-color: var(--glass-text-secondary);
+  box-shadow: none;
+  color: var(--color-on-glass);
+}
+
+.workspace-actions {
+  --hover: var(--color-glass-hover);
+  background: var(--color-glass-overlay);
+  border-top: 1px solid var(--color-glass-border);
+}
+
+.workspace-actions .workspace-action-button {
+  color: var(--color-on-glass-secondary);
+}
+
+.workspace-actions .workspace-action-button:hover:not(:disabled) {
+  background: var(--color-glass-hover);
+  color: var(--color-on-glass);
+}
+
+.workspace-actions .workspace-action-button:disabled {
+  color: var(--color-on-glass-muted);
+}
+
+.modal-overlay,
+.preview-diagram-overlay {
+  background: var(--modal-backdrop);
+}
+
+.chart-view-status,
+.preview-diagram-overlay-panel {
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+
+.preview-diagram-overlay-panel {
+  backdrop-filter: blur(10px) saturate(100%);
+  background: var(--color-glass-overlay);
+  border-color: var(--color-glass-border);
+}

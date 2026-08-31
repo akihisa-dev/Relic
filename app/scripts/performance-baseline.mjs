@@ -12,6 +12,54 @@ export function median(values) {
   return (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
+export function currentPerformanceEnvironment({
+  arch = process.arch,
+  nodeVersion = process.versions.node,
+  platform = process.platform
+} = {}) {
+  const nodeMajor = Number.parseInt(nodeVersion.split(".")[0], 10);
+  if (!Number.isInteger(nodeMajor) || nodeMajor <= 0) {
+    throw new Error(`Unable to determine the Node.js major version: ${nodeVersion}`);
+  }
+  return { arch, nodeMajor, platform };
+}
+
+export function performanceBaselineCompatibilityErrors(current, baseline) {
+  const fields = [
+    "fixture.fingerprint",
+    "fixture.fileCount",
+    "fixture.directoryCount",
+    "environment.nodeMajor",
+    "environment.platform",
+    "environment.arch",
+    "runs",
+    "warmups"
+  ];
+
+  return fields.flatMap((field) => {
+    const currentValue = nestedValue(current, field);
+    const baselineValue = nestedValue(baseline, field);
+    return Object.is(currentValue, baselineValue)
+      ? []
+      : [`Performance baseline metadata mismatch for ${field}: baseline=${displayMetadataValue(baselineValue)} current=${displayMetadataValue(currentValue)}.`];
+  });
+}
+
+export function assertPerformanceBaselineComparable(current, baseline) {
+  const errors = performanceBaselineCompatibilityErrors(current, baseline);
+  if (errors.length > 0) {
+    throw new Error(`Performance baseline is not comparable:\n${errors.join("\n")}`);
+  }
+}
+
+function nestedValue(value, field) {
+  return field.split(".").reduce((current, key) => current?.[key], value);
+}
+
+function displayMetadataValue(value) {
+  return value === undefined ? "missing" : JSON.stringify(value);
+}
+
 export function compareLowerIsBetterMetrics(current, baseline, maxRegressionPercent) {
   if (!Number.isFinite(maxRegressionPercent) || maxRegressionPercent < 0) {
     throw new Error("maxRegressionPercent must be a non-negative number.");

@@ -1,78 +1,9 @@
 import type {
-  ChartSettings,
-  ChartSource,
-  UpdateChartEntryInput,
   SaveWorkspaceTablePreferencesInput,
   WorkspaceTablePreferences
 } from "../../shared/ipc";
 import { workspaceTablePreferenceLimits } from "../../shared/ipc";
-import { isWorkspaceRelativeInputPath } from "../files/paths";
 import { isWorkspaceIdInput } from "./inputValidation";
-
-const chartSources: ChartSource[] = ["chronicle"];
-
-export function isChartsInput(input: unknown): input is ChartSettings[] {
-  if (!Array.isArray(input) || input.length !== 1) return false;
-
-  const sources = new Set<ChartSource>();
-
-  return input.every((chart) => {
-    if (typeof chart !== "object" || chart === null) return false;
-
-    const candidate = chart as Record<string, unknown>;
-    if (typeof candidate.id !== "string" || candidate.id.trim() === "") {
-      return false;
-    }
-    if (typeof candidate.name !== "string" || candidate.name.trim() === "") {
-      return false;
-    }
-    if (!chartSources.includes(candidate.source as ChartSource)) return false;
-    if (sources.has(candidate.source as ChartSource)) return false;
-    if ("filePaths" in candidate && !Array.isArray(candidate.filePaths)) {
-      return false;
-    }
-    if (
-      Array.isArray(candidate.filePaths) &&
-      !candidate.filePaths.every(isWorkspaceRelativeInputPath)
-    ) {
-      return false;
-    }
-
-    sources.add(candidate.source as ChartSource);
-    return true;
-  });
-}
-
-export function isUpdateChartEntryInput(
-  input: unknown
-): input is UpdateChartEntryInput {
-  if (typeof input !== "object" || input === null) return false;
-
-  const candidate = input as Record<string, unknown>;
-  const startValue = candidate.startValue;
-  const endValue = candidate.endValue;
-
-  if (typeof startValue !== "number" || typeof endValue !== "number") {
-    return false;
-  }
-
-  return (
-    isWorkspaceRelativeInputPath(candidate.path) &&
-    chartSources.includes(candidate.source as ChartSource) &&
-    Number.isInteger(candidate.chronicleEntryIndex) &&
-    Number(candidate.chronicleEntryIndex) >= 0 &&
-    (
-      candidate.kind === "move" ||
-      candidate.kind === "resize-start" ||
-      candidate.kind === "resize-end"
-    ) &&
-    Number.isInteger(candidate.originalStartValue) &&
-    Number.isInteger(candidate.originalEndValue) &&
-    Number.isInteger(startValue) &&
-    Number.isInteger(endValue) &&
-    startValue <= endValue
-  );
-}
 
 export function isWorkspaceTablePreferencesInput(
   input: unknown

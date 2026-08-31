@@ -1,16 +1,8 @@
 {
   "entries": {
-    "src/renderer/styles/file-tree-search.css": {
-      "category": "css",
-      "lines": 1081
-    },
     "src/renderer/styles/workspace-editor.css": {
       "category": "css",
       "lines": 981
-    },
-    "src/renderer/styles/architectural-design.css": {
-      "category": "css",
-      "lines": 979
     },
     "src/renderer/App.fileActions.test.tsx": {
       "category": "test",
@@ -20,6 +12,10 @@
       "category": "css",
       "lines": 937
     },
+    "src/renderer/diagramPreview.test.ts": {
+      "category": "test",
+      "lines": 923
+    },
     "src/renderer/components/Editor.livePreview.test.tsx": {
       "category": "test",
       "lines": 906
@@ -28,69 +24,77 @@
       "category": "test",
       "lines": 847
     },
-    "src/renderer/App.workspaces.test.tsx": {
+    "src/main/ipc/toolActions.test.ts": {
       "category": "test",
-      "lines": 819
-    },
-    "src/renderer/diagramPreview.test.ts": {
-      "category": "test",
-      "lines": 813
+      "lines": 838
     },
     "src/renderer/styles/table-view.css": {
       "category": "css",
       "lines": 805
     },
-    "src/main/ipc/toolActions.test.ts": {
+    "src/main/ipc/workspaceHandlers.test.ts": {
       "category": "test",
-      "lines": 790
+      "lines": 798
     },
-    "src/renderer/App.fileTabs.test.tsx": {
+    "src/renderer/App.workspaces.test.tsx": {
       "category": "test",
-      "lines": 780
+      "lines": 791
+    },
+    "src/main/files/replace.test.ts": {
+      "category": "test",
+      "lines": 789
     },
     "src/renderer/styles/editor-frontmatter.css": {
       "category": "css",
       "lines": 761
     },
+    "src/renderer/App.fileTabs.test.tsx": {
+      "category": "test",
+      "lines": 747
+    },
     "src/renderer/components/Toolbar.test.tsx": {
       "category": "test",
       "lines": 741
-    },
-    "src/renderer/App.fileRename.test.tsx": {
-      "category": "test",
-      "lines": 731
     },
     "src/main/ipc/markdownFileHandlers.test.ts": {
       "category": "test",
       "lines": 727
     },
-    "src/main/files/replace.test.ts": {
-      "category": "test",
-      "lines": 725
-    },
     "src/renderer/App.tsx": {
       "category": "production",
-      "lines": 699
+      "lines": 718
     },
-    "src/renderer/App.charts.test.tsx": {
+    "src/renderer/App.fileRename.test.tsx": {
       "category": "test",
-      "lines": 681
+      "lines": 711
+    },
+    "src/main/ipc/workspaceRegistrationHandlers.test.ts": {
+      "category": "test",
+      "lines": 707
+    },
+    "src/main/files/linkUpdater.test.ts": {
+      "category": "test",
+      "lines": 687
     },
     "src/renderer/components/FileTree.test.tsx": {
       "category": "test",
-      "lines": 679
+      "lines": 665
     },
     "src/renderer/components/Editor.frontmatter.test.tsx": {
       "category": "test",
       "lines": 659
     },
-    "src/renderer/bubble/bubbleCategoryModel.ts": {
-      "category": "production",
-      "lines": 632
-    },
-    "src/main/files/linkUpdater.test.ts": {
+    "src/main/files/workspaceDerivedDataSession.test.ts": {
       "category": "test",
-      "lines": 609
+      "lines": 644
+    },
+    "src/renderer/App.externalChanges.test.tsx": {
+      "category": "test",
+      "lines": 634
+    },
+    "src/renderer/App.charts.test.tsx": {
+      "category": "test",
+      "lines": 615
     },
     "src/main/files/markdownFileRelocation.test.ts": {
       "category": "test",
@@ -100,77 +104,97 @@
       "category": "test",
       "lines": 599
     },
-    "src/renderer/App.externalChanges.test.tsx": {
+    "src/main/ipc/workspaceDataHandlers.test.ts": {
       "category": "test",
-      "lines": 590
+      "lines": 598
     },
-    "src/main/ipc/workspaceRegistrationHandlers.test.ts": {
+    "src/renderer/components/BubbleView.test.tsx": {
       "category": "test",
-      "lines": 589
-    },
-    "src/renderer/bubble/bubbleDrawingModel.ts": {
-      "category": "production",
-      "lines": 576
+      "lines": 593
     },
     "src/renderer/styles/ui-motion.css": {
       "category": "css",
       "lines": 570
     },
+    "src/renderer/bubble/bubbleCategoryModel.test.ts": {
+      "category": "test",
+      "lines": 558
+    },
+    "src/main/files/workspaceFileIndexCache.test.ts": {
+      "category": "test",
+      "lines": 555
+    },
     "src/renderer/sphere/sphereRuntime.ts": {
       "category": "production",
       "lines": 553
+    },
+    "src/main/files/workspaceFileIndex.test.ts": {
+      "category": "test",
+      "lines": 547
     },
     "src/renderer/styles/chronicle.css": {
       "category": "css",
       "lines": 547
     },
+    "src/main/workspace/workspaceService.test.ts": {
+      "category": "test",
+      "lines": 542
+    },
     "src/renderer/components/PaneView.test.tsx": {
       "category": "test",
       "lines": 530
     },
-    "src/main/ipc/workspaceHandlers.test.ts": {
-      "category": "test",
-      "lines": 529
-    },
-    "src/main/ipc/workspaceDataHandlers.test.ts": {
-      "category": "test",
-      "lines": 528
-    },
     "src/renderer/components/TableView.tsx": {
       "category": "production",
-      "lines": 517
+      "lines": 520
+    },
+    "src/main/files/linkUpdater.ts": {
+      "category": "production",
+      "lines": 516
     },
     "src/renderer/chronicleCanvasModel.ts": {
       "category": "production",
       "lines": 516
     },
-    "src/renderer/hooks/useBubbleCanvasInteractions.ts": {
+    "src/renderer/editorLivePreviewModel.ts": {
       "category": "production",
-      "lines": 507
+      "lines": 508
     },
     "scripts/architecture-check.mjs": {
       "category": "tooling",
       "lines": 496
     },
+    "src/main/files/workspaceFileIndex.ts": {
+      "category": "production",
+      "lines": 496
+    },
     "scripts/sphere-performance-report.mjs": {
       "category": "tooling",
-      "lines": 492
+      "lines": 494
+    },
+    "src/renderer/bubble/bubbleDrawingModel.ts": {
+      "category": "production",
+      "lines": 490
     },
     "src/renderer/sphere/sphereRuntime.test.ts": {
       "category": "test",
       "lines": 487
     },
-    "src/renderer/editorLivePreviewModel.ts": {
+    "src/renderer/hooks/useBubbleCanvasInteractions.ts": {
       "category": "production",
-      "lines": 479
+      "lines": 477
+    },
+    "src/main/ipc/workspaceRenameTransaction.ts": {
+      "category": "production",
+      "lines": 469
     },
     "src/renderer/styles/shell-sidebar.css": {
       "category": "css",
       "lines": 461
     },
-    "src/main/workspace/workspaceService.test.ts": {
-      "category": "test",
-      "lines": 450
+    "src/main/files/workspaceDerivedDataSession.ts": {
+      "category": "production",
+      "lines": 457
     },
     "src/renderer/chronicleCanvasRenderer.ts": {
       "category": "production",
@@ -180,9 +204,9 @@
       "category": "production",
       "lines": 443
     },
-    "src/renderer/bubble/bubbleCategoryModel.test.ts": {
-      "category": "test",
-      "lines": 439
+    "src/main/files/replace.ts": {
+      "category": "production",
+      "lines": 438
     },
     "src/renderer/editorTableWidget.ts": {
       "category": "production",
@@ -190,15 +214,19 @@
     },
     "scripts/workspace-performance-report.mjs": {
       "category": "tooling",
-      "lines": 434
-    },
-    "src/main/files/linkUpdater.ts": {
-      "category": "production",
-      "lines": 432
+      "lines": 436
     },
     "src/renderer/chronicleCanvasRenderer.test.ts": {
       "category": "test",
       "lines": 432
+    },
+    "src/main/files/folders.test.ts": {
+      "category": "test",
+      "lines": 431
+    },
+    "src/main/files/workspaceFileIndexCache.ts": {
+      "category": "production",
+      "lines": 425
     },
     "src/main/settings/workspaceSettings.test.ts": {
       "category": "test",
@@ -208,17 +236,13 @@
       "category": "css",
       "lines": 423
     },
-    "src/renderer/components/BubbleView.test.tsx": {
-      "category": "test",
-      "lines": 420
-    },
-    "src/main/files/workspaceFileIndex.test.ts": {
-      "category": "test",
+    "src/main/files/workspaceGraph.ts": {
+      "category": "production",
       "lines": 417
     },
     "src/renderer/previewMarkdown.test.ts": {
       "category": "test",
-      "lines": 407
+      "lines": 409
     },
     "src/renderer/components/FileTree.tsx": {
       "category": "production",
@@ -228,11 +252,19 @@
       "category": "production",
       "lines": 399
     },
+    "src/main/files/markdownFileCreation.test.ts": {
+      "category": "test",
+      "lines": 397
+    },
     "src/renderer/chronicleCanvasModel.test.ts": {
       "category": "test",
       "lines": 394
     },
-    "src/main/files/workspaceGraph.ts": {
+    "src/shared/ipc/workspace.ts": {
+      "category": "production",
+      "lines": 394
+    },
+    "src/renderer/bubble/bubbleSimulationClient.ts": {
       "category": "production",
       "lines": 393
     },
@@ -244,6 +276,10 @@
       "category": "production",
       "lines": 383
     },
+    "src/main/files/workspaceDerivedData.ts": {
+      "category": "production",
+      "lines": 379
+    },
     "src/renderer/editorLivePreviewBlockField.ts": {
       "category": "production",
       "lines": 379
@@ -252,13 +288,45 @@
       "category": "production",
       "lines": 378
     },
+    "src/renderer/bubble/bubbleSimulationWorker.ts": {
+      "category": "production",
+      "lines": 377
+    },
+    "src/renderer/editorFrontmatterYaml.ts": {
+      "category": "production",
+      "lines": 376
+    },
+    "src/renderer/hooks/useWorkspaceRegistryActions.ts": {
+      "category": "production",
+      "lines": 375
+    },
+    "scripts/check-github-workflows.mjs": {
+      "category": "tooling",
+      "lines": 373
+    },
+    "src/renderer/styles/architectural-design/component-refinements.css": {
+      "category": "css",
+      "lines": 372
+    },
+    "src/renderer/styles/architectural-design/foundation-variables.css": {
+      "category": "css",
+      "lines": 372
+    },
     "scripts/docs-index.mjs": {
       "category": "tooling",
       "lines": 371
     },
     "src/renderer/bubble/bubbleInteractionModel.ts": {
       "category": "production",
-      "lines": 370
+      "lines": 371
+    },
+    "src/renderer/components/TableView.test.tsx": {
+      "category": "test",
+      "lines": 368
+    },
+    "scripts/check-github-workflows.test.mjs": {
+      "category": "test",
+      "lines": 367
     },
     "src/renderer/components/Editor.tsx": {
       "category": "production",
@@ -280,7 +348,7 @@
       "category": "test",
       "lines": 362
     },
-    "src/main/files/folders.test.ts": {
+    "src/renderer/App.navigationShortcuts.test.tsx": {
       "category": "test",
       "lines": 357
     },
@@ -296,45 +364,49 @@
       "category": "css",
       "lines": 351
     },
-    "src/renderer/App.navigationShortcuts.test.tsx": {
-      "category": "test",
-      "lines": 349
-    },
-    "src/main/files/replace.ts": {
+    "src/main/workspace/workspaceService.ts": {
       "category": "production",
-      "lines": 347
+      "lines": 337
     },
-    "src/renderer/components/TableView.test.tsx": {
+    "src/main/ipc/fileSearchHandlers.test.ts": {
       "category": "test",
-      "lines": 346
-    },
-    "src/renderer/editorFrontmatterYaml.ts": {
-      "category": "production",
-      "lines": 344
+      "lines": 336
     },
     "src/renderer/App.searchLinks.test.tsx": {
       "category": "test",
+      "lines": 333
+    },
+    "src/main/files/markdownFileCreation.ts": {
+      "category": "production",
       "lines": 329
+    },
+    "src/renderer/components/AppEditorWorkspace.tsx": {
+      "category": "production",
+      "lines": 328
+    },
+    "src/main/ipc/workspaceSelectionHandlers.ts": {
+      "category": "production",
+      "lines": 326
+    },
+    "src/renderer/designCompliance.test.ts": {
+      "category": "test",
+      "lines": 326
     },
     "src/renderer/hooks/useEditorAutoSave.ts": {
       "category": "production",
       "lines": 326
     },
-    "src/renderer/bubble/bubbleSimulationClient.ts": {
-      "category": "production",
-      "lines": 324
+    "src/renderer/styles/file-tree-search/file-tree.css": {
+      "category": "css",
+      "lines": 325
     },
     "src/renderer/components/Editor.frontmatterFields.test.tsx": {
       "category": "test",
       "lines": 323
     },
-    "src/main/ipc/fileSearchHandlers.test.ts": {
+    "scripts/renderer-production-check.test.mjs": {
       "category": "test",
-      "lines": 319
-    },
-    "src/renderer/components/AppEditorWorkspace.tsx": {
-      "category": "production",
-      "lines": 316
+      "lines": 321
     },
     "src/renderer/store/editorPaneStateModel.ts": {
       "category": "production",
@@ -352,9 +424,17 @@
       "category": "test",
       "lines": 312
     },
-    "src/shared/ipc/workspace.ts": {
+    "src/main/ipc/toolCandidateCollectors.ts": {
       "category": "production",
-      "lines": 310
+      "lines": 312
+    },
+    "src/renderer/hooks/useWorkspaceRegistryActions.test.ts": {
+      "category": "test",
+      "lines": 311
+    },
+    "src/main/workspace/workspaceWatcherRuntime.ts": {
+      "category": "production",
+      "lines": 309
     },
     "src/renderer/components/EditorContextMenu.tsx": {
       "category": "production",
@@ -368,19 +448,27 @@
       "category": "test",
       "lines": 307
     },
+    "src/shared/links.ts": {
+      "category": "production",
+      "lines": 305
+    },
+    "src/renderer/components/BubbleView.tsx": {
+      "category": "production",
+      "lines": 304
+    },
     "src/renderer/components/FilesWorkspaceActions.tsx": {
       "category": "production",
       "lines": 303
     },
-    "src/shared/links.ts": {
+    "src/renderer/components/PaneContentSurface.tsx": {
       "category": "production",
       "lines": 303
     },
-    "src/renderer/components/FileTreeContextMenu.tsx": {
+    "src/main/files/folders.ts": {
       "category": "production",
       "lines": 301
     },
-    "src/renderer/components/PaneContentSurface.tsx": {
+    "src/renderer/components/FileTreeContextMenu.tsx": {
       "category": "production",
       "lines": 301
     },
@@ -392,9 +480,17 @@
       "category": "production",
       "lines": 299
     },
-    "src/renderer/bubble/bubbleSimulationWorker.ts": {
+    "src/main/workspace/workspaceWatcher.test.ts": {
+      "category": "test",
+      "lines": 294
+    },
+    "src/renderer/components/Editor.markdownEditing.test.tsx": {
+      "category": "test",
+      "lines": 294
+    },
+    "src/renderer/bubble/bubbleCategoryMotionModel.ts": {
       "category": "production",
-      "lines": 299
+      "lines": 292
     },
     "src/renderer/editorTables.ts": {
       "category": "production",
@@ -408,21 +504,13 @@
       "category": "production",
       "lines": 286
     },
+    "src/renderer/hooks/useEditorAutoSave.test.ts": {
+      "category": "test",
+      "lines": 286
+    },
     "src/renderer/diagramPreview.ts": {
       "category": "production",
-      "lines": 284
-    },
-    "src/main/workspace/workspaceWatcher.test.ts": {
-      "category": "test",
-      "lines": 283
-    },
-    "src/main/files/markdownFileCreation.test.ts": {
-      "category": "test",
-      "lines": 281
-    },
-    "src/renderer/components/BubbleView.tsx": {
-      "category": "production",
-      "lines": 280
+      "lines": 282
     },
     "src/main/settings/appSettings.ts": {
       "category": "production",
@@ -434,6 +522,10 @@
     },
     "src/renderer/hooks/useWorkspaceMoveRenameActions.ts": {
       "category": "production",
+      "lines": 278
+    },
+    "src/renderer/styles/architectural-design/operation-surfaces.css": {
+      "category": "css",
       "lines": 278
     },
     "src/main/ipc/diagramOutputHandlers.test.ts": {
@@ -460,25 +552,13 @@
       "category": "production",
       "lines": 271
     },
-    "src/renderer/components/Editor.markdownEditing.test.tsx": {
-      "category": "test",
-      "lines": 271
-    },
     "src/renderer/editorExtensions.test.ts": {
       "category": "test",
       "lines": 271
     },
-    "scripts/check-github-workflows.mjs": {
-      "category": "tooling",
-      "lines": 269
-    },
-    "src/renderer/hooks/useEditorAutoSave.test.ts": {
-      "category": "test",
-      "lines": 269
-    },
-    "src/renderer/styles/cards.css": {
+    "src/renderer/styles/file-tree-search/files-search-input.css": {
       "category": "css",
-      "lines": 269
+      "lines": 271
     },
     "src/renderer/components/SphereView.tsx": {
       "category": "production",
@@ -488,28 +568,44 @@
       "category": "production",
       "lines": 268
     },
+    "src/renderer/sphere/sphereModel.ts": {
+      "category": "production",
+      "lines": 268
+    },
     "src/renderer/App.refresh.test.tsx": {
       "category": "test",
       "lines": 267
     },
-    "src/renderer/sphere/sphereModel.ts": {
-      "category": "production",
-      "lines": 262
+    "scripts/renderer-production-check.mjs": {
+      "category": "tooling",
+      "lines": 266
     },
-    "src/renderer/hooks/useWorkspaceRegistryActions.ts": {
+    "src/renderer/components/PaneView.tsx": {
       "category": "production",
-      "lines": 260
+      "lines": 265
+    },
+    "src/renderer/bubble/bubbleCategoryRegionModel.ts": {
+      "category": "production",
+      "lines": 263
+    },
+    "src/renderer/styles/cards.css": {
+      "category": "css",
+      "lines": 263
     },
     "src/renderer/components/AppRightPanel.tsx": {
       "category": "production",
       "lines": 258
     },
-    "src/main/files/workspaceFileIndex.ts": {
-      "category": "production",
+    "src/renderer/hooks/useAppPreviewOutputActions.test.ts": {
+      "category": "test",
       "lines": 257
     },
-    "src/main/files/workspaceDerivedDataSession.test.ts": {
-      "category": "test",
+    "src/renderer/fileTreeModel.ts": {
+      "category": "production",
+      "lines": 253
+    },
+    "src/renderer/hooks/useWorkspaceSearchState.ts": {
+      "category": "production",
       "lines": 253
     },
     "src/renderer/components/CardView.test.tsx": {
@@ -528,41 +624,33 @@
       "category": "test",
       "lines": 248
     },
-    "src/renderer/fileTreeModel.ts": {
-      "category": "production",
-      "lines": 247
-    },
     "src/renderer/styles/theme-motion.css": {
       "category": "css",
       "lines": 247
+    },
+    "src/renderer/styles/architectural-design/global-foundation.css": {
+      "category": "css",
+      "lines": 246
     },
     "src/main/files/search.ts": {
       "category": "production",
       "lines": 245
     },
+    "src/main/files/markdownMutationCoordinator.test.ts": {
+      "category": "test",
+      "lines": 243
+    },
     "src/main/files/paths.ts": {
       "category": "production",
-      "lines": 242
-    },
-    "src/main/ipc/editorHandlers.test.ts": {
-      "category": "test",
       "lines": 242
     },
     "src/renderer/components/ChronicleCalendarSettingsPanel.tsx": {
       "category": "production",
       "lines": 242
     },
-    "src/renderer/components/PaneView.tsx": {
+    "src/main/files/regexSafety.ts": {
       "category": "production",
-      "lines": 239
-    },
-    "scripts/check-github-workflows.test.mjs": {
-      "category": "test",
-      "lines": 237
-    },
-    "src/main/workspace/workspaceWatcherRuntime.ts": {
-      "category": "production",
-      "lines": 237
+      "lines": 241
     },
     "src/renderer/components/ChronicleCanvas.tsx": {
       "category": "production",
@@ -576,24 +664,40 @@
       "category": "test",
       "lines": 235
     },
-    "src/main/workspace/workspaceService.ts": {
+    "src/renderer/hooks/useAppPaneFileActions.ts": {
       "category": "production",
+      "lines": 235
+    },
+    "src/renderer/hooks/useWorkspaceExternalRefresh.ts": {
+      "category": "production",
+      "lines": 234
+    },
+    "scripts/package-content-report.mjs": {
+      "category": "tooling",
       "lines": 233
     },
-    "src/renderer/hooks/useWorkspaceSearchState.ts": {
+    "src/main/workspace/workspaceWatcherRuntime.test.ts": {
+      "category": "test",
+      "lines": 233
+    },
+    "src/shared/links.test.ts": {
+      "category": "test",
+      "lines": 231
+    },
+    "src/main/files/unlinkedReferences.ts": {
       "category": "production",
       "lines": 230
-    },
-    "src/renderer/appLayoutPropsSections.ts": {
-      "category": "production",
-      "lines": 228
     },
     "src/renderer/components/FileTreeItemRow.tsx": {
       "category": "production",
       "lines": 228
     },
-    "src/shared/links.test.ts": {
+    "src/main/ipc/previewPdfHandler.test.ts": {
       "category": "test",
+      "lines": 226
+    },
+    "src/renderer/hooks/useSidebarFileInteractions.ts": {
+      "category": "production",
       "lines": 226
     },
     "src/renderer/components/TableColumnHeader.tsx": {
@@ -604,24 +708,36 @@
       "category": "production",
       "lines": 224
     },
-    "src/main/files/workspaceDerivedData.ts": {
-      "category": "production",
-      "lines": 224
-    },
-    "src/renderer/hooks/useSidebarFileInteractions.ts": {
-      "category": "production",
-      "lines": 224
-    },
     "src/renderer/editorFrontmatterWidget.ts": {
       "category": "production",
       "lines": 223
     },
-    "src/main/ipc/previewPdfHandler.test.ts": {
+    "src/renderer/hooks/useWorkspaceFileOpenActions.ts": {
+      "category": "production",
+      "lines": 223
+    },
+    "src/main/ipc/workspaceState.test.ts": {
       "category": "test",
       "lines": 222
     },
+    "src/renderer/appLayoutPropsSections.ts": {
+      "category": "production",
+      "lines": 222
+    },
+    "src/renderer/editorHeadingFolding.ts": {
+      "category": "production",
+      "lines": 222
+    },
+    "src/renderer/bubble/bubbleNodeCollisionModel.ts": {
+      "category": "production",
+      "lines": 221
+    },
     "src/renderer/fileTreeModel.test.ts": {
       "category": "test",
+      "lines": 221
+    },
+    "src/renderer/styles/file-tree-search/files-workspace-actions.css": {
+      "category": "css",
       "lines": 221
     },
     "src/renderer/styles/preview-diagram.css": {
@@ -629,14 +745,6 @@
       "lines": 221
     },
     "src/renderer/components/PaneTabContextMenu.tsx": {
-      "category": "production",
-      "lines": 220
-    },
-    "src/renderer/editorHeadingFolding.ts": {
-      "category": "production",
-      "lines": 220
-    },
-    "src/renderer/hooks/useAppPaneFileActions.ts": {
       "category": "production",
       "lines": 220
     },
@@ -648,19 +756,23 @@
       "category": "production",
       "lines": 220
     },
+    "src/main/ipc/editorHandlers.test.ts": {
+      "category": "test",
+      "lines": 219
+    },
     "src/renderer/components/FilesSidebar.tsx": {
       "category": "production",
       "lines": 219
     },
-    "src/main/ipc/editorHandlers.ts": {
-      "category": "production",
-      "lines": 218
+    "src/main/files/imageFiles.test.ts": {
+      "category": "test",
+      "lines": 217
     },
-    "src/main/ipc/workspaceVisualizationHandlerValidators.ts": {
-      "category": "production",
-      "lines": 216
+    "src/main/files/markdownFileContent.test.ts": {
+      "category": "test",
+      "lines": 215
     },
-    "src/main/files/folders.ts": {
+    "src/shared/ipc/files.ts": {
       "category": "production",
       "lines": 215
     },
@@ -672,44 +784,32 @@
       "category": "production",
       "lines": 214
     },
-    "src/main/files/markdownFileCreation.ts": {
+    "src/renderer/workspaceSnapshotSync.ts": {
       "category": "production",
-      "lines": 213
+      "lines": 214
     },
     "src/renderer/components/editorTestHelpers.ts": {
       "category": "test-support",
+      "lines": 213
+    },
+    "src/renderer/hooks/useAppChartTabRenderer.tsx": {
+      "category": "production",
       "lines": 213
     },
     "src/renderer/appLayoutPropsTypes.ts": {
       "category": "production",
       "lines": 212
     },
-    "src/shared/ipc/files.ts": {
-      "category": "production",
-      "lines": 211
-    },
     "scripts/version-policy.mjs": {
       "category": "tooling",
       "lines": 210
-    },
-    "src/main/ipc/workspaceState.test.ts": {
-      "category": "test",
-      "lines": 208
     },
     "src/renderer/styles/shell-layout.css": {
       "category": "css",
       "lines": 208
     },
-    "src/main/ipc/workspaceRegistrationMutationHandlers.ts": {
-      "category": "production",
-      "lines": 205
-    },
     "src/renderer/components/EditorFrontmatterPropertyMenu.tsx": {
       "category": "production",
-      "lines": 204
-    },
-    "src/renderer/hooks/useWorkspaceRegistryActions.test.ts": {
-      "category": "test",
       "lines": 204
     },
     "src/main/settings/secureVersionedJsonStore.test.ts": {
@@ -717,6 +817,10 @@
       "lines": 203
     },
     "src/renderer/editorFrontmatterModel.test.ts": {
+      "category": "test",
+      "lines": 200
+    },
+    "src/renderer/hooks/useAppSettingsState.test.ts": {
       "category": "test",
       "lines": 200
     },
@@ -728,28 +832,32 @@
       "category": "production",
       "lines": 200
     },
-    "src/main/ipc/toolCandidateCollectors.ts": {
-      "category": "production",
+    "src/main/windowSecurity.test.ts": {
+      "category": "test",
       "lines": 199
     },
     "src/renderer/components/PaneTabBar.tsx": {
       "category": "production",
       "lines": 199
     },
+    "src/renderer/outputHtml.ts": {
+      "category": "production",
+      "lines": 198
+    },
+    "src/main/ipc/editorHandlers.ts": {
+      "category": "production",
+      "lines": 197
+    },
     "src/renderer/components/PaneContentSurface.test.tsx": {
       "category": "test",
       "lines": 197
     },
-    "src/main/ipc/workspaceVisualizationDataHandlers.ts": {
-      "category": "production",
+    "src/main/ipc/workspacePreferenceHandlers.test.ts": {
+      "category": "test",
       "lines": 196
     },
-    "src/renderer/hooks/useWorkspaceFileOpenActions.ts": {
-      "category": "production",
-      "lines": 196
-    },
-    "src/main/files/unlinkedReferences.ts": {
-      "category": "production",
+    "src/renderer/outputHtml.test.ts": {
+      "category": "test",
       "lines": 195
     },
     "src/renderer/styles/modal-ui.css": {
@@ -768,9 +876,21 @@
       "category": "production",
       "lines": 194
     },
+    "src/main/files/imageFiles.ts": {
+      "category": "production",
+      "lines": 193
+    },
     "src/main/files/unlinkedReferencesModel.ts": {
       "category": "production",
       "lines": 192
+    },
+    "src/preload/preload.test.ts": {
+      "category": "test",
+      "lines": 192
+    },
+    "scripts/test-inventory.mjs": {
+      "category": "tooling",
+      "lines": 191
     },
     "src/main/settings/appSettingsRecovery.ts": {
       "category": "production",
@@ -780,19 +900,11 @@
       "category": "test",
       "lines": 191
     },
-    "src/main/files/workspaceDerivedDataSession.ts": {
-      "category": "production",
-      "lines": 190
-    },
-    "src/main/windowSecurity.test.ts": {
-      "category": "test",
-      "lines": 190
-    },
-    "src/renderer/bubble/bubbleDrawingModel.test.ts": {
-      "category": "test",
-      "lines": 190
-    },
     "scripts/architecture-check.test.mjs": {
+      "category": "test",
+      "lines": 189
+    },
+    "src/main/files/fileTree.test.ts": {
       "category": "test",
       "lines": 189
     },
@@ -800,17 +912,21 @@
       "category": "production",
       "lines": 189
     },
-    "src/renderer/hooks/useAppChartTabRenderer.tsx": {
-      "category": "production",
-      "lines": 188
+    "src/renderer/bubble/bubbleLayout.test.ts": {
+      "category": "test",
+      "lines": 186
     },
     "src/shared/ipc/search.ts": {
       "category": "production",
       "lines": 186
     },
-    "src/main/files/imageFiles.test.ts": {
-      "category": "test",
+    "src/main/ipc/workspacePreferenceHandlerValidators.ts": {
+      "category": "production",
       "lines": 184
+    },
+    "src/main/ipc/workspaceRegistrationMutationHandlers.ts": {
+      "category": "production",
+      "lines": 183
     },
     "src/renderer/editorTableWidgetMenu.ts": {
       "category": "production",
@@ -824,7 +940,7 @@
       "category": "production",
       "lines": 182
     },
-    "src/main/files/markdownFileContent.test.ts": {
+    "src/renderer/bubble/bubbleDrawingModel.test.ts": {
       "category": "test",
       "lines": 182
     },
@@ -832,15 +948,11 @@
       "category": "test",
       "lines": 182
     },
-    "src/renderer/hooks/useWorkspaceExternalRefresh.ts": {
-      "category": "production",
-      "lines": 181
+    "src/renderer/hooks/useWorkspaceFileOpenActions.test.ts": {
+      "category": "test",
+      "lines": 182
     },
-    "scripts/test-inventory.mjs": {
-      "category": "tooling",
-      "lines": 179
-    },
-    "src/main/ipc/workspacePreferenceHandlers.test.ts": {
+    "src/renderer/App.railPanels.test.tsx": {
       "category": "test",
       "lines": 179
     },
@@ -852,47 +964,47 @@
       "category": "production",
       "lines": 178
     },
-    "src/main/files/fileTree.test.ts": {
-      "category": "test",
+    "src/renderer/components/PagePreviewPopover.tsx": {
+      "category": "production",
       "lines": 177
     },
-    "src/renderer/hooks/useAppSettingsState.test.ts": {
+    "src/renderer/components/PagePreviewPopover.test.tsx": {
       "category": "test",
-      "lines": 177
+      "lines": 176
     },
     "src/renderer/editorTableWidgetDrag.ts": {
       "category": "production",
       "lines": 176
     },
+    "src/renderer/bubble/bubbleTypes.ts": {
+      "category": "production",
+      "lines": 175
+    },
     "src/renderer/editorListModel.ts": {
       "category": "production",
       "lines": 175
     },
-    "src/main/files/imageFiles.ts": {
+    "src/renderer/htmlSanitizer.ts": {
       "category": "production",
       "lines": 174
     },
-    "src/main/ipc/fileHandlerValidators.ts": {
-      "category": "production",
+    "src/main/files/atomicWrite.test.ts": {
+      "category": "test",
       "lines": 173
     },
-    "src/renderer/App.railPanels.test.tsx": {
-      "category": "test",
+    "src/main/ipc/fileHandlerValidators.ts": {
+      "category": "production",
       "lines": 173
     },
     "src/main/files/aliases.ts": {
       "category": "production",
       "lines": 171
     },
-    "src/main/ipc/workspaceHandlerValidators.test.ts": {
-      "category": "test",
-      "lines": 171
-    },
-    "src/renderer/bubble/bubbleTypes.ts": {
+    "src/renderer/hooks/useWorkspaceFileCreationActions.ts": {
       "category": "production",
       "lines": 171
     },
-    "src/renderer/components/PagePreviewPopover.tsx": {
+    "src/main/files/fileTree.ts": {
       "category": "production",
       "lines": 170
     },
@@ -900,53 +1012,53 @@
       "category": "production",
       "lines": 169
     },
+    "scripts/source-size-report.mjs": {
+      "category": "tooling",
+      "lines": 168
+    },
+    "src/main/files/renameOperations.ts": {
+      "category": "production",
+      "lines": 168
+    },
     "src/renderer/editorTableWidgetState.ts": {
       "category": "production",
       "lines": 168
+    },
+    "src/main/files/markdownMutationCoordinator.ts": {
+      "category": "production",
+      "lines": 167
+    },
+    "src/renderer/editorLivePreviewModel.test.ts": {
+      "category": "test",
+      "lines": 167
     },
     "src/renderer/hooks/useAppRailNavigation.tsx": {
       "category": "production",
       "lines": 167
     },
-    "src/renderer/htmlSanitizer.ts": {
+    "src/renderer/mermaidRenderer.ts": {
       "category": "production",
-      "lines": 166
-    },
-    "src/shared/chartFrontmatterUpdate.ts": {
-      "category": "production",
-      "lines": 166
+      "lines": 165
     },
     "src/main/electronSmoke.ts": {
       "category": "production",
       "lines": 164
     },
-    "src/main/ipc/workspaceSelectionHandlers.ts": {
-      "category": "production",
-      "lines": 164
+    "scripts/performance-baseline.mjs": {
+      "category": "tooling",
+      "lines": 163
     },
-    "src/main/ipc/workspacePreferenceHandlerValidators.ts": {
+    "src/renderer/hooks/useActiveDocumentContext.ts": {
       "category": "production",
       "lines": 163
     },
-    "src/renderer/hooks/useAppPreviewOutputActions.test.ts": {
-      "category": "test",
-      "lines": 163
-    },
-    "src/main/files/charts.ts": {
+    "src/renderer/bubble/bubbleCategoryTranslation.ts": {
       "category": "production",
       "lines": 162
     },
     "src/renderer/editorExtensionAssembly.ts": {
       "category": "production",
       "lines": 161
-    },
-    "src/renderer/hooks/useWorkspaceFileCreationActions.ts": {
-      "category": "production",
-      "lines": 161
-    },
-    "scripts/source-size-report.mjs": {
-      "category": "tooling",
-      "lines": 160
     },
     "src/main/files/workspaceTable.ts": {
       "category": "production",
@@ -956,13 +1068,13 @@
       "category": "test",
       "lines": 160
     },
-    "src/renderer/bubble/bubbleCategoryTranslation.ts": {
-      "category": "production",
-      "lines": 160
-    },
     "src/renderer/store/editorTabOpenModel.ts": {
       "category": "production",
       "lines": 160
+    },
+    "src/main/ipc/workspaceVisualizationHandlerValidators.ts": {
+      "category": "production",
+      "lines": 159
     },
     "src/renderer/components/RightPanelRecoveryList.tsx": {
       "category": "production",
@@ -972,11 +1084,11 @@
       "category": "production",
       "lines": 159
     },
-    "src/renderer/hooks/useActiveDocumentContext.ts": {
-      "category": "production",
-      "lines": 159
+    "src/main/ipc/previewPdfRuntime.test.ts": {
+      "category": "test",
+      "lines": 158
     },
-    "src/main/files/atomicWrite.test.ts": {
+    "src/renderer/components/AppTitleBar.test.tsx": {
       "category": "test",
       "lines": 157
     },
@@ -984,11 +1096,7 @@
       "category": "test",
       "lines": 156
     },
-    "src/renderer/components/AppTitleBar.test.tsx": {
-      "category": "test",
-      "lines": 156
-    },
-    "src/renderer/outputHtml.ts": {
+    "src/main/files/markdownFileContent.ts": {
       "category": "production",
       "lines": 155
     },
@@ -1004,6 +1112,10 @@
       "category": "production",
       "lines": 154
     },
+    "src/renderer/sphere/sphereModel.test.ts": {
+      "category": "test",
+      "lines": 154
+    },
     "src/main/files/backlinks.test.ts": {
       "category": "test",
       "lines": 153
@@ -1013,10 +1125,6 @@
       "lines": 153
     },
     "src/renderer/editorTableModel.test.ts": {
-      "category": "test",
-      "lines": 152
-    },
-    "src/renderer/sphere/sphereModel.test.ts": {
       "category": "test",
       "lines": 152
     },
@@ -1040,6 +1148,10 @@
       "category": "production",
       "lines": 150
     },
+    "scripts/test-inventory.test.mjs": {
+      "category": "test",
+      "lines": 149
+    },
     "src/renderer/components/SettingsPanel.tsx": {
       "category": "production",
       "lines": 149
@@ -1056,19 +1168,15 @@
       "category": "production",
       "lines": 147
     },
-    "src/renderer/mermaidRenderer.ts": {
-      "category": "production",
-      "lines": 147
-    },
-    "src/renderer/editorLivePreviewModel.test.ts": {
-      "category": "test",
-      "lines": 146
-    },
     "src/main/applicationMenu.test.ts": {
       "category": "test",
       "lines": 145
     },
-    "src/main/ipc/previewPdfRuntime.test.ts": {
+    "src/main/files/unlinkedReferences.test.ts": {
+      "category": "test",
+      "lines": 145
+    },
+    "src/renderer/previewImageLoader.test.ts": {
       "category": "test",
       "lines": 145
     },
@@ -1088,15 +1196,7 @@
       "category": "test",
       "lines": 142
     },
-    "src/main/files/fileTree.ts": {
-      "category": "production",
-      "lines": 141
-    },
     "src/renderer/App.workspaceRace.test.tsx": {
-      "category": "test",
-      "lines": 141
-    },
-    "src/renderer/hooks/useWorkspaceFileOpenActions.test.ts": {
       "category": "test",
       "lines": 141
     },
@@ -1104,9 +1204,17 @@
       "category": "production",
       "lines": 140
     },
+    "src/renderer/outputHtml.concurrency.test.ts": {
+      "category": "test",
+      "lines": 139
+    },
     "scripts/electron-smoke.mjs": {
       "category": "tooling",
       "lines": 138
+    },
+    "src/main/ipc/previewPdfValidator.test.ts": {
+      "category": "test",
+      "lines": 137
     },
     "scripts/check-local-publication.test.mjs": {
       "category": "test",
@@ -1116,16 +1224,24 @@
       "category": "production",
       "lines": 135
     },
+    "src/main/ipc/workspaceState.ts": {
+      "category": "production",
+      "lines": 133
+    },
     "src/renderer/paneViewModel.ts": {
       "category": "production",
       "lines": 133
     },
-    "src/renderer/bubble/bubbleLayout.test.ts": {
+    "src/test/rendererTestUtils.ts": {
+      "category": "test-support",
+      "lines": 133
+    },
+    "src/renderer/bubble/bubbleSimulationClient.test.ts": {
       "category": "test",
       "lines": 132
     },
-    "src/test/rendererTestUtils.ts": {
-      "category": "test-support",
+    "src/renderer/hooks/useAppSettingsState.ts": {
+      "category": "production",
       "lines": 132
     },
     "src/main/ipc/ipcContract.test.ts": {
@@ -1136,20 +1252,16 @@
       "category": "css",
       "lines": 131
     },
+    "src/renderer/hooks/useUnlinkedReferencesState.ts": {
+      "category": "production",
+      "lines": 130
+    },
+    "src/main/files/workspaceDataInvalidation.test.ts": {
+      "category": "test",
+      "lines": 128
+    },
     "scripts/generate-large-workspace.mjs": {
       "category": "tooling",
-      "lines": 127
-    },
-    "scripts/package-content-report.mjs": {
-      "category": "tooling",
-      "lines": 127
-    },
-    "src/main/files/charts.test.ts": {
-      "category": "test",
-      "lines": 127
-    },
-    "src/main/files/workspaceFileIndexCache.ts": {
-      "category": "production",
       "lines": 127
     },
     "src/main/settings/appSettingsRecovery.test.ts": {
@@ -1164,25 +1276,37 @@
       "category": "production",
       "lines": 127
     },
-    "src/renderer/appShellModel.ts": {
+    "src/main/files/workspaceDataInvalidation.ts": {
       "category": "production",
       "lines": 126
     },
-    "scripts/test-inventory.test.mjs": {
+    "src/main/ipc/workspaceHandlerValidators.test.ts": {
       "category": "test",
-      "lines": 125
+      "lines": 126
     },
-    "src/main/ipc/workspaceState.ts": {
+    "src/main/main.ts": {
       "category": "production",
-      "lines": 125
+      "lines": 126
+    },
+    "src/renderer/appShellModel.ts": {
+      "category": "production",
+      "lines": 126
     },
     "src/renderer/table/tableViewModel.test.ts": {
       "category": "test",
       "lines": 125
     },
-    "src/renderer/workspaceSnapshotSync.ts": {
+    "src/renderer/previewImageLoader.ts": {
       "category": "production",
       "lines": 124
+    },
+    "src/main/files/pdfFiles.test.ts": {
+      "category": "test",
+      "lines": 123
+    },
+    "src/main/ipc/sanitizeOutputSvg.ts": {
+      "category": "production",
+      "lines": 123
     },
     "src/main/ipc/diagramOutputHandlers.ts": {
       "category": "production",
@@ -1192,15 +1316,23 @@
       "category": "production",
       "lines": 122
     },
-    "src/preload/preload.test.ts": {
+    "src/renderer/App.railRendering.test.tsx": {
       "category": "test",
-      "lines": 121
+      "lines": 122
     },
     "src/renderer/components/CommandPalette.tsx": {
       "category": "production",
       "lines": 121
     },
-    "src/main/main.ts": {
+    "src/main/files/frontmatter.ts": {
+      "category": "production",
+      "lines": 120
+    },
+    "src/renderer/bubble/bubbleCategoryLayoutModel.ts": {
+      "category": "production",
+      "lines": 120
+    },
+    "src/main/ipc/workspaceVisualizationDataHandlers.ts": {
       "category": "production",
       "lines": 119
     },
@@ -1208,19 +1340,19 @@
       "category": "test",
       "lines": 118
     },
-    "src/renderer/components/PagePreviewPopover.test.tsx": {
-      "category": "test",
-      "lines": 118
-    },
     "src/renderer/hooks/useCommandPaletteCommands.ts": {
       "category": "production",
       "lines": 118
     },
-    "src/renderer/hooks/useUnlinkedReferencesState.ts": {
+    "src/main/files/atomicWrite.ts": {
       "category": "production",
-      "lines": 118
+      "lines": 117
     },
     "src/main/files/frontmatterCandidates.test.ts": {
+      "category": "test",
+      "lines": 117
+    },
+    "src/main/ipc/sanitizeOutputSvg.test.ts": {
       "category": "test",
       "lines": 117
     },
@@ -1244,6 +1376,10 @@
       "category": "production",
       "lines": 116
     },
+    "src/renderer/graph/graphThemeModel.ts": {
+      "category": "production",
+      "lines": 116
+    },
     "src/renderer/hooks/useWorkspaceDuplicateDeleteActions.ts": {
       "category": "production",
       "lines": 116
@@ -1252,28 +1388,12 @@
       "category": "test",
       "lines": 116
     },
-    "src/shared/ipc/editor.ts": {
-      "category": "production",
-      "lines": 116
-    },
-    "scripts/performance-baseline.mjs": {
-      "category": "tooling",
-      "lines": 115
-    },
-    "src/main/files/atomicWrite.ts": {
-      "category": "production",
-      "lines": 115
-    },
     "src/main/files/cards.test.ts": {
       "category": "test",
       "lines": 115
     },
     "src/renderer/hooks/workspaceFileMutationModel.ts": {
       "category": "production",
-      "lines": 115
-    },
-    "src/renderer/outputHtml.concurrency.test.ts": {
-      "category": "test",
       "lines": 115
     },
     "src/renderer/store/editorFileTabModel.ts": {
@@ -1284,17 +1404,29 @@
       "category": "test",
       "lines": 114
     },
-    "src/main/files/unlinkedReferences.test.ts": {
-      "category": "test",
-      "lines": 113
+    "src/shared/ipc/editor.ts": {
+      "category": "production",
+      "lines": 114
     },
     "src/main/ipc/toolOutputFiles.ts": {
       "category": "production",
       "lines": 113
     },
-    "src/renderer/graph/graphThemeModel.ts": {
+    "src/main/ipc/workspaceStateHandlers.ts": {
       "category": "production",
       "lines": 113
+    },
+    "src/renderer/bubble/bubbleNodeCollisionModel.test.ts": {
+      "category": "test",
+      "lines": 113
+    },
+    "src/renderer/hooks/useAppChartTabRenderer.test.tsx": {
+      "category": "test",
+      "lines": 113
+    },
+    "scripts/package-content-report.test.mjs": {
+      "category": "test",
+      "lines": 112
     },
     "src/renderer/appShellModel.test.ts": {
       "category": "test",
@@ -1302,10 +1434,6 @@
     },
     "src/renderer/components/FileToolsSubmenu.tsx": {
       "category": "production",
-      "lines": 112
-    },
-    "src/renderer/designCompliance.test.ts": {
-      "category": "test",
       "lines": 112
     },
     "src/renderer/editorDerivedState.ts": {
@@ -1320,6 +1448,10 @@
       "category": "css",
       "lines": 112
     },
+    "src/main/files/frontmatter.test.ts": {
+      "category": "test",
+      "lines": 111
+    },
     "src/preload/ipcContract.test.ts": {
       "category": "test",
       "lines": 111
@@ -1332,16 +1464,16 @@
       "category": "test",
       "lines": 110
     },
+    "src/main/ipc/localizedIpcHandler.test.ts": {
+      "category": "test",
+      "lines": 110
+    },
     "src/renderer/components/MarkdownActionIcons.tsx": {
       "category": "production",
       "lines": 110
     },
     "src/renderer/hooks/useRootFileTreeDrop.ts": {
       "category": "production",
-      "lines": 110
-    },
-    "src/renderer/outputHtml.test.ts": {
-      "category": "test",
       "lines": 110
     },
     "scripts/source-size-report.test.mjs": {
@@ -1352,10 +1484,6 @@
       "category": "test",
       "lines": 109
     },
-    "src/main/ipc/previewPdfValidator.test.ts": {
-      "category": "test",
-      "lines": 109
-    },
     "src/renderer/hooks/workspaceFileActionHelpers.ts": {
       "category": "production",
       "lines": 109
@@ -1363,10 +1491,6 @@
     "src/renderer/previewMarkdown.ts": {
       "category": "production",
       "lines": 109
-    },
-    "scripts/renderer-production-check.mjs": {
-      "category": "tooling",
-      "lines": 108
     },
     "src/main/devServerLoader.test.ts": {
       "category": "test",
@@ -1384,7 +1508,7 @@
       "category": "production",
       "lines": 108
     },
-    "src/main/files/workspaceDataInvalidation.ts": {
+    "src/main/ipc/previewPdfValidator.ts": {
       "category": "production",
       "lines": 107
     },
@@ -1392,8 +1516,8 @@
       "category": "test",
       "lines": 107
     },
-    "src/renderer/bubble/bubbleSimulationClient.test.ts": {
-      "category": "test",
+    "src/renderer/bubble/bubbleViewportModel.ts": {
+      "category": "production",
       "lines": 107
     },
     "src/renderer/editorInputBuffer.ts": {
@@ -1412,7 +1536,11 @@
       "category": "test",
       "lines": 104
     },
-    "src/main/workspace/workspaceWatcherRuntime.test.ts": {
+    "src/main/ipc/workspacePreferenceDataHandlers.ts": {
+      "category": "production",
+      "lines": 104
+    },
+    "src/renderer/hooks/useWorkspaceChronicleCalendarSettings.test.ts": {
       "category": "test",
       "lines": 104
     },
@@ -1424,9 +1552,13 @@
       "category": "production",
       "lines": 103
     },
-    "src/renderer/previewImageLoader.test.ts": {
+    "src/renderer/bubble/bubbleViewportModel.test.ts": {
       "category": "test",
       "lines": 102
+    },
+    "src/main/files/charts.test.ts": {
+      "category": "test",
+      "lines": 101
     },
     "src/renderer/editorTableWidgetGeometry.test.ts": {
       "category": "test",
@@ -1436,8 +1568,20 @@
       "category": "test",
       "lines": 100
     },
+    "src/shared/securityRedaction.test.ts": {
+      "category": "test",
+      "lines": 100
+    },
     "src/main/files/workspaceGraph.test.ts": {
       "category": "test",
+      "lines": 99
+    },
+    "src/main/ipc/activeWorkspace.ts": {
+      "category": "production",
+      "lines": 99
+    },
+    "src/main/ipc/localizedIpcHandler.ts": {
+      "category": "production",
       "lines": 99
     },
     "src/main/ipc/toolHandlerValidators.ts": {
@@ -1456,37 +1600,21 @@
       "category": "test",
       "lines": 99
     },
-    "src/main/ipc/workspaceStateHandlers.ts": {
-      "category": "production",
+    "scripts/workspace-performance-report.test.mjs": {
+      "category": "test",
       "lines": 98
     },
     "src/renderer/components/AppOverlays.test.tsx": {
       "category": "test",
       "lines": 98
     },
-    "src/main/files/regexSafety.ts": {
-      "category": "production",
-      "lines": 97
-    },
-    "scripts/workspace-performance-report.test.mjs": {
-      "category": "test",
-      "lines": 96
-    },
-    "src/main/files/renameOperations.ts": {
+    "src/main/windowSecurity.ts": {
       "category": "production",
       "lines": 96
     },
     "src/renderer/bubble/bubblePhysicsModel.ts": {
       "category": "production",
       "lines": 96
-    },
-    "src/shared/ipcContract.test.ts": {
-      "category": "test",
-      "lines": 96
-    },
-    "src/main/files/markdownFileContent.ts": {
-      "category": "production",
-      "lines": 95
     },
     "src/renderer/components/PaneAttachmentSurfaces.tsx": {
       "category": "production",
@@ -1512,6 +1640,10 @@
       "category": "production",
       "lines": 94
     },
+    "src/renderer/hooks/useWorkspaceCharts.test.tsx": {
+      "category": "test",
+      "lines": 94
+    },
     "scripts/generate-icons.mjs": {
       "category": "tooling",
       "lines": 93
@@ -1520,12 +1652,16 @@
       "category": "production",
       "lines": 93
     },
+    "src/shared/ipcContract.test.ts": {
+      "category": "test",
+      "lines": 93
+    },
     "src/shared/markdownScan.ts": {
       "category": "production",
       "lines": 93
     },
-    "src/main/ipc/workspacePreferenceDataHandlers.ts": {
-      "category": "production",
+    "scripts/performance-baseline.test.mjs": {
+      "category": "test",
       "lines": 92
     },
     "src/renderer/chronicleCalendarTreeModel.ts": {
@@ -1536,7 +1672,7 @@
       "category": "production",
       "lines": 92
     },
-    "src/renderer/hooks/useWorkspaceCharts.test.tsx": {
+    "src/renderer/hooks/useWorkspaceFrontmatterCategoryChoices.test.ts": {
       "category": "test",
       "lines": 92
     },
@@ -1544,15 +1680,15 @@
       "category": "production",
       "lines": 92
     },
-    "src/main/files/frontmatter.test.ts": {
-      "category": "test",
-      "lines": 91
-    },
     "src/main/ipc/toolTargets.ts": {
       "category": "production",
       "lines": 91
     },
     "src/renderer/components/RailNavigationIcons.tsx": {
+      "category": "production",
+      "lines": 91
+    },
+    "src/renderer/previewMarkdownModel.ts": {
       "category": "production",
       "lines": 91
     },
@@ -1564,8 +1700,16 @@
       "category": "production",
       "lines": 90
     },
-    "src/main/ipc/sanitizeOutputSvg.test.ts": {
+    "src/main/files/charts.ts": {
+      "category": "production",
+      "lines": 89
+    },
+    "src/main/ipc/toolCandidateCollectors.test.ts": {
       "category": "test",
+      "lines": 89
+    },
+    "src/renderer/d2Renderer.ts": {
+      "category": "production",
       "lines": 89
     },
     "src/renderer/hooks/useEditorFrontmatterDialog.ts": {
@@ -1576,27 +1720,11 @@
       "category": "tooling",
       "lines": 88
     },
-    "src/main/ipc/localizedIpcHandler.ts": {
-      "category": "production",
-      "lines": 88
-    },
     "src/renderer/hooks/useAppRightPanel.ts": {
       "category": "production",
       "lines": 88
     },
-    "src/main/windowSecurity.ts": {
-      "category": "production",
-      "lines": 87
-    },
     "src/renderer/components/AppTitleBar.tsx": {
-      "category": "production",
-      "lines": 87
-    },
-    "src/renderer/previewImageLoader.ts": {
-      "category": "production",
-      "lines": 87
-    },
-    "src/renderer/previewMarkdownModel.ts": {
       "category": "production",
       "lines": 87
     },
@@ -1620,15 +1748,7 @@
       "category": "production",
       "lines": 86
     },
-    "src/renderer/hooks/useAppSettingsState.ts": {
-      "category": "production",
-      "lines": 86
-    },
     "src/renderer/store/editorStoreModel.test.ts": {
-      "category": "test",
-      "lines": 86
-    },
-    "src/shared/securityRedaction.test.ts": {
       "category": "test",
       "lines": 86
     },
@@ -1648,12 +1768,28 @@
       "category": "production",
       "lines": 84
     },
+    "src/main/workspace/workspaceWatcherNotifications.test.ts": {
+      "category": "test",
+      "lines": 84
+    },
     "src/renderer/hooks/useAppCloseGuards.ts": {
+      "category": "production",
+      "lines": 84
+    },
+    "src/renderer/hooks/useWorkspaceCharts.ts": {
       "category": "production",
       "lines": 84
     },
     "src/renderer/hooks/useWorkspaceFileCreationActions.test.ts": {
       "category": "test",
+      "lines": 84
+    },
+    "src/renderer/hooks/useWorkspaceFrontmatterCategoryChoices.ts": {
+      "category": "production",
+      "lines": 84
+    },
+    "src/renderer/table/useWorkspaceTablePreferences.ts": {
+      "category": "production",
       "lines": 84
     },
     "src/shared/ipc/settings.ts": {
@@ -1664,15 +1800,19 @@
       "category": "test",
       "lines": 82
     },
-    "src/renderer/d2Renderer.ts": {
-      "category": "production",
-      "lines": 82
-    },
     "src/renderer/toolsPanelModel.test.ts": {
       "category": "test",
       "lines": 82
     },
+    "src/renderer/hooks/useWorkspaceAliases.test.ts": {
+      "category": "test",
+      "lines": 81
+    },
     "src/renderer/hooks/useWorkspaceMutationRunner.test.ts": {
+      "category": "test",
+      "lines": 81
+    },
+    "src/renderer/hooks/useWorkspaceSearchState.test.ts": {
       "category": "test",
       "lines": 81
     },
@@ -1680,29 +1820,37 @@
       "category": "test",
       "lines": 80
     },
+    "src/renderer/hooks/useWorkspaceDataRevision.test.ts": {
+      "category": "test",
+      "lines": 80
+    },
     "src/renderer/hooks/workspaceFileMutationModel.test.ts": {
       "category": "test",
+      "lines": 80
+    },
+    "src/renderer/styles/editor-empty-pane.css": {
+      "category": "css",
       "lines": 80
     },
     "src/main/files/unlinkedReferencesModel.test.ts": {
       "category": "test",
       "lines": 79
     },
-    "src/main/ipc/previewPdfValidator.ts": {
-      "category": "production",
-      "lines": 79
-    },
     "src/renderer/diagramErrorView.ts": {
       "category": "production",
       "lines": 79
     },
-    "src/renderer/styles/editor-empty-pane.css": {
-      "category": "css",
-      "lines": 79
+    "src/main/applicationQuitLifecycle.test.ts": {
+      "category": "test",
+      "lines": 78
     },
-    "src/renderer/table/useWorkspaceTablePreferences.ts": {
+    "src/main/files/chronicleData.ts": {
       "category": "production",
-      "lines": 79
+      "lines": 78
+    },
+    "src/main/ipc/toolTagIndexAction.ts": {
+      "category": "production",
+      "lines": 78
     },
     "src/renderer/editorDiagramEditState.ts": {
       "category": "production",
@@ -1716,15 +1864,11 @@
       "category": "tooling",
       "lines": 77
     },
-    "src/main/files/chronicleData.ts": {
-      "category": "production",
-      "lines": 77
-    },
-    "src/main/files/frontmatter.ts": {
-      "category": "production",
-      "lines": 77
-    },
     "src/renderer/components/SettingsSegmentedControl.tsx": {
+      "category": "production",
+      "lines": 77
+    },
+    "src/renderer/hooks/useAppPreviewOutputActions.ts": {
       "category": "production",
       "lines": 77
     },
@@ -1732,7 +1876,11 @@
       "category": "production",
       "lines": 77
     },
-    "scripts/renderer-production-check.test.mjs": {
+    "src/renderer/table/useWorkspaceTablePreferences.test.ts": {
+      "category": "test",
+      "lines": 77
+    },
+    "src/main/ipc/activeWorkspace.test.ts": {
       "category": "test",
       "lines": 76
     },
@@ -1740,7 +1888,11 @@
       "category": "production",
       "lines": 76
     },
-    "src/main/ipc/toolTagIndexAction.ts": {
+    "src/main/ipc/previewPdfRuntime.ts": {
+      "category": "production",
+      "lines": 76
+    },
+    "src/renderer/bubble/bubbleCategoryCore.ts": {
       "category": "production",
       "lines": 76
     },
@@ -1764,25 +1916,13 @@
       "category": "production",
       "lines": 75
     },
+    "src/renderer/App.railViews.test.tsx": {
+      "category": "test",
+      "lines": 75
+    },
     "src/renderer/components/FilesSearchResults.test.tsx": {
       "category": "test",
       "lines": 75
-    },
-    "src/renderer/hooks/useWorkspaceCharts.ts": {
-      "category": "production",
-      "lines": 75
-    },
-    "src/main/files/workspaceDataInvalidation.test.ts": {
-      "category": "test",
-      "lines": 74
-    },
-    "src/main/ipc/previewPdfRuntime.ts": {
-      "category": "production",
-      "lines": 74
-    },
-    "src/main/ipc/sanitizeOutputSvg.ts": {
-      "category": "production",
-      "lines": 74
     },
     "src/renderer/editorImageDrop.ts": {
       "category": "production",
@@ -1808,8 +1948,8 @@
       "category": "test",
       "lines": 73
     },
-    "src/renderer/App.railRendering.test.tsx": {
-      "category": "test",
+    "src/main/files/pdfFiles.ts": {
+      "category": "production",
       "lines": 72
     },
     "src/renderer/editorFrontmatterPropertyMenuModel.ts": {
@@ -1824,11 +1964,7 @@
       "category": "production",
       "lines": 71
     },
-    "src/main/workspace/workspaceWatcherNotifications.test.ts": {
-      "category": "test",
-      "lines": 71
-    },
-    "src/preload/api/workspace.ts": {
+    "src/main/ipc/workspacePreferenceHandlers.ts": {
       "category": "production",
       "lines": 71
     },
@@ -1836,29 +1972,25 @@
       "category": "production",
       "lines": 71
     },
-    "src/renderer/table/useWorkspaceTablePreferences.test.ts": {
-      "category": "test",
+    "src/renderer/hooks/useWorkspaceChronicleCalendarSettings.ts": {
+      "category": "production",
       "lines": 71
     },
     "scripts/run-forge-build.mjs": {
       "category": "tooling",
       "lines": 70
     },
-    "src/main/ipc/workspacePreferenceHandlers.ts": {
+    "src/main/mainWindow.ts": {
       "category": "production",
       "lines": 70
     },
-    "src/main/mainWindow.ts": {
-      "category": "production",
+    "src/renderer/workspaceChangeCoordinator.test.ts": {
+      "category": "test",
       "lines": 70
     },
     "src/shared/chronicleCalendar.ts": {
       "category": "production",
       "lines": 70
-    },
-    "src/main/ipc/localizedIpcHandler.test.ts": {
-      "category": "test",
-      "lines": 69
     },
     "src/renderer/chronicleCalendarSettingsModel.test.ts": {
       "category": "test",
@@ -1868,24 +2000,28 @@
       "category": "production",
       "lines": 69
     },
+    "src/renderer/editorHeadingFolding.test.ts": {
+      "category": "test",
+      "lines": 69
+    },
     "src/renderer/hooks/useFileToolActions.ts": {
       "category": "production",
       "lines": 69
     },
-    "src/renderer/hooks/useWorkspaceFrontmatterCategoryChoices.ts": {
+    "src/preload/api/workspace.ts": {
       "category": "production",
-      "lines": 69
+      "lines": 68
     },
     "src/renderer/chronicleCalendarTreeModel.test.ts": {
       "category": "test",
       "lines": 68
     },
-    "src/renderer/editorClipboard.ts": {
+    "src/shared/ipc/output.ts": {
       "category": "production",
       "lines": 68
     },
-    "src/main/ipc/activeWorkspace.ts": {
-      "category": "production",
+    "src/main/settings/secureSettingsFile.test.ts": {
+      "category": "test",
       "lines": 67
     },
     "src/renderer/components/AppStatusBar.tsx": {
@@ -1900,10 +2036,6 @@
       "category": "test",
       "lines": 66
     },
-    "src/renderer/hooks/useAppPreviewOutputActions.ts": {
-      "category": "production",
-      "lines": 66
-    },
     "src/renderer/hooks/useFileTreeContextMenuDialog.ts": {
       "category": "production",
       "lines": 66
@@ -1912,16 +2044,8 @@
       "category": "test",
       "lines": 66
     },
-    "src/renderer/hooks/useWorkspaceChronicleCalendarSettings.test.ts": {
-      "category": "test",
-      "lines": 66
-    },
     "scripts/dependency-metadata.mjs": {
       "category": "tooling",
-      "lines": 65
-    },
-    "src/renderer/App.railViews.test.tsx": {
-      "category": "test",
       "lines": 65
     },
     "src/renderer/components/FilesSidebarTreeSection.tsx": {
@@ -1932,17 +2056,17 @@
       "category": "production",
       "lines": 65
     },
-    "src/renderer/hooks/useWorkspaceDataRevision.test.ts": {
-      "category": "test",
-      "lines": 65
-    },
-    "src/renderer/hooks/useWorkspaceFrontmatterCategoryChoices.test.ts": {
-      "category": "test",
+    "src/renderer/hooks/useBacklinksState.ts": {
+      "category": "production",
       "lines": 65
     },
     "src/shared/ipc/tools.ts": {
       "category": "production",
       "lines": 65
+    },
+    "src/main/files/workspaceDataProvider.ts": {
+      "category": "production",
+      "lines": 64
     },
     "src/renderer/chronicleCalendarSettingsModel.ts": {
       "category": "production",
@@ -1950,10 +2074,6 @@
     },
     "src/renderer/diagramRenderState.ts": {
       "category": "production",
-      "lines": 64
-    },
-    "src/renderer/hooks/useAppFileSaved.test.ts": {
-      "category": "test",
       "lines": 64
     },
     "src/renderer/hooks/useAppToast.ts": {
@@ -1964,12 +2084,20 @@
       "category": "test",
       "lines": 64
     },
+    "src/renderer/hooks/useWorkspaceFileImportActions.ts": {
+      "category": "production",
+      "lines": 64
+    },
     "src/renderer/styles/right-panel-shell.css": {
       "category": "css",
       "lines": 64
     },
     "src/renderer/toolbarTargetView.ts": {
       "category": "production",
+      "lines": 64
+    },
+    "src/test/setup.ts": {
+      "category": "test-support",
       "lines": 64
     },
     "src/main/files/markdownFilePaths.test.ts": {
@@ -1980,6 +2108,10 @@
       "category": "production",
       "lines": 63
     },
+    "src/main/workspace/workspaceWatcherNotifications.ts": {
+      "category": "production",
+      "lines": 63
+    },
     "src/renderer/components/EditorFrontmatterDialog.tsx": {
       "category": "production",
       "lines": 63
@@ -1987,26 +2119,6 @@
     "src/main/ipc/toolWikiLinks.ts": {
       "category": "production",
       "lines": 62
-    },
-    "src/renderer/hooks/useWorkspaceAliases.test.ts": {
-      "category": "test",
-      "lines": 62
-    },
-    "src/renderer/hooks/useWorkspaceChronicleCalendarSettings.ts": {
-      "category": "production",
-      "lines": 62
-    },
-    "src/renderer/hooks/useWorkspaceSearchState.test.ts": {
-      "category": "test",
-      "lines": 62
-    },
-    "src/shared/ipc/output.ts": {
-      "category": "production",
-      "lines": 62
-    },
-    "src/main/files/pdfFiles.test.ts": {
-      "category": "test",
-      "lines": 61
     },
     "src/main/files/searchRequestCoordinator.ts": {
       "category": "production",
@@ -2021,6 +2133,10 @@
       "lines": 61
     },
     "src/renderer/editorAutoSaveStatus.ts": {
+      "category": "production",
+      "lines": 61
+    },
+    "src/renderer/hooks/useAppWorkspaceDerivedData.ts": {
       "category": "production",
       "lines": 61
     },
@@ -2044,11 +2160,11 @@
       "category": "production",
       "lines": 60
     },
-    "src/renderer/hooks/useAppTabRenderers.tsx": {
+    "src/renderer/editorClipboard.ts": {
       "category": "production",
       "lines": 60
     },
-    "src/renderer/hooks/useWorkspaceFileImportActions.ts": {
+    "src/renderer/hooks/useAppTabRenderers.tsx": {
       "category": "production",
       "lines": 60
     },
@@ -2076,10 +2192,6 @@
       "category": "test",
       "lines": 59
     },
-    "src/renderer/hooks/useAppWorkspaceDerivedData.ts": {
-      "category": "production",
-      "lines": 59
-    },
     "src/renderer/hooks/usePaneHeadingScroll.ts": {
       "category": "production",
       "lines": 59
@@ -2087,6 +2199,14 @@
     "src/renderer/store/editorStoreTypes.ts": {
       "category": "production",
       "lines": 59
+    },
+    "src/shared/result.ts": {
+      "category": "production",
+      "lines": 59
+    },
+    "scripts/sphere-performance-report.test.mjs": {
+      "category": "test",
+      "lines": 58
     },
     "src/main/windowOptions.test.ts": {
       "category": "test",
@@ -2120,7 +2240,7 @@
       "category": "test",
       "lines": 57
     },
-    "scripts/package-content-report.test.mjs": {
+    "src/main/files/regexSafety.test.ts": {
       "category": "test",
       "lines": 56
     },
@@ -2142,10 +2262,6 @@
     },
     "src/renderer/filesSidebarModel.test.ts": {
       "category": "test",
-      "lines": 56
-    },
-    "src/renderer/hooks/useBacklinksState.ts": {
-      "category": "production",
       "lines": 56
     },
     "src/renderer/hooks/useWindowCloseRequest.test.ts": {
@@ -2176,10 +2292,6 @@
       "category": "test",
       "lines": 54
     },
-    "src/main/files/pdfFiles.ts": {
-      "category": "production",
-      "lines": 54
-    },
     "build-tools/katexFontCss.test.ts": {
       "category": "test",
       "lines": 53
@@ -2190,6 +2302,14 @@
     },
     "scripts/generate-large-workspace.test.mjs": {
       "category": "test",
+      "lines": 53
+    },
+    "src/main/applicationQuitLifecycle.ts": {
+      "category": "production",
+      "lines": 53
+    },
+    "src/main/ipc/editorHandlerValidators.ts": {
+      "category": "production",
       "lines": 53
     },
     "src/renderer/filesSidebarModel.ts": {
@@ -2208,11 +2328,7 @@
       "category": "production",
       "lines": 52
     },
-    "src/main/files/workspaceDataProvider.ts": {
-      "category": "production",
-      "lines": 52
-    },
-    "src/main/ipc/editorHandlerValidators.ts": {
+    "src/main/workspace/workspaceRegistrationGate.ts": {
       "category": "production",
       "lines": 52
     },
@@ -2220,11 +2336,23 @@
       "category": "test",
       "lines": 52
     },
+    "src/renderer/hooks/useWorkspaceAliases.ts": {
+      "category": "production",
+      "lines": 52
+    },
     "scripts/build-platform.mjs": {
       "category": "tooling",
       "lines": 51
     },
+    "src/main/workspace/workspaceRegistrationGate.test.ts": {
+      "category": "test",
+      "lines": 51
+    },
     "src/renderer/components/AppStatusBar.test.tsx": {
+      "category": "test",
+      "lines": 51
+    },
+    "src/renderer/editorFrontmatterYaml.test.ts": {
       "category": "test",
       "lines": 51
     },
@@ -2244,6 +2372,10 @@
       "category": "test",
       "lines": 50
     },
+    "src/main/files/workspaceDataProvider.test.ts": {
+      "category": "test",
+      "lines": 50
+    },
     "src/preload/api/fragments.test.ts": {
       "category": "test",
       "lines": 50
@@ -2256,15 +2388,23 @@
       "category": "production",
       "lines": 50
     },
+    "src/renderer/styles/file-tree-search/files-search-results.css": {
+      "category": "css",
+      "lines": 50
+    },
     "src/renderer/uiSelectionContextMenu.ts": {
       "category": "production",
       "lines": 50
     },
-    "src/renderer/hooks/useAppTheme.test.ts": {
-      "category": "test",
+    "src/main/ipc/ipcRequestLifecycle.ts": {
+      "category": "production",
       "lines": 49
     },
-    "src/shared/chartFrontmatterUpdate.test.ts": {
+    "src/main/settings/secureSettingsFile.ts": {
+      "category": "production",
+      "lines": 49
+    },
+    "src/renderer/hooks/useAppTheme.test.ts": {
       "category": "test",
       "lines": 49
     },
@@ -2284,6 +2424,10 @@
       "category": "test",
       "lines": 48
     },
+    "src/renderer/hooks/appTabLazyViews.styles.test.ts": {
+      "category": "test",
+      "lines": 48
+    },
     "src/renderer/styles/status-bar.css": {
       "category": "css",
       "lines": 48
@@ -2292,11 +2436,11 @@
       "category": "test",
       "lines": 47
     },
-    "src/main/files/workspaceDataProvider.test.ts": {
+    "src/renderer/editorOutgoingLinks.test.ts": {
       "category": "test",
       "lines": 47
     },
-    "src/renderer/editorOutgoingLinks.test.ts": {
+    "src/renderer/graph/graphDisplayModel.test.ts": {
       "category": "test",
       "lines": 47
     },
@@ -2320,7 +2464,7 @@
       "category": "test",
       "lines": 45
     },
-    "src/main/workspace/workspaceWatcherNotifications.ts": {
+    "src/main/files/chronicleModel.ts": {
       "category": "production",
       "lines": 45
     },
@@ -2332,10 +2476,6 @@
       "category": "css",
       "lines": 45
     },
-    "src/main/files/chronicleModel.ts": {
-      "category": "production",
-      "lines": 44
-    },
     "src/main/files/names.ts": {
       "category": "production",
       "lines": 44
@@ -2344,19 +2484,15 @@
       "category": "test",
       "lines": 44
     },
+    "src/main/workspace/workspaceWatcher.ts": {
+      "category": "production",
+      "lines": 44
+    },
     "src/renderer/components/Editor.link.test.tsx": {
       "category": "test",
       "lines": 44
     },
-    "src/renderer/editorHeadingFolding.test.ts": {
-      "category": "test",
-      "lines": 44
-    },
     "src/renderer/fileTreeActions.ts": {
-      "category": "production",
-      "lines": 44
-    },
-    "src/renderer/hooks/useWorkspaceAliases.ts": {
       "category": "production",
       "lines": 44
     },
@@ -2367,14 +2503,6 @@
     "scripts/mac-build-target.test.mjs": {
       "category": "test",
       "lines": 43
-    },
-    "src/main/workspace/workspaceWatcher.ts": {
-      "category": "production",
-      "lines": 43
-    },
-    "scripts/performance-baseline.test.mjs": {
-      "category": "test",
-      "lines": 42
     },
     "src/main/files/tags.ts": {
       "category": "production",
@@ -2388,10 +2516,6 @@
       "category": "tooling",
       "lines": 41
     },
-    "src/renderer/graph/graphDisplayModel.test.ts": {
-      "category": "test",
-      "lines": 41
-    },
     "src/renderer/hooks/useAppWorkspaceCollections.ts": {
       "category": "production",
       "lines": 41
@@ -2400,12 +2524,12 @@
       "category": "test",
       "lines": 40
     },
-    "src/main/normalApplication.test.ts": {
-      "category": "test",
+    "src/main/files/workspaceFileIndexIO.ts": {
+      "category": "production",
       "lines": 40
     },
-    "src/preload/api/editor.ts": {
-      "category": "production",
+    "src/main/normalApplication.test.ts": {
+      "category": "test",
       "lines": 40
     },
     "src/renderer/bubble/bubbleViewRuntime.ts": {
@@ -2416,8 +2540,8 @@
       "category": "production",
       "lines": 40
     },
-    "src/renderer/hooks/useAppFileSaved.ts": {
-      "category": "production",
+    "src/renderer/hooks/useStableCallback.test.ts": {
+      "category": "test",
       "lines": 40
     },
     "src/renderer/store/uiStore.ts": {
@@ -2448,19 +2572,19 @@
       "category": "test",
       "lines": 39
     },
+    "src/renderer/bubble/bubbleCategoryModel.ts": {
+      "category": "production",
+      "lines": 39
+    },
     "src/renderer/hooks/useSplitCloseMotion.ts": {
       "category": "production",
       "lines": 39
     },
-    "src/main/files/performanceLog.ts": {
+    "src/renderer/hooks/useWorkspaceDataRevision.ts": {
       "category": "production",
-      "lines": 38
+      "lines": 39
     },
-    "src/main/files/workspaceFileIndexCache.test.ts": {
-      "category": "test",
-      "lines": 38
-    },
-    "src/main/files/workspaceFileIndexIO.ts": {
+    "src/main/files/performanceLog.ts": {
       "category": "production",
       "lines": 38
     },
@@ -2472,9 +2596,21 @@
       "category": "production",
       "lines": 38
     },
+    "src/renderer/hooks/useAppFileSaved.test.ts": {
+      "category": "test",
+      "lines": 38
+    },
+    "src/renderer/styles/file-tree-search/files-create-actions.css": {
+      "category": "css",
+      "lines": 38
+    },
     "src/shared/chronicleCalendar.test.ts": {
       "category": "test",
       "lines": 38
+    },
+    "src/preload/api/editor.ts": {
+      "category": "production",
+      "lines": 37
     },
     "src/renderer/components/ChronicleCanvas.test.ts": {
       "category": "test",
@@ -2482,10 +2618,6 @@
     },
     "src/renderer/editorFrontmatterPropertyMenuModel.test.ts": {
       "category": "test",
-      "lines": 37
-    },
-    "src/renderer/hooks/appTabLazyViews.tsx": {
-      "category": "production",
       "lines": 37
     },
     "src/renderer/hooks/useAppTheme.ts": {
@@ -2496,9 +2628,17 @@
       "category": "production",
       "lines": 37
     },
+    "src/renderer/workspaceChangeCoordinator.ts": {
+      "category": "production",
+      "lines": 37
+    },
     "src/shared/ipc/api.ts": {
       "category": "production",
       "lines": 37
+    },
+    "src/main/ipc/ipcRequestLifecycle.test.ts": {
+      "category": "test",
+      "lines": 36
     },
     "src/renderer/chartNormalize.ts": {
       "category": "production",
@@ -2516,6 +2656,14 @@
       "category": "test",
       "lines": 36
     },
+    "src/renderer/styles/file-tree-search/files-sidebar-layout.css": {
+      "category": "css",
+      "lines": 36
+    },
+    "src/main/files/aliasesModel.ts": {
+      "category": "production",
+      "lines": 35
+    },
     "src/renderer/components/AppFilesSidebar.tsx": {
       "category": "production",
       "lines": 35
@@ -2524,7 +2672,7 @@
       "category": "test",
       "lines": 35
     },
-    "src/renderer/hooks/useWorkspaceDataRevision.ts": {
+    "src/renderer/hooks/useStableCallback.ts": {
       "category": "production",
       "lines": 35
     },
@@ -2532,11 +2680,19 @@
       "category": "production",
       "lines": 35
     },
-    "src/main/files/aliasesModel.ts": {
+    "src/renderer/styles/file-tree-search/list-loading-note.css": {
+      "category": "css",
+      "lines": 35
+    },
+    "src/main/files/fileSystem.ts": {
       "category": "production",
       "lines": 34
     },
-    "src/main/files/fileSystem.ts": {
+    "src/main/files/workspaceFileIndexTypes.ts": {
+      "category": "production",
+      "lines": 34
+    },
+    "src/main/ipc/toolActionRuntime.ts": {
       "category": "production",
       "lines": 34
     },
@@ -2546,6 +2702,10 @@
     },
     "src/preload/api/search.ts": {
       "category": "production",
+      "lines": 34
+    },
+    "src/renderer/appTestHelpers.tsx": {
+      "category": "test-support",
       "lines": 34
     },
     "src/renderer/editorTabIndexes.test.ts": {
@@ -2562,10 +2722,6 @@
     },
     "src/main/files/chronicleModel.test.ts": {
       "category": "test",
-      "lines": 33
-    },
-    "src/main/ipc/toolActionRuntime.ts": {
-      "category": "production",
       "lines": 33
     },
     "src/main/windowOptions.ts": {
@@ -2616,6 +2772,10 @@
       "category": "production",
       "lines": 32
     },
+    "src/renderer/hooks/useBacklinksState.test.ts": {
+      "category": "test",
+      "lines": 32
+    },
     "src/shared/i18n.ts": {
       "category": "production",
       "lines": 32
@@ -2628,20 +2788,8 @@
       "category": "production",
       "lines": 31
     },
-    "src/main/settings/secureSettingsFile.test.ts": {
-      "category": "test",
-      "lines": 30
-    },
-    "src/shared/result.ts": {
-      "category": "production",
-      "lines": 30
-    },
     "src/main/developmentUserData.test.ts": {
       "category": "test",
-      "lines": 29
-    },
-    "src/renderer/appTestHelpers.tsx": {
-      "category": "test-support",
       "lines": 29
     },
     "src/renderer/hooks/useAppPanePresentationState.ts": {
@@ -2680,14 +2828,6 @@
       "category": "production",
       "lines": 27
     },
-    "scripts/sphere-performance-report.test.mjs": {
-      "category": "test",
-      "lines": 26
-    },
-    "src/renderer/chartFrontmatter.ts": {
-      "category": "production",
-      "lines": 26
-    },
     "src/renderer/components/LayoutResizeBoundary.tsx": {
       "category": "production",
       "lines": 26
@@ -2720,10 +2860,6 @@
       "category": "production",
       "lines": 25
     },
-    "src/renderer/graph/graphDisplayModel.ts": {
-      "category": "production",
-      "lines": 25
-    },
     "src/renderer/table/useWorkspaceTableState.ts": {
       "category": "production",
       "lines": 25
@@ -2734,10 +2870,6 @@
     },
     "src/main/files/test/markdownFileTestUtils.ts": {
       "category": "test-support",
-      "lines": 24
-    },
-    "src/main/files/workspaceFileIndexTypes.ts": {
-      "category": "production",
       "lines": 24
     },
     "src/renderer/components/SettingsToggleSwitch.tsx": {
@@ -2776,6 +2908,14 @@
       "category": "production",
       "lines": 23
     },
+    "src/renderer/graph/graphDisplayModel.ts": {
+      "category": "production",
+      "lines": 23
+    },
+    "src/renderer/hooks/appTabLazyViews.tsx": {
+      "category": "production",
+      "lines": 23
+    },
     "src/renderer/hooks/useApplicationMenu.ts": {
       "category": "production",
       "lines": 23
@@ -2800,7 +2940,7 @@
       "category": "test",
       "lines": 22
     },
-    "src/main/settings/secureSettingsFile.ts": {
+    "src/shared/securityRedaction.ts": {
       "category": "production",
       "lines": 22
     },
@@ -2820,10 +2960,6 @@
       "category": "production",
       "lines": 21
     },
-    "src/shared/securityRedaction.ts": {
-      "category": "production",
-      "lines": 21
-    },
     "src/renderer/appFont.test.ts": {
       "category": "test",
       "lines": 20
@@ -2840,10 +2976,6 @@
       "category": "production",
       "lines": 19
     },
-    "src/main/ipc/activeWorkspace.test.ts": {
-      "category": "test",
-      "lines": 19
-    },
     "src/renderer/diagramSourceAttribute.test.ts": {
       "category": "test",
       "lines": 19
@@ -2856,12 +2988,12 @@
       "category": "production",
       "lines": 19
     },
-    "src/shared/workspaceFileKinds.test.ts": {
-      "category": "test",
+    "src/renderer/hooks/useAppFileSaved.ts": {
+      "category": "production",
       "lines": 19
     },
-    "src/test/setup.ts": {
-      "category": "test-support",
+    "src/shared/workspaceFileKinds.test.ts": {
+      "category": "test",
       "lines": 19
     },
     "src/renderer/cards/cardViewModel.test.ts": {
@@ -2881,10 +3013,6 @@
       "lines": 18
     },
     "src/renderer/hooks/useWindowCloseRequest.ts": {
-      "category": "production",
-      "lines": 18
-    },
-    "src/renderer/main.tsx": {
       "category": "production",
       "lines": 18
     },
@@ -2916,8 +3044,8 @@
       "category": "production",
       "lines": 17
     },
-    "src/renderer/styles.css": {
-      "category": "css",
+    "src/renderer/main.tsx": {
+      "category": "production",
       "lines": 17
     },
     "src/renderer/styles/chart-view-status.css": {
@@ -2968,6 +3096,10 @@
       "category": "production",
       "lines": 15
     },
+    "src/test/cssTestUtils.ts": {
+      "category": "test-support",
+      "lines": 15
+    },
     "src/preload/api/output.ts": {
       "category": "production",
       "lines": 14
@@ -2984,6 +3116,10 @@
       "category": "test",
       "lines": 14
     },
+    "src/renderer/styles/file-tree-search/shell-action-buttons.css": {
+      "category": "css",
+      "lines": 14
+    },
     "src/renderer/cards/workspaceCardsLoader.ts": {
       "category": "production",
       "lines": 13
@@ -2998,6 +3134,10 @@
     },
     "src/renderer/hooks/useActiveDocumentContext.test.ts": {
       "category": "test",
+      "lines": 13
+    },
+    "src/renderer/styles.css": {
+      "category": "css",
       "lines": 13
     },
     "src/shared/markdownExtension.ts": {
@@ -3056,6 +3196,10 @@
       "category": "css",
       "lines": 10
     },
+    "src/shared/urlSafety.ts": {
+      "category": "production",
+      "lines": 10
+    },
     "src/main/ipc/fileHandlers.ts": {
       "category": "production",
       "lines": 9
@@ -3070,6 +3214,10 @@
     },
     "src/renderer/chronicleCanvasHelpers.ts": {
       "category": "production",
+      "lines": 9
+    },
+    "src/renderer/styles/file-tree-search.css": {
+      "category": "css",
       "lines": 9
     },
     "src/renderer/vite-env.d.ts": {
@@ -3100,6 +3248,10 @@
       "category": "production",
       "lines": 6
     },
+    "src/renderer/styles/architectural-design.css": {
+      "category": "css",
+      "lines": 5
+    },
     "src/main/ipc/toolActions.ts": {
       "category": "production",
       "lines": 4
@@ -3116,6 +3268,34 @@
       "category": "production",
       "lines": 3
     },
+    "src/renderer/hooks/lazyViews/BubbleView.ts": {
+      "category": "production",
+      "lines": 3
+    },
+    "src/renderer/hooks/lazyViews/CardView.ts": {
+      "category": "production",
+      "lines": 3
+    },
+    "src/renderer/hooks/lazyViews/ChartView.ts": {
+      "category": "production",
+      "lines": 3
+    },
+    "src/renderer/hooks/lazyViews/FrontmatterPanel.ts": {
+      "category": "production",
+      "lines": 3
+    },
+    "src/renderer/hooks/lazyViews/SettingsPanel.ts": {
+      "category": "production",
+      "lines": 3
+    },
+    "src/renderer/hooks/lazyViews/SphereView.ts": {
+      "category": "production",
+      "lines": 3
+    },
+    "src/renderer/hooks/lazyViews/TableView.ts": {
+      "category": "production",
+      "lines": 3
+    },
     "src/shared/pdfFiles.ts": {
       "category": "production",
       "lines": 3
@@ -3124,13 +3304,37 @@
       "category": "test-support",
       "lines": 3
     },
-    "src/renderer/chartData.ts": {
-      "category": "production",
-      "lines": 2
-    },
     "src/renderer/editorFrontmatterModel.ts": {
       "category": "production",
       "lines": 2
+    },
+    "src/renderer/styles/vendor.css": {
+      "category": "css",
+      "lines": 2
+    },
+    "src/renderer/styles/lazy/bubble.css": {
+      "category": "css",
+      "lines": 1
+    },
+    "src/renderer/styles/lazy/cards.css": {
+      "category": "css",
+      "lines": 1
+    },
+    "src/renderer/styles/lazy/chronicle.css": {
+      "category": "css",
+      "lines": 1
+    },
+    "src/renderer/styles/lazy/settings.css": {
+      "category": "css",
+      "lines": 1
+    },
+    "src/renderer/styles/lazy/sphere.css": {
+      "category": "css",
+      "lines": 1
+    },
+    "src/renderer/styles/lazy/table-view.css": {
+      "category": "css",
+      "lines": 1
     }
   },
   "version": 2

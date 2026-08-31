@@ -37,13 +37,14 @@ export const workspaceChangeMaxNotifyDelayMs = 2000;
 export const workspaceWatcherRetryBaseDelayMs = 1000;
 export const workspaceWatcherRetryMaxDelayMs = 30_000;
 export const workspaceWatcherFailureNotifyDelayMs = 5000;
+export const workspaceWatcherRecoveryStabilityDelayMs = 1000;
 /**
  * Keep watcher bursts bounded.  File-system watchers are untrusted input and
  * must not be allowed to retain an unbounded event queue while the debounce
  * timer is pending.  Overflow intentionally falls back to a full resync by
  * sending an empty event list to the invalidation coordinator.
  */
-export const workspaceWatcherMaxPendingEvents = 256;
+export const workspaceWatcherMaxPendingEvents = 10_000;
 
 const defaultWatchWorkspace: WorkspaceWatch = (targetPath, options, listener) =>
   watch(targetPath, options, listener);
@@ -54,7 +55,9 @@ export class WorkspaceWatcherRuntime {
   private notifyTimer: NodeJS.Timeout | null = null;
   private firstPendingNotifyAt: number | null = null;
   private pendingWatchEvents: WorkspaceWatchEvent[] = [];
+  private readonly pendingWatchEventKeys = new Set<string>();
   private pendingEventsRequireFullResync = false;
+  private recoveryStabilityTimer: NodeJS.Timeout | null = null;
   private retryTimer: NodeJS.Timeout | null = null;
   private failureNotifyTimer: NodeJS.Timeout | null = null;
   private retryAttempt = 0;
@@ -108,6 +111,7 @@ export class WorkspaceWatcherRuntime {
         if (this.workspaceWatcher !== watcher || !sameWorkspaceWatchTarget(this.desiredTarget, target)) {
           return;
         }
+        if (this.watcherUnavailable) return;
         if (!shouldNotifyWorkspaceChangeEvent(eventType, filename)) return;
         this.scheduleChangedNotification(target, eventType, filename);
       });
@@ -115,10 +119,10 @@ export class WorkspaceWatcherRuntime {
       watcher.on("error", () => this.handleFailure(target, watcher));
 
       if (this.watcherUnavailable) {
-        this.clearFailureState();
-        this.notifications.notifyWorkspaceChanged(target);
+        this.scheduleRecoveryStabilityCheck(target, watcher);
+      } else {
+        this.retryAttempt = 0;
       }
-      this.retryAttempt = 0;
     } catch {
       this.handleFailure(target);
     }
@@ -132,6 +136,25 @@ export class WorkspaceWatcherRuntime {
     this.watcherUnavailable = true;
     this.scheduleFailureNotification(target);
     this.scheduleRetry(target);
+  }
+
+  private scheduleRecoveryStabilityCheck(
+    target: WorkspaceWatchTarget,
+    watcher: FSWatcher
+  ): void {
+    this.clearRecoveryStabilityCheck();
+    this.recoveryStabilityTimer = setTimeout(() => {
+      this.recoveryStabilityTimer = null;
+      if (
+        this.workspaceWatcher !== watcher
+        || !this.watcherUnavailable
+        || !sameWorkspaceWatchTarget(this.desiredTarget, target)
+      ) return;
+
+      this.clearFailureState();
+      this.retryAttempt = 0;
+      this.notifications.notifyWorkspaceChanged(target);
+    }, workspaceWatcherRecoveryStabilityDelayMs);
   }
 
   private scheduleRetry(target: WorkspaceWatchTarget): void {
@@ -158,16 +181,24 @@ export class WorkspaceWatcherRuntime {
   }
 
   private closeActiveWatcher(): void {
+    this.clearRecoveryStabilityCheck();
     if (this.notifyTimer) {
       clearTimeout(this.notifyTimer);
       this.notifyTimer = null;
     }
     this.firstPendingNotifyAt = null;
     this.pendingWatchEvents = [];
+    this.pendingWatchEventKeys.clear();
     this.pendingEventsRequireFullResync = false;
 
     this.workspaceWatcher?.close();
     this.workspaceWatcher = null;
+  }
+
+  private clearRecoveryStabilityCheck(): void {
+    if (!this.recoveryStabilityTimer) return;
+    clearTimeout(this.recoveryStabilityTimer);
+    this.recoveryStabilityTimer = null;
   }
 
   private clearRetry(): void {
@@ -206,6 +237,7 @@ export class WorkspaceWatcherRuntime {
         ? []
         : this.pendingWatchEvents;
       this.pendingWatchEvents = [];
+      this.pendingWatchEventKeys.clear();
       this.pendingEventsRequireFullResync = false;
       this.notifications.notifyWorkspaceChanged(target, events);
     }, delay);
@@ -220,22 +252,23 @@ export class WorkspaceWatcherRuntime {
     if (eventType === "rename" || !filename) {
       this.pendingEventsRequireFullResync = true;
       this.pendingWatchEvents = [];
+      this.pendingWatchEventKeys.clear();
       return;
     }
 
     const normalizedFilename = filename.replaceAll("\\", "/");
-    const existingIndex = this.pendingWatchEvents.findIndex((event) =>
-      event.eventType === eventType && event.filename?.replaceAll("\\", "/") === normalizedFilename
-    );
-    if (existingIndex >= 0) return;
+    const eventKey = `${eventType}\0${normalizedFilename}`;
+    if (this.pendingWatchEventKeys.has(eventKey)) return;
 
     if (this.pendingWatchEvents.length >= workspaceWatcherMaxPendingEvents) {
       this.pendingEventsRequireFullResync = true;
       this.pendingWatchEvents = [];
+      this.pendingWatchEventKeys.clear();
       return;
     }
 
     this.pendingWatchEvents.push({ eventType, filename });
+    this.pendingWatchEventKeys.add(eventKey);
   }
 }
 

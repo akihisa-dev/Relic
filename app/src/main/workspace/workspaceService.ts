@@ -2,7 +2,7 @@ import { rename, stat } from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
 
-import type { WorkspaceFileIndexEntry, WorkspaceState, WorkspaceSummary, WorkspaceTreeNode } from "../../shared/ipc";
+import type { WorkspaceState, WorkspaceSummary, WorkspaceTreeNode } from "../../shared/ipc";
 import { fail, ok, type RelicResult, type WorkspaceMutationRecovery } from "../../shared/result";
 import type { AppSettings } from "../settings/appSettings";
 import { errorDetails } from "../files/fileSystem";
@@ -224,15 +224,13 @@ export async function renameWorkspaceRegistration(
 export function toWorkspaceState(
   settings: AppSettings,
   fileTree: WorkspaceTreeNode[] = [],
-  pinnedPaths: string[] = [],
-  fileIndex: WorkspaceFileIndexEntry[] = []
+  pinnedPaths: string[] = []
 ): WorkspaceState {
   const activeWorkspace =
     settings.workspaces.find((workspace) => workspace.id === settings.lastWorkspaceId) ?? null;
 
   return {
     activeWorkspace,
-    fileIndex,
     fileTree,
     pinnedPaths,
     workspaces: settings.workspaces

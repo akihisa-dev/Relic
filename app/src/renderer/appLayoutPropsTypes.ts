@@ -52,7 +52,8 @@ export interface AppLayoutEditorWorkspaceInput {
   handleOpenFile: EditorWorkspaceProps["onOpenFile"];
   handleOpenMarkdownLink: EditorWorkspaceProps["onOpenLink"];
   handleOpenWikiLink: EditorWorkspaceProps["onOpenWikiLink"];
-  handleRenameTreeItem: FilesSidebarProps["onRenameItem"];
+  handlePaneRenameFile: EditorWorkspaceProps["onRenameFile"];
+  handlePaneSourceModeToggle: EditorWorkspaceProps["onSourceModeToggle"];
   handleRevealTabFile: EditorWorkspaceProps["onRevealTabFile"];
   handleRightPanelViewButton: EditorWorkspaceProps["onRightPanelViewButton"];
   handleSavePreviewAsPdf: EditorWorkspaceProps["onSavePreviewAsPdf"];
@@ -84,8 +85,6 @@ export interface AppLayoutEditorWorkspaceInput {
   rightPanelView: EditorWorkspaceProps["rightPanelView"];
   rightPanelWidth: EditorWorkspaceProps["rightPanelWidth"];
   setFocusedPane: EditorWorkspaceProps["onSetFocusedPane"];
-  setIsLeftSourceMode: (updater: (value: boolean) => boolean) => void;
-  setIsRightSourceMode: (updater: (value: boolean) => boolean) => void;
   setLinkContextMenu: EditorWorkspaceProps["setLinkContextMenu"];
   setTabActive: EditorWorkspaceProps["onTabSelect"];
   setWorkspaceError: EditorWorkspaceProps["onFileSaveError"];
@@ -100,6 +99,7 @@ export interface AppLayoutEditorWorkspaceInput {
   userDefinedFields: EditorWorkspaceProps["userDefinedFields"];
   workspaceState: FilesSidebarProps["workspaceState"];
   workspaceDataRevision: EditorWorkspaceProps["workspaceDataRevision"];
+  workspaceStructureRevision?: EditorWorkspaceProps["workspaceStructureRevision"];
 }
 
 export interface AppLayoutFilesSidebarInput {

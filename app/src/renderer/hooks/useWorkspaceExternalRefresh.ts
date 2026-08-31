@@ -5,6 +5,8 @@ import type { Translator } from "../i18nModel";
 import { relicClient } from "../relicClient";
 import { useEditorStore } from "../store/editorStore";
 import { applyWorkspaceSnapshot } from "../workspaceSnapshotSync";
+import { applyWorkspacePaths } from "../workspaceSnapshotSync";
+import { WorkspaceChangeCoordinator, type WorkspaceChangeAction } from "../workspaceChangeCoordinator";
 import type { IsCurrentRequest } from "./useAsyncRequestGuard";
 import { useLatest } from "./useLatest";
 import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
@@ -17,6 +19,7 @@ interface SaveBeforeRefreshResult {
 interface UseWorkspaceExternalRefreshInput extends Pick<WorkspaceRequestGuard, "beginWorkspaceRequestFor"> {
   flushTabsBeforeClose: (tabIds: string[]) => Promise<SaveBeforeRefreshResult>;
   onWorkspaceDataChanged: () => Promise<boolean>;
+  onWorkspacePathsChanged: () => Promise<boolean>;
   setWorkspaceError: (message: string | null) => void;
   setWorkspaceState: (state: WorkspaceState) => void;
   showToast: (message: string, type?: "error" | "info") => void;
@@ -28,6 +31,7 @@ export function useWorkspaceExternalRefresh({
   beginWorkspaceRequestFor,
   flushTabsBeforeClose,
   onWorkspaceDataChanged,
+  onWorkspacePathsChanged,
   setWorkspaceError,
   setWorkspaceState,
   showToast,
@@ -40,7 +44,9 @@ export function useWorkspaceExternalRefresh({
   const [isRefreshingWorkspace, setIsRefreshingWorkspace] = useState(false);
   const manualRefreshPromiseRef = useRef<Promise<void> | null>(null);
   const externalRefreshPromiseRef = useRef<Promise<void> | null>(null);
-  const queuedExternalWorkspaceIdRef = useRef<string | null>(null);
+  const queuedExternalChangeRef = useRef<WorkspaceChangeAction | null>(null);
+  const changeCoordinatorRef = useRef<WorkspaceChangeCoordinator | null>(null);
+  changeCoordinatorRef.current ??= new WorkspaceChangeCoordinator();
   const activeWorkspaceIdRef = useLatest(workspaceState?.activeWorkspace?.id ?? null);
   const onWorkspaceDataChangedRef = useLatest(onWorkspaceDataChanged);
 
@@ -63,13 +69,36 @@ export function useWorkspaceExternalRefresh({
     });
   }, [activeWorkspaceIdRef, onWorkspaceDataChangedRef, setWorkspaceError, setWorkspaceState, t]);
 
-  const runExternalRefresh = useCallback((workspaceId: string): void => {
+  const queueExternalChange = useCallback((action: WorkspaceChangeAction): void => {
+    const queued = queuedExternalChangeRef.current;
+    if (!queued || queued.workspaceId !== action.workspaceId) {
+      queuedExternalChangeRef.current = action;
+      return;
+    }
+    if (queued.kind === "full" || action.kind === "full") {
+      queuedExternalChangeRef.current = {
+        kind: "full",
+        revision: Math.max(queued.revision, action.revision),
+        workspaceId: action.workspaceId
+      };
+      return;
+    }
+    queuedExternalChangeRef.current = {
+      kind: "paths",
+      paths: [...new Set([...queued.paths, ...action.paths])].toSorted(),
+      revision: Math.max(queued.revision, action.revision),
+      workspaceId: action.workspaceId
+    };
+  }, []);
+
+  const runExternalRefresh = useCallback((action: WorkspaceChangeAction): void => {
+    const workspaceId = action.workspaceId;
     if (manualRefreshPromiseRef.current) {
-      queuedExternalWorkspaceIdRef.current = workspaceId;
+      queueExternalChange(action);
       return;
     }
     if (externalRefreshPromiseRef.current) {
-      queuedExternalWorkspaceIdRef.current = workspaceId;
+      queueExternalChange(action);
       return;
     }
 
@@ -78,6 +107,27 @@ export function useWorkspaceExternalRefresh({
       if (!isCurrentWorkspace()) return;
       const relic = relicClient.current;
       if (!relic || activeWorkspaceIdRef.current !== workspaceId) return;
+
+      if (action.kind === "paths") {
+        const applied = await applyWorkspacePaths({
+          conflictMessage: (name) => t("pane.externalConflictToast", { name }),
+          getActiveWorkspaceId: () => activeWorkspaceIdRef.current,
+          isCurrentWorkspace,
+          paths: action.paths,
+          setWorkspaceError,
+          workspaceId
+        });
+        if (!applied.applied || !isCurrentWorkspace()) return;
+        const derivedDataUpdated = await onWorkspacePathsChanged();
+        if (!isCurrentWorkspace() || !derivedDataUpdated) {
+          if (isCurrentWorkspace() && applied.failedFileCount === 0) {
+            setWorkspaceError(t("refresh.derivedDataFailed"));
+          }
+          return;
+        }
+        return;
+      }
+
       const result = await relic.getWorkspaceState();
       if (!isCurrentWorkspace()) return;
       if (!result.ok) {
@@ -87,12 +137,12 @@ export function useWorkspaceExternalRefresh({
       await applyCurrentWorkspaceSnapshot(result.value, workspaceId, true, isCurrentWorkspace);
     })().finally(() => {
       externalRefreshPromiseRef.current = null;
-      const queuedWorkspaceId = queuedExternalWorkspaceIdRef.current;
-      queuedExternalWorkspaceIdRef.current = null;
-      if (queuedWorkspaceId) runExternalRefresh(queuedWorkspaceId);
+      const queuedChange = queuedExternalChangeRef.current;
+      queuedExternalChangeRef.current = null;
+      if (queuedChange) runExternalRefresh(queuedChange);
     });
     externalRefreshPromiseRef.current = promise;
-  }, [activeWorkspaceIdRef, applyCurrentWorkspaceSnapshot, beginWorkspaceRequestFor, setWorkspaceError]);
+  }, [activeWorkspaceIdRef, applyCurrentWorkspaceSnapshot, beginWorkspaceRequestFor, onWorkspacePathsChanged, queueExternalChange, setWorkspaceError, t]);
 
   const refreshWorkspace = useCallback((): void => {
     const workspaceId = activeWorkspaceIdRef.current;
@@ -147,9 +197,9 @@ export function useWorkspaceExternalRefresh({
     }).finally(() => {
       manualRefreshPromiseRef.current = null;
       setIsRefreshingWorkspace(false);
-      const queuedWorkspaceId = queuedExternalWorkspaceIdRef.current;
-      queuedExternalWorkspaceIdRef.current = null;
-      if (queuedWorkspaceId) runExternalRefresh(queuedWorkspaceId);
+      const queuedChange = queuedExternalChangeRef.current;
+      queuedExternalChangeRef.current = null;
+      if (queuedChange) runExternalRefresh(queuedChange);
     });
     manualRefreshPromiseRef.current = promise;
   }, [
@@ -164,8 +214,11 @@ export function useWorkspaceExternalRefresh({
 
   useEffect(() => {
     if (!relicClient.current?.onWorkspaceChanged) return undefined;
-    return relicClient.current.onWorkspaceChanged((event) => runExternalRefresh(event.workspaceId));
-  }, [runExternalRefresh]);
+    return relicClient.current.onWorkspaceChanged((event) => {
+      const action = changeCoordinatorRef.current?.accept(event, activeWorkspaceIdRef.current);
+      if (action) runExternalRefresh(action);
+    });
+  }, [activeWorkspaceIdRef, runExternalRefresh]);
 
   useEffect(() => {
     if (!relicClient.current?.onWorkspaceWatcherStatus) return undefined;

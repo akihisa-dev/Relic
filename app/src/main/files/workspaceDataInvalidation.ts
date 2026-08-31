@@ -1,4 +1,6 @@
 import { hasMarkdownExtension } from "../../shared/markdownExtension";
+import { normalizeWorkspaceRelativeInputPath } from "./paths";
+import { hasHiddenPathSegment } from "./names";
 import { workspaceSearchRequestCoordinator } from "./searchRequestCoordinator";
 import { workspaceDerivedDataSession } from "./workspaceDerivedDataSession";
 
@@ -11,6 +13,11 @@ export interface WorkspaceWatchEvent {
   eventType: string;
   filename?: string | null;
 }
+
+export type WorkspaceWatcherInvalidationResult =
+  | { kind: "none" }
+  | { kind: "paths"; paths: string[] }
+  | { kind: "full" };
 
 const defaultRecentMutationTtlMs = 2500;
 
@@ -34,36 +41,41 @@ export class WorkspaceMutationCoordinator {
     }
   }
 
-  invalidateWatcherEvents(workspaceId: string, events: WorkspaceWatchEvent[]): void {
+  invalidateWatcherEvents(
+    workspaceId: string,
+    events: WorkspaceWatchEvent[]
+  ): WorkspaceWatcherInvalidationResult {
     this.pruneExpiredMutations();
     if (events.length === 0) {
       this.invalidateTargets(workspaceId);
-      return;
+      return { kind: "full" };
     }
 
     const changedPaths = new Set<string>();
     for (const event of events) {
       const normalizedPath = normalizeWatchedPath(event.filename);
-      if (normalizedPath && this.consumeRecentMutation(workspaceId, normalizedPath)) continue;
+      if (normalizedPath && this.matchesRecentMutation(workspaceId, normalizedPath)) continue;
 
       const eventPaths = workspaceWatchEventChangedPaths(event);
       if (!eventPaths) {
         this.invalidateTargets(workspaceId);
-        return;
+        return { kind: "full" };
       }
       for (const changedPath of eventPaths) changedPaths.add(changedPath);
     }
 
     if (changedPaths.size > 0) {
-      this.invalidateTargets(workspaceId, [...changedPaths]);
+      const paths = [...changedPaths].toSorted();
+      this.invalidateTargets(workspaceId, paths);
+      return { kind: "paths", paths };
     }
+
+    return { kind: "none" };
   }
 
-  private consumeRecentMutation(workspaceId: string, changedPath: string): boolean {
+  private matchesRecentMutation(workspaceId: string, changedPath: string): boolean {
     const key = mutationKey(workspaceId, changedPath);
-    if (!this.recentMutations.has(key)) return false;
-    this.recentMutations.delete(key);
-    return true;
+    return this.recentMutations.has(key);
   }
 
   private invalidateTargets(workspaceId?: string, changedPaths?: string[]): void {
@@ -81,7 +93,7 @@ export class WorkspaceMutationCoordinator {
 
 export function workspaceWatchEventChangedPaths(event: WorkspaceWatchEvent): string[] | undefined {
   const normalizedPath = normalizeWatchedPath(event.filename);
-  if (event.eventType !== "change" || !normalizedPath || !hasMarkdownExtension(normalizedPath)) {
+  if (event.eventType !== "change" || !normalizedPath || hasHiddenPathSegment(normalizedPath) || !hasMarkdownExtension(normalizedPath)) {
     return undefined;
   }
   return [normalizedPath];
@@ -89,7 +101,14 @@ export function workspaceWatchEventChangedPaths(event: WorkspaceWatchEvent): str
 
 function normalizeWatchedPath(filename: string | null | undefined): string | null {
   if (!filename) return null;
-  return filename.replaceAll("\\", "/");
+  const slashNormalized = filename.replaceAll("\\", "/");
+  if (/^[A-Za-z]:/.test(slashNormalized)) return null;
+  const normalized = normalizeWorkspaceRelativeInputPath(slashNormalized);
+
+  // Watcher filenames are untrusted OS input. Requiring the exact normalized
+  // form rejects absolute paths, traversal, NUL, and ambiguous separators
+  // before any value can cross the main/renderer boundary.
+  return normalized === slashNormalized ? normalized : null;
 }
 
 function mutationKey(workspaceId: string, changedPath: string): string {

@@ -13,6 +13,7 @@ const dependencies = vi.hoisted(() => ({
   buildWorkspaceState: vi.fn(),
   createWorkspaceSummary: vi.fn(),
   getMainTranslator: vi.fn(),
+  invalidateWorkspaceFileIndexCache: vi.fn(),
   invalidateWorkspaceData: vi.fn(),
   mkdir: vi.fn(),
   normalizeWorkspacePathForId: vi.fn((value: string) => value.toLowerCase()),
@@ -61,6 +62,7 @@ vi.mock("../files/workspaceDataInvalidation", () => ({
 }));
 
 vi.mock("../files/workspaceFileIndexCache", () => ({
+  invalidateWorkspaceFileIndexCache: dependencies.invalidateWorkspaceFileIndexCache,
   transitionWorkspaceFileIndexCacheOwner: dependencies.transitionWorkspaceFileIndexCacheOwner,
 }));
 
@@ -143,7 +145,6 @@ function stateFor(settings = baseSettings) {
       settings.workspaces.find(
         (workspace) => workspace.id === settings.lastWorkspaceId,
       ) ?? null,
-    fileIndex: [],
     fileTree: [],
     pinnedPaths: [],
     workspaces: settings.workspaces,
@@ -223,6 +224,7 @@ describe("registerWorkspaceRegistrationHandlers", () => {
     dependencies.readFileSystemEntryIdentity.mockResolvedValue({ dev: 1, ino: 1, kind: "directory" });
     dependencies.rollbackRenamedDirectoryWithoutOverwrite.mockResolvedValue({ ok: true });
     dependencies.rm.mockResolvedValue(undefined);
+    dependencies.invalidateWorkspaceFileIndexCache.mockResolvedValue(1);
     dependencies.transitionWorkspaceFileIndexCacheOwner.mockResolvedValue(1);
 
     registerWorkspaceRegistrationHandlers();
@@ -244,6 +246,9 @@ describe("registerWorkspaceRegistrationHandlers", () => {
     const result = await handlerFor(refreshWorkspaceChannel)({}, { workspaceId: workspaceOne.id });
 
     expect(dependencies.invalidateWorkspaceData).toHaveBeenCalledWith(workspaceOne.id);
+    expect(dependencies.invalidateWorkspaceFileIndexCache).toHaveBeenCalledWith(
+      "/user-data/workspace-indexes/workspace-1.json"
+    );
     expect(dependencies.buildWorkspaceState).toHaveBeenCalledWith(baseSettings);
     expect(result).toMatchObject({
       error: { code: "WORKSPACE_REFRESH_STALE" },
@@ -293,7 +298,8 @@ describe("registerWorkspaceRegistrationHandlers", () => {
     await expect(first).resolves.toEqual({ ok: true, value: stateFor() });
     await expect(second).resolves.toEqual({ ok: true, value: stateFor() });
     expect(dependencies.invalidateWorkspaceData).toHaveBeenCalledTimes(1);
-    expect(dependencies.rm).toHaveBeenCalledTimes(1);
+    expect(dependencies.invalidateWorkspaceFileIndexCache).toHaveBeenCalledTimes(1);
+    expect(dependencies.rm).not.toHaveBeenCalled();
   });
 
   it("再走査に失敗した場合は監視対象や画面用状態を更新しない", async () => {

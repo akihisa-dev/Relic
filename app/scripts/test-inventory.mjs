@@ -161,12 +161,24 @@ export function renderTestInventory(inventory) {
   ].join("\n");
 }
 
+export function assertTestInventoryContract(inventory) {
+  const violations = [];
+  if (inventory.uncollected.length > 0) {
+    violations.push(`${inventory.uncollected.length} test file(s) are outside the Vitest collection policy.`);
+  }
+  if (inventory.totals.disabledDeclarations > 0) {
+    violations.push(`${inventory.totals.disabledDeclarations} disabled test declaration(s) are not allowed.`);
+  }
+  if (inventory.totals.focusedDeclarations > 0) {
+    violations.push(`${inventory.totals.focusedDeclarations} focused test declaration(s) are not allowed.`);
+  }
+  if (violations.length > 0) throw new Error(violations.join("\n"));
+}
+
 async function main() {
   const inventory = await collectTestInventory(process.cwd());
   console.log(renderTestInventory(inventory));
-  if (inventory.uncollected.length > 0) {
-    throw new Error(`${inventory.uncollected.length} test file(s) are outside the Vitest collection policy.`);
-  }
+  assertTestInventoryContract(inventory);
 }
 
 const isDirectExecution = process.argv[1]

@@ -12,6 +12,7 @@ import { knownFrontmatterSearchFields } from "../filesSidebarModel";
 import { useT } from "../i18n";
 
 interface UseWorkspaceSearchStateInput {
+  contentRevision?: number;
   setWorkspaceError: (message: string | null) => void;
   userDefinedFields: UserDefinedField[];
   workspaceState: WorkspaceState | null;
@@ -51,6 +52,7 @@ const emptyDebouncedSearchSnapshot: DebouncedSearchSnapshot = {
 };
 
 export function useWorkspaceSearchState({
+  contentRevision = 0,
   setWorkspaceError,
   userDefinedFields,
   workspaceState
@@ -129,7 +131,7 @@ export function useWorkspaceSearchState({
     return () => {
       canceled = true;
     };
-  }, [setWorkspaceError, t, workspaceId, workspaceState?.fileTree]);
+  }, [contentRevision, setWorkspaceError, t, workspaceId, workspaceState?.fileTree]);
 
   useEffect(() => {
     if (!hasActiveWorkspace || searchQuery.trim() === "") {
@@ -157,7 +159,8 @@ export function useWorkspaceSearchState({
     if (!workspaceState?.activeWorkspace || !relicClient.current || activeDebouncedSearch.key === null) {
       return;
     }
-    if (lastRequestedSearchKey.current === activeDebouncedSearch.key) {
+    const requestKey = `${activeDebouncedSearch.key}:${contentRevision}`;
+    if (lastRequestedSearchKey.current === requestKey) {
       return;
     }
 
@@ -174,7 +177,7 @@ export function useWorkspaceSearchState({
           query: activeDebouncedSearch.query
         };
 
-    lastRequestedSearchKey.current = activeDebouncedSearch.key;
+    lastRequestedSearchKey.current = requestKey;
 
     void relicClient.current
       .searchWorkspace(input)
@@ -218,6 +221,7 @@ export function useWorkspaceSearchState({
     };
   }, [
     activeDebouncedSearch,
+    contentRevision,
     t,
     workspaceState?.activeWorkspace?.id,
     workspaceState?.fileTree

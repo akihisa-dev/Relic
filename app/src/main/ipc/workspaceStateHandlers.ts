@@ -1,5 +1,3 @@
-import { rm } from "node:fs/promises";
-
 import { app } from "electron";
 
 import {
@@ -9,6 +7,7 @@ import {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { getWorkspaceFileIndexCachePath } from "../files/workspaceFileIndex";
+import { invalidateWorkspaceFileIndexCache } from "../files/workspaceFileIndexCache";
 import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
 import { getMainTranslator } from "../i18n";
 import { readAppSettings } from "../settings/appSettings";
@@ -77,7 +76,9 @@ function refreshWorkspaceState(
       const startingRegistration = workspaceRegistrationFingerprint(startingWorkspace);
 
       invalidateWorkspaceData(workspaceId);
-      await rm(getWorkspaceFileIndexCachePath(userDataPath, workspaceId), { force: true });
+      await invalidateWorkspaceFileIndexCache(
+        getWorkspaceFileIndexCachePath(userDataPath, workspaceId)
+      );
       const state = await buildWorkspaceState(settings);
       const latestSettings = await readAppSettings(userDataPath);
       const latestWorkspace = latestSettings.workspaces.find((workspace) => workspace.id === workspaceId);

@@ -10,7 +10,22 @@ const manifestFileName = "renderer-production-manifest.json";
 export const requiredDeferredRendererSources = [
   "node_modules/@terrastruct/d2/dist/browser/index.js",
   "node_modules/mermaid/dist/mermaid.core.mjs",
-  "src/renderer/previewMarkdown.ts"
+  "src/renderer/previewMarkdown.ts",
+  "src/renderer/components/SphereView.tsx"
+];
+export const protectedDeferredRendererSources = [
+  "src/renderer/sphere/sphereRuntime.ts",
+  "node_modules/3d-force-graph/dist/3d-force-graph.mjs",
+  "node_modules/three/build/three.module.js"
+];
+export const requiredDeferredRendererStyleEntries = [
+  "src/renderer/hooks/lazyViews/BubbleView.ts",
+  "src/renderer/hooks/lazyViews/CardView.ts",
+  "src/renderer/hooks/lazyViews/ChartView.ts",
+  "src/renderer/hooks/lazyViews/FrontmatterPanel.ts",
+  "src/renderer/hooks/lazyViews/SettingsPanel.ts",
+  "src/renderer/hooks/lazyViews/SphereView.ts",
+  "src/renderer/hooks/lazyViews/TableView.ts"
 ];
 export const requiredDeferredRendererChunks = [
   {
@@ -33,9 +48,8 @@ export const requiredInitialRendererChunks = [
 
 export async function buildRendererProduction(outputDirectory = defaultOutputDirectory) {
   await rm(outputDirectory, { force: true, recursive: true });
-  await execFileAsync("pnpm", [
-    "exec",
-    "vite",
+  await execFileAsync(process.execPath, [
+    path.join(process.cwd(), "node_modules", "vite", "bin", "vite.js"),
     "build",
     "--config",
     "vite.renderer.config.ts",
@@ -58,7 +72,9 @@ export async function checkRendererProductionManifest(
     manifest,
     requiredDeferredRendererSources,
     requiredDeferredRendererChunks,
-    requiredInitialRendererChunks
+    requiredInitialRendererChunks,
+    protectedDeferredRendererSources,
+    requiredDeferredRendererStyleEntries
   );
   if (violations.length > 0) {
     throw new Error(`Renderer initial-load boundary failed:\n${violations.join("\n")}`);
@@ -91,9 +107,18 @@ export function rendererInitialLoadViolations(
   manifest,
   requiredSources,
   requiredDeferredChunks = [],
-  requiredInitialChunks = []
+  requiredInitialChunks = [],
+  protectedDeferredSources = [],
+  requiredDeferredStyleEntries = []
 ) {
   const initialKeys = collectInitialManifestKeys(manifest);
+  const initialFiles = new Set([...initialKeys].flatMap((key) => {
+    const entry = manifest[key];
+    return [
+      ...(entry?.file ? [entry.file] : []),
+      ...(entry?.css ?? [])
+    ];
+  }));
   const violations = [];
 
   for (const requiredSource of requiredSources) {
@@ -108,6 +133,37 @@ export function rendererInitialLoadViolations(
     const [key] = match;
     if (initialKeys.has(key)) {
       violations.push(`Renderer dependency is loaded initially: ${requiredSource}`);
+    }
+  }
+
+  for (const protectedSource of protectedDeferredSources) {
+    const match = Object.entries(manifest).find(([, entry]) =>
+      canonicalRendererSource(entry.src) === protectedSource
+    );
+    if (match && initialKeys.has(match[0])) {
+      violations.push(`Renderer dependency is loaded initially: ${protectedSource}`);
+    }
+  }
+
+  for (const entrySource of requiredDeferredStyleEntries) {
+    const match = Object.entries(manifest).find(([, entry]) =>
+      canonicalRendererSource(entry.src) === entrySource
+    );
+    if (!match) {
+      violations.push(`Required deferred renderer style entry was not emitted: ${entrySource}`);
+      continue;
+    }
+
+    const [key, entry] = match;
+    const styleFiles = [...collectStaticManifestKeys(manifest, [key])]
+      .flatMap((staticKey) => manifest[staticKey]?.css ?? []);
+    if (styleFiles.length === 0) {
+      violations.push(`Required deferred renderer style was not emitted from entry: ${entrySource}`);
+      continue;
+    }
+    const deferredStyleFiles = styleFiles.filter((file) => !initialFiles.has(file));
+    if (initialKeys.has(key) || deferredStyleFiles.length === 0) {
+      violations.push(`Renderer style is loaded initially: ${entrySource}`);
     }
   }
 
@@ -193,7 +249,7 @@ async function main() {
   try {
     await buildRendererProduction();
     await checkRendererProductionManifest(defaultOutputDirectory);
-    console.log("Renderer production check passed: marked, highlight.js, Markdown preview, Mermaid, and D2 remain deferred while KaTeX and DOMPurify remain in the initial static import graph.");
+    console.log("Renderer production check passed: feature-view CSS, marked, highlight.js, Markdown preview, Mermaid, D2, and the Sphere runtime with its 3D dependencies remain deferred while KaTeX and DOMPurify remain in the initial static import graph.");
   } finally {
     await rm(defaultOutputDirectory, { force: true, recursive: true });
   }

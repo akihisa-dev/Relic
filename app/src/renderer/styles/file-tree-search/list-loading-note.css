@@ -1,0 +1,35 @@
+.list-loading-note {
+  animation: loading-note-in var(--motion-normal) var(--ease-enter);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-3);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow: hidden;
+  padding: 8px 10px 8px 28px;
+  position: relative;
+}
+
+.list-loading-note::before {
+  animation: loading-dot-pulse 860ms ease-in-out infinite;
+  background: var(--accent);
+  border-radius: 999px;
+  content: "";
+  height: 7px;
+  left: 11px;
+  opacity: 0.66;
+  position: absolute;
+  top: 14px;
+  width: 7px;
+}
+
+.list-loading-note::after {
+  animation: loading-sweep 1180ms ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, var(--accent-soft), transparent);
+  bottom: 0;
+  content: "";
+  left: -40%;
+  position: absolute;
+  top: 0;
+  width: 40%;
+}

@@ -1,4 +1,4 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
@@ -58,9 +58,12 @@ describe("useEditorAutoSave", () => {
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    cleanup();
+    act(() => {
+      resetStore();
+    });
     vi.clearAllMocks();
-    resetStore();
+    vi.useRealTimers();
   });
 
   it("開いている全ファイルタブを保存対象にする", async () => {
@@ -76,7 +79,9 @@ describe("useEditorAutoSave", () => {
       tabs: useEditorStore.getState().tabs
     }));
 
-    await vi.advanceTimersByTimeAsync(1000);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
 
     expect(window.relic!.writeMarkdownFile).toHaveBeenCalledWith({
       content: "first draft",
@@ -110,7 +115,9 @@ describe("useEditorAutoSave", () => {
       initialProps: { tabs: useEditorStore.getState().tabs }
     });
 
-    await vi.advanceTimersByTimeAsync(1000);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
     expect(window.relic!.writeMarkdownFile).toHaveBeenCalledTimes(1);
 
     act(() => {
@@ -118,8 +125,10 @@ describe("useEditorAutoSave", () => {
     });
     rerender({ tabs: useEditorStore.getState().tabs });
 
-    firstSave.resolve({ ok: true, value: undefined });
-    await vi.advanceTimersByTimeAsync(0);
+    await act(async () => {
+      firstSave.resolve({ ok: true, value: undefined });
+      await vi.advanceTimersByTimeAsync(0);
+    });
 
     expect(window.relic!.writeMarkdownFile).toHaveBeenCalledTimes(2);
     const checkpoint = useEditorStore.getState().tabs.tab;
@@ -134,8 +143,10 @@ describe("useEditorAutoSave", () => {
       path: "memo.md"
     });
 
-    secondSave.resolve({ ok: true, value: undefined });
-    await vi.advanceTimersByTimeAsync(0);
+    await act(async () => {
+      secondSave.resolve({ ok: true, value: undefined });
+      await vi.advanceTimersByTimeAsync(0);
+    });
 
     const tab = useEditorStore.getState().tabs.tab;
     expect(tab?.kind).toBe("file");
@@ -161,7 +172,9 @@ describe("useEditorAutoSave", () => {
       initialProps: { tabs: useEditorStore.getState().tabs }
     });
 
-    await vi.advanceTimersByTimeAsync(1000);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
     act(() => {
       useEditorStore.getState().updateTabContent("tab", "改稿");
     });
@@ -214,7 +227,9 @@ describe("useEditorAutoSave", () => {
       initialProps: { tabs: useEditorStore.getState().tabs }
     });
 
-    await vi.advanceTimersByTimeAsync(1000);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
     expect(window.relic!.writeMarkdownFile).toHaveBeenCalledTimes(1);
 
     act(() => {
@@ -227,8 +242,10 @@ describe("useEditorAutoSave", () => {
     });
     rerender({ tabs: useEditorStore.getState().tabs });
 
-    firstSave.resolve({ ok: true, value: undefined });
-    await vi.advanceTimersByTimeAsync(0);
+    await act(async () => {
+      firstSave.resolve({ ok: true, value: undefined });
+      await vi.advanceTimersByTimeAsync(0);
+    });
 
     expect(window.relic!.writeMarkdownFile).toHaveBeenCalledTimes(1);
 

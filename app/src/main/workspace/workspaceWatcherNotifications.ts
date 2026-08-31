@@ -16,14 +16,32 @@ export function notifyWorkspaceChanged(
   target: WorkspaceWatchTarget,
   events: WorkspaceWatchEvent[] = []
 ): void {
-  workspaceMutationCoordinator.invalidateWatcherEvents(target.id, events);
+  const invalidation = workspaceMutationCoordinator.invalidateWatcherEvents(target.id, events);
+  if (invalidation.kind === "none") return;
 
-  const payload: WorkspaceChangedEvent = {
-    changedAt: new Date().toISOString(),
-    workspaceId: target.id
-  };
+  const payload: WorkspaceChangedEvent = invalidation.kind === "paths"
+    ? {
+      changedAt: new Date().toISOString(),
+      kind: "paths",
+      paths: invalidation.paths,
+      revision: nextWorkspaceChangedRevision(),
+      workspaceId: target.id
+    }
+    : {
+      changedAt: new Date().toISOString(),
+      kind: "full",
+      revision: nextWorkspaceChangedRevision(),
+      workspaceId: target.id
+    };
 
   sendToActiveWindows(workspaceChangedChannel, payload);
+}
+
+let workspaceChangedRevision = 0;
+
+function nextWorkspaceChangedRevision(): number {
+  workspaceChangedRevision += 1;
+  return workspaceChangedRevision;
 }
 
 export function notifyWorkspaceWatcherStatus(target: WorkspaceWatchTarget): void {

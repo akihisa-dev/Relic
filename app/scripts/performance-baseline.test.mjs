@@ -1,10 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  assertPerformanceBaselineComparable,
   compareLowerIsBetterMetrics,
+  currentPerformanceEnvironment,
   median,
+  performanceBaselineCompatibilityErrors,
   renderComparison
 } from "./performance-baseline.mjs";
+
+const comparableReport = {
+  environment: { arch: "arm64", nodeMajor: 26, platform: "darwin" },
+  fixture: { directoryCount: 20, fileCount: 1000, fingerprint: "fixture-a" },
+  host: { cpu: "host-specific model" },
+  runs: 5,
+  warmups: 1
+};
 
 describe("performance-baseline", () => {
   it("奇数と偶数のサンプルから中央値を返す", () => {
@@ -38,5 +49,44 @@ describe("performance-baseline", () => {
     expect(comparison.missingMetrics.map((entry) => entry.metric)).toEqual(["silentlyMissing"]);
     expect(comparison.regressions.map((entry) => entry.metric)).toEqual(["silentlyMissing"]);
     expect(renderComparison(comparison)).toContain("MISSING\t50\t-\tmissing\tsilentlyMissing");
+  });
+
+  it("Node major、platform、archを比較可能性metadataとして返す", () => {
+    expect(currentPerformanceEnvironment({
+      arch: "arm64",
+      nodeVersion: "26.4.0",
+      platform: "darwin"
+    })).toEqual({ arch: "arm64", nodeMajor: 26, platform: "darwin" });
+  });
+
+  it("同じfixtureと実行条件を比較可能として扱いCPU名は一致必須にしない", () => {
+    const baseline = structuredClone(comparableReport);
+    baseline.host.cpu = "different host-specific model";
+
+    expect(performanceBaselineCompatibilityErrors(comparableReport, baseline)).toEqual([]);
+    expect(() => assertPerformanceBaselineComparable(comparableReport, baseline)).not.toThrow();
+  });
+
+  it.each([
+    ["fixture.fingerprint", "fixture-b"],
+    ["fixture.fileCount", 999],
+    ["fixture.directoryCount", 19],
+    ["environment.nodeMajor", 25],
+    ["environment.platform", "linux"],
+    ["environment.arch", "x64"],
+    ["runs", 4],
+    ["warmups", 0]
+  ])("%sが異なるbaselineを比較不能として明示する", (field, value) => {
+    const baseline = structuredClone(comparableReport);
+    const keys = field.split(".");
+    const target = keys.slice(0, -1).reduce((current, key) => current[key], baseline);
+    target[keys.at(-1)] = value;
+
+    expect(performanceBaselineCompatibilityErrors(comparableReport, baseline)).toEqual([
+      expect.stringContaining(`metadata mismatch for ${field}`)
+    ]);
+    expect(() => assertPerformanceBaselineComparable(comparableReport, baseline)).toThrow(
+      `Performance baseline metadata mismatch for ${field}`
+    );
   });
 });

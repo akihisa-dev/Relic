@@ -82,7 +82,7 @@ export function summarize(values) {
   };
 }
 
-async function createFixture(root, size) {
+export async function createSpherePerformanceFixture(root, size) {
   const workspacePath = path.join(root, "workspace");
   await mkdir(workspacePath, { recursive: true });
   const outgoing = Array.from({ length: size.nodes }, () => []);
@@ -101,9 +101,8 @@ async function createFixture(root, size) {
   const userDataPath = path.join(root, "user-data");
   await mkdir(userDataPath, { recursive: true });
   await writeFile(path.join(userDataPath, "app-settings.json"), JSON.stringify({
-    featureToggles: { graph: true, sphere: true },
     lastWorkspaceId: "sphere-audit",
-    schemaVersion: 4,
+    schemaVersion: 6,
     workspaces: [{ id: "sphere-audit", name: "Sphere audit", path: workspacePath }]
   }), "utf8");
   return { userDataPath, workspacePath };
@@ -457,7 +456,10 @@ async function main(rawArgs) {
   try {
     const runs = [];
     for (let index = 0; index < options.runs; index += 1) {
-      const fixture = await createFixture(path.join(temporaryRoot, `run-${index}`), graphSizes[options.size]);
+      const fixture = await createSpherePerformanceFixture(
+        path.join(temporaryRoot, `run-${index}`),
+        graphSizes[options.size]
+      );
       runs.push(await runScenario(options.executable, fixture, 9_400 + index, options.cycles));
     }
     const report = {

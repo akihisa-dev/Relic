@@ -15,8 +15,16 @@ const includedExtensions = new Set([
 ]);
 const excludedDirectories = new Set([".vite", "coverage", "dist", "node_modules", "out"]);
 const retainedLargeSourceReasons = new Map([
+  [
+    "src/renderer/App.tsx",
+    "画面全体の組み立て口として状態と機能別モジュールを配線する。処理本体は分離済みで、再描画境界も回帰テストで保護している"
+  ],
   ["src/renderer/styles/chronicle.css", "年表画面の構成要素とレスポンシブ上書きを一続きで管理する単一機能CSS"],
-  ["src/renderer/styles/settings.css", "設定画面の各セクションを共通レイアウトと状態上書きとともに管理する単一機能CSS"]
+  ["src/renderer/styles/settings.css", "設定画面の各セクションを共通レイアウトと状態上書きとともに管理する単一機能CSS"],
+  [
+    "src/renderer/styles/workspace-editor.css",
+    "初期表示する編集画面の相互に重なる指定と適用順を一続きで管理し、個別に遅延読込できる機能境界がない"
+  ]
 ]);
 
 export function classifySourceFile(filePath) {

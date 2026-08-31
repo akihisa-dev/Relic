@@ -1,4 +1,4 @@
-import { act, cleanup, screen } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 const railWorkspaceSwitcherRender = vi.hoisted(() => vi.fn());
@@ -15,6 +15,10 @@ vi.mock("./components/SphereView", () => ({
 }));
 
 import { renderApp } from "./appTestHelpers";
+import {
+  __getPaneViewRenderCountsForTests,
+  __resetPaneViewRenderCountsForTests
+} from "./components/PaneView";
 import { useEditorStore } from "./store/editorStore";
 import {
   installMatchMediaMock,
@@ -27,7 +31,6 @@ describe("App rail rendering", () => {
   beforeAll(installMatchMediaMock);
 
   afterEach(() => {
-    cleanup();
     vi.clearAllMocks();
     resetRendererStores();
   });
@@ -57,7 +60,7 @@ describe("App rail rendering", () => {
       })
     });
 
-    renderApp();
+    await renderApp();
     await screen.findByTestId("rail-workspace-switcher");
     railWorkspaceSwitcherRender.mockClear();
 
@@ -68,5 +71,52 @@ describe("App rail rendering", () => {
     act(() => useEditorStore.getState().openPanelInPane("left", "settings", "Settings"));
 
     expect(railWorkspaceSwitcherRender).toHaveBeenCalledTimes(1);
+  });
+
+  it("左ペインの本文更新ではApp経由の右ペインpropsを変えない", async () => {
+    useEditorStore.setState({
+      focusedPane: "left",
+      isSplit: true,
+      leftPane: { activeTabId: "tab-left", history: [], tabIds: ["tab-left"] },
+      rightPane: { activeTabId: "tab-right", history: [], tabIds: ["tab-right"] },
+      tabs: {
+        "tab-left": {
+          content: "左本文",
+          id: "tab-left",
+          kind: "file",
+          name: "Left.md",
+          path: "Left.md",
+          savedContent: "左本文"
+        },
+        "tab-right": {
+          content: "右本文",
+          id: "tab-right",
+          kind: "file",
+          name: "Right.md",
+          path: "Right.md",
+          savedContent: "右本文"
+        }
+      }
+    });
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...testWorkspaceState,
+          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+        }
+      })
+    });
+
+    await renderApp();
+    await screen.findByText("右本文");
+    __resetPaneViewRenderCountsForTests();
+
+    act(() => useEditorStore.getState().updateTabContent("tab-left", "左の改稿"));
+
+    const renderCounts = __getPaneViewRenderCountsForTests();
+    expect(renderCounts.left).toBeGreaterThan(0);
+    expect(renderCounts.right).toBe(0);
   });
 });

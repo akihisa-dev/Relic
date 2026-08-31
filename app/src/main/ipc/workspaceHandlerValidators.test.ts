@@ -15,10 +15,8 @@ import {
   isSwitchWorkspaceInput
 } from "./workspaceRegistrationHandlerValidators";
 import {
-  isChartsInput,
   isSaveWorkspaceTablePreferencesInput,
   isWorkspaceTablePreferencesInput,
-  isUpdateChartEntryInput
 } from "./workspaceVisualizationHandlerValidators";
 
 describe("workspaceHandlerValidators", () => {
@@ -98,76 +96,7 @@ describe("workspaceHandlerValidators", () => {
     expect(isSaveWorkspaceTablePreferencesInput({ preferences: { ...preferences, fileColumnWidth: 20 }, workspaceId: "workspace-a" })).toBe(false);
   });
 
-  it("validates the required chronicle chart source", () => {
-    expect(isChartsInput([
-      { id: "chronicle", name: "Chronicle", source: "chronicle" }
-    ])).toBe(true);
-    expect(isChartsInput([
-      { id: "a", name: "A", source: "chronicle" },
-      { id: "b", name: "B", source: "chronicle" }
-    ])).toBe(false);
-    expect(isChartsInput([
-      { id: "chronicle", name: "Chronicle", source: "chronicle", filePaths: ["../outside.md"] }
-    ])).toBe(false);
-    expect(isChartsInput([
-      { id: "chronicle", name: "Chronicle", source: "chronicle", filePaths: ["/tmp/outside.md"] }
-    ])).toBe(false);
-    expect(isChartsInput([
-      { id: "chronicle", name: "Chronicle", source: "chronicle", filePaths: ["section/../a.md"] }
-    ])).toBe(false);
-  });
-
-  it("validates chart entry edits and frontmatter templates", () => {
-    expect(isUpdateChartEntryInput({
-      chronicleEntryIndex: 1,
-      endValue: 3,
-      kind: "move",
-      originalEndValue: 2,
-      originalStartValue: 1,
-      path: "Note.md",
-      source: "chronicle",
-      startValue: 2
-    })).toBe(true);
-    expect(isUpdateChartEntryInput({
-      chronicleEntryIndex: -1,
-      endValue: 3,
-      kind: "move",
-      originalEndValue: 2,
-      originalStartValue: 1,
-      path: "Note.md",
-      source: "chronicle",
-      startValue: 2
-    })).toBe(false);
-    expect(isUpdateChartEntryInput({
-      chronicleEntryIndex: 0,
-      endValue: 3,
-      kind: "move",
-      originalEndValue: 2,
-      originalStartValue: 1,
-      path: "Note.md",
-      source: "chronicle",
-      startValue: 2
-    })).toBe(true);
-    expect(isUpdateChartEntryInput({
-      chronicleEntryIndex: 0,
-      endValue: 3,
-      kind: "move",
-      originalEndValue: 2,
-      originalStartValue: 1,
-      path: "../outside.md",
-      source: "chronicle",
-      startValue: 2
-    })).toBe(false);
-    expect(isUpdateChartEntryInput({
-      chronicleEntryIndex: 0,
-      endValue: 3,
-      kind: "move",
-      originalEndValue: 2,
-      originalStartValue: 1,
-      path: " Notes/Idea.md ",
-      source: "chronicle",
-      startValue: 2
-    })).toBe(false);
+  it("validates frontmatter templates", () => {
     expect(isFrontmatterTemplatesInput([{ fieldNames: ["status"], name: "Basic" }])).toBe(true);
     expect(isFrontmatterTemplatesInput([{ fieldNames: [], name: "Basic" }])).toBe(false);
   });

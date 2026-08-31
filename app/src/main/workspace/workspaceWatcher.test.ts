@@ -33,6 +33,7 @@ import {
   workspaceChangeNotifyDelayMs,
   workspaceChangeMaxNotifyDelayMs,
   workspaceWatcherFailureNotifyDelayMs,
+  workspaceWatcherRecoveryStabilityDelayMs,
   workspaceWatcherRetryBaseDelayMs,
   workspaceWatcherRetryDelay,
   workspaceWatcherRetryMaxDelayMs
@@ -162,8 +163,12 @@ describe("workspaceWatcher", () => {
     vi.advanceTimersByTime(workspaceWatcherRetryBaseDelayMs);
 
     expect(fsMock.watch).toHaveBeenCalledTimes(2);
+    expect(send).not.toHaveBeenCalledWith("workspace:changed", expect.anything());
+    vi.advanceTimersByTime(workspaceWatcherRecoveryStabilityDelayMs);
     expect(send).toHaveBeenCalledWith("workspace:changed", {
       changedAt: expect.any(String),
+      kind: "full",
+      revision: expect.any(Number),
       workspaceId: "ws-1"
     });
     expect(send).not.toHaveBeenCalledWith("workspace:watcherStatus", expect.anything());
@@ -187,8 +192,12 @@ describe("workspaceWatcher", () => {
 
     expect(firstWatcher.close).toHaveBeenCalledOnce();
     expect(fsMock.watch).toHaveBeenNthCalledWith(2, "/tmp/notes", { recursive: true }, expect.any(Function));
+    expect(send).not.toHaveBeenCalledWith("workspace:changed", expect.anything());
+    vi.advanceTimersByTime(workspaceWatcherRecoveryStabilityDelayMs);
     expect(send).toHaveBeenCalledWith("workspace:changed", {
       changedAt: expect.any(String),
+      kind: "full",
+      revision: expect.any(Number),
       workspaceId: "ws-1"
     });
   });
@@ -276,6 +285,8 @@ describe("workspaceWatcher", () => {
 
     expect(send).toHaveBeenCalledWith("workspace:changed", {
       changedAt: expect.any(String),
+      kind: "full",
+      revision: expect.any(Number),
       workspaceId: "ws-1"
     });
     expect(send.mock.calls[0][1]).not.toHaveProperty("workspacePath");

@@ -10,7 +10,9 @@ import { createServer } from "vite";
 
 import { generateLargeWorkspace, positiveInteger } from "./generate-large-workspace.mjs";
 import {
+  assertPerformanceBaselineComparable,
   compareLowerIsBetterMetrics,
+  currentPerformanceEnvironment,
   median,
   readBaseline,
   renderComparison,
@@ -105,6 +107,7 @@ export async function runWorkspacePerformanceReport({
     const metrics = buildWorkspacePerformanceMetrics(scenarios, medianIndexStats, medianIncrementalStats);
 
     return {
+      environment: currentPerformanceEnvironment(),
       fixture: {
         directoryCount: fixture.directoryCount,
         fileCount: fixture.fileCount,
@@ -138,6 +141,7 @@ export function renderWorkspacePerformanceReport(report) {
   const lines = [
     "Workspace performance",
     `fixture\t${report.fixture.fileCount} files\t${report.fixture.directoryCount} directories\t${report.fixture.fingerprint}`,
+    `runtime\tNode ${report.environment.nodeMajor}\t${report.environment.platform}/${report.environment.arch}`,
     `samples\t${report.runs} runs\t${report.warmups} warmup(s)`,
     "",
     "scenario\tmedian ms\tminimum ms\tmaximum ms"
@@ -410,9 +414,7 @@ async function main() {
   }
   if (args.baseline) {
     const baseline = await readBaseline(path.resolve(args.baseline), "workspace-performance");
-    if (baseline.fixture?.fingerprint !== report.fixture.fingerprint) {
-      throw new Error("Workspace performance baseline uses a different fixture fingerprint.");
-    }
+    assertPerformanceBaselineComparable(report, baseline);
     const comparison = compareLowerIsBetterMetrics(
       report.metrics,
       baseline.metrics,

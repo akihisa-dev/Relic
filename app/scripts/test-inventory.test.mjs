@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  assertTestInventoryContract,
   classifyTestFile,
   classifyTestProject,
   collectTestInventory,
@@ -121,5 +122,28 @@ describe("test-inventory", () => {
     expect(inventory.projects).toEqual({ node: 0, renderer: 0, uncollected: 1 });
     expect(inventory.uncollected.map((entry) => entry.path)).toEqual(["src/unknown/orphan.test.ts"]);
     expect(renderTestInventory(inventory)).toContain("Collection gaps\nsrc/unknown/orphan.test.ts");
+  });
+
+  it("未収集、無効化、単独実行指定を公開検証の失敗にする", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "relic-test-inventory-"));
+    temporaryDirectories.push(root);
+    const sources = new Map([
+      ["src/renderer/disabled.test.ts", "it.skip('disabled', () => {});\n"],
+      ["src/shared/focused.test.ts", "test.only('focused', () => {});\n"],
+      ["src/unknown/orphan.test.ts", "it('uncollected', () => {});\n"]
+    ]);
+    for (const [relativePath, source] of sources) {
+      const filePath = path.join(root, relativePath);
+      await mkdir(path.dirname(filePath), { recursive: true });
+      await writeFile(filePath, source);
+    }
+
+    const inventory = await collectTestInventory(root);
+
+    expect(() => assertTestInventoryContract(inventory)).toThrow([
+      "1 test file(s) are outside the Vitest collection policy.",
+      "1 disabled test declaration(s) are not allowed.",
+      "1 focused test declaration(s) are not allowed."
+    ].join("\n"));
   });
 });

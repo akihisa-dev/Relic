@@ -1,6 +1,7 @@
 import type { RelicResult } from "../result";
 import type { IpcFeatureContract } from "./contract";
 import type { ChronicleCalendarSettings } from "../chronicleCalendar";
+import { hasMarkdownExtension } from "../markdownExtension";
 export type { ChronicleCalendarDefinition, ChronicleCalendarSettings } from "../chronicleCalendar";
 
 export const createNewWorkspaceChannel = "workspace:createNew";
@@ -21,9 +22,7 @@ export const getWorkspaceFrontmatterCategoryChoicesChannel = "workspace:getFront
 export const saveWorkspaceFrontmatterCategoryChoicesChannel = "workspace:saveFrontmatterCategoryChoices";
 export const getWorkspaceChronicleCalendarSettingsChannel = "workspace:getChronicleCalendarSettings";
 export const saveWorkspaceChronicleCalendarSettingsChannel = "workspace:saveChronicleCalendarSettings";
-export const saveWorkspaceChartsChannel = "workspace:saveCharts";
 export const saveWorkspaceTablePreferencesChannel = "workspace:saveTablePreferences";
-export const updateChartEntryChannel = "workspace:updateChartEntry";
 
 export interface WorkspaceSummary {
   id: string;
@@ -85,14 +84,100 @@ export interface WorkspaceState {
   activeWorkspace: WorkspaceSummary | null;
   availability?: WorkspaceAvailability;
   fileTree: WorkspaceTreeNode[];
-  fileIndex?: WorkspaceFileIndexEntry[];
   pinnedPaths: string[];
   workspaces: WorkspaceSummary[];
 }
 
-export interface WorkspaceChangedEvent {
+export type WorkspaceChangedEvent = WorkspaceChangedPathsEvent | WorkspaceChangedFullEvent;
+
+export interface WorkspaceChangedPathsEvent {
   changedAt: string;
+  kind: "paths";
+  paths: string[];
+  revision: number;
   workspaceId: string;
+}
+
+export interface WorkspaceChangedFullEvent {
+  changedAt: string;
+  kind: "full";
+  revision: number;
+  workspaceId: string;
+}
+
+/**
+ * Validate and sanitize the event crossing the preload boundary. Main emits
+ * only normalized relative paths, but the renderer must still treat IPC
+ * notifications as untrusted input. An unsafe path deliberately degrades to
+ * a full event so no path supplied by an external sender is exposed.
+ */
+export function sanitizeWorkspaceChangedEvent(input: unknown): WorkspaceChangedEvent | null {
+  const revision = isRecord(input) ? input.revision : undefined;
+  if (!isRecord(input) ||
+      typeof input.changedAt !== "string" ||
+      typeof input.workspaceId !== "string" ||
+      input.workspaceId.length === 0 ||
+      typeof revision !== "number" ||
+      !Number.isSafeInteger(revision) ||
+      revision < 1) {
+    return null;
+  }
+
+  if (input.kind === "full" && !("paths" in input)) {
+    return {
+      changedAt: input.changedAt,
+      kind: "full",
+      revision,
+      workspaceId: input.workspaceId
+    };
+  }
+
+  if (input.kind !== "paths" || !Array.isArray(input.paths) || input.paths.length === 0) {
+    return {
+      changedAt: input.changedAt,
+      kind: "full",
+      revision,
+      workspaceId: input.workspaceId
+    };
+  }
+
+  const paths = [...new Set(input.paths.filter(isSafeWorkspaceChangedMarkdownPath))].toSorted();
+  if (paths.length !== input.paths.length) {
+    return {
+      changedAt: input.changedAt,
+      kind: "full",
+      revision,
+      workspaceId: input.workspaceId
+    };
+  }
+
+  return {
+    changedAt: input.changedAt,
+    kind: "paths",
+    paths,
+    revision,
+    workspaceId: input.workspaceId
+  };
+}
+
+function isRecord(input: unknown): input is Record<string, unknown> {
+  return typeof input === "object" && input !== null;
+}
+
+export function isSafeWorkspaceChangedPath(input: unknown): input is string {
+  if (typeof input !== "string" || input.length === 0 || input.includes("\0")) return false;
+  if (input.includes("\\") || input.startsWith("/") || /^[A-Za-z]:/.test(input)) return false;
+  const segments = input.split("/");
+  return segments.every((segment) =>
+    segment.length > 0 &&
+    segment !== "." &&
+    segment !== ".." &&
+    !segment.startsWith(".")
+  );
+}
+
+function isSafeWorkspaceChangedMarkdownPath(input: unknown): input is string {
+  return isSafeWorkspaceChangedPath(input) && hasMarkdownExtension(input);
 }
 
 export interface WorkspaceWatcherStatusEvent {
@@ -264,19 +349,6 @@ export interface WorkspaceTable {
   rows: WorkspaceTableRow[];
 }
 
-export type ChartEntryEditKind = "move" | "resize-start" | "resize-end";
-
-export interface UpdateChartEntryInput {
-  endValue: number;
-  kind: ChartEntryEditKind;
-  chronicleEntryIndex: number;
-  originalEndValue: number;
-  originalStartValue: number;
-  path: string;
-  source: ChartSource;
-  startValue: number;
-}
-
 export interface WorkspaceApi {
   createNewWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   togglePin: (path: string) => Promise<RelicResult<WorkspaceState>>;
@@ -294,9 +366,7 @@ export interface WorkspaceApi {
   getWorkspaceChronicleCalendarSettings: () => Promise<RelicResult<ChronicleCalendarSettings>>;
   saveWorkspaceFrontmatterCategoryChoices: (input: SaveWorkspaceFrontmatterCategoryChoicesInput) => Promise<RelicResult<FrontmatterCategoryChoice[]>>;
   saveWorkspaceChronicleCalendarSettings: (input: SaveWorkspaceChronicleCalendarSettingsInput) => Promise<RelicResult<ChronicleCalendarSettings>>;
-  saveWorkspaceCharts: (input: ChartSettings[]) => Promise<RelicResult<WorkspaceChart[]>>;
   saveWorkspaceTablePreferences: (input: SaveWorkspaceTablePreferencesInput) => Promise<RelicResult<WorkspaceTablePreferences>>;
-  updateChartEntry: (input: UpdateChartEntryInput) => Promise<RelicResult<WorkspaceChart[]>>;
   onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => () => void;
   onWorkspaceWatcherStatus: (callback: (event: WorkspaceWatcherStatusEvent) => void) => () => void;
 }
@@ -318,9 +388,7 @@ export const workspaceIpcContract = {
   getWorkspaceChronicleCalendarSettings: { channel: getWorkspaceChronicleCalendarSettingsChannel, main: "handle", transport: "invoke", validatesInput: false },
   saveWorkspaceFrontmatterCategoryChoices: { channel: saveWorkspaceFrontmatterCategoryChoicesChannel, main: "handle", transport: "invoke", validatesInput: true },
   saveWorkspaceChronicleCalendarSettings: { channel: saveWorkspaceChronicleCalendarSettingsChannel, main: "handle", transport: "invoke", validatesInput: true },
-  saveWorkspaceCharts: { channel: saveWorkspaceChartsChannel, main: "handle", transport: "invoke", validatesInput: true },
   saveWorkspaceTablePreferences: { channel: saveWorkspaceTablePreferencesChannel, main: "handle", transport: "invoke", validatesInput: true },
-  updateChartEntry: { channel: updateChartEntryChannel, main: "handle", transport: "invoke", validatesInput: true },
   onWorkspaceChanged: { channel: workspaceChangedChannel, main: "sender", transport: "subscribe", validatesInput: false },
   onWorkspaceWatcherStatus: { channel: workspaceWatcherStatusChannel, main: "sender", transport: "subscribe", validatesInput: false }
 } as const satisfies IpcFeatureContract;

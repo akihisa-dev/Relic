@@ -9,6 +9,7 @@ import { useWorkspaceFrontmatterCategoryChoices } from "./useWorkspaceFrontmatte
 import type { useWorkspaceSearchState } from "./useWorkspaceSearchState";
 
 interface UseAppWorkspaceDerivedDataOptions {
+  contentRevision: number;
   frontmatterCandidates: ReturnType<typeof useWorkspaceSearchState>["frontmatterCandidates"];
   hasOpenChart: boolean;
   setWorkspaceError: Parameters<typeof useWorkspaceAliases>[0]["setWorkspaceError"];
@@ -17,6 +18,7 @@ interface UseAppWorkspaceDerivedDataOptions {
 }
 
 export function useAppWorkspaceDerivedData({
+  contentRevision,
   frontmatterCandidates,
   hasOpenChart,
   setWorkspaceError,
@@ -24,7 +26,7 @@ export function useAppWorkspaceDerivedData({
   workspaceState
 }: UseAppWorkspaceDerivedDataOptions) {
   const collections = useAppWorkspaceCollections({ tabs, workspaceState });
-  const aliasesByPath = useWorkspaceAliases({ setWorkspaceError, workspaceState });
+  const aliasesByPath = useWorkspaceAliases({ contentRevision, setWorkspaceError, workspaceState });
   const { charts, reloadCharts } = useWorkspaceCharts({
     hasOpenChart,
     setWorkspaceError,

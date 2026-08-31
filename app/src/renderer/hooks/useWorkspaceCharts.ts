@@ -7,7 +7,7 @@ import type {
   WorkspaceState
 } from "../../shared/ipc";
 import { relicApiContractVersion } from "../../shared/ipc";
-import { normalizeWorkspaceCharts } from "../chartData";
+import { normalizeWorkspaceCharts } from "../chartNormalize";
 import { useT } from "../i18n";
 import { useAsyncRequestGuard } from "./useAsyncRequestGuard";
 

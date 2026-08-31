@@ -59,7 +59,9 @@ describe("App navigation and shortcuts", () => {
 
     expect(document.querySelector('.pane-tab[data-tab-id="panel-settings"]')?.textContent).toContain("設定");
 
-    useEditorStore.getState().setEditorSettings({ ...defaultEditorSettings, language: "en" });
+    act(() => {
+      useEditorStore.getState().setEditorSettings({ ...defaultEditorSettings, language: "en" });
+    });
 
     await waitFor(() => {
       expect(document.querySelector('.pane-tab[data-tab-id="panel-settings"]')?.textContent).toContain("Settings");
@@ -100,8 +102,12 @@ describe("App navigation and shortcuts", () => {
     if (!(rail instanceof HTMLElement)) throw new Error("rail was not rendered");
     const tableButton = within(rail).getByRole("button", { name: "テーブル" });
 
-    fireEvent.click(tableButton);
-    fireEvent.click(within(rail).getByRole("button", { name: "設定" }));
+    await act(async () => {
+      fireEvent.click(tableButton);
+    });
+    await act(async () => {
+      fireEvent.click(within(rail).getByRole("button", { name: "設定" }));
+    });
 
     expect(useEditorStore.getState().tabs["chart-table"]).toMatchObject({
       chartId: "table",
@@ -111,7 +117,9 @@ describe("App navigation and shortcuts", () => {
     expect(tableButton).toHaveClass("open");
     expect(tableButton).not.toHaveClass("active");
 
-    fireEvent.click(tableButton);
+    await act(async () => {
+      fireEvent.click(tableButton);
+    });
 
     expect(document.querySelector(".rail-tab-flight--close")).not.toBeInTheDocument();
     expect(useEditorStore.getState().leftPane.activeTabId).toBe("chart-table");

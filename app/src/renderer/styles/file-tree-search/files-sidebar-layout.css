@@ -1,0 +1,36 @@
+/* ────────────────────────────────── */
+/* Buttons / Inputs                   */
+/* ────────────────────────────────── */
+
+.sidebar-body:has(> .files-sidebar-section) {
+  overflow: hidden;
+}
+
+.files-sidebar-section {
+  box-sizing: border-box;
+  display: grid;
+  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: calc(100% + 32px);
+  margin: -16px;
+  min-height: calc(100% + 32px);
+  padding: 16px 16px 0;
+}
+
+.files-sidebar-fixed-controls {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 12px;
+  min-width: 0;
+  position: relative;
+  z-index: 6;
+}
+
+.files-sidebar-scroll-area {
+  align-content: start;
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+}

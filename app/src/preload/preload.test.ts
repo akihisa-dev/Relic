@@ -32,6 +32,7 @@ import {
   saveDiagramSvgChannel,
   savePreviewAsPdfChannel,
   startWorkspaceFileDragChannel,
+  workspaceChangedChannel,
   workspaceWatcherStatusChannel,
   type RelicApi
 } from "../shared/ipc";
@@ -114,5 +115,78 @@ describe("preload output API", () => {
     expect(callback).toHaveBeenCalledWith(payload);
     unsubscribe();
     expect(electronMock.removeListener).toHaveBeenCalledWith(workspaceWatcherStatusChannel, listener);
+  });
+
+  it("workspace changed eventを検証し、危険なpathはfullへ退避する", () => {
+    const api = exposedApi();
+    const callback = vi.fn();
+    api.onWorkspaceChanged(callback);
+    const listener = electronMock.on.mock.calls.find(([channel]) => channel === workspaceChangedChannel)?.[1];
+
+    listener?.({}, {
+      changedAt: new Date().toISOString(),
+      kind: "paths",
+      paths: ["../outside.md"],
+      revision: 1,
+      workspaceId: "ws-1"
+    });
+
+    expect(callback).toHaveBeenCalledWith({
+      changedAt: expect.any(String),
+      kind: "full",
+      revision: 1,
+      workspaceId: "ws-1"
+    });
+  });
+
+  it("revisionが不正な通知はRendererへ渡さない", () => {
+    const api = exposedApi();
+    const callback = vi.fn();
+    api.onWorkspaceChanged(callback);
+    const listener = electronMock.on.mock.calls.find(([channel]) => channel === workspaceChangedChannel)?.[1];
+
+    listener?.({}, {
+      changedAt: new Date().toISOString(),
+      kind: "full",
+      revision: "1",
+      workspaceId: "ws-1"
+    });
+
+    expect(callback).not.toHaveBeenCalled();
+  });
+
+  it("Markdown以外または隠しpathのpaths通知はfullへ退避する", () => {
+    const api = exposedApi();
+    const callback = vi.fn();
+    api.onWorkspaceChanged(callback);
+    const listener = electronMock.on.mock.calls.find(([channel]) => channel === workspaceChangedChannel)?.[1];
+
+    listener?.({}, {
+      changedAt: new Date().toISOString(),
+      kind: "paths",
+      paths: ["assets/image.png"],
+      revision: 2,
+      workspaceId: "ws-1"
+    });
+    listener?.({}, {
+      changedAt: new Date().toISOString(),
+      kind: "paths",
+      paths: [".relic/note.md"],
+      revision: 3,
+      workspaceId: "ws-1"
+    });
+
+    expect(callback).toHaveBeenNthCalledWith(1, {
+      changedAt: expect.any(String),
+      kind: "full",
+      revision: 2,
+      workspaceId: "ws-1"
+    });
+    expect(callback).toHaveBeenNthCalledWith(2, {
+      changedAt: expect.any(String),
+      kind: "full",
+      revision: 3,
+      workspaceId: "ws-1"
+    });
   });
 });

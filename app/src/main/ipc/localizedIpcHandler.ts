@@ -4,6 +4,7 @@ import { createTranslator, type TranslationKey } from "../../shared/i18n";
 import { fail, type RelicResult } from "../../shared/result";
 import { getCachedMainLanguage, getCachedMainTranslator } from "../i18n";
 import { isAuthorizedIpcSender } from "./ipcSenderAuthorization";
+import { runMainIpcRequest } from "./ipcRequestLifecycle";
 
 type IpcHandler<Args extends unknown[], Result> = (
   event: IpcMainInvokeEvent,
@@ -71,12 +72,21 @@ export function handleLocalizedIpc<Args extends unknown[], Result>(
   handler: IpcHandler<Args, Result>
 ): void {
   ipcMain.handle(channel, async (event, ...args: Args) => {
-    const result = isAuthorizedIpcSender(event?.sender)
-      ? await handler(event, ...args)
-      : fail(
+    let result: Result;
+    if (!isAuthorizedIpcSender(event?.sender)) {
+      result = fail(
         "IPC_UNAUTHORIZED_SENDER",
         "IPC要求の送信元を確認できませんでした。"
       ) as Result;
+    } else {
+      const tracked = await runMainIpcRequest(() => handler(event, ...args));
+      result = tracked.accepted
+        ? tracked.value
+        : fail(
+          "IPC_SHUTTING_DOWN",
+          "アプリの終了処理中のため、新しい操作を開始できません。"
+        ) as Result;
+    }
     if (!needsLocalization(result)) return result;
     const language = typeof getCachedMainLanguage === "function"
       ? getCachedMainLanguage()

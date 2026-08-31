@@ -96,7 +96,6 @@ describe("buildWorkspaceState availability", () => {
 
     expect(result).toMatchObject({
       activeWorkspace: null,
-      fileIndex: [],
       fileTree: [],
       pinnedPaths: []
     });
@@ -149,7 +148,6 @@ describe("buildWorkspaceState availability", () => {
         issues: [{ area: "file-index", kind: "temporary" }],
         status: "degraded"
       },
-      fileIndex: [],
       fileTree
     });
     expect(dependencies.getWorkspaceData).toHaveBeenCalledWith({

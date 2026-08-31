@@ -1,9 +1,14 @@
-import { render } from "@testing-library/react";
+import { act, render, type RenderResult } from "@testing-library/react";
 
 import { App } from "./App";
 
-export function renderApp() {
-  return render(<App />);
+export async function renderApp(): Promise<RenderResult> {
+  let result: RenderResult | undefined;
+  await act(async () => {
+    result = render(<App />);
+  });
+  if (!result) throw new Error("App test render did not complete.");
+  return result;
 }
 
 export function searchResultSet(results: unknown[]) {

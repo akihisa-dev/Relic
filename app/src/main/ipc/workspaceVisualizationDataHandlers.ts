@@ -1,34 +1,22 @@
-import type { ChartSettings } from "../../shared/ipc";
 import {
   getWorkspaceChartsChannel,
   getWorkspaceTableChannel,
-  saveWorkspaceChartsChannel,
-  saveWorkspaceTablePreferencesChannel,
-  updateChartEntryChannel
+  saveWorkspaceTablePreferencesChannel
 } from "../../shared/ipc";
 import { defaultChronicleCalendarSettings } from "../../shared/chronicleCalendar";
 import { fail } from "../../shared/result";
-import { readWorkspaceCharts, updateWorkspaceChartEntry } from "../files/charts";
-import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
+import { readWorkspaceCharts } from "../files/charts";
 import { workspaceDataProvider } from "../files/workspaceDataProvider";
 import { readWorkspaceTable } from "../files/workspaceTable";
 import { runWorkspaceRegistrationTask } from "../workspace/workspaceRegistrationGate";
-import {
-  normalizeWorkspaceRelativeSettingPath,
-  readWorkspaceSettings,
-  updateWorkspaceSettings
-} from "../settings/workspaceSettings";
+import { readWorkspaceSettings, updateWorkspaceSettings } from "../settings/workspaceSettings";
 import {
   getActiveWorkspaceContext,
   getRegisteredWorkspaceContext,
   ipcErrorDetails
 } from "./activeWorkspace";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
-import {
-  isChartsInput,
-  isSaveWorkspaceTablePreferencesInput,
-  isUpdateChartEntryInput
-} from "./workspaceVisualizationHandlerValidators";
+import { isSaveWorkspaceTablePreferencesInput } from "./workspaceVisualizationHandlerValidators";
 
 export function registerWorkspaceVisualizationDataHandlers(): void {
   handleLocalizedIpc(getWorkspaceChartsChannel, async () => {
@@ -99,45 +87,6 @@ export function registerWorkspaceVisualizationDataHandlers(): void {
     }
   });
 
-  handleLocalizedIpc(saveWorkspaceChartsChannel, async (_event, input: unknown) => {
-    try {
-      if (!isChartsInput(input)) {
-        return fail("INVALID_CHARTS", "チャート設定が正しくありません。");
-      }
-
-      const savedCharts = normalizeChartSettingsForSave(input);
-      return await runWorkspaceRegistrationTask(async () => {
-        const context = await getActiveWorkspaceContext();
-        if (!context.ok) return context;
-        const workspaceSettings = await updateWorkspaceSettings(
-          context.value.userDataPath,
-          context.value.activeWorkspace.id,
-          (workspaceSettings) => ({
-            ...workspaceSettings,
-            charts: savedCharts
-          })
-        );
-        const data = await workspaceDataProvider.get({
-          userDataPath: context.value.userDataPath,
-          workspaceId: context.value.activeWorkspace.id,
-          workspacePath: context.value.activeWorkspace.path
-        });
-
-        return readWorkspaceCharts(
-          data.workspacePath,
-          savedCharts,
-          workspaceSettings.chronicleCalendarSettings ?? defaultChronicleCalendarSettings,
-          data.options
-        );
-      });
-    } catch (error) {
-      return fail(
-        "WORKSPACE_CHARTS_SAVE_FAILED",
-        "チャート設定を保存できませんでした。",
-        ipcErrorDetails(error)
-      );
-    }
-  });
   handleLocalizedIpc(saveWorkspaceTablePreferencesChannel, async (_event, input: unknown) => {
     try {
       if (!isSaveWorkspaceTablePreferencesInput(input)) {
@@ -163,53 +112,8 @@ export function registerWorkspaceVisualizationDataHandlers(): void {
     }
   });
 
-  handleLocalizedIpc(updateChartEntryChannel, async (_event, input: unknown) => {
-    try {
-      if (!isUpdateChartEntryInput(input)) {
-        return fail("CHART_ENTRY_UPDATE_INVALID_INPUT", "チャートの変更内容が正しくありません。");
-      }
-
-      return await runWorkspaceRegistrationTask(async () => {
-        const context = await getActiveWorkspaceContext();
-        if (!context.ok) return context;
-
-        const workspaceSettings = await readWorkspaceSettings(
-          context.value.userDataPath,
-          context.value.activeWorkspace.id
-        );
-        const result = await updateWorkspaceChartEntry(
-          context.value.activeWorkspace.path,
-          workspaceSettings.charts,
-          workspaceSettings.chronicleCalendarSettings ?? defaultChronicleCalendarSettings,
-          input
-        );
-        if (result.ok) {
-          invalidateWorkspaceData(context.value.activeWorkspace.id);
-        }
-        return result;
-      });
-    } catch (error) {
-      return fail(
-        "CHART_ENTRY_UPDATE_FAILED",
-        "チャートの変更を保存できませんでした。",
-        ipcErrorDetails(error)
-      );
-    }
-  });
 }
 
 function sameTablePreferences(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
-}
-
-function normalizeChartSettingsForSave(charts: ChartSettings[]): ChartSettings[] {
-  return charts.map((chart) => ({
-    filePaths: chart.filePaths?.flatMap((filePath) => {
-      const normalized = normalizeWorkspaceRelativeSettingPath(filePath);
-      return normalized ? [normalized] : [];
-    }),
-    id: chart.id.trim(),
-    name: chart.name.trim(),
-    source: chart.source
-  }));
 }

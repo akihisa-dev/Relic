@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, stat, utimes, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   bumpWorkspaceFileIndexCacheGeneration,
+  invalidateWorkspaceFileIndexCache,
   parseCachedWorkspaceFileIndex,
   transitionWorkspaceFileIndexCacheOwner,
   workspaceFileIndexCacheVersion,
@@ -477,5 +478,78 @@ describe("workspaceFileIndexCache", () => {
     );
 
     await expect(readFile(cachePath, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("rename直前の旧writeとinvalidateが交差しても削除後は本文を再読込する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-cache-strict-refresh-"));
+    temporaryPaths.push(workspacePath);
+    const cachePath = path.join(workspacePath, "index.json");
+    const notePath = path.join(workspacePath, "note.md");
+    await writeFile(notePath, "old", "utf8");
+
+    let releaseRename!: () => void;
+    let signalRenameReady!: () => void;
+    const renameGate = new Promise<void>((resolve) => {
+      releaseRename = resolve;
+    });
+    const renameReady = new Promise<void>((resolve) => {
+      signalRenameReady = resolve;
+    });
+    const operations = {
+      mkdir,
+      readCache: (filePath: string) => readFile(filePath, "utf8"),
+      readFile: (filePath: string) => readFile(filePath, "utf8"),
+      readHead: async (filePath: string, byteLength: number) =>
+        (await readFile(filePath, "utf8")).slice(0, byteLength),
+      stat,
+      writeCache: async (filePath: string, content: string) => {
+        const temporaryCachePath = `${filePath}.pending`;
+        await writeFile(temporaryCachePath, content, "utf8");
+        signalRenameReady();
+        await renameGate;
+        await rename(temporaryCachePath, filePath);
+      }
+    };
+    const oldWrite = writeCachedWorkspaceFileIndexRecords(
+      cachePath,
+      [{
+        contentHash: "old",
+        headHash: "old",
+        kind: "markdown",
+        lines: ["old"],
+        mtimeMs: 1,
+        name: "note",
+        path: "note.md",
+        readStatus: "ok",
+        searchable: true,
+        size: 3
+      }],
+      new Map(),
+      operations,
+      { completeSnapshot: true, generation: 0, ownerPath: workspacePath }
+    );
+    await renameReady;
+
+    let deleteStarted = false;
+    const invalidation = invalidateWorkspaceFileIndexCache(cachePath, {
+      deleteCache: async (filePath) => {
+        deleteStarted = true;
+        await rm(filePath, { force: true });
+      }
+    });
+    await Promise.resolve();
+    expect(deleteStarted).toBe(false);
+
+    releaseRename();
+    await Promise.all([oldWrite, invalidation]);
+    expect(deleteStarted).toBe(true);
+    await expect(readFile(cachePath, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+
+    await writeFile(notePath, "fresh", "utf8");
+    const refreshed = await readWorkspaceFileIndex(workspacePath, { cachePath });
+
+    expect(refreshed.records).toMatchObject([{ path: "note.md", lines: ["fresh"] }]);
+    expect(refreshed.stats.cachedContentHitCount).toBe(0);
+    expect(refreshed.stats.readFileCount).toBe(1);
   });
 });

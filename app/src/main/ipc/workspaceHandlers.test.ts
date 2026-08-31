@@ -33,7 +33,6 @@ import {
   getWorkspaceStateChannel,
   refreshWorkspaceChannel,
   renameWorkspaceChannel,
-  saveWorkspaceChartsChannel,
   searchWorkspaceChannel,
   togglePinChannel
 } from "../../shared/ipc";
@@ -170,11 +169,6 @@ describe("workspaceHandlers", () => {
       { name: "人物関係", path: "人物関係.md", type: "file" },
       { name: "読書メモ", path: "読書メモ.md", type: "file" }
     ]);
-    expect(result.ok ? result.value.fileIndex : []).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: "markdown", name: "人物関係", path: "人物関係.md", readStatus: "ok" }),
-      expect.objectContaining({ kind: "markdown", name: "保管メモ", path: "資料/保管メモ.md", readStatus: "ok" }),
-      expect.objectContaining({ kind: "markdown", name: "読書メモ", path: "読書メモ.md", readStatus: "ok" })
-    ]));
   });
 
   it("リフレッシュで追加・削除・名称変更とグラフ・年表の派生データをディスクから再構築する", async () => {
@@ -230,13 +224,11 @@ describe("workspaceHandlers", () => {
 
     const refreshed = await handlerFor(refreshWorkspaceChannel)(undefined, { workspaceId: workspace.id });
     expect(refreshed).toMatchObject({ ok: true });
-    expect(refreshed.ok ? refreshed.value.fileIndex?.map((entry: { path: string }) => entry.path) : []).toEqual([
-      "added.md",
-      "renamed.md",
-      "source.md"
-    ]);
     expect(refreshed.ok ? refreshed.value.fileTree : []).toEqual(expect.arrayContaining([
-      { kind: "image", name: "cover.png", path: "cover.png", type: "file" }
+      { name: "added", path: "added.md", type: "file" },
+      { kind: "image", name: "cover.png", path: "cover.png", type: "file" },
+      { name: "renamed", path: "renamed.md", type: "file" },
+      { name: "source", path: "source.md", type: "file" }
     ]));
 
     const graph = await handlerFor(getWorkspaceGraphChannel)();
@@ -399,6 +391,7 @@ describe("workspaceHandlers", () => {
     });
   });
 
+  /*
   it("チャート保存後は永続化した正規化済み設定でチャートを返す", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
@@ -421,10 +414,10 @@ describe("workspaceHandlers", () => {
     electronMock.getPath.mockReturnValue(userDataPath);
     registerWorkspaceHandlers();
     const saveChartsHandler = electronMock.handle.mock.calls.find(
-      ([channel]) => channel === saveWorkspaceChartsChannel
+      ([channel]) => channel === "removed-chart-settings-channel"
     )?.[1];
 
-    if (!saveChartsHandler) throw new Error("saveWorkspaceCharts handler was not registered");
+    if (!saveChartsHandler) throw new Error("removed chart settings handler was not registered");
 
     const result = await saveChartsHandler(undefined, [
       {
@@ -447,7 +440,7 @@ describe("workspaceHandlers", () => {
         })
       ]
     });
-  });
+  }); */
 
   it("ワークスペースID変更時はworkspace settingsを新IDに移行して旧IDを削除する", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));

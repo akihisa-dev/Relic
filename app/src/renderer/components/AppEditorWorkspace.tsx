@@ -8,6 +8,7 @@ import type { HeadingScrollTarget, OutlineHeading } from "../editorDerivedState"
 import type { FileTab, PaneId, PanelTabKind } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
 import type { WorkspaceRequestGuard } from "../hooks/useWorkspaceRequestGuard";
+import { useStableCallback, useStableOptionalCallback } from "../hooks/useStableCallback";
 import { useT } from "../i18n";
 import { AppRightPanel } from "./AppRightPanel";
 import { LayoutResizeBoundary } from "./LayoutResizeBoundary";
@@ -85,6 +86,7 @@ interface AppEditorWorkspaceProps {
   userDefinedFields: UserDefinedField[];
   workspacePath?: string | null;
   workspaceDataRevision: number;
+  workspaceStructureRevision?: number;
 }
 
 type CommonPaneViewProps = Omit<
@@ -196,10 +198,19 @@ export function AppEditorWorkspace({
   unlinkedReferences,
   userDefinedFields,
   workspaceDataRevision,
+  workspaceStructureRevision = workspaceDataRevision,
   workspacePath
 }: AppEditorWorkspaceProps): ReactElement {
   const t = useT();
   void showRightPanelRecoveryControl;
+  const stableCloseAllTabs = useStableCallback(onCloseAllTabsInPane);
+  const stableCloseOtherTabs = useStableCallback(onCloseOtherTabs);
+  const stableCloseTabsToRight = useStableCallback(onCloseTabsToRight);
+  const stableDuplicateTabFile = useStableOptionalCallback(onDuplicateTabFile);
+  const stableOpenInOtherPane = useStableCallback(onOpenInOtherPane);
+  const stableOpenLink = useStableCallback(onOpenLink);
+  const stableOpenWikiLink = useStableCallback(onOpenWikiLink);
+  const stableRevealTabFile = useStableOptionalCallback(onRevealTabFile);
   const focusLeftPane = useCallback(() => onSetFocusedPane("left"), [onSetFocusedPane]);
   const focusRightPane = useCallback(() => onSetFocusedPane("right"), [onSetFocusedPane]);
   const handleLeftScrollTarget = useCallback(() => onScrollTargetHandled("left"), [onScrollTargetHandled]);
@@ -215,21 +226,21 @@ export function AppEditorWorkspace({
     focusedPane,
     frontmatterCandidates,
     isSplitView: isSplit,
-    onCloseAllTabs: onCloseAllTabsInPane,
-    onCloseOtherTabs,
-    onCloseTabsToRight,
+    onCloseAllTabs: stableCloseAllTabs,
+    onCloseOtherTabs: stableCloseOtherTabs,
+    onCloseTabsToRight: stableCloseTabsToRight,
     onCreateFile,
-    onDuplicateTabFile,
+    onDuplicateTabFile: stableDuplicateTabFile,
     onEditorAction,
     onFileSaveError,
     onFileSaved,
     onLargeMarkdownFallback,
-    onOpenInOtherPane,
+    onOpenInOtherPane: stableOpenInOtherPane,
     onReopenClosedTab,
-    onOpenLink,
-    onOpenWikiLink,
+    onOpenLink: stableOpenLink,
+    onOpenWikiLink: stableOpenWikiLink,
     onRenameFile,
-    onRevealTabFile,
+    onRevealTabFile: stableRevealTabFile,
     onSavePreviewAsPdf,
     onTabClose,
     onTabMove,
@@ -241,6 +252,7 @@ export function AppEditorWorkspace({
     typewriterMode: isTypewriterMode,
     userDefinedFields,
     workspaceDataRevision,
+    workspaceStructureRevision,
     workspacePath
   };
   const leftPaneViewProps = paneViewProps(commonPaneViewProps, {

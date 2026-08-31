@@ -22,6 +22,7 @@ const maxOutgoingLinks = 1000;
 
 interface UseActiveDocumentContextInput {
   aliasesByPath: AliasIndex;
+  contentRevision: number;
   existingMarkdownPaths: string[];
   fileTree: WorkspaceTreeNode[] | undefined;
   focusedPane: PaneId;
@@ -46,6 +47,7 @@ export function shouldExtractOutlineHeadings(
 
 export function useActiveDocumentContext({
   aliasesByPath,
+  contentRevision,
   existingMarkdownPaths,
   fileTree,
   focusedPane,
@@ -126,6 +128,7 @@ export function useActiveDocumentContext({
 
   const { backlinks, isLoadingBacklinks } = useBacklinksState({
     activeFilePath: activeFileTabInFocusedPane && !isLargeMarkdown && isLinksPanelActive ? activeFileTabInFocusedPane.path : null,
+    contentRevision,
     enabled: isLinksPanelActive,
     fileTree,
     setWorkspaceError
@@ -138,6 +141,7 @@ export function useActiveDocumentContext({
   } = useUnlinkedReferencesState({
     activeFilePath: activeFileTabInFocusedPane && !isLargeMarkdown && isLinksPanelActive ? activeFileTabInFocusedPane.path : null,
     enabled: isLinksPanelActive,
+    contentRevision,
     fileTree,
     setWorkspaceError,
     tabs,

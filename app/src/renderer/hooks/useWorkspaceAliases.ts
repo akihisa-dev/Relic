@@ -6,11 +6,13 @@ import type { AliasIndex } from "../../shared/links";
 import { useT } from "../i18n";
 
 interface UseWorkspaceAliasesInput {
+  contentRevision?: number;
   setWorkspaceError: (message: string | null) => void;
   workspaceState: WorkspaceState | null;
 }
 
 export function useWorkspaceAliases({
+  contentRevision = 0,
   setWorkspaceError,
   workspaceState
 }: UseWorkspaceAliasesInput): AliasIndex {
@@ -44,7 +46,7 @@ export function useWorkspaceAliases({
     return () => {
       canceled = true;
     };
-  }, [setWorkspaceError, t, workspaceId, workspaceState?.fileTree]);
+  }, [contentRevision, setWorkspaceError, t, workspaceId, workspaceState?.fileTree]);
 
   return workspaceId && snapshot?.workspaceId === workspaceId ? snapshot.aliasesByPath : {};
 }

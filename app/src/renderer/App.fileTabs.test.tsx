@@ -690,7 +690,9 @@ describe("App file tabs", () => {
       });
     });
 
-    closeRequestHandler({ requestId: "close-after-input" });
+    await act(async () => {
+      closeRequestHandler({ requestId: "close-after-input" });
+    });
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "本文テスト\n終了直前の本文",

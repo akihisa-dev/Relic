@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   screen,
   waitFor
@@ -224,9 +225,12 @@ describe("App search and links", () => {
     fireEvent.click(screen.getByRole("button", { name: "リンク" }));
 
     expect(await screen.findByText("バックリンク")).toBeInTheDocument();
-    fireEvent.click(await screen.findByRole("button", { name: "source" }));
+    await act(async () => {
+      fireEvent.click(await screen.findByRole("button", { name: "source" }));
+    });
 
     expect(readMarkdownFile).toHaveBeenCalledWith({ path: "source.md" });
+    expect(await screen.findByText("参照元本文")).toBeInTheDocument();
   });
 
   it("リンクパネルを表示するまでバックリンクを取得しない", async () => {

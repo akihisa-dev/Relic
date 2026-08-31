@@ -24,23 +24,6 @@ describe("useWorkspaceCharts API contract", () => {
     expect(apiContractMismatchMessage()).toContain("Relicを再起動");
   });
 
-  it("チャート更新IPC例外時にrenderer側fallbackへ切り替えない", async () => {
-    const relic = makeRelicApi({
-      updateChartEntry: vi.fn().mockRejectedValue(new Error("ipc failed"))
-    }) as RelicApi;
-
-    await expect(relic.updateChartEntry({
-      chronicleEntryIndex: 0,
-      endValue: 1,
-      kind: "move",
-      originalEndValue: 1,
-      originalStartValue: 1,
-      path: "note.md",
-      source: "chronicle",
-      startValue: 1
-    })).rejects.toThrow("ipc failed");
-  });
-
   it("切替前のチャート完了を新しいワークスペースへ適用しない", async () => {
     const first = deferred<RelicResult<WorkspaceChart[]>>();
     const second = deferred<RelicResult<WorkspaceChart[]>>();

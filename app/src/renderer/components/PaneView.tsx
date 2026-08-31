@@ -30,6 +30,7 @@ export interface PaneViewProps {
   userDefinedFields: UserDefinedField[];
   workspacePath?: string | null;
   workspaceDataRevision?: number;
+  workspaceStructureRevision?: number;
   viewRef: MutableRefObject<EditorView | null>;
   renderChartTab: (chartId: string, pane?: PaneId) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
@@ -89,6 +90,7 @@ function PaneViewComponent({
   userDefinedFields,
   workspacePath,
   workspaceDataRevision = 0,
+  workspaceStructureRevision = workspaceDataRevision,
   viewRef,
   renderChartTab,
   renderPanelTab,
@@ -222,6 +224,7 @@ function PaneViewComponent({
         viewRef={viewRef}
         workspacePath={workspacePath}
         workspaceDataRevision={workspaceDataRevision}
+        workspaceStructureRevision={workspaceStructureRevision}
         onCreateFile={onCreateFile}
         onEditorAction={onEditorAction}
         onLargeMarkdownFallback={onLargeMarkdownFallback}
@@ -236,4 +239,27 @@ function PaneViewComponent({
   );
 }
 
-export const PaneView = memo(PaneViewComponent);
+const renderPropKeys = new Set<keyof PaneViewProps>(["renderChartTab", "renderPanelTab"]);
+
+function paneViewPropsAreEqual(previous: PaneViewProps, next: PaneViewProps): boolean {
+  const keys = new Set<keyof PaneViewProps>([
+    ...Object.keys(previous) as (keyof PaneViewProps)[],
+    ...Object.keys(next) as (keyof PaneViewProps)[]
+  ]);
+  for (const key of keys) {
+    if (!renderPropKeys.has(key) && !Object.is(previous[key], next[key])) return false;
+  }
+
+  const state = useEditorStore.getState();
+  const paneState = next.pane === "left" ? state.leftPane : state.rightPane;
+  const activeTab = state.tabs[paneState.activeTabId ?? ""];
+  if (activeTab?.kind === "chart") {
+    return Object.is(previous.renderChartTab, next.renderChartTab);
+  }
+  if (activeTab?.kind === "panel") {
+    return Object.is(previous.renderPanelTab, next.renderPanelTab);
+  }
+  return true;
+}
+
+export const PaneView = memo(PaneViewComponent, paneViewPropsAreEqual);

@@ -51,7 +51,7 @@ function watcherStatusSubscription(callback: (value: WorkspaceWatcherStatusEvent
 }
 
 const implementations: Partial<RelicApi> = {
-  apiContractVersion: 7,
+  apiContractVersion: 9,
   getWorkspaceState: () => command<WorkspaceState>("workspace_get_state"),
   openWorkspace: () => unsupported("openWorkspace (use workspace_set_path in the spike harness)"),
   refreshWorkspace: (input) => command("workspace_refresh", input as unknown as Record<string, unknown>),
@@ -63,9 +63,18 @@ const implementations: Partial<RelicApi> = {
     expectedContent: input.expectedContent
   }),
   savePreviewAsPdf: () => unsupported("savePreviewAsPdf"),
-  onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => subscription<RawWorkspaceChanged>("workspace_changed", (event) => {
-    callback({ workspaceId: event.workspaceId, changedAt: event.changedAt });
-  }),
+  onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => {
+    let revision = 0;
+    return subscription<RawWorkspaceChanged>("workspace_changed", (event) => {
+      revision += 1;
+      callback({
+        changedAt: event.changedAt,
+        kind: "full",
+        revision,
+        workspaceId: event.workspaceId
+      });
+    });
+  },
   onWorkspaceWatcherStatus: (callback) => watcherStatusSubscription(callback)
 };
 

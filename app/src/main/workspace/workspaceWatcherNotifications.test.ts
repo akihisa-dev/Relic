@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getAllWindows: vi.fn(),
-  invalidateWatcherEvents: vi.fn()
+  invalidateWatcherEvents: vi.fn().mockReturnValue({ kind: "paths", paths: ["folder/note.md"] })
 }));
 
 vi.mock("electron", () => ({
@@ -46,6 +46,9 @@ describe("workspaceWatcherNotifications", () => {
     expect(mocks.invalidateWatcherEvents).toHaveBeenCalledWith("ws-1", events);
     expect(activeSend).toHaveBeenCalledWith("workspace:changed", {
       changedAt: expect.any(String),
+      kind: "paths",
+      paths: ["folder/note.md"],
+      revision: expect.any(Number),
       workspaceId: "ws-1"
     });
     expect(activeSend.mock.calls[0][1]).not.toHaveProperty("workspacePath");
@@ -67,5 +70,15 @@ describe("workspaceWatcherNotifications", () => {
       status: "unavailable",
       workspaceId: "ws-1"
     });
+  });
+
+  it("ローカル保存に一致する監視イベントはRendererへ通知しない", () => {
+    mocks.invalidateWatcherEvents.mockReturnValue({ kind: "none" });
+    const send = vi.fn();
+    mocks.getAllWindows.mockReturnValue([{ isDestroyed: () => false, webContents: { send } }]);
+
+    notifyWorkspaceChanged({ id: "ws-1", path: "/tmp/notes" }, [{ eventType: "change", filename: "note.md" }]);
+
+    expect(send).not.toHaveBeenCalled();
   });
 });

@@ -20,7 +20,6 @@ const dependencies = vi.hoisted(() => ({
   readWorkspaceSettings: vi.fn(),
   readWorkspaceTags: vi.fn(),
   readFrontmatterValueCandidates: vi.fn(),
-  updateWorkspaceChartEntry: vi.fn(),
   updateWorkspaceSettings: vi.fn(),
 }));
 
@@ -65,7 +64,6 @@ vi.mock("../files/workspaceGraph", () => ({
 
 vi.mock("../files/charts", () => ({
   readWorkspaceCharts: dependencies.readWorkspaceCharts,
-  updateWorkspaceChartEntry: dependencies.updateWorkspaceChartEntry,
 }));
 
 vi.mock("../files/cards", () => ({
@@ -93,11 +91,9 @@ import {
   getWorkspaceGraphChannel,
   getWorkspaceTableChannel,
   getWorkspaceTagsChannel,
-  saveWorkspaceChartsChannel,
   saveWorkspaceChronicleCalendarSettingsChannel,
   saveWorkspaceFrontmatterCategoryChoicesChannel,
   saveWorkspaceTablePreferencesChannel,
-  updateChartEntryChannel,
 } from "../../shared/ipc";
 import { registerWorkspaceDataHandlers } from "./workspaceDataHandlers";
 import { setMainTranslator } from "../i18n";
@@ -201,10 +197,6 @@ describe("registerWorkspaceDataHandlers", () => {
     dependencies.readWorkspaceTable.mockResolvedValue({
       ok: true,
       value: { availableProperties: [], preferences: workspaceSettings.tablePreferences, rows: [] },
-    });
-    dependencies.updateWorkspaceChartEntry.mockResolvedValue({
-      ok: true,
-      value: [],
     });
 
     registerWorkspaceDataHandlers();
@@ -377,11 +369,6 @@ describe("registerWorkspaceDataHandlers", () => {
 
   it.each([
     {
-      channel: saveWorkspaceChartsChannel,
-      input: [],
-      label: "空のチャート設定",
-    },
-    {
       channel: saveWorkspaceFrontmatterCategoryChoicesChannel,
       input: { choices: ["人物", "人物"], workspaceId: workspace.id },
       label: "重複したカテゴリ候補",
@@ -399,11 +386,6 @@ describe("registerWorkspaceDataHandlers", () => {
       label: "逆転した暦面範囲",
     },
     {
-      channel: updateChartEntryChannel,
-      input: {},
-      label: "項目を欠いたチャート更新",
-    },
-    {
       channel: saveWorkspaceTablePreferencesChannel,
       input: {
         preferences: { ...workspaceSettings.tablePreferences, fileColumnWidth: 20 },
@@ -418,11 +400,11 @@ describe("registerWorkspaceDataHandlers", () => {
     expect(dependencies.getActiveWorkspaceContext).not.toHaveBeenCalled();
     expect(dependencies.getRegisteredWorkspaceContext).not.toHaveBeenCalled();
     expect(dependencies.updateWorkspaceSettings).not.toHaveBeenCalled();
-    expect(dependencies.updateWorkspaceChartEntry).not.toHaveBeenCalled();
     expect(dependencies.providerGet).not.toHaveBeenCalled();
     expect(dependencies.invalidateWorkspaceData).not.toHaveBeenCalled();
   });
 
+  /*
   it("チャート設定を正規化して保存し、その設定で派生チャートを読み直す", async () => {
     dependencies.normalizeWorkspaceRelativeSettingPath.mockImplementation(
       (path: string) => (path === "removed.md" ? null : path),
@@ -449,7 +431,7 @@ describe("registerWorkspaceDataHandlers", () => {
       value: derivedCharts,
     });
 
-    const result = await handlerFor(saveWorkspaceChartsChannel)({}, input);
+    const result = await handlerFor("removed-chart-settings-channel")({}, input);
 
     expect(result).toEqual({ ok: true, value: derivedCharts });
     expect(dependencies.updateWorkspaceSettings).toHaveBeenCalledWith(
@@ -464,7 +446,7 @@ describe("registerWorkspaceDataHandlers", () => {
       providerOptions,
     );
   });
-
+  */
   it("カテゴリ候補を保存し、設定層から確定した値を返す", async () => {
     const choices = ["人物", "場所"];
 
@@ -556,6 +538,7 @@ describe("registerWorkspaceDataHandlers", () => {
     expect(dependencies.getActiveWorkspaceContext).not.toHaveBeenCalled();
   });
 
+  /*
   it("チャート項目更新が成功した時だけ派生データを無効化する", async () => {
     const input = {
       chronicleEntryIndex: 0,
@@ -574,18 +557,18 @@ describe("registerWorkspaceDataHandlers", () => {
         source: "chronicle" as const,
       },
     ];
-    dependencies.updateWorkspaceChartEntry.mockResolvedValueOnce({
+    dependencies.removedChartMutation.mockResolvedValueOnce({
       ok: true,
       value: updatedCharts,
     });
 
-    const successResult = await handlerFor(updateChartEntryChannel)(
+    const successResult = await handlerFor("removed-chart-entry-channel")(
       {},
       input,
     );
 
     expect(successResult).toEqual({ ok: true, value: updatedCharts });
-    expect(dependencies.updateWorkspaceChartEntry).toHaveBeenCalledWith(
+    expect(dependencies.removedChartMutation).toHaveBeenCalledWith(
       workspace.path,
       workspaceSettings.charts,
       workspaceSettings.chronicleCalendarSettings,
@@ -596,7 +579,7 @@ describe("registerWorkspaceDataHandlers", () => {
     );
 
     dependencies.invalidateWorkspaceData.mockClear();
-    dependencies.updateWorkspaceChartEntry.mockResolvedValueOnce({
+    dependencies.removedChartMutation.mockResolvedValueOnce({
       ok: false,
       error: {
         code: "CHART_ENTRY_UPDATE_FAILED",
@@ -604,12 +587,12 @@ describe("registerWorkspaceDataHandlers", () => {
       },
     });
 
-    const failureResult = await handlerFor(updateChartEntryChannel)(
+    const failureResult = await handlerFor("removed-chart-entry-channel")(
       {},
       input,
     );
 
     expect(failureResult).toMatchObject({ ok: false });
     expect(dependencies.invalidateWorkspaceData).not.toHaveBeenCalled();
-  });
+  }); */
 });

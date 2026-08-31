@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   parseWorkflow,
+  validateDraftReleaseWorkflowPolicy,
   validateRepositoryWorkflowPolicy,
   validateWorkflow
 } from "./check-github-workflows.mjs";
@@ -26,6 +27,48 @@ jobs:
         with:
           persist-credentials: false
       - run: pnpm test
+`;
+
+const validDraftReleaseWorkflow = `
+name: Draft Release
+on:
+  push:
+    tags:
+      - "*"
+permissions:
+  contents: read
+concurrency:
+  group: draft-release-\${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate-release-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "$GITHUB_REF_TYPE" = tag && test "$GITHUB_REF_NAME" = "$(node -p \"require('./app/package.json').version\")"
+  verify-release-dependencies:
+    needs: validate-release-tag
+    runs-on: ubuntu-latest
+    steps:
+      - run: pnpm licenses:check
+  build-macos:
+    needs: verify-release-dependencies
+    runs-on: macos-latest
+    steps:
+      - run: test "$(uname -m)" = arm64
+      - run: pnpm build:mac:safe
+      - run: pnpm smoke:package
+  draft-release:
+    needs: build-macos
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - run: test "$GITHUB_REF_TYPE" = tag && test "$TAG_NAME" = "$(node -p \"require('./app/package.json').version\")"
+      - run: >-
+          gh release upload "$TAG_NAME"
+          release-assets/Relic-macOS-arm64.dmg
+          release-assets/Relic-macOS-arm64.dmg.sha256
+          THIRD_PARTY_NOTICES.md
+          sbom/relic-dependencies.cdx.json
 `;
 
 describe("check-github-workflows", () => {
@@ -113,7 +156,7 @@ jobs:
     const workflows = new Map([
       [".github/workflows/ci.yml", codeCi],
       [".github/workflows/pre-release-verification.yml", workflow("Pre-release", "workflow_dispatch", "test \"$(uname -m)\" = arm64 && pnpm build:mac:safe && pnpm smoke:package")],
-      [".github/workflows/draft-release.yml", workflow("Draft", "push", "test \"$(uname -m)\" = arm64 && pnpm build:mac:safe && pnpm smoke:package && test -f Relic-macOS-arm64.dmg && test -f Relic-macOS-arm64.dmg.sha256")]
+      [".github/workflows/draft-release.yml", parseWorkflow(validDraftReleaseWorkflow)]
     ]);
 
     expect(validateRepositoryWorkflowPolicy(workflows, {
@@ -187,35 +230,19 @@ jobs:
   });
 
   it("Draft ReleaseにDMGとchecksumがない場合は報告する", () => {
-    const packageWorkflow = parseWorkflow(`
-name: Package
-on: workflow_dispatch
-permissions:
-  contents: read
-concurrency:
-  group: package
-  cancel-in-progress: false
-jobs:
-  build:
-    runs-on: macos-latest
-    steps:
-      - run: test "$(uname -m)" = arm64
-      - run: pnpm build:mac:safe
-      - run: pnpm smoke:package
-`);
-    const workflows = new Map([
-      [".github/workflows/ci.yml", packageWorkflow],
-      [".github/workflows/pre-release-verification.yml", packageWorkflow],
-      [".github/workflows/draft-release.yml", packageWorkflow]
-    ]);
+    const workflow = parseWorkflow(validDraftReleaseWorkflow);
+    const uploadStep = workflow.jobs["draft-release"].steps[1];
+    uploadStep.run = uploadStep.run
+      .replace("release-assets/Relic-macOS-arm64.dmg.sha256", "")
+      .replace("release-assets/Relic-macOS-arm64.dmg", "");
+    const errors = validateDraftReleaseWorkflowPolicy(workflow);
 
-    expect(validateRepositoryWorkflowPolicy(workflows, {
-      engines: { node: ">=22 <27" },
-      packageManager: "pnpm@10.10.0"
-    })).toEqual(expect.arrayContaining([
-      ".github/workflows/draft-release.yml: missing macOS release asset Relic-macOS-arm64.dmg.",
-      ".github/workflows/draft-release.yml: missing macOS release asset Relic-macOS-arm64.dmg.sha256."
-    ]));
+    expect(errors).toContain(
+      ".github/workflows/draft-release.yml: draft-release job must upload release-assets/Relic-macOS-arm64.dmg."
+    );
+    expect(errors).toContain(
+      ".github/workflows/draft-release.yml: draft-release job must upload release-assets/Relic-macOS-arm64.dmg.sha256."
+    );
   });
 
   it("ドラフト配布の書込jobがrelease環境を経由しない場合は報告する", () => {
@@ -278,5 +305,63 @@ jobs:
     expect(errors).toContain(
       ".github/workflows/draft-release.yml: job build must verify an arm64 runner before pnpm build:mac:safe."
     );
+  });
+
+  it("現行Release Checklistのtag・版数・添付条件を満たすfixtureを受理する", () => {
+    expect(validateDraftReleaseWorkflowPolicy(
+      parseWorkflow(validDraftReleaseWorkflow)
+    )).toEqual([]);
+  });
+
+  it.each([
+    {
+      expected: ".github/workflows/draft-release.yml: Draft Release must run only for tag pushes.",
+      mutate(workflow) {
+        workflow.on.push.branches = ["main"];
+      },
+      name: "tag限定trigger"
+    },
+    {
+      expected: ".github/workflows/draft-release.yml: validate-release-tag job must compare the pushed tag with app/package.json version.",
+      mutate(workflow) {
+        workflow.jobs["validate-release-tag"].steps[0].run = "test \"$GITHUB_REF_TYPE\" = tag";
+      },
+      name: "package versionとのtag照合"
+    },
+    {
+      expected: ".github/workflows/draft-release.yml: verify-release-dependencies job must check the SBOM and third-party notices with pnpm licenses:check.",
+      mutate(workflow) {
+        workflow.jobs["verify-release-dependencies"].steps = [];
+      },
+      name: "SBOMと第三者通知書の生成確認"
+    },
+    {
+      expected: ".github/workflows/draft-release.yml: draft-release job must recheck the tag ref and app/package.json version before writing.",
+      mutate(workflow) {
+        workflow.jobs["draft-release"].steps.shift();
+      },
+      name: "Release書込直前のtag再照合"
+    },
+    {
+      expected: ".github/workflows/draft-release.yml: draft-release job must upload THIRD_PARTY_NOTICES.md.",
+      mutate(workflow) {
+        workflow.jobs["draft-release"].steps[1].run = workflow.jobs["draft-release"].steps[1].run
+          .replace("THIRD_PARTY_NOTICES.md", "");
+      },
+      name: "第三者通知書upload"
+    },
+    {
+      expected: ".github/workflows/draft-release.yml: draft-release job must upload sbom/relic-dependencies.cdx.json.",
+      mutate(workflow) {
+        workflow.jobs["draft-release"].steps[1].run = workflow.jobs["draft-release"].steps[1].run
+          .replace("sbom/relic-dependencies.cdx.json", "");
+      },
+      name: "SBOM upload"
+    }
+  ])("$name stepの欠落をfixtureで検出する", ({ expected, mutate }) => {
+    const workflow = parseWorkflow(validDraftReleaseWorkflow);
+    mutate(workflow);
+
+    expect(validateDraftReleaseWorkflowPolicy(workflow)).toContain(expected);
   });
 });

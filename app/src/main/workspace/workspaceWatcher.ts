@@ -13,6 +13,7 @@ export {
   workspaceChangeNotificationDelay,
   workspaceChangeNotifyDelayMs,
   workspaceWatcherFailureNotifyDelayMs,
+  workspaceWatcherRecoveryStabilityDelayMs,
   workspaceWatcherRetryBaseDelayMs,
   workspaceWatcherRetryDelay,
   workspaceWatcherRetryMaxDelayMs

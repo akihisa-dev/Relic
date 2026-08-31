@@ -178,7 +178,7 @@ describe("App workspace refresh", () => {
     fireEvent.click(screen.getByRole("button", { name: "リフレッシュ" }));
     await waitFor(() => expect(window.relic?.refreshWorkspace).toHaveBeenCalledTimes(1));
 
-    act(() => workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" }));
+    act(() => workspaceChanged({ changedAt: new Date().toISOString(), kind: "full", revision: 1, workspaceId: "ws-1" }));
     expect(getWorkspaceState).toHaveBeenCalledTimes(1);
 
     await act(async () => deferred.resolve({ ok: true, value: noteWorkspace }));
@@ -220,13 +220,13 @@ describe("App workspace refresh", () => {
 
     await renderApp();
     await screen.findByRole("button", { name: "Notes" });
-    act(() => workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1" }));
+    act(() => workspaceChanged({ changedAt: new Date().toISOString(), kind: "full", revision: 1, workspaceId: "ws-1" }));
     await waitFor(() => expect(getWorkspaceState).toHaveBeenCalledTimes(2));
 
     fireEvent.click(await screen.findByRole("button", { name: "Notes" }));
     fireEvent.click(await screen.findByRole("button", { name: "Archive" }));
     await screen.findByRole("button", { name: /Archive note/ });
-    act(() => workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-2" }));
+    act(() => workspaceChanged({ changedAt: new Date().toISOString(), kind: "full", revision: 2, workspaceId: "ws-2" }));
 
     await act(async () => staleRefresh.resolve({ ok: true, value: workspaceA }));
 

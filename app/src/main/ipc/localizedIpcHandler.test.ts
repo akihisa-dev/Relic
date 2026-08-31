@@ -75,6 +75,22 @@ describe("localizeIpcResult", () => {
 });
 
 describe("handleLocalizedIpc", () => {
+  it("許可された送信元の処理をMain IPCライフサイクルへ登録する", async () => {
+    const handler = vi.fn(async () => ({ ok: true as const, value: "done" }));
+
+    handleLocalizedIpc("test:tracked-request", handler);
+    const registeredHandler = electronMock.handle.mock.calls.at(-1)?.[1] as
+      | ((event: { sender: unknown }) => Promise<unknown>)
+      | undefined;
+    if (!registeredHandler) throw new Error("IPC handler was not registered.");
+
+    await expect(registeredHandler({ sender: {} })).resolves.toEqual({
+      ok: true,
+      value: "done"
+    });
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
   it("許可されていない送信元を処理本体へ渡さず拒否する", async () => {
     const handler = vi.fn(() => ({ ok: true }));
     configureIpcSenderAuthorization(() => false);

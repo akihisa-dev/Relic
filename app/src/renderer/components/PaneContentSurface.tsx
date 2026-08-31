@@ -42,6 +42,7 @@ interface PaneContentSurfaceProps {
   viewRef: MutableRefObject<EditorView | null>;
   workspacePath?: string | null;
   workspaceDataRevision?: number;
+  workspaceStructureRevision?: number;
   onCreateFile: (name: string) => void;
   onEditorAction?: () => void;
   onLoadExternalVersion: () => void;
@@ -70,6 +71,7 @@ export function PaneContentSurface({
   viewRef,
   workspacePath,
   workspaceDataRevision = 0,
+  workspaceStructureRevision = workspaceDataRevision,
   onCreateFile,
   onEditorAction,
   onLargeMarkdownFallback,
@@ -248,11 +250,11 @@ export function PaneContentSurface({
   }
 
   if (activeTab?.kind === "image") {
-    return <ImageTabSurface name={activeTab.name} path={activeTab.path} refreshRevision={workspaceDataRevision} />;
+    return <ImageTabSurface name={activeTab.name} path={activeTab.path} refreshRevision={workspaceStructureRevision} />;
   }
 
   if (activeTab?.kind === "pdf") {
-    return <PdfTabSurface name={activeTab.name} path={activeTab.path} refreshRevision={workspaceDataRevision} />;
+    return <PdfTabSurface name={activeTab.name} path={activeTab.path} refreshRevision={workspaceStructureRevision} />;
   }
 
   if (activeTab?.kind === "chart") {

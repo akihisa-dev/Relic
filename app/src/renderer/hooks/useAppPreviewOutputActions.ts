@@ -1,10 +1,10 @@
 import { relicClient } from "../relicClient";
-import { useCallback } from "react";
 
 import type { FileTab } from "../store/editorStore";
 import { buildPreviewOutputHtml } from "../outputHtml";
 import type { Translator } from "../i18nModel";
 import type { IsCurrentRequest } from "./useAsyncRequestGuard";
+import { useStableCallback } from "./useStableCallback";
 
 interface UseAppPreviewOutputActionsInput {
   activeFileTab: FileTab | null;
@@ -27,7 +27,7 @@ export function useAppPreviewOutputActions({
 }: UseAppPreviewOutputActionsInput): {
   handleSavePreviewAsPdf: (tab?: FileTab) => void;
 } {
-  const buildPreviewOutput = useCallback(async (tab?: FileTab) => {
+  const buildPreviewOutput = useStableCallback(async (tab?: FileTab) => {
     const outputTab = tab ?? activeFileTab;
     if (!outputTab) return null;
 
@@ -40,9 +40,9 @@ export function useAppPreviewOutputActions({
       workspacePath,
       workspaceRevision
     });
-  }, [activeFileTab, t, workspacePath, workspaceRevision]);
+  });
 
-  const handleSavePreviewAsPdf = useCallback((tab?: FileTab): void => {
+  const handleSavePreviewAsPdf = useStableCallback((tab?: FileTab): void => {
     if (!relicClient.current) return;
     const isCurrentWorkspace = beginWorkspaceRequest();
 
@@ -69,7 +69,7 @@ export function useAppPreviewOutputActions({
       if (!isCurrentWorkspace()) return;
       setWorkspaceError(error instanceof Error ? error.message : String(error));
     });
-  }, [beginWorkspaceRequest, buildPreviewOutput, setWorkspaceError, showToast, t]);
+  });
 
   return {
     handleSavePreviewAsPdf

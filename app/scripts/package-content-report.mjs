@@ -12,6 +12,74 @@ const requiredAsarEntries = [
   "/assets/icon.iconset/icon_32x32.png"
 ];
 
+const electronRuntimeResourceEntries = [
+  "af.lproj",
+  "am.lproj",
+  "ar.lproj",
+  "bg.lproj",
+  "bn.lproj",
+  "ca.lproj",
+  "cs.lproj",
+  "da.lproj",
+  "de.lproj",
+  "el.lproj",
+  "electron.icns",
+  "en.lproj",
+  "en_GB.lproj",
+  "es.lproj",
+  "es_419.lproj",
+  "et.lproj",
+  "fa.lproj",
+  "fi.lproj",
+  "fil.lproj",
+  "fr.lproj",
+  "gu.lproj",
+  "he.lproj",
+  "hi.lproj",
+  "hr.lproj",
+  "hu.lproj",
+  "id.lproj",
+  "it.lproj",
+  "ja.lproj",
+  "kn.lproj",
+  "ko.lproj",
+  "lt.lproj",
+  "lv.lproj",
+  "ml.lproj",
+  "mr.lproj",
+  "ms.lproj",
+  "nb.lproj",
+  "nl.lproj",
+  "pl.lproj",
+  "pt_BR.lproj",
+  "pt_PT.lproj",
+  "ro.lproj",
+  "ru.lproj",
+  "sk.lproj",
+  "sl.lproj",
+  "sr.lproj",
+  "sv.lproj",
+  "sw.lproj",
+  "ta.lproj",
+  "te.lproj",
+  "th.lproj",
+  "tr.lproj",
+  "uk.lproj",
+  "ur.lproj",
+  "vi.lproj",
+  "zh_CN.lproj",
+  "zh_TW.lproj"
+];
+
+export const requiredPackagedResourceEntries = [
+  "/app.asar",
+  "/LICENSE",
+  "/THIRD_PARTY_NOTICES.md",
+  "/sbom",
+  "/sbom/relic-dependencies.cdx.json",
+  ...electronRuntimeResourceEntries.map((entry) => `/${entry}`)
+];
+
 export function auditAsarEntries(entries) {
   const normalizedEntries = entries.map(normalizeAsarEntry);
   const entrySet = new Set(normalizedEntries);
@@ -45,6 +113,35 @@ export function isForbiddenAsarEntry(entry) {
   return !entry.startsWith("/.vite/renderer/main_window/");
 }
 
+export function auditPackagedResourceEntries(entries) {
+  const normalizedEntries = entries.map(normalizeAsarEntry);
+  const entrySet = new Set(normalizedEntries);
+  const allowedEntries = new Set(requiredPackagedResourceEntries);
+  return {
+    missing: requiredPackagedResourceEntries.filter((entry) => !entrySet.has(entry)),
+    unexpected: normalizedEntries.filter((entry) => !allowedEntries.has(entry))
+  };
+}
+
+export async function listPackagedResourceEntries(resourcesDirectory) {
+  const entries = [];
+
+  async function visit(directory, relativeDirectory = "") {
+    const children = await readdir(directory, { withFileTypes: true });
+    children.sort((left, right) => left.name.localeCompare(right.name));
+    for (const child of children) {
+      const relativePath = path.posix.join(relativeDirectory, child.name);
+      entries.push(`/${relativePath}`);
+      if (child.isDirectory()) {
+        await visit(path.join(directory, child.name), relativePath);
+      }
+    }
+  }
+
+  await visit(resourcesDirectory);
+  return entries;
+}
+
 export async function inspectPackagedResources(resourcesDirectory) {
   const appAsarPath = path.join(resourcesDirectory, "app.asar");
   const legalPaths = [
@@ -52,7 +149,16 @@ export async function inspectPackagedResources(resourcesDirectory) {
     path.join(resourcesDirectory, "THIRD_PARTY_NOTICES.md"),
     path.join(resourcesDirectory, "sbom", "relic-dependencies.cdx.json")
   ];
-  await Promise.all([access(appAsarPath), ...legalPaths.map((filePath) => access(filePath))]);
+  const resourceAudit = auditPackagedResourceEntries(
+    await listPackagedResourceEntries(resourcesDirectory)
+  );
+  if (resourceAudit.missing.length > 0 || resourceAudit.unexpected.length > 0) {
+    const details = [
+      ...resourceAudit.missing.map((entry) => `Missing packaged resource: ${entry}`),
+      ...resourceAudit.unexpected.map((entry) => `Unexpected packaged resource: ${entry}`)
+    ];
+    throw new Error(details.join("\n"));
+  }
 
   const asarEntries = listPackage(appAsarPath);
   const audit = auditAsarEntries(asarEntries);

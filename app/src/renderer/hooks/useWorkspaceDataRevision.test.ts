@@ -32,6 +32,21 @@ describe("useWorkspaceDataRevision", () => {
     expect(result.current.workspaceDataRevision).toBe(1);
   });
 
+  it("path変更は本文由来の世代だけを進め、構造由来の表示を再読込しない", () => {
+    const { result } = renderHook(() => useWorkspaceDataRevision("workspace-a"));
+    const initialStructureRevision = result.current.workspaceStructureRevision;
+
+    act(() => result.current.markWorkspaceDataChanged("paths"));
+
+    expect(result.current.workspaceDataRevision).toBe(1);
+    expect(result.current.workspaceStructureRevision).toBe(initialStructureRevision);
+
+    act(() => result.current.markWorkspaceDataChanged("full"));
+
+    expect(result.current.workspaceDataRevision).toBe(2);
+    expect(result.current.workspaceStructureRevision).toBe(initialStructureRevision + 1);
+  });
+
   it("起動後の最初のワークスペース読込は空のcacheに対する基準activationとして扱う", () => {
     const { result, rerender } = renderHook(
       ({ workspaceId }) => useWorkspaceDataRevision(workspaceId),

@@ -6,6 +6,7 @@ import { useT } from "../i18n";
 
 interface UseBacklinksStateInput {
   activeFilePath: string | null;
+  contentRevision?: number;
   enabled: boolean;
   fileTree: WorkspaceTreeNode[] | undefined;
   setWorkspaceError: (message: string | null) => void;
@@ -15,6 +16,7 @@ const emptyBacklinks: Backlink[] = [];
 
 export function useBacklinksState({
   activeFilePath,
+  contentRevision = 0,
   enabled,
   fileTree,
   setWorkspaceError
@@ -54,7 +56,7 @@ export function useBacklinksState({
     return () => {
       canceled = true;
     };
-  }, [activeFilePath, enabled, fileTree, setWorkspaceError, t]);
+  }, [activeFilePath, contentRevision, enabled, fileTree, setWorkspaceError, t]);
 
   return {
     backlinks: hasActiveFile && backlinkState.path === activeFilePath ? backlinkState.backlinks : emptyBacklinks,

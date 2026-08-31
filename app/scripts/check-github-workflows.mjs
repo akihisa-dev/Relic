@@ -59,6 +59,31 @@ function workflowCommands(workflow) {
       : []);
 }
 
+function jobCommands(job) {
+  return Array.isArray(job?.steps)
+    ? job.steps.map((step) => typeof step?.run === "string" ? step.run : "")
+    : [];
+}
+
+function jobNeeds(job, dependency) {
+  if (typeof job?.needs === "string") return job.needs === dependency;
+  return Array.isArray(job?.needs) && job.needs.includes(dependency);
+}
+
+function hasTagRefGuard(job) {
+  return jobCommands(job).some((command) =>
+    command.includes("GITHUB_REF_TYPE") && command.includes("tag")
+  );
+}
+
+function hasPackageVersionComparison(job, tagVariable) {
+  return jobCommands(job).some((command) =>
+    command.includes(tagVariable)
+    && command.includes("app/package.json")
+    && command.includes("version")
+  );
+}
+
 export function parseWorkflow(content, source = "workflow") {
   const parsed = load(content, { schema: JSON_SCHEMA });
   if (!isObject(parsed)) throw new Error(`${source}: workflow root must be a mapping.`);
@@ -124,6 +149,90 @@ export function validateWorkflow(workflow, source = "workflow") {
       }
     }
   }
+  return errors;
+}
+
+export function validateDraftReleaseWorkflowPolicy(
+  workflow,
+  source = ".github/workflows/draft-release.yml"
+) {
+  const errors = [];
+  if (!workflow) {
+    return [`${source}: Draft Release workflow is required.`];
+  }
+
+  const triggers = workflowTriggers(workflow);
+  const push = workflow.on?.push;
+  if (triggers.size !== 1
+    || !triggers.has("push")
+    || !isObject(push)
+    || !Array.isArray(push.tags)
+    || push.tags.length === 0
+    || Object.keys(push).some((key) => key !== "tags")) {
+    errors.push(`${source}: Draft Release must run only for tag pushes.`);
+  }
+
+  const validateTagJob = workflow.jobs?.["validate-release-tag"];
+  if (!validateTagJob) {
+    errors.push(`${source}: validate-release-tag job is required.`);
+  } else {
+    if (!hasTagRefGuard(validateTagJob)) {
+      errors.push(`${source}: validate-release-tag job must reject non-tag refs.`);
+    }
+    if (!hasPackageVersionComparison(validateTagJob, "GITHUB_REF_NAME")) {
+      errors.push(`${source}: validate-release-tag job must compare the pushed tag with app/package.json version.`);
+    }
+  }
+
+  const dependencyJob = workflow.jobs?.["verify-release-dependencies"];
+  if (!dependencyJob) {
+    errors.push(`${source}: verify-release-dependencies job is required.`);
+  } else {
+    if (!jobNeeds(dependencyJob, "validate-release-tag")) {
+      errors.push(`${source}: verify-release-dependencies job must depend on validate-release-tag.`);
+    }
+    if (!jobCommands(dependencyJob).some((command) => command.includes("pnpm licenses:check"))) {
+      errors.push(`${source}: verify-release-dependencies job must check the SBOM and third-party notices with pnpm licenses:check.`);
+    }
+  }
+
+  const buildJob = workflow.jobs?.["build-macos"];
+  if (!buildJob) {
+    errors.push(`${source}: build-macos job is required.`);
+  } else if (!jobNeeds(buildJob, "verify-release-dependencies")) {
+    errors.push(`${source}: build-macos job must depend on verify-release-dependencies.`);
+  }
+
+  const draftReleaseJob = workflow.jobs?.["draft-release"];
+  if (!draftReleaseJob) {
+    errors.push(`${source}: draft-release job is required.`);
+    return errors;
+  }
+  if (!jobNeeds(draftReleaseJob, "build-macos")) {
+    errors.push(`${source}: draft-release job must depend on build-macos.`);
+  }
+  if (draftReleaseJob.environment !== "release") {
+    errors.push(`${source}: draft-release job must use the protected release environment.`);
+  }
+  if (!hasTagRefGuard(draftReleaseJob)
+    || !hasPackageVersionComparison(draftReleaseJob, "TAG_NAME")) {
+    errors.push(`${source}: draft-release job must recheck the tag ref and app/package.json version before writing.`);
+  }
+
+  const uploadCommand = jobCommands(draftReleaseJob).find((command) =>
+    command.includes("gh release upload")
+  ) ?? "";
+  for (const assetPath of [
+    "release-assets/Relic-macOS-arm64.dmg",
+    "release-assets/Relic-macOS-arm64.dmg.sha256",
+    "THIRD_PARTY_NOTICES.md",
+    "sbom/relic-dependencies.cdx.json"
+  ]) {
+    if (!uploadCommand.includes(assetPath)) {
+      errors.push(`${source}: draft-release job must upload ${assetPath}.`);
+    }
+  }
+
   return errors;
 }
 
@@ -199,16 +308,7 @@ export function validateRepositoryWorkflowPolicy(workflows, packageJson) {
     errors.push(".github/workflows/pre-release-verification.yml: pre-release verification must be manual-only.");
   }
   const draftRelease = workflows.get(".github/workflows/draft-release.yml");
-  const draftReleaseJob = draftRelease?.jobs?.["draft-release"];
-  if (draftReleaseJob && draftReleaseJob.environment !== "release") {
-    errors.push(".github/workflows/draft-release.yml: draft-release job must use the protected release environment.");
-  }
-  const draftReleaseCommands = draftRelease ? workflowCommands(draftRelease) : [];
-  for (const assetName of ["Relic-macOS-arm64.dmg", "Relic-macOS-arm64.dmg.sha256"]) {
-    if (!draftReleaseCommands.some((command) => command.includes(assetName))) {
-      errors.push(`.github/workflows/draft-release.yml: missing macOS release asset ${assetName}.`);
-    }
-  }
+  errors.push(...validateDraftReleaseWorkflowPolicy(draftRelease));
   for (const command of ["pnpm build:mac:safe"]) {
     if (!preRelease || !workflowCommands(preRelease).some((entry) => entry.includes(command))) {
       errors.push(`.github/workflows/pre-release-verification.yml: missing shared safe build command ${command}.`);

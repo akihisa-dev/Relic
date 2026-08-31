@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   screen,
   waitFor
@@ -435,7 +436,6 @@ describe("App charts", () => {
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
-    const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
     const getWorkspaceCharts = vi.fn().mockResolvedValue({
       ok: true,
       value: [{
@@ -458,7 +458,6 @@ describe("App charts", () => {
           path: "history/kamakura.md"
         }
       }),
-      updateChartEntry
     });
 
     const renderResult = await renderApp();
@@ -499,7 +498,6 @@ describe("App charts", () => {
     expect(renderResult.container.querySelectorAll(".chronicle-guide-line")).toHaveLength(0);
     expect(renderResult.container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-year")).toHaveLength(0);
     expect(renderResult.container.querySelectorAll(".chronicle-guide-row-line")).toHaveLength(0);
-    expect(updateChartEntry).not.toHaveBeenCalled();
   });
 
   it("カードを開いて戻ったときに一覧の選択状態を維持する", async () => {
@@ -537,7 +535,6 @@ describe("App charts", () => {
   });
 
   it("chronicleのCanvas操作はMarkdownを書き換えない", async () => {
-    const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({
       getWorkspaceCharts: vi.fn().mockResolvedValue({
@@ -559,7 +556,6 @@ describe("App charts", () => {
           path: "history/kamakura.md"
         }
       }),
-      updateChartEntry
     });
 
     const { container } = await renderApp();
@@ -569,7 +565,6 @@ describe("App charts", () => {
     fireEvent.click(screen.getByRole("button", { name: "クロニクル" }));
     await waitFor(() => expect(container.querySelector(".chronicle-canvas")).not.toBeNull());
     expect(container.querySelector(".chronicle-actions")).toBeNull();
-    expect(updateChartEntry).not.toHaveBeenCalled();
   });
 
   it("chronicleの暦→カテゴリツリーと表示状態をタブへ戻った後もペイン内で維持する", async () => {
@@ -602,13 +597,15 @@ describe("App charts", () => {
     expect(screen.getByRole("button", { name: "未分類カテゴリを表示" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "暦ツリーを折りたたむ" }));
 
-    useEditorStore.getState().openFileInPane("left", {
-      content: "# 一時ファイル",
-      name: "一時ファイル",
-      path: "temporary.md"
+    act(() => {
+      useEditorStore.getState().openFileInPane("left", {
+        content: "# 一時ファイル",
+        name: "一時ファイル",
+        path: "temporary.md"
+      });
     });
     await waitFor(() => expect(screen.queryByRole("complementary", { name: "暦" })).not.toBeInTheDocument());
-    useEditorStore.getState().setTabActive("left", "chart-chronicle");
+    act(() => useEditorStore.getState().setTabActive("left", "chart-chronicle"));
 
     const expandTree = await screen.findByRole("button", { name: "暦ツリーを展開" });
     fireEvent.click(expandTree);

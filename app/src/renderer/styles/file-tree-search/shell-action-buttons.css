@@ -1,0 +1,14 @@
+.primary-button {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-contrast);
+}
+.primary-button:hover {
+  background: var(--accent-hover);
+}
+
+.secondary-button {
+  background: transparent;
+  border-color: var(--border-medium);
+  color: var(--text-2);
+}

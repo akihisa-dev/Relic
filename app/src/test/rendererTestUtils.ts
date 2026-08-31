@@ -1,3 +1,4 @@
+import { act, cleanup } from "@testing-library/react";
 import { vi } from "vitest";
 
 import {
@@ -29,23 +30,26 @@ export function installMatchMediaMock(): void {
 }
 
 export function resetRendererStores(): void {
-  __resetEditorInputBufferForTests();
-  useEditorStore.setState({
-    closedTabs: [],
-    focusedPane: "left",
-    isSplit: false,
-    leftPane: { activeTabId: null, history: [], tabIds: [] },
-    navigationHistory: [],
-    navigationIndex: -1,
-    rightPane: { activeTabId: null, history: [], tabIds: [] },
-    tabs: {}
-  });
-  useUiStore.setState({
-    activeSidebarView: "files",
-    isRightPanelOpen: true,
-    isSidebarOpen: true,
-    isTypewriterMode: false,
-    rightPanelView: "outline"
+  cleanup();
+  act(() => {
+    __resetEditorInputBufferForTests();
+    useEditorStore.setState({
+      closedTabs: [],
+      focusedPane: "left",
+      isSplit: false,
+      leftPane: { activeTabId: null, history: [], tabIds: [] },
+      navigationHistory: [],
+      navigationIndex: -1,
+      rightPane: { activeTabId: null, history: [], tabIds: [] },
+      tabs: {}
+    });
+    useUiStore.setState({
+      activeSidebarView: "files",
+      isRightPanelOpen: true,
+      isSidebarOpen: true,
+      isTypewriterMode: false,
+      rightPanelView: "outline"
+    });
   });
 }
 
@@ -117,13 +121,11 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     saveUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveWorkspaceFrontmatterCategoryChoices: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     saveWorkspaceChronicleCalendarSettings: vi.fn().mockResolvedValue({ ok: true, value: { baseCalendarName: "基準暦", calendars: [], visibleCalendarNames: ["基準暦"] } }),
-    saveWorkspaceCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     saveWorkspaceTablePreferences: vi.fn().mockResolvedValue({ ok: true, value: { columnWidths: [], fileColumnWidth: 260, filters: [], selectedProperties: [], sort: { direction: "asc", property: null }, wrappedProperties: [] } }),
     searchAndReplace: vi.fn(),
     searchWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { results: [], skippedLongLines: 0, skippedLargeFiles: 0, truncated: false } }),
     switchWorkspace: vi.fn(),
     togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
-    updateChartEntry: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     copyEditorTextToClipboard: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     ...overrides

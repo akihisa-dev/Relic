@@ -9,7 +9,11 @@ import { useT } from "../i18n";
 interface PagePreviewPopoverProps {
   aliasesByPath: AliasIndex;
   existingMarkdownPaths: string[];
+  loadMarkdownRenderer?: PagePreviewMarkdownLoader;
 }
+
+type PagePreviewMarkdownModule = Pick<typeof import("../previewMarkdown"), "renderMarkdown">;
+type PagePreviewMarkdownLoader = () => Promise<PagePreviewMarkdownModule>;
 
 interface PreviewState {
   error: string | null;
@@ -24,9 +28,12 @@ const previewDelayMs = 240;
 const popoverWidth = 360;
 const popoverHeight = 280;
 
+const loadPagePreviewMarkdown: PagePreviewMarkdownLoader = () => import("../previewMarkdown");
+
 export function PagePreviewPopover({
   aliasesByPath,
-  existingMarkdownPaths
+  existingMarkdownPaths,
+  loadMarkdownRenderer = loadPagePreviewMarkdown
 }: PagePreviewPopoverProps): ReactElement | null {
   const t = useT();
   const [preview, setPreview] = useState<PreviewState | null>(null);
@@ -85,7 +92,7 @@ export function PagePreviewPopover({
         void relicClient.current.readMarkdownFile({ path }).then(async (result) => {
           if (requestIdRef.current !== requestId) return;
           if (result.ok) {
-            const { renderMarkdown } = await import("../previewMarkdown");
+            const { renderMarkdown } = await loadMarkdownRenderer();
             if (requestIdRef.current !== requestId) return;
             const html = sanitizePreviewHtml(renderMarkdown(result.value.content, null, new Map(), false, t));
             setPreview({ error: null, html, isLoading: false, path, x, y });
@@ -147,7 +154,7 @@ export function PagePreviewPopover({
       window.removeEventListener("scroll", hide, true);
       window.removeEventListener("keydown", hide, true);
     };
-  }, [aliasesByPath, existingMarkdownPaths, existingPathSet, t]);
+  }, [aliasesByPath, existingMarkdownPaths, existingPathSet, loadMarkdownRenderer, t]);
 
   if (!preview) return null;
 

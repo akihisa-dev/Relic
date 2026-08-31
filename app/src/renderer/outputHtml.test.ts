@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createTranslator } from "./i18nModel";
 import {
@@ -9,7 +9,26 @@ import {
 } from "./outputHtml";
 import { maxOutputDiagramSourceChars, maxPreviewMarkdownBytes } from "../shared/ipc/output";
 
+const renderDiagramElementMock = vi.hoisted(() => vi.fn());
+
+vi.mock("./diagramPreview", async (importOriginal) => ({
+  ...await importOriginal<typeof import("./diagramPreview")>(),
+  renderDiagramElement: renderDiagramElementMock
+}));
+
 describe("outputHtml", () => {
+  beforeEach(() => {
+    renderDiagramElementMock.mockReset();
+    renderDiagramElementMock.mockImplementation(async (container: HTMLElement, language: string) => {
+      container.innerHTML = [
+        `<div class="preview-diagram-svg preview-diagram-svg--${language}">`,
+        '<svg viewBox="0 0 120 80"><text>rendered diagram</text></svg>',
+        "</div>"
+      ].join("");
+      return null;
+    });
+  });
+
   afterEach(() => {
     document.body.replaceChildren();
   });
@@ -69,7 +88,7 @@ describe("outputHtml", () => {
     expect(document.querySelector("meta[http-equiv='refresh']")).toBeNull();
   });
 
-  it("PDF用HTMLでも通常Markdown、コードブロック、KaTeX、Mermaid枠を維持する", async () => {
+  it("PDF用HTMLでも通常Markdown、コードブロック、KaTeX、描画済みMermaid SVGを維持する", async () => {
     const t = createTranslator("ja");
     const result = await buildPreviewOutputHtml({
       content: [
@@ -99,8 +118,41 @@ describe("outputHtml", () => {
     expect(result.html).toContain("math-inline");
     expect(result.html).toContain("katex");
     expect(result.html).toContain("hljs language-js");
-    expect(result.html).toContain("preview-diagram");
-    expect(result.html).toContain('data-diagram-language="mermaid"');
+    expect(renderDiagramElementMock).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      "mermaid",
+      "graph TD; A-->B",
+      t
+    );
+    const outputDocument = new DOMParser().parseFromString(result.html, "text/html");
+    expect(outputDocument.querySelector("main .relic-output-diagram svg")?.textContent)
+      .toContain("rendered diagram");
+    expect(result.html).not.toContain("data-diagram-source");
+  });
+
+  it("Mermaid描画に失敗した場合はSVG化せずソース付きfallbackを維持する", async () => {
+    renderDiagramElementMock.mockImplementationOnce(async (container: HTMLElement) => {
+      container.innerHTML = [
+        '<div class="preview-diagram-error">',
+        "<p>Mermaid diagram rendering failed.</p>",
+        '<pre><code class="language-mermaid">graph TD; A--&gt;B</code></pre>',
+        "</div>"
+      ].join("");
+      return null;
+    });
+    const result = await buildPreviewOutputHtml({
+      content: "```mermaid\ngraph TD; A-->B\n```",
+      fileName: "Note",
+      path: "Folder/Note.md",
+      t: createTranslator("ja"),
+      title: "Note"
+    });
+
+    expect(result.html).toContain("preview-diagram-error");
+    expect(result.html).toContain("graph TD; A--&gt;B");
+    const outputDocument = new DOMParser().parseFromString(result.html, "text/html");
+    expect(outputDocument.querySelector("main .relic-output-diagram")).toBeNull();
+    expect(outputDocument.querySelector("main svg")).toBeNull();
   });
 
   it("初期ファイル名に使えない文字を安全な文字にする", () => {

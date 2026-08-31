@@ -116,7 +116,7 @@ describe("App workspace request races", () => {
       openWorkspace
     });
 
-    renderApp();
+    await renderApp();
     fireEvent.click(await screen.findByRole("button", { name: "ワークスペースを開く" }));
     await waitFor(() => expect(openWorkspace).toHaveBeenCalledOnce());
 

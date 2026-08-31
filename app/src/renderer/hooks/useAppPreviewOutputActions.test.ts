@@ -76,6 +76,39 @@ describe("useAppPreviewOutputActions", () => {
     expect(setWorkspaceError).not.toHaveBeenCalled();
   });
 
+  it("操作関数の同一性を保ち、引数省略時は最新の選択ファイルを使う", async () => {
+    const savePreviewAsPdf = vi.fn<SavePreviewAsPdf>().mockResolvedValue({
+      ok: true,
+      value: { status: "saved" }
+    });
+    installApi(savePreviewAsPdf);
+    const nextTab: FileTab = {
+      ...activeFileTab,
+      content: "# Updated",
+      id: "updated",
+      name: "Updated.md",
+      path: "docs/Updated.md"
+    };
+    const { rerender, result } = renderHook(
+      ({ tab }) => useAppPreviewOutputActions({
+        activeFileTab: tab,
+        setWorkspaceError: vi.fn(),
+        showToast: vi.fn(),
+        t: createTranslator("en")
+      }),
+      { initialProps: { tab: activeFileTab } }
+    );
+    const initialHandler = result.current.handleSavePreviewAsPdf;
+
+    rerender({ tab: nextTab });
+    act(() => result.current.handleSavePreviewAsPdf());
+
+    expect(result.current.handleSavePreviewAsPdf).toBe(initialHandler);
+    await waitFor(() => expect(outputMock.buildPreviewOutputHtml).toHaveBeenCalledWith(
+      expect.objectContaining({ content: nextTab.content, path: nextTab.path })
+    ));
+  });
+
   it("保存キャンセルでは成功通知もエラーも表示しない", async () => {
     const savePreviewAsPdf = vi.fn<SavePreviewAsPdf>().mockResolvedValue({
       ok: true,
