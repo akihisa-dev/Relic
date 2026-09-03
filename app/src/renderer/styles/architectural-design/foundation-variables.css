@@ -42,6 +42,8 @@
   --tab-active-border: var(--glass-border);
   --tab-active-indicator: var(--glass-text);
   --tab-active-text: var(--glass-text);
+  --tab-active-text-secondary: var(--glass-text-secondary);
+  --tab-active-text-muted: var(--glass-text-muted);
   --card-preview-bg: #151513;
   --card-preview-border: rgba(255, 255, 254, 0.34);
   --card-preview-text: var(--color-white);
@@ -177,6 +179,8 @@
   --tab-active-border: rgba(242, 243, 237, 0.3);
   --tab-active-indicator: var(--color-dark-text);
   --tab-active-text: var(--color-dark-text);
+  --tab-active-text-secondary: rgba(242, 243, 237, 0.78);
+  --tab-active-text-muted: rgba(242, 243, 237, 0.62);
   --card-preview-bg: #20211d;
   --card-preview-border: rgba(242, 243, 237, 0.26);
   --card-preview-text: var(--color-dark-text);
@@ -291,6 +295,8 @@
     --tab-active-border: rgba(242, 243, 237, 0.3);
     --tab-active-indicator: var(--color-dark-text);
     --tab-active-text: var(--color-dark-text);
+    --tab-active-text-secondary: rgba(242, 243, 237, 0.78);
+    --tab-active-text-muted: rgba(242, 243, 237, 0.62);
     --card-preview-bg: #20211d;
     --card-preview-border: rgba(242, 243, 237, 0.26);
     --card-preview-text: var(--color-dark-text);

@@ -5,6 +5,65 @@
   padding-left: 1em;
 }
 
+/* Keep syntax highlighting readable and monochrome in both themes. */
+:where(.preview-body, .page-preview-body) .hljs {
+  background: transparent;
+  color: var(--text);
+}
+
+:where(.preview-body, .page-preview-body) :is(
+  .hljs-doctag,
+  .hljs-keyword,
+  .hljs-template-tag,
+  .hljs-template-variable,
+  .hljs-type,
+  .hljs-variable.language_,
+  .hljs-section,
+  .hljs-strong
+) {
+  color: var(--text);
+  font-weight: 700;
+}
+
+:where(.preview-body, .page-preview-body) :is(
+  .hljs-title,
+  .hljs-attr,
+  .hljs-attribute,
+  .hljs-literal,
+  .hljs-meta,
+  .hljs-number,
+  .hljs-operator,
+  .hljs-variable,
+  .hljs-regexp,
+  .hljs-string,
+  .hljs-built_in,
+  .hljs-symbol,
+  .hljs-name,
+  .hljs-selector-tag,
+  .hljs-selector-pseudo,
+  .hljs-bullet,
+  .hljs-link,
+  .hljs-params,
+  .hljs-property,
+  .hljs-punctuation,
+  .hljs-tag
+) {
+  color: var(--text-2);
+}
+
+:where(.preview-body, .page-preview-body) :is(.hljs-comment, .hljs-code, .hljs-formula, .hljs-quote) {
+  color: var(--text-3);
+}
+
+:where(.preview-body, .page-preview-body) :is(.hljs-subst, .hljs-emphasis) {
+  color: var(--text);
+}
+
+:where(.preview-body, .page-preview-body) :is(.hljs-addition, .hljs-deletion) {
+  background: var(--selection);
+  color: var(--text);
+}
+
 .preview-body ul,
 .preview-body ol {
   padding-left: 1.5em;

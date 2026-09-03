@@ -19,6 +19,88 @@
 /* DESIGN.md compliance overrides      */
 /* ────────────────────────────────── */
 
+/* Every dark operation surface carries its own complete foreground context. */
+:where(
+  .title-bar,
+  .rail,
+  .workspace-actions,
+  .tab-context-menu,
+  .toolbar-dropdown-menu,
+  .toolbar-inline-dialog,
+  .editor-frontmatter-add-menu,
+  .editor-context-menu-inline-dialog,
+  .frontmatter-dialog,
+  .frontmatter-add-dialog,
+  .file-search-panel,
+  .new-file-form--primary,
+  .page-preview-popover,
+  .preview-diagram-overlay-panel,
+  .command-palette,
+  .quick-switcher,
+  .cm-live-table-menu,
+  .files-search-method-menu,
+  .workspace-input-dialog,
+  .toast
+) {
+  --accent: var(--glass-text);
+  --accent-contrast: var(--glass-action-text);
+  --accent-hover: var(--glass-text);
+  --accent-ring: var(--glass-text);
+  --accent-soft: var(--glass-hover);
+  --accent-softer: var(--glass-hover);
+  --attention: var(--glass-text);
+  --attention-hover: var(--glass-text);
+  --bg: var(--glass-control-bg);
+  --border: var(--glass-control-border);
+  --border-soft: var(--glass-control-border);
+  --border-medium: var(--glass-text-secondary);
+  --btn-bg: var(--glass-control-bg);
+  --color-accent: var(--glass-text);
+  --color-accent-strong: var(--glass-text);
+  --color-border: var(--glass-control-border);
+  --color-border-strong: var(--glass-text-secondary);
+  --color-danger: var(--glass-text);
+  --color-info: var(--glass-text);
+  --color-on-accent: var(--glass-action-text);
+  --color-on-primary: var(--glass-action-text);
+  --color-overlay-subtle: var(--glass-hover);
+  --color-primary: var(--glass-text);
+  --color-primary-dark: var(--glass-text);
+  --color-selection-bg: var(--glass-hover);
+  --color-selection-border: var(--glass-text-secondary);
+  --color-selection-text: var(--glass-text);
+  --color-success: var(--glass-text);
+  --color-surface: var(--glass-surface);
+  --color-surface-alt: var(--glass-control-bg);
+  --color-surface-elevated: var(--glass-control-bg);
+  --color-text: var(--glass-text);
+  --color-text-secondary: var(--glass-text-secondary);
+  --color-text-muted: var(--glass-text-muted);
+  --color-warning: var(--glass-text);
+  --error: var(--glass-text);
+  --error-bg: var(--glass-hover);
+  --focus-ring: var(--glass-text);
+  --hover: var(--glass-hover);
+  --hover-strong: var(--glass-hover);
+  --input-bg: var(--glass-control-bg);
+  --link: var(--glass-text);
+  --material-control: var(--glass-control-bg);
+  --popup-bg: var(--glass-surface);
+  --success: var(--glass-text);
+  --surface: var(--glass-surface);
+  --surface-raised: var(--glass-control-bg);
+  --surface-subtle: var(--glass-surface);
+  --text: var(--glass-text);
+  --text-2: var(--glass-text-secondary);
+  --text-3: var(--glass-text-muted);
+}
+
+.app-shell :is(button, input, select, textarea):disabled {
+  color: var(--text-3);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
 .rail {
   background: var(--color-glass-overlay);
   background-size: auto;

@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -51,11 +52,23 @@ function cssColorRgb(value: string, background: Rgb): Rgb {
   return blend([Number(rgba[1]), Number(rgba[2]), Number(rgba[3])], Number(rgba[4]), background);
 }
 
+function listCssFiles(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = join(directory, entry.name);
+    if (entry.isDirectory()) return listCssFiles(entryPath);
+    return entry.isFile() && entry.name.endsWith(".css") ? [entryPath] : [];
+  });
+}
+
 describe("DESIGN.md compliance", () => {
   const designCss = readCssEntry("src/renderer/styles/architectural-design.css");
   const settingsCss = readFileSync("src/renderer/styles/settings.css", "utf8");
+  const shellLayoutCss = readFileSync("src/renderer/styles/shell-layout.css", "utf8");
   const tableCss = readFileSync("src/renderer/styles/table-view.css", "utf8");
   const motionCss = readFileSync("src/renderer/styles/theme-motion.css", "utf8");
+  const bubbleCss = readFileSync("src/renderer/styles/bubble.css", "utf8");
+  const editorShellCss = readFileSync("src/renderer/styles/editor-shell.css", "utf8");
+  const previewMarkdownCss = readFileSync("src/renderer/styles/preview-markdown-content.css", "utf8");
   const rightPanelCss = readCssEntry("src/renderer/styles/right-panel.css");
   const workspaceEditorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
   const styleEntryCss = readFileSync("src/renderer/styles.css", "utf8");
@@ -83,6 +96,8 @@ describe("DESIGN.md compliance", () => {
     expect(designCss).toContain("--glass-highlight: rgba(255, 255, 254, 0.1);");
     expect(designCss).toContain("--glass-hover: rgba(255, 255, 254, 0.09);");
     expect(designCss).toContain("--glass-text: var(--color-white);");
+    expect(designCss).toContain("--tab-active-text-secondary: var(--glass-text-secondary);");
+    expect(designCss).toContain("--tab-active-text-muted: var(--glass-text-muted);");
     expect(designCss).toContain("--color-tooltip-surface: var(--glass-surface);");
     expect(designCss).toContain("--color-tooltip-text: var(--glass-text);");
     expect(designCss).toContain("--color-glass-overlay: var(--glass-surface);");
@@ -126,6 +141,42 @@ describe("DESIGN.md compliance", () => {
     expect(contrastRatio(darkText, darkGlass)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(lightActionText, lightAction)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(darkActionText, darkAction)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("keeps every semantic foreground readable on its light and dark surface", () => {
+    const rootTokens = cssDeclarations(designCss.match(/:root\s*\{[\s\S]*?\n\}/)?.[0] ?? "");
+    const darkTokens = new Map([
+      ...rootTokens,
+      ...cssDeclarations(designCss.match(/:root\[data-theme="dark"\]\s*\{[\s\S]*?\n\}/)?.[0] ?? "")
+    ]);
+    const surfaces: ReadonlyArray<readonly [string, string, readonly string[]]> = [
+      ["work", "--color-bg", ["--color-text", "--color-text-secondary", "--color-text-muted"]],
+      ["surface", "--color-surface", ["--color-text", "--color-text-secondary", "--color-text-muted"]],
+      ["elevated", "--color-surface-elevated", ["--color-text", "--color-text-secondary", "--color-text-muted"]],
+      ["selection", "--color-selection-bg", ["--color-selection-text"]],
+      ["glass", "--glass-surface", ["--glass-text", "--glass-text-secondary", "--glass-text-muted"]],
+      ["active tab", "--tab-active-bg", ["--tab-active-text", "--tab-active-text-secondary", "--tab-active-text-muted"]],
+      ["card preview", "--card-preview-bg", ["--card-preview-text", "--card-preview-text-secondary", "--card-preview-text-muted"]],
+      ["glass action", "--glass-action-bg", ["--glass-action-text"]],
+      ["tooltip", "--color-tooltip-surface", ["--color-tooltip-text"]]
+    ];
+
+    for (const [theme, tokens, fallback] of [
+      ["light", rootTokens, hexRgb("#fffffe")],
+      ["dark", darkTokens, hexRgb("#10110f")]
+    ] as const) {
+      const workSurface = cssColorRgb(resolveCssValue("var(--color-bg)", tokens), fallback);
+      for (const [surfaceName, surfaceToken, foregroundTokens] of surfaces) {
+        const surface = cssColorRgb(resolveCssValue(`var(${surfaceToken})`, tokens), workSurface);
+        for (const foregroundToken of foregroundTokens) {
+          const foreground = cssColorRgb(resolveCssValue(`var(${foregroundToken})`, tokens), surface);
+          expect(
+            contrastRatio(foreground, surface),
+            `${theme} ${foregroundToken} on ${surfaceName}`
+          ).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    }
   });
 
   it("uses the Liquid Charcoal font stack with system fallback", () => {
@@ -204,6 +255,8 @@ describe("DESIGN.md compliance", () => {
       ...cssDeclarations(originalActiveTab),
       ...cssDeclarations(finalActiveTab)
     ]);
+    const lightActiveTokens = new Map([...lightTokens, ...activeDeclarations]);
+    const darkActiveTokens = new Map([...resolvedDarkTokens, ...activeDeclarations]);
     const lightBackground = resolveCssValue(activeDeclarations.get("background") ?? "", lightTokens);
     const lightText = resolveCssValue(activeDeclarations.get("color") ?? "", lightTokens);
     const darkBackground = resolveCssValue(activeDeclarations.get("background") ?? "", resolvedDarkTokens);
@@ -217,6 +270,52 @@ describe("DESIGN.md compliance", () => {
       .toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(cssColorRgb(darkText, hexRgb("#10110f")), cssColorRgb(darkBackground, hexRgb("#10110f"))))
       .toBeGreaterThanOrEqual(4.5);
+    for (const activeForeground of ["--text", "--text-2", "--text-3"]) {
+      const lightForeground = resolveCssValue(`var(${activeForeground})`, lightActiveTokens);
+      const darkForeground = resolveCssValue(`var(${activeForeground})`, darkActiveTokens);
+      expect(contrastRatio(cssColorRgb(lightForeground, hexRgb("#fffffe")), cssColorRgb(lightBackground, hexRgb("#fffffe"))))
+        .toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(cssColorRgb(darkForeground, hexRgb("#10110f")), cssColorRgb(darkBackground, hexRgb("#10110f"))))
+        .toBeGreaterThanOrEqual(4.5);
+    }
+    expect(designCss).toMatch(/\.pane-tab--active \.pane-tab-close\s*\{[^}]*color:\s*var\(--tab-active-text-muted\);/s);
+    expect(designCss).toMatch(/\.pane-tab--active \.pane-tab-close:hover\s*\{[^}]*color:\s*var\(--tab-active-text\);/s);
+  });
+
+  it("scopes all foreground states to dark operation surfaces", () => {
+    const operationContext = designCss.match(/:where\(\s*\.title-bar,[\s\S]*?\.toast\s*\)\s*\{[\s\S]*?\n\}/)?.[0] ?? "";
+    for (const declaration of [
+      "--color-text: var(--glass-text);",
+      "--color-text-secondary: var(--glass-text-secondary);",
+      "--color-text-muted: var(--glass-text-muted);",
+      "--color-danger: var(--glass-text);",
+      "--error: var(--glass-text);",
+      "--focus-ring: var(--glass-text);",
+      "--text: var(--glass-text);",
+      "--text-2: var(--glass-text-secondary);",
+      "--text-3: var(--glass-text-muted);"
+    ]) {
+      expect(operationContext).toContain(declaration);
+    }
+    expect(designCss).toMatch(/\.app-shell :is\(button, input, select, textarea\):disabled\s*\{[^}]*color:\s*var\(--text-3\);[^}]*cursor:\s*not-allowed;[^}]*opacity:\s*1;/s);
+    expect(shellLayoutCss).toMatch(/\.sw-7 \.track\s*\{[^}]*background:\s*var\(--off\);[^}]*border:\s*1px solid var\(--border\);/s);
+  });
+
+  it("keeps keyboard focus visible on tabs, menus, and canvas views", () => {
+    expect(workspaceEditorCss).toMatch(/\.pane-tab:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--accent-ring\);/s);
+    expect(workspaceEditorCss).toMatch(/\.tab-context-menu-item:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--accent-ring\);/s);
+    expect(bubbleCss).toMatch(/\.bubble-view-canvas:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--color-primary\);/s);
+  });
+
+  it("uses theme-aware syntax foregrounds instead of the vendor light palette", () => {
+    expect(previewMarkdownCss).toMatch(/:where\(\.preview-body, \.page-preview-body\) \.hljs\s*\{[^}]*background:\s*transparent;[^}]*color:\s*var\(--text\);/s);
+    expect(previewMarkdownCss).toMatch(/\.hljs-comment,[\s\S]*?color:\s*var\(--text-3\);/s);
+    expect(previewMarkdownCss).toMatch(/\.hljs-addition, \.hljs-deletion\)\s*\{[^}]*background:\s*var\(--selection\);[^}]*color:\s*var\(--text\);/s);
+  });
+
+  it("keeps the line-number gutter on the current theme surface", () => {
+    expect(designCss).toMatch(/\.cm-editor-shell \.cm-editor-container \.cm-gutters\s*\{[^}]*background-color:\s*var\(--bg\) !important;[^}]*color:\s*var\(--color-text-muted\) !important;/s);
+    expect(designCss).toMatch(/\.cm-editor-shell \.cm-editor-container \.cm-activeLineGutter\s*\{[^}]*background-color:\s*var\(--bg\) !important;/s);
   });
 
   it("keeps transient dialog controls readable on glass", () => {
@@ -227,11 +326,24 @@ describe("DESIGN.md compliance", () => {
 
   it("does not bypass theme tokens in component foregrounds and surfaces", () => {
     const directColor = /^\s*(?:color|background(?:-color)?|border-color):\s*(?:white|black|#[\da-f]{3,8}|rgba?\()/gim;
-    const violations = readdirSync("src/renderer/styles")
-      .filter((file) => file.endsWith(".css") && file !== "architectural-design.css")
-      .flatMap((file) => [...readFileSync(`src/renderer/styles/${file}`, "utf8").matchAll(directColor)]
+    const violations = listCssFiles("src/renderer/styles")
+      .filter((file) => !file.endsWith("architectural-design/foundation-variables.css"))
+      .flatMap((file) => [...readFileSync(file, "utf8").matchAll(directColor)]
         .map((match) => `${file}:${match[0].trim()}`));
     expect(violations).toEqual([]);
+  });
+
+  it("defines every semantic color alias referenced by renderer styles", () => {
+    const allCss = listCssFiles("src/renderer/styles").map((file) => readFileSync(file, "utf8")).join("\n");
+    const definitions = new Set([...allCss.matchAll(/(--[\w-]+)\s*:/g)].map((match) => match[1]!));
+    const semanticColorAlias = /^--(?:color-|glass-|tab-active-|card-preview-|text(?:-|$)|bg$|surface(?:-|$)|border(?:-|$)|btn-bg$|hover(?:-|$)|accent(?:-|$)|attention(?:-|$)|highlight$|error(?:-|$)|success$|focus(?:-|$)|input-bg$|link$|popup-bg$|rail-bg$|sidebar-bg$|title-bar-bg$|chrome-)/;
+    const missing = [...new Set([...allCss.matchAll(/var\((--[\w-]+)/g)].map((match) => match[1]!))]
+      .filter((variable) => semanticColorAlias.test(variable) && !definitions.has(variable))
+      .sort();
+
+    expect(missing).toEqual([]);
+    expect(editorShellCss).not.toContain("var(--text-1)");
+    expect(settingsCss).not.toContain("var(--text-muted)");
   });
 
   it("moves settings switch knobs through the on class with elastic feedback", () => {

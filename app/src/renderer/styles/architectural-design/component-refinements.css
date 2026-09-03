@@ -16,11 +16,12 @@
 }
 
 .pane-tab--active {
-  --accent: var(--color-primary);
-  --attention: var(--color-text-secondary);
-  --text: var(--color-text);
-  --text-2: var(--color-text-secondary);
-  --text-3: var(--color-text-muted);
+  --accent: var(--tab-active-text);
+  --accent-ring: var(--tab-active-text);
+  --attention: var(--tab-active-text-secondary);
+  --text: var(--tab-active-text);
+  --text-2: var(--tab-active-text-secondary);
+  --text-3: var(--tab-active-text-muted);
   background: var(--tab-active-bg);
   border: 1px solid var(--tab-active-border);
   box-shadow: inset 0 -3px 0 var(--tab-active-indicator);
@@ -30,6 +31,14 @@
 
 .pane-tab--chart.pane-tab--active,
 .pane-tab--active .pane-tab-pin-icon {
+  color: var(--tab-active-text);
+}
+
+.pane-tab--active .pane-tab-close {
+  color: var(--tab-active-text-muted);
+}
+
+.pane-tab--active .pane-tab-close:hover {
   color: var(--tab-active-text);
 }
 
@@ -99,9 +108,14 @@
   padding-bottom: 80px;
 }
 
-.cm-editor-container .cm-gutters {
-  color: var(--color-text-muted);
+.cm-editor-shell .cm-editor-container .cm-gutters {
+  background-color: var(--bg) !important;
+  color: var(--color-text-muted) !important;
   font-family: var(--font-mono);
+}
+
+.cm-editor-shell .cm-editor-container .cm-activeLineGutter {
+  background-color: var(--bg) !important;
 }
 
 .cm-live-h1,

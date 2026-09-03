@@ -632,6 +632,11 @@
   transform: scale(0.94);
 }
 
+.pane-tab:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: -3px;
+}
+
 /* ────────────────────────────────── */
 /* Tab context menu                   */
 /* ────────────────────────────────── */
@@ -678,7 +683,7 @@
 
 .tab-context-menu-item:focus-visible {
   background: var(--hover-strong);
-  outline: 2px solid var(--focus);
+  outline: 2px solid var(--accent-ring);
   outline-offset: -2px;
 }
 

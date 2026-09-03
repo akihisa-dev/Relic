@@ -296,7 +296,7 @@
 
 .cm-heading-fold-marker:hover {
   background: var(--hover);
-  color: var(--text-1);
+  color: var(--text);
 }
 
 .cm-foldPlaceholder {

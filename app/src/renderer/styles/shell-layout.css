@@ -87,7 +87,8 @@
 }
 
 .sw-7 .track {
-  background: color-mix(in srgb, var(--color-border-strong) 70%, var(--surface));
+  background: var(--off);
+  border: 1px solid var(--border);
 }
 
 .sw-7 .thumb {
