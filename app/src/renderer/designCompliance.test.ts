@@ -56,6 +56,7 @@ describe("DESIGN.md compliance", () => {
   const settingsCss = readFileSync("src/renderer/styles/settings.css", "utf8");
   const tableCss = readFileSync("src/renderer/styles/table-view.css", "utf8");
   const motionCss = readFileSync("src/renderer/styles/theme-motion.css", "utf8");
+  const rightPanelCss = readCssEntry("src/renderer/styles/right-panel.css");
   const workspaceEditorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
   const styleEntryCss = readFileSync("src/renderer/styles.css", "utf8");
 
@@ -172,6 +173,24 @@ describe("DESIGN.md compliance", () => {
     );
     expect(styleEntryCss.indexOf('@import "./styles/architectural-design.css" layer(relic-refinements);'))
       .toBeGreaterThan(styleEntryCss.indexOf('@import "./styles/workspace-editor.css" layer(relic-shell);'));
+  });
+
+  it("keeps outline labels clear of their hierarchy guides", () => {
+    const outlineButtonRefinement = designCss.match(/\.outline-item-button\s*\{([^}]*)\}/)?.[1] ?? "";
+    const guidePositions = new Map([...rightPanelCss.matchAll(
+      /\.outline-item--h(\d)\s*\{[^}]*--outline-guide-position:\s*([^;]+);/gs
+    )].map((match) => [Number(match[1]), [...match[2]!.matchAll(/(\d+)px/g)].map((position) => Number(position[1]))]));
+    const labelInsets = new Map([...rightPanelCss.matchAll(
+      /\.outline-item--h(\d) \.outline-item-button\s*\{\s*padding:\s*\d+px\s+\d+px\s+\d+px\s+(\d+)px;\s*\}/g
+    )].map((match) => [Number(match[1]), Number(match[2])]));
+
+    expect(outlineButtonRefinement).toContain("padding-block: 8px;");
+    expect(outlineButtonRefinement).toContain("padding-right: 12px;");
+    expect(outlineButtonRefinement).not.toMatch(/^\s*padding(?:\s*:|-left\s*:|-inline(?:-start|-end)?\s*:)/m);
+
+    for (let level = 2; level <= 6; level += 1) {
+      expect(labelInsets.get(level)).toBeGreaterThan(Math.max(...(guidePositions.get(level) ?? [])));
+    }
   });
 
   it("resolves the final active tab foreground and background as a contrasting pair", () => {
