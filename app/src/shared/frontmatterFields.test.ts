@@ -15,6 +15,7 @@ describe("frontmatterFields", () => {
       "aliases",
       "category",
       "card",
+      "roman",
       "tags",
       "chronicle"
     ]);
@@ -26,6 +27,7 @@ describe("frontmatterFields", () => {
     expect(isReservedFrontmatterFieldName("actualDate")).toBe(false);
     expect(isReservedFrontmatterFieldName("category")).toBe(true);
     expect(isReservedFrontmatterFieldName("card")).toBe(true);
+    expect(isReservedFrontmatterFieldName("roman")).toBe(true);
     expect(isReservedFrontmatterFieldName("chronicle")).toBe(true);
     expect(isReservedFrontmatterFieldName("chronicle0")).toBe(false);
     expect(isReservedFrontmatterFieldName("custom")).toBe(false);
@@ -54,6 +56,7 @@ describe("frontmatterFields", () => {
     expect(isValidUserDefinedFieldName("project")).toBe(true);
     expect(isValidUserDefinedFieldName("status")).toBe(true);
     expect(isValidUserDefinedFieldName("category")).toBe(false);
+    expect(isValidUserDefinedFieldName("roman")).toBe(false);
     expect(isValidUserDefinedFieldName(" planned")).toBe(false);
     expect(isValidUserDefinedFieldName("bad:name")).toBe(false);
   });

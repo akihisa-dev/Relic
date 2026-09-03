@@ -21,6 +21,7 @@ describe("filesSidebarModel", () => {
       "chronicle",
       "custom",
       "date",
+      "roman",
       "tags"
     ]);
   });

@@ -20,6 +20,11 @@ export const STANDARD_FIXED_FIELDS: FixedFieldDefinition[] = [
     examples: ["settings.fixedFieldAliasesSingleExample", "settings.fixedFieldAliasesMultipleExample"]
   },
   {
+    name: "roman",
+    descriptionKey: "settings.fixedFieldRomanDescription",
+    examples: ["settings.fixedFieldRomanExample"]
+  },
+  {
     name: "card",
     descriptionKey: "settings.fixedFieldCardDescription",
     examples: ["settings.fixedFieldCardExample"]

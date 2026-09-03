@@ -29,7 +29,7 @@ Relic英語名は、文書、会話、英語UIで使う概念名を指す。
 | フロントマター | Frontmatter | `frontmatter`, `parseFrontmatter`, `writeFrontmatter`, `getFrontmatterValueCandidatesChannel` | `app/src/main/files/frontmatter.ts`, `app/src/renderer/editorFrontmatter.ts`, `app/src/renderer/editorFrontmatterModel.ts` | [frontmatter](../features/frontmatter.md), [data-model](../engineering/data-model.md) |
 | 図表コードブロック | Diagram code block | `DiagramLanguage`, `diagramLanguageFor`, `renderDiagramElement`, `DiagramBlockWidget`, `data-diagram-source` | `app/src/renderer/diagramLanguage.ts`, `app/src/renderer/diagramPreview.ts`, `app/src/renderer/editorDiagramLivePreview.ts` | [markdown](../features/markdown.md), [editor-engine](../engineering/editor-engine.md) |
 | フロントマターテンプレート | Frontmatter template | `FrontmatterTemplate`, `frontmatterTemplates`, `getFrontmatterTemplatesChannel` | `app/src/shared/ipc.ts`, `app/src/main/settings/appSettings.ts`, `app/src/main/ipc/workspacePreferenceHandlers.ts` | [data-model](../engineering/data-model.md) |
-| 固定プロパティ | Fixed property | `FixedFrontmatterFieldName`, `reservedFrontmatterFieldNames`, `aliases`, `card`, `category`, `tags`, `chronicle` | `app/src/shared/frontmatterFields.ts`, `app/src/renderer/frontmatterSettingsModel.ts` | [frontmatter](../features/frontmatter.md), [data-model](../engineering/data-model.md) |
+| 固定プロパティ | Fixed property | `FixedFrontmatterFieldName`, `reservedFrontmatterFieldNames`, `aliases`, `roman`, `card`, `category`, `tags`, `chronicle` | `app/src/shared/frontmatterFields.ts`, `app/src/renderer/frontmatterSettingsModel.ts` | [frontmatter](../features/frontmatter.md), [data-model](../engineering/data-model.md) |
 | 旧カスタムプロパティ定義 | Legacy custom property definition | `UserDefinedField`, `UserDefinedFieldType`, `userDefinedFields`, `getUserDefinedFieldsChannel` | `app/src/shared/ipc.ts`, `app/src/main/settings/appSettings.ts` | [frontmatter](../features/frontmatter.md) |
 | アプリウィンドウ | App window | `BrowserWindow`, `App`, `createWindow` | `app/src/main/main.ts`, `app/src/renderer/App.tsx` | [design](../design/DESIGN.md), [architecture](../engineering/architecture.md) |
 | アプリケーションメニュー | Application menu | `ApplicationMenuCommand`, `ApplicationMenuState`, `configureApplicationMenu`, `useApplicationMenu` | `app/src/main/applicationMenu.ts`, `app/src/renderer/hooks/useApplicationMenu.ts`, `app/src/shared/ipc/settings.ts` | [commands](../features/commands.md), [architecture](../engineering/architecture.md) |
@@ -142,7 +142,7 @@ Markdown本文中の `mermaid` または `d2` コードブロック。保存さ�
 複数のフィールド名をまとめるアプリ設定上の保存済みセット。ワークスペース内の専用テンプレートフォルダや本文テンプレートファイルには依存しない。現行UIではテンプレート管理画面やテンプレート適用操作は表示しない。
 
 ### 固定プロパティ
-Relicが最初から特別扱いするフロントマターキー。`aliases`、`card`、`category`、`tags`、`chronicle` を指す。
+Relicが最初から特別扱いするフロントマターキー。`aliases`、`roman`、`card`、`category`、`tags`、`chronicle` を指す。`roman` は名前や用語のアルファベット表記を単一値で保持する。
 
 ### 旧カスタムプロパティ定義
 旧設定ファイルに保存済みの場合だけ互換的に読み込む、任意名フロントマターキーの入力能力定義。現行UIでは追加・編集・削除の管理画面を持たない。

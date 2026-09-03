@@ -75,7 +75,7 @@ Relic is an owner-led open source project licensed under the GNU Affero General 
 ### Front Matter and Tags
 
 - Collapsible form editing for existing YAML front matter values, with source-mode access to the original YAML.
-- Guided addition and editing for fixed properties (`aliases`, `card`, `category`, `tags`, `chronicle`).
+- Guided addition and editing for fixed properties (`aliases`, `roman`, `card`, `category`, `tags`, `chronicle`).
 - Read-only overview of any top-level property in Table view.
 - Tags from front matter `tags:`.
 
@@ -354,7 +354,7 @@ Relicは、GNU Affero General Public License v3.0 or later（AGPL-3.0-or-later�
 ### フロントマターとタグ
 
 - 既存のフロントマター値を折りたたみ式フォームで編集でき、ソースモードでは元のYAMLを直接確認・編集できます
-- 固定プロパティ（`aliases`、`card`、`category`、`tags`、`chronicle`）の追加・編集をフォームで補助します
+- 固定プロパティ（`aliases`、`roman`、`card`、`category`、`tags`、`chronicle`）の追加・編集をフォームで補助します
 - テーブルビューでは、任意のトップレベルプロパティを読み取り専用の一覧として確認できます
 - フロントマター `tags:` によるタグ扱い
 

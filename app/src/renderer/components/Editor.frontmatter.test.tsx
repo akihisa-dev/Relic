@@ -340,6 +340,25 @@ describe("Editor frontmatter", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("---\nversion: v1.0\nstatus:\naliases:\n---");
   });
 
+  it("romanをアルファベット表記の単一値として編集できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\nroman: Teito\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await expandFrontmatter(container);
+    const romanRow = container.querySelector('[data-frontmatter-key="roman"]') as HTMLElement;
+    const input = romanRow.querySelector(".cm-frontmatter-input") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "Imperial Capital" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("roman: Imperial Capital");
+  });
+
   it("常設プラスボタンからフロントマターを新規作成できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();

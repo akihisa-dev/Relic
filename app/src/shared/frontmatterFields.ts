@@ -20,6 +20,7 @@ export type FixedFrontmatterFieldName =
   | "aliases"
   | "category"
   | "card"
+  | "roman"
   | "tags"
   | "chronicle";
 
@@ -27,6 +28,7 @@ export const reservedFrontmatterFieldNames: FixedFrontmatterFieldName[] = [
   "aliases",
   "category",
   "card",
+  "roman",
   "tags",
   "chronicle"
 ];

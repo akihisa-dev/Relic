@@ -435,6 +435,8 @@
   "settings.fixedFieldAliasesDescription": "このファイルを別名でもリンクできるようにする名前。リンク解決やファイル名検索に使われます。通常のYAML配列で書きます。",
   "settings.fixedFieldAliasesSingleExample": "aliases:\n  - 帝都",
   "settings.fixedFieldAliasesMultipleExample": "aliases:\n  - 帝都\n  - 王都",
+  "settings.fixedFieldRomanDescription": "名前や用語のアルファベット表記を書くための単一の値です。",
+  "settings.fixedFieldRomanExample": "roman: Teito",
   "settings.fixedFieldChronicleCount": "1件",
   "settings.fixedFieldChronicleDescription": "このファイルを年単位で年表へ置く値。暦名、開始年、終了年を書き、単年では開始年と終了年を同じにします。",
   "settings.fixedFieldChronicleGroup": "chronicle",
