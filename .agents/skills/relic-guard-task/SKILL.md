@@ -50,7 +50,7 @@ description: Relicの変更・コミット・外部書き込みで、対象、�
 ## 専門Skillへ渡して完了証拠を集める
 
 1. 要求ごとに変更箇所、自動テスト、文書、外部状態のどれで完了を証明するか決める。実画面は明示時だけ証拠に含め、無関係な検査を増やさない。
-2. UIは `$relic-change-ui` と `$relic-test-development-app`、Issueは `$relic-issue`、コミットとversion・SBOMは `$relic-commit` と `$relic-manage-version`、機能廃止は `$relic-retire-feature` へ委ねる。
+2. UI変更は `$relic-change-ui`、実アプリの起動・操作・画面確認は明示依頼時だけ `$relic-test-development-app`、Issueは `$relic-issue`、コミットとversion・SBOMは `$relic-commit` と `$relic-manage-version`、機能廃止は `$relic-retire-feature` へ委ねる。
 3. 複数Skillの条件が食い違う場合は`AGENTS.md`と結果所有Skillへ照合して解消する。独自条件で完了を遅らせない。
 4. ツールの成功表示、テスト成功、開発版の起動、コミット作成を、それぞれ利用者が求めた結果そのものと混同しない。
 
@@ -63,6 +63,6 @@ description: Relicの変更・コミット・外部書き込みで、対象、�
 
 ## 完了前に再照合する
 
-1. 最新指示と契約を読み直し、`git status`、全差分、対象テスト、文書、外部状態を結果ごとに照合する。実画面は明示時だけ対象にする。
+1. 最新指示・契約を確認し、`git status` で全体を把握し、担当範囲・影響先の差分、テスト、文書、外部状態を契約に沿って照合する。競合の疑い時だけ範囲を広げ、実画面は明示時だけ対象にする。
 2. 対象、見本、権限、完了条件のどれかが未確認なら、その結果を確認済みと報告しない。
 3. 変更結果、検証済み事項、未確認事項、未実施の外部操作、非対象への影響を分けて報告する。
