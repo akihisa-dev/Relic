@@ -14,17 +14,14 @@ export function parseMarkdownTags(markdown: string): ParsedTags {
 }
 
 function splitFrontmatter(markdown: string): string | null {
-  if (!markdown.startsWith("---\n")) {
-    return null;
-  }
+  const openDelimiter = /^---\r?\n/.exec(markdown);
+  if (!openDelimiter) return null;
 
-  const endIndex = markdown.indexOf("\n---", 4);
+  const rest = markdown.slice(openDelimiter[0].length);
+  const closeDelimiter = /^---(?:\r?\n|$)/m.exec(rest);
+  if (!closeDelimiter || closeDelimiter.index === undefined) return null;
 
-  if (endIndex === -1) {
-    return null;
-  }
-
-  return markdown.slice(4, endIndex);
+  return rest.slice(0, closeDelimiter.index);
 }
 
 function parseFrontmatterTags(frontmatter: string | null): string[] {

@@ -19,4 +19,15 @@ describe("parseMarkdownTags", () => {
       "小説"
     ]);
   });
+
+  it("CRLFのフロントマターもタグの正本として解析する", () => {
+    expect(parseMarkdownTags("---\r\ntags: [小説, 資料]\r\n---\r\n本文").tags).toEqual([
+      "資料",
+      "小説"
+    ]);
+  });
+
+  it("閉じ区切りに続く文字を区切りとして扱わない", () => {
+    expect(parseMarkdownTags("---\n---extra\ntags: [後続]\n---\n本文").tags).toEqual(["後続"]);
+  });
 });
