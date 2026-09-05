@@ -150,6 +150,18 @@ describe("resolveMarkdownLinkPath", () => {
     });
   });
 
+  it("相対Markdownリンクがワークスペースのルートを越える場合は解決しない", () => {
+    expect(resolveMarkdownLinkPath("../outside.md", "source.md")).toBeNull();
+    expect(resolveMarkdownLinkPath("notes/../../outside.md", "source.md")).toBeNull();
+    expect(resolveMarkdownLinkPath("%2e%2e/outside.md", "source.md")).toBeNull();
+    expect(resolveMarkdownLinkPath("/../outside.md", "source.md")).toBeNull();
+    expect(resolveMarkdownLinkPath("\\\\outside\\note.md", "source.md")).toBeNull();
+    expect(resolveMarkdownLinkPath("%2F%2Foutside/note.md", "source.md")).toBeNull();
+    expect(resolveMarkdownLinkPath("j%61vascript:alert(1)", "source.md")).toBeNull();
+    expect(resolveMarkdownLinkPath("notes/note.md#heading%00", "source.md")).toBeNull();
+    expect(resolveMarkdownLinkPath("notes/note%00.md", "source.md")).toBeNull();
+  });
+
   it("外部URLはワークスペース内リンクとして扱わない", () => {
     expect(resolveMarkdownLinkPath("https://example.com", "source.md")).toBeNull();
     expect(resolveMarkdownLinkPath("//example.com/note", "source.md")).toBeNull();
@@ -204,6 +216,33 @@ describe("resolveWikiLinks", () => {
     ]);
   });
 
+  it("パス付きリンクは省略拡張子から既存の大文字拡張子を一意に解決する", () => {
+    expect(resolveWikiLinks("[[./folder/Target]]", "source.md", ["folder/Target.MD"])).toEqual([
+      expect.objectContaining({
+        exists: true,
+        path: "folder/Target.MD"
+      })
+    ]);
+  });
+
+  it("拡張子の大小違いだけで同じパスが複数ある場合は解決しない", () => {
+    expect(resolveWikiLinks("[[./folder/Target]]", "source.md", ["folder/Target.MD", "folder/Target.mD"])).toEqual([
+      expect.objectContaining({
+        exists: false,
+        path: "folder/Target.md"
+      })
+    ]);
+  });
+
+  it("明示された完全一致のMarkdownパスを拡張子違いの候補より優先する", () => {
+    expect(resolveWikiLinks("[[./folder/Target.md]]", "source.md", ["folder/Target.md", "folder/Target.MD"])).toEqual([
+      expect.objectContaining({
+        exists: true,
+        path: "folder/Target.md"
+      })
+    ]);
+  });
+
   it("同じpath集合とalias集合を再利用するresolverを作れる", () => {
     const resolve = createWikiLinkResolver(["A.md", "notes/B.md"], { "notes/B.md": ["bee"] });
 
@@ -227,5 +266,9 @@ describe("resolveWikiLinkPathWithAliases", () => {
 
   it("パスなしリンクはワークスペース内でファイル名が一意なら開ける", () => {
     expect(resolveWikiLinkPathWithAliases("B", "indexes/source.md", ["notes/B.md"])).toBe("notes/B.md");
+  });
+
+  it("パス付きリンクの省略拡張子から既存の大文字拡張子を解決する", () => {
+    expect(resolveWikiLinkPathWithAliases("./folder/Target", "source.md", ["folder/Target.MD"])).toBe("folder/Target.MD");
   });
 });
