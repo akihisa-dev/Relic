@@ -1,5 +1,5 @@
 import { relicClient } from "../relicClient";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ensureMarkdownExtension } from "../../shared/markdownExtension";
 import {
@@ -32,6 +32,16 @@ export function useWorkspaceFileCreationActions({
   const [folderNameDraft, setFolderNameDraft] = useState("");
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const workspaceId = workspaceState?.activeWorkspace?.id ?? null;
+  const fileCreationRequestRef = useRef(0);
+  const folderCreationRequestRef = useRef(0);
+
+  useEffect(() => {
+    fileCreationRequestRef.current += 1;
+    folderCreationRequestRef.current += 1;
+    setIsCreatingFile(false);
+    setIsCreatingFolder(false);
+  }, [workspaceId]);
 
   const handleCreateFile = useCallback((): void => {
     const relic = relicClient.current;
@@ -44,6 +54,7 @@ export function useWorkspaceFileCreationActions({
     const fileName = fileNameDraft.trim() || nextUniqueFileName(workspaceState, t);
     const isCurrentWorkspace = beginWorkspaceRequest();
     if (!isCurrentWorkspace()) return;
+    const requestId = ++fileCreationRequestRef.current;
 
     setIsCreatingFile(true);
     setWorkspaceError(null);
@@ -69,7 +80,11 @@ export function useWorkspaceFileCreationActions({
       }).catch(() => {
         if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
       })
-      .finally(() => setIsCreatingFile(false));
+      .finally(() => {
+        if (requestId === fileCreationRequestRef.current && isCurrentWorkspace()) {
+          setIsCreatingFile(false);
+        }
+      });
   }, [
     beginWorkspaceRequest,
     fileNameDraft,
@@ -137,6 +152,7 @@ export function useWorkspaceFileCreationActions({
 
     const isCurrentWorkspace = beginWorkspaceRequest();
     if (!isCurrentWorkspace()) return;
+    const requestId = ++folderCreationRequestRef.current;
     setIsCreatingFolder(true);
     setWorkspaceError(null);
 
@@ -153,7 +169,11 @@ export function useWorkspaceFileCreationActions({
       }).catch(() => {
         if (isCurrentWorkspace()) setWorkspaceError(t("errors.operationFailed"));
       })
-      .finally(() => setIsCreatingFolder(false));
+      .finally(() => {
+        if (requestId === folderCreationRequestRef.current && isCurrentWorkspace()) {
+          setIsCreatingFolder(false);
+        }
+      });
   }, [beginWorkspaceRequest, folderNameDraft, setWorkspaceError, setWorkspaceState, t, workspaceState]);
 
   return {

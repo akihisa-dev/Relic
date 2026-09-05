@@ -153,13 +153,27 @@ function PaneViewComponent({
   };
 
   const saveRelicVersion = (): void => {
-    if (activeTab?.kind !== "file" || !relicClient.current) return;
+    const client = relicClient.current;
+    if (activeTab?.kind !== "file" || !client) return;
+    const isCurrentWorkspace = beginWorkspaceRequest?.() ?? (() => true);
+    if (!isCurrentWorkspace()) return;
     flushPendingEditorChanges([activeTab.id]);
     const latestTab = useEditorStore.getState().tabs[activeTab.id];
     if (latestTab?.kind !== "file") return;
 
-    void relicClient.current.writeMarkdownFile({ content: latestTab.content, path: latestTab.path }).then((result) => {
+    void client.writeMarkdownFile({ content: latestTab.content, path: latestTab.path }).then((result) => {
+      if (!isCurrentWorkspace()) return;
       if (result.ok) {
+        flushPendingEditorChanges([latestTab.id]);
+        const currentTab = useEditorStore.getState().tabs[latestTab.id];
+        if (
+          currentTab?.kind !== "file" ||
+          currentTab.path !== latestTab.path ||
+          currentTab.content !== latestTab.content ||
+          currentTab.externalConflict !== latestTab.externalConflict
+        ) {
+          return;
+        }
         resolveTabExternalConflict(latestTab.id, "relic");
         markTabSaved(latestTab.id, latestTab.content);
         onFileSaved?.(latestTab.path);
@@ -168,6 +182,7 @@ function PaneViewComponent({
 
       onFileSaveError?.(result.error.message);
     }).catch((error) => {
+      if (!isCurrentWorkspace()) return;
       onFileSaveError?.(error instanceof Error ? error.message : String(error));
     });
   };

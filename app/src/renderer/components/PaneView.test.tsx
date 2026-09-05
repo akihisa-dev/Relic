@@ -5,6 +5,7 @@ import type { EditorView } from "@codemirror/view";
 
 import { defaultEditorSettings } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
+import { bufferEditorChange } from "../editorInputBuffer";
 import { largeMarkdownMaxContentBytes, largeMarkdownMaxLineLength } from "../largeMarkdown";
 import { useEditorStore, type PaneState, type Tab } from "../store/editorStore";
 import { PANE_TAB_DRAG_MIME, serializePaneTabDragPayload } from "../paneViewModel";
@@ -14,6 +15,7 @@ import {
   PaneView,
   type PaneViewProps
 } from "./PaneView";
+import { makeRelicApi } from "../../test/rendererTestUtils";
 
 const emptyPane = (): PaneState => ({ activeTabId: null, history: [], tabIds: [] });
 
@@ -312,6 +314,130 @@ describe("PaneView", () => {
 
     expect(screen.getByText("Frontmatter cannot be read. Editing and saving can continue.")).toBeInTheDocument();
     expect(screen.getByText("Editable body")).toBeInTheDocument();
+  });
+
+  it("ワークスペース切替後に衝突解決保存の完了を反映しない", async () => {
+    let resolveSave: (value: Awaited<ReturnType<NonNullable<typeof window.relic>["writeMarkdownFile"]>>) => void = () => undefined;
+    const writeMarkdownFile = vi.fn().mockReturnValue(new Promise((resolve) => {
+      resolveSave = resolve;
+    }));
+    let currentWorkspace = true;
+    const onFileSaved = vi.fn();
+    window.relic = makeRelicApi({ writeMarkdownFile });
+    const conflictedTab: Tab = {
+      ...fileTab,
+      content: "Relic側の本文",
+      externalConflict: { content: "外部側の本文" },
+      savedContent: "保存済み本文"
+    };
+    setPaneState(
+      { [conflictedTab.id]: conflictedTab },
+      { activeTabId: conflictedTab.id, history: [conflictedTab.id], tabIds: [conflictedTab.id] }
+    );
+
+    renderPaneView({
+      beginWorkspaceRequest: () => () => currentWorkspace,
+      onFileSaved
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Save Relic version" }));
+    expect(writeMarkdownFile).toHaveBeenCalledWith({
+      content: "Relic側の本文",
+      path: "Folder/Note.md"
+    });
+
+    currentWorkspace = false;
+    await act(async () => {
+      resolveSave({ ok: true, value: undefined });
+      await Promise.resolve();
+    });
+
+    expect(onFileSaved).not.toHaveBeenCalled();
+    const tab = useEditorStore.getState().tabs[conflictedTab.id];
+    expect(tab?.kind).toBe("file");
+    if (tab?.kind === "file") {
+      expect(tab.savedContent).toBe("保存済み本文");
+      expect(tab.externalConflict?.content).toBe("外部側の本文");
+    }
+  });
+
+  it("保存中に同じタブを編集しても遅延完了で新しい本文を上書きしない", async () => {
+    let resolveSave: (value: Awaited<ReturnType<NonNullable<typeof window.relic>["writeMarkdownFile"]>>) => void = () => undefined;
+    const writeMarkdownFile = vi.fn().mockReturnValue(new Promise((resolve) => {
+      resolveSave = resolve;
+    }));
+    const onFileSaved = vi.fn();
+    window.relic = makeRelicApi({ writeMarkdownFile });
+    const conflictedTab: Tab = {
+      ...fileTab,
+      content: "Relic側の本文",
+      externalConflict: { content: "外部側の本文" },
+      savedContent: "保存済み本文"
+    };
+    setPaneState(
+      { [conflictedTab.id]: conflictedTab },
+      { activeTabId: conflictedTab.id, history: [conflictedTab.id], tabIds: [conflictedTab.id] }
+    );
+
+    renderPaneView({ onFileSaved });
+    fireEvent.click(screen.getByRole("button", { name: "Save Relic version" }));
+    bufferEditorChange({
+      commit: (change) => useEditorStore.getState().updateTabContent(change.tabId, change.content, change.contentUpdate),
+      content: "保存中に追加した本文",
+      filePath: conflictedTab.path,
+      tabId: conflictedTab.id
+    });
+
+    await act(async () => {
+      resolveSave({ ok: true, value: undefined });
+      await Promise.resolve();
+    });
+
+    const tab = useEditorStore.getState().tabs[conflictedTab.id];
+    expect(tab?.kind).toBe("file");
+    if (tab?.kind === "file") {
+      expect(tab.content).toBe("保存中に追加した本文");
+      expect(tab.savedContent).toBe("保存済み本文");
+      expect(tab.externalConflict?.content).toBe("外部側の本文");
+    }
+    expect(onFileSaved).not.toHaveBeenCalled();
+  });
+
+  it("保存中に届いた新しい外部衝突を古い保存完了で解除しない", async () => {
+    let resolveSave: (value: Awaited<ReturnType<NonNullable<typeof window.relic>["writeMarkdownFile"]>>) => void = () => undefined;
+    const writeMarkdownFile = vi.fn().mockReturnValue(new Promise((resolve) => {
+      resolveSave = resolve;
+    }));
+    const onFileSaved = vi.fn();
+    window.relic = makeRelicApi({ writeMarkdownFile });
+    const conflictedTab: Tab = {
+      ...fileTab,
+      content: "Relic側の本文",
+      externalConflict: { content: "最初の外部本文" },
+      savedContent: "保存済み本文"
+    };
+    setPaneState(
+      { [conflictedTab.id]: conflictedTab },
+      { activeTabId: conflictedTab.id, history: [conflictedTab.id], tabIds: [conflictedTab.id] }
+    );
+
+    renderPaneView({ onFileSaved });
+    fireEvent.click(screen.getByRole("button", { name: "Save Relic version" }));
+    act(() => useEditorStore.getState().setTabExternalConflict(conflictedTab.id, "新しい外部本文"));
+
+    await act(async () => {
+      resolveSave({ ok: true, value: undefined });
+      await Promise.resolve();
+    });
+
+    const tab = useEditorStore.getState().tabs[conflictedTab.id];
+    expect(tab?.kind).toBe("file");
+    if (tab?.kind === "file") {
+      expect(tab.content).toBe("Relic側の本文");
+      expect(tab.savedContent).toBe("保存済み本文");
+      expect(tab.externalConflict?.content).toBe("新しい外部本文");
+    }
+    expect(onFileSaved).not.toHaveBeenCalled();
   });
 
   it("見出しジャンプではスクロール対象の見出しへカーソルも移す", async () => {

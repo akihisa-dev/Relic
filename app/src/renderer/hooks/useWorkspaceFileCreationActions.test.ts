@@ -64,6 +64,61 @@ describe("useWorkspaceFileCreationActions", () => {
     expect(readMarkdownFile).not.toHaveBeenCalled();
     expect(openFileInPane).not.toHaveBeenCalled();
   });
+
+  it("切替先での作成中表示を旧ワークスペースの完了処理で解除しない", async () => {
+    const createdA = deferred<RelicResult<WorkspaceState>>();
+    const createdB = deferred<RelicResult<WorkspaceState>>();
+    const stateA = workspaceState("workspace-a");
+    const stateB = workspaceState("workspace-b");
+    window.relic = makeRelicApi({
+      createMarkdownFile: vi.fn()
+        .mockReturnValueOnce(createdA.promise)
+        .mockReturnValueOnce(createdB.promise)
+    });
+
+    const { result, rerender } = renderHook(
+      ({ workspaceState }) => {
+        const guard = useWorkspaceRequestGuard(workspaceState.activeWorkspace?.id ?? null);
+        return useWorkspaceFileCreationActions({
+          ...guard,
+          focusedPane: "left",
+          openFileInPane: vi.fn(),
+          setWorkspaceError: vi.fn(),
+          setWorkspaceState: vi.fn(),
+          t: createTranslator("ja"),
+          workspaceState
+        });
+      },
+      { initialProps: { workspaceState: stateA } }
+    );
+
+    act(() => result.current.handleCreateFile());
+    expect(result.current.isCreatingFile).toBe(true);
+
+    rerender({ workspaceState: stateB });
+    act(() => result.current.handleCreateFile());
+    expect(result.current.isCreatingFile).toBe(true);
+
+    await act(async () => {
+      createdA.resolve({
+        error: { code: "CREATE_FAILED", message: "作成に失敗しました。" },
+        ok: false
+      });
+      await Promise.resolve();
+    });
+
+    expect(result.current.isCreatingFile).toBe(true);
+
+    await act(async () => {
+      createdB.resolve({
+        error: { code: "CREATE_FAILED", message: "作成に失敗しました。" },
+        ok: false
+      });
+      await Promise.resolve();
+    });
+
+    expect(result.current.isCreatingFile).toBe(false);
+  });
 });
 
 function workspaceState(id: string): WorkspaceState {
