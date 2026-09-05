@@ -1,4 +1,3 @@
-import { rm } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -56,15 +55,8 @@ const workspaceSettingsStore = new SecureVersionedJsonStore<PersistedWorkspaceSe
 
 function createDefaultWorkspaceSettings(): WorkspaceSettings {
   return {
-    charts: defaultCharts.map((chart) => ({
-      ...chart,
-      ...(chart.filePaths ? { filePaths: [...chart.filePaths] } : {})
-    })),
-    chronicleCalendarSettings: {
-      ...defaultChronicleCalendarSettings,
-      calendars: defaultChronicleCalendarSettings.calendars.map((calendar) => ({ ...calendar })),
-      visibleCalendarNames: [...defaultChronicleCalendarSettings.visibleCalendarNames]
-    },
+    charts: cloneDefaultCharts(),
+    chronicleCalendarSettings: cloneDefaultChronicleCalendarSettings(),
     frontmatterCategoryChoices: [],
     pinnedPaths: [],
     tablePreferences: cloneDefaultTablePreferences(),
@@ -103,10 +95,10 @@ function parseWorkspaceSettings(raw: PersistedWorkspaceSettings): WorkspaceSetti
 }
 
 export function parseChronicleCalendarSettings(raw: unknown): ChronicleCalendarSettings {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return defaultChronicleCalendarSettings;
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return cloneDefaultChronicleCalendarSettings();
   const candidate = raw as Record<string, unknown>;
   const baseCalendarName = typeof candidate.baseCalendarName === "string" ? candidate.baseCalendarName.trim() : "";
-  if (!baseCalendarName) return defaultChronicleCalendarSettings;
+  if (!baseCalendarName) return cloneDefaultChronicleCalendarSettings();
   const calendars = Array.isArray(candidate.calendars) ? candidate.calendars.flatMap((value) => {
     if (typeof value !== "object" || value === null || Array.isArray(value)) return [];
     const calendar = value as Record<string, unknown>;
@@ -139,7 +131,7 @@ function parseChronicleCalendarRange(raw: unknown): { end: number; start: number
 }
 
 export function parseCharts(raw: unknown): ChartSettings[] {
-  if (!Array.isArray(raw)) return defaultCharts;
+  if (!Array.isArray(raw)) return cloneDefaultCharts();
 
   const parsed = raw.flatMap((chart): ChartSettings[] => {
     if (typeof chart !== "object" || chart === null) return [];
@@ -311,6 +303,24 @@ function isChartSource(value: unknown): value is ChartSource {
   return value === "chronicle";
 }
 
+function cloneDefaultCharts(): ChartSettings[] {
+  return defaultCharts.map((chart) => ({
+    ...chart,
+    ...(chart.filePaths ? { filePaths: [...chart.filePaths] } : {})
+  }));
+}
+
+function cloneDefaultChronicleCalendarSettings(): ChronicleCalendarSettings {
+  return {
+    ...defaultChronicleCalendarSettings,
+    calendars: defaultChronicleCalendarSettings.calendars.map((calendar) => ({
+      ...calendar,
+      ...(calendar.range ? { range: { ...calendar.range } } : {})
+    })),
+    visibleCalendarNames: [...defaultChronicleCalendarSettings.visibleCalendarNames]
+  };
+}
+
 function defaultChartName(source: ChartSource): string {
   void source;
   return "クロニクル";
@@ -350,7 +360,7 @@ export async function removeWorkspaceSettings(
 ): Promise<void> {
   const settingsPath = getWorkspaceSettingsPath(userDataPath, workspaceId);
 
-  await rm(settingsPath, { force: true });
+  await workspaceSettingsStore.remove(settingsPath);
 }
 
 function parseSettingsObject(raw: unknown, settingsPath: string): PersistedWorkspaceSettings | null {

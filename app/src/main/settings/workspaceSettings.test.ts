@@ -4,12 +4,14 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 import { defaultWorkspaceTablePreferences } from "../../shared/ipc";
+import { defaultChronicleCalendarSettings } from "../../shared/chronicleCalendar";
 
 import {
   defaultCharts,
   getWorkspaceSettingsPath,
   parseChronicleCalendarSettings,
   readWorkspaceSettings,
+  removeWorkspaceSettings,
   updateWorkspaceSettings,
   writeWorkspaceSettings
 } from "./workspaceSettings";
@@ -309,6 +311,40 @@ describe("workspaceSettings", () => {
     expect(settings.charts).toEqual(defaultCharts);
   });
 
+  it("欠損項目の既定値を読み込み結果間で共有しない", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-independent-defaults");
+    await mkdir(path.dirname(settingsPath), { recursive: true });
+    await writeFile(settingsPath, JSON.stringify({ schemaVersion: 6 }), "utf8");
+
+    const expectedCharts = structuredClone(defaultCharts);
+    const expectedChronicleCalendarSettings = structuredClone(defaultChronicleCalendarSettings);
+
+    try {
+      const first = await readWorkspaceSettings(userDataPath, "ws-independent-defaults");
+      first.charts.push({ filePaths: [], id: "extra", name: "extra", source: "chronicle" });
+      first.chronicleCalendarSettings?.visibleCalendarNames.push("追加暦");
+
+      const second = await readWorkspaceSettings(userDataPath, "ws-independent-defaults");
+
+      expect(second.charts).toEqual(expectedCharts);
+      expect(second.chronicleCalendarSettings).toEqual(expectedChronicleCalendarSettings);
+    } finally {
+      defaultCharts.splice(0, defaultCharts.length, ...expectedCharts);
+      defaultChronicleCalendarSettings.calendars.splice(
+        0,
+        defaultChronicleCalendarSettings.calendars.length,
+        ...expectedChronicleCalendarSettings.calendars
+      );
+      defaultChronicleCalendarSettings.visibleCalendarNames.splice(
+        0,
+        defaultChronicleCalendarSettings.visibleCalendarNames.length,
+        ...expectedChronicleCalendarSettings.visibleCalendarNames
+      );
+    }
+  });
+
   it("設定ファイルのパスはworkspaceId別になる", () => {
     const p1 = getWorkspaceSettingsPath("/userData", "ws-1");
     const p2 = getWorkspaceSettingsPath("/userData", "ws-2");
@@ -373,6 +409,44 @@ describe("workspaceSettings", () => {
 
     expect(loaded.pinnedPaths).toEqual(["notes/one.md"]);
     expect(loaded.workspacePath).toBe("/Users/test/notes");
+  });
+
+  it("削除は進行中の更新後に実行され、削除済み設定を復活させない", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeWorkspaceSettings(userDataPath, "ws-remove-race", {
+      charts: defaultCharts,
+      frontmatterCategoryChoices: [],
+      pinnedPaths: [],
+      tablePreferences: defaultWorkspaceTablePreferences,
+      workspacePath: ""
+    });
+
+    let releaseUpdate!: () => void;
+    let signalUpdateStarted!: () => void;
+    const updateStarted = new Promise<void>((resolve) => {
+      signalUpdateStarted = resolve;
+    });
+    const updateGate = new Promise<void>((resolve) => {
+      releaseUpdate = resolve;
+    });
+
+    const update = updateWorkspaceSettings(userDataPath, "ws-remove-race", async (settings) => {
+      signalUpdateStarted();
+      await updateGate;
+      return { ...settings, pinnedPaths: ["notes/late.md"] };
+    });
+    await updateStarted;
+
+    const removal = removeWorkspaceSettings(userDataPath, "ws-remove-race");
+    await Promise.resolve();
+    await expect(readFile(getWorkspaceSettingsPath(userDataPath, "ws-remove-race"), "utf8"))
+      .resolves.toBeTruthy();
+
+    releaseUpdate();
+    await Promise.all([update, removal]);
+    await expect(readFile(getWorkspaceSettingsPath(userDataPath, "ws-remove-race"), "utf8"))
+      .rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("同じIDでも別の設定ファイルの更新は完了待ちに巻き込まれない", async () => {

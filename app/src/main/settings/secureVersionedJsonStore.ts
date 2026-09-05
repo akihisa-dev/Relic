@@ -1,4 +1,4 @@
-import { link, readFile, unlink } from "node:fs/promises";
+import { link, readFile, rm, unlink } from "node:fs/promises";
 import path from "node:path";
 
 import { writePrivateSettingsTextFile } from "./secureSettingsFile";
@@ -27,6 +27,12 @@ export class SecureVersionedJsonStore<TRaw extends object, TValue> {
   async write(settingsPath: string, value: TValue): Promise<void> {
     await queueSettingsUpdate(settingsPath, async () => {
       await this.writeRaw(settingsPath, this.codec.serialize(value));
+    });
+  }
+
+  async remove(settingsPath: string): Promise<void> {
+    await queueSettingsUpdate(settingsPath, async () => {
+      await rm(settingsPath, { force: true });
     });
   }
 
