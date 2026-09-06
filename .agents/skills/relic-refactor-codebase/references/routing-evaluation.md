@@ -7,6 +7,8 @@
 | Relic全体を大規模リファクタリングしてください | `relic-refactor-codebase` |
 | 技術的な負債を包括的に解消してください | `relic-refactor-codebase` |
 | 機能を変えず、構造と性能を全体的に改善してください | `relic-refactor-codebase` |
+| 全体のリファクタリング計画だけ作ってください | 本Skillで読み取り調査し、変更単位・順序・検証方法を報告。編集・コミットしない |
+| 検索の責務分割だけを動作を変えずに行ってください | 局所整理なら対象機能Skill、複数境界の再構成なら本Skillを併用。無関係な性能・配布まで広げない |
 | 定期的なコードベース健全化を実施してください | `relic-refactor-codebase` |
 | mainからrendererまで含む検索領域を包括的に整理してください | `relic-refactor-codebase` と対象機能Skill |
 
@@ -37,11 +39,11 @@
 1. 発火対象の「全体」「包括」「機能を変えない構造・性能」「定期健全化」がdescriptionだけで選べる。
 2. 単一bug、新機能、UI、翻訳、test、version、commit、dependency、package障害を横取りしない。
 3. 指定領域でも複数境界を包括的に変える依頼を未発火にしない。
-4. `relic-audit-code-health` と両方が候補になる場合、調査だけか包括実装かで選べる。
+4. `relic-audit-code-health` と両方が候補になる場合、局所診断か包括的な再構成かで選べる。計画だけの依頼は編集しない。
 
 ## 本Skillを変更したときの検証
 
 1. repository rootと対象Skillを確認し、`app/package.json` と `docs/development.md` にある現行の `pnpm skills:check` を必須検証として実行する。
 2. frontmatter、参照切れ、重複名、`agents/openai.yaml` との意味の一致を確認する。descriptionを変えた場合は上記の発火例と対象外を再評価する。
 3. 利用可能なら公式Skill validatorも実行する。validatorが `PyYAML` を要求し、実行環境にない場合は未実施理由とrepository標準検証の結果を分けて報告する。外部validatorだけのために `PyYAML` をRelicの製品依存へ追加しない。
-4. 手順またはroutingを実質的に変えた場合は、発火対象、単一問題、責務分割だけを求める依頼の代表例でforward-testする。外部変更や長時間作業を伴う場合は実行前に利用者へ確認する。
+4. 手順またはroutingを実質的に変えた場合は、発火対象、単一問題、責務分割だけを求める依頼の代表例でforward-testする。外部変更や長時間作業を伴う場合は実行前に利用者へ確認する。読み取り専用の評価では、依頼に対する範囲・最初の行動・検証・終了条件を独立担当に判断させる。全体調査の未完了で独立単位を止めないこと、既存テストで十分なら追加を強制しないことも確認する。

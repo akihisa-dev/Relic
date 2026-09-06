@@ -12,7 +12,7 @@
 | 面 | 先に記録するもの | 変更後の主な確認 |
 |----|------------------|------------------|
 | Markdown・frontmatter | 入力形式、未知項目、往復保持 | parser・serializer、fixture、差分 |
-| 設定・保存済みdata | schema version、既定値、移行、atomic write | 旧形式読込、競合、失敗後、再起動 |
+| 設定・保存済みdata | 現行schema version、既定値、書込の安全条件 | 現行の受理・拒否、競合、失敗後、再読込 |
 | workspace・file | root境界、path規則、外部変更、保存待ち | 一時directory、競合、切替、復旧 |
 | IPC・公開型 | channel、method、input/output、limits | shared・preload・main契約検査 |
 | UI・操作 | 画面構成、focus、mouse、keyboard、drag | 状態遷移test、明示指示時だけ開発版 |
@@ -21,6 +21,8 @@
 | 配布 | ASAR entry、resources、OS差、legal files | safe build/check、内容report |
 
 ## 変更別の回帰検知
+
+以下は選択肢であり全件必須ではない。現行仕様と変更が影響する条件を選び、未対応の移行・再試行などを検査のために追加しない。実アプリの起動・見た目確認は明示依頼時だけ行う。
 
 - 純粋処理: 境界値、未知入力、順序、round tripを対象moduleのtestで固定する。
 - 状態所有: 二重source of truth、更新順、購読解除、reset、workspace切替を確認する。
