@@ -21,11 +21,9 @@ export interface WorkspaceDerivedDataSnapshotRequest extends WorkspaceDerivedDat
 }
 
 interface WorkspaceDerivedDataSessionEntry {
-  createdAt: number;
   desiredLimit: number;
   fulfilledLimit: number | null;
   generation: number;
-  lastSettledAt: number;
   lastUsedAt: number;
   pending: boolean;
   promise: Promise<WorkspaceDerivedDataSnapshot>;
@@ -93,17 +91,14 @@ export class WorkspaceDerivedDataSession {
       const snapshot = { fileIndex, parseCache };
       entry.snapshot = snapshot;
       entry.fulfilledLimit = normalizedLimit(normalizedRequest);
-      entry.lastSettledAt = this.now();
       entry.pending = false;
       return snapshot;
     });
 
     Object.assign(entry, {
-      createdAt: now,
       desiredLimit: normalizedLimit(normalizedRequest),
       fulfilledLimit: null,
       generation,
-      lastSettledAt: now,
       lastUsedAt: now,
       pending: true,
       promise,
@@ -111,7 +106,7 @@ export class WorkspaceDerivedDataSession {
       workspaceId: normalizedRequest.workspaceId
     });
     this.entries.set(key, entry);
-    this.trackInitialPromiseFailure(key, entry, promise);
+    this.trackSnapshotPromiseFailure(key, entry, promise);
     this.pruneOverflow();
 
     return promise;
@@ -154,7 +149,6 @@ export class WorkspaceDerivedDataSession {
         })
           .then((snapshot) => {
             entry.snapshot = snapshot;
-            entry.lastSettledAt = this.now();
             entry.pending = false;
             return snapshot;
           })
@@ -176,14 +170,13 @@ export class WorkspaceDerivedDataSession {
           }
           const snapshot = { fileIndex, parseCache: refreshParseCache };
           entry.snapshot = snapshot;
-          entry.lastSettledAt = this.now();
           entry.pending = false;
           return snapshot;
         });
       entry.promise = refreshPromise;
       entry.upgradePromise = undefined;
       entry.pending = true;
-      this.trackRefreshPromiseFailure(key, entry, refreshPromise);
+      this.trackSnapshotPromiseFailure(key, entry, refreshPromise);
     }
   }
 
@@ -230,7 +223,6 @@ export class WorkspaceDerivedDataSession {
         }
         entry.snapshot = { fileIndex, parseCache: current.parseCache };
         entry.fulfilledLimit = targetLimit;
-        entry.lastSettledAt = this.now();
       }
 
       if (!entry.snapshot) throw new Error("Workspace derived snapshot is unavailable.");
@@ -247,7 +239,6 @@ export class WorkspaceDerivedDataSession {
         entry.upgradePromise = undefined;
         entry.promise = Promise.resolve(snapshot);
         entry.pending = false;
-        entry.lastSettledAt = this.now();
       },
       () => {
         if (!this.isCurrentEntry(key, entry, generation)) return;
@@ -255,10 +246,12 @@ export class WorkspaceDerivedDataSession {
         entry.pending = false;
         if (entry.snapshot) {
           entry.promise = Promise.resolve(entry.snapshot);
+        } else {
+          entry.generation += 1;
+          this.entries.delete(key);
         }
       }
     );
-    this.trackUpgradePromiseFailure(key, entry, upgradePromise);
     return upgradePromise;
   }
 
@@ -295,50 +288,16 @@ export class WorkspaceDerivedDataSession {
     }
   }
 
-  private trackInitialPromiseFailure(
+  private trackSnapshotPromiseFailure(
     key: string,
     entry: WorkspaceDerivedDataSessionEntry,
     promise: Promise<WorkspaceDerivedDataSnapshot>
   ): void {
     promise.catch(() => {
       const current = this.entries.get(key);
-      if (current === entry && current.promise === promise) {
-        current.generation += 1;
-        this.entries.delete(key);
-      }
-    });
-  }
-
-  private trackUpgradePromiseFailure(
-    key: string,
-    entry: WorkspaceDerivedDataSessionEntry,
-    promise: Promise<WorkspaceDerivedDataSnapshot>
-  ): void {
-    promise.catch(() => {
-      const current = this.entries.get(key);
-      if (current !== entry || current.upgradePromise !== promise) return;
-      current.upgradePromise = undefined;
-      current.pending = false;
-      if (!current.snapshot) {
-        current.generation += 1;
-        this.entries.delete(key);
-      } else {
-        current.promise = Promise.resolve(current.snapshot);
-      }
-    });
-  }
-
-  private trackRefreshPromiseFailure(
-    key: string,
-    entry: WorkspaceDerivedDataSessionEntry,
-    promise: Promise<WorkspaceDerivedDataSnapshot>
-  ): void {
-    promise.catch(() => {
-      const current = this.entries.get(key);
-      if (current === entry && current.promise === promise) {
-        current.generation += 1;
-        this.entries.delete(key);
-      }
+      if (current !== entry || current.promise !== promise) return;
+      current.generation += 1;
+      this.entries.delete(key);
     });
   }
 }
