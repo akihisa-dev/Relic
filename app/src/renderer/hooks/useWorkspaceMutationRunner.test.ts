@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createTranslator } from "../../shared/i18n";
 import { useWorkspaceMutationRunner } from "./useWorkspaceMutationRunner";
-import { useWorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import { useWorkspaceSession } from "./useWorkspaceSession";
+import { makeWorkspaceState } from "../../test/rendererTestUtils";
 
 describe("useWorkspaceMutationRunner", () => {
   afterEach(() => {
@@ -18,7 +19,7 @@ describe("useWorkspaceMutationRunner", () => {
     const action = vi.fn().mockResolvedValue({ ok: true, value: "done" });
     const onSuccess = vi.fn();
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("workspace-a");
+      const guard = useWorkspaceSession(makeWorkspaceState("workspace-a"));
       return {
         guard,
         runner: useWorkspaceMutationRunner({
@@ -53,7 +54,7 @@ describe("useWorkspaceMutationRunner", () => {
     }));
     const onSuccess = vi.fn();
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("workspace-a");
+      const guard = useWorkspaceSession(makeWorkspaceState("workspace-a"));
       return {
         guard,
         runner: useWorkspaceMutationRunner({

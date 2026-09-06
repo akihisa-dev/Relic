@@ -52,6 +52,39 @@ describe("useWorkspaceCharts API contract", () => {
     expect(result.current.charts.flatMap((item) => item.filePaths)).toEqual(["chart-b.md"]);
   });
 
+  it("明示再取得中は年表を保ち、最新の完了だけを反映して成否を返す", async () => {
+    const older = deferred<RelicResult<WorkspaceChart[]>>();
+    const newer = deferred<RelicResult<WorkspaceChart[]>>();
+    window.relic = makeRelicApi({
+      getWorkspaceCharts: vi.fn().mockResolvedValueOnce({ ok: true, value: [chart("initial")] })
+        .mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise)
+    });
+    const setWorkspaceError = vi.fn();
+    const workspaceState = workspace("workspace-a");
+    const { result } = renderHook(() => useWorkspaceCharts({ hasOpenChart: true, setWorkspaceError, workspaceState }));
+    await act(async () => undefined);
+    let olderReload!: Promise<boolean>;
+    let newerReload!: Promise<boolean>;
+    act(() => { olderReload = result.current.reloadCharts(); newerReload = result.current.reloadCharts(); });
+    expect(result.current.charts.flatMap((item) => item.filePaths)).toEqual(["initial.md"]);
+    await act(async () => { newer.resolve({ ok: true, value: [chart("latest")] }); expect(await newerReload).toBe(true); });
+    await act(async () => { older.resolve({ ok: false, error: { code: "OLD", message: "old failure" } }); expect(await olderReload).toBe(false); });
+    expect(result.current.charts.flatMap((item) => item.filePaths)).toEqual(["latest.md"]);
+    expect(setWorkspaceError).not.toHaveBeenCalled();
+  });
+
+  it("未表示時は自動取得せず、契約不一致は再取得失敗として通知する", async () => {
+    const getWorkspaceCharts = vi.fn();
+    window.relic = { ...makeRelicApi({ getWorkspaceCharts }), apiContractVersion: 0 } as unknown as RelicApi;
+    const setWorkspaceError = vi.fn();
+    const workspaceState = workspace("workspace-a");
+    const { result } = renderHook(() => useWorkspaceCharts({ hasOpenChart: false, setWorkspaceError, workspaceState }));
+    expect(getWorkspaceCharts).not.toHaveBeenCalled();
+    await act(async () => { expect(await result.current.reloadCharts()).toBe(false); });
+    expect(setWorkspaceError).toHaveBeenCalledWith(apiContractMismatchMessage());
+    expect(getWorkspaceCharts).not.toHaveBeenCalled();
+  });
+
   it("IPC transport rejection clears charts and reports a localized fallback", async () => {
     const setWorkspaceError = vi.fn();
     window.relic = makeRelicApi({

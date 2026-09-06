@@ -2,8 +2,7 @@ import type { GenerateTitleListInput } from "../../shared/ipc";
 import { fail, type RelicResult } from "../../shared/result";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { collectTitleListFiles, type ToolActionFileOperations } from "./toolCandidateCollectors";
-import { getToolWorkspaceContext, toolActionFileOperations } from "./toolActionRuntime";
-import { writeToolMarkdownOutput } from "./toolOutputFiles";
+import { getToolWorkspaceContext, toolActionFileOperations, writeToolOutput } from "./toolActionRuntime";
 import { resolveToolTargetPaths } from "./toolTargets";
 import { collectMarkdownPathsFromTree, createWikiLinkFormatter } from "./toolWikiLinks";
 
@@ -30,5 +29,5 @@ export async function generateTitleList(
 
   const wikiLinkForPath = createWikiLinkFormatter(collectMarkdownPathsFromTree(fileTree));
   const content = collected.map((file) => `- ${wikiLinkForPath(file.path, file.name)}`).join("\n") + "\n";
-  return writeToolMarkdownOutput(workspacePath, input.outputFolder, input.outputName, content);
+  return writeToolOutput(context.value, input.outputFolder, input.outputName, content);
 }

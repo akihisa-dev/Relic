@@ -1,7 +1,6 @@
-import { useCallback, useMemo, useState, type ReactElement } from "react";
+import { useCallback, useMemo, type ReactElement } from "react";
 import { useShallow } from "zustand/react/shallow";
 
-import { type WorkspaceState } from "../shared/ipc";
 import { createAppLayoutProps } from "./appLayoutProps";
 import { selectAppEditorStoreState, selectAppUiStoreState } from "./appStoreSelectors";
 import { AppLayout } from "./components/AppLayout";
@@ -32,8 +31,7 @@ import { useSplitCloseMotion } from "./hooks/useSplitCloseMotion";
 import { useWindowCloseRequest } from "./hooks/useWindowCloseRequest";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
 import { useWorkspaceExternalRefresh } from "./hooks/useWorkspaceExternalRefresh";
-import { useWorkspaceDataRevision } from "./hooks/useWorkspaceDataRevision";
-import { useWorkspaceRequestGuard } from "./hooks/useWorkspaceRequestGuard";
+import { useWorkspaceSession } from "./hooks/useWorkspaceSession";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { useStableCallback } from "./hooks/useStableCallback";
@@ -43,9 +41,16 @@ import { useUiStore } from "./store/uiStore";
 import "./styles.css";
 
 export function App(): ReactElement {
-  const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
-  const workspaceRequestGuard = useWorkspaceRequestGuard(workspaceState?.activeWorkspace?.id ?? null);
-  const { beginWorkspaceRequest, beginWorkspaceRequestFor } = workspaceRequestGuard;
+  const {
+    beginWorkspaceRequest,
+    beginWorkspaceRequestFor,
+    markWorkspaceDataChanged,
+    setWorkspaceState,
+    workspaceDataRevision,
+    workspaceRequestGuard,
+    workspaceState,
+    workspaceStructureRevision
+  } = useWorkspaceSession();
   const { closeToast, isToastClosing, setWorkspaceError, showToast, toastMessage } = useAppToast();
   const {
     linkContextMenu,
@@ -70,11 +75,6 @@ export function App(): ReactElement {
     setLeftPaneScrollHeading,
     setRightPaneScrollHeading
   } = useAppPanePresentationState();
-  const {
-    markWorkspaceDataChanged,
-    workspaceStructureRevision,
-    workspaceDataRevision
-  } = useWorkspaceDataRevision(workspaceState?.activeWorkspace?.id ?? null);
   const {
     clearRailTabFlight,
     railTabFlight,

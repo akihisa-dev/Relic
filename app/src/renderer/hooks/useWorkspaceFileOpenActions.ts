@@ -8,7 +8,7 @@ import { isSupportedPdfPath } from "../../shared/pdfFiles";
 import type { FileTab } from "../store/editorStoreTypes";
 import { useAsyncRequestGuard } from "./useAsyncRequestGuard";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
-import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 
 type WorkspaceFileOpenInput = Pick<
   WorkspaceFileActionsContext,

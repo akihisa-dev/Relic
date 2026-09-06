@@ -1,15 +1,10 @@
 import { readFile, realpath, stat } from "node:fs/promises";
 
-import { app } from "electron";
-
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { readAppSettings } from "../settings/appSettings";
-import { toWorkspaceState } from "../workspace/workspaceService";
+import { getActiveWorkspaceContext } from "./activeWorkspace";
 import type { ToolActionFileOperations } from "./toolCandidateCollectors";
-
-interface ToolWorkspaceContext {
-  workspacePath: string;
-}
+import { writeToolMarkdownOutput } from "./toolOutputFiles";
+import { workspaceMutationService, type WorkspaceMutationContext } from "../files/workspaceMutationService";
 
 const defaultToolActionFileOperations: ToolActionFileOperations = {
   readFile,
@@ -25,10 +20,26 @@ export function toolActionFileOperations(
   return { ...defaultToolActionFileOperations, ...operations };
 }
 
-export async function getToolWorkspaceContext(): Promise<RelicResult<ToolWorkspaceContext>> {
-  const settings = await readAppSettings(app.getPath("userData"));
-  const state = toWorkspaceState(settings);
-  if (!state.activeWorkspace) return fail("NO_WORKSPACE", "ワークスペースが選択されていません。");
+export async function getToolWorkspaceContext(): Promise<RelicResult<WorkspaceMutationContext>> {
+  const active = await getActiveWorkspaceContext();
+  if (!active.ok) {
+    return active.error.code === "WORKSPACE_NOT_SELECTED"
+      ? fail("NO_WORKSPACE", "ワークスペースが選択されていません。")
+      : active;
+  }
+  const workspace = active.value.activeWorkspace;
 
-  return ok({ workspacePath: state.activeWorkspace.path });
+  return ok({ workspaceId: workspace.id, workspacePath: workspace.path });
+}
+
+export function writeToolOutput(
+  context: WorkspaceMutationContext,
+  outputFolder: string,
+  outputName: string,
+  content: string
+): Promise<RelicResult<string>> {
+  return workspaceMutationService.run(
+    context,
+    ({ workspacePath }) => writeToolMarkdownOutput(workspacePath, outputFolder, outputName, content)
+  );
 }

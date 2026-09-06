@@ -9,7 +9,7 @@ import type { HeadingScrollTarget } from "../editorDerivedState";
 import type { Translator } from "../i18nModel";
 import { useEditorStore, type ImageTab, type PaneId, type PdfTab } from "../store/editorStore";
 import type { SidebarCreateFlight } from "./useRailFlights";
-import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 
 interface UseSidebarFileInteractionsInput extends Pick<WorkspaceRequestGuard, "beginWorkspaceRequest"> {
   handleCreateFile: () => void;

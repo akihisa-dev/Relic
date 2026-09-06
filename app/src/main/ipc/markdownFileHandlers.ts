@@ -27,7 +27,7 @@ import {
   renameMarkdownFile
 } from "../files/markdownFileRelocation";
 import { readLinkUpdateImpact } from "../files/linkUpdater";
-import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
+import { workspaceMutationService } from "../files/workspaceMutationService";
 import { getCachedMainTranslator } from "../i18n";
 import { createCopyNameFormatter } from "../files/markdownFilePaths";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
@@ -83,13 +83,15 @@ export function registerMarkdownFileHandlers(): void {
         const context = await getActiveWorkspaceContext();
         if (!context.ok) return context;
 
-        const createdFile = await createMarkdownFile(context.value.activeWorkspace.path, input.name);
+        const createdFile = await workspaceMutationService.run(
+          { workspaceId: context.value.activeWorkspace.id, workspacePath: context.value.activeWorkspace.path },
+          ({ workspacePath }) => createMarkdownFile(workspacePath, input.name)
+        );
 
         if (!createdFile.ok) {
           return createdFile;
         }
 
-        invalidateWorkspaceData(context.value.activeWorkspace.id);
         return ok(await buildWorkspaceState(context.value.settings));
       } catch (error) {
         return fail(
@@ -112,17 +114,15 @@ export function registerMarkdownFileHandlers(): void {
         const context = await getActiveWorkspaceContext();
         if (!context.ok) return context;
 
-        const importedFiles = await importMarkdownFiles(
-          context.value.activeWorkspace.path,
-          input.sourcePaths,
-          input.destinationFolder
+        const importedFiles = await workspaceMutationService.run(
+          { workspaceId: context.value.activeWorkspace.id, workspacePath: context.value.activeWorkspace.path },
+          ({ workspacePath }) => importMarkdownFiles(workspacePath, input.sourcePaths, input.destinationFolder)
         );
 
         if (!importedFiles.ok) {
           return importedFiles;
         }
 
-        invalidateWorkspaceData(context.value.activeWorkspace.id);
         return ok(await buildWorkspaceState(context.value.settings));
       } catch (error) {
         return fail(
@@ -145,13 +145,15 @@ export function registerMarkdownFileHandlers(): void {
         const context = await getActiveWorkspaceContext();
         if (!context.ok) return context;
 
-        const createdFile = await createMarkdownFileAtPath(context.value.activeWorkspace.path, input.path);
+        const createdFile = await workspaceMutationService.run(
+          { workspaceId: context.value.activeWorkspace.id, workspacePath: context.value.activeWorkspace.path },
+          ({ workspacePath }) => createMarkdownFileAtPath(workspacePath, input.path)
+        );
 
         if (!createdFile.ok) {
           return createdFile;
         }
 
-        invalidateWorkspaceData(context.value.activeWorkspace.id);
         return ok({
           file: createdFile.value,
           workspaceState: await buildWorkspaceState(context.value.settings)
@@ -176,18 +178,15 @@ export function registerMarkdownFileHandlers(): void {
       if (!context.ok) return context;
 
       const t = getCachedMainTranslator();
-      const duplicatedFile = await duplicateMarkdownFile(
-        context.value.activeWorkspace.path,
-        input.path,
-        {},
-        createCopyNameFormatter(t)
+      const duplicatedFile = await workspaceMutationService.run(
+        { workspaceId: context.value.activeWorkspace.id, workspacePath: context.value.activeWorkspace.path },
+        ({ workspacePath }) => duplicateMarkdownFile(workspacePath, input.path, {}, createCopyNameFormatter(t))
       );
 
       if (!duplicatedFile.ok) {
         return duplicatedFile;
       }
 
-      invalidateWorkspaceData(context.value.activeWorkspace.id);
       return ok({
         file: duplicatedFile.value,
         workspaceState: await buildWorkspaceState(context.value.settings)
@@ -210,17 +209,15 @@ export function registerMarkdownFileHandlers(): void {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
 
-      const renamedFile = await renameMarkdownFile(
-        context.value.activeWorkspace.path,
-        input.path,
-        input.newName
+      const renamedFile = await workspaceMutationService.run(
+        { workspaceId: context.value.activeWorkspace.id, workspacePath: context.value.activeWorkspace.path },
+        ({ workspacePath }) => renameMarkdownFile(workspacePath, input.path, input.newName)
       );
 
       if (!renamedFile.ok) {
         return renamedFile;
       }
 
-      invalidateWorkspaceData(context.value.activeWorkspace.id);
       const workspaceState = await buildWorkspaceState(context.value.settings);
       return renamedFile.value.status === "completed"
         ? ok({
@@ -251,17 +248,15 @@ export function registerMarkdownFileHandlers(): void {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
 
-      const movedFile = await moveMarkdownFile(
-        context.value.activeWorkspace.path,
-        input.path,
-        input.destinationFolder
+      const movedFile = await workspaceMutationService.run(
+        { workspaceId: context.value.activeWorkspace.id, workspacePath: context.value.activeWorkspace.path },
+        ({ workspacePath }) => moveMarkdownFile(workspacePath, input.path, input.destinationFolder)
       );
 
       if (!movedFile.ok) {
         return movedFile;
       }
 
-      invalidateWorkspaceData(context.value.activeWorkspace.id);
       const workspaceState = await buildWorkspaceState(context.value.settings);
       return movedFile.value.status === "completed"
         ? ok({

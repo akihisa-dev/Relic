@@ -9,7 +9,7 @@ import type { HeadingScrollTarget } from "../editorDerivedState";
 import { flushPendingEditorChanges } from "../editorInputBuffer";
 import { paneTabsPresentationKey } from "../paneViewModel";
 import { usePaneHeadingScroll } from "../hooks/usePaneHeadingScroll";
-import type { WorkspaceRequestGuard } from "../hooks/useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 import { useEditorStore, type PaneId, type PanelTabKind } from "../store/editorStore";
 import { PaneContentSurface } from "./PaneContentSurface";
 import { PaneTabs } from "./PaneTabs";

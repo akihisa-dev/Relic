@@ -6,7 +6,7 @@ import type { RelicError, WorkspaceMutationRecovery } from "../../shared/result"
 import type { TranslationKey, Translator } from "../../shared/i18n";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 import { useAsyncRequestGuard } from "./useAsyncRequestGuard";
-import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 
 type WorkspaceRegistryInput = Pick<
   WorkspaceFileActionsContext,

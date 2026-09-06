@@ -23,7 +23,7 @@ import { searchWorkspace, workspaceSearchMaxFileBytes } from "../files/search";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
 import { workspaceSearchRequestCoordinator } from "../files/searchRequestCoordinator";
 import { applyUnlinkedReference, readUnlinkedReferences } from "../files/unlinkedReferences";
-import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
+import { workspaceMutationService } from "../files/workspaceMutationService";
 import { workspaceDataProvider } from "../files/workspaceDataProvider";
 import { withActiveWorkspaceContext } from "./activeWorkspace";
 import { isPathInput } from "./inputValidation";
@@ -138,12 +138,11 @@ export function registerFileSearchHandlers(): void {
     return withActiveWorkspaceContext(
       { code: "UNLINKED_REFERENCE_APPLY_FAILED", message: "未リンク参照をリンク化できませんでした。" },
       async (context) => {
-        const result = await applyUnlinkedReference(context.activeWorkspace.path, input);
-        if (result.ok) {
-          invalidateWorkspaceData(context.activeWorkspace.id);
-        }
-
-        return result;
+        return workspaceMutationService.run(
+          { workspaceId: context.activeWorkspace.id, workspacePath: context.activeWorkspace.path },
+          ({ workspacePath }) => applyUnlinkedReference(workspacePath, input),
+          "workspace"
+        );
       }
     );
   });
@@ -156,17 +155,17 @@ export function registerFileSearchHandlers(): void {
     return withActiveWorkspaceContext(
       { code: "REPLACE_FAILED", message: "置換できませんでした。" },
       async (context) => {
-        const result = await replaceInFile(
-          context.activeWorkspace.path,
-          input.path,
-          input.searchQuery,
-          input.replacement,
-          input.isRegex
+        return workspaceMutationService.run(
+          { workspaceId: context.activeWorkspace.id, workspacePath: context.activeWorkspace.path },
+          ({ workspacePath }) => replaceInFile(
+            workspacePath,
+            input.path,
+            input.searchQuery,
+            input.replacement,
+            input.isRegex
+          ),
+          "workspace"
         );
-        if (result.ok) {
-          invalidateWorkspaceData(context.activeWorkspace.id);
-        }
-        return result;
       }
     );
   });
@@ -195,18 +194,17 @@ export function registerFileSearchHandlers(): void {
     return withActiveWorkspaceContext(
       { code: "REPLACE_FAILED", message: "一括置換できませんでした。" },
       async (context) => {
-        const result = await applySearchAndReplace(
-          context.activeWorkspace.path,
-          input.searchQuery,
-          input.replacement,
-          input.isRegex,
-          undefined,
-          input.expectedFileSnapshots
+        return workspaceMutationService.run(
+          { workspaceId: context.activeWorkspace.id, workspacePath: context.activeWorkspace.path },
+          ({ workspacePath }) => applySearchAndReplace(
+            workspacePath,
+            input.searchQuery,
+            input.replacement,
+            input.isRegex,
+            undefined,
+            input.expectedFileSnapshots
+          )
         );
-        if (result.ok) {
-          invalidateWorkspaceData(context.activeWorkspace.id);
-        }
-        return result;
       }
     );
   });

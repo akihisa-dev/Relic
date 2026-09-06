@@ -2,7 +2,7 @@ import { useWorkspaceFileCreationActions } from "./useWorkspaceFileCreationActio
 import { useWorkspaceFileMutationActions } from "./useWorkspaceFileMutationActions";
 import { useWorkspaceFileOpenActions } from "./useWorkspaceFileOpenActions";
 import { useWorkspaceRegistryActions } from "./useWorkspaceRegistryActions";
-import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 import type { Translator } from "../i18nModel";
 

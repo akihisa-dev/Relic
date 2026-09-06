@@ -1,9 +1,9 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { makeRelicApi } from "../../test/rendererTestUtils";
+import { makeRelicApi, makeWorkspaceState } from "../../test/rendererTestUtils";
 import { useAppFileSaved } from "./useAppFileSaved";
-import { useWorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import { useWorkspaceSession } from "./useWorkspaceSession";
 
 describe("useAppFileSaved", () => {
   afterEach(() => {
@@ -17,7 +17,7 @@ describe("useAppFileSaved", () => {
       getWorkspaceState: vi.fn()
     });
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("workspace-a");
+      const guard = useWorkspaceSession(makeWorkspaceState("workspace-a"));
       const onFileSaved = useAppFileSaved({
         beginWorkspaceRequest: guard.beginWorkspaceRequest,
         onWorkspaceDataChanged

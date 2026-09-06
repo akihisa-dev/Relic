@@ -4,10 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTranslator } from "../../shared/i18n";
 import type { WorkspaceState } from "../../shared/ipc";
 import type { RelicResult } from "../../shared/result";
-import { makeRelicApi } from "../../test/rendererTestUtils";
+import { makeRelicApi, makeWorkspaceState } from "../../test/rendererTestUtils";
 import { useWorkspaceFileCreationActions } from "./useWorkspaceFileCreationActions";
 import { useWorkspaceRegistryActions } from "./useWorkspaceRegistryActions";
-import { useWorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import { useWorkspaceSession } from "./useWorkspaceSession";
 
 describe("useWorkspaceFileCreationActions", () => {
   afterEach(() => {
@@ -28,7 +28,7 @@ describe("useWorkspaceFileCreationActions", () => {
     const stateA = workspaceState("workspace-a");
     const stateB = workspaceState("workspace-b");
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("workspace-a");
+      const guard = useWorkspaceSession(makeWorkspaceState("workspace-a"));
       const creationActions = useWorkspaceFileCreationActions({
         beginWorkspaceRequest: guard.beginWorkspaceRequest,
         focusedPane: "left",
@@ -76,26 +76,26 @@ describe("useWorkspaceFileCreationActions", () => {
         .mockReturnValueOnce(createdB.promise)
     });
 
-    const { result, rerender } = renderHook(
-      ({ workspaceState }) => {
-        const guard = useWorkspaceRequestGuard(workspaceState.activeWorkspace?.id ?? null);
-        return useWorkspaceFileCreationActions({
+    const { result } = renderHook(
+      () => {
+        const guard = useWorkspaceSession(stateA);
+        const actions = useWorkspaceFileCreationActions({
           ...guard,
           focusedPane: "left",
           openFileInPane: vi.fn(),
           setWorkspaceError: vi.fn(),
           setWorkspaceState: vi.fn(),
           t: createTranslator("ja"),
-          workspaceState
+          workspaceState: guard.workspaceState
         });
-      },
-      { initialProps: { workspaceState: stateA } }
+        return { ...actions, setActiveWorkspace: guard.setWorkspaceState };
+      }
     );
 
     act(() => result.current.handleCreateFile());
     expect(result.current.isCreatingFile).toBe(true);
 
-    rerender({ workspaceState: stateB });
+    act(() => result.current.setActiveWorkspace(stateB));
     act(() => result.current.handleCreateFile());
     expect(result.current.isCreatingFile).toBe(true);
 

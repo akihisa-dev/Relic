@@ -3,10 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { MarkdownFileContent, WorkspaceState } from "../../shared/ipc";
 import type { RelicResult } from "../../shared/result";
-import { makeRelicApi } from "../../test/rendererTestUtils";
+import { makeRelicApi, makeWorkspaceState } from "../../test/rendererTestUtils";
 import { useWorkspaceFileOpenActions } from "./useWorkspaceFileOpenActions";
 import { useWorkspaceRegistryActions } from "./useWorkspaceRegistryActions";
-import { useWorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import { useWorkspaceSession } from "./useWorkspaceSession";
 
 describe("useWorkspaceFileOpenActions", () => {
   afterEach(() => {
@@ -20,7 +20,7 @@ describe("useWorkspaceFileOpenActions", () => {
     const pane = { activeTabId: "chart-graph", history: [], tabIds: ["chart-graph"] };
     const existingFile = file("A.md");
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("workspace-a");
+      const guard = useWorkspaceSession(makeWorkspaceState("workspace-a"));
       return useWorkspaceFileOpenActions({
         ...guard,
         activeWorkspaceId: "workspace-a",
@@ -74,12 +74,12 @@ describe("useWorkspaceFileOpenActions", () => {
       setWorkspaceState: vi.fn()
     };
 
-    const { result, rerender } = renderHook(
-      ({ activeWorkspaceId }) => {
-        const guard = useWorkspaceRequestGuard(activeWorkspaceId);
-        return useWorkspaceFileOpenActions({
+    const { result } = renderHook(
+      () => {
+        const guard = useWorkspaceSession(makeWorkspaceState("workspace-a"));
+        const actions = useWorkspaceFileOpenActions({
           ...guard,
-          activeWorkspaceId,
+          activeWorkspaceId: guard.workspaceState?.activeWorkspace?.id ?? null,
           aliasesByPath: {},
           existingMarkdownPaths: ["A.md", "B.md"],
           focusedPane: "left",
@@ -88,12 +88,12 @@ describe("useWorkspaceFileOpenActions", () => {
           tabs: {},
           ...callbacks
         });
-      },
-      { initialProps: { activeWorkspaceId: "workspace-a" as string | null } }
+        return { ...actions, setActiveWorkspace: guard.setWorkspaceState };
+      }
     );
 
     act(() => result.current.handleOpenFile("A.md"));
-    rerender({ activeWorkspaceId: "workspace-b" });
+    act(() => result.current.setActiveWorkspace(makeWorkspaceState("workspace-b")));
     act(() => result.current.handleOpenFile("B.md"));
 
     await act(async () => first.resolve({ ok: true, value: file("A.md") }));
@@ -115,7 +115,7 @@ describe("useWorkspaceFileOpenActions", () => {
     });
     const pane = { activeTabId: null, history: [], tabIds: [] };
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("workspace-a");
+      const guard = useWorkspaceSession(makeWorkspaceState("workspace-a"));
       const openActions = useWorkspaceFileOpenActions({
         ...guard,
         activeWorkspaceId: "workspace-a",

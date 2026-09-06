@@ -43,6 +43,27 @@ describe("useWorkspaceAliases", () => {
     expect(result.current).toEqual({ "B.md": ["Beta"] });
   });
 
+  it("一覧更新中は別名を保ち、失敗後の次の更新で再取得する", async () => {
+    const update = deferred<RelicResult<AliasIndex>>();
+    window.relic = makeRelicApi({
+      getWorkspaceAliases: vi.fn().mockResolvedValueOnce({ ok: true, value: { "A.md": ["Alpha"] } })
+        .mockReturnValueOnce(update.promise).mockResolvedValueOnce({ ok: true, value: { "B.md": ["Beta"] } })
+    });
+    const setWorkspaceError = vi.fn();
+    const workspaceA = workspace("workspace-a");
+    const { result, rerender } = renderHook(({ workspaceState }) => useWorkspaceAliases({ setWorkspaceError, workspaceState }),
+      { initialProps: { workspaceState: workspaceA } });
+    await act(async () => undefined);
+    rerender({ workspaceState: { ...workspaceA, fileTree: [] } });
+    expect(result.current).toEqual({ "A.md": ["Alpha"] });
+    await act(async () => update.resolve({ ok: false, error: { code: "FAILED", message: "failed" } }));
+    expect(result.current).toEqual({});
+    expect(setWorkspaceError).toHaveBeenCalledWith("failed");
+    rerender({ workspaceState: { ...workspaceA, fileTree: [] } });
+    await act(async () => undefined);
+    expect(result.current).toEqual({ "B.md": ["Beta"] });
+  });
+
   it("IPC transport rejection clears aliases without exposing the rejection", async () => {
     const setWorkspaceError = vi.fn();
     const workspaceState = workspace("workspace-a");

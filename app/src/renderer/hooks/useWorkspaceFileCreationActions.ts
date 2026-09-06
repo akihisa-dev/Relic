@@ -9,7 +9,7 @@ import {
 } from "./workspaceFileActionHelpers";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 import type { Translator } from "../i18nModel";
-import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 import { workspaceFileErrorMessage } from "./workspaceFileError";
 
 type WorkspaceFileCreationInput = Pick<

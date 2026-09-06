@@ -6,7 +6,7 @@ import type { Translator } from "../i18nModel";
 import { relicClient } from "../relicClient";
 import type { IsCurrentRequest } from "./useAsyncRequestGuard";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
-import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 import { workspaceFileErrorMessage } from "./workspaceFileError";
 
 export type WorkspaceMutationItem = { path: string; type: "file" | "folder" };

@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 
-import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 
 interface UseAppFileSavedOptions extends Pick<WorkspaceRequestGuard, "beginWorkspaceRequest"> {
   onWorkspaceDataChanged: () => Promise<boolean>;

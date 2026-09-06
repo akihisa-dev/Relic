@@ -1,12 +1,12 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { makeRelicApi, testWorkspaceState } from "../../test/rendererTestUtils";
+import { makeRelicApi, makeWorkspaceState, testWorkspaceState } from "../../test/rendererTestUtils";
 import { createTranslator } from "../../shared/i18n";
 import type { WorkspaceState } from "../../shared/ipc";
 import type { RelicError, RelicResult } from "../../shared/result";
 import { useWorkspaceRegistryActions, workspaceRecoveryErrorMessage } from "./useWorkspaceRegistryActions";
-import { useWorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import { useWorkspaceSession } from "./useWorkspaceSession";
 
 describe("useWorkspaceRegistryActions", () => {
   afterEach(() => {
@@ -22,7 +22,7 @@ describe("useWorkspaceRegistryActions", () => {
     });
 
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("ws-active");
+      const guard = useWorkspaceSession(makeWorkspaceState("ws-active"));
       return useWorkspaceRegistryActions({
         ...guard,
         activeWorkspaceId: "ws-active",
@@ -48,7 +48,7 @@ describe("useWorkspaceRegistryActions", () => {
     });
 
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("ws-1");
+      const guard = useWorkspaceSession(makeWorkspaceState("ws-1"));
       return useWorkspaceRegistryActions({
         ...guard,
         activeWorkspaceId: "ws-1",
@@ -73,7 +73,7 @@ describe("useWorkspaceRegistryActions", () => {
     });
 
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("ws-1");
+      const guard = useWorkspaceSession(makeWorkspaceState("ws-1"));
       return useWorkspaceRegistryActions({
         ...guard,
         activeWorkspaceId: "ws-1",
@@ -97,7 +97,7 @@ describe("useWorkspaceRegistryActions", () => {
     });
 
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("ws-1");
+      const guard = useWorkspaceSession(makeWorkspaceState("ws-1"));
       return {
         actions: useWorkspaceRegistryActions({
           ...guard,
@@ -135,7 +135,7 @@ describe("useWorkspaceRegistryActions", () => {
     });
 
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("workspace-a");
+      const guard = useWorkspaceSession(makeWorkspaceState("workspace-a"));
       return useWorkspaceRegistryActions({
         ...guard,
         activeWorkspaceId: "workspace-a",
@@ -171,7 +171,7 @@ describe("useWorkspaceRegistryActions", () => {
     });
 
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("workspace-a");
+      const guard = useWorkspaceSession(makeWorkspaceState("workspace-a"));
       return useWorkspaceRegistryActions({
         ...guard,
         activeWorkspaceId: "workspace-a",
@@ -200,7 +200,7 @@ describe("useWorkspaceRegistryActions", () => {
       switchWorkspace: vi.fn().mockRejectedValue(new Error("internal transport detail"))
     });
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("workspace-a");
+      const guard = useWorkspaceSession(makeWorkspaceState("workspace-a"));
       return useWorkspaceRegistryActions({
         ...guard,
         activeWorkspaceId: "workspace-a",
@@ -221,7 +221,7 @@ describe("useWorkspaceRegistryActions", () => {
     const switchWorkspace = vi.fn();
     window.relic = makeRelicApi({ switchWorkspace });
     const { result } = renderHook(() => {
-      const guard = useWorkspaceRequestGuard("workspace-a");
+      const guard = useWorkspaceSession(makeWorkspaceState("workspace-a"));
       const actions = useWorkspaceRegistryActions({
         ...guard,
         activeWorkspaceId: "workspace-a",

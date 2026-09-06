@@ -2,7 +2,7 @@ import { isSupportedMarkdownImagePath } from "../../shared/imageFiles";
 import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 import type { useWorkspaceMutationRunner } from "./useWorkspaceMutationRunner";
-import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 
 export type WorkspaceFileMutationInput = Pick<
   WorkspaceFileActionsContext,

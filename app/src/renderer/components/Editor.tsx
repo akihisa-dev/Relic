@@ -18,7 +18,7 @@ import {
 import { useEditorContextMenu } from "../hooks/useEditorContextMenu";
 import { useEditorFrontmatterDialog } from "../hooks/useEditorFrontmatterDialog";
 import { useLatest } from "../hooks/useLatest";
-import type { WorkspaceRequestGuard } from "../hooks/useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 import { useToolbarActions } from "../hooks/useToolbarActions";
 import { useT } from "../i18n";
 import { outputFileNameFromPath } from "../outputHtml";

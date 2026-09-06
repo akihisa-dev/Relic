@@ -20,7 +20,7 @@ import { isLargeMarkdownContent } from "../largeMarkdown";
 import { updateTextCount, type TextCountSnapshot } from "../paneViewModel";
 import { useEditorStore, type PaneId, type PanelTabKind, type Tab } from "../store/editorStore";
 import { useT } from "../i18n";
-import type { WorkspaceRequestGuard } from "../hooks/useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 import { SourceModeButton } from "./AppMainActions";
 import { EditableFileTitle } from "./EditableFileTitle";
 import { Editor } from "./Editor";

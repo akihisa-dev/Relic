@@ -7,7 +7,7 @@ import type { AppLinkContextMenu } from "../appLinks";
 import type { HeadingScrollTarget, OutlineHeading } from "../editorDerivedState";
 import type { FileTab, PaneId, PanelTabKind } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
-import type { WorkspaceRequestGuard } from "../hooks/useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 import { useStableCallback, useStableOptionalCallback } from "../hooks/useStableCallback";
 import { useT } from "../i18n";
 import { AppRightPanel } from "./AppRightPanel";

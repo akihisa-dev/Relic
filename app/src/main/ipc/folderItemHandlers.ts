@@ -14,7 +14,7 @@ import {
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { createFolder, moveFolder, renameFolder } from "../files/folders";
 import { moveWorkspaceItemToTrash } from "../files/trash";
-import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
+import { workspaceMutationService } from "../files/workspaceMutationService";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import { handleLocalizedIpc } from "./localizedIpcHandler";
 import {
@@ -37,13 +37,15 @@ export function registerFolderItemHandlers(): void {
         const context = await getActiveWorkspaceContext();
         if (!context.ok) return context;
 
-        const createdFolder = await createFolder(context.value.activeWorkspace.path, input.name, input.parentFolder);
+        const createdFolder = await workspaceMutationService.run(
+          { workspaceId: context.value.activeWorkspace.id, workspacePath: context.value.activeWorkspace.path },
+          ({ workspacePath }) => createFolder(workspacePath, input.name, input.parentFolder)
+        );
 
         if (!createdFolder.ok) {
           return createdFolder;
         }
 
-        invalidateWorkspaceData(context.value.activeWorkspace.id);
         return ok(await buildWorkspaceState(context.value.settings));
       } catch (error) {
         return fail(
@@ -64,17 +66,15 @@ export function registerFolderItemHandlers(): void {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
 
-      const movedFolder = await moveFolder(
-        context.value.activeWorkspace.path,
-        input.path,
-        input.destinationFolder
+      const movedFolder = await workspaceMutationService.run(
+        { workspaceId: context.value.activeWorkspace.id, workspacePath: context.value.activeWorkspace.path },
+        ({ workspacePath }) => moveFolder(workspacePath, input.path, input.destinationFolder)
       );
 
       if (!movedFolder.ok) {
         return movedFolder;
       }
 
-      invalidateWorkspaceData(context.value.activeWorkspace.id);
       return ok(await buildWorkspaceState(context.value.settings));
     } catch (error) {
       return fail(
@@ -94,13 +94,15 @@ export function registerFolderItemHandlers(): void {
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
 
-      const renamedFolder = await renameFolder(context.value.activeWorkspace.path, input.path, input.newName);
+      const renamedFolder = await workspaceMutationService.run(
+        { workspaceId: context.value.activeWorkspace.id, workspacePath: context.value.activeWorkspace.path },
+        ({ workspacePath }) => renameFolder(workspacePath, input.path, input.newName)
+      );
 
       if (!renamedFolder.ok) {
         return renamedFolder;
       }
 
-      invalidateWorkspaceData(context.value.activeWorkspace.id);
       return ok(await buildWorkspaceState(context.value.settings));
     } catch (error) {
       return fail(
@@ -122,18 +124,15 @@ export function registerFolderItemHandlers(): void {
         const context = await getActiveWorkspaceContext();
         if (!context.ok) return context;
 
-        const movedItem = await moveWorkspaceItemToTrash(
-          context.value.activeWorkspace.path,
-          input.path,
-          input.type,
-          shell.trashItem
+        const movedItem = await workspaceMutationService.run(
+          { workspaceId: context.value.activeWorkspace.id, workspacePath: context.value.activeWorkspace.path },
+          ({ workspacePath }) => moveWorkspaceItemToTrash(workspacePath, input.path, input.type, shell.trashItem)
         );
 
         if (!movedItem.ok) {
           return movedItem;
         }
 
-        invalidateWorkspaceData(context.value.activeWorkspace.id);
         return ok(await buildWorkspaceState(context.value.settings));
       } catch (error) {
         return fail(

@@ -10,6 +10,7 @@ import type {
 } from "../../shared/ipc";
 import { knownFrontmatterSearchFields } from "../filesSidebarModel";
 import { useT } from "../i18n";
+import { useWorkspaceResourceController } from "./useWorkspaceResourceState";
 
 interface UseWorkspaceSearchStateInput {
   contentRevision?: number;
@@ -32,10 +33,12 @@ interface DebouncedSearchSnapshot {
   query: string;
 }
 
-interface FrontmatterCandidateSnapshot {
-  candidates: Record<string, string[]>;
-  workspaceId: string;
-}
+const loadFrontmatterCandidates = () => {
+  const client = relicClient.current;
+  if (!client) throw new Error("Relic API is unavailable.");
+  return client.getFrontmatterValueCandidates();
+};
+const emptyFrontmatterCandidates: Record<string, string[]> = {};
 
 const emptySearchSnapshot: SearchSnapshot = {
   error: null,
@@ -62,7 +65,6 @@ export function useWorkspaceSearchState({
   const [searchMode, setSearchMode] = useState<SearchMode>("fullText");
   const [searchFrontmatterField, setSearchFrontmatterField] = useState("");
   const [searchSnapshot, setSearchSnapshot] = useState<SearchSnapshot>(emptySearchSnapshot);
-  const [frontmatterCandidateSnapshot, setFrontmatterCandidateSnapshot] = useState<FrontmatterCandidateSnapshot | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState<DebouncedSearchSnapshot>(emptyDebouncedSearchSnapshot);
   const lastRequestedSearchKey = useRef<string | null>(null);
   const frontmatterSearchFields = useMemo(
@@ -77,9 +79,19 @@ export function useWorkspaceSearchState({
       : searchFrontmatterField;
   const hasActiveWorkspace = Boolean(workspaceState?.activeWorkspace);
   const workspaceId = workspaceState?.activeWorkspace?.id ?? null;
-  const workspaceFrontmatterCandidates = workspaceId !== null && frontmatterCandidateSnapshot?.workspaceId === workspaceId
-    ? frontmatterCandidateSnapshot.candidates
-    : {};
+  const { state: candidateState } = useWorkspaceResourceController({
+    available: Boolean(workspaceId && relicClient.current),
+    loadFailedMessage: t("errors.operationFailed"),
+    loadResource: loadFrontmatterCandidates,
+    onError: setWorkspaceError,
+    refreshToken: workspaceState?.fileTree,
+    retainWhileRefreshing: true,
+    revision: contentRevision,
+    workspaceId: workspaceId ?? ""
+  });
+  const workspaceFrontmatterCandidates = candidateState.status === "ready"
+    ? candidateState.value
+    : emptyFrontmatterCandidates;
   const searchKey = hasActiveWorkspace && searchQuery.trim() !== ""
     ? `${workspaceState?.activeWorkspace?.id ?? ""}:${searchMode}:${effectiveSearchFrontmatterField}:${searchQuery}`
     : null;
@@ -95,43 +107,6 @@ export function useWorkspaceSearchState({
 
     return result;
   }, [hasActiveWorkspace, userDefinedFields, workspaceFrontmatterCandidates]);
-
-  useEffect(() => {
-    if (workspaceId === null || !relicClient.current) {
-      return;
-    }
-
-    let canceled = false;
-    const requestedWorkspaceId = workspaceId;
-
-    void relicClient.current.getFrontmatterValueCandidates().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        setFrontmatterCandidateSnapshot({
-          candidates: result.value,
-          workspaceId: requestedWorkspaceId
-        });
-      } else {
-        setFrontmatterCandidateSnapshot({
-          candidates: {},
-          workspaceId: requestedWorkspaceId
-        });
-        setWorkspaceError(result.error.message);
-      }
-    }).catch(() => {
-      if (canceled) return;
-      setFrontmatterCandidateSnapshot({
-        candidates: {},
-        workspaceId: requestedWorkspaceId
-      });
-      setWorkspaceError(t("errors.operationFailed"));
-    });
-
-    return () => {
-      canceled = true;
-    };
-  }, [contentRevision, setWorkspaceError, t, workspaceId, workspaceState?.fileTree]);
 
   useEffect(() => {
     if (!hasActiveWorkspace || searchQuery.trim() === "") {

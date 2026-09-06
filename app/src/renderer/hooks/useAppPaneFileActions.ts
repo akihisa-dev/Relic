@@ -9,7 +9,7 @@ import { ensureMarkdownExtension } from "../../shared/markdownExtension";
 import type { HeadingScrollTarget } from "../editorDerivedState";
 import type { PaneId, PanelTabKind, Tab } from "../store/editorStore";
 import { joinWorkspacePath } from "../workspacePaths";
-import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 
 interface UseAppPaneFileActionsInput extends Pick<WorkspaceRequestGuard, "beginWorkspaceRequest"> {
   focusedPane: PaneId;

@@ -20,6 +20,8 @@ import {
 import { createTranslator } from "../../shared/i18n";
 import { resolveWikiLinks } from "../../shared/links";
 import { writeAppSettings } from "../settings/appSettings";
+import { workspaceDataProvider } from "../files/workspaceDataProvider";
+import { workspaceDerivedDataSession } from "../files/workspaceDerivedDataSession";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
 import { maxToolCandidateReadBytes } from "./toolCandidateCollectors";
 import {
@@ -34,6 +36,7 @@ describe("toolActions", () => {
   const temporaryPaths: string[] = [];
 
   afterEach(async () => {
+    workspaceDerivedDataSession.invalidate();
     vi.clearAllMocks();
     await Promise.all(
       temporaryPaths.splice(0).map((temporaryPath) =>
@@ -50,12 +53,24 @@ describe("toolActions", () => {
 
     const titleWorkspace = await prepareActiveWorkspace();
     await writeFile(path.join(titleWorkspace.workspacePath, "note.md"), source, "utf8");
+    const beforeToolOutput = await workspaceDataProvider.get({
+      userDataPath: titleWorkspace.userDataPath,
+      workspaceId: titleWorkspace.workspaceId,
+      workspacePath: titleWorkspace.workspacePath
+    });
+    expect(beforeToolOutput.options.fileIndex?.entries.some((entry) => entry.path === "Titles.md")).toBe(false);
     await expect(generateTitleList({
       outputFolder: "",
       outputName: "Titles",
       sortBy: "name",
       target: { kind: "workspace" }
     })).resolves.toMatchObject({ ok: true, value: "Titles.md" });
+    const afterToolOutput = await workspaceDataProvider.get({
+      userDataPath: titleWorkspace.userDataPath,
+      workspaceId: titleWorkspace.workspaceId,
+      workspacePath: titleWorkspace.workspacePath
+    });
+    expect(afterToolOutput.options.fileIndex?.entries.some((entry) => entry.path === "Titles.md")).toBe(true);
     await expect(readFile(path.join(titleWorkspace.workspacePath, "note.md"), "utf8")).resolves.toBe(source);
 
     const tocWorkspace = await prepareActiveWorkspace();
@@ -809,8 +824,26 @@ describe("toolActions", () => {
     )).rejects.toMatchObject({ code: "TOOL_CANDIDATE_LIMIT" });
   });
 
+  it("ワークスペース未選択時は既存のツール失敗コードを保つ", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-tools-empty-"));
+    temporaryPaths.push(userDataPath);
+    electronMock.getPath.mockReturnValue(userDataPath);
+
+    await expect(generateTitleList({
+      outputFolder: "",
+      outputName: "Titles",
+      sortBy: "name",
+      target: { kind: "workspace" }
+    })).resolves.toEqual({
+      ok: false,
+      error: { code: "NO_WORKSPACE", message: "ワークスペースが選択されていません。" }
+    });
+  });
+
   async function prepareActiveWorkspace(): Promise<{
     outsidePath: string;
+    userDataPath: string;
+    workspaceId: string;
     workspacePath: string;
   }> {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-tools-user-data-"));
@@ -833,6 +866,6 @@ describe("toolActions", () => {
     await writeAppSettings(userDataPath, settings);
     electronMock.getPath.mockReturnValue(userDataPath);
 
-    return { outsidePath, workspacePath };
+    return { outsidePath, userDataPath, workspaceId: workspace.id, workspacePath };
   }
 });

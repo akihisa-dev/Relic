@@ -14,10 +14,10 @@ import {
 import {
   getToolWorkspaceContext,
   maxConcurrentToolReads,
-  toolActionFileOperations
+  toolActionFileOperations,
+  writeToolOutput
 } from "./toolActionRuntime";
 import { formatGeneratedMarkdownHeadingText } from "./toolMarkdownFormat";
-import { writeToolMarkdownOutput } from "./toolOutputFiles";
 import { resolveToolTargetPaths } from "./toolTargets";
 import { collectMarkdownPathsFromTree, createWikiLinkFormatter } from "./toolWikiLinks";
 
@@ -69,8 +69,8 @@ export async function generateTagIndex(
     lines.push("");
   }
 
-  return writeToolMarkdownOutput(
-    workspacePath,
+  return writeToolOutput(
+    context.value,
     input.outputFolder,
     input.outputName,
     lines.join("\n").trimEnd() + "\n"

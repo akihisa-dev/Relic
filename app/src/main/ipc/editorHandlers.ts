@@ -23,7 +23,7 @@ import {
   listFileRecoverySnapshots,
   readFileRecoverySnapshot
 } from "../files/fileRecovery";
-import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
+import { workspaceMutationService } from "../files/workspaceMutationService";
 import { setMainTranslator } from "../i18n";
 import { readAppSettings, updateAppSettings } from "../settings/appSettings";
 import { runWorkspaceRegistrationTask } from "../workspace/workspaceRegistrationGate";
@@ -50,23 +50,23 @@ export function registerEditorHandlers(): void {
       return withActiveWorkspaceContext(
         { code: "FILE_WRITE_FAILED", message: "ファイルを保存できませんでした。" },
         async (context) => {
-          const result = await writeMarkdownFileContent(
-            context.activeWorkspace.path,
-            input.path,
-            input.content,
-            input.expectedContent,
-            {},
-            async (previousContent) => createFileRecoverySnapshot(
-              app.getPath("userData"),
-              context.activeWorkspace.id,
+          return workspaceMutationService.run(
+            { workspaceId: context.activeWorkspace.id, workspacePath: context.activeWorkspace.path },
+            ({ workspacePath }) => writeMarkdownFileContent(
+              workspacePath,
               input.path,
-              previousContent
-            )
+              input.content,
+              input.expectedContent,
+              {},
+              async (previousContent) => createFileRecoverySnapshot(
+                app.getPath("userData"),
+                context.activeWorkspace.id,
+                input.path,
+                previousContent
+              )
+            ),
+            [input.path]
           );
-          if (result.ok) {
-            invalidateWorkspaceData(context.activeWorkspace.id, [input.path]);
-          }
-          return result;
         }
       );
     }

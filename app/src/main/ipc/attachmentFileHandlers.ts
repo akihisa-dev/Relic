@@ -9,7 +9,7 @@ import {
 import { fail } from "../../shared/result";
 import { importImageFile, readImageFile } from "../files/imageFiles";
 import { readPdfFile } from "../files/pdfFiles";
-import { invalidateWorkspaceData } from "../files/workspaceDataInvalidation";
+import { workspaceMutationService } from "../files/workspaceMutationService";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
   isImportImageFileInput,
@@ -29,13 +29,10 @@ export function registerAttachmentFileHandlers(): void {
         const context = await getActiveWorkspaceContext();
         if (!context.ok) return context;
 
-        const importedImage = await importImageFile(
-          context.value.activeWorkspace.path,
-          input.sourcePath,
-          input.destinationFolder
+        return await workspaceMutationService.run(
+          { workspaceId: context.value.activeWorkspace.id, workspacePath: context.value.activeWorkspace.path },
+          ({ workspacePath }) => importImageFile(workspacePath, input.sourcePath, input.destinationFolder)
         );
-        if (importedImage.ok) invalidateWorkspaceData(context.value.activeWorkspace.id);
-        return importedImage;
       } catch (error) {
         return fail("IMAGE_IMPORT_FAILED", "画像ファイルを追加できませんでした。", ipcErrorDetails(error));
       }

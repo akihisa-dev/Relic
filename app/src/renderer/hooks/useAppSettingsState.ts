@@ -13,7 +13,7 @@ import {
 } from "../../shared/ipc";
 import { useT } from "../i18n";
 import { useLatest } from "./useLatest";
-import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 
 interface UseAppSettingsStateInput extends Pick<WorkspaceRequestGuard, "beginWorkspaceRequest"> {
   setEditorSettings: (settings: EditorSettings) => void;

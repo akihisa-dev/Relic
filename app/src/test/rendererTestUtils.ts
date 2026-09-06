@@ -17,6 +17,15 @@ export const testWorkspaceState: WorkspaceState = {
   workspaces: []
 };
 
+export function makeWorkspaceState(id: string | null): WorkspaceState {
+  return {
+    activeWorkspace: id === null ? null : { id, name: id, path: `/workspace/${id}` },
+    fileTree: [],
+    pinnedPaths: [],
+    workspaces: []
+  };
+}
+
 export function installMatchMediaMock(): void {
   Object.defineProperty(window, "matchMedia", {
     writable: true,

@@ -9,7 +9,7 @@ import { applyWorkspacePaths } from "../workspaceSnapshotSync";
 import { WorkspaceChangeCoordinator, type WorkspaceChangeAction } from "../workspaceChangeCoordinator";
 import type { IsCurrentRequest } from "./useAsyncRequestGuard";
 import { useLatest } from "./useLatest";
-import type { WorkspaceRequestGuard } from "./useWorkspaceRequestGuard";
+import type { WorkspaceRequestGuard } from "../workspaceSession";
 
 interface SaveBeforeRefreshResult {
   message?: string;

@@ -1,5 +1,4 @@
 import { relicClient } from "../relicClient";
-import { useCallback, useEffect, useState } from "react";
 
 import type {
   RelicApi,
@@ -9,7 +8,8 @@ import type {
 import { relicApiContractVersion } from "../../shared/ipc";
 import { normalizeWorkspaceCharts } from "../chartNormalize";
 import { useT } from "../i18n";
-import { useAsyncRequestGuard } from "./useAsyncRequestGuard";
+import { useWorkspaceResourceController } from "./useWorkspaceResourceState";
+import type { RelicResult } from "../../shared/result";
 
 interface UseWorkspaceChartsInput {
   hasOpenChart: boolean;
@@ -27,52 +27,29 @@ export function useWorkspaceCharts({
 } {
   const t = useT();
   const workspaceId = workspaceState?.activeWorkspace?.id ?? null;
-  const [snapshot, setSnapshot] = useState<{ charts: WorkspaceChart[]; workspaceId: string } | null>(null);
-  const beginRequest = useAsyncRequestGuard([workspaceId]);
-
-  const reloadCharts = useCallback(async (): Promise<boolean> => {
-    const client = relicClient.current;
-    if (!workspaceId || !client) {
-      return true;
-    }
-    const isCurrentRequest = beginRequest();
-    if (!isRelicApiContractCompatible(client)) {
-      if (!isCurrentRequest()) return false;
-      setSnapshot({ charts: [], workspaceId });
-      setWorkspaceError(apiContractMismatchMessage());
-      return false;
-    }
-
-    try {
-      const result = await client.getWorkspaceCharts();
-      if (!isCurrentRequest()) return false;
-
-      if (result.ok) {
-        setSnapshot({ charts: normalizeWorkspaceCharts(result.value), workspaceId });
-        return true;
-      } else {
-        setSnapshot({ charts: [], workspaceId });
-        setWorkspaceError(result.error.message);
-        return false;
-      }
-    } catch {
-      if (!isCurrentRequest()) return false;
-      setSnapshot({ charts: [], workspaceId });
-      setWorkspaceError(t("errors.operationFailed"));
-      return false;
-    }
-  }, [beginRequest, setWorkspaceError, t, workspaceId]);
-
-  useEffect(() => {
-    if (!hasOpenChart) return;
-
-    void reloadCharts();
-  }, [hasOpenChart, reloadCharts]);
-
+  const { state, reload } = useWorkspaceResourceController({
+    available: Boolean(workspaceId && relicClient.current),
+    enabled: hasOpenChart,
+    loadFailedMessage: t("errors.operationFailed"),
+    loadResource: loadCharts,
+    onError: setWorkspaceError,
+    retainWhileRefreshing: true,
+    revision: 0,
+    workspaceId: workspaceId ?? ""
+  });
   return {
-    charts: workspaceId && hasOpenChart && snapshot?.workspaceId === workspaceId ? snapshot.charts : [],
-    reloadCharts
+    charts: workspaceId && hasOpenChart && state.status === "ready" ? state.value : [],
+    reloadCharts: reload
   };
+}
+
+async function loadCharts(): Promise<RelicResult<WorkspaceChart[]>> {
+  const client = relicClient.current;
+  if (!isRelicApiContractCompatible(client)) {
+    return { ok: false, error: { code: "API_CONTRACT_MISMATCH", message: apiContractMismatchMessage() } };
+  }
+  const result = await client.getWorkspaceCharts();
+  return result.ok ? { ok: true, value: normalizeWorkspaceCharts(result.value) } : result;
 }
 
 export function isRelicApiContractCompatible(relic: RelicApi | undefined): relic is RelicApi {

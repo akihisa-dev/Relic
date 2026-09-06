@@ -2,9 +2,8 @@ import type { GenerateTableOfContentsInput } from "../../shared/ipc";
 import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, type RelicResult } from "../../shared/result";
 import { readWorkspaceFileTree } from "../files/fileTree";
-import { getToolWorkspaceContext } from "./toolActionRuntime";
+import { getToolWorkspaceContext, writeToolOutput } from "./toolActionRuntime";
 import { formatGeneratedMarkdownHeadingText } from "./toolMarkdownFormat";
-import { writeToolMarkdownOutput } from "./toolOutputFiles";
 import { resolveToolTargetPaths } from "./toolTargets";
 import { collectMarkdownPathsFromTree, createWikiLinkFormatter } from "./toolWikiLinks";
 
@@ -28,8 +27,8 @@ export async function generateTableOfContents(
   const lines = tableOfContentsLinesForPaths(targetPaths.value, baseFolder, wikiLinkForPath);
   if (lines.length === 0) return fail("TOOL_TARGET_EMPTY", "対象になるMarkdownファイルがありません。");
 
-  return writeToolMarkdownOutput(
-    workspacePath,
+  return writeToolOutput(
+    context.value,
     input.outputFolder,
     input.outputName,
     lines.join("\n") + "\n"

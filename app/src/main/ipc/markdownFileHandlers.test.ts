@@ -61,6 +61,7 @@ import {
   startWorkspaceFileDragChannel
 } from "../../shared/ipc";
 import { workspaceDerivedDataSession } from "../files/workspaceDerivedDataSession";
+import { workspaceMutationService } from "../files/workspaceMutationService";
 import { writeAppSettings } from "../settings/appSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
 import { setMainTranslator } from "../i18n";
@@ -658,6 +659,17 @@ describe("markdownFileHandlers", () => {
       },
       ok: false
     });
+  });
+
+  it("画像追加の非同期例外を従来の失敗結果に変換する", async () => {
+    await createActiveWorkspace({});
+    vi.spyOn(workspaceMutationService, "run").mockRejectedValueOnce(new Error("write failed"));
+    registerMarkdownFileHandlers();
+
+    await expect(handlerFor(importImageFileChannel)(undefined, {
+      destinationFolder: "",
+      sourcePath: "/tmp/image.png"
+    })).resolves.toMatchObject({ ok: false, error: { code: "IMAGE_IMPORT_FAILED" } });
   });
 
   function handlerFor(channel: string): (event: unknown, input: unknown) => Promise<unknown> {

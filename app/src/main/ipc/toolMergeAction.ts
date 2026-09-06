@@ -13,10 +13,10 @@ import {
 import {
   getToolWorkspaceContext,
   maxConcurrentToolReads,
-  toolActionFileOperations
+  toolActionFileOperations,
+  writeToolOutput
 } from "./toolActionRuntime";
 import { formatGeneratedMarkdownHeadingText } from "./toolMarkdownFormat";
-import { writeToolMarkdownOutput } from "./toolOutputFiles";
 import { resolveToolTargetPaths } from "./toolTargets";
 
 export async function mergeFiles(
@@ -47,8 +47,8 @@ export async function mergeFiles(
       : content.trim();
   });
 
-  return writeToolMarkdownOutput(
-    workspacePath,
+  return writeToolOutput(
+    context.value,
     input.outputFolder,
     input.outputName || "merged",
     parts.join("\n\n---\n\n") + "\n"
