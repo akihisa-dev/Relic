@@ -1,7 +1,7 @@
 import { relicClient } from "../relicClient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { FileTab, Tab } from "../store/editorStore";
+import type { FileTab } from "../store/editorStore";
 import {
   initialEditorSaveStatuses,
   updateEditorSaveStatuses,
@@ -21,8 +21,6 @@ interface UseEditorAutoSaveInput {
   onSaved?: (path: string) => void;
   onSaveError?: (message: string) => void;
   saveFailedMessage: string;
-  /** @deprecated The hook subscribes directly to changed tabs. */
-  tabs?: Record<string, Tab>;
 }
 
 interface SaveBeforeCloseResult {

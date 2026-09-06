@@ -75,8 +75,7 @@ describe("useEditorAutoSave", () => {
 
     renderHook(() => useEditorAutoSave({
       conflictCloseBlockedMessage: "conflict",
-      saveFailedMessage: "save failed",
-      tabs: useEditorStore.getState().tabs
+      saveFailedMessage: "save failed"
     }));
 
     await act(async () => {
@@ -107,13 +106,10 @@ describe("useEditorAutoSave", () => {
       tab: { content: "初稿", id: "tab", kind: "file", name: "Memo", path: "memo.md", savedContent: "" }
     });
 
-    const { rerender } = renderHook(({ tabs }) => useEditorAutoSave({
+    renderHook(() => useEditorAutoSave({
       conflictCloseBlockedMessage: "conflict",
-      saveFailedMessage: "save failed",
-      tabs
-    }), {
-      initialProps: { tabs: useEditorStore.getState().tabs }
-    });
+      saveFailedMessage: "save failed"
+    }));
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
@@ -123,7 +119,6 @@ describe("useEditorAutoSave", () => {
     act(() => {
       useEditorStore.getState().updateTabContent("tab", "改稿");
     });
-    rerender({ tabs: useEditorStore.getState().tabs });
 
     await act(async () => {
       firstSave.resolve({ ok: true, value: undefined });
@@ -164,13 +159,10 @@ describe("useEditorAutoSave", () => {
       tab: { content: "初稿", id: "tab", kind: "file", name: "Memo", path: "memo.md", savedContent: "Base" }
     });
 
-    const { rerender, result } = renderHook(({ tabs }) => useEditorAutoSave({
+    const { result } = renderHook(() => useEditorAutoSave({
       conflictCloseBlockedMessage: "conflict",
-      saveFailedMessage: "save failed",
-      tabs
-    }), {
-      initialProps: { tabs: useEditorStore.getState().tabs }
-    });
+      saveFailedMessage: "save failed"
+    }));
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
@@ -178,7 +170,6 @@ describe("useEditorAutoSave", () => {
     act(() => {
       useEditorStore.getState().updateTabContent("tab", "改稿");
     });
-    rerender({ tabs: useEditorStore.getState().tabs });
 
     await act(async () => {
       failedSave.resolve({ ok: false, error: { code: "WRITE_FAILED", message: "save failed" } });
@@ -197,7 +188,6 @@ describe("useEditorAutoSave", () => {
     act(() => {
       useEditorStore.getState().updateTabContent("tab", "最終稿");
     });
-    rerender({ tabs: useEditorStore.getState().tabs });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
@@ -219,13 +209,10 @@ describe("useEditorAutoSave", () => {
       tab: { content: "初稿", id: "tab", kind: "file", name: "Memo", path: "memo.md", savedContent: "Base" }
     });
 
-    const { rerender } = renderHook(({ tabs }) => useEditorAutoSave({
+    renderHook(() => useEditorAutoSave({
       conflictCloseBlockedMessage: "conflict",
-      saveFailedMessage: "save failed",
-      tabs
-    }), {
-      initialProps: { tabs: useEditorStore.getState().tabs }
-    });
+      saveFailedMessage: "save failed"
+    }));
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
@@ -235,12 +222,10 @@ describe("useEditorAutoSave", () => {
     act(() => {
       useEditorStore.getState().updateTabContent("tab", "改稿");
     });
-    rerender({ tabs: useEditorStore.getState().tabs });
 
     act(() => {
       useEditorStore.getState().setTabExternalConflict("tab", "外部版");
     });
-    rerender({ tabs: useEditorStore.getState().tabs });
 
     await act(async () => {
       firstSave.resolve({ ok: true, value: undefined });
@@ -273,8 +258,7 @@ describe("useEditorAutoSave", () => {
 
     const { result } = renderHook(() => useEditorAutoSave({
       conflictCloseBlockedMessage: "conflict",
-      saveFailedMessage: "save failed",
-      tabs: useEditorStore.getState().tabs
+      saveFailedMessage: "save failed"
     }));
 
     await expect(result.current.flushTabsBeforeClose(["tab"])).resolves.toEqual({

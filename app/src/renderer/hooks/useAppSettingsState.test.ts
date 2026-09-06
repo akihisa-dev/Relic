@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   defaultEditorSettings,
-  type UserDefinedField,
   type WorkspaceState
 } from "../../shared/ipc";
 import { makeRelicApi } from "../../test/rendererTestUtils";
@@ -17,7 +16,6 @@ describe("useAppSettingsState", () => {
     language: "ja" as const,
     fontSize: 18
   };
-  const userDefinedFields: UserDefinedField[] = [{ name: "category", type: "text" }];
   afterEach(() => {
     window.relic = undefined;
     vi.clearAllMocks();
@@ -132,35 +130,6 @@ describe("useAppSettingsState", () => {
     expect(setEditorSettings).toHaveBeenCalledWith(editorSettings);
     await waitFor(() => {
       expect(setWorkspaceError).toHaveBeenCalledWith("エディタ設定の保存に失敗しました");
-    });
-  });
-
-  it("ユーザー定義フィールド保存失敗時に setWorkspaceError を呼ぶ", async () => {
-    window.relic = makeRelicApi({
-      saveUserDefinedFields: vi.fn().mockResolvedValue({
-        ok: false,
-        error: { code: "USER_DEFINED_FIELDS_SAVE_FAILED", message: "カスタムフィールドの保存に失敗しました" }
-      })
-    });
-
-    const setWorkspaceError = vi.fn();
-    const setWorkspaceState = vi.fn();
-
-    const { result } = renderHook(() => useAppSettingsState({
-      beginWorkspaceRequest: beginCurrentWorkspaceRequest,
-      setEditorSettings: vi.fn(),
-      setWorkspaceError,
-      setWorkspaceState
-    }));
-
-    act(() => {
-      result.current.handleSaveUserDefinedFields(userDefinedFields);
-    });
-
-    expect(result.current.userDefinedFields).toEqual(userDefinedFields);
-
-    await waitFor(() => {
-      expect(setWorkspaceError).toHaveBeenCalledWith("カスタムフィールドの保存に失敗しました");
     });
   });
 

@@ -31,9 +31,7 @@ export function useAppSettingsState({
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [userDefinedFields, setUserDefinedFields] = useState<UserDefinedField[]>(defaultUserDefinedFields);
   const editorSettingsRef = useRef<EditorSettings>(defaultEditorSettings);
-  const userDefinedFieldsRef = useRef<UserDefinedField[]>(defaultUserDefinedFields);
   const editorSaveGenerationRef = useRef(0);
-  const userDefinedFieldsSaveGenerationRef = useRef(0);
   const beginWorkspaceRequestRef = useLatest(beginWorkspaceRequest);
 
   useEffect(() => {
@@ -72,7 +70,6 @@ export function useAppSettingsState({
     void relicClient.current?.getUserDefinedFields().then((result) => {
       if (canceled) return;
       if (result.ok) {
-        userDefinedFieldsRef.current = result.value;
         setUserDefinedFields(result.value);
       }
     }).catch(() => {
@@ -104,29 +101,9 @@ export function useAppSettingsState({
     [setEditorSettings, setWorkspaceError, t]
   );
 
-  const handleSaveUserDefinedFields = useCallback((fields: UserDefinedField[]): void => {
-    const previousFields = userDefinedFieldsRef.current;
-    const generation = ++userDefinedFieldsSaveGenerationRef.current;
-    userDefinedFieldsRef.current = fields;
-    setUserDefinedFields(fields);
-    void relicClient.current?.saveUserDefinedFields(fields).then((result) => {
-      if (!result.ok && generation === userDefinedFieldsSaveGenerationRef.current) {
-        userDefinedFieldsRef.current = previousFields;
-        setUserDefinedFields(previousFields);
-        setWorkspaceError(result.error.message);
-      }
-    }).catch(() => {
-      if (generation !== userDefinedFieldsSaveGenerationRef.current) return;
-      userDefinedFieldsRef.current = previousFields;
-      setUserDefinedFields(previousFields);
-      setWorkspaceError(t("errors.operationFailed"));
-    });
-  }, [setWorkspaceError, t]);
-
   return {
     appInfo,
     handleSaveSettings,
-    handleSaveUserDefinedFields,
     userDefinedFields
   };
 }
