@@ -33,6 +33,7 @@ import {
   saveEditorSettingsChannel,
   writeMarkdownFileChannel
 } from "../../shared/ipc";
+import * as markdownFileContent from "../files/markdownFileContent";
 import { workspaceMutationCoordinator } from "../files/workspaceDataInvalidation";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
@@ -141,6 +142,27 @@ describe("editor IPC handlers", () => {
       ok: false
     });
     await expect(readFile(path.join(workspacePath, "Note.md"), "utf8")).resolves.toBe("# Current");
+    expect(invalidateSpy).not.toHaveBeenCalled();
+  });
+
+  it("保存処理の非同期例外を安全な失敗結果として返し、索引を無効化しない", async () => {
+    await createActiveWorkspace({});
+    vi.spyOn(markdownFileContent, "writeMarkdownFileContent").mockRejectedValueOnce(
+      new Error("write failed SERVICE_API_KEY=private-value")
+    );
+    const invalidateSpy = vi.spyOn(workspaceMutationCoordinator, "invalidateAfterMutation");
+
+    await expect(handlerFor(writeMarkdownFileChannel)(undefined, {
+      content: "# Updated",
+      expectedContent: "# Before",
+      path: "Note.md"
+    })).resolves.toMatchObject({
+      ok: false,
+      error: {
+        code: "FILE_WRITE_FAILED",
+        details: "write failed SERVICE_API_KEY=[redacted]"
+      }
+    });
     expect(invalidateSpy).not.toHaveBeenCalled();
   });
 

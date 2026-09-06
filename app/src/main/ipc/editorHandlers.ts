@@ -43,85 +43,69 @@ export function registerEditorHandlers(): void {
   handleLocalizedIpc(
     writeMarkdownFileChannel,
     async (_event, input: WriteMarkdownFileInput): Promise<RelicResult<void>> => {
-      try {
-        if (!isWriteMarkdownFileInput(input)) {
-          return fail("FILE_WRITE_INVALID_INPUT", "パスと内容を指定してください。");
-        }
-
-        return withActiveWorkspaceContext(
-          { code: "FILE_WRITE_FAILED", message: "ファイルを保存できませんでした。" },
-          async (context) => {
-            const result = await writeMarkdownFileContent(
-              context.activeWorkspace.path,
-              input.path,
-              input.content,
-              input.expectedContent,
-              {},
-              async (previousContent) => createFileRecoverySnapshot(
-                app.getPath("userData"),
-                context.activeWorkspace.id,
-                input.path,
-                previousContent
-              )
-            );
-            if (result.ok) {
-              invalidateWorkspaceData(context.activeWorkspace.id, [input.path]);
-            }
-            return result;
-          }
-        );
-      } catch (error) {
-        return fail(
-          "FILE_WRITE_FAILED",
-          "ファイルを保存できませんでした。",
-          ipcErrorDetails(error)
-        );
+      if (!isWriteMarkdownFileInput(input)) {
+        return fail("FILE_WRITE_INVALID_INPUT", "パスと内容を指定してください。");
       }
+
+      return withActiveWorkspaceContext(
+        { code: "FILE_WRITE_FAILED", message: "ファイルを保存できませんでした。" },
+        async (context) => {
+          const result = await writeMarkdownFileContent(
+            context.activeWorkspace.path,
+            input.path,
+            input.content,
+            input.expectedContent,
+            {},
+            async (previousContent) => createFileRecoverySnapshot(
+              app.getPath("userData"),
+              context.activeWorkspace.id,
+              input.path,
+              previousContent
+            )
+          );
+          if (result.ok) {
+            invalidateWorkspaceData(context.activeWorkspace.id, [input.path]);
+          }
+          return result;
+        }
+      );
     }
   );
 
   handleLocalizedIpc(
     listFileRecoverySnapshotsChannel,
     async (_event, input: FileRecoveryInput): Promise<RelicResult<FileRecoveryList>> => {
-      try {
-        if (!isPathInput(input)) {
-          return fail("FILE_RECOVERY_INVALID_INPUT", "復元版を確認するファイルを指定してください。");
-        }
-
-        return withActiveWorkspaceContext(
-          { code: "FILE_RECOVERY_LIST_FAILED", message: "復元版を読み込めませんでした。" },
-          async (context) => listFileRecoverySnapshots(
-            app.getPath("userData"),
-            context.activeWorkspace.id,
-            input.path
-          )
-        );
-      } catch (error) {
-        return fail("FILE_RECOVERY_LIST_FAILED", "復元版を読み込めませんでした。", ipcErrorDetails(error));
+      if (!isPathInput(input)) {
+        return fail("FILE_RECOVERY_INVALID_INPUT", "復元版を確認するファイルを指定してください。");
       }
+
+      return withActiveWorkspaceContext(
+        { code: "FILE_RECOVERY_LIST_FAILED", message: "復元版を読み込めませんでした。" },
+        async (context) => listFileRecoverySnapshots(
+          app.getPath("userData"),
+          context.activeWorkspace.id,
+          input.path
+        )
+      );
     }
   );
 
   handleLocalizedIpc(
     readFileRecoverySnapshotChannel,
     async (_event, input: ReadFileRecoverySnapshotInput): Promise<RelicResult<FileRecoverySnapshot>> => {
-      try {
-        if (!isReadFileRecoverySnapshotInput(input)) {
-          return fail("FILE_RECOVERY_INVALID_INPUT", "復元版の指定が正しくありません。");
-        }
-
-        return withActiveWorkspaceContext(
-          { code: "FILE_RECOVERY_READ_FAILED", message: "復元版を読み込めませんでした。" },
-          async (context) => readFileRecoverySnapshot(
-            app.getPath("userData"),
-            context.activeWorkspace.id,
-            input.path,
-            input.snapshotId
-          )
-        );
-      } catch (error) {
-        return fail("FILE_RECOVERY_READ_FAILED", "復元版を読み込めませんでした。", ipcErrorDetails(error));
+      if (!isReadFileRecoverySnapshotInput(input)) {
+        return fail("FILE_RECOVERY_INVALID_INPUT", "復元版の指定が正しくありません。");
       }
+
+      return withActiveWorkspaceContext(
+        { code: "FILE_RECOVERY_READ_FAILED", message: "復元版を読み込めませんでした。" },
+        async (context) => readFileRecoverySnapshot(
+          app.getPath("userData"),
+          context.activeWorkspace.id,
+          input.path,
+          input.snapshotId
+        )
+      );
     }
   );
 
