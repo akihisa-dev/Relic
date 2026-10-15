@@ -13,6 +13,78 @@ describe("useWorkspaceRegistryActions", () => {
     window.relic = undefined;
   });
 
+  it.each(["open", "create", "relink"] as const)("%s完了後は切替先でも再操作できる", async (operation) => {
+    const next = makeWorkspaceState("workspace-b");
+    const response = vi.fn().mockResolvedValue({ ok: true, value: next });
+    window.relic = makeRelicApi({ openWorkspace: response, createNewWorkspace: response, relinkWorkspace: response });
+    const { result } = renderHook(() => {
+      const session = useWorkspaceSession(makeWorkspaceState("workspace-a"));
+      return {
+        session,
+        actions: useWorkspaceRegistryActions({
+          ...session,
+          activeWorkspaceId: session.workspaceState?.activeWorkspace?.id,
+          activeWorkspacePath: session.workspaceState?.activeWorkspace?.path,
+          closeAllTabs: vi.fn(),
+          setWorkspaceError: vi.fn()
+        })
+      };
+    });
+    const invoke = () => {
+      if (operation === "open") result.current.actions.handleOpenWorkspace();
+      if (operation === "create") result.current.actions.handleCreateNewWorkspace();
+      if (operation === "relink") result.current.actions.handleRelinkWorkspace("workspace-a");
+    };
+    await act(async () => invoke());
+    expect(result.current.session.workspaceState?.activeWorkspace?.id).toBe("workspace-b");
+    expect(result.current.actions.isOpeningWorkspace || result.current.actions.isCreatingWorkspace || result.current.actions.isRelinkingWorkspace).toBe(false);
+    await act(async () => invoke());
+    expect(response).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["cancel", "error", "reject"] as const)("%s後も処理中状態を解除する", async (outcome) => {
+    const initial = makeWorkspaceState("workspace-a");
+    const response = outcome === "reject"
+      ? vi.fn().mockRejectedValue(new Error("transport detail"))
+      : vi.fn().mockResolvedValue(outcome === "cancel"
+        ? { ok: true, value: initial }
+        : { ok: false, error: { code: "WORKSPACE_OPEN_FAILED", message: "failed" } });
+    window.relic = makeRelicApi({ openWorkspace: response });
+    const { result } = renderHook(() => {
+      const session = useWorkspaceSession(initial);
+      return useWorkspaceRegistryActions({
+        ...session,
+        activeWorkspaceId: session.workspaceState?.activeWorkspace?.id,
+        activeWorkspacePath: session.workspaceState?.activeWorkspace?.path,
+        closeAllTabs: vi.fn(),
+        setWorkspaceError: vi.fn()
+      });
+    });
+    await act(async () => result.current.handleOpenWorkspace());
+    expect(result.current.isOpeningWorkspace).toBe(false);
+  });
+
+  it("古い完了は新しい操作の処理中状態を解除しない", async () => {
+    const first = deferred<RelicResult<WorkspaceState>>();
+    const second = deferred<RelicResult<WorkspaceState>>();
+    window.relic = makeRelicApi({ openWorkspace: vi.fn().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise) });
+    const { result } = renderHook(() => {
+      const session = useWorkspaceSession(makeWorkspaceState("workspace-a"));
+      return useWorkspaceRegistryActions({
+        ...session,
+        activeWorkspaceId: session.workspaceState?.activeWorkspace?.id,
+        activeWorkspacePath: session.workspaceState?.activeWorkspace?.path,
+        closeAllTabs: vi.fn(),
+        setWorkspaceError: vi.fn()
+      });
+    });
+    act(() => { result.current.handleOpenWorkspace(); result.current.handleOpenWorkspace(); });
+    await act(async () => first.resolve({ ok: true, value: makeWorkspaceState("workspace-b") }));
+    expect(result.current.isOpeningWorkspace).toBe(true);
+    await act(async () => second.resolve({ ok: true, value: makeWorkspaceState("workspace-c") }));
+    expect(result.current.isOpeningWorkspace).toBe(false);
+  });
+
   it("非アクティブなワークスペースを一覧から外しても現在のタブを閉じない", async () => {
     const beforeCloseAllTabs = vi.fn().mockReturnValue(true);
     const closeAllTabs = vi.fn();

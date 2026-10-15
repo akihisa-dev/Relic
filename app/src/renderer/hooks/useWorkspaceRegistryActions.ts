@@ -31,6 +31,9 @@ export function useWorkspaceRegistryActions({
   const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const [isRelinkingWorkspace, setIsRelinkingWorkspace] = useState(false);
+  const beginOpeningRequest = useAsyncRequestGuard([]);
+  const beginCreatingRequest = useAsyncRequestGuard([]);
+  const beginRelinkingRequest = useAsyncRequestGuard([]);
   const beginLatestActivationRequest = useAsyncRequestGuard([]);
   const beginWorkspaceActivationRequest = useCallback(() => {
     const isLatestActivation = beginLatestActivationRequest();
@@ -65,6 +68,7 @@ export function useWorkspaceRegistryActions({
 
     runAfterCloseCheck(beforeCloseAllTabs, () => {
       if (!isCurrentRequest()) return;
+      const isLatestOperation = beginOpeningRequest();
       setIsOpeningWorkspace(true);
       setWorkspaceError(null);
 
@@ -82,10 +86,10 @@ export function useWorkspaceRegistryActions({
           if (isCurrentRequest()) setWorkspaceError(t("errors.operationFailed"));
         })
         .finally(() => {
-          if (isCurrentRequest()) setIsOpeningWorkspace(false);
+          if (isLatestOperation()) setIsOpeningWorkspace(false);
         });
     });
-  }, [applySelectedWorkspaceState, beforeCloseAllTabs, beginWorkspaceActivationRequest, setWorkspaceError, t]);
+  }, [applySelectedWorkspaceState, beforeCloseAllTabs, beginOpeningRequest, beginWorkspaceActivationRequest, setWorkspaceError, t]);
 
   const handleCreateNewWorkspace = useCallback((): void => {
     const relic = relicClient.current;
@@ -95,6 +99,7 @@ export function useWorkspaceRegistryActions({
 
     runAfterCloseCheck(beforeCloseAllTabs, () => {
       if (!isCurrentRequest()) return;
+      const isLatestOperation = beginCreatingRequest();
       setIsCreatingWorkspace(true);
       setWorkspaceError(null);
 
@@ -112,10 +117,10 @@ export function useWorkspaceRegistryActions({
           if (isCurrentRequest()) setWorkspaceError(t("errors.operationFailed"));
         })
         .finally(() => {
-          if (isCurrentRequest()) setIsCreatingWorkspace(false);
+          if (isLatestOperation()) setIsCreatingWorkspace(false);
         });
     });
-  }, [applySelectedWorkspaceState, beforeCloseAllTabs, beginWorkspaceActivationRequest, setWorkspaceError, t]);
+  }, [applySelectedWorkspaceState, beforeCloseAllTabs, beginCreatingRequest, beginWorkspaceActivationRequest, setWorkspaceError, t]);
 
   const handleSwitchWorkspace = useCallback((workspaceId: string): void => {
     const relic = relicClient.current;
@@ -176,6 +181,7 @@ export function useWorkspaceRegistryActions({
 
     runAfterCloseCheck(beforeCloseAllTabs, () => {
       if (!isCurrentRequest()) return;
+      const isLatestOperation = beginRelinkingRequest();
       setIsRelinkingWorkspace(true);
       setWorkspaceError(null);
       void relic.relinkWorkspace({ workspaceId }).then((result) => {
@@ -188,10 +194,10 @@ export function useWorkspaceRegistryActions({
       }).catch(() => {
         if (isCurrentRequest()) setWorkspaceError(t("errors.operationFailed"));
       }).finally(() => {
-        if (isCurrentRequest()) setIsRelinkingWorkspace(false);
+        if (isLatestOperation()) setIsRelinkingWorkspace(false);
       });
     });
-  }, [applySelectedWorkspaceState, beforeCloseAllTabs, beginWorkspaceActivationRequest, setWorkspaceError, t]);
+  }, [applySelectedWorkspaceState, beforeCloseAllTabs, beginRelinkingRequest, beginWorkspaceActivationRequest, setWorkspaceError, t]);
 
   const handleRenameWorkspace = useCallback(async (workspaceId: string, name: string): Promise<boolean> => {
     if (!relicClient.current) return false;
