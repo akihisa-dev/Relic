@@ -210,8 +210,8 @@
     {
       "type": "library",
       "name": "dompurify",
-      "version": "3.4.13",
-      "purl": "pkg:npm/dompurify@3.4.13",
+      "version": "3.4.16",
+      "purl": "pkg:npm/dompurify@3.4.16",
       "licenses": [
         {
           "license": {
