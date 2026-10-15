@@ -66,7 +66,10 @@ export function useWorkspaceSearchState({
   const [searchFrontmatterField, setSearchFrontmatterField] = useState("");
   const [searchSnapshot, setSearchSnapshot] = useState<SearchSnapshot>(emptySearchSnapshot);
   const [debouncedSearch, setDebouncedSearch] = useState<DebouncedSearchSnapshot>(emptyDebouncedSearchSnapshot);
-  const lastRequestedSearchKey = useRef<string | null>(null);
+  const operationFailedMessage = useRef(t("errors.operationFailed"));
+  useEffect(() => {
+    operationFailedMessage.current = t("errors.operationFailed");
+  }, [t]);
   const frontmatterSearchFields = useMemo(
     () => knownFrontmatterSearchFields(userDefinedFields),
     [userDefinedFields]
@@ -110,7 +113,6 @@ export function useWorkspaceSearchState({
 
   useEffect(() => {
     if (!hasActiveWorkspace || searchQuery.trim() === "") {
-      lastRequestedSearchKey.current = null;
       return;
     }
 
@@ -122,7 +124,6 @@ export function useWorkspaceSearchState({
         mode: searchMode,
         query: searchQuery
       });
-      lastRequestedSearchKey.current = null;
     }, 120);
 
     return () => {
@@ -131,11 +132,7 @@ export function useWorkspaceSearchState({
   }, [effectiveSearchFrontmatterField, hasActiveWorkspace, searchKey, searchMode, searchQuery]);
 
   useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !relicClient.current || activeDebouncedSearch.key === null) {
-      return;
-    }
-    const requestKey = `${activeDebouncedSearch.key}:${contentRevision}`;
-    if (lastRequestedSearchKey.current === requestKey) {
+    if (!workspaceId || !relicClient.current || activeDebouncedSearch.key === null || activeDebouncedSearch.key !== searchKey) {
       return;
     }
 
@@ -151,8 +148,6 @@ export function useWorkspaceSearchState({
           mode: activeDebouncedSearch.mode,
           query: activeDebouncedSearch.query
         };
-
-    lastRequestedSearchKey.current = requestKey;
 
     void relicClient.current
       .searchWorkspace(input)
@@ -184,7 +179,7 @@ export function useWorkspaceSearchState({
       .catch(() => {
         if (canceled) return;
         setSearchSnapshot({
-          error: t("errors.operationFailed"),
+          error: operationFailedMessage.current,
           key: activeDebouncedSearch.key,
           limitNotice: null,
           results: []
@@ -197,9 +192,8 @@ export function useWorkspaceSearchState({
   }, [
     activeDebouncedSearch,
     contentRevision,
-    t,
-    workspaceState?.activeWorkspace?.id,
-    workspaceState?.fileTree
+    searchKey,
+    workspaceId
   ]);
 
   const hasActiveSearch = searchKey !== null;
