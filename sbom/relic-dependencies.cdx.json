@@ -248,8 +248,8 @@
     {
       "type": "library",
       "name": "js-yaml",
-      "version": "5.2.2",
-      "purl": "pkg:npm/js-yaml@5.2.2",
+      "version": "5.4.3",
+      "purl": "pkg:npm/js-yaml@5.4.3",
       "licenses": [
         {
           "license": {

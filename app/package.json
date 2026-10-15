@@ -75,7 +75,7 @@
     "d3-force": "^3.0.0",
     "dompurify": "3.4.13",
     "highlight.js": "^11.11.1",
-    "js-yaml": "^5.2.2",
+    "js-yaml": "^5.4.3",
     "katex": "^0.17.0",
     "marked": "^18.0.3",
     "marked-footnote": "^1.4.0",
