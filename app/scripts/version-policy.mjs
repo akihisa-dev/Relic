@@ -16,7 +16,8 @@ export const commitTypes = new Set([
 ]);
 
 const versionPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
-const subjectPattern = /^([a-z]+)(!)?: ((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)) (.+)$/u;
+const subjectPattern = /^([a-z]+)(!)?: (.+)$/u;
+const numberedDescriptionPattern = /^((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)) (.+)$/u;
 
 export function parseVersion(value) {
   const match = versionPattern.exec(value);
@@ -27,19 +28,16 @@ export function parseVersion(value) {
   return match.slice(1).map(Number);
 }
 
-export function nextVersion(current, type, { major = false } = {}) {
-  if (!commitTypes.has(type)) {
-    throw new Error(`Unsupported commit type: ${type}`);
+export function nextVersion(current, ...increments) {
+  if (increments.length === 0) throw new Error("At least one version increment is required.");
+  let [major, minor, patch] = parseVersion(current);
+  for (const increment of increments) {
+    if (increment === "major") { major += 1; minor = 0; patch = 0; }
+    else if (increment === "minor") { minor += 1; patch = 0; }
+    else if (increment === "patch") { patch += 1; }
+    else throw new Error(`Unsupported version increment: ${increment}`);
   }
-
-  const [majorNumber, minorNumber, patchNumber] = parseVersion(current);
-  if (major) {
-    return `${majorNumber + 1}.0.0`;
-  }
-  if (type === "feat") {
-    return `${majorNumber}.${minorNumber + 1}.0`;
-  }
-  return `${majorNumber}.${minorNumber}.${patchNumber + 1}`;
+  return `${major}.${minor}.${patch}`;
 }
 
 export function parseCommitSubject(subject) {
@@ -48,33 +46,36 @@ export function parseCommitSubject(subject) {
     throw new Error(`Invalid commit subject: ${subject}`);
   }
 
+  const numbered = numberedDescriptionPattern.exec(match[3]);
   return {
     type: match[1],
     breaking: Boolean(match[2]),
-    version: match[3],
-    description: match[4],
+    version: numbered?.[1] ?? null,
+    description: numbered?.[2] ?? match[3],
   };
 }
 
 export function validateVersionChange({ previous, current, message }) {
   const subject = message.split(/\r?\n/u, 1)[0];
   const parsed = parseCommitSubject(subject);
-  const hasBreakingChange = parsed.breaking || /^BREAKING CHANGE:/mu.test(message);
-  const hasMajorApproval = /^Version-Impact: major\s*$/imu.test(message);
-
-  if (hasBreakingChange && !hasMajorApproval) {
-    throw new Error("Breaking changes require an explicit Version-Impact: major trailer.");
+  const before = parseVersion(previous);
+  const after = parseVersion(current);
+  if (previous === current) {
+    if (parsed.version || /^Version-Impact:/imu.test(message)) {
+      throw new Error("Ordinary commits must not carry a version or Version-Impact trailer.");
+    }
+    return { version: current, versionUpdate: false };
   }
-
-  const expected = nextVersion(previous, parsed.type, { major: hasMajorApproval });
-  if (current !== expected) {
-    throw new Error(`Expected package version ${expected}, received ${current}.`);
+  if (parsed.type !== "chore" || parsed.breaking || parsed.version !== current) {
+    throw new Error("Version updates require a dedicated chore subject matching the package version.");
   }
-  if (parsed.version !== current) {
-    throw new Error(`Commit subject version ${parsed.version} does not match package version ${current}.`);
+  const changedPart = after.findIndex((part, index) => part !== before[index]);
+  if (after[changedPart] < before[changedPart]) {
+    throw new Error("Version updates must increase the package version.");
   }
-
-  return { expected, type: parsed.type, major: hasMajorApproval };
+  // Classification and covered history are reviewed from the actual changes,
+  // rather than inferred from commit types or the final version alone.
+  return { version: current, versionUpdate: true };
 }
 
 export function validateVersionArtifacts({ packageVersion, sbomVersion }) {
@@ -132,8 +133,8 @@ function checkRange(base, head) {
 
 function printUsage() {
   console.error("Usage:");
-  console.error("  node scripts/version-policy.mjs next <current> <type> [--major]");
-  console.error("  node scripts/version-policy.mjs check <previous> <current> <type> [--major]");
+  console.error("  node scripts/version-policy.mjs next <current> <major|minor|patch>...");
+  console.error("  node scripts/version-policy.mjs check <previous> <current> <major|minor|patch>...");
   console.error("  node scripts/version-policy.mjs check-range <base> <head>");
   console.error("  node scripts/version-policy.mjs check-ref <revision>");
   console.error("  node scripts/version-policy.mjs check-staged");
@@ -144,22 +145,22 @@ function main(args) {
   const values = rawValues[0] === "--" ? rawValues.slice(1) : rawValues;
 
   if (command === "next") {
-    const [current, type] = values;
-    if (!current || !type) {
+    const [current, ...increments] = values;
+    if (!current || increments.length === 0) {
       printUsage();
       return 1;
     }
-    console.log(nextVersion(current, type, { major: values.includes("--major") }));
+    console.log(nextVersion(current, ...increments));
     return 0;
   }
 
   if (command === "check") {
-    const [previous, current, type] = values;
-    if (!previous || !current || !type) {
+    const [previous, current, ...increments] = values;
+    if (!previous || !current || increments.length === 0) {
       printUsage();
       return 1;
     }
-    const expected = nextVersion(previous, type, { major: values.includes("--major") });
+    const expected = nextVersion(previous, ...increments);
     if (current !== expected) {
       throw new Error(`Expected version ${expected}, received ${current}.`);
     }
